@@ -27,6 +27,17 @@ description: Core rules for every pyRevit agent task. Covers the script contract
 - **Injected names:** `doc`, `uidoc`, `app`, `uiapp`, `DB` (Autodesk.Revit.DB), `UI` (Autodesk.Revit.UI), and `inputs` (the dict you pass as `inputs`). Don't `import DB` or `import UI`.
 - **Use the shared libraries first.** pyrevitlib (`from pyrevit import revit`; `from pyrevit.revit.db import query, create, update`) and rpw (`from rpw import db`) cover lookups, element and view creation, parameters, units, transactions and navigation, and they handle the API traps below. Find functions with `lookup_pyrevit_api`; the `pyrevit-library` skill maps them. Write raw `DB.` code only for what they don't cover.
 - **Your own helpers across runs:** put plan data and helper functions in modules in a folder, and pass the folder as `workspace` to `run_query` and `run_modify`. Then `import my_module` works, and it is re-imported fresh every run, so edits apply. Don't paste the same library into every script.
+- **Modules don't see the injected names.** `doc`, `DB` and the others exist only in the run script, so a workspace module that uses them fails with `NameError`. Import in the module and take the document as an argument:
+
+  ```python
+  from pyrevit import revit, DB
+
+  def wall_count(doc=None):
+      doc = doc or revit.doc
+      return DB.FilteredElementCollector(doc).OfClass(DB.Wall).GetElementCount()
+  ```
+
+  Call it as `my_module.wall_count(doc)` from the run script.
 - **Returning data:** assign `result`. It must be JSON-serializable. `ElementId`, `Element` and `XYZ` are converted for you, and so are .NET numbers and collections. Use `print()` for short notes only.
 - **Large results:** results over 256 KB are saved to the run record. Page through them with `get_run(run_id, offset, length)`.
 
@@ -60,6 +71,7 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
 ## Units and ids
 
 - **Units:** internal lengths are feet and angles are radians. To report in project units, use `DB.UnitUtils.ConvertFromInternalUnits(value, DB.UnitTypeId.Millimeters)`.
+- **A bare number is feet everywhere,** in the Revit API and in pyrevitlib. `create.create_wall(..., height=3500)` builds a wall 3,500 feet high without complaint. Write `"3500mm"`, or convert first, and read a dimension back after creating.
 - **ElementId values:** `element_id.Value` on Revit 2024 and later, `IntegerValue` before that. `Value` is a .NET Int64: use `str(element_id.Value)` or `"{}".format(...)` to build strings.
 - **Building ids:** `DB.ElementId(value)`.
 
@@ -91,6 +103,8 @@ walls_with_comments = (
 - **`OfCategory` takes a `BuiltInCategory`**, not a `Category` object.
 - **`OfClass` only accepts native classes.** For rooms, areas and spaces use `OfCategory(DB.BuiltInCategory.OST_Rooms)`, or `OfClass(DB.SpatialElement)` plus `isinstance()`.
 - **A category holds several classes.** `OST_Walls` also returns in-place walls as `FamilyInstance`. Filter with `OfClass` or `isinstance()` before using class members such as `Wall.WallType`.
+- **Types are elements too.** `FamilySymbol`, `WallType` and other types are element types, so `OfClass(DB.FamilySymbol).WhereElementIsNotElementType()` returns nothing. To check whether a family is loaded, collect `OfClass(DB.FamilySymbol)` or `OfClass(DB.Family)` without that filter.
+- **Connectors** (MEP): a duct or pipe has `ConnectorManager` directly; a family instance has `instance.MEPModel.ConnectorManager`. A connector's position is `Origin` and its facing is `CoordinateSystem.BasisZ`; `Direction` is the flow direction (`FlowDirectionType`), not a vector. Round connectors have `Radius` (there is no `Diameter`); rectangular ones have `Width` and `Height` (check `connector.Shape`). Filter by `connector.Domain` before reading domain-specific members such as `DuctSystemType`.
 - **Sub-namespaces:** `DB.Architecture.Room`, `DB.Structure.StructuralType`, `DB.Plumbing.Pipe`, `DB.Mechanical.Duct`. There is no `DB.Roof`; roofs are `DB.RoofBase` (`FootPrintRoof`, `ExtrusionRoof`).
 - **Categories:** `DB.Category.GetCategory(doc, DB.BuiltInCategory.OST_Walls)` needs the document first.
 - **Types and parameters:**
@@ -146,6 +160,12 @@ walls_with_comments = (
   | `BuiltInParameter.WALL_HEIGHT`, `TYPE_MARK`, `ALL_MODEL_COMMENTS` | `WALL_USER_HEIGHT_PARAM`, `ALL_MODEL_TYPE_MARK`, `ALL_MODEL_INSTANCE_COMMENTS` |
   | `view.SetCategoryHidden(category, True)` | `view.SetCategoryHidden(category.Id, True)` |
   | `DB.RoomTagType`, `DB.StairsType`, `DB.StairsRun` | `DB.Architecture.RoomTagType`, `DB.Architecture.StairsType`, `DB.Architecture.StairsRun` |
+  | `symbol.FamilyPlacementType` | `symbol.Family.FamilyPlacementType` |
+  | `DB.Category.GetAllCategories()`, `OfClass(DB.Category)` | `doc.Settings.Categories` (categories aren't elements) |
+  | `floor.Symbol` | `floor.FloorType`, or `doc.GetElement(floor.GetTypeId())` for any element |
+  | `duct.MEPModel`, `pipe.MEPModel` | `duct.ConnectorManager` |
+  | `connector.Direction.X`, `connector.Diameter` | `connector.CoordinateSystem.BasisZ.X`, `connector.Radius * 2` |
+  | `BuiltInParameter.FAMILY_SYMBOL_WIDTH_PARAM`, `FLOOR_PARAM_STRUCTURE` | `FAMILY_WIDTH_PARAM`, `FLOOR_STRUCTURE_ID_PARAM` |
   | `floor_type.Width`, `layer.LayerWidth` | `floor_type.GetCompoundStructure().GetWidth()`, `structure.GetLayerWidth(index)` |
   | `.OfCategory(category)` or `.OfCategory(element_id)` | `.OfCategory(DB.BuiltInCategory.OST_X)`, or `.OfCategoryId(category.Id)` |
   | `query.get_family_symbol(..., category=...)` | `query.find_family_symbol(type_name, family_name=..., category="OST_Doors")` |

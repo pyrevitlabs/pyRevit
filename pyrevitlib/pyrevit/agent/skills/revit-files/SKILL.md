@@ -124,8 +124,8 @@ except Exception as error:
 result = {"active": uiapp.ActiveUIDocument.Document.Title if uiapp.ActiveUIDocument else None}
 ```
 
-- **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** Don't treat the exception as failure: check `uiapp.ActiveUIDocument` afterwards, then `get_context`.
-- **With no document open**, runs still execute with `doc` and `uidoc` set to `None`, and the decision is `no_document`. Open or create a project that way, then continue in the next run.
+- **With no document open**, runs still execute with `doc` and `uidoc` set to `None`, and the decision is `no_document`. `OpenAndActivateDocument` returns normally there; open or create the project that way, then continue in the next run.
+- **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` afterwards, then `get_context`.
 - `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started fails the run with `other_document_modified`.
 
 ## Before you report done
