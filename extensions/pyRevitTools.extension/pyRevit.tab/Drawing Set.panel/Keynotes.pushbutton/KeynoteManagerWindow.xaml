@@ -8,7 +8,7 @@
         WindowStartupLocation="Manual"
         Title="Keynote Manager"
         Closing="window_closing"
-        KeyDown="window_keydown">
+        PreviewKeyDown="window_keydown">
 
     <Window.Resources>
         <!-- ============================================================ -->
