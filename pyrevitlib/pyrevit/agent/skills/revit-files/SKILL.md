@@ -38,6 +38,7 @@ generic_model = os.path.join(family_templates, "English", "Metric Generic Model.
 ## Saving: what a run can and can't do
 
 - **Documents the run created or opened** can be saved (`SaveAs`) and closed (`Close(False)`) from the same run.
+- **Create, build and save a new document in one run.** When a run ends, the host closes every background document it created or opened, without saving, and lists them in `closed_documents`; a failed run loses whatever it built there. Never keep an unsaved model across runs: a crash or a closed document loses it. `get_context.open_documents` shows what is open.
 - **The document that was open when the run started can't be saved from a run.** Revit refuses with "Operation is not permitted when there is any open transaction phase started by API client", because the run holds a transaction group on it. Ask the user to save it in Revit.
 - **Files written during a dry run stay on disk.** A dry run rolls back model changes, not files.
 - **`SaveAs` fails when the file exists.** Check with `os.path.exists` first and ask the user before replacing a file; overwrite only with `DB.SaveAsOptions()` and `OverwriteExistingFile = True` after they agree.

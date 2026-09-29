@@ -96,6 +96,7 @@ walls_with_comments = (
 
 - **Slow:** `len(list(collector))` and `[e for e in collector if e.get_Parameter(...)...]` over a whole model. Fine on a short, already filtered list.
 - **`CreateHasValueParameterRule` isn't "not empty".** An empty text value counts as a value. For text, use `CreateNotEqualsRule(parameter_id, "")`.
+- **Deleting by category deletes its types too.** `OfCategory(...)` without `.WhereElementIsNotElementType()` returns the category's types as well, so a cleanup that deletes "last run's output" by category also deletes the types a later step needs.
 - **Filters change the collector itself.** `walls = everything.OfClass(DB.Wall)` returns the same object, so `everything` now holds only walls too. Start a new `FilteredElementCollector` for each query.
 
 ## Performance rules (strict)
