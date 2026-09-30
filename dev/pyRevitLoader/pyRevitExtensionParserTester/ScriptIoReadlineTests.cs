@@ -301,9 +301,15 @@ namespace pyRevitExtensionParserTester
             Assert.Multiple(() => {
                 Assert.That(Encoding.UTF8.GetString(buffer, 0, firstRead), Is.EqualTo("first"));
                 Assert.That(io.readline(), Is.EqualTo("second"));
-                Assert.That(io.Read(buffer, 0, buffer.Length), Is.EqualTo(6),
+            });
+
+            int thirdLineByteCount = io.Read(buffer, 0, buffer.Length);
+            string thirdLine = Encoding.UTF8.GetString(buffer, 0, thirdLineByteCount);
+
+            Assert.Multiple(() => {
+                Assert.That(thirdLineByteCount, Is.EqualTo(5), "returns the bytes actually copied");
+                Assert.That(thirdLine, Is.EqualTo("third"),
                     "the handshake swallowed a line the user had already entered");
-                Assert.That(Encoding.UTF8.GetString(buffer, 0, 6), Is.EqualTo("third"));
             });
         }
 
