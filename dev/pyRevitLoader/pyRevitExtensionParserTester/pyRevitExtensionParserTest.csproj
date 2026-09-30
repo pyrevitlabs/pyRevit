@@ -73,6 +73,7 @@
     <Compile Include="PyRevitConfigsFacadeTests.cs" />
     <Compile Include="VersionFilteringTests.cs" />
     <Compile Include="PyRevitRootResolutionTests.cs" />
+    <Compile Include="ScriptIoReadlineTests.cs" />
     <Compile Include="CommandSearchPathsTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
     <Compile Include="HeldRecordBufferTests.cs" />
@@ -113,6 +114,13 @@
       <HintPath>..\..\libs\netfx\pyRevitLabs.Json.dll</HintPath>
       <Private>true</Private>
     </Reference>
+    <!-- ScriptIO holds a ScriptConsole reference, so instantiating one needs the
+         MahApps types that type drags in. The Runtime project marks this
+         reference copy-local=false; the tests have to bring it along. -->
+    <Reference Include="pyRevitLabs.MahAppsMetro">
+      <HintPath>..\..\libs\netfx\pyRevitLabs.MahAppsMetro.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <Reference Include="pyRevitLabs.NLog">
@@ -121,6 +129,13 @@
     </Reference>
     <Reference Include="pyRevitLabs.Json">
       <HintPath>..\..\libs\netcore\pyRevitLabs.Json.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <!-- ScriptIO holds a ScriptConsole reference, so instantiating one needs the
+         MahApps types that type drags in. The Runtime project marks this
+         reference copy-local=false; the tests have to bring it along. -->
+    <Reference Include="pyRevitLabs.MahAppsMetro">
+      <HintPath>..\..\libs\netcore\pyRevitLabs.MahAppsMetro.dll</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>
