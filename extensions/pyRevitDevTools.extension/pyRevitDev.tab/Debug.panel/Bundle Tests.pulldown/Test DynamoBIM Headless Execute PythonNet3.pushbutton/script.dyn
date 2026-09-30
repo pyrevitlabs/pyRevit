@@ -1,0 +1,112 @@
+{
+  "Uuid": "3c8b22a8-bd50-4fdd-ab80-5d35560739bb",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "script",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "Code": "import clr\r\nimport os\r\nimport subprocess\r\nimport traceback\r\nfrom datetime import datetime\r\n\r\n# --------------------------------------------------\r\n# Revit API\r\n# --------------------------------------------------\r\n\r\nclr.AddReference(\"RevitAPI\")\r\nfrom Autodesk.Revit.DB import *\r\n\r\n# Dynamo / Revit services\r\nclr.AddReference(\"RevitServices\")\r\nfrom RevitServices.Persistence import DocumentManager\r\n\r\n# --------------------------------------------------\r\n# Configuration\r\n# --------------------------------------------------\r\n\r\nfolder = r\"C:\\Temp\"\r\n\r\nif not os.path.exists(folder):\r\n    os.makedirs(folder)\r\n\r\nnow = datetime.now()\r\n\r\ntimestamp_text = now.strftime(\"%Y-%m-%d %H:%M:%S\")\r\ntimestamp_filename = now.strftime(\"%Y-%m-%d_%H-%M-%S\")\r\n\r\ndoc = None\r\ntransaction = None\r\nrevit_version = \"UNKNOWN\"\r\nrevit_version_name = \"UNKNOWN\"\r\n\r\ntry:\r\n    # --------------------------------------------------\r\n    # Get current Revit document\r\n    # --------------------------------------------------\r\n\r\n    doc = DocumentManager.Instance.CurrentDBDocument\r\n\r\n    if doc is None:\r\n        raise Exception(\"No active Revit document was found.\")\r\n\r\n    # --------------------------------------------------\r\n    # Get actual Revit version from Revit API\r\n    # --------------------------------------------------\r\n\r\n    revit_version = doc.Application.VersionNumber\r\n    revit_version_name = doc.Application.VersionName\r\n\r\n    # --------------------------------------------------\r\n    # Get wall type\r\n    # --------------------------------------------------\r\n\r\n    wall_type = (\r\n        FilteredElementCollector(doc)\r\n        .OfClass(WallType)\r\n        .FirstElement()\r\n    )\r\n\r\n    if wall_type is None:\r\n        raise Exception(\"No WallType was found in the current document.\")\r\n\r\n    # --------------------------------------------------\r\n    # Get level\r\n    # --------------------------------------------------\r\n\r\n    level = (\r\n        FilteredElementCollector(doc)\r\n        .OfClass(Level)\r\n        .FirstElement()\r\n    )\r\n\r\n    if level is None:\r\n        raise Exception(\"No Level was found in the current document.\")\r\n\r\n    # --------------------------------------------------\r\n    # Wall dimensions\r\n    # Revit internal units are feet\r\n    # --------------------------------------------------\r\n\r\n    height = 10.0\r\n\r\n    # Wall 1\r\n    p1 = XYZ(0, 0, 0)\r\n    p2 = XYZ(20, 0, 0)\r\n\r\n    # Wall 2\r\n    p3 = XYZ(0, 10, 0)\r\n    p4 = XYZ(20, 10, 0)\r\n\r\n    line1 = Line.CreateBound(p1, p2)\r\n    line2 = Line.CreateBound(p3, p4)\r\n\r\n    # --------------------------------------------------\r\n    # Create walls\r\n    # --------------------------------------------------\r\n\r\n    transaction = Transaction(doc, \"Dynamo Wall Test\")\r\n    transaction.Start()\r\n\r\n    wall1 = Wall.Create(\r\n        doc,\r\n        line1,\r\n        wall_type.Id,\r\n        level.Id,\r\n        height,\r\n        0.0,\r\n        False,\r\n        False\r\n    )\r\n\r\n    wall2 = Wall.Create(\r\n        doc,\r\n        line2,\r\n        wall_type.Id,\r\n        level.Id,\r\n        height,\r\n        0.0,\r\n        False,\r\n        False\r\n    )\r\n\r\n    transaction.Commit()\r\n    transaction = None\r\n\r\n    # --------------------------------------------------\r\n    # Create success marker file\r\n    # --------------------------------------------------\r\n\r\n    filename = \"Dynamo_Wall_Test_{}_SUCCESS_{}.txt\".format(\r\n        revit_version,\r\n        timestamp_filename\r\n    )\r\n\r\n    marker_path = os.path.join(folder, filename)\r\n\r\n    # --------------------------------------------------\r\n    # Get ElementIds\r\n    # --------------------------------------------------\r\n\r\n    wall1_id = wall1.Id.Value\r\n    wall2_id = wall2.Id.Value\r\n\r\n    # --------------------------------------------------\r\n    # Write success marker\r\n    # --------------------------------------------------\r\n\r\n    with open(marker_path, \"w\") as f:\r\n        f.write(\"DYNAMO WALL TEST SUCCESSFUL\\n\")\r\n        f.write(\"=\" * 60)\r\n        f.write(\"\\n\\n\")\r\n\r\n        f.write(\"Execution date and time: {}\\n\".format(timestamp_text))\r\n        f.write(\"Revit version: {}\\n\".format(revit_version))\r\n        f.write(\"Revit version name: {}\\n\".format(revit_version_name))\r\n        f.write(\"Revit document: {}\\n\".format(doc.Title))\r\n\r\n        f.write(\"\\n\")\r\n        f.write(\"RESULT:\\n\")\r\n        f.write(\"Walls created: 2\\n\")\r\n        f.write(\"Wall 1 ElementId: {}\\n\".format(wall1_id))\r\n        f.write(\"Wall 2 ElementId: {}\\n\".format(wall2_id))\r\n\r\n        f.write(\"\\n\")\r\n        f.write(\"Marker file: {}\\n\".format(marker_path))\r\n\r\n    # --------------------------------------------------\r\n    # Open success file in Notepad\r\n    # --------------------------------------------------\r\n\r\n    subprocess.Popen([\"notepad.exe\", marker_path])\r\n\r\n    # --------------------------------------------------\r\n    # Dynamo output\r\n    # --------------------------------------------------\r\n\r\n    OUT = [\r\n        wall1,\r\n        wall2,\r\n        revit_version,\r\n        timestamp_text,\r\n        marker_path\r\n    ]\r\n\r\nexcept Exception as ex:\r\n\r\n    # --------------------------------------------------\r\n    # Roll back transaction if something failed\r\n    # --------------------------------------------------\r\n\r\n    if transaction is not None:\r\n        try:\r\n            if transaction.GetStatus() == TransactionStatus.Started:\r\n                transaction.RollBack()\r\n        except:\r\n            pass\r\n\r\n    # --------------------------------------------------\r\n    # Try to retrieve Revit version if possible\r\n    # --------------------------------------------------\r\n\r\n    if doc is not None:\r\n        try:\r\n            revit_version = doc.Application.VersionNumber\r\n            revit_version_name = doc.Application.VersionName\r\n        except:\r\n            pass\r\n\r\n    # --------------------------------------------------\r\n    # Create error log\r\n    # --------------------------------------------------\r\n\r\n    error_filename = \"Dynamo_Wall_Test_{}_ERROR_{}.txt\".format(\r\n        revit_version,\r\n        timestamp_filename\r\n    )\r\n\r\n    error_path = os.path.join(folder, error_filename)\r\n\r\n    error_trace = traceback.format_exc()\r\n\r\n    with open(error_path, \"w\") as f:\r\n        f.write(\"DYNAMO WALL TEST FAILED\\n\")\r\n        f.write(\"=\" * 60)\r\n        f.write(\"\\n\\n\")\r\n\r\n        f.write(\"Execution date and time: {}\\n\".format(timestamp_text))\r\n        f.write(\"Revit version: {}\\n\".format(revit_version))\r\n        f.write(\"Revit version name: {}\\n\".format(revit_version_name))\r\n\r\n        if doc is not None:\r\n            try:\r\n                f.write(\"Revit document: {}\\n\".format(doc.Title))\r\n            except:\r\n                pass\r\n\r\n        f.write(\"\\n\")\r\n        f.write(\"ERROR:\\n\")\r\n        f.write(str(ex))\r\n        f.write(\"\\n\\n\")\r\n\r\n        f.write(\"FULL STACK TRACE:\\n\")\r\n        f.write(\"-\" * 60)\r\n        f.write(\"\\n\")\r\n        f.write(error_trace)\r\n        f.write(\"\\n\")\r\n\r\n        f.write(\"-\" * 60)\r\n        f.write(\"\\n\")\r\n        f.write(\"Error log: {}\\n\".format(error_path))\r\n\r\n    # --------------------------------------------------\r\n    # Open error file in Notepad\r\n    # --------------------------------------------------\r\n\r\n    try:\r\n        subprocess.Popen([\"notepad.exe\", error_path])\r\n    except:\r\n        pass\r\n\r\n    # --------------------------------------------------\r\n    # Still report the run as failed in Dynamo\r\n    # --------------------------------------------------\r\n\r\n    raise",
+      "Engine": "PythonNet3",
+      "VariableInputPorts": true,
+      "Id": "a55eb79556c44983a4b860ff72a93318",
+      "NodeType": "PythonScriptNode",
+      "Inputs": [
+        {
+          "Id": "d43434145280443eb42814edf8c91fb4",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "ac369e6b27474269978e8e0932820b93",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    }
+  ],
+  "Connectors": [],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "EnableLegacyPolyCurveBehavior": true,
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "3.6",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "9.1",
+      "Data": {}
+    }
+  ],
+  "Author": "None provided",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "4.2.1.5887",
+      "RunType": "Automatic",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "_Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Id": "a55eb79556c44983a4b860ff72a93318",
+        "Name": "Balloon Notification",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1486.144094886928,
+        "Y": 465.77340268564296
+      }
+    ],
+    "Annotations": [],
+    "X": -21.884808153769086,
+    "Y": -152.32292037674893,
+    "Zoom": 0.6751528997701232
+  }
+}

@@ -11,8 +11,8 @@ namespace Build.Modules;
 
 [DependsOn<BuildRunnersModule>]
 /// <summary>
-/// Runs configuration backend and compatibility tests after their build outputs
-/// are available.
+/// Runs configuration backend, CPython interpreter lifecycle, and compatibility tests after their
+/// build outputs are available.
 /// </summary>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
@@ -34,6 +34,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.CPythonRuntimeTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
         foreach (string framework in new[] { "net48", "net8.0-windows" })
             await RunTestsAsync(
                 context,
@@ -44,7 +51,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                     "-f",
                     framework,
                     "--filter",
-                    "FullyQualifiedName~PyRevitConfigsSeedTests",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests",
                 ],
                 cancellationToken);
 
@@ -57,7 +64,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "-f",
                 "net8.0-windows",
                 "--filter",
-                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests",
+                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests",
             ],
             cancellationToken);
     }

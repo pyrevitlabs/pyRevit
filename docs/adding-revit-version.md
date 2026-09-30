@@ -115,7 +115,7 @@ Example entry:
     },
     "notes": "",
     "product": "Autodesk Revit",
-    "release": "Revit 2028",
+    "release": "2028",
     "target": "x64",
     "version": "28.0.0.0"
 }
@@ -123,6 +123,78 @@ Example entry:
 
 !!! note
     Build numbers are released by Autodesk with each update. Add new entries as updates are released.
+
+### The `release` field is a display name, not an identity
+
+`release` holds the title Autodesk uses on the matching release-notes page: the dotted
+version, then `Update` for a minor release or `Hotfix`/`Update` for a point fix, exactly
+as Autodesk spells it. Autodesk's own usage is not uniform — point fixes are `Hotfix` up
+to 2023.0 and `Update` from 2023.1 on — so the file reproduces that rather than smoothing
+it. The `2021 First Customer Ship` and `2027 Preview Release` names describe a
+distribution channel, not a version, and are kept verbatim.
+
+Identity comes from `version` and `build`. `FindProductInfo` does compare `release`
+(`RevitProduct.cs:165`), but the identifier it receives on the installed-products path is
+the registry `DisplayVersion`, which for Revit 2021 and later is a four-part number such
+as `25.5.0.57` — so `version` satisfies that match and `release` is close to inert there.
+What `release` drives is display: `pyrevit revits`, `revits --csv`, `pyrevit env --json`,
+attachment labels, and the Settings UI.
+
+Two consequences for anyone editing this file:
+
+- **Names must be unique.** When Autodesk ships two builds under one release-notes page
+  (a base build and a follow-up install build), the second name carries its build date:
+  `2025.4.3 Update` and `2025.4.3 Update (20250815)`. A shared name is not a cosmetic
+  problem — looking one up by name matches every record carrying it, and `FindProductInfo`
+  then resolves the tie by build/version evidence or refuses to answer, so the two builds
+  cannot be told apart. The same applies to a shared `version`, which is why these pairs are
+  also expected to differ there.
+- **Do not put whitespace immediately before a four-digit run.** Names contain spaces
+  (`2021.1 Update`) and that is fine; what matters is the gap before the year. `GetProductYear`
+  (`RevitProduct.cs:223`) matches `.*\s+(?<product_year>\d{4}).*`, so a name like
+  `Revit 2028` starts resolving the product year from `release` instead of falling through
+  to `version`, which changes what `IsSupported` and the attachment code paths do. No name in
+  the file has whitespace directly before a year for this reason — a title ending in a bare
+  year (`2027`) is unaffected.
+
+### Which Revit versions are listed
+
+The host registry lists exactly the Revits the current pyRevit line supports, and
+that floor is **Revit 2021** (`RevitProductData.MinimumSupportedProductYear`).
+The C# loader replaced the legacy pure-Python loader, which was the only runtime
+that ran on Revit 2020 and earlier, so those releases are not supported and are
+deliberately absent from the file — the 6.5 line was the last to carry them.
+
+Do not add a record below that floor to "fix" an install reporting the wrong
+product. An older install is still detected, and reported as unsupported, so it
+shows up in `pyrevit env` with a `not supported by this version of pyRevit` note
+instead of silently standing in for a supported Revit.
+
+### Build numbers are not unique
+
+Autodesk reuses a build number across product years, so `build` alone does not
+identify a host. Both of these ship build `20220517_1515`:
+
+| release | version | build |
+|---|---|---|
+| 2020.2.9 | 20.2.90.12 | 20220517_1515 |
+| 2021.1.7 Hotfix | 21.1.70.21 | 20220517_1515 |
+
+(`2020.2.9` is shown as it was when that section was written; it predates the 2021 floor
+described above and is no longer in the file.)
+
+`RevitProductData.FindProductInfo` therefore treats a build match as a candidate
+set and narrows it with the host's own identity — full file version first, then
+install path, then the release named in the identifier. A candidate whose product
+year contradicts the host's is dropped, and a candidate set that stays ambiguous
+resolves to nothing rather than to an arbitrary record, so the caller falls back
+to the binary's own version info.
+
+Binding an install to the wrong record is not cosmetic: it reports the wrong
+product year, which is what makes pyRevit load runtime assemblies built for a
+different Revit and fail at load time with a `TypeLoadException`. When a build is
+genuinely shared, an `Ambiguous host product` warning in the log names the records
+involved; add the missing record to the registry rather than relying on a guess.
 
 ---
 

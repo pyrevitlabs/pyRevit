@@ -1,0 +1,608 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization.Json;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
+
+namespace pyRevitLabs.PyRevit.Runtime.Shared {
+    /// <summary>
+    /// Journal data keys read by <c>Dynamo.Applications.DynamoRevit.ExecuteCommand</c> in Dynamo
+    /// for Revit. Unrecognized keys are ignored without warning, so these must match Dynamo's
+    /// own <c>JournalKeys</c> exactly, including casing and without trailing whitespace.
+    /// </summary>
+    public static class DynamoJournalKeys {
+        public const string ShowUI = "dynShowUI";
+        public const string Automation = "dynAutomation";
+        public const string GraphPath = "dynPath";
+        public const string ExecuteGraph = "dynPathExecute";
+        public const string ShutdownModel = "dynModelShutDown";
+        public const string NodesInfo = "dynModelNodesInfo";
+
+        /// <summary>Open the graph with its "Run" setting forced to manual.</summary>
+        public const string ForceManualRun = "dynForceManualRun";
+
+        /// <summary>Reuse the currently open workspace when it is already the requested graph.</summary>
+        public const string ReuseOpenGraph = "dynPathCheckExisting";
+    }
+
+    /// <summary>
+    /// Execution settings for a Dynamo graph run, mapped one-to-one onto Dynamo's journal data.
+    /// </summary>
+    public class DynamoExecutionOptions {
+        /// <summary>Full path to the <c>.dyn</c> graph to open. Ignored when empty.</summary>
+        public string GraphPath { get; set; }
+
+        /// <summary>JSON payload with node values to push after the graph is opened.</summary>
+        public string NodesInfo { get; set; }
+
+        /// <summary>Bring up the Dynamo UI.</summary>
+        public bool ShowUI { get; set; }
+
+        /// <summary>Run on the main thread without the idle loop.</summary>
+        public bool Automate { get; set; }
+
+        public bool ExecuteGraph { get; set; }
+
+        public bool ShutdownModel { get; set; }
+
+        public bool ReuseOpenGraph { get; set; }
+
+        public bool ForceManualRun { get; set; }
+
+        /// <summary>
+        /// The same settings with the model shutdown dropped, for the calls of a UIless run.
+        /// </summary>
+        /// <remarks>
+        /// <c>DynamoRevit.ExecuteCommand</c> shuts the model down instead of running the graph
+        /// when a call asks for both, so the shutdown cannot be combined with a UIless run.
+        /// </remarks>
+        public DynamoExecutionOptions WithoutShutdown() {
+            if (!ShutdownModel)
+                return this;
+
+            return new DynamoExecutionOptions {
+                GraphPath = GraphPath,
+                NodesInfo = NodesInfo,
+                ShowUI = ShowUI,
+                Automate = Automate,
+                ExecuteGraph = ExecuteGraph,
+                ShutdownModel = false,
+                ReuseOpenGraph = ReuseOpenGraph,
+                ForceManualRun = ForceManualRun
+            };
+        }
+    }
+
+    /// <summary>Run setting a graph opens with, as Dynamo decides it when loading the file.</summary>
+    public enum DynamoGraphRunMode {
+        /// <summary>The graph file could not be read, or its run setting is one Dynamo may still execute.</summary>
+        Unknown,
+        Automatic,
+        Manual
+    }
+
+    public enum DynamoCommandStatus {
+        Succeeded,
+        DynamoUnavailable,
+        IncompatibleDynamo,
+        Rejected,
+
+        /// <summary>Dynamo accepted the command but never executed the graph.</summary>
+        NotRun,
+        Failed
+    }
+
+    /// <summary>Outcome of a Dynamo command run, with a user facing message and full diagnostics.</summary>
+    public class DynamoCommandResult {
+        public DynamoCommandStatus Status { get; }
+
+        public string Message { get; }
+
+        public string Details { get; }
+
+        public bool Succeeded => Status == DynamoCommandStatus.Succeeded;
+
+        public DynamoCommandResult(DynamoCommandStatus status, string message, string details) {
+            Status = status;
+            Message = message;
+            Details = details;
+        }
+    }
+
+    /// <summary>
+    /// Resolves and drives <c>Dynamo.Applications.DynamoRevitApp.ExecuteDynamoCommand</c>, the
+    /// entry point Dynamo for Revit exposes to add-ins that run a graph outside the Dynamo UI.
+    ///
+    /// Important: a UIless run is two calls. On a cold session
+    /// <c>DynamoRevit.ExecuteCommand</c> only starts the Dynamo model and returns without opening
+    /// the graph, and it only opens and runs the graph handed to it by a later call. The first call
+    /// therefore only starts the model and carries no graph path, and the second one carries it.
+    /// The warm-up is a no-op once the model is up, so the pair is safe to always issue.
+    ///
+    /// Important: a call that asks for the model to be shut down never runs anything - Dynamo
+    /// tears the model down instead - so the shutdown is dropped for a UIless run.
+    ///
+    /// Important: the graph-carrying call must carry <c>dynPath</c>, and
+    /// <c>ExecuteCommand</c> throws <see cref="NullReferenceException"/> when it is called with no
+    /// Revit document open, because it dereferences the active document. Dynamo answers that with
+    /// its own modal error dialog, which blocks the calling API thread.
+    ///
+    /// Important: with <c>dynAutomation</c> on, Dynamo ignores <c>dynPathExecute</c> and only
+    /// opens the graph, so a graph that opens with its run setting on manual is never executed.
+    /// A UIless automation run of such a graph is reported as <see cref="DynamoCommandStatus.NotRun"/>
+    /// before Dynamo is called.
+    ///
+    /// Invariant: this type must stay free of Revit API types so it can be exercised outside of a
+    /// Revit host. The active <c>UIApplication</c> is passed in as a plain object.
+    /// </summary>
+    public static class DynamoRevitInterop {
+        /// <summary>Assembly the Dynamo for Revit add-in ships in.</summary>
+        public const string AppAssemblyName = "DynamoRevitDS";
+
+        /// <summary>Full name of the Dynamo for Revit external application type.</summary>
+        public const string AppTypeName = "Dynamo.Applications.DynamoRevitApp";
+
+        /// <summary>Method on the app type that runs a graph from the journal data.</summary>
+        public const string ExecuteCommandMethodName = "ExecuteDynamoCommand";
+
+        /// <summary>Type holding Dynamo's per-Revit state, used to tell whether its model is up.</summary>
+        public const string DynamoRevitTypeName = "Dynamo.Applications.DynamoRevit";
+
+        /// <summary>Property on that type that is set once a Dynamo model is loaded.</summary>
+        public const string DynamoModelPropertyName = "RevitDynamoModel";
+
+        /// <summary>Property on the model that carries its run state, e.g. <c>StartedUI</c>.</summary>
+        public const string DynamoModelStatePropertyName = "State";
+
+        /// <summary>Prefix of every model state in which a graph can be executed.</summary>
+        public const string DynamoModelStartedStatePrefix = "Started";
+
+        private const string DynamoNotAvailableMessage =
+            "Can not find Dynamo installation or determine which Dynamo version to Run.\n\n"
+            + "Make sure Dynamo for Revit is installed for this Revit version, and run Dynamo "
+            + "once to select the active version.";
+
+        /// <summary>
+        /// Hands <paramref name="options"/> to Dynamo, resolving the add-in assembly, the app type
+        /// and the command method from whatever Dynamo version is present.
+        /// </summary>
+        /// <param name="options">Graph run settings.</param>
+        /// <param name="uiApplication">Active <c>UIApplication</c> of the host session.</param>
+        /// <param name="addinsFolders">
+        /// Folders holding Revit add-in manifests, searched only when Dynamo is not loaded yet.
+        /// </param>
+        public static DynamoCommandResult Run(DynamoExecutionOptions options,
+                                              object uiApplication,
+                                              IEnumerable<string> addinsFolders) {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+            if (uiApplication == null)
+                throw new ArgumentNullException(nameof(uiApplication));
+
+            var journalData = BuildJournalData(options, includeGraph: true);
+            var diagnostics = new StringBuilder();
+
+            Type appType;
+            try {
+                appType = ResolveDynamoRevitAppType(addinsFolders, out var resolvedFrom);
+                diagnostics.AppendLine("Resolved Dynamo from: " + (resolvedFrom ?? "<not found>"));
+            }
+            catch (Exception resolveEx) {
+                return Failed(DynamoCommandStatus.DynamoUnavailable, DynamoNotAvailableMessage, resolveEx, diagnostics);
+            }
+
+            if (appType == null)
+                return Failed(DynamoCommandStatus.DynamoUnavailable, DynamoNotAvailableMessage, null, diagnostics);
+
+            var executeCommand = ResolveExecuteDynamoCommandMethod(appType, journalData, uiApplication);
+            if (executeCommand == null)
+                return Failed(
+                    DynamoCommandStatus.IncompatibleDynamo,
+                    "Can not find \"" + ExecuteCommandMethodName + "\" on the installed Dynamo version.\n\n"
+                        + "This tool needs a Dynamo version that can run graphs from an add-in.",
+                    null,
+                    diagnostics
+                    );
+
+            object app;
+            try {
+                app = Activator.CreateInstance(appType, nonPublic: true);
+            }
+            catch (Exception createEx) {
+                return Failed(DynamoCommandStatus.IncompatibleDynamo, "Error initializing Dynamo.", createEx, diagnostics);
+            }
+
+            var modelStateKnown = TryGetModelUp(appType, out var modelUpAtStart);
+            diagnostics.AppendLine("Dynamo model up at start: " + (modelStateKnown ? modelUpAtStart.ToString() : "unknown"));
+
+            if (!options.ShowUI && options.Automate) {
+                var graphRunMode = options.ForceManualRun
+                    ? DynamoGraphRunMode.Manual
+                    : ReadGraphRunMode(options.GraphPath);
+                diagnostics.AppendLine("Graph run mode: " + graphRunMode + (options.ForceManualRun ? " (forced)" : string.Empty));
+
+                if (graphRunMode == DynamoGraphRunMode.Manual) {
+                    return new DynamoCommandResult(
+                        DynamoCommandStatus.NotRun,
+                        "Dynamo would not run the graph.\n\n"
+                            + DescribeManualGraphInAutomation(options),
+                        diagnostics.ToString()
+                        );
+                }
+            }
+
+            // Dynamo only runs a graph from a model that is already started, and only while the
+            // call does not ask for the model to be shut down. A UIless run is therefore a warm-up
+            // call that starts the model, followed by the call that carries the graph. The warm-up
+            // is a no-op once the model is up, so it is always issued.
+            var calls = new List<IDictionary<string, string>>();
+            if (!options.ShowUI) {
+                calls.Add(BuildJournalData(options.WithoutShutdown(), includeGraph: false));
+                calls.Add(BuildJournalData(options.WithoutShutdown(), includeGraph: true));
+                if (options.ShutdownModel) {
+                    diagnostics.AppendLine(
+                        "The model shutdown was not requested: Dynamo shuts the model down instead "
+                            + "of running the graph when a call asks for both."
+                        );
+                }
+            }
+            else {
+                calls.Add(journalData);
+            }
+
+            foreach (var call in calls) {
+                diagnostics.AppendLine("Dynamo call: " + DescribeJournalData(call));
+                object invokeResult;
+                try {
+                    invokeResult = executeCommand.Invoke(app, new object[] { call, uiApplication });
+                }
+                catch (Exception invokeEx) {
+                    return Failed(DynamoCommandStatus.Failed, "Error executing Dynamo script.", invokeEx, diagnostics);
+                }
+
+                if (IsRejectedResult(invokeResult)) {
+                    diagnostics.AppendLine("Dynamo result: " + invokeResult);
+                    return Failed(
+                        DynamoCommandStatus.Rejected,
+                        "Dynamo did not run the graph.\n\nDynamo returned: " + invokeResult,
+                        null,
+                        diagnostics
+                        );
+                }
+            }
+
+            if (!options.Automate && !options.ExecuteGraph) {
+                return new DynamoCommandResult(
+                    DynamoCommandStatus.NotRun,
+                    "Dynamo did not run the graph.\n\nThis run asked Dynamo to open the graph "
+                        + "with neither automation nor graph execution, so nothing was executed.",
+                    diagnostics.ToString()
+                    );
+            }
+
+            if (options.ShowUI) {
+                return new DynamoCommandResult(
+                    DynamoCommandStatus.Succeeded,
+                    "Dynamo opened the graph in the Dynamo UI. It was executed if the graph's own "
+                        + "Run setting is on Automatic - check the model for the graph's effect.",
+                    diagnostics.ToString());
+            }
+
+            if (modelStateKnown && !modelUpAtStart) {
+                diagnostics.AppendLine("Dynamo model was not up: the warm-up call started it before the graph was handed over");
+            }
+
+            return new DynamoCommandResult(
+                DynamoCommandStatus.Succeeded,
+                "Dynamo ran the graph without showing its UI. Dynamo does not report whether the "
+                    + "graph itself succeeded, so check the model for the graph's effect.",
+                diagnostics.ToString());
+        }
+
+        /// <summary>
+        /// Reads the run setting a graph opens with, following the rules Dynamo applies on load: a
+        /// graph that is not marked as having run without a crash is opened on manual.
+        /// </summary>
+        /// <remarks>
+        /// Reads both the JSON format of Dynamo 2 and later and the XML format of Dynamo 1.
+        /// </remarks>
+        /// <returns>
+        /// <see cref="DynamoGraphRunMode.Unknown"/> when the file is missing or unreadable, so the
+        /// caller does not block a run on a guess.
+        /// </returns>
+        public static DynamoGraphRunMode ReadGraphRunMode(string graphPath) {
+            if (string.IsNullOrEmpty(graphPath) || !File.Exists(graphPath))
+                return DynamoGraphRunMode.Unknown;
+
+            try {
+                var content = File.ReadAllText(graphPath).TrimStart();
+                return content.StartsWith("<")
+                    ? ReadXmlGraphRunMode(content)
+                    : ReadJsonGraphRunMode(content);
+            }
+            catch (Exception) {
+                return DynamoGraphRunMode.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Locates the Dynamo add-in type, preferring an already loaded assembly over one loaded
+        /// from the add-in manifest of the host Revit version.
+        /// </summary>
+        /// <remarks>
+        /// The host can load the add-in into a context of its own, where the assembly is not named
+        /// after the add-in, so the type is also looked for across every loaded assembly.
+        /// </remarks>
+        /// <param name="addinsFolders">Revit add-in manifest folders to fall back to.</param>
+        /// <param name="resolvedFrom">Assembly name or path the type was resolved from.</param>
+        /// <returns>The app type, or null when no Dynamo installation can be found.</returns>
+        public static Type ResolveDynamoRevitAppType(IEnumerable<string> addinsFolders, out string resolvedFrom) {
+            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            foreach (var assembly in loadedAssemblies) {
+                if (string.Equals(assembly.GetName().Name, AppAssemblyName, StringComparison.OrdinalIgnoreCase)) {
+                    var appType = assembly.GetType(AppTypeName, throwOnError: false);
+                    if (appType != null) {
+                        resolvedFrom = assembly.GetName().Name;
+                        return appType;
+                    }
+                }
+            }
+
+            foreach (var assembly in loadedAssemblies) {
+                var appType = assembly.GetType(AppTypeName, throwOnError: false);
+                if (appType != null) {
+                    resolvedFrom = assembly.FullName;
+                    return appType;
+                }
+            }
+
+            var assemblyPath = FindDynamoRevitAssemblyFile(addinsFolders);
+            if (assemblyPath == null) {
+                resolvedFrom = null;
+                return null;
+            }
+
+            var dynamoAssembly = Assembly.LoadFrom(assemblyPath);
+            resolvedFrom = assemblyPath;
+            return dynamoAssembly.GetType(AppTypeName, throwOnError: false);
+        }
+
+        /// <summary>
+        /// Reads the Dynamo add-in manifests in <paramref name="addinsFolders"/> and returns the
+        /// <c>DynamoRevitDS</c> assembly sitting next to the add-in they point at.
+        /// </summary>
+        public static string FindDynamoRevitAssemblyFile(IEnumerable<string> addinsFolders) {
+            if (addinsFolders == null)
+                return null;
+
+            foreach (var addinsFolder in addinsFolders) {
+                if (string.IsNullOrEmpty(addinsFolder) || !Directory.Exists(addinsFolder))
+                    continue;
+
+                foreach (var manifestFile in Directory.GetFiles(addinsFolder, "*.addin")) {
+                    var addinAssembly = ReadManifestAssemblyPath(manifestFile);
+                    if (string.IsNullOrEmpty(addinAssembly))
+                        continue;
+
+                    var installDir = Path.GetDirectoryName(addinAssembly);
+                    if (string.IsNullOrEmpty(installDir))
+                        continue;
+
+                    var dynamoAssembly = Path.Combine(installDir, AppAssemblyName + ".dll");
+                    if (File.Exists(dynamoAssembly))
+                        return dynamoAssembly;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Picks the <c>ExecuteDynamoCommand</c> overload that can take the journal data and the
+        /// host application, so parameter type changes between Dynamo versions do not break the call.
+        /// </summary>
+        public static MethodInfo ResolveExecuteDynamoCommandMethod(Type appType,
+                                                                    IDictionary<string, string> journalData,
+                                                                    object uiApplication) {
+            return appType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                          .Where(method => method.Name == ExecuteCommandMethodName)
+                          .Where(method => {
+                              var parameters = method.GetParameters();
+                              return parameters.Length == 2
+                                     && Accepts(parameters[0].ParameterType, journalData)
+                                     && Accepts(parameters[1].ParameterType, uiApplication);
+                          })
+                          .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Whether Dynamo's model is up and can run a graph, which is what decides if a UIless
+        /// call runs the graph. Read from <c>DynamoRevit.RevitDynamoModel</c> on the add-in
+        /// assembly.
+        /// </summary>
+        /// <remarks>
+        /// A model reference on its own is not enough: Dynamo keeps it after a shutdown, so the
+        /// model's own state is read as well and only a started state counts as up.
+        ///
+        /// This is a Dynamo implementation detail, so it is read on a best-effort basis: when the
+        /// type, the property or the state is not there, or reading any of them fails,
+        /// <paramref name="modelUp"/> is false and the caller reports the run as unconfirmed
+        /// rather than as a failure.
+        /// </remarks>
+        /// <param name="addinType">The resolved <c>DynamoRevitApp</c> type.</param>
+        /// <param name="modelUp">Whether a started Dynamo model is loaded.</param>
+        /// <returns>True when the state could be read.</returns>
+        public static bool TryGetModelUp(Type addinType, out bool modelUp) {
+            modelUp = false;
+            try {
+                var modelProperty = addinType.Assembly
+                                          .GetType(DynamoRevitTypeName, throwOnError: false)?
+                                          .GetProperty(
+                                              DynamoModelPropertyName,
+                                              BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                                              );
+                if (modelProperty == null)
+                    return false;
+
+                var model = modelProperty.GetValue(null, null);
+                if (model == null)
+                    return true;
+
+                var stateProperty = model.GetType()
+                                        .GetProperty(
+                                            DynamoModelStatePropertyName,
+                                            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                                            );
+                if (stateProperty == null)
+                    return false;
+
+                var state = stateProperty.GetValue(model, null)?.ToString();
+                if (state == null)
+                    return false;
+
+                modelUp = state.StartsWith(DynamoModelStartedStatePrefix, StringComparison.Ordinal);
+                return true;
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Reads Dynamo's command result, which is Revit's <c>Result</c> for every Dynamo version
+        /// that exposes the command. Any other return value is treated as no result to judge.
+        /// </summary>
+        public static bool IsRejectedResult(object invokeResult) {
+            if (invokeResult is bool succeeded)
+                return !succeeded;
+
+            if (invokeResult is Enum) {
+                var resultName = invokeResult.ToString();
+                return resultName != "Succeeded" && resultName != "Success";
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Builds the journal data for one Dynamo call. <paramref name="includeGraph"/> leaves out
+        /// everything the graph path is needed for, which is how a prepare call tells Dynamo to only
+        /// bring up or replace its model.
+        /// </summary>
+        /// <remarks>
+        /// <c>dynShowUI</c> is always present: Dynamo falls back to showing its splash screen when
+        /// the key is missing, which would block the caller with a modal window.
+        /// </remarks>
+        public static IDictionary<string, string> BuildJournalData(DynamoExecutionOptions options, bool includeGraph) {
+            var journalData = new Dictionary<string, string>() {
+                { DynamoJournalKeys.ShowUI, options.ShowUI.ToString() },
+                { DynamoJournalKeys.Automation, options.Automate.ToString() },
+                { DynamoJournalKeys.ShutdownModel, options.ShutdownModel.ToString() },
+                { DynamoJournalKeys.ReuseOpenGraph, options.ReuseOpenGraph.ToString() },
+                { DynamoJournalKeys.ForceManualRun, options.ForceManualRun.ToString() }
+            };
+
+            if (includeGraph) {
+                journalData[DynamoJournalKeys.ExecuteGraph] = options.ExecuteGraph.ToString();
+                if (!string.IsNullOrEmpty(options.GraphPath))
+                    journalData[DynamoJournalKeys.GraphPath] = options.GraphPath;
+                if (!string.IsNullOrEmpty(options.NodesInfo))
+                    journalData[DynamoJournalKeys.NodesInfo] = options.NodesInfo;
+            }
+
+            return journalData;
+        }
+
+        private static DynamoGraphRunMode ReadJsonGraphRunMode(string content) {
+            using (var reader = JsonReaderWriterFactory.CreateJsonReader(
+                       Encoding.UTF8.GetBytes(content),
+                       XmlDictionaryReaderQuotas.Max)) {
+                var dynamoView = XElement.Load(reader).Element("View")?.Element("Dynamo");
+                return ToGraphRunMode(
+                    dynamoView?.Element("RunType")?.Value,
+                    dynamoView?.Element("HasRunWithoutCrash")?.Value
+                    );
+            }
+        }
+
+        private static DynamoGraphRunMode ReadXmlGraphRunMode(string content) {
+            var workspace = XElement.Parse(content);
+            return ToGraphRunMode(
+                workspace.Attribute("RunType")?.Value,
+                workspace.Attribute("HasRunWithoutCrash")?.Value
+                );
+        }
+
+        private static DynamoGraphRunMode ToGraphRunMode(string runType, string hasRunWithoutCrash) {
+            if (string.Equals(hasRunWithoutCrash, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                return DynamoGraphRunMode.Manual;
+            if (runType == nameof(DynamoGraphRunMode.Manual))
+                return DynamoGraphRunMode.Manual;
+            if (runType == nameof(DynamoGraphRunMode.Automatic))
+                return DynamoGraphRunMode.Automatic;
+            return DynamoGraphRunMode.Unknown;
+        }
+
+        private static string DescribeManualGraphInAutomation(DynamoExecutionOptions options) {
+            var cause = options.ForceManualRun
+                ? "This tool sets dynamo_force_manual_run, which opens the graph with its Run setting on Manual."
+                : "The graph opens with its Run setting on Manual: it is saved that way, or it has not "
+                    + "yet run without a crash.";
+            return cause
+                + "\n\nIn automation mode Dynamo only runs a graph whose Run setting is Automatic. "
+                + "Set the graph to Automatic in Dynamo and save it, or remove automate from the "
+                + "bundle's engine settings.\n\nGraph: " + options.GraphPath;
+        }
+
+        private static bool Accepts(Type parameterType, object argument) {
+            return argument != null && parameterType.IsInstanceOfType(argument);
+        }
+
+        private static string ReadManifestAssemblyPath(string manifestFile) {
+            try {
+                var document = new XmlDocument();
+                document.Load(manifestFile);
+                var assemblyNode = document.DocumentElement?.SelectSingleNode("AddIn/Assembly");
+                return assemblyNode?.InnerText.Trim();
+            }
+            catch (Exception) {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The journal data as a readable line, with node values left out.
+        /// </summary>
+        /// <remarks>
+        /// <c>dynModelNodesInfo</c> carries the caller's own values, and diagnostics end up in the
+        /// debug log and in the failure dialog, so only its presence is reported.
+        /// </remarks>
+        private static string DescribeJournalData(IDictionary<string, string> journalData) {
+            return string.Join(
+                " ",
+                journalData.Select(
+                    entry => entry.Key == DynamoJournalKeys.NodesInfo
+                        ? entry.Key + "=<" + entry.Value.Length + " chars>"
+                        : entry.Key + "=" + entry.Value));
+        }
+
+        private static DynamoCommandResult Failed(DynamoCommandStatus status,
+                                                  string message,
+                                                  Exception exception,
+                                                  StringBuilder diagnostics) {
+            if (exception != null) {
+                var failure = exception is TargetInvocationException && exception.InnerException != null
+                    ? exception.InnerException
+                    : exception;
+                diagnostics.AppendLine(failure.ToString());
+            }
+
+            return new DynamoCommandResult(status, message, diagnostics.ToString());
+        }
+    }
+}

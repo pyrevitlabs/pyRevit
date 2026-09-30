@@ -240,6 +240,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
 
+        /// <summary>
+        /// The window output may currently be rendered into, without resurrecting one the user
+        /// closed: the <see cref="window"/> getter replaces a closed window, which would reopen it
+        /// on the next background write.
+        /// </summary>
+        /// <returns>The window to render into, or null when the user closed it.</returns>
+        internal ScriptConsole open_window {
+            get {
+                if (_window != null && _window.ClosedByUser)
+                    return null;
+                return window;
+            }
+        }
+
         public ScriptIO output_stream {
             get {
                 var runtime = BoundRuntime;
@@ -249,7 +263,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (_outputStream == null) {
-                    _outputStream = new ScriptIO(window);
+                    _outputStream = new ScriptIO(this);
                     _outputStream.PrintDebugInfo = _debugMode;
                 }
                 return _outputStream;
@@ -313,20 +327,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal void write_log_record(string content, bool markError) {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher != null
-                    && !dispatcher.HasShutdownStarted
-                    && !dispatcher.HasShutdownFinished
-                    && !dispatcher.CheckAccess()) {
-                dispatcher.BeginInvoke(
-                    new Action(() => write_log_record(content, markError)),
-                    DispatcherPriority.Background);
+            if (markError)
+                mark_error();
+
+            if (ScriptOutputUi.MayCreateOutputUi) {
+                write_line(content);
                 return;
             }
 
-            if (markError)
-                mark_error();
-            write_line(content);
+            if (ScriptOutputUi.TryBeginInvoke(
+                    () => write_log_record(content, markError), DispatcherPriority.Background))
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "A log record was produced on {0} and discarded: no host UI thread was available "
+                    + "to show it in an output window.",
+                ScriptOutputUi.DescribeCallingThread());
         }
 
         /// <summary>
@@ -391,17 +407,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void log_to_activity(Action<ScriptConsole> writeLog) {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher != null
-                    && !dispatcher.HasShutdownStarted
-                    && !dispatcher.HasShutdownFinished
-                    && !dispatcher.CheckAccess()) {
-                dispatcher.BeginInvoke(
-                    new Action(() => log_to_activity(writeLog)),
-                    DispatcherPriority.Background);
+            if (ScriptOutputUi.IsHostUiThread) {
+                write_activity_log(writeLog);
                 return;
             }
 
+            if (ScriptOutputUi.TryBeginInvoke(
+                    () => write_activity_log(writeLog), DispatcherPriority.Background))
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "An activity-bar log record was produced on {0} and discarded: no host UI thread "
+                    + "was available to show it.",
+                ScriptOutputUi.DescribeCallingThread());
+        }
+
+        private void write_activity_log(Action<ScriptConsole> writeLog) {
             show_logpanel();
             writeLog(window);
         }

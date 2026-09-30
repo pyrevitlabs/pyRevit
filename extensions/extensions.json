@@ -369,6 +369,19 @@
             "website": "https://github.com/lewismconte/groundit",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "False",
+            "name": "NdevTools",
+            "description": "pyRevit tools for Revit sheet and view management.",
+            "author": "Nataraj Devaraj",
+            "author_profile": "https://github.com/ndev16",
+            "url": "https://github.com/ndev16/NdevTools.git",
+            "website": "https://github.com/ndev16/NdevTools",
+            "image": "",
+            "dependencies": []
         }
     ]
 }

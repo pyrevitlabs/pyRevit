@@ -30,10 +30,10 @@ Examples:
     ```
 
 
-Typed section access is the preferred way to reach the built-in settings.
+Typed section access is the canonical way to reach the built-in settings.
 The `core`, `routes`, and `telemetry` properties expose the strongly-typed
-sections backed by the shared configuration service, so a setting can be read
-or written by its section and name directly:
+sections backed by the shared configuration service, so a setting is read and
+written by its section and its C# property name:
 
 Examples:
     ```python
@@ -41,10 +41,29 @@ Examples:
     value = user_config.core.RocketMode
     ```
 
-The flat snake_case accessors (e.g. `user_config.rocket_mode`) are convenience
-aliases over these sections and are considered legacy: prefer the typed
-`section.name` form in new code. The aliases are expected to be deprecated in a
-future release once callers have migrated, so avoid adding new ones.
+The flat snake_case accessors (e.g. `user_config.rocket_mode`) are aliases
+over these sections. They are **frozen, not deprecated**: they keep working
+for reads and writes indefinitely, none is scheduled for removal, and no new
+one may be added. That is a decision, not an oversight - see
+`docs/config-api.md` for the naming contract, the full alias inventory, and
+the reasoning.
+
+Important: a typed section falls back to a raw option for any name the C#
+schema does not declare, on read and on write alike. So
+`user_config.core.rocket_mode = True` stores a raw key named `rocket_mode` in a
+section whose real key is `rocketmode`; it does not raise, and it leaves
+`RocketMode` untouched. Use the PascalCase property name, or `set_option` for a
+key the schema has no property for.
+
+Examples:
+    ```python
+    user_config.core.set_option("my_key", value)   # explicit: raw option
+    user_config.core.my_key                        # reads it back
+    ```
+
+`add_section`/`get_section` and the per-section `get_option`/`set_option` are
+the escape hatch for anything outside the typed schema, and
+`pyrevit.coreutils.configparser.open_config_file` covers a tool's own ini.
 """
 
 # pylint: disable=C0103,C0413,W0703

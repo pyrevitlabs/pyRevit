@@ -1,0 +1,9 @@
+title: Test DynamoBIM Headless Forced Manual
+tooltip: 'Regression test for a headless Dynamo run whose bundle forces the graph to Manual. The graph is saved on Automatic, but the bundle sets dynamo_force_manual_run and runs in automation mode, where Dynamo only runs Automatic graphs. Click the button in non debug mode: pyRevit must show a "Dynamo would not run the graph" dialog naming dynamo_force_manual_run, and no Dynamo_Forced_Manual_SHOULD_NOT_RUN_*.txt file may appear in C:\Temp.'
+author: "{{author}}"
+highlight: new
+min_revit_version: '2024'
+engine:
+  clean: false
+  automate: true
+  dynamo_force_manual_run: true
