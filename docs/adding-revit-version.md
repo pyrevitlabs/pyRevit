@@ -145,13 +145,17 @@ Two consequences for anyone editing this file:
 - **Names must be unique.** When Autodesk ships two builds under one release-notes page
   (a base build and a follow-up install build), the second name carries its build date:
   `2025.4.3 Update` and `2025.4.3 Update (20250815)`. A shared name is not a cosmetic
-  problem — `FindProductInfo` resolves a tied match by returning the first row
-  (`RevitProduct.cs:191`), so the second build would silently be reported as the first.
-- **Do not put whitespace before a four-digit year.** `GetProductYear`
+  problem — looking one up by name matches every record carrying it, and `FindProductInfo`
+  then resolves the tie by build/version evidence or refuses to answer, so the two builds
+  cannot be told apart. The same applies to a shared `version`, which is why these pairs are
+  also expected to differ there.
+- **Do not put whitespace immediately before a four-digit run.** Names contain spaces
+  (`2021.1 Update`) and that is fine; what matters is the gap before the year. `GetProductYear`
   (`RevitProduct.cs:223`) matches `.*\s+(?<product_year>\d{4}).*`, so a name like
   `Revit 2028` starts resolving the product year from `release` instead of falling through
-  to `version`, which changes what `IsSupported` and the attachment code paths do. Every
-  name in the file is currently whitespace-free for this reason.
+  to `version`, which changes what `IsSupported` and the attachment code paths do. No name in
+  the file has whitespace directly before a year for this reason — a title ending in a bare
+  year (`2027`) is unaffected.
 
 ### Which Revit versions are listed
 
