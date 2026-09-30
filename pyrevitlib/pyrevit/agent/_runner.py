@@ -81,8 +81,9 @@ def _start_watchdog(timeout_s, state):
 
     CPython removes the trace function as soon as it raises, so a script that
     catches the first ``RunTimedOut`` inside a loop would never be checked
-    again. Returns a function that stops the watchdog, or None on engines
-    where the tracer keeps working.
+    again. Returns a function that stops the watchdog, waits for it to exit and
+    clears any injection still pending, or None on engines where the tracer
+    keeps working.
     """
     if _implementation() != "cpython":
         return None
@@ -107,7 +108,18 @@ def _start_watchdog(timeout_s, state):
     thread = threading.Thread(target=watch)
     thread.daemon = True
     thread.start()
-    return stopped.set
+
+    def stop():
+        while True:
+            try:
+                stopped.set()
+                thread.join()
+                set_async_exc(thread_id, None)
+                return
+            except RunTimedOut:
+                pass
+
+    return stop
 
 
 def run(context):
