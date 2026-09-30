@@ -115,7 +115,7 @@ Example entry:
     },
     "notes": "",
     "product": "Autodesk Revit",
-    "release": "Revit 2028",
+    "release": "2028",
     "target": "x64",
     "version": "28.0.0.0"
 }
@@ -123,6 +123,35 @@ Example entry:
 
 !!! note
     Build numbers are released by Autodesk with each update. Add new entries as updates are released.
+
+### The `release` field is a display name, not an identity
+
+`release` holds the title Autodesk uses on the matching release-notes page: the dotted
+version, then `Update` for a minor release or `Hotfix`/`Update` for a point fix, exactly
+as Autodesk spells it. Autodesk's own usage is not uniform — point fixes are `Hotfix` up
+to 2023.0 and `Update` from 2023.1 on — so the file reproduces that rather than smoothing
+it. The `2021 First Customer Ship` and `2027 Preview Release` names describe a
+distribution channel, not a version, and are kept verbatim.
+
+Identity comes from `version` and `build`. `FindProductInfo` does compare `release`
+(`RevitProduct.cs:165`), but the identifier it receives on the installed-products path is
+the registry `DisplayVersion`, which for Revit 2021 and later is a four-part number such
+as `25.5.0.57` — so `version` satisfies that match and `release` is close to inert there.
+What `release` drives is display: `pyrevit revits`, `revits --csv`, `pyrevit env --json`,
+attachment labels, and the Settings UI.
+
+Two consequences for anyone editing this file:
+
+- **Names must be unique.** When Autodesk ships two builds under one release-notes page
+  (a base build and a follow-up install build), the second name carries its build date:
+  `2025.4.3 Update` and `2025.4.3 Update (20250815)`. A shared name is not a cosmetic
+  problem — `FindProductInfo` resolves a tied match by returning the first row
+  (`RevitProduct.cs:191`), so the second build would silently be reported as the first.
+- **Do not put whitespace before a four-digit year.** `GetProductYear`
+  (`RevitProduct.cs:223`) matches `.*\s+(?<product_year>\d{4}).*`, so a name like
+  `Revit 2028` starts resolving the product year from `release` instead of falling through
+  to `version`, which changes what `IsSupported` and the attachment code paths do. Every
+  name in the file is currently whitespace-free for this reason.
 
 ### Which Revit versions are listed
 
@@ -145,7 +174,10 @@ identify a host. Both of these ship build `20220517_1515`:
 | release | version | build |
 |---|---|---|
 | 2020.2.9 | 20.2.90.12 | 20220517_1515 |
-| 2021.1.7 | 21.1.70.21 | 20220517_1515 |
+| 2021.1.7 Hotfix | 21.1.70.21 | 20220517_1515 |
+
+(`2020.2.9` is shown as it was when that section was written; it predates the 2021 floor
+described above and is no longer in the file.)
 
 `RevitProductData.FindProductInfo` therefore treats a build match as a candidate
 set and narrows it with the host's own identity — full file version first, then
