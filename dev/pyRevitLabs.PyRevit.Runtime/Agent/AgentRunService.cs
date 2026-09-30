@@ -24,8 +24,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>A query or dry run never leaves a change in the model.</item>
     /// <item>A modify run changes the model only after the user approves it in Revit, unless the
     /// <c>[agent] policy</c> is <c>auto</c>, the user's explicit opt-in to skip the prompt.</item>
-    /// <item>The policy is re-read after the script finishes, right before the decision, so a
-    /// switch to <c>readonly</c> while a run was queued or running still stops its commit.</item>
+    /// <item>The policy is read before the script starts and again after it finishes, and the
+    /// stricter of the two (<c>readonly</c> over <c>ask</c> over <c>auto</c>) decides. A switch
+    /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
+    /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
@@ -47,6 +49,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxOutputChars = 64 * 1024;
         private const int MaxChangeSamples = 50;
 
+        private static string StricterPolicy(string first, string second) {
+            return PolicyRank(first) <= PolicyRank(second) ? first : second;
+        }
+
+        private static int PolicyRank(string policy) {
+            if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly)
+                return 0;
+            return policy == PyRevitConsts.ConfigsAgentPolicyAuto ? 2 : 1;
+        }
+
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
@@ -64,6 +76,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
             if (lostBefore != null)
                 warnings.Add(lostBefore);
+
+            AgentHost.RefreshConfigIfChanged();
+            var policyAtStart = PyRevitConfigs.GetAgentPolicy();
 
             var stopwatch = Stopwatch.StartNew();
             var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
@@ -93,7 +108,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (otherDocuments.Count > 0)
                         changes["other_documents"] = otherDocuments;
                     AgentHost.RefreshConfigIfChanged();
-                    var policy = PyRevitConfigs.GetAgentPolicy();
+                    var policy = StricterPolicy(policyAtStart, PyRevitConfigs.GetAgentPolicy());
                     var status = "ok";
                     string decision;
 

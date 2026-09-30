@@ -509,7 +509,7 @@ namespace pyRevitCLI {
                     }, new string[0], readOnly: true),
 
                 Tool("run_query",
-                    "Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Always rolled back; must not change the model.",
+                    "Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes are always rolled back and must not be made. The script itself runs with full access to the machine; only the Revit model is protected.",
                     new JObject {
                         ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Assign `result` to return data." },
                         ["title"] = new JObject { ["type"] = "string", ["description"] = "Short label for the run record." },
@@ -521,7 +521,7 @@ namespace pyRevitCLI {
                             ["description"] = "Absolute path of a folder with your own helper modules (plan data, functions). It is on sys.path for the run and its modules are re-imported fresh every run, so `import house_plan` sees your latest edits.",
                         },
                         ["revit"] = revitProperty,
-                    }, new[] { "script" }, readOnly: true),
+                    }, new[] { "script" }, readOnly: false),
 
                 Tool("run_modify",
                     "Run a Python script that changes the model. With dry_run=true the change set is returned and everything is rolled back. Otherwise, under agent policy 'ask', Revit shows the user an approval prompt with the changed elements isolated; under policy 'auto' the change is committed directly. Kept changes become one undo entry named 'Agent: <title>'. Status 'rejected' means the user discarded the changes.",

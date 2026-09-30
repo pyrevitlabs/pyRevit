@@ -49,8 +49,10 @@ runtime is independent of the Routes server and doesn't need it enabled.
 
 To remove the server: `pyrevit mcp uninstall <client>`. `pyrevit mcp uninstall --all` removes
 the user-level entry from every client, and the pyRevit uninstaller runs it with `--owned`, which
-keeps entries that point at another pyRevit install. Project-level entries (`--project`) are
-never removed automatically. To turn the host off: `pyrevit configs agent disable`.
+keeps entries that point at another pyRevit install. When that command runs elevated, it
+doesn't start the `claude` or `codex` command line tools, so those two entries stay; run
+`pyrevit mcp uninstall claude` (or `codex`) from a normal prompt. Project-level entries
+(`--project`) are never removed automatically. To turn the host off: `pyrevit configs agent disable`.
 
 !!! note "Model data leaves the machine"
 
@@ -82,7 +84,7 @@ Run any of these commands without a value to print the current setting.
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; always rolled back. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
+| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
 | `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 
@@ -441,8 +443,10 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
       with `other_document_modified`. Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
-    - **modify** with policy `readonly`: the policy is re-read here, so a run queued before
-      the switch to `readonly` rolls back with `policy_readonly` instead of committing.
+    - **modify** with policy `readonly`: the policy is read before the script and again here,
+      and the stricter value (`readonly`, then `ask`, then `auto`) decides. A run queued before
+      the switch to `readonly` rolls back with `policy_readonly` instead of committing, and a
+      script that rewrites the policy can't loosen it for its own run.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says
       `approval: auto`.
     - **modify** with policy `ask`: while the group is still open, select and temporarily

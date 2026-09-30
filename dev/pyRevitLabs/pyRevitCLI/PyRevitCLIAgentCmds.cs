@@ -236,11 +236,26 @@ namespace pyRevitCLI {
                         Console.WriteLine($"Kept {client}: not registered to {Environment.ProcessPath}.");
                         continue;
                     }
+                    if (ownedOnly && IsClientCliManaged(client) && IsElevated()) {
+                        Console.WriteLine($"Kept {client}: an elevated cleanup doesn't run its command line tool. Run 'pyrevit mcp uninstall {client.ToString().ToLowerInvariant()}' from a normal prompt.");
+                        continue;
+                    }
                     UninstallMcp(client, project: false);
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Skipped {client}: {ex.Message}");
                 }
+            }
+        }
+
+        private static bool IsClientCliManaged(McpClientKind client) {
+            return client == McpClientKind.Claude || client == McpClientKind.Codex;
+        }
+
+        private static bool IsElevated() {
+            using (var identity = System.Security.Principal.WindowsIdentity.GetCurrent()) {
+                return new System.Security.Principal.WindowsPrincipal(identity)
+                    .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
             }
         }
 
