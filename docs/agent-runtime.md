@@ -47,7 +47,8 @@ runtime is independent of the Routes server and doesn't need it enabled.
    isolated in the active view. *Keep* commits them as one undo entry named
    `Agent: <title>`; *Discard* rolls them back.
 
-To remove the server: `pyrevit mcp uninstall <client>`. To turn the host off:
+To remove the server: `pyrevit mcp uninstall <client>`, or `pyrevit mcp uninstall --all` for every
+client's user-level entry, which the uninstaller runs too. To turn the host off:
 `pyrevit configs agent disable`.
 
 !!! note "Model data leaves the machine"

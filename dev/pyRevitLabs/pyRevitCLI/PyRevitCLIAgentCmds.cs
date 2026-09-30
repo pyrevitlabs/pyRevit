@@ -219,6 +219,22 @@ namespace pyRevitCLI {
             Console.WriteLine($"Removed MCP server \"{McpServerName}\" from {client}.");
         }
 
+        /// <summary>
+        /// Removes the pyrevit MCP server from every client's user-level configuration, for the
+        /// uninstaller. Never throws: a client that isn't installed, has no entry, or has a
+        /// config that can't be rewritten is skipped with a message.
+        /// </summary>
+        public static void UninstallMcpFromAllClients() {
+            foreach (McpClientKind client in Enum.GetValues(typeof(McpClientKind))) {
+                try {
+                    UninstallMcp(client, project: false);
+                }
+                catch (Exception ex) {
+                    Console.WriteLine($"Skipped {client}: {ex.Message}");
+                }
+            }
+        }
+
         private static void RejectProjectScope(McpClientKind client, bool project) {
             if (project)
                 throw new PyRevitException(client + " only supports user-level MCP servers; drop --project.");

@@ -597,6 +597,9 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Mcp);
 
+                else if (all("uninstall") && arguments["--all"].IsTrue)
+                    PyRevitCLIAgentCmds.UninstallMcpFromAllClients();
+
                 else if (any("install", "uninstall")) {
                     var client = arguments["claude"].IsTrue ? McpClientKind.Claude
                         : arguments["codex"].IsTrue ? McpClientKind.Codex

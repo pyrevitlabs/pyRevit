@@ -88,6 +88,7 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Seeding extension defaults...";
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all"; Flags: runhidden
 
 [Code]
 function NotAdminAndPathNotExists: Boolean;
