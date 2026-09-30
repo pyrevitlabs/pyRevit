@@ -523,7 +523,7 @@
         },
         "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024release_html",
         "product": "Autodesk Revit",
-        "release": "2024.0.1 Update",
+        "release": "2024.0.1 Install",
         "target": "x64",
         "version": "24.0.5.432"
     },
@@ -991,7 +991,7 @@
         },
         "notes": "https://help.autodesk.com/view/RVT/2027/ENU/?guid=RevitReleaseNotes_2027release_html",
         "product": "Autodesk Revit",
-        "release": "2027 Update",
+        "release": "2027 First Customer Ship",
         "target": "x64",
         "version": "27.0.4.412"
     },
