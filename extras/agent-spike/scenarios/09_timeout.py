@@ -2,7 +2,7 @@
 
 Run with --timeout 5 on each engine (--engine ironpython, --engine cpython).
 Expected: after about 5 seconds, status error, error.type timeout, and Revit
-responsive again. The bare except proves the script can't swallow the stop.
+responsive again. The bare except is narrowed to Exception, so the script can't swallow the stop.
 """
 
 while True:

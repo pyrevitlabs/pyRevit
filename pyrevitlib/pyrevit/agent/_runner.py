@@ -16,6 +16,7 @@ Invariant:
     first release with ``getattr`` and a default that keeps the old behavior.
 """
 
+import ast
 import json
 import linecache
 import os.path as op
@@ -56,10 +57,51 @@ class RunTimedOut(BaseException):
     """Raised inside the agent script once its time limit has passed.
 
     Derives from ``BaseException`` so a script's ``except Exception`` can't
-    swallow it. A script can still catch it with a bare ``except``, so the
-    tracer and the CPython watchdog record that the deadline passed and
-    :func:`run` fails the run even if the script then ends normally.
+    swallow it. Python drops a trace function after its first raise on every
+    engine, so a handler that caught it would end the deadline checks. The
+    runner therefore narrows every bare ``except`` and ``except
+    BaseException`` in the script to ``except Exception`` before compiling,
+    and also records that the deadline passed so :func:`run` fails the run
+    even if the script then ends normally.
     """
+
+
+class _NarrowBroadHandlers(ast.NodeTransformer):
+    """Turn handlers that would catch ``RunTimedOut`` into ``except Exception``.
+
+    A script that catches the timeout inside a loop can't be stopped again,
+    because Python removes the trace function once it has raised.
+    """
+
+    def visit_ExceptHandler(self, node):
+        self.generic_visit(node)
+        if _catches_base_exception(node.type):
+            node.type = ast.Name(id="Exception", ctx=ast.Load())
+        return node
+
+
+def _catches_base_exception(handler_type):
+    if handler_type is None:
+        return True
+    if isinstance(handler_type, ast.Name):
+        return handler_type.id == "BaseException"
+    if isinstance(handler_type, ast.Tuple):
+        return any(_catches_base_exception(item) for item in handler_type.elts)
+    return False
+
+
+def _compile_source(source):
+    """Compile the agent source with broad exception handlers narrowed.
+
+    Falls back to compiling the source unchanged when the rewrite fails, so a
+    syntax error keeps its original message and line number.
+    """
+    try:
+        tree = _NarrowBroadHandlers().visit(ast.parse(source, SOURCE_NAME, "exec"))
+        ast.fix_missing_locations(tree)
+        return compile(tree, SOURCE_NAME, "exec")
+    except Exception:
+        return compile(source, SOURCE_NAME, "exec")
 
 
 def _deadline_tracer(timeout_s, state):
@@ -140,10 +182,13 @@ def run(context):
         ``timeout`` once that call returns.
 
     Warning:
-        Raising from the trace function ends tracing. On CPython a watchdog
-        thread keeps raising, but on IronPython a script that catches the
-        first ``RunTimedOut`` in a loop can't be stopped; the run only fails
-        with ``timeout`` if that script ever returns.
+        Raising from the trace function ends tracing, so the script's own
+        handlers must not catch ``RunTimedOut``. The source is compiled with
+        every bare ``except`` and ``except BaseException`` narrowed to
+        ``except Exception``; a script can no longer catch ``KeyboardInterrupt``
+        or ``SystemExit`` that way. Suppression through an alias or
+        ``contextlib.suppress(BaseException)`` still bypasses this, and on
+        CPython the watchdog thread is the backstop.
     """
     context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
     source = context.Source
@@ -163,7 +208,7 @@ def run(context):
     try:
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
-        code = compile(source, SOURCE_NAME, "exec")
+        code = _compile_source(source)
         timeout_s = getattr(context, "TimeoutSeconds", None)
         state = {"timed_out": False}
         started = time.time()

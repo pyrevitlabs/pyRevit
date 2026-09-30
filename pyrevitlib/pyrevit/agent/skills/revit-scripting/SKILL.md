@@ -214,6 +214,7 @@ def connected(first, limit=10000):
 - **No LINQ:** collectors have no `FirstOrDefault` or `Where`. Use `.FirstElement()`, `.WherePasses(...)` and `.GetElementCount()`, as in [Collecting elements](#collecting-elements).
 - **No `import *`:** `from Autodesk.Revit.DB import *` skips enums on IronPython (`ViewType`, `StructuralType`). Use the injected `DB.` prefix. `Autodesk` itself isn't a name in the script; write `DB.GeometryObject`, not `Autodesk.Revit.DB.GeometryObject`.
 - **Fail loudly.** Use the `query.find_*` functions, which raise with the names that exist. In your own code, when a lookup by name finds nothing, `raise` with the names that do exist; don't carry on with `None`. When a filter matches no elements, raise too. Silent no-ops look like success in the change set.
+- **Bare `except:` and `except BaseException` catch only `Exception`.** The runner rewrites them so a script can't swallow its own timeout; catching `KeyboardInterrupt` or `SystemExit` isn't possible.
 - **Never `except Exception: pass`.** Collect the error text and return it. A swallowed exception in a loop reports "0 changed" as if it were a result.
 - **Read numbers back.** After creating geometry, compare a measured value (a bounding box height, an area, a count) with what you intended. Plausible-looking geometry is the error that screenshots don't catch.
 - **Never hardcode type names.** They differ between templates ("Generic - 300mm" wall, "Generic 300mm" floor, metric vs imperial). Query the types first and pick by name from that list.
