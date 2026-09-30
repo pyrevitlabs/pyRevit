@@ -20,6 +20,7 @@ import json
 import linecache
 import os.path as op
 import sys
+import threading
 import time
 import traceback
 
@@ -36,6 +37,7 @@ from pyrevit.compat import get_elementid_value_func
 SOURCE_NAME = "<agent-script>"
 
 _DEADLINE_CHECK_INTERVAL = 100
+_WATCHDOG_RETRY_SECONDS = 0.2
 
 _elementid_value_raw = get_elementid_value_func()
 
@@ -54,22 +56,58 @@ class RunTimedOut(BaseException):
     """Raised inside the agent script once its time limit has passed.
 
     Derives from ``BaseException`` so a script's ``except Exception`` can't
-    swallow it. A bare ``except`` can, but the deadline tracer raises it
-    again on the next check, so the script can't keep running.
+    swallow it. A script can still catch it with a bare ``except``, so the
+    tracer and the CPython watchdog record that the deadline passed and
+    :func:`run` fails the run even if the script then ends normally.
     """
 
 
-def _deadline_tracer(timeout_s):
+def _deadline_tracer(timeout_s, state):
     deadline = time.time() + timeout_s
     events = [0]
 
     def trace(frame, event, arg):
         events[0] += 1
         if events[0] % _DEADLINE_CHECK_INTERVAL == 0 and time.time() > deadline:
+            state["timed_out"] = True
             raise RunTimedOut(timeout_s)
         return trace
 
     return trace
+
+
+def _start_watchdog(timeout_s, state):
+    """Keep raising ``RunTimedOut`` in the script thread on CPython.
+
+    CPython removes the trace function as soon as it raises, so a script that
+    catches the first ``RunTimedOut`` inside a loop would never be checked
+    again. Returns a function that stops the watchdog, or None on engines
+    where the tracer keeps working.
+    """
+    if _implementation() != "cpython":
+        return None
+    try:
+        import ctypes
+
+        set_async_exc = ctypes.pythonapi.PyThreadState_SetAsyncExc
+    except (ImportError, AttributeError):
+        return None
+
+    thread_id = ctypes.c_ulong(threading.current_thread().ident)
+    stopped = threading.Event()
+
+    def watch():
+        if stopped.wait(timeout_s):
+            return
+        while not stopped.is_set():
+            state["timed_out"] = True
+            set_async_exc(thread_id, ctypes.py_object(RunTimedOut))
+            stopped.wait(_WATCHDOG_RETRY_SECONDS)
+
+    thread = threading.Thread(target=watch)
+    thread.daemon = True
+    thread.start()
+    return stopped.set
 
 
 def run(context):
@@ -109,13 +147,20 @@ def run(context):
         namespace = _build_namespace(context)
         code = compile(source, SOURCE_NAME, "exec")
         timeout_s = getattr(context, "TimeoutSeconds", None)
+        state = {"timed_out": False}
+        stop_watchdog = None
         if timeout_s:
-            sys.settrace(_deadline_tracer(timeout_s))
+            sys.settrace(_deadline_tracer(timeout_s, state))
+            stop_watchdog = _start_watchdog(timeout_s, state)
         try:
             exec(code, namespace)
         finally:
+            if stop_watchdog:
+                stop_watchdog()
             if timeout_s:
                 sys.settrace(None)
+        if state["timed_out"]:
+            raise RunTimedOut(timeout_s)
     except SystemExit:
         pass
     except RunTimedOut:

@@ -116,7 +116,8 @@ namespace pyRevitCLI {
             var arguments = parameters["arguments"] as JObject ?? new JObject();
             var progressToken = parameters["_meta"]?["progressToken"];
 
-            using (StartProgress(progressToken)) {
+            var progress = StartProgress(progressToken);
+            try {
                 JObject result;
                 try {
                     var payload = Dispatch(name, arguments);
@@ -131,7 +132,12 @@ namespace pyRevitCLI {
                 catch (Exception ex) {
                     result = ToolResult(new JObject { ["error"] = "server_error", ["message"] = ex.Message }.ToString(Formatting.None), true);
                 }
+                StopProgress(progress);
+                progress = null;
                 Write(Result(id, result));
+            }
+            finally {
+                StopProgress(progress);
             }
         }
 
@@ -300,7 +306,16 @@ namespace pyRevitCLI {
             return File.Exists(path) ? File.ReadAllText(path) : null;
         }
 
-        private IDisposable StartProgress(JToken progressToken) {
+        private static void StopProgress(Timer progress) {
+            if (progress == null)
+                return;
+            using (var finished = new ManualResetEvent(false)) {
+                progress.Dispose(finished);
+                finished.WaitOne();
+            }
+        }
+
+        private Timer StartProgress(JToken progressToken) {
             if (progressToken == null)
                 return null;
 

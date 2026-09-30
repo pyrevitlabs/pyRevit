@@ -115,8 +115,10 @@ def _run_pyrevit_cli(arguments):
     start_info.RedirectStandardOutput = True
     start_info.RedirectStandardError = True
     process = System.Diagnostics.Process.Start(start_info)
-    output_text = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd()
+    stdout_task = process.StandardOutput.ReadToEndAsync()
+    stderr_task = process.StandardError.ReadToEndAsync()
     process.WaitForExit()
+    output_text = stdout_task.Result + stderr_task.Result
     return process.ExitCode, output_text.strip()
 
 
@@ -444,6 +446,7 @@ class SettingsWindow(forms.WPFWindow):
             )
 
     def _setup_agent(self):
+        self._agent_enabled_at_open = user_config.agent_enabled
         self.agent_cb.IsChecked = user_config.agent_enabled
         policy = user_config.agent_policy
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
@@ -1051,7 +1054,7 @@ class SettingsWindow(forms.WPFWindow):
     def _save_agent(self):
         request_reload = False
         enabled = bool(self.agent_cb.IsChecked)
-        if enabled != user_config.agent_enabled:
+        if enabled != self._agent_enabled_at_open:
             request_reload = forms.alert(
                 self.get_locale_string("Agent.Changed"), yes=True, no=True
             )

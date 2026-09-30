@@ -42,16 +42,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxWidth = 2400;
 
         private const double SectionBoxPadding = 2.0;
-        private const int CoverageProbeInset = 4;
+        private const int DwmaCloaked = 13;
+        private const int DwmaExtendedFrameBounds = 9;
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct NativePoint {
-            public int X;
-            public int Y;
-        }
+        private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
 
         [DllImport("user32.dll")]
-        private static extern IntPtr WindowFromPoint(NativePoint point);
+        private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsWindowVisible(IntPtr window);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsIconic(IntPtr window);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out int value, int size);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out NativeRect value, int size);
 
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
@@ -363,7 +372,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var top = screen.Y(rectangle.Top);
                 var right = screen.X(rectangle.Right);
                 var bottom = screen.Y(rectangle.Bottom);
-                if (IsCoveredByOtherProcess(left, top, right, bottom))
+                if (IsCoveredByOtherProcess(uidoc.Application.MainWindowHandle, left, top, right, bottom))
                     throw new AgentException("view_obscured",
                         $"Another application's window covers view '{view.Name}', so a screen capture would show it "
                         + "instead of the model; use mode 'export', or ask the user to bring Revit to the front.");
@@ -440,21 +449,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static bool IsCoveredByOtherProcess(int left, int top, int right, int bottom) {
+        /// <summary>
+        /// Walks the top-level windows from the top of the z-order down to Revit's main window
+        /// and reports whether a visible window of another process overlaps any part of the
+        /// rectangle. Windows below Revit's main window are hidden by it.
+        /// </summary>
+        private static bool IsCoveredByOtherProcess(IntPtr mainWindow, int left, int top, int right, int bottom) {
             var revitProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-            var centerX = (left + right) / 2;
-            var centerY = (top + bottom) / 2;
-            var probes = new[] {
-                new NativePoint { X = centerX, Y = centerY },
-                new NativePoint { X = left + CoverageProbeInset, Y = top + CoverageProbeInset },
-                new NativePoint { X = right - CoverageProbeInset, Y = top + CoverageProbeInset },
-                new NativePoint { X = left + CoverageProbeInset, Y = bottom - CoverageProbeInset },
-                new NativePoint { X = right - CoverageProbeInset, Y = bottom - CoverageProbeInset },
-            };
-            return probes.Any(probe => {
-                GetWindowThreadProcessId(WindowFromPoint(probe), out var owner);
-                return owner != revitProcessId;
-            });
+            var covered = false;
+            EnumWindows((window, _) => {
+                if (window == mainWindow)
+                    return false;
+                GetWindowThreadProcessId(window, out var owner);
+                if (owner == revitProcessId || !IsWindowVisible(window) || IsIconic(window))
+                    return true;
+                if (DwmGetWindowAttribute(window, DwmaCloaked, out var cloaked, sizeof(int)) == 0 && cloaked != 0)
+                    return true;
+                if (DwmGetWindowAttribute(window, DwmaExtendedFrameBounds, out var bounds, Marshal.SizeOf(typeof(NativeRect))) != 0
+                    && !GetWindowRect(window, out bounds))
+                    return true;
+                if (bounds.Left < right && bounds.Right > left && bounds.Top < bottom && bounds.Bottom > top) {
+                    covered = true;
+                    return false;
+                }
+                return true;
+            }, IntPtr.Zero);
+            return covered;
         }
 
         private static void ScaleDown(string path, int maxWidth, out int width, out int height) {

@@ -26,8 +26,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
     /// <item>cancels synchronize requests, and saving, saving as or closing any document that was
-    /// open when the run started. A document the script opened or created itself, such as a
-    /// family from <c>EditFamily</c> or a new project, may be saved and closed.</item>
+    /// open when the run started, and saving or saving as any project the script opened from a
+    /// file on disk. A family, a family from <c>EditFamily</c> or a new project the script
+    /// opened or created itself may be saved and closed.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -35,7 +36,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariant: every group must be closed before the ExternalEvent callback returns;
     /// Revit doesn't allow an open group to outlive the callback. <see cref="Dispose"/> rolls back
     /// anything still open and always unsubscribes every handler.
-    /// Documents the script opens during the run have no group; their changes are only reported.
+    /// A project the script opens from disk during the run gets a group as well and counts as a
+    /// document that was already open: changing it fails the run and is rolled back.
     /// </remarks>
     internal sealed class AgentRunGuard : IDisposable {
         private const int MaxRecordedEntries = 200;
@@ -48,6 +50,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly JArray blocked = new JArray();
         private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
         private readonly List<Document> openAtStart = new List<Document>();
+        private readonly List<Document> projectsOpenedFromDisk = new List<Document>();
+        private string groupName;
         private TransactionGroup group;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
@@ -84,9 +88,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             app.FailuresProcessing += OnFailuresProcessing;
             app.DocumentSaving += OnDocumentSaving;
             app.DocumentSavingAs += OnDocumentSavingAs;
+            app.DocumentOpened += OnDocumentOpened;
             app.DocumentClosing += OnDocumentClosing;
             app.DocumentSynchronizingWithCentral += OnDocumentSynchronizingWithCentral;
             documentEventsArmed = true;
+            this.groupName = groupName;
 
             dialogCapture = new AgentDialogCapture(uiApp);
 
@@ -156,6 +162,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     app.FailuresProcessing -= OnFailuresProcessing;
                     app.DocumentSaving -= OnDocumentSaving;
                     app.DocumentSavingAs -= OnDocumentSavingAs;
+                    app.DocumentOpened -= OnDocumentOpened;
                     app.DocumentClosing -= OnDocumentClosing;
                     app.DocumentSynchronizingWithCentral -= OnDocumentSynchronizingWithCentral;
                     documentEventsArmed = false;
@@ -215,14 +222,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 hasErrors ? FailureProcessingResult.ProceedWithRollBack : FailureProcessingResult.Continue);
         }
 
+        private void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            var opened = e.Document;
+            if (opened == null || opened.IsLinked || opened.IsFamilyDocument || string.IsNullOrEmpty(opened.PathName))
+                return;
+            projectsOpenedFromDisk.Add(opened);
+            if (IsWatchedDocument(opened) || others.Any(candidate => candidate.Document.Equals(opened)))
+                return;
+            var tracked = new AgentOtherDocument(opened, openedDuringRun: false);
+            tracked.StartGroup(groupName);
+            others.Add(tracked);
+        }
+
         private void OnDocumentSaving(object sender, DocumentSavingEventArgs e) {
-            if (WasOpenAtStart(e.Document))
+            if (IsProtectedFromSave(e.Document))
                 Block(e, e.Document, "save");
         }
 
         private void OnDocumentSavingAs(object sender, DocumentSavingAsEventArgs e) {
-            if (WasOpenAtStart(e.Document))
+            if (IsProtectedFromSave(e.Document))
                 Block(e, e.Document, "save_as");
+        }
+
+        private bool IsProtectedFromSave(Document target) {
+            return WasOpenAtStart(target)
+                || (target != null && projectsOpenedFromDisk.Any(opened => opened.Equals(target)));
         }
 
         private void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
@@ -299,8 +323,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public void RollBack() {
-            if (HasOpenGroup)
-                group.RollBack();
+            try {
+                if (HasOpenGroup)
+                    group.RollBack();
+            }
+            catch (Exception) {
+                if (Document.IsValidObject)
+                    throw;
+            }
         }
 
         public JObject Describe() {

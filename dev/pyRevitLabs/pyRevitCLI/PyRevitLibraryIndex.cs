@@ -49,6 +49,7 @@ namespace pyRevitCLI {
         private static readonly Regex DefStart = new Regex(@"^(?<indent>\s*)def\s+(?<name>\w+)\s*\(", RegexOptions.Compiled);
         private static readonly Regex Decorator = new Regex(@"^\s*@(?<name>[\w.]+)", RegexOptions.Compiled);
 
+        private static readonly object cacheLock = new object();
         private static List<LibrarySymbol> cached;
         private static DateTime cachedStamp;
         private static string cachedRoot;
@@ -197,16 +198,18 @@ namespace pyRevitCLI {
 
             var files = SourceFiles(root).ToList();
             var stamp = files.Count == 0 ? DateTime.MinValue : files.Max(File.GetLastWriteTimeUtc);
-            if (cached != null && cachedRoot == root && cachedStamp >= stamp)
-                return cached;
+            lock (cacheLock) {
+                if (cached != null && cachedRoot == root && cachedStamp >= stamp)
+                    return cached;
 
-            var symbols = new List<LibrarySymbol>();
-            foreach (var file in files)
-                symbols.AddRange(ParseFile(root, file));
-            cached = symbols;
-            cachedStamp = stamp;
-            cachedRoot = root;
-            return symbols;
+                var symbols = new List<LibrarySymbol>();
+                foreach (var file in files)
+                    symbols.AddRange(ParseFile(root, file));
+                cached = symbols;
+                cachedStamp = stamp;
+                cachedRoot = root;
+                return symbols;
+            }
         }
 
         private static IEnumerable<string> SourceFiles(string root) {
