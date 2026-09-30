@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
@@ -224,15 +225,68 @@ namespace pyRevitCLI {
         /// uninstaller. Never throws: a client that isn't installed, has no entry, or has a
         /// config that can't be rewritten is skipped with a message.
         /// </summary>
-        public static void UninstallMcpFromAllClients() {
+        /// <param name="ownedOnly">
+        /// Keeps a registration whose command is not this <c>pyrevit.exe</c>, or whose command
+        /// can't be read, so uninstalling one installation leaves another one's registration.
+        /// </param>
+        public static void UninstallMcpFromAllClients(bool ownedOnly) {
             foreach (McpClientKind client in Enum.GetValues(typeof(McpClientKind))) {
                 try {
+                    if (ownedOnly && !IsRegisteredToThisInstall(client)) {
+                        Console.WriteLine($"Kept {client}: not registered to {Environment.ProcessPath}.");
+                        continue;
+                    }
                     UninstallMcp(client, project: false);
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Skipped {client}: {ex.Message}");
                 }
             }
+        }
+
+        private static bool IsRegisteredToThisInstall(McpClientKind client) {
+            var registered = ReadRegisteredCommand(client);
+            var current = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(registered) || string.IsNullOrWhiteSpace(current))
+                return false;
+            try {
+                return string.Equals(Path.GetFullPath(registered.Trim()), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
+        private static string ReadRegisteredCommand(McpClientKind client) {
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            switch (client) {
+                case McpClientKind.Claude:
+                    return TryReadJson(Path.Combine(userProfile, ".claude.json"))?["mcpServers"]?[McpServerName]?.Value<string>("command");
+                case McpClientKind.Codex:
+                    return ReadCodexCommand(Path.Combine(userProfile, ".codex", "config.toml"));
+                case McpClientKind.Cursor:
+                    return TryReadJson(CursorConfigPath(false))?["mcpServers"]?[McpServerName]?.Value<string>("command");
+                case McpClientKind.VSCode:
+                    return TryReadJson(VSCodeConfigPath(false))?["servers"]?[McpServerName]?.Value<string>("command");
+                case McpClientKind.OpenCode:
+                    return (TryReadJson(OpenCodeConfigPath(false))?["mcp"]?[McpServerName]?["command"] as JArray)?.FirstOrDefault()?.Value<string>();
+                default:
+                    return null;
+            }
+        }
+
+        private static string ReadCodexCommand(string path) {
+            if (!File.Exists(path))
+                return null;
+            var section = Regex.Match(
+                File.ReadAllText(path),
+                @"^\[mcp_servers\." + McpServerName + @"\]\s*\n(?:(?!\[).*\n)*?command\s*=\s*(?:""(?<basic>(?:[^""\\]|\\.)*)""|'(?<literal>[^']*)')",
+                RegexOptions.Multiline);
+            if (!section.Success)
+                return null;
+            return section.Groups["literal"].Success
+                ? section.Groups["literal"].Value
+                : Regex.Unescape(section.Groups["basic"].Value);
         }
 
         private static void RejectProjectScope(McpClientKind client, bool project) {

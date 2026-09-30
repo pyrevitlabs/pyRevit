@@ -48,7 +48,7 @@ runtime is independent of the Routes server and doesn't need it enabled.
    `Agent: <title>`; *Discard* rolls them back.
 
 To remove the server: `pyrevit mcp uninstall <client>`, or `pyrevit mcp uninstall --all` for every
-client's user-level entry, which the uninstaller runs too. To turn the host off:
+client's user-level entry. The uninstaller runs it with `--owned`, which keeps entries that point at another pyRevit install. To turn the host off:
 `pyrevit configs agent disable`.
 
 !!! note "Model data leaves the machine"

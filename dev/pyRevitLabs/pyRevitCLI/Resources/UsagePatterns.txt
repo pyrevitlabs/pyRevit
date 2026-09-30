@@ -79,7 +79,7 @@ Usage:
 	pyrevit mcp [--revit=<revit_year>]
 	pyrevit mcp install (claude | codex | cursor | vscode | opencode) [--project] [--log=<log_file>]
 	pyrevit mcp uninstall (claude | codex | cursor | vscode | opencode) [--project] [--log=<log_file>]
-	pyrevit mcp uninstall --all [--log=<log_file>]
+	pyrevit mcp uninstall --all [--owned] [--log=<log_file>]
 	pyrevit caches (-h | --help)
 	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config (-h | --help)
