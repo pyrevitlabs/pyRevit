@@ -1143,10 +1143,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void Window_Loaded(object sender, System.EventArgs e) {
             var outputWindow = (ScriptConsole)sender;
-            // Install low-level keyboard hook for Ctrl+C/Ctrl+A support.
-            // Installed here (not in constructor) so Window_Closing can always dispose it.
-            // Fix for https://github.com/pyrevitlabs/pyRevit/issues/1729
-            _keyHook = new ScriptConsoleLowLevelKeyHook(this);
             ScriptConsoleManager.AppendToOutputWindowList(this);
             ApplyCloseOthersConfig();
         }
@@ -1154,6 +1150,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             var outputWindow = (ScriptConsole)sender;
             outputWindow._keyHook?.Dispose();
+            outputWindow._keyHook = null;
 
             outputWindow.stdinBar.CancelRead();
 
@@ -1470,11 +1467,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void ScriptOutput_GotFocus(object sender, EventArgs e) {
+            if (_keyHook == null)
+                _keyHook = new ScriptConsoleLowLevelKeyHook(this);
+
             if (IsAutoCollapseActive && IsCollapsed)
                 UnCollapseWindow();
         }
 
         private void ScriptOutput_LostFocus(object sender, EventArgs e) {
+            if (_keyHook != null) {
+                _keyHook.Dispose();
+                _keyHook = null;
+            }
+
             if (IsAutoCollapseActive && !IsCollapsed)
                 CollapseWindow();
         }

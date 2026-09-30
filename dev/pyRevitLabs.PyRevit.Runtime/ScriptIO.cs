@@ -47,6 +47,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly StringBuilder _partial = new StringBuilder();
         private readonly object _logLock = new object();
         private bool _inputReceived = false;
+        private static readonly byte[] EmptyBuffer = new byte[0];
+
+        private byte[] _bufferedInput = EmptyBuffer;
         private bool _errored = false;
         private ScriptEngineType _erroredEngine;
         private bool _prefixAtLineStart = true;
@@ -819,17 +822,132 @@ namespace PyRevitLabs.PyRevit.Runtime {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Reads the next line of script input, or <see cref="string.Empty"/> at end of input.
+        /// </summary>
+        /// <param name="size">
+        /// Maximum number of characters to return, or a negative value for the whole line.
+        /// Never splits a character: a limit that falls inside a multi-byte character returns
+        /// everything up to the last character that fits.
+        /// </param>
+        /// <remarks>
+        /// A limit narrower than the line leaves the remainder buffered, so the following call
+        /// continues it instead of consuming a new line. Mixing this with <see cref="Read(byte[], int, int)"/>
+        /// is safe: both draw from the same buffer.
+        ///
+        /// A <paramref name="size"/> of zero returns nothing and consumes no input, which is what
+        /// a zero-length read means to a caller. A negative size is the unbounded case.
+        /// </remarks>
+        public string readline(int size = -1) {
+            if (size == 0)
+                return string.Empty;
+
+            string line = TakeWholeLine();
+            return line == null ? string.Empty : TakeCharacters(line, size);
+        }
+
+        /// <summary>
+        /// Reads the next line of script input, or <see cref="string.Empty"/> at end of input.
+        /// Alias of <see cref="readline"/>.
+        /// </summary>
         public string read(int size = -1) {
             return readline(size);
         }
 
-        public string readline(int size = -1) {
-            var buffer = new byte[1024];
-            var _ = Read(buffer, 0, 1024);
-            _ = Read(buffer, 0, 1024);
-            return OutputEncoding.GetString(buffer);
+        /// <summary>
+        /// Returns the next complete line decoded in full, or <c>null</c> at end of input.
+        /// </summary>
+        /// <remarks>
+        /// Decoding happens over whole lines only, so a multi-byte character is never split
+        /// between what this call returns and what a later one resumes from. The line is
+        /// assembled in <see cref="_bufferedInput"/> first, which is what keeps a line longer
+        /// than one read chunk intact, and <see cref="AlignToCharacterBoundary"/> is what keeps
+        /// a raw read from leaving this buffer starting mid-character.
+        ///
+        /// A line is fetched through <see cref="ReadNextLine"/> rather than
+        /// <see cref="Read(byte[], int, int)"/>, so the output window is prepared here and the
+        /// pending raw-read handshake is cleared. Leaving that flag set would make the next raw
+        /// read report end of input and skip a line the user had already entered.
+        /// </remarks>
+        private string TakeWholeLine() {
+            if (!HasBufferedInput) {
+                if (PrepareOutputForRead())
+                    return null;
+
+                string line = ReadNextLine();
+                if (line == null)
+                    return null;
+
+                _inputReceived = false;
+                AppendToBuffer(OutputEncoding.GetBytes(line));
+            }
+
+            string decoded;
+            lock (this) {
+                decoded = OutputEncoding.GetString(_bufferedInput, 0, _bufferedInput.Length);
+                _bufferedInput = EmptyBuffer;
+            }
+
+            return decoded;
         }
 
+        private bool HasBufferedInput {
+            get {
+                lock (this) {
+                    return _bufferedInput.Length > 0;
+                }
+            }
+        }
+
+        private string TakeCharacters(string line, int size) {
+            if (size < 0 || line.Length <= size)
+                return line;
+
+            string head = line.Substring(0, size);
+            PrependToBuffer(OutputEncoding.GetBytes(line.Substring(size)));
+            return head;
+        }
+
+        private void PrependToBuffer(byte[] text) {
+            if (text == null || text.Length == 0)
+                return;
+
+            lock (this) {
+                byte[] merged = new byte[text.Length + _bufferedInput.Length];
+                Buffer.BlockCopy(text, 0, merged, 0, text.Length);
+                Buffer.BlockCopy(_bufferedInput, 0, merged, text.Length, _bufferedInput.Length);
+                _bufferedInput = merged;
+            }
+        }
+
+        private void AppendToBuffer(byte[] text) {
+            if (text == null || text.Length == 0)
+                return;
+
+            lock (this) {
+                byte[] merged = new byte[text.Length + _bufferedInput.Length];
+                Buffer.BlockCopy(_bufferedInput, 0, merged, 0, _bufferedInput.Length);
+                Buffer.BlockCopy(text, 0, merged, _bufferedInput.Length, text.Length);
+                _bufferedInput = merged;
+            }
+        }
+
+        /// <summary>
+        /// Copies the next available script input into <paramref name="buffer"/> and returns the
+        /// number of bytes written.
+        /// </summary>
+        /// <remarks>
+        /// The return value is what was actually copied, never the length of the line behind it:
+        /// a <see cref="StreamReader"/> consumer reads the rest of the buffer up to it. A line
+        /// longer than <paramref name="count"/> is not lost either, because the remainder is
+        /// buffered and handed to the following read.
+        ///
+        /// The copy stops on a character boundary, so mixing raw reads with
+        /// <see cref="readline"/> cannot leave a half character behind for the next decoder to
+        /// turn into a replacement character. A <paramref name="count"/> too small to hold the
+        /// first character copies nothing and returns zero, since copying it would overrun the
+        /// caller's buffer.
+        /// </remarks>
         public override int Read(byte[] buffer, int offset, int count) {
             if (buffer == null)
                 throw new ArgumentNullException("buffer", "buffer is null");
@@ -838,72 +956,143 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (offset + count > buffer.Length)
                 throw new IndexOutOfRangeException("The sum of offset and count is larger than the buffer length.");
 
-            var output = GetOutput();
-            if (output != null) {
-                if (output.ClosedByUser) {
-                    _gui = new WeakReference<ScriptConsole>(null);
-                    ClearPending();
-                    StopFlushTimer();
+            if (PrepareOutputForRead())
+                return 0;
+
+            lock (this) {
+                if (_bufferedInput.Length > 0)
+                    return DrainBufferedInput(buffer, offset, count);
+
+                if (_inputReceived) {
+                    _inputReceived = false;
                     return 0;
                 }
 
-                if (!output.IsVisible) {
-                    try {
-                        output.Show();
-                        output.Focus();
-                    }
-                    catch {
-                        return 0;
-                    }
+                string input = ReadNextLine();
+                if (input == null)
+                    return 0;
+
+                _inputReceived = true;
+
+                var inputBytes = OutputEncoding.GetBytes(input);
+                int copyCount = AlignToCharacterBoundary(inputBytes, count);
+                if (copyCount > 0)
+                    Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
+
+                if (copyCount < inputBytes.Length) {
+                    byte[] leftover = new byte[inputBytes.Length - copyCount];
+                    Buffer.BlockCopy(inputBytes, copyCount, leftover, 0, leftover.Length);
+                    PrependToBuffer(leftover);
                 }
 
-                lock (this) {
-                    string input = string.Empty;
+                ReportReadDiagnostics(buffer, offset, count, input, copyCount);
 
-                    if (_inputReceived) {
-                        _inputReceived = false;
-                        return 0;
-                    }
+                return copyCount;
+            }
+        }
 
-                    input = output.GetInput();
-                    _inputReceived = true;
+        /// <summary>
+        /// Brings the output window forward for a read and reports whether the read must be
+        /// abandoned because there is no usable window.
+        /// </summary>
+        private bool PrepareOutputForRead() {
+            var output = GetOutput();
+            if (output == null)
+                return false;
 
-                    if (PrintDebugInfo) {
-                        try {
-                            output.AppendText(
-                                string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
-                                ScriptConsoleConfigs.DefaultBlock);
-                        }
-                        catch (Exception ex) {
-                            System.Diagnostics.Debug.WriteLine(
-                                string.Format("[ScriptIO] Failed to append read diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
-                            );
-                        }
-                    }
-
-                    var inputBytes = OutputEncoding.GetBytes(input);
-                    if (inputBytes.Length > 0) {
-                        int copyCount = Math.Min(inputBytes.Length, count);
-                        Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
-                        if (PrintDebugInfo) {
-                            try {
-                                output.AppendText(
-                                    string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
-                                    ScriptConsoleConfigs.DefaultBlock);
-                            }
-                            catch (Exception ex) {
-                                System.Diagnostics.Debug.WriteLine(
-                                    string.Format("[ScriptIO] Failed to append read copied diagnostics text (size: {0}): {1}", copyCount, ex)
-                                );
-                            }
-                        }
-                    }
-
-                    return inputBytes.Length;
-                }
+            if (output.ClosedByUser) {
+                _gui = new WeakReference<ScriptConsole>(null);
+                ClearPending();
+                StopFlushTimer();
+                return true;
             }
 
-            return 0;
+            if (output.IsVisible)
+                return false;
+
+            try {
+                output.Show();
+                output.Focus();
+            }
+            catch {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ReportReadDiagnostics(byte[] buffer, int offset, int count, string input, int copyCount) {
+            if (!PrintDebugInfo)
+                return;
+
+            var output = GetOutput();
+            if (output == null)
+                return;
+
+            try {
+                output.AppendText(
+                    string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
+                    ScriptConsoleConfigs.DefaultBlock);
+                output.AppendText(
+                    string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
+                    ScriptConsoleConfigs.DefaultBlock);
+            }
+            catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine(
+                    string.Format("[ScriptIO] Failed to append read diagnostics text (size: {0}): {1}", copyCount, ex)
+                );
+            }
+        }
+
+        /// <summary>
+        /// Obtains the next line of input from the output window, or <c>null</c> when there is no
+        /// input source or it has gone away.
+        /// </summary>
+        /// <remarks>
+        /// The single point where script input enters the stream. Every read path funnels through
+        /// here so the handshake, the size limit and the leftover buffer cannot drift apart.
+        /// </remarks>
+        protected virtual string ReadNextLine() {
+            var output = GetOutput();
+            if (output == null || output.ClosedByUser)
+                return null;
+
+            return output.GetInput();
+        }
+
+        /// <summary>
+        /// Copies from the input carried over from an earlier read, keeping whatever does not
+        /// fit for the next caller. Callers hold <c>this</c>.
+        /// </summary>
+        private int DrainBufferedInput(byte[] buffer, int offset, int count) {
+            int copyCount = AlignToCharacterBoundary(_bufferedInput, count);
+            Buffer.BlockCopy(_bufferedInput, 0, buffer, offset, copyCount);
+            byte[] leftover = new byte[_bufferedInput.Length - copyCount];
+            Buffer.BlockCopy(_bufferedInput, copyCount, leftover, 0, leftover.Length);
+            _bufferedInput = leftover;
+            return copyCount;
+        }
+
+        /// <summary>
+        /// Returns how many bytes of <paramref name="text"/> a read of <paramref name="count"/>
+        /// bytes may copy without splitting a character.
+        /// </summary>
+        /// <remarks>
+        /// <paramref name="text"/> is the whole remaining line, so a cut that lands on a
+        /// continuation byte is pulled back until the character it belongs to is whole, and that
+        /// character stays buffered for the next read rather than being decoded on its own.
+        ///
+        /// A cut inside the first character yields zero. Copying it would overrun the caller's
+        /// buffer, so nothing is copied and the line waits for a read with room for it.
+        /// </remarks>
+        private static int AlignToCharacterBoundary(byte[] text, int count) {
+            if (count >= text.Length)
+                return text.Length;
+
+            while (count > 0 && (text[count] & 0xC0) == 0x80)
+                count--;
+
+            return count;
         }
 
         public override bool CanRead {

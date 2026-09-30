@@ -418,7 +418,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         // Bump CommandTypeGeneratorSchema when generation logic changes without a
         // pyRevit version bump. Library-extension directories are hashed separately
         // in strategySeed so adding/removing a .lib or nested lib/ also invalidates.
-        private const string CommandTypeGeneratorSchema = "lib-root-1";
+        private const string CommandTypeGeneratorSchema = "lib-root-2";
 
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 

@@ -22,6 +22,9 @@
     <None Include="..\..\release\pyrevit-products.json" Link="Fixtures\pyrevit-products.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\..\release\pyrevit-hosts.json" Link="Fixtures\pyrevit-hosts.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
