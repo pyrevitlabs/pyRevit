@@ -77,6 +77,7 @@
     <Compile Include="CommandSearchPathsTests.cs" />
     <Compile Include="EnginePortableRequestsImportTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
+    <Compile Include="ScriptOutputUiGateTests.cs" />
     <Compile Include="HeldRecordBufferTests.cs" />
     <Compile Include="ParallelLogCaptureTests.cs" />
     <Compile Include="EmojisTests.cs" />
