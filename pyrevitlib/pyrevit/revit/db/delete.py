@@ -1,20 +1,20 @@
 """Database elements deletion functions."""
 
 from pyrevit import DOCS
-from pyrevit.framework import List
+from pyrevit.framework import to_clr_list
 from pyrevit import DB
 from pyrevit.revit.db import query
 from pyrevit.revit.db import ensure
 
 
 def clear_sheet_revisions(sheet):
-    sheet.SetAdditionalRevisionIds(List[DB.ElementId]([]))
+    sheet.SetAdditionalRevisionIds(to_clr_list(DB.ElementId, []))
 
 
 def delete_elements(element_list, doc=None):
     doc = doc or DOCS.doc
     element_ids = ensure.ensure_element_ids(element_list)
-    return doc.Delete(List[DB.ElementId](element_ids))
+    return doc.Delete(to_clr_list(DB.ElementId, element_ids))
 
 
 def delete_revision(rvt_rev, doc=None):
@@ -27,5 +27,5 @@ def reset_subcategories(doc=None, purgable=False, filterfunc=None):
     cats_to_delete = query.get_subcategories(
         doc=doc, purgable=purgable, filterfunc=filterfunc
     )
-    doc.Delete(List[DB.ElementId]([x.Id for x in cats_to_delete]))
+    doc.Delete(to_clr_list(DB.ElementId, [x.Id for x in cats_to_delete]))
     del cats_to_delete

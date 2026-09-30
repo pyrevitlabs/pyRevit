@@ -99,12 +99,14 @@ class ElementSelection:
 
     def set_to(self, element_list):
         self._refs = ElementSelection.get_element_ids(element_list)
-        HOST_APP.uidoc.Selection.SetElementIds(framework.List[DB.ElementId](self._refs))
+        HOST_APP.uidoc.Selection.SetElementIds(
+            framework.to_clr_list(DB.ElementId, self._refs)
+        )
         HOST_APP.uidoc.RefreshActiveView()
 
     def clear(self):
         HOST_APP.uidoc.Selection.SetElementIds(
-            framework.List[DB.ElementId]([DB.ElementId.InvalidElementId])
+            framework.to_clr_list(DB.ElementId, [DB.ElementId.InvalidElementId])
         )
         HOST_APP.uidoc.RefreshActiveView()
 

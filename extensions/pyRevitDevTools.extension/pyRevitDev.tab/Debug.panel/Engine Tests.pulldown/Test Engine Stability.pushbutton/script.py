@@ -3,7 +3,13 @@ from pyrevit import coreutils
 from pyrevit import framework
 from pyrevit import script
 
-framework.clr.AddReference("IronPython")
+# No AddReference("IronPython") here: the IronPython engine host has already
+# loaded IronPython - it is what is running this very script - and the shipped
+# assembly is named pyRevitLabs.IronPython.dll (that is framework.ipy_dllpath,
+# built from engine.EnginePrefix), so the name-only overload raised
+# "Could not add reference to assembly IronPython" and the test never reached
+# the engine loop it exists to measure. Importing the namespaces below is the
+# real proof that the reference is in place.
 import IronPython.Hosting
 import IronPython.Runtime
 

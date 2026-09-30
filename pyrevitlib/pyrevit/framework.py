@@ -99,6 +99,34 @@ _perfmark("pyrevit.framework:after `from System.* import` block")
 import pyrevit.engine as eng
 
 
+def to_clr_list(item_type, iterable):
+    """Build a ``List[item_type]`` from any Python iterable, on either engine.
+
+    ``List[T](some_python_list)`` is the obvious spelling and it only works on
+    IronPython. Under pythonnet the single-argument constructor cannot convert a
+    Python list to ``IEnumerable<T]``, so overload resolution falls through to
+    ``List(int capacity)`` and raises::
+
+        TypeError: No method matches given arguments for List`1..ctor: (<class 'list'>)
+
+    which surfaces from the Revit API call that consumed the list rather than
+    from here, so the traceback points at the caller and hides the cause. Filling
+    the list through ``Add`` needs no conversion and behaves the same on both
+    engines.
+
+    Args:
+        item_type (type): The CLR element type, e.g. ``DB.FilterRule``.
+        iterable (iterable): Values to add, in order.
+
+    Returns:
+        System.Collections.Generic.List[item_type]
+    """
+    clr_list = List[item_type]()
+    for item in iterable:
+        clr_list.Add(item)
+    return clr_list
+
+
 ASSEMBLY_FILE_TYPE = "dll"
 ASSEMBLY_FILE_EXT = ".dll"
 

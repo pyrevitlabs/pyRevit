@@ -441,6 +441,7 @@ class OutParamMarshalingTests(unittest.TestCase):
 
         from pyrevit.revit import create, query
         from pyrevit import coreutils
+        from pyrevit import DB
 
         if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
             self.skipTest("No family file fixture provided")
@@ -452,11 +453,26 @@ class OutParamMarshalingTests(unittest.TestCase):
             symbols = create.load_family(FAMILY_FILE, doc=self.doc)
             if not symbols:
                 self.skipTest("Family fixture contains no loadable symbols")
-            if IRONPY:
-                from rpw import db
-
-                self.assertIsInstance(db.Element(symbols[0]), db.FamilySymbol)
-            symbol_name = symbols[0].Name
+            # What this test claims is that the out-param marshal produced a
+            # usable family symbol, so assert on the host API type. The check
+            # used to be rpw.db.Element(...) against rpw.db.family.FamilySymbol,
+            # which cannot pass on any input: rpw's Element constructor always
+            # returns the base rpw.db.Element wrapper, never the specific
+            # subclass, so the assertion failed on IronPython even though the
+            # marshal was correct. Revit also hands back a generated subclass
+            # (this family's type is an AnnotationSymbolType), whose MRO still
+            # derives from FamilySymbol - which is why the host-type check is
+            # the one that expresses the claim.
+            self.assertIsInstance(symbols[0], DB.FamilySymbol)
+            # ...and the same generated subclass is why the type name cannot be
+            # read as .Name: the member is present in the binding but raises
+            # AttributeError on read, on IronPython and CPython alike. The
+            # symbol-name parameter is the stable read for a family type name.
+            name_param = symbols[0].get_Parameter(
+                DB.BuiltInParameter.SYMBOL_NAME_PARAM)
+            self.assertIsNotNone(
+                name_param, "family symbol carries no symbol name")
+            symbol_name = name_param.AsString()
         finally:
             discovery_txn.RollBack()
 

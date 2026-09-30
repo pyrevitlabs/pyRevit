@@ -5,7 +5,7 @@
 from pyrevit import HOST_APP
 from pyrevit.runtime import types
 from pyrevit.framework import Media
-from pyrevit.framework import List, Regex
+from pyrevit.framework import List, Regex, to_clr_list
 from pyrevit.coreutils import envvars
 
 
@@ -52,8 +52,9 @@ def _get_tab_orderrules(tabcfgs, default=False):
     if not default:
         raw = tabcfgs.get_option("tab_colors", default_colors)
         tab_colors = raw if isinstance(raw, list) else default_colors
-    return List[types.TabColoringRule](
-        [types.TabColoringRule(hex_to_brush(c)) for c in tab_colors]
+    return to_clr_list(
+        types.TabColoringRule,
+        [types.TabColoringRule(hex_to_brush(c)) for c in tab_colors],
     )
 
 
@@ -65,8 +66,9 @@ def _get_tab_filterrules(tabcfgs):
     tab_filtercolors = tabcfgs.get_option("tab_filtercolors", {})
     if not isinstance(tab_filtercolors, dict):
         tab_filtercolors = {}
-    return List[types.TabColoringRule](
-        [types.TabColoringRule(hex_to_brush(c), f) for c, f in tab_filtercolors.items()]
+    return to_clr_list(
+        types.TabColoringRule,
+        [types.TabColoringRule(hex_to_brush(c), f) for c, f in tab_filtercolors.items()],
     )
 
 
