@@ -4,7 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+
+using Microsoft.Win32.SafeHandles;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
@@ -126,6 +129,17 @@ namespace pyRevitCLI {
             return matches[0];
         }
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetNamedPipeServerProcessId(SafePipeHandle pipe, out uint serverProcessId);
+
+        private static void RequireServerProcess(NamedPipeClientStream pipe, AgentInstance instance) {
+            if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var serverProcessId) || serverProcessId != (uint)instance.ProcessId)
+                throw new AgentClientException(
+                    "pipe_error",
+                    $"The agent pipe of Revit {instance.RevitVersion} (pid {instance.ProcessId}) is served by another process; "
+                    + "no request was sent.");
+        }
+
         /// <summary>
         /// Sends one request and waits for its response. There is no read timeout: a modify
         /// run legitimately waits for the user to answer the approval prompt in Revit.
@@ -142,6 +156,7 @@ namespace pyRevitCLI {
             try {
                 using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut)) {
                     pipe.Connect(ConnectTimeoutMs);
+                    RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
                     var reader = new StreamReader(pipe, Utf8);
                     writer.WriteLine(request.ToString(Formatting.None));
