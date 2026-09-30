@@ -11,7 +11,7 @@ description: Revit file types and working with files. Covers what .rvt, .rte, .r
 |---|---|---|
 | `.rvt` | A project: the building model, its views and sheets. Also used for central and local models of a workshared project; `Name.0001.rvt` files next to it are backups. | `app.OpenDocumentFile(path)`, or `uiapp.OpenAndActivateDocument(path)` to show it to the user |
 | `.rte` | A project template: the starting settings, types, views and families of a new project. | `app.NewProjectDocument(path)` |
-| `.rfa` | A loadable family: doors, furniture, equipment, fixtures. | `doc.LoadFamily(path)` to load it into a project; `app.OpenDocumentFile(path)` to edit it |
+| `.rfa` | A loadable family: doors, furniture, equipment, fixtures. | `doc.LoadFamily(path)` to load it into a project; `app.OpenDocumentFile(path)` to read it. A family opened from disk can't be changed or saved; to change the file, load it, edit it with `EditFamily`, and `SaveAs` its path |
 | `.rft` | A family template: fixes the new family's category and how it is hosted. | `app.NewFamilyDocument(path)` |
 
 Text files often travel with them: a type catalog (`Door.txt` next to `Door.rfa`) lists the family's types, a shared parameters file defines parameters shared across families and projects (`app.SharedParametersFilename`), and a keynote file holds keynote text.
@@ -127,7 +127,7 @@ result = {"active": uiapp.ActiveUIDocument.Document.Title if uiapp.ActiveUIDocum
 
 - **With no document open**, runs still execute with `doc` and `uidoc` set to `None`, and the decision is `no_document`. `OpenAndActivateDocument` returns normally there; open or create the project that way, then continue in the next run.
 - **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` afterwards, then `get_context`.
-- `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started, or a project you opened from a file, fails the run with `other_document_modified`, and it can't be saved.
+- `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started, or a project or family you opened from a file, fails the run with `other_document_modified`, and it can't be saved.
 
 ## Before you report done
 

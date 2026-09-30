@@ -235,10 +235,10 @@ Rules the host enforces:
   `get_context.open_documents` lists every open document and marks the background ones.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
-  from a file during the run counts as one that was already open: changing it fails the run,
-  it is rolled back, and it can't be saved or saved as, so the file on disk stays unchanged.
-  A family (such as one from `EditFamily`) or a new project the script creates itself is
-  reported there but doesn't fail the run, and isn't rolled back.
+  or a family from a file during the run counts as one that was already open: changing it fails
+  the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
+  unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
+  it is reported there but doesn't fail the run, and isn't rolled back.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   When a Revit call throws, the message carries the underlying .NET exception and its
   inner exceptions (`[.NET: Autodesk.Revit.Exceptions.… <- …]`), not only the generic
@@ -424,17 +424,17 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
 1. **Arm guards** (only while the run is active):
     - `DocumentSynchronizingWithCentral` is cancelled, and so are `DocumentSaving`,
       `DocumentSavingAs` and `DocumentClosing` for every document open when the run started.
-      `DocumentSaving` and `DocumentSavingAs` are also cancelled for a project the script
-      opens from a file (`DocumentOpened`). A family, a family from `EditFamily`, or a new
-      project the script opened or created itself may be saved and closed.
+      `DocumentSaving` and `DocumentSavingAs` are also cancelled for a project or family the
+      script opens from a file (`DocumentOpened`). A family from `EditFamily` or a new
+      document the script created has no file yet and may be saved and closed.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
       failing transaction, in every non-linked document. A failure in a family or a new
       document fails the run with `revit_failure` instead of raising a dialog.
     - `DocumentChanged` collects added, modified and deleted ids, per document.
 2. **`TransactionGroup.Start("Agent: <title>")`** on the active document and on every other
-   open, editable, non-linked document, and later on each project the script opens from a
-   file.
+   open, editable, non-linked document, and later on each project or family the script
+   opens from a file.
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
     - **any mode**, another open document changed: roll back every group. The run fails

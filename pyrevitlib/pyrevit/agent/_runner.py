@@ -93,15 +93,21 @@ def _catches_base_exception(handler_type):
 def _compile_source(source):
     """Compile the agent source with broad exception handlers narrowed.
 
-    Falls back to compiling the source unchanged when the rewrite fails, so a
-    syntax error keeps its original message and line number.
+    Returns:
+        tuple: the code object, and None or a description of why the rewrite
+        was skipped. Falls back to compiling the source unchanged when the
+        rewrite fails, so a syntax error keeps its original message and line
+        number; the caller must report the skipped rewrite, because a script
+        compiled that way can swallow its own timeout.
     """
     try:
         tree = _NarrowBroadHandlers().visit(ast.parse(source, SOURCE_NAME, "exec"))
         ast.fix_missing_locations(tree)
-        return compile(tree, SOURCE_NAME, "exec")
-    except Exception:
-        return compile(source, SOURCE_NAME, "exec")
+        return compile(tree, SOURCE_NAME, "exec"), None
+    except Exception as ex:
+        return compile(source, SOURCE_NAME, "exec"), "{}: {}".format(
+            type(ex).__name__, _safe_text(ex)
+        )
 
 
 def _deadline_tracer(timeout_s, state):
@@ -208,7 +214,13 @@ def run(context):
     try:
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
-        code = _compile_source(source)
+        code, rewrite_problem = _compile_source(source)
+        if rewrite_problem:
+            print(
+                "[pyRevit agent] Could not narrow the script's bare except "
+                "handlers ({}); a handler that catches everything can swallow "
+                "the timeout.".format(rewrite_problem)
+            )
         timeout_s = getattr(context, "TimeoutSeconds", None)
         state = {"timed_out": False}
         started = time.time()

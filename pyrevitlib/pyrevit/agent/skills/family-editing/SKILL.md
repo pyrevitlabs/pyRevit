@@ -35,7 +35,7 @@ The run guard, and the dry-run rollback, cover the **project** document only.
 - **The project change is `LoadFamily`.** It's part of the guarded run, so it's rolled back by a dry run and needs approval under policy `ask`.
 - **Close without saving:** always call `fam_doc.Close(False)`, in a `finally`.
 - **Reloading replaces the `Family` object.** After `LoadFamily` brings an edited family back, the `Family` you edited is no longer valid (`IsValidObject` is false). Keep its name before editing, and look the family up again by name to read it afterwards.
-- **Save only on request:** don't call `fam_doc.Save()` or `SaveAs()` unless the user asked to change the family file on disk. A family you opened in the run can be saved; the project open when the run started can't.
+- **Save only on request:** don't call `fam_doc.Save()` or `SaveAs()` unless the user asked to change the family file on disk. A family from `EditFamily` or `NewFamilyDocument` can be saved; the project open when the run started, and any file you opened with `OpenDocumentFile`, can't.
 
 ## Family parameters
 
