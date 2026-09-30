@@ -36,8 +36,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariant: every group must be closed before the ExternalEvent callback returns;
     /// Revit doesn't allow an open group to outlive the callback. <see cref="Dispose"/> rolls back
     /// anything still open and always unsubscribes every handler.
-    /// A project or family the script opens from disk during the run gets a group as well and
-    /// counts as a document that was already open: changing it fails the run and is rolled back.
+    /// A project or family the script opens from disk during the run counts as a document that
+    /// was already open: changing it fails the run. It gets no group, so the script can still
+    /// close it; its changes are discarded when it is closed without saving, by the script or by
+    /// the host when the run ends.
     /// </remarks>
     internal sealed class AgentRunGuard : IDisposable {
         private const int MaxRecordedEntries = 200;
@@ -229,9 +231,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             documentsOpenedFromDisk.Add(opened);
             if (IsWatchedDocument(opened) || others.Any(candidate => IsSameDocument(candidate.Document, opened)))
                 return;
-            var tracked = new AgentOtherDocument(opened, openedDuringRun: false);
-            tracked.StartGroup(groupName);
-            others.Add(tracked);
+            others.Add(new AgentOtherDocument(opened, openedDuringRun: false, openedFromDisk: true));
         }
 
         private void OnDocumentSaving(object sender, DocumentSavingEventArgs e) {
@@ -296,11 +296,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal sealed class AgentOtherDocument : IDisposable {
         private readonly bool modifiableAtStart;
+        private readonly bool openedFromDisk;
         private TransactionGroup group;
 
-        public AgentOtherDocument(Document document, bool openedDuringRun) {
+        public AgentOtherDocument(Document document, bool openedDuringRun, bool openedFromDisk = false) {
             Document = document;
             OpenedDuringRun = openedDuringRun;
+            this.openedFromDisk = openedFromDisk;
             Title = document.Title;
             modifiableAtStart = document.IsModifiable;
         }
@@ -346,7 +348,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var description = Changes.Summarize();
             description["document"] = Title;
             description["opened_during_run"] = OpenedDuringRun;
-            description["rolled_back"] = group != null;
+            description["rolled_back"] = group != null || openedFromDisk;
             return description;
         }
 

@@ -50,6 +50,7 @@ runtime is independent of the Routes server and doesn't need it enabled.
 To remove the server: `pyrevit mcp uninstall <client>`. `pyrevit mcp uninstall --all` removes
 the user-level entry from every client, and the pyRevit uninstaller runs it with `--owned`, which
 keeps entries that point at another pyRevit install. When that command runs elevated, it
+checks the Cursor, VS Code and OpenCode entries of every user profile on the machine, and it
 doesn't start the `claude` or `codex` command line tools, so those two entries stay; run
 `pyrevit mcp uninstall claude` (or `codex`) from a normal prompt. Project-level entries
 (`--project`) are never removed automatically. To turn the host off: `pyrevit configs agent disable`.
@@ -427,7 +428,8 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
     - `DocumentSynchronizingWithCentral` is cancelled, and so are `DocumentSaving`,
       `DocumentSavingAs` and `DocumentClosing` for every document open when the run started.
       `DocumentSaving` and `DocumentSavingAs` are also cancelled for a project or family the
-      script opens from a file (`DocumentOpened`). A family from `EditFamily` or a new
+      script opens from a file (`DocumentOpened`); the script may still close it, and the
+      host closes it without saving when the run ends. A family from `EditFamily` or a new
       document the script created has no file yet and may be saved and closed.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the

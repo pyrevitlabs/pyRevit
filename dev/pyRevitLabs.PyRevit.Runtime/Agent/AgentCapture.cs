@@ -42,7 +42,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxWidth = 2400;
 
         private const double SectionBoxPadding = 2.0;
-        private const int DwmaCloaked = 13;
+        private const int DwmaCloaked = 14;
         private const int DwmaExtendedFrameBounds = 9;
 
         private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);

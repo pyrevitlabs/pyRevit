@@ -228,23 +228,53 @@ namespace pyRevitCLI {
         /// <param name="ownedOnly">
         /// Keeps a registration whose command is not this <c>pyrevit.exe</c>, or whose command
         /// can't be read, so uninstalling one installation leaves another one's registration.
+        /// Run elevated, it checks the Cursor, VS Code and OpenCode configs of every user profile,
+        /// because an all-users uninstall may be elevated with another account than the user who
+        /// registered the server.
         /// </param>
         public static void UninstallMcpFromAllClients(bool ownedOnly) {
+            var everyProfile = ownedOnly && IsElevated();
             foreach (McpClientKind client in Enum.GetValues(typeof(McpClientKind))) {
                 try {
-                    if (ownedOnly && !IsRegisteredToThisInstall(client)) {
-                        Console.WriteLine($"Kept {client}: not registered to {Environment.ProcessPath}.");
-                        continue;
-                    }
-                    if (ownedOnly && IsClientCliManaged(client) && IsElevated()) {
-                        Console.WriteLine($"Kept {client}: an elevated cleanup doesn't run its command line tool. Run 'pyrevit mcp uninstall {client.ToString().ToLowerInvariant()}' from a normal prompt.");
-                        continue;
-                    }
-                    UninstallMcp(client, project: false);
+                    if (IsClientCliManaged(client))
+                        UninstallCliManagedClient(client, ownedOnly);
+                    else if (!ownedOnly)
+                        UninstallMcp(client, project: false);
+                    else
+                        foreach (var path in UserConfigPaths(client, everyProfile))
+                            UninstallOwnedFileRegistration(client, path, reportKept: !everyProfile);
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Skipped {client}: {ex.Message}");
                 }
+            }
+        }
+
+        private static void UninstallCliManagedClient(McpClientKind client, bool ownedOnly) {
+            if (ownedOnly && !IsThisInstall(ReadCliClientCommand(client))) {
+                Console.WriteLine($"Kept {client}: not registered to {Environment.ProcessPath}.");
+                return;
+            }
+            if (ownedOnly && IsElevated()) {
+                Console.WriteLine($"Kept {client}: an elevated cleanup doesn't run its command line tool. Run 'pyrevit mcp uninstall {client.ToString().ToLowerInvariant()}' from a normal prompt.");
+                return;
+            }
+            UninstallMcp(client, project: false);
+        }
+
+        private static void UninstallOwnedFileRegistration(McpClientKind client, string path, bool reportKept) {
+            try {
+                var registered = ReadFileClientCommand(client, path);
+                if (!IsThisInstall(registered)) {
+                    if (reportKept || registered != null)
+                        Console.WriteLine($"Kept {client} in {path}: not registered to {Environment.ProcessPath}.");
+                    return;
+                }
+                UpdateJsonConfig(path, ServersKey(client), null);
+                Console.WriteLine($"Removed MCP server \"{McpServerName}\" from {client} ({path}).");
+            }
+            catch (Exception ex) {
+                Console.WriteLine($"Skipped {client} in {path}: {ex.Message}");
             }
         }
 
@@ -259,8 +289,7 @@ namespace pyRevitCLI {
             }
         }
 
-        private static bool IsRegisteredToThisInstall(McpClientKind client) {
-            var registered = ReadRegisteredCommand(client);
+        private static bool IsThisInstall(string registered) {
             var current = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(registered) || string.IsNullOrWhiteSpace(current))
                 return false;
@@ -272,22 +301,83 @@ namespace pyRevitCLI {
             }
         }
 
-        private static string ReadRegisteredCommand(McpClientKind client) {
+        private static string ReadCliClientCommand(McpClientKind client) {
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             switch (client) {
                 case McpClientKind.Claude:
                     return TryReadJson(Path.Combine(userProfile, ".claude.json"))?["mcpServers"]?[McpServerName]?.Value<string>("command");
                 case McpClientKind.Codex:
                     return ReadCodexCommand(Path.Combine(userProfile, ".codex", "config.toml"));
-                case McpClientKind.Cursor:
-                    return TryReadJson(CursorConfigPath(false))?["mcpServers"]?[McpServerName]?.Value<string>("command");
-                case McpClientKind.VSCode:
-                    return TryReadJson(VSCodeConfigPath(false))?["servers"]?[McpServerName]?.Value<string>("command");
-                case McpClientKind.OpenCode:
-                    return (TryReadJson(OpenCodeConfigPath(false))?["mcp"]?[McpServerName]?["command"] as JArray)?.FirstOrDefault()?.Value<string>();
                 default:
                     return null;
             }
+        }
+
+        private static string ReadFileClientCommand(McpClientKind client, string path) {
+            var entry = TryReadJson(path)?[ServersKey(client)]?[McpServerName];
+            if (client == McpClientKind.OpenCode)
+                return (entry?["command"] as JArray)?.FirstOrDefault()?.Value<string>();
+            return entry?.Value<string>("command");
+        }
+
+        private static string ServersKey(McpClientKind client) {
+            switch (client) {
+                case McpClientKind.Cursor:
+                    return "mcpServers";
+                case McpClientKind.VSCode:
+                    return "servers";
+                case McpClientKind.OpenCode:
+                    return "mcp";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(client));
+            }
+        }
+
+        private static IEnumerable<string> UserConfigPaths(McpClientKind client, bool everyProfile) {
+            var paths = new List<string> {
+                UserConfigPath(
+                    client,
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)),
+            };
+            if (everyProfile)
+                paths.AddRange(UserProfileDirectories()
+                    .Select(home => UserConfigPath(client, home, Path.Combine(home, "AppData", "Roaming"))));
+            return paths.Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string UserConfigPath(McpClientKind client, string home, string appData) {
+            switch (client) {
+                case McpClientKind.Cursor:
+                    return Path.Combine(home, ".cursor", "mcp.json");
+                case McpClientKind.VSCode:
+                    return Path.Combine(appData, "Code", "User", "mcp.json");
+                case McpClientKind.OpenCode:
+                    return OpenCodeConfigFile(Path.Combine(home, ".config", "opencode"));
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(client));
+            }
+        }
+
+        private static List<string> UserProfileDirectories() {
+            var directories = new List<string>();
+            using (var profiles = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList")) {
+                if (profiles == null)
+                    return directories;
+                foreach (var sid in profiles.GetSubKeyNames()) {
+                    if (!sid.StartsWith("S-1-5-21-") && !sid.StartsWith("S-1-12-1-"))
+                        continue;
+                    using (var profile = profiles.OpenSubKey(sid)) {
+                        var directory = profile?.GetValue("ProfileImagePath") as string;
+                        if (string.IsNullOrEmpty(directory))
+                            continue;
+                        directory = Environment.ExpandEnvironmentVariables(directory);
+                        if (Directory.Exists(directory))
+                            directories.Add(directory);
+                    }
+                }
+            }
+            return directories;
         }
 
         private static string ReadCodexCommand(string path) {
@@ -312,7 +402,7 @@ namespace pyRevitCLI {
         private static string CursorConfigPath(bool project) {
             return project
                 ? Path.Combine(Environment.CurrentDirectory, ".cursor", "mcp.json")
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cursor", "mcp.json");
+                : UserConfigPath(McpClientKind.Cursor, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), null);
         }
 
         /// <summary>
@@ -321,9 +411,12 @@ namespace pyRevitCLI {
         /// updated; otherwise <c>opencode.json</c> is created.
         /// </summary>
         private static string OpenCodeConfigPath(bool project) {
-            var directory = project
+            return OpenCodeConfigFile(project
                 ? Environment.CurrentDirectory
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "opencode");
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "opencode"));
+        }
+
+        private static string OpenCodeConfigFile(string directory) {
             var jsonc = Path.Combine(directory, "opencode.jsonc");
             return File.Exists(jsonc) ? jsonc : Path.Combine(directory, "opencode.json");
         }
@@ -331,7 +424,7 @@ namespace pyRevitCLI {
         private static string VSCodeConfigPath(bool project) {
             return project
                 ? Path.Combine(Environment.CurrentDirectory, ".vscode", "mcp.json")
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Code", "User", "mcp.json");
+                : UserConfigPath(McpClientKind.VSCode, null, Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
         }
 
         /// <summary>
