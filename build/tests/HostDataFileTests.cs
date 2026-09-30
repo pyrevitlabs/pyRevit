@@ -46,12 +46,11 @@ public sealed class HostDataFileTests
     }
 
     /// <summary>
-    /// A shared release name is not cosmetic. FindProductInfo resolves a tied match by
-    /// returning the first row (RevitProduct.cs:191), so two builds sharing a name means
-    /// the second is silently reported as the first - the wrong product year, which is
-    /// what makes pyRevit load a runtime built for a different Revit. Autodesk does ship
-    /// two builds under some release-notes pages, hence the build-date qualifier, e.g.
-    /// "2025.4.3 Update" and "2025.4.3 Update (20250815)".
+    /// A shared release name is not cosmetic. Looking one up matches every record
+    /// carrying it, and FindProductInfo then has to fall back on build/version evidence
+    /// or refuse to answer, so two builds under one name cannot be told apart. Autodesk
+    /// does ship two builds under some release-notes pages, hence the build-date
+    /// qualifier, e.g. "2025.4.3 Update" and "2025.4.3 Update (20250815)".
     /// </summary>
     [TestMethod]
     public void Release_names_are_unique_ignoring_case()
@@ -95,15 +94,16 @@ public sealed class HostDataFileTests
     /// GetProductYear matches on whitespace followed by four digits
     /// (RevitProduct.cs:223). A name like "Revit 2028" therefore starts resolving the
     /// product year from the name instead of falling through to the version, which
-    /// changes what IsSupported and the attachment code paths do. Keep names
-    /// whitespace-free ahead of the year.
+    /// changes what IsSupported and the attachment code paths do. Match any four digits,
+    /// not just 19xx or 20xx: the loader would treat a typo'd "Revit 3028" as the product
+    /// year, so restricting the pattern here would let that through.
     /// </summary>
     [TestMethod]
-    public void Release_names_never_put_whitespace_before_the_product_year()
+    public void Release_names_never_put_whitespace_before_a_four_digit_run()
     {
         var risky = LoadHosts()
             .Select(host => host.Release)
-            .Where(name => Regex.IsMatch(name, @"\s+(19|20)\d{2}"))
+            .Where(name => Regex.IsMatch(name, @"\s+\d{4}"))
             .ToList();
 
         Assert.AreEqual(0, risky.Count, "Would activate GetProductYear name parsing: " + string.Join("; ", risky));
@@ -163,11 +163,13 @@ public sealed class HostDataFileTests
         Assert.AreEqual(0, unexpected.Count, "Unsupported meta.schema: " + string.Join("; ", unexpected));
     }
 
+    /// <summary>
+    /// RevitProductData.MinimumSupportedProductYear. A pre-2021 record would be listed as
+    /// supported while the C# loader cannot run on it.
+    /// </summary>
     [TestMethod]
     public void No_record_sits_below_the_supported_floor()
     {
-        // RevitProductData.MinimumSupportedProductYear. A pre-2021 record would be listed
-        // as supported while the C# loader cannot run on it.
         const int minimumSupportedProductYear = 2021;
         var tooOld = LoadHosts()
             .Where(host => 2000 + int.Parse(host.Version.Split('.')[0]) < minimumSupportedProductYear)
@@ -183,7 +185,6 @@ public sealed class HostDataFileTests
         var rightParts = right.Split('.').Select(int.Parse).ToList();
         for (var i = 0; i < Math.Max(leftParts.Count, rightParts.Count); i++)
         {
-            // A missing component reads as 0 so 21.1 and 21.1.0 compare equal.
             var l = i < leftParts.Count ? leftParts[i] : 0;
             var r = i < rightParts.Count ? rightParts[i] : 0;
             if (l != r)
