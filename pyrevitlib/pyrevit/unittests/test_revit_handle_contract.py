@@ -251,6 +251,18 @@ class RpwHandleTests(unittest.TestCase):
         self.assertIsNone(self.wrapper.active_view)
         self.assertEqual(self.wrapper.docs, [])
 
+    def test_cached_wrapper_adopts_late_pyrevit_handle(self):
+        """A wrapper initialized without a host adopts a later pyRevit handle."""
+        self.scope["__revit__"] = None
+        self.wrapper._host = None
+        self.wrapper.uiapp = None
+
+        handle = _UIApplication()
+        self.scope["__revit__"] = handle
+
+        self.assertIs(self.wrapper.uiapp, handle)
+        self.assertEqual(self.wrapper.host, "RPS")
+
     def test_sphinx_compat_import_without_imp(self):
         """The compatibility module imports on Python versions without imp."""
         source_path = "pyrevitlib/rpw/utils/sphinx_compat.py"

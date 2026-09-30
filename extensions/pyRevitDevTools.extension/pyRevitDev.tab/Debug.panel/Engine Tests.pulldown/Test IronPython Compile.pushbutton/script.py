@@ -1,5 +1,6 @@
 """Exercise IronPython assembly compilation when the active runtime supports it."""
 
+import sys
 import os.path as op
 import clr
 

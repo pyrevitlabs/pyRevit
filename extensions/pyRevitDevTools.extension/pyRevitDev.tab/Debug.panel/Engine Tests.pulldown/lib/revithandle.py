@@ -209,17 +209,21 @@ def run(engine_name):
 
     assert_module_tests_successful(test_revit_handle_contract)
     handle = _handle()
+    is_uiapp = isinstance(handle, UI.UIApplication)
+    host_app = HOST_APP.app
     checks = [
-        ("__revit__ is UIApplication", isinstance(handle, UI.UIApplication)),
+        ("__revit__ is UIApplication", is_uiapp),
         ("HOST_APP.uiapp is available", HOST_APP.uiapp is not None),
-        ("HOST_APP.app is available", HOST_APP.app is not None),
+        ("HOST_APP.app is available", host_app is not None),
         (
             "HOST_APP.app matches __revit__.Application",
-            HOST_APP.app.VersionNumber == handle.Application.VersionNumber,
+            is_uiapp
+            and host_app is not None
+            and host_app.VersionNumber == handle.Application.VersionNumber,
         ),
         (
             "HOST_APP.version matches Revit",
-            HOST_APP.version == handle.Application.VersionNumber,
+            is_uiapp and HOST_APP.version == handle.Application.VersionNumber,
         ),
         ("HOST_APP.addin_id is available", HOST_APP.addin_id is not None),
         ("HOST_APP.post_command is callable", callable(HOST_APP.post_command)),

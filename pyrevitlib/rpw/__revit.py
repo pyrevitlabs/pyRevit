@@ -118,6 +118,16 @@ class Revit(BaseObject):
                 return __revit__
             except NameError:
                 return None
+
+        try:
+            pyrevit_uiapp = __revit__
+        except NameError:
+            pyrevit_uiapp = None
+
+        if pyrevit_uiapp is not None:
+            self._host = Revit.HOSTS.RPS
+            return pyrevit_uiapp
+
         return getattr(self, '_uiapp', None)
 
     @uiapp.setter
