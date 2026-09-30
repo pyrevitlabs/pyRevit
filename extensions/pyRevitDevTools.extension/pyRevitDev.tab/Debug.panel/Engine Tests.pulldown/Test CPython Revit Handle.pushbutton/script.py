@@ -4,4 +4,4 @@
 # pylint: skip-file
 import revithandle
 
-revithandle.report("CPython pushbutton", revithandle.RUNTIME_ENGINE_SITE)
+revithandle.report("CPython pushbutton (runtime engines)")

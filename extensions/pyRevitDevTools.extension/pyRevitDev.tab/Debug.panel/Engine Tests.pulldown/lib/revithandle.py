@@ -12,17 +12,16 @@ Two injection sites have to honour that, and each button here covers one:
 * ``ScriptExecutor``, behind smart buttons and combo boxes.
 
 Both engines run the same checks from this module so IronPython and CPython
-cannot drift apart. The ``injection site is ...`` row verifies the entry point
-really did run through the site it claims, so a path that silently stops being
-covered is reported instead of quietly passing.
+cannot drift apart. Which of the two sites ran the probe is *not* checked from
+inside the script: ``ScriptExecutor`` injects only ``__revit__`` and leaves the
+engine-injected builtins of a cached engine in place, so no builtin distinguishes
+the two, and both resolve the same ``UIApplication`` singleton. The entry points
+report the site they were written for as provenance instead.
 """
 
 import sys
 
 from pyrevit import EXEC_PARAMS, HOST_APP, UI, script
-
-RUNTIME_ENGINE_SITE = "ScriptRuntime"
-EXECUTOR_SITE = "ScriptExecutor"
 
 
 def _check(results, name, passed, detail):
@@ -80,7 +79,7 @@ def _check_accessor(results, name, getter, predicate=None, detail=None):
     return value
 
 
-def _collect(context, site):
+def _collect(context):
     results = []
 
     handle = _handle()
@@ -90,18 +89,7 @@ def _collect(context, site):
         isinstance(handle, UI.UIApplication),
         _typename(handle),
     )
-
-    # The engines inject __scriptruntime__; ScriptExecutor does not. A button
-    # that expected one site and got the other is no longer covering it.
-    actual_site = (
-        RUNTIME_ENGINE_SITE if EXEC_PARAMS.script_runtime is not None else EXECUTOR_SITE
-    )
-    _check(
-        results,
-        "injection site is {}".format(site),
-        actual_site == site,
-        "{} ran {}".format(context, actual_site),
-    )
+    _info(results, "entry point", context)
 
     _check_accessor(results, "HOST_APP.uiapp", lambda: HOST_APP.uiapp)
 
@@ -162,19 +150,19 @@ def _collect(context, site):
     return results
 
 
-def report(context, site):
+def report(context):
     """Print the handle contract report and return True when every check passed.
 
     Args:
-        context: Label for the entry point running this probe.
-        site: The injection site that entry point expects to run through, one
-            of :data:`RUNTIME_ENGINE_SITE` or :data:`EXECUTOR_SITE`.
+        context: Label for the entry point running this probe, naming the
+            injection site it was written for. Provenance only - the site is
+            not asserted, for the reason given in the module docstring.
 
     Returns:
         bool: True if no check failed.
     """
     output = script.get_output()
-    results = _collect(context, site)
+    results = _collect(context)
 
     print("python: {}".format(sys.version.replace("\n", " ")))
     print(

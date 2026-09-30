@@ -6,4 +6,4 @@ import revithandle
 # Smart buttons inject __revit__ through PyRevitLoader's ScriptExecutor, not
 # through the runtime engines, so the pushbuttons above never exercise the
 # second injection site.
-revithandle.report("SmartButton", revithandle.EXECUTOR_SITE)
+revithandle.report("SmartButton (ScriptExecutor)")
