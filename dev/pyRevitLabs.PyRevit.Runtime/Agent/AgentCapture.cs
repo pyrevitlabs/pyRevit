@@ -463,9 +463,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 GetWindowThreadProcessId(window, out var owner);
                 if (owner == revitProcessId || !IsWindowVisible(window) || IsIconic(window))
                     return true;
-                if (DwmGetWindowAttribute(window, DwmaCloaked, out var cloaked, sizeof(int)) == 0 && cloaked != 0)
+                int cloaked;
+                if (DwmGetWindowAttribute(window, DwmaCloaked, out cloaked, sizeof(int)) == 0 && cloaked != 0)
                     return true;
-                if (DwmGetWindowAttribute(window, DwmaExtendedFrameBounds, out var bounds, Marshal.SizeOf(typeof(NativeRect))) != 0
+                NativeRect bounds;
+                if (DwmGetWindowAttribute(window, DwmaExtendedFrameBounds, out bounds, Marshal.SizeOf(typeof(NativeRect))) != 0
                     && !GetWindowRect(window, out bounds))
                     return true;
                 if (bounds.Left < right && bounds.Right > left && bounds.Top < bottom && bounds.Bottom > top) {

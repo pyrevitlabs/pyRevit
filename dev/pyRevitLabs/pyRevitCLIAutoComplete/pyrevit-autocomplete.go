@@ -550,7 +550,9 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
+							"--all":     complete.PredictNothing,
 							"--log":     complete.PredictNothing,
+							"--owned":   complete.PredictNothing,
 							"--project": complete.PredictNothing,
 						},
 					},
