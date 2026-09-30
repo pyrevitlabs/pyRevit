@@ -138,6 +138,12 @@ def run(context):
         stops Python code, including loops, but not a single blocking call
         such as a long Revit API call or ``time.sleep``; the run fails with
         ``timeout`` once that call returns.
+
+    Warning:
+        Raising from the trace function ends tracing. On CPython a watchdog
+        thread keeps raising, but on IronPython a script that catches the
+        first ``RunTimedOut`` in a loop can't be stopped; the run only fails
+        with ``timeout`` if that script ever returns.
     """
     context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
     source = context.Source
@@ -160,6 +166,7 @@ def run(context):
         code = compile(source, SOURCE_NAME, "exec")
         timeout_s = getattr(context, "TimeoutSeconds", None)
         state = {"timed_out": False}
+        started = time.time()
         stop_watchdog = None
         if timeout_s:
             sys.settrace(_deadline_tracer(timeout_s, state))
@@ -171,7 +178,7 @@ def run(context):
                 stop_watchdog()
             if timeout_s:
                 sys.settrace(None)
-        if state["timed_out"]:
+        if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
             raise RunTimedOut(timeout_s)
     except SystemExit:
         pass
