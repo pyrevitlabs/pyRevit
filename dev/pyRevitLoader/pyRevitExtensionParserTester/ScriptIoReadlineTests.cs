@@ -303,18 +303,12 @@ namespace pyRevitExtensionParserTester
                 Assert.That(io.readline(), Is.EqualTo("second"));
             });
 
-            // Read the count back before asserting on it. Asserting a literal here is what
-            // made this test fail while the stream was correct: "third" is five bytes, not
-            // six. The expectation had been copied from the sibling test below, where the
-            // line read back is "second" and six is right. Read returns the number of bytes
-            // actually copied, so the count is asserted against the value it produced and the
-            // text is decoded over exactly that many bytes.
-            int secondRead = io.Read(buffer, 0, buffer.Length);
-            string returned = Encoding.UTF8.GetString(buffer, 0, secondRead);
+            int thirdLineByteCount = io.Read(buffer, 0, buffer.Length);
+            string thirdLine = Encoding.UTF8.GetString(buffer, 0, thirdLineByteCount);
 
             Assert.Multiple(() => {
-                Assert.That(secondRead, Is.EqualTo(5), "returns the bytes actually copied");
-                Assert.That(returned, Is.EqualTo("third"),
+                Assert.That(thirdLineByteCount, Is.EqualTo(5), "returns the bytes actually copied");
+                Assert.That(thirdLine, Is.EqualTo("third"),
                     "the handshake swallowed a line the user had already entered");
             });
         }
