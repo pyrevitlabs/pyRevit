@@ -90,7 +90,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
 
             var openAtStart = AgentDocuments.Snapshot(app.Application);
-            using (var guard = new AgentRunGuard(app, doc)) {
+            var guard = new AgentRunGuard(app, doc);
+            using (guard) {
                 try {
                     guard.Arm("Agent: " + request.Title);
                     var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
@@ -130,7 +131,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         decision = "rolled_back";
                         context.SetError("other_document_modified",
                             "The script changed another open document. Agent runs may change only the active "
-                            + "document; every change was rolled back. See 'changes.other_documents'.",
+                            + "document. See 'changes.other_documents' for rollback and discard outcomes.",
                             null);
                         guard.RollBack();
                     }
@@ -210,12 +211,33 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             try {
                 var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
                 response["closed_documents"] = leftovers["closed"];
+                response["unclosed_documents"] = leftovers["failed"];
                 if (((JArray)leftovers["failed"]).Count > 0)
                     warnings.Add("Could not close background documents the run left open: "
                         + string.Join(", ", leftovers["failed"].Values<string>()));
             }
             catch (Exception ex) {
                 logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);
+                warnings.Add("Closing leftover documents failed: " + ex.Message);
+            }
+            var finalOtherDocuments = guard.DescribeOtherDocuments();
+            foreach (var failure in guard.CleanupFailures)
+                warnings.Add("Guard cleanup failed: " + failure);
+            if (finalOtherDocuments.Count > 0) {
+                var changes = response["changes"] as JObject;
+                if (changes == null) {
+                    changes = new JObject();
+                    response["changes"] = changes;
+                }
+                changes["other_documents"] = finalOtherDocuments;
+            }
+            if (guard.HasUnrevertedOtherDocumentChanges) {
+                response["status"] = "error";
+                response["decision"] = "rollback_incomplete";
+                warnings.Add("Changes remain in another open document. Close it without saving to discard them. "
+                    + "See 'changes.other_documents' for the documents that were not reverted.");
+                SetErrorIfMissing(context, "rollback_incomplete",
+                    "The host could not revert changes in another document. Close it without saving.");
             }
             response["warnings"] = warnings;
 

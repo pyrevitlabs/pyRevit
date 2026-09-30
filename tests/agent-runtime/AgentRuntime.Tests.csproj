@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.1.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.1.0" />
+    <ProjectReference Include="../../dev/modules/pyRevitLabs.Newtonsoft.Json/Src/Newtonsoft.Json/Newtonsoft.Json.csproj" AdditionalProperties="LibraryFrameworks=net6.0" />
+    <Compile Include="../../dev/pyRevitLabs.PyRevit.Runtime/Agent/AgentRunGuard.cs" Link="AgentRunGuard.cs" />
+    <Compile Include="../../dev/pyRevitLabs.PyRevit.Runtime/Agent/AgentDocuments.cs" Link="AgentDocuments.cs" />
+  </ItemGroup>
+</Project>

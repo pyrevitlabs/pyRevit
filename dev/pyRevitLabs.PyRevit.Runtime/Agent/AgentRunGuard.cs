@@ -53,7 +53,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
         private readonly List<Document> openAtStart = new List<Document>();
         private readonly List<Document> documentsOpenedFromDisk = new List<Document>();
-        private string groupName;
         private TransactionGroup group;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
@@ -68,6 +67,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Failures => failures;
         public JArray Dialogs => dialogCapture?.Dialogs ?? new JArray();
         public JArray Blocked => blocked;
+        public List<string> CleanupFailures { get; } = new List<string>();
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
         /// <summary>
@@ -94,7 +94,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             app.DocumentClosing += OnDocumentClosing;
             app.DocumentSynchronizingWithCentral += OnDocumentSynchronizingWithCentral;
             documentEventsArmed = true;
-            this.groupName = groupName;
 
             dialogCapture = new AgentDialogCapture(uiApp);
 
@@ -123,27 +122,44 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public void RollBack() {
-            if (HasOpenGroup)
-                group.RollBack();
-            RollBackOtherDocuments();
+            try {
+                if (HasOpenGroup)
+                    group.RollBack();
+            }
+            finally {
+                RollBackOtherDocuments();
+            }
         }
 
         public void Assimilate() {
+            RollBackOtherDocuments();
             if (HasOpenGroup)
                 group.Assimilate();
-            RollBackOtherDocuments();
         }
 
         /// <summary>
-        /// Describes every other document the script changed. Call it before rolling back.
+        /// Describes every other document the script changed, with confirmed rollback and
+        /// discard outcomes. Refresh after disposing the guard and closing leftovers.
         /// </summary>
         public JArray DescribeOtherDocuments() {
             return new JArray(others.Where(other => !other.Changes.IsEmpty).Select(other => other.Describe()));
         }
 
+        public bool HasUnrevertedOtherDocumentChanges => others.Any(other =>
+            !other.OpenedDuringRun && !other.Changes.IsEmpty && !other.ChangesReverted);
+
         private void RollBackOtherDocuments() {
-            foreach (var other in others)
-                other.RollBack();
+            var errors = new List<Exception>();
+            foreach (var other in others) {
+                try {
+                    other.RollBack();
+                }
+                catch (Exception ex) {
+                    errors.Add(ex);
+                }
+            }
+            if (errors.Count > 0)
+                throw new AggregateException("Could not roll back other documents.", errors);
         }
 
         public void Dispose() {
@@ -154,11 +170,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception) {
             }
             finally {
-                group?.Dispose();
+                TryCleanup(() => group?.Dispose());
                 group = null;
                 foreach (var other in others)
-                    other.Dispose();
-                DisarmDialogCapture();
+                    TryCleanup(other.Dispose);
+                TryCleanup(DisarmDialogCapture);
                 if (documentEventsArmed) {
                     app.DocumentChanged -= OnDocumentChanged;
                     app.FailuresProcessing -= OnFailuresProcessing;
@@ -169,6 +185,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     app.DocumentSynchronizingWithCentral -= OnDocumentSynchronizingWithCentral;
                     documentEventsArmed = false;
                 }
+            }
+        }
+
+        private void TryCleanup(Action cleanup) {
+            try {
+                cleanup();
+            }
+            catch (Exception ex) {
+                CleanupFailures.Add(ex.Message);
             }
         }
 
@@ -226,12 +251,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
             var opened = e.Document;
-            if (opened == null || opened.IsLinked || string.IsNullOrEmpty(opened.PathName))
+            if (opened == null || opened.IsLinked)
                 return;
             documentsOpenedFromDisk.Add(opened);
-            if (IsWatchedDocument(opened) || others.Any(candidate => IsSameDocument(candidate.Document, opened)))
+            if (IsWatchedDocument(opened))
                 return;
-            others.Add(new AgentOtherDocument(opened, openedDuringRun: false, openedFromDisk: true));
+            var tracked = others.FirstOrDefault(candidate => IsSameDocument(candidate.Document, opened));
+            if (tracked != null)
+                tracked.MarkOpenedFromDisk();
+            else
+                others.Add(new AgentOtherDocument(opened, openedDuringRun: false, openedFromDisk: true));
         }
 
         private void OnDocumentSaving(object sender, DocumentSavingEventArgs e) {
@@ -255,6 +284,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static bool IsSameDocument(Document first, Document second) {
+            if (first != null && ReferenceEquals(first, second))
+                return true;
             try {
                 return first != null && second != null && first.IsValidObject && second.IsValidObject && first.Equals(second);
             }
@@ -296,7 +327,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal sealed class AgentOtherDocument : IDisposable {
         private readonly bool modifiableAtStart;
-        private readonly bool openedFromDisk;
+        private bool openedFromDisk;
+        private bool rolledBack;
         private TransactionGroup group;
 
         public AgentOtherDocument(Document document, bool openedDuringRun, bool openedFromDisk = false) {
@@ -308,13 +340,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public Document Document { get; }
-        public bool OpenedDuringRun { get; }
+        public bool OpenedDuringRun { get; private set; }
         public string Title { get; }
         public AgentChangeSet Changes { get; } = new AgentChangeSet();
 
         public bool HasOpenTransaction => !modifiableAtStart && Document.IsValidObject && Document.IsModifiable;
 
         private bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
+
+        public bool ChangesReverted => rolledBack || (openedFromDisk && !Document.IsValidObject);
+
+        public void MarkOpenedFromDisk() {
+            openedFromDisk = true;
+            OpenedDuringRun = false;
+        }
 
         /// <summary>
         /// Opens a group when the document can take one; a read-only document or one with a
@@ -325,7 +364,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             try {
                 group = new TransactionGroup(Document, groupName);
-                group.Start();
+                if (group.Start() != TransactionStatus.Started) {
+                    group.Dispose();
+                    group = null;
+                }
             }
             catch (Exception) {
                 group?.Dispose();
@@ -336,7 +378,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void RollBack() {
             try {
                 if (HasOpenGroup)
-                    group.RollBack();
+                    rolledBack = group.RollBack() == TransactionStatus.RolledBack;
             }
             catch (Exception) {
                 if (Document.IsValidObject)
@@ -348,7 +390,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var description = Changes.Summarize();
             description["document"] = Title;
             description["opened_during_run"] = OpenedDuringRun;
-            description["rolled_back"] = group != null || openedFromDisk;
+            description["rolled_back"] = rolledBack;
+            if (openedFromDisk)
+                description["discarded_on_close"] = !Document.IsValidObject;
             return description;
         }
 
