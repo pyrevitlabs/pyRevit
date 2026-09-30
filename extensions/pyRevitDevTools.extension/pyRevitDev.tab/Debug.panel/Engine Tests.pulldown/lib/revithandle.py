@@ -19,9 +19,12 @@ the two, and both resolve the same ``UIApplication`` singleton. The entry points
 report the site they were written for as provenance instead.
 """
 
+import platform
 import sys
 
-from pyrevit import EXEC_PARAMS, HOST_APP, UI, script
+from pyrevit import EXEC_PARAMS, HOST_APP, UI, revit, script
+from PyRevitLabs.PyRevit.Runtime import RevitAppResolver
+from System import Object
 
 
 def _check(results, name, passed, detail):
@@ -190,3 +193,101 @@ def report(context):
         output.print_md("**All {} checks passed.**".format(checked))
 
     return not failed
+
+
+def run(engine_name):
+    """Verify resolver behavior and library access for the active command.
+
+    Args:
+        engine_name: Expected implementation name reported by the engine.
+    """
+    actual_engine = platform.python_implementation()
+    assert actual_engine == engine_name, "Unexpected engine: {}".format(sys.version)
+
+    from pyrevit.unittests import test_revit_handle_contract
+    from pyrevit.unittests.runner import assert_module_tests_successful
+
+    assert_module_tests_successful(test_revit_handle_contract)
+    handle = _handle()
+    checks = [
+        ("__revit__ is UIApplication", isinstance(handle, UI.UIApplication)),
+        ("HOST_APP.uiapp is available", HOST_APP.uiapp is not None),
+        ("HOST_APP.app is available", HOST_APP.app is not None),
+        (
+            "HOST_APP.app matches __revit__.Application",
+            HOST_APP.app.VersionNumber == handle.Application.VersionNumber,
+        ),
+        (
+            "HOST_APP.version matches Revit",
+            HOST_APP.version == handle.Application.VersionNumber,
+        ),
+        ("HOST_APP.addin_id is available", HOST_APP.addin_id is not None),
+        ("HOST_APP.post_command is callable", callable(HOST_APP.post_command)),
+    ]
+
+    for name, passed in checks:
+        print("{}: {}".format(name, "PASS" if passed else "FAIL"))
+
+    print("Handle type: {}".format(type(handle).__name__))
+    print(
+        "Active document: {}".format(
+            revit.doc.Title if revit.doc is not None else "<none>"
+        )
+    )
+
+    failed = [name for name, passed in checks if not passed]
+    if failed:
+        raise AssertionError(
+            "{} Revit-handle test failed: {}".format(engine_name, ", ".join(failed))
+        )
+
+    session = RevitAppResolver.SessionUIApplication
+    assert Object.ReferenceEquals(RevitAppResolver.GetUIApplication(handle), handle)
+    assert session is not None
+    alternate = UI.UIApplication(handle.Application)
+    assert Object.ReferenceEquals(
+        RevitAppResolver.GetUIApplication(alternate), alternate
+    )
+    assert Object.ReferenceEquals(session, RevitAppResolver.SessionUIApplication)
+    RevitAppResolver.SeedSessionUIApplication(None)
+    assert Object.ReferenceEquals(session, RevitAppResolver.SessionUIApplication)
+
+    for sender in (None, Object(), handle.Application, handle):
+        resolved = RevitAppResolver.GetUIApplication(sender)
+        assert isinstance(resolved, UI.UIApplication)
+        assert resolved.Application.VersionNumber == handle.Application.VersionNumber
+        if sender is None or type(sender) == Object:
+            assert Object.ReferenceEquals(resolved, session)
+
+    import pyrevit
+    from rpw import revit as rpw_revit
+    import rpw.__revit as rpw_host
+
+    scopes = (pyrevit.__dict__, rpw_host.__dict__)
+    saved_handles = [
+        (scope, "__revit__" in scope, scope.get("__revit__")) for scope in scopes
+    ]
+    try:
+        for scope in scopes:
+            scope["__revit__"] = alternate
+        assert Object.ReferenceEquals(HOST_APP.uiapp, alternate)
+        assert Object.ReferenceEquals(rpw_revit.uiapp, alternate)
+        for scope in scopes:
+            scope["__revit__"] = None
+        for name in ("uiapp", "app", "uidoc", "doc", "version", "addin_id", "username"):
+            assert getattr(HOST_APP, name) is None, name
+        assert not HOST_APP.has_api_context
+        assert not HOST_APP.is_newer_than(2025)
+        assert not HOST_APP.is_older_than(2025)
+        assert rpw_revit.uiapp is None
+        assert rpw_revit.doc is None
+        assert rpw_revit.app is None
+        assert rpw_revit.active_view is None
+    finally:
+        for scope, existed, value in saved_handles:
+            if existed:
+                scope["__revit__"] = value
+            else:
+                scope.pop("__revit__", None)
+
+    print("{} Revit-handle test passed.".format(engine_name))

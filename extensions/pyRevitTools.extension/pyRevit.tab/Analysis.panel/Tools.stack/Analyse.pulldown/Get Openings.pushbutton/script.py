@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 
 """Lists all openings in the project and creates
-a selection filter for them."""
+a selection filter for them.
+"""
 
 # Sytem
 import time
 
 # pyRevit
-from pyrevit import revit, script, DB
+from pyrevit import revit, script, DB, forms
 from pyrevit.framework import List
 
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
+uidoc = revit.uidoc
+if uidoc is None:
+    forms.alert("Open a project before finding openings.", exitscript=True)
+doc = uidoc.Document
 output = script.get_output()
 selection = uidoc.Selection
 timer_start = time.time()

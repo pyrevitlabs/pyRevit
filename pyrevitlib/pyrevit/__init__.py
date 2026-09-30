@@ -216,8 +216,10 @@ class _HostApplication(object):
         Every accessor resolves through the ``__revit__`` builtin, which pyRevit
         always injects as a ``UI.UIApplication`` - in commands and in event
         hooks alike, including DB-only ``Application_*`` hooks. It is ``None``
-        only outside a Revit host, and the accessors below return ``None``
-        rather than raising in that case. The type checks tolerate third-party
+        when no UI handle can be resolved, including early host startup.
+        Read accessors return ``None`` or empty collections without a host;
+        version comparisons return False. Operations that change UI state still
+        require a usable host. The type checks tolerate third-party
         hosts that bind ``__revit__`` themselves.
 
     Note:
@@ -269,12 +271,12 @@ class _HostApplication(object):
     @property
     def addin_id(self):
         """Return active addin id."""
-        return self.app.ActiveAddInId
+        return getattr(self.app, "ActiveAddInId", None)
 
     @property
     def has_api_context(self):
         """Determine if host application is in API context."""
-        return self.app.ActiveAddInId is not None
+        return self.addin_id is not None
 
     @property
     def uidoc(self):
@@ -315,34 +317,34 @@ class _HostApplication(object):
     @property
     def available_servers(self):
         """Return :obj:`list` of available Revit server names."""
-        return list(self.app.GetRevitServerNetworkHosts())
+        return list(self.app.GetRevitServerNetworkHosts()) if self.app else []
 
     @property
     def version(self):
         """str: Return version number (e.g. '2018')."""
-        return self.app.VersionNumber
+        return getattr(self.app, "VersionNumber", None)
 
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        return self.app.SubVersionNumber
+        return getattr(self.app, "SubVersionNumber", None)
 
     @property
     def version_name(self):
         """str: Return version name (e.g. 'Autodesk Revit 2018')."""
-        return self.app.VersionName
+        return getattr(self.app, "VersionName", None)
 
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
         # Revit 2021+ VersionBuild reports the same value as VersionNumber.
         # uses labs module that is imported later in this code
-        return labs.extract_build_from_exe(self.proc_path)
+        return labs.extract_build_from_exe(self.proc_path) if self.app else None
 
     @property
     def serial_no(self):
         """str: Return serial number number (e.g. '569-09704828')."""
-        return api.get_product_serial_number()
+        return api.get_product_serial_number() if self.app else None
 
     @property
     def pretty_name(self):
@@ -354,22 +356,26 @@ class _HostApplication(object):
         Returns:
             (str): Pretty name of the host
         """
+        if self.app is None:
+            return None
         host_name = self.version_name.replace(self.version, self.subversion)
         return "%s build: %s" % (host_name, self.build)
 
     @property
     def is_demo(self):
         """bool: Determine if product is using demo license."""
-        return api.is_product_demo()
+        return api.is_product_demo() if self.app else None
 
     @property
     def language(self):
         """str: Return language type (e.g. 'LanguageType.English_USA')."""
-        return self.app.Language
+        return getattr(self.app, "Language", None)
 
     @property
     def username(self):
         """str: Return the username from Revit API (Application.Username)."""
+        if self.app is None:
+            return None
         uname = self.app.Username
         uname = uname.split("@")[0]  # if username is email
         # removing dots since username will be used in file naming
@@ -399,12 +405,12 @@ class _HostApplication(object):
     @property
     def proc_window(self):
         """``intptr``: Return handle to current process window."""
-        return self.uiapp.MainWindowHandle
+        return getattr(self.uiapp, "MainWindowHandle", None)
 
     @property
     def proc_screen(self):
         """``intptr``: Return handle to screen hosting current process."""
-        return Forms.Screen.FromHandle(self.proc_window)
+        return Forms.Screen.FromHandle(self.proc_window) if self.uiapp else None
 
     @property
     def proc_screen_workarea(self):
@@ -429,6 +435,8 @@ class _HostApplication(object):
             version (str or int): version to check against.
             or_equal (bool): Whether to include `version` in the comparison
         """
+        if self.version is None:
+            return False
         if or_equal:
             return int(self.version) >= int(version)
         else:
@@ -440,7 +448,7 @@ class _HostApplication(object):
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) < int(version)
+        return self.version is not None and int(self.version) < int(version)
 
     def is_exactly(self, version):
         """bool: Return True if host app is equal to provided version.
@@ -448,7 +456,7 @@ class _HostApplication(object):
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) == int(version)
+        return self.version is not None and int(self.version) == int(version)
 
     def get_postable_commands(self):
         """Return list of postable commands.
@@ -458,6 +466,8 @@ class _HostApplication(object):
         """
         # if list of postable commands is _not_ already created
         # make the list and store in instance parameter
+        if self.uiapp is None:
+            return []
         if not self._postable_cmds:
             for pc in UI.PostableCommand.GetValues(UI.PostableCommand):
                 try:

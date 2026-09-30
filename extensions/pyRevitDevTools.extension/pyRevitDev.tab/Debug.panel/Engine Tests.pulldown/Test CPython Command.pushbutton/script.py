@@ -87,11 +87,17 @@ import clr
 # clr.AddReference('Autodesk.Revit.DB')
 import Autodesk.Revit.DB as DB
 
+from pyrevit import HOST_APP
+
 cl = (
-    DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)
-    .OfClass(DB.Wall)
-    .WhereElementIsNotElementType()
-    .ToElements()
+    (
+        DB.FilteredElementCollector(HOST_APP.doc)
+        .OfClass(DB.Wall)
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
+    if HOST_APP.doc is not None
+    else []
 )
 
 print("\n## list of DB.Walls:")

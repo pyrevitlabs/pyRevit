@@ -145,9 +145,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             switch (kind) {
                 case RevitAppHandleKind.UiApplication:
-                    var uiApp = (UIApplication)appHandle;
-                    SeedSessionUIApplication(uiApp);
-                    return uiApp;
+                    return (UIApplication)appHandle;
                 case RevitAppHandleKind.Application:
                     return FromApplication((Application)appHandle);
                 case RevitAppHandleKind.UIControlledApplication:

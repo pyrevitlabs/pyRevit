@@ -5,3 +5,4 @@
 import revithandle
 
 revithandle.report("CPython pushbutton (runtime engines)")
+revithandle.run("CPython")

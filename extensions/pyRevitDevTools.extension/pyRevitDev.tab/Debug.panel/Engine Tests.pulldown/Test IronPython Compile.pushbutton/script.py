@@ -1,22 +1,25 @@
-import sys
+"""Exercise IronPython assembly compilation when the active runtime supports it."""
+
 import os.path as op
 import clr
 
+from System import NotSupportedException
+
 from pyrevit import USER_SYS_TEMP
 from pyrevit import script
-from pyrevit.framework import IO
 
-# compile
+source = script.get_bundle_file("ipycompiletest.py")
+dest = op.join(USER_SYS_TEMP, "compiledipytest.dll")
+
 try:
-    source = script.get_bundle_file("ipycompiletest.py")
-    dest = op.join(USER_SYS_TEMP, "compiledipytest.dll")
     clr.CompileModules(dest, source)
-except IO.IOException as ioerr:
-    print("DLL file already exists...")
-except Exception as cerr:
-    print("Compilation failed: {}".format(cerr))
+except (NotImplementedError, NotSupportedException):
+    print("SKIPPED: IronPython cannot emit assemblies on this .NET runtime.")
+    script.exit()
 
-# import test
+if not op.isfile(dest):
+    raise RuntimeError("Compilation completed without creating: {}".format(dest))
+
 sys.path.append(USER_SYS_TEMP)
 clr.AddReferenceToFileAndPath(dest)
 
@@ -25,3 +28,5 @@ import ipycompiletest
 ipycompiletest.compile_test("Compiled function works.")
 
 ipycompiletest.CompiledType("Compiled type works.")
+
+print("IronPython assembly compilation test passed.")

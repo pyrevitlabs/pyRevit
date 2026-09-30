@@ -5,6 +5,7 @@ using System.Collections.Generic;
 // iron languages
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Runtime;
 using IronPython.Hosting;
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
@@ -81,6 +82,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // RecursionError instead of overflowing the native stack and crashing
                 // Revit. IronPython does not enforce a limit unless one is set.
                 flags["RecursionLimit"] = 1000;
+                flags["ConsoleSupportLevel"] = SharedIO.SupportLevel.Basic;
 
                 if (ExecEngineConfigs.full_frame) {
                     flags["Frames"] = true;

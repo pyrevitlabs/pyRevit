@@ -4,3 +4,4 @@
 import revithandle
 
 revithandle.report("IronPython pushbutton (runtime engines)")
+revithandle.run("IronPython")

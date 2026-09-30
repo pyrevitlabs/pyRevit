@@ -138,7 +138,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             RevitAppResolver.SeedSessionUIApplication(
                 ScriptRuntimeConfigs.CommandData != null
                     ? ScriptRuntimeConfigs.CommandData.Application
-                    : _uiApp);
+                    : ScriptRuntimeConfigs.UIApp);
 
             // prepare results
             ExecutionResult = ScriptExecutorResultCodes.Succeeded;
@@ -415,8 +415,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         ///
         /// <para>The resolved handle is cached for the lifetime of the runtime and
         /// is not re-resolved once the runtime is disposed. Null when no UI
-        /// application can be reached at all, which only happens outside a Revit
-        /// host.</para>
+        /// application can be reached, including before a session handle has
+        /// been seeded during host startup.</para>
         /// </remarks>
         public UIApplication UIApp {
             get {

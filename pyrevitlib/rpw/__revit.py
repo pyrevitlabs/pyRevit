@@ -1,5 +1,4 @@
-"""
-The main rpw namespace and rpw.revit provide you with most of the imports will
+"""The main rpw namespace and rpw.revit provide you with most of the imports will
 need.
 
 >>> from rpw import revit, db, ui
@@ -28,8 +27,7 @@ from rpw.base import BaseObject
 
 
 class Revit(BaseObject):
-    """
-    Revit Application Wrapper
+    """Revit Application Wrapper
 
     Note:
         The module path for the Revit Wrapper and its namespaces is ``rpw.__revit.Revit``.
@@ -73,7 +71,7 @@ class Revit(BaseObject):
             self._host = None
 
     def find_uiapp(self):
-        """ Return the host application handle, preferring pyRevit's builtin.
+        """Return the host application handle, preferring pyRevit's builtin.
 
         Returns:
             uiapp: A UIApplication, or None if no host handle is reachable.
@@ -106,6 +104,26 @@ class Revit(BaseObject):
         self._host = Revit.HOSTS.DYNAMO
         return uiapp
 
+    @property
+    def uiapp(self):
+        """Return the current pyRevit handle or the explicitly stored fallback.
+
+        Note:
+            A pyRevit wrapper reads the builtin on every access so cached modules
+            cannot retain a handle from a completed event. None clears that
+            execution's host context instead of exposing an older handle.
+        """
+        if getattr(self, '_host', None) == Revit.HOSTS.RPS:
+            try:
+                return __revit__
+            except NameError:
+                return None
+        return getattr(self, '_uiapp', None)
+
+    @uiapp.setter
+    def uiapp(self, value):
+        self._uiapp = value
+
     def find_dynamo_uiapp(self):
         clr.AddReference("RevitServices")
         import RevitServices
@@ -117,7 +135,7 @@ class Revit(BaseObject):
 
     @property
     def host(self):
-        """ Host is set based on how revit handle was found.
+        """Host is set based on how revit handle was found.
 
         Returns:
             Host (str): Revit Application Host ['RPS', 'Dynamo']
@@ -125,16 +143,16 @@ class Revit(BaseObject):
         return self._host
 
     def open(self, path):
-        """ Opens New Document """
+        """Opens New Document"""
 
     @property
     def doc(self):
-        """ Returns: uiapp.ActiveUIDocument.Document, or None """
+        """Returns: uiapp.ActiveUIDocument.Document, or None"""
         return getattr(self.uidoc, 'Document', None)
 
     @property
     def uidoc(self):
-        """ Returns: uiapp.ActiveUIDocument, or None """
+        """Returns: uiapp.ActiveUIDocument, or None"""
         try:
             return getattr(self.uiapp, 'ActiveUIDocument', None)
         except Exception:
@@ -142,8 +160,9 @@ class Revit(BaseObject):
 
     @property
     def active_view(self):
-        """ Returns: uidoc.ActiveView """
-        return rpw.db.Element(self.uidoc.ActiveView)
+        """Returns: uidoc.ActiveView"""
+        uidoc = self.uidoc
+        return rpw.db.Element(uidoc.ActiveView) if uidoc is not None else None
 
     @active_view.setter
     def active_view(self, view_reference):
@@ -151,37 +170,37 @@ class Revit(BaseObject):
 
     @property
     def app(self):
-        """ Returns: uidoc.Application """
-        return self.uiapp.Application
+        """Returns: uidoc.Application"""
+        return getattr(self.uiapp, 'Application', None)
 
     @property
     def docs(self):
-        """ Returns: uidoc.Application.Documents """
-        return [doc for doc in self.app.Documents]
+        """Returns: uidoc.Application.Documents"""
+        return list(self.app.Documents) if self.app is not None else []
 
     @property
     def username(self):
-        """ Returns: uidoc.Application.Username """
-        return self.uiapp.Application.Username
+        """Returns: uidoc.Application.Username"""
+        return getattr(self.app, 'Username', None)
 
     @property
     def version(self):
-        """ Returns: uidoc.Application.Username """
-        return RevitVersion(self.uiapp)
+        """Returns: uidoc.Application.Username"""
+        return RevitVersion(self.uiapp) if self.uiapp is not None else None
 
     @property
     def process(self):
-        """ Returns: Process.GetCurrentProcess() """
+        """Returns: Process.GetCurrentProcess()"""
         return Process.GetCurrentProcess()
 
     @property
     def process_id(self):
-        """ Returns: Process.GetCurrentProcess() """
+        """Returns: Process.GetCurrentProcess()"""
         return self.process.Id
 
     @property
     def process_name(self):
-        """ Returns: Process.GetCurrentProcess() """
+        """Returns: Process.GetCurrentProcess()"""
         return self.process.ProcessName
 
     def __repr__(self):
@@ -214,11 +233,11 @@ class RevitVersion():
         return self.uiapp.Application.VersionBuild
 
     def __lt__(self, other):
-        """ Handle Version Comparison Logic"""
+        """Handle Version Comparison Logic"""
         raise NotImplemented
 
     def __gt__(self, other):
-        """ Handle Version Comparison Logic"""
+        """Handle Version Comparison Logic"""
         raise NotImplemented
 
     def __repr__(self):
