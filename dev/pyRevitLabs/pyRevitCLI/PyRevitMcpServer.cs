@@ -177,7 +177,7 @@ namespace pyRevitCLI {
                             + "lookup_pyrevit_api(query=...) shows the full docstring."
                         : $"Nothing named like '{library.Value.Member}' in pyrevitlib or rpw; search with lookup_pyrevit_api(query='<what you need>').";
                 }
-                catch (AgentClientException) {
+                catch (Exception) {
                 }
                 return run;
             }
@@ -192,7 +192,7 @@ namespace pyRevitCLI {
                 if (hint != null)
                     error["hint"] = hint;
             }
-            catch (AgentClientException) {
+            catch (Exception) {
             }
             return run;
         }
