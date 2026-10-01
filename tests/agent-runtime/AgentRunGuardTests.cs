@@ -37,6 +37,21 @@ namespace AgentRuntime.Tests {
         }
 
         [TestMethod]
+        public void ExportAndSynchronizeOperationsAreBlocked() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                Assert.IsFalse(app.Application.ExportFile());
+                Assert.IsFalse(app.Application.ExportView());
+                Assert.IsFalse(app.Application.Synchronize(document));
+                Assert.AreEqual("file_export", guard.Blocked[0].Value<string>("operation"));
+                Assert.AreEqual("view_export", guard.Blocked[1].Value<string>("operation"));
+                Assert.AreEqual("synchronize_with_central", guard.Blocked[2].Value<string>("operation"));
+            }
+        }
+
+        [TestMethod]
         public void ExistingDocumentsCannotBeSavedAndRollbackIsConfirmedOnlyAfterSuccess() {
             var app = new UIApplication();
             var existing = new Document();

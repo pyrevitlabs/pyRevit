@@ -239,6 +239,9 @@ Rules the host enforces:
   listed in `closed_documents`. The host blocks their save and save-as operations while a run is
   active.
   `get_context.open_documents` lists every open document and marks the background ones.
+- While a run is active, the host cancels Revit operations exposed through cancellable save,
+  save-as, synchronize-with-central, file-export and view-export events. The response lists a
+  cancelled operation in `blocked`.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails

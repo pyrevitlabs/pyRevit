@@ -25,8 +25,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// have errors, in every non-linked document, so a failure in a family or a new document
     /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
-    /// <item>cancels synchronize requests and every save or save-as operation while the run is
-    /// armed. It cancels closing only for documents that were open when the run started.</item>
+    /// <item>cancels synchronize, save, save-as, file-export and view-export operations while
+    /// armed when Revit marks their event cancellable. It cancels closing only for documents
+    /// that were open when the run started.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -90,6 +91,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             app.FailuresProcessing += OnFailuresProcessing;
             app.DocumentSaving += OnDocumentSaving;
             app.DocumentSavingAs += OnDocumentSavingAs;
+            app.FileExporting += OnFileExporting;
+            app.ViewExporting += OnViewExporting;
             app.DocumentCreated += OnDocumentCreated;
             app.DocumentOpened += OnDocumentOpened;
             app.DocumentClosing += OnDocumentClosing;
@@ -181,6 +184,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     app.FailuresProcessing -= OnFailuresProcessing;
                     app.DocumentSaving -= OnDocumentSaving;
                     app.DocumentSavingAs -= OnDocumentSavingAs;
+                    app.FileExporting -= OnFileExporting;
+                    app.ViewExporting -= OnViewExporting;
                     app.DocumentCreated -= OnDocumentCreated;
                     app.DocumentOpened -= OnDocumentOpened;
                     app.DocumentClosing -= OnDocumentClosing;
@@ -283,6 +288,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void OnDocumentSavingAs(object sender, DocumentSavingAsEventArgs e) {
             if (IsProtectedFromSave(e.Document))
                 Block(e, e.Document, "save_as");
+        }
+
+        private void OnFileExporting(object sender, FileExportingEventArgs e) {
+            Block(e, null, "file_export");
+        }
+
+        private void OnViewExporting(object sender, ViewExportingEventArgs e) {
+            Block(e, null, "view_export");
         }
 
         private bool IsProtectedFromSave(Document target) {
