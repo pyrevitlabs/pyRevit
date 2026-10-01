@@ -1,15 +1,18 @@
+"""Time 500 IronPython engine create/compile/execute/shutdown cycles.
+
+IronPython is not referenced by name here. The IronPython engine host has
+already loaded it - it is what runs this script - and the shipped assembly is
+``pyRevitLabs.IronPython.dll`` (``framework.ipy_dllpath``, built from
+``engine.EnginePrefix``), so ``clr.AddReference("IronPython")`` raised
+"Could not add reference to assembly IronPython" and the loop below never ran.
+Importing the namespaces is what actually proves the reference is in place.
+"""
+
 from pyrevit import MISC_LIB_DIR, MAIN_LIB_DIR
 from pyrevit import coreutils
 from pyrevit import framework
 from pyrevit import script
 
-# No AddReference("IronPython") here: the IronPython engine host has already
-# loaded IronPython - it is what is running this very script - and the shipped
-# assembly is named pyRevitLabs.IronPython.dll (that is framework.ipy_dllpath,
-# built from engine.EnginePrefix), so the name-only overload raised
-# "Could not add reference to assembly IronPython" and the test never reached
-# the engine loop it exists to measure. Importing the namespaces below is the
-# real proof that the reference is in place.
 import IronPython.Hosting
 import IronPython.Runtime
 
@@ -34,7 +37,7 @@ def run(engine, runtime):
 def make_engine():
     options = {"Frames": True, "FullFrames": True, "LightweightScopes": True}
     engine = IronPython.Hosting.Python.CreateEngine(options)
-    engine.SetSearchPaths(framework.List[str]([MISC_LIB_DIR, MAIN_LIB_DIR]))
+    engine.SetSearchPaths(framework.to_clr_list(str, [MISC_LIB_DIR, MAIN_LIB_DIR]))
     runtime = engine.Runtime
     return engine, runtime
 

@@ -5,7 +5,7 @@
 from pyrevit import HOST_APP
 from pyrevit.runtime import types
 from pyrevit.framework import Media
-from pyrevit.framework import List, Regex, to_clr_list
+from pyrevit.framework import Regex, to_clr_list
 from pyrevit.coreutils import envvars
 
 
@@ -68,7 +68,10 @@ def _get_tab_filterrules(tabcfgs):
         tab_filtercolors = {}
     return to_clr_list(
         types.TabColoringRule,
-        [types.TabColoringRule(hex_to_brush(c), f) for c, f in tab_filtercolors.items()],
+        [
+            types.TabColoringRule(hex_to_brush(c), f)
+            for c, f in tab_filtercolors.items()
+        ],
     )
 
 

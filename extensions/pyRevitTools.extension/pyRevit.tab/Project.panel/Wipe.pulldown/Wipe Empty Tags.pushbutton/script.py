@@ -30,4 +30,4 @@ if selected_views:
                     itags_ids_to_remove.append(itag.Id)
 
         # and remove
-        revit.doc.Delete(framework.List[DB.ElementId](itags_ids_to_remove))
+        revit.doc.Delete(framework.to_clr_list(DB.ElementId, itags_ids_to_remove))

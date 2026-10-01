@@ -162,7 +162,7 @@ def make_pattern(patdef):
     rvt_fill_pat = DB.FillPattern(
         patdef.name, fp_target, DB.FillPatternHostOrientation.ToHost
     )
-    rvt_fill_pat.SetFillGrids(framework.List[DB.FillGrid](fill_grids))
+    rvt_fill_pat.SetFillGrids(framework.to_clr_list(DB.FillGrid, fill_grids))
 
     if existing_fpelement:
         existing_fpelement.SetFillPattern(rvt_fill_pat)
