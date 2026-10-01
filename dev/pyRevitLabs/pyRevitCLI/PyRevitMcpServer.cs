@@ -282,6 +282,11 @@ namespace pyRevitCLI {
         private JToken RunAutomation(JObject arguments) {
             var operation = PyRevitAutomationOperations.Resolve(
                 arguments.Value<string>("id"), arguments["inputs"]);
+            if (operation.Value<bool>("requires_document")) {
+                var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
+                if (context?["document"] == null || context["document"].Type == JTokenType.Null)
+                    throw new AgentClientException("no_active_document", $"'{operation.Value<string>("id")}' requires an active document.");
+            }
             var parameters = new JObject {
                 ["script"] = operation.Value<string>("source"),
                 ["mode"] = "query",
