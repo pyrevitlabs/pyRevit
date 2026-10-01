@@ -105,6 +105,9 @@ set, failures, dialogs and blocked operations. The full record stays available t
 `lookup_revit_api` call to make, for example `'Collector' does not exist in
 Autodesk.Revit.DB` or `check the overloads of 'FilteredElementCollector.OfCategory'`.
 
+If the host cannot persist a result or run record, the response keeps the final model decision
+and adds a warning. The corresponding `get_run` record can be incomplete or unavailable.
+
 Every tool that talks to Revit accepts an optional `revit` argument (a year such as
 `"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
 sets a default.

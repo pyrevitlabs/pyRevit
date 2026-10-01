@@ -34,11 +34,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
     /// document remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
-    /// ends, whatever its outcome, and listed in <c>closed_documents</c>. A script that needs
-    /// such a document on disk saves it within the run.</item>
+    /// ends, whatever its outcome, and listed in <c>closed_documents</c>. The guard blocks their
+    /// save and save-as operations while the run is active.</item>
     /// </list>
-    /// Every run writes <c>script.py</c>, <c>request.json</c> and <c>response.json</c> under
-    /// <c>%APPDATA%\pyRevit\agent\runs\</c>.
+    /// The host attempts to write <c>script.py</c>, <c>request.json</c> and <c>response.json</c>
+    /// under <c>%APPDATA%\pyRevit\agent\runs\</c>. A failure to persist an outcome never
+    /// changes an already-final model decision.
     /// </remarks>
     internal static class AgentRunService {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -242,7 +243,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             response["warnings"] = warnings;
 
-            AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython");
+            AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython", warnings);
             response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;
 
             try {
@@ -250,6 +251,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception ex) {
                 logger.Warn("Could not write agent run record: {0}", ex.Message);
+                warnings.Add("Could not write the agent run record: " + ex.Message);
             }
 
             return response;
@@ -260,7 +262,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 context.SetError(type, message, null);
         }
 
-        private static void AddScriptOutcome(JObject response, AgentScriptContext context, string runDir, string requestedEngine) {
+        private static void AddScriptOutcome(
+            JObject response, AgentScriptContext context, string runDir, string requestedEngine, JArray warnings) {
             var output = context.Output ?? string.Empty;
             response["output_truncated"] = output.Length > MaxOutputChars;
             response["output"] = output.Length > MaxOutputChars ? output.Substring(0, MaxOutputChars) : output;
@@ -268,14 +271,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             response["result"] = null;
             response["result_truncated"] = false;
             if (context.ResultJson != null) {
-                if (context.ResultJson.Length > MaxResultChars) {
-                    var resultPath = Path.Combine(runDir, "result.json");
-                    File.WriteAllText(resultPath, context.ResultJson, Utf8);
-                    response["result_truncated"] = true;
-                    response["result_path"] = resultPath;
+                try {
+                    if (context.ResultJson.Length > MaxResultChars) {
+                        var resultPath = Path.Combine(runDir, "result.json");
+                        File.WriteAllText(resultPath, context.ResultJson, Utf8);
+                        response["result_truncated"] = true;
+                        response["result_path"] = resultPath;
+                    }
+                    else {
+                        response["result"] = JToken.Parse(context.ResultJson);
+                    }
                 }
-                else {
-                    response["result"] = JToken.Parse(context.ResultJson);
+                catch (Exception ex) {
+                    logger.Warn("Could not record agent script result: {0}", ex.Message);
+                    warnings.Add("Could not record the script result: " + ex.Message);
+                    response["result"] = null;
+                    response["result_truncated"] = false;
+                    response.Remove("result_path");
                 }
             }
 
