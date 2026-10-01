@@ -6,6 +6,7 @@ import re
 from pyrevit import DOCS, HOST_APP
 from pyrevit import DB
 from pyrevit import PyRevitException
+from pyrevit import automation
 
 _FEET_INCHES = re.compile(
     r"^\s*(?:(?P<feet>-?\d+(?:\.\d+)?)\s*')?\s*-?\s*"
@@ -207,6 +208,12 @@ def get_unit_name(forge_id):
     return ""
 
 
+@automation.operation(
+    "pyrevit.units.parse-length",
+    PlainEnglish="Convert a written length to Revit internal feet.",
+    mode="pure",
+    context="none",
+)
 def parse_length(value):
     """Convert a length written the way drawings write it to feet.
 
@@ -248,6 +255,12 @@ def parse_length(value):
         )
 
 
+@automation.operation(
+    "pyrevit.units.parse-slope",
+    PlainEnglish="Convert a written roof pitch to rise over run.",
+    mode="pure",
+    context="none",
+)
 def parse_slope(value):
     """Convert a roof pitch to rise over run, the value Revit's slope APIs take.
 
