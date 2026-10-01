@@ -52,6 +52,23 @@ namespace AgentRuntime.Tests {
         }
 
         [TestMethod]
+        public void DeletedElementsAreRecordedAndTransientElementsAreExcluded() {
+            var app = new UIApplication();
+            var document = new Document();
+            var transient = new ElementId();
+            var deleted = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { transient });
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { transient, deleted });
+                var changes = guard.Changes.Summarize();
+                Assert.AreEqual(0, changes.Value<int>("added_count"));
+                Assert.AreEqual(1, changes.Value<int>("deleted_count"));
+                Assert.AreEqual(0, changes.Value<int>("modified_count"));
+            }
+        }
+
+        [TestMethod]
         public void ExistingDocumentsCannotBeSavedAndRollbackIsConfirmedOnlyAfterSuccess() {
             var app = new UIApplication();
             var existing = new Document();

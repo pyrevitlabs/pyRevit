@@ -86,10 +86,13 @@ namespace Autodesk.Revit.DB.Events {
     internal sealed class ViewExportingEventArgs : RevitAPIPreEventArgs { }
     internal sealed class DocumentChangedEventArgs : EventArgs {
         public Document Document { get; set; }
+        public IEnumerable<ElementId> Added { get; set; } = new[] { new ElementId() };
+        public IEnumerable<ElementId> Deleted { get; set; } = new ElementId[0];
+        public IEnumerable<ElementId> Modified { get; set; } = new ElementId[0];
         public Document GetDocument() => Document;
-        public IEnumerable<ElementId> GetAddedElementIds() => new[] { new ElementId() };
-        public IEnumerable<ElementId> GetDeletedElementIds() => new ElementId[0];
-        public IEnumerable<ElementId> GetModifiedElementIds() => new ElementId[0];
+        public IEnumerable<ElementId> GetAddedElementIds() => Added;
+        public IEnumerable<ElementId> GetDeletedElementIds() => Deleted;
+        public IEnumerable<ElementId> GetModifiedElementIds() => Modified;
         public IEnumerable<string> GetTransactionNames() => new[] { "Test transaction" };
     }
     internal sealed class FailuresProcessingEventArgs : EventArgs {
@@ -118,7 +121,18 @@ namespace Autodesk.Revit.ApplicationServices {
             Documents.Add(document);
             DocumentCreated?.Invoke(this, new DocumentCreatedEventArgs { Document = document });
         }
-        public void Change(Document document) => DocumentChanged?.Invoke(this, new DocumentChangedEventArgs { Document = document });
+        public void Change(
+            Document document,
+            IEnumerable<ElementId> added = null,
+            IEnumerable<ElementId> deleted = null,
+            IEnumerable<ElementId> modified = null) {
+            DocumentChanged?.Invoke(this, new DocumentChangedEventArgs {
+                Document = document,
+                Added = added ?? new[] { new ElementId() },
+                Deleted = deleted ?? new ElementId[0],
+                Modified = modified ?? new ElementId[0],
+            });
+        }
         public bool Save(Document document) {
             var args = new DocumentSavingEventArgs { Document = document };
             DocumentSaving?.Invoke(this, args);
