@@ -330,7 +330,7 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
         filters.append(bip_valuerule)
 
     if filters:
-        return DB.ElementParameterFilter(framework.to_clr_list(DB.FilterRule, filters))
+        return DB.ElementParameterFilter(framework.to_net_list(DB.FilterRule, filters))
     else:
         raise PyRevitException("Error creating filters.")
 
@@ -573,7 +573,7 @@ def get_elements_by_categories(categories, elements=None, doc=None, view_id=None
         return []
 
     elcats_filter = DB.LogicalOrFilter(
-        framework.to_clr_list(DB.ElementFilter, cat_filters)
+        framework.to_net_list(DB.ElementFilter, cat_filters)
     )
 
     fec = (
@@ -1746,7 +1746,7 @@ def get_category(cat_input, doc=None):
 
     Args:
         cat_input (Union[str, DB.BuiltInCategory, DB.Category, DB.ElementId]): The category name as a string,
-            a built-in category enum, a category object or ElementId.
+            a BuiltInCategory name such as "OST_Walls", a built-in category enum, a category object or ElementId.
         doc (Optional[Document]): The Revit document to search within. If not provided, defaults to DOCS.doc.
 
     Returns:
@@ -1772,6 +1772,10 @@ def get_category(cat_input, doc=None):
         return doc.Settings.Categories.get_Item(cat_input)
 
     if isinstance(cat_input, str):
+        if cat_input.startswith("OST_") and hasattr(DB.BuiltInCategory, cat_input):
+            return doc.Settings.Categories.get_Item(
+                getattr(DB.BuiltInCategory, cat_input)
+            )
         for cat in get_doc_categories(doc):
             if cat.Name == cat_input:
                 return cat
@@ -3383,3 +3387,311 @@ def get_elements_bounding_box(elements, view=None, padding=0.0):
     new_bbox.Max = DB.XYZ(max_x + padding, max_y + padding, max_z + padding)
 
     return new_bbox
+
+
+FIND_LISTING_LIMIT = 40
+
+UNFRAMED_MODEL_CATEGORIES = (
+    "OST_ProjectBasePoint",
+    "OST_SharedBasePoint",
+    "OST_Cameras",
+    "OST_SectionBox",
+    "OST_Topography",
+    "OST_Toposolid",
+    "OST_RvtLinks",
+)
+
+
+def _name_listing(names):
+    names = sorted(set(name for name in names if name))
+    shown = ", ".join(names[:FIND_LISTING_LIMIT])
+    if len(names) > FIND_LISTING_LIMIT:
+        shown += ", ... ({} more)".format(len(names) - FIND_LISTING_LIMIT)
+    return shown or "(none)"
+
+
+def find_level(level_name=None, doc=None):
+    """Return a level by name, or raise an error that lists the existing levels.
+
+    Unlike the ``get_*`` functions, which return None when nothing matches,
+    the ``find_*`` functions raise, so a misspelled name stops a script
+    instead of passing None on.
+
+    Args:
+        level_name (str | DB.Level | DB.ElementId, optional): level name, level
+            or level id. When omitted, the active plan's level, else the
+            lowest level.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Level): the level.
+
+    Raises:
+        PyRevitException: when no level has that name, or the document has
+            no levels.
+    """
+    if isinstance(level_name, DB.Level):
+        return level_name
+    doc = doc or DOCS.doc
+    if isinstance(level_name, DB.ElementId):
+        level = doc.GetElement(level_name)
+        if isinstance(level, DB.Level):
+            return level
+        raise PyRevitException("Element {} is not a level.".format(level_name))
+    levels = sorted(
+        DB.FilteredElementCollector(doc).OfClass(DB.Level).ToElements(),
+        key=lambda level: level.Elevation,
+    )
+    if not levels:
+        raise PyRevitException("The document has no levels.")
+    if level_name is None:
+        active_level = getattr(doc.ActiveView, "GenLevel", None)
+        return active_level if active_level is not None else levels[0]
+    for level in levels:
+        if level.Name == level_name:
+            return level
+    raise PyRevitException(
+        "No level named {!r}. Levels: {}.".format(
+            level_name, _name_listing(level.Name for level in levels)
+        )
+    )
+
+
+def find_type(type_class, type_name, doc=None):
+    """Return an element type of a class by exact name, or raise listing the names.
+
+    Args:
+        type_class (type): element type class, such as ``DB.WallType``,
+            ``DB.FloorType``, ``DB.RoofType`` or ``DB.CeilingType``.
+        type_name (str | DB.ElementType): type name.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.ElementType): the type.
+
+    Raises:
+        PyRevitException: when no type of that class has the name.
+    """
+    if isinstance(type_name, DB.ElementType):
+        return type_name
+    types = get_types_by_class(type_class, doc=doc or DOCS.doc)
+    for element_type in types:
+        if get_name(element_type) == type_name:
+            return element_type
+    raise PyRevitException(
+        "No {} named {!r}. Available: {}.".format(
+            type_class.__name__, type_name, _name_listing(get_name(t) for t in types)
+        )
+    )
+
+
+def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
+    """Return a family type by name, or raise listing the family types.
+
+    Args:
+        symbol_name (str | DB.FamilySymbol): family type name, such as
+            ``36" x 84"``, or ``"Family : Type"`` when ``family_name``
+            is omitted.
+        family_name (str, optional): family name, required when several
+            families have a type with that name.
+        category (str | DB.BuiltInCategory | DB.Category, optional): limit
+            the search to a category, such as ``"OST_Doors"``.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.FamilySymbol): the family type. It may be inactive; activate it
+        inside a transaction before placing it, or use the ``create.place_*``
+        functions, which do.
+
+    Raises:
+        PyRevitException: when nothing matches, or the name is ambiguous
+            without ``family_name``.
+    """
+    if isinstance(symbol_name, DB.FamilySymbol):
+        return symbol_name
+    if family_name is None and " : " in symbol_name:
+        family_name, symbol_name = symbol_name.split(" : ", 1)
+    doc = doc or DOCS.doc
+    collector = DB.FilteredElementCollector(doc).OfClass(DB.FamilySymbol)
+    if category is not None:
+        category_element = get_category(category, doc=doc)
+        if category_element is None:
+            raise PyRevitException("No category {!r}.".format(category))
+        collector = collector.OfCategoryId(category_element.Id)
+    candidates = [
+        symbol
+        for symbol in collector
+        if family_name is None or symbol.FamilyName == family_name
+    ]
+    matches = [symbol for symbol in candidates if get_name(symbol) == symbol_name]
+    if not matches:
+        raise PyRevitException(
+            "No family type {!r}{}. Available: {}.".format(
+                symbol_name,
+                " in family {!r}".format(family_name) if family_name else "",
+                _name_listing(
+                    "{} : {}".format(symbol.FamilyName, get_name(symbol))
+                    for symbol in candidates
+                ),
+            )
+        )
+    families = sorted(set(symbol.FamilyName for symbol in matches))
+    if len(families) > 1:
+        raise PyRevitException(
+            "Several families have a type named {!r}: {}. Pass family_name.".format(
+                symbol_name, ", ".join(families)
+            )
+        )
+    return matches[0]
+
+
+def find_view(view_name_or_id, doc=None):
+    """Return a view (or view template) by name or id, or raise listing similar names.
+
+    Args:
+        view_name_or_id (str | int | DB.ElementId | DB.View): view name or id.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.View): the view.
+
+    Raises:
+        PyRevitException: when no view has that name or id.
+    """
+    if isinstance(view_name_or_id, DB.View):
+        return view_name_or_id
+    doc = doc or DOCS.doc
+    if isinstance(view_name_or_id, (int, DB.ElementId)):
+        element_id = (
+            view_name_or_id
+            if isinstance(view_name_or_id, DB.ElementId)
+            else DB.ElementId(view_name_or_id)
+        )
+        view = doc.GetElement(element_id)
+        if isinstance(view, DB.View):
+            return view
+        raise PyRevitException("No view with id {}.".format(view_name_or_id))
+    views = DB.FilteredElementCollector(doc).OfClass(DB.View).ToElements()
+    for view in views:
+        if view.Name == view_name_or_id:
+            return view
+    words = [word for word in str(view_name_or_id).lower().split() if len(word) > 2]
+    similar = [
+        view.Name for view in views if any(w in view.Name.lower() for w in words)
+    ]
+    raise PyRevitException(
+        "No view named {!r}. Similar: {}.".format(
+            view_name_or_id, _name_listing(similar)
+        )
+    )
+
+
+def find_plan_view(level, doc=None):
+    """Return a floor plan of a level, or raise when the level has none.
+
+    Args:
+        level (DB.Level | str): level or level name.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.ViewPlan): a non-template floor plan generated from the level.
+
+    Raises:
+        PyRevitException: when the level has no floor plan.
+    """
+    doc = doc or DOCS.doc
+    level = find_level(level, doc=doc)
+    for view in DB.FilteredElementCollector(doc).OfClass(DB.ViewPlan):
+        if (
+            not view.IsTemplate
+            and view.ViewType == DB.ViewType.FloorPlan
+            and view.GenLevel is not None
+            and view.GenLevel.Id == level.Id
+        ):
+            return view
+    raise PyRevitException(
+        "Level {!r} has no floor plan; create one with "
+        "create.create_plan_view(level).".format(level.Name)
+    )
+
+
+def get_model_elements(doc=None):
+    """Return the elements that make up the model, for framing and extents.
+
+    Model-category, non-view-specific instances with a bounding box.
+    Levels, base points, cameras, section boxes, topography and links are
+    left out, because their extents are far larger than the building.
+
+    Args:
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (list[DB.Element]): model elements.
+    """
+    doc = doc or DOCS.doc
+    unframed = set()
+    for name in UNFRAMED_MODEL_CATEGORIES:
+        if hasattr(DB.BuiltInCategory, name):
+            category = DB.Category.GetCategory(doc, getattr(DB.BuiltInCategory, name))
+            if category is not None:
+                unframed.add(category.Name)
+    return [
+        element
+        for element in DB.FilteredElementCollector(doc).WhereElementIsNotElementType()
+        if element.Category is not None
+        and element.Category.CategoryType == DB.CategoryType.Model
+        and not element.ViewSpecific
+        and not isinstance(element, DB.Level)
+        and element.Category.Name not in unframed
+        and element.get_BoundingBox(None) is not None
+    ]
+
+
+def get_face_references(element, direction):
+    """Return references to an element's planar faces that face a direction.
+
+    For dimensioning walls, floors and other host elements to their faces.
+
+    Args:
+        element (DB.Element): element whose faces to find.
+        direction (DB.XYZ): outward face normal to match, such as
+            ``DB.XYZ.BasisX`` for faces looking east or ``-DB.XYZ.BasisY``
+            for faces looking south.
+
+    Returns:
+        (list[DB.Reference]): references of the matching faces, outermost
+        first (furthest along ``direction``), so ``[0]`` is the outer face.
+
+    Raises:
+        PyRevitException: when the element has no planar face facing that
+            way.
+
+    Note:
+        Family instances such as doors return instance geometry, whose
+        references can't be dimensioned; use
+        ``instance.GetReferences(DB.FamilyInstanceReferenceType.CenterLeftRight)``
+        for them instead.
+    """
+    direction = direction.Normalize()
+    faces = []
+    for geometry in get_geometry(element, compute_references=True) or []:
+        if not isinstance(geometry, DB.Solid) or geometry.Volume == 0:
+            continue
+        for face in geometry.Faces:
+            if (
+                isinstance(face, DB.PlanarFace)
+                and face.Reference is not None
+                and face.FaceNormal.IsAlmostEqualTo(direction)
+            ):
+                faces.append(face)
+    if not faces:
+        raise PyRevitException(
+            "Element {} has no planar face facing ({:.2f}, {:.2f}, {:.2f}).".format(
+                get_elementid_value_func()(element.Id),
+                direction.X,
+                direction.Y,
+                direction.Z,
+            )
+        )
+    faces.sort(key=lambda face: face.Origin.DotProduct(direction), reverse=True)
+    return [face.Reference for face in faces]

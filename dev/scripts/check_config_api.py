@@ -66,6 +66,8 @@ SECTION_ACCESSORS = ("core", "routes", "telemetry", "environment")
 
 IDENTITY_PROPERTIES = ("config_service", "is_readonly")
 
+DIRECT_CONFIG_ACCESSORS = ("agent_enabled", "agent_policy", "agent_engine")
+
 SECTION_MEMBER_EXEMPT = ("get_option", "set_option", "has_option", "remove_option")
 
 BARE_DELEGATIONS = {
@@ -500,7 +502,11 @@ def _check_aliases(schema, bare, static_properties, derived, dynamic_dispatch, l
             )
 
     for alias in sorted(static_properties):
-        if alias in FLAT_ALIASES or alias in SECTION_ACCESSORS:
+        if (
+            alias in FLAT_ALIASES
+            or alias in SECTION_ACCESSORS
+            or alias in DIRECT_CONFIG_ACCESSORS
+        ):
             continue
         if alias in IDENTITY_PROPERTIES:
             continue
@@ -537,6 +543,18 @@ def _check_aliases(schema, bare, static_properties, derived, dynamic_dispatch, l
                     rel,
                     line_of.get(prop, 0),
                     "user_config.{} is documented and is missing".format(prop),
+                )
+            )
+    for prop in DIRECT_CONFIG_ACCESSORS:
+        if prop not in static_properties:
+            findings.append(
+                Finding(
+                    "ALIAS-DYNAMIC",
+                    rel,
+                    0,
+                    "user_config.{} must stay a statically declared direct config accessor".format(
+                        prop
+                    ),
                 )
             )
     return findings
