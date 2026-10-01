@@ -12,7 +12,6 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
-      - 'tests/**'
   push:
     branches: [develop, master]
     tags: ['v*']
@@ -24,7 +23,6 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
-      - 'tests/**'
   workflow_dispatch:
 
 permissions:

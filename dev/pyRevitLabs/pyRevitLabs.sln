@@ -65,7 +65,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.CPython.Tests", "tests\pyRevitLabs.PyRevit.Runtime.CPython.Tests\pyRevitLabs.PyRevit.Runtime.CPython.Tests.csproj", "{6D2C1B4A-3F57-4E8B-9C10-5A7E2D48B931}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentRuntime.Tests", "..\..\tests\agent-runtime\AgentRuntime.Tests.csproj", "{35C11A0D-1966-4C7D-AB51-D0AA0C1734F4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "tests\pyRevitLabs.PyRevit.Runtime.Agent.Tests\pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj", "{35C11A0D-1966-4C7D-AB51-D0AA0C1734F4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
