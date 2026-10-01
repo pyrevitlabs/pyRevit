@@ -31,9 +31,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>A script error always rolls back.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
-    /// <item>With no document open, a run still executes, with <c>doc</c> and <c>uidoc</c> set
-    /// to None, so a script can open or create a document. There is nothing to roll back, and
-    /// the decision is <c>no_document</c>.</item>
+    /// <item>A modify run requires an active document. Query and dry-run requests with no active
+    /// document remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
     /// ends, whatever its outcome, and listed in <c>closed_documents</c>. A script that needs
     /// such a document on disk saves it within the run.</item>
@@ -62,6 +61,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
+            if (doc == null && request.Mode == AgentRunMode.Modify)
+                throw new AgentException("no_active_document", "A modify run requires an active document.");
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
                 throw new AgentException("document_read_only", "The active document is read-only.");
             if (doc != null && doc.IsModifiable)

@@ -86,7 +86,7 @@ Run any of these commands without a value to print the current setting.
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
-| `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
+| `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
@@ -228,10 +228,9 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
-- With no document open, a run still executes with `doc` and `uidoc` set to `None`, so a
-  script can open or create a document. There is nothing to roll back, and the decision is
-  `no_document`. The other tools (`capture_view`, `inspect_elements`, `show_elements`) still
-  need an open document.
+- `run_modify` requires an active document and is refused before the script runs when none is
+  active. The other tools (`capture_view`, `inspect_elements`, `show_elements`) also require an
+  active document.
 - Background documents a run created or opened (no view in Revit, not linked, not open when
   the run started) are closed without saving when the run ends, whatever its outcome, and
   listed in `closed_documents`. Save a new document within the run that builds it.

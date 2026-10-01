@@ -10,7 +10,9 @@ description: Core rules for every pyRevit agent task. Covers the script contract
 1. **Context.** `get_context` returns the Revit version, the document, the active view, the selection, the levels, the agent policy and `scripting`.
 2. **Explore.** Use `run_query`, `inspect_elements` and `lookup_revit_api`. Filter and aggregate inside the script, and return only what you need.
 3. **Show.** `show_elements` selects, zooms to, or temporarily isolates or hides elements. It needs no approval. Don't write `run_modify` scripts to show things.
-4. **Change.** Call `run_modify` with `dry_run=true`, review the change set, then run it for real.
+4. **Change.** With an active document, call `run_modify` with `dry_run=true`, review the change
+   set, then run it for real. The host refuses modify runs before the script starts when no
+   document is active.
    - Policy `ask`: the user approves the change in Revit. Status `rejected` means they discarded it; ask them before retrying.
    - Policy `auto`: the change is committed without a prompt. Dry-run first and keep each change focused.
    - Policy `readonly`: modify runs are refused.
