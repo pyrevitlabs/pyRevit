@@ -287,13 +287,15 @@ namespace pyRevitCLI {
                 compact["by_category"] = byCategory;
             if (changes["added"] is JArray added && added.Count > 0)
                 compact["added_ids"] = new JArray(added.Take(MaxChangeIds).Select(element => element["id"]));
+            CopyIfNotEmpty(changes, compact, "other_documents");
             if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > 0 || changes.Value<int>("deleted_count") > 0)
                 compact["details"] = "Element names, classes and modified or deleted ids are in get_run(run_id).";
             return compact;
         }
 
         private static bool HasChanges(JObject changes) {
-            return changes.Value<int>("added_count") + changes.Value<int>("modified_count") + changes.Value<int>("deleted_count") > 0;
+            return changes.Value<int>("added_count") + changes.Value<int>("modified_count") + changes.Value<int>("deleted_count") > 0
+                || changes["other_documents"] is JArray otherDocuments && otherDocuments.Count > 0;
         }
 
         private static void CopyIfNotEmpty(JObject source, JObject target, string key) {
