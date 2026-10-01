@@ -18,9 +18,22 @@ namespace pyRevitCLI {
         public string Kind { get; set; }
         public string Signature { get; set; }
         public string Doc { get; set; }
+        public AutomationMetadata Automation { get; set; }
 
         public string FullName => Owner == null ? $"{Module}.{Name}" : $"{Module}.{Owner}.{Name}";
         public string Summary => (Doc ?? string.Empty).Split('\n').Select(line => line.Trim()).FirstOrDefault(line => line.Length > 0) ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Stable metadata attached to a Python library symbol for agent discovery.
+    /// </summary>
+    internal sealed class AutomationMetadata {
+        public string Id { get; set; }
+        public string PlainEnglish { get; set; }
+        public string Mode { get; set; }
+        public List<string> Effects { get; set; }
+        public string Context { get; set; }
+        public string Transaction { get; set; }
     }
 
     /// <summary>
@@ -48,6 +61,11 @@ namespace pyRevitCLI {
         private static readonly Regex ClassLine = new Regex(@"^class\s+(?<name>\w+)\s*(\((?<bases>[^)]*)\))?\s*:", RegexOptions.Compiled);
         private static readonly Regex DefStart = new Regex(@"^(?<indent>\s*)def\s+(?<name>\w+)\s*\(", RegexOptions.Compiled);
         private static readonly Regex Decorator = new Regex(@"^\s*@(?<name>[\w.]+)", RegexOptions.Compiled);
+        private static readonly Regex AutomationOperation = new Regex(@"^\s*@automation\.operation\s*\(", RegexOptions.Compiled);
+        private static readonly Regex AutomationId = new Regex(@"^\s*(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex AutomationValue = new Regex(@"(?:^|,)\s*(?<name>PlainEnglish|mode|context|transaction)\s*=\s*(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex AutomationEffects = new Regex(@"(?:^|,)\s*effects\s*=\s*\((?<values>.*?)\)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex QuotedValue = new Regex(@"(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
 
         private static readonly object cacheLock = new object();
         private static List<LibrarySymbol> cached;
@@ -88,6 +106,7 @@ namespace pyRevitCLI {
             var exact = symbols
                 .Where(symbol => symbol.Kind != "module"
                                  && (string.Equals(symbol.FullName, query, StringComparison.OrdinalIgnoreCase)
+                                     || string.Equals(symbol.Automation?.Id, query, StringComparison.OrdinalIgnoreCase)
                                      || string.Equals(symbol.Name, query, StringComparison.OrdinalIgnoreCase)
                                      || (symbol.Owner != null && string.Equals(symbol.Owner + "." + symbol.Name, query, StringComparison.OrdinalIgnoreCase))
                                      || IsReExport(symbol, query)))
@@ -152,6 +171,7 @@ namespace pyRevitCLI {
                 ["kind"] = symbol.Kind,
                 ["signature"] = symbol.Signature,
                 ["summary"] = symbol.Summary,
+                ["automation"] = Automation(symbol),
             };
         }
 
@@ -160,6 +180,19 @@ namespace pyRevitCLI {
             entry["doc"] = symbol.Doc;
             entry["import"] = ImportLine(symbol);
             return entry;
+        }
+
+        private static JObject Automation(LibrarySymbol symbol) {
+            if (symbol.Automation == null)
+                return null;
+            return new JObject {
+                ["id"] = symbol.Automation.Id,
+                ["plain_english"] = symbol.Automation.PlainEnglish,
+                ["mode"] = symbol.Automation.Mode,
+                ["effects"] = new JArray(symbol.Automation.Effects),
+                ["context"] = symbol.Automation.Context,
+                ["transaction"] = symbol.Automation.Transaction,
+            };
         }
 
         private static string ImportLine(LibrarySymbol symbol) {
@@ -172,8 +205,12 @@ namespace pyRevitCLI {
 
         private static int Score(LibrarySymbol symbol, List<string> tokens) {
             var doc = symbol.Doc ?? string.Empty;
+            var automation = symbol.Automation == null
+                ? string.Empty
+                : symbol.Automation.Id + " " + symbol.Automation.PlainEnglish;
             return NameScore(symbol.FullName, tokens)
-                + tokens.Count(token => doc.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0);
+                + tokens.Count(token => doc.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                + tokens.Count(token => automation.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) * 4;
         }
 
         private static int NameScore(string name, List<string> tokens) {
@@ -247,8 +284,13 @@ namespace pyRevitCLI {
             string currentClass = null;
             LibrarySymbol currentClassSymbol = null;
             var decorators = new List<string>();
+            AutomationMetadata automation = null;
             for (var index = 0; index < lines.Length; index++) {
                 var line = lines[index];
+                if (AutomationOperation.IsMatch(line)) {
+                    automation = ReadAutomation(lines, ref index);
+                    continue;
+                }
                 var decorator = Decorator.Match(line);
                 if (decorator.Success) {
                     decorators.Add(decorator.Groups["name"].Value);
@@ -260,6 +302,7 @@ namespace pyRevitCLI {
                     currentClass = classMatch.Groups["name"].Value;
                     currentClassSymbol = null;
                     decorators.Clear();
+                    automation = null;
                     if (currentClass.StartsWith("_"))
                         continue;
                     var bases = classMatch.Groups["bases"].Value.Trim();
@@ -280,6 +323,7 @@ namespace pyRevitCLI {
                     if (line.Length > 0 && !char.IsWhiteSpace(line[0]) && !line.StartsWith("#"))
                         currentClass = null;
                     decorators.Clear();
+                    automation = null;
                     continue;
                 }
 
@@ -303,11 +347,75 @@ namespace pyRevitCLI {
                         Kind = isMethod ? (decorators.Contains("property") ? "property" : "method") : "function",
                         Signature = isMethod ? DropSelf(signature) : signature,
                         Doc = ReadDocstring(lines, index + 1),
+                        Automation = automation,
                     });
                 }
                 decorators.Clear();
+                automation = null;
             }
             return symbols;
+        }
+
+        private static AutomationMetadata ReadAutomation(string[] lines, ref int index) {
+            var decorator = ReadDecorator(lines, ref index);
+            var arguments = decorator.Substring(decorator.IndexOf('(') + 1);
+            arguments = arguments.Substring(0, arguments.Length - 1);
+            var id = ReadString(AutomationId.Match(arguments));
+            var values = AutomationValue.Matches(arguments)
+                .Cast<Match>()
+                .ToDictionary(match => match.Groups["name"].Value, ReadString);
+            var effects = AutomationEffects.Match(arguments);
+            var effectValues = effects.Success
+                ? QuotedValue.Matches(effects.Groups["values"].Value).Cast<Match>().Select(ReadString).ToList()
+                : new List<string>();
+            if (string.IsNullOrEmpty(id) || !values.ContainsKey("PlainEnglish"))
+                throw new AgentClientException("invalid_automation_marker", "A Python automation marker needs a stable id and PlainEnglish value.");
+            return new AutomationMetadata {
+                Id = id,
+                PlainEnglish = values["PlainEnglish"],
+                Mode = values.ContainsKey("mode") ? values["mode"] : "query",
+                Effects = effectValues,
+                Context = values.ContainsKey("context") ? values["context"] : "document",
+                Transaction = values.ContainsKey("transaction") ? values["transaction"] : "none",
+            };
+        }
+
+        private static string ReadDecorator(string[] lines, ref int index) {
+            var builder = new StringBuilder();
+            var depth = 0;
+            var quote = '\0';
+            for (; index < lines.Length; index++) {
+                var line = StripComment(lines[index]);
+                builder.Append(line.Trim());
+                for (var position = 0; position < line.Length; position++) {
+                    var character = line[position];
+                    if (quote != '\0') {
+                        if (character == '\\')
+                            position++;
+                        else if (character == quote)
+                            quote = '\0';
+                    }
+                    else if (character == '\"' || character == '\'')
+                        quote = character;
+                    else if (character == '(')
+                        depth++;
+                    else if (character == ')') {
+                        depth--;
+                        if (depth == 0)
+                            return builder.ToString();
+                    }
+                }
+            }
+            throw new AgentClientException("invalid_automation_marker", "A Python automation marker has an unclosed argument list.");
+        }
+
+        private static string ReadString(Match match) {
+            if (!match.Success)
+                return null;
+            var value = match.Groups["double"].Success
+                ? match.Groups["double"].Value
+                : match.Groups["single"].Value;
+            return Regex.Unescape(value);
         }
 
         private static string ReadSignature(string[] lines, ref int index, int openParen) {
