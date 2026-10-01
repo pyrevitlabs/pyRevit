@@ -399,7 +399,7 @@
     <system:String x:Key="pyRevit.AdminInstall">Die pyRevit-Einstellungen werden von Ihrem Administrator festgelegt.</system:String>
 
     <system:String x:Key="Agent.Title">Agent-Laufzeit (MCP)</system:String>
-    <system:String x:Key="Agent.Description">Ermöglicht MCP-Coding-Agenten wie Claude Code, Codex, Cursor, VS Code und OpenCode, das geöffnete Modell zu lesen und zu ändern, indem sie Python in Revit ausführen. Agenten verbinden sich über eine lokale Named Pipe, die nur Ihr Windows-Benutzer öffnen kann; anders als der Routes-Server ist nichts über das Netzwerk erreichbar. Standardmäßig erfordert jede Modelländerung Ihre Freigabe in Revit.</system:String>
+    <system:String x:Key="Agent.Description">Ermöglicht MCP-Coding-Agenten wie Claude Code, Codex, Cursor, VS Code und OpenCode, das geöffnete Modell zu lesen und zu ändern, indem sie Python in Revit ausführen. Agenten verbinden sich über eine lokale Named Pipe, die nur Ihr Windows-Benutzer öffnen kann; anders als der Routes-Server ist nichts über das Netzwerk erreichbar. Standardmäßig erfordert jeder Agentenlauf, der das Modell ändert, Ihre Freigabe in Revit. Das schützt vor Fehlern eines Agenten, nicht vor einem bösartigen Skript; verbinden Sie daher nur Agenten, denen Sie vertrauen.</system:String>
     <system:String x:Key="Agent.Privacy">Alles, was der Agent liest (Elementnamen, Parameterwerte, Ergebnisse), wird an den Modellanbieter des Agenten gesendet.</system:String>
     <system:String x:Key="Agent.Check">Agent-Host (Beta)</system:String>
     <system:String x:Key="Agent.Policy">Modelländerungen</system:String>

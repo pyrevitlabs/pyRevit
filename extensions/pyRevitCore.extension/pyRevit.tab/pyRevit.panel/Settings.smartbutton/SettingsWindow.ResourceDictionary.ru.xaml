@@ -401,7 +401,7 @@
     <system:String x:Key="pyRevit.AdminInstall">Настройки pyRevit устанавливаются вашим администратором.</system:String>
 
     <system:String x:Key="Agent.Title">Среда агентов (MCP)</system:String>
-    <system:String x:Key="Agent.Description">Позволяет MCP-агентам для программирования (Claude Code, Codex, Cursor, VS Code, OpenCode) читать и изменять открытую модель, выполняя Python внутри Revit. Агенты подключаются через локальный именованный канал, доступный только вашему пользователю Windows; в отличие от сервера Routes, ничего не доступно по сети. По умолчанию каждое изменение модели требует вашего подтверждения в Revit.</system:String>
+    <system:String x:Key="Agent.Description">Позволяет MCP-агентам для программирования (Claude Code, Codex, Cursor, VS Code, OpenCode) читать и изменять открытую модель, выполняя Python внутри Revit. Агенты подключаются через локальный именованный канал, доступный только вашему пользователю Windows; в отличие от сервера Routes, ничего не доступно по сети. По умолчанию каждый запуск агента, изменяющий модель, требует вашего подтверждения в Revit. Это защищает от ошибок агента, но не от вредоносного скрипта, поэтому подключайте только агентов, которым доверяете.</system:String>
     <system:String x:Key="Agent.Privacy">Всё, что читает агент (имена элементов, значения параметров, результаты), отправляется поставщику модели агента.</system:String>
     <system:String x:Key="Agent.Check">Хост агентов (бета)</system:String>
     <system:String x:Key="Agent.Policy">Изменения модели</system:String>

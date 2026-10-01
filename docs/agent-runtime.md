@@ -9,7 +9,7 @@
 The agent runtime lets any MCP-capable coding agent (Claude Code, Codex, Cursor, VS Code,
 OpenCode, ...) read and change a live Revit model by sending **Python programs**, not by calling
 hundreds of per-API tools. The Revit API is the toolset; MCP is only the control
-protocol. The human stays in control: every model change is approved inside Revit.
+protocol. The human stays in control: by default, the model changes a run makes are approved inside Revit.
 
 ## Getting started
 
@@ -412,12 +412,17 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
 
 The approval must happen inside the same callback, because Revit won't keep a
 transaction group open after the callback returns. The benefit is that the human
-approves inside Revit, and the agent can't approve itself.
+approves inside Revit, and no agent tool can approve a run.
 
 Honest limits:
 
 - Rollback protects the model, not the file system or the network. There is no sandbox;
   `readonly` means query-only model access, not restricted Python execution.
+- The guard covers the run itself, not code the run leaves behind. A script has the live
+  Revit API, so it can subscribe to a Revit event such as `Idling`, or start a thread, that
+  changes the model or answers the approval prompt after the guard has ended. Those changes
+  are neither approved nor recorded. Approval and `readonly` stop an agent's mistakes, not a
+  hostile script: connect only agents you trust, and don't feed them untrusted content.
 - Revit serves one agent request at a time. While one session's run is executing, which can
   last until its `timeout_s`, a second agent session can't connect and gets `revit_busy`
   after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.

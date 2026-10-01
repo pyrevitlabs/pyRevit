@@ -482,7 +482,7 @@ namespace pyRevitCLI {
                     }, new string[0], readOnly: true),
 
                 Tool("run_query",
-                    "Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes are always rolled back and must not be made. The script itself runs with full access to the machine; only the Revit model is protected.",
+                    "Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
                     new JObject {
                         ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Assign `result` to return data." },
                         ["title"] = new JObject { ["type"] = "string", ["description"] = "Short label for the run record." },
