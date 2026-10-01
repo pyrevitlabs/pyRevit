@@ -3,12 +3,20 @@
 import os.path as op
 
 from pyrevit import DOCS, PyRevitException
+from pyrevit import automation
 from pyrevit.framework import List, to_clr_list
 from pyrevit import DB
 from pyrevit.revit.db import query
 from pyrevit.compat import get_elementid_value_func
 
 
+@automation.operation(
+    "pyrevit.elements.rename",
+    PlainEnglish="Rename a Revit element that supports a writable name.",
+    mode="modify",
+    effects=("model.write",),
+    transaction="caller",
+)
 def set_name(element, new_name):
     element.Name = new_name
 
@@ -64,6 +72,13 @@ def update_revision_numbering(per_sheet=False, doc=None):
     )
 
 
+@automation.operation(
+    "pyrevit.parameters.set-formatted",
+    PlainEnglish="Set a writable parameter from text or a Revit-formatted value.",
+    mode="modify",
+    effects=("model.write",),
+    transaction="caller",
+)
 def update_param_value(rvt_param, value):
     if not rvt_param.IsReadOnly:
         if rvt_param.StorageType == DB.StorageType.String:
