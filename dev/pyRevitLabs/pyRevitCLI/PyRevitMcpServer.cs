@@ -166,6 +166,22 @@ namespace pyRevitCLI {
         /// </summary>
         private JObject ResolveMissingApiName(JObject arguments, JObject run) {
             var error = run["error"] as JObject;
+            var library = error == null ? null : PyRevitMcpRunResults.MissingLibraryName(error);
+            if (library != null) {
+                try {
+                    var similar = PyRevitLibraryIndex.Similar(library.Value.Member, library.Value.Module);
+                    if (similar.Count == 0 && library.Value.Module != null)
+                        similar = PyRevitLibraryIndex.Similar(library.Value.Member);
+                    error["hint"] = similar.Count > 0
+                        ? $"'{library.Value.Member}' is not in {library.Value.Module ?? "that module"}. Similar: {string.Join("; ", similar)}. "
+                            + "lookup_pyrevit_api(query=...) shows the full docstring."
+                        : $"Nothing named like '{library.Value.Member}' in pyrevitlib or rpw; search with lookup_pyrevit_api(query='<what you need>').";
+                }
+                catch (AgentClientException) {
+                }
+                return run;
+            }
+
             var missing = error == null ? null : PyRevitMcpRunResults.MissingRevitApiName(error);
             if (missing == null)
                 return run;
@@ -425,6 +441,16 @@ namespace pyRevitCLI {
                         ["ids"] = arguments["ids"],
                         ["parameters"] = arguments["parameters"] ?? true,
                     })),
+
+                new McpTool("lookup_pyrevit_api", readOnly: true, new[] { "query" },
+                    () => ("Search pyrevitlib (pyrevit.revit: query, create, update, units, ui, Transaction) and rpw (rpw.db) before writing "
+                        + "raw Revit API code. Pass a module ('pyrevit.revit.db.create') to list its functions, a function name ('find_type', "
+                        + "'pyrevit.revit.db.create.create_gable_roof') for its signature and docstring, or words ('section box', 'room') to search. "
+                        + "Works without Revit.",
+                        new JObject {
+                            ["query"] = new JObject { ["type"] = "string", ["description"] = "Module, function or class name, or search words." },
+                        }),
+                    arguments => PyRevitLibraryIndex.Lookup(arguments.Value<string>("query"))),
 
                 new McpTool("lookup_revit_api", readOnly: true, new[] { "name" },
                     () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers.",
