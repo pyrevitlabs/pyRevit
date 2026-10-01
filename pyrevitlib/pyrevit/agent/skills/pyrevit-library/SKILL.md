@@ -15,7 +15,7 @@ pyRevit ships two maintained libraries that agent scripts can import on every en
 - `lookup_pyrevit_api(query="create_gable_roof")` returns the signature, the full docstring and the import line.
 - `lookup_pyrevit_api(query="pyrevit.revit.db.create")` lists a module.
 - `list_automation(offset=0, limit=25)` lists reviewed APIs with stable IDs, effects, context and transaction requirements. Use an ID with `lookup_pyrevit_api` to read its full contract.
-- `run_automation(id=..., inputs=...)` runs a small reviewed subset through the existing guarded query path. It currently accepts `pyrevit.units.parse-length` and `pyrevit.units.parse-slope`, each with `{"value": ...}`, plus `pyrevit.levels.resolve` with `{"name": ...}` and an active document.
+- `run_automation(id=..., inputs=...)` runs a small reviewed subset through the existing guarded query path. It currently accepts `pyrevit.units.parse-length` and `pyrevit.units.parse-slope`, each with `{"value": ...}`; `pyrevit.levels.resolve` with `{"name": ...}`; and `pyrevit.elements.by-category` with `{"categories": ["OST_Walls"], "limit": 50}`. The document-bound operations require an active document.
 
 When a script fails on a name from these libraries, the error hint lists similar names.
 
