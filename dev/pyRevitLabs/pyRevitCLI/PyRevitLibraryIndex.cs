@@ -49,6 +49,8 @@ namespace pyRevitCLI {
     internal static class PyRevitLibraryIndex {
         private const int MaxResults = 15;
         private const int MaxModuleMembers = 200;
+        private const int DefaultAutomationResults = 25;
+        private const int MaxAutomationResults = 50;
 
         private static readonly string[] IndexedPaths = {
             "pyrevit/revit",
@@ -139,6 +141,39 @@ namespace pyRevitCLI {
                 ["note"] = ranked.Count > 0
                     ? "Ranked by name and docstring. Look one up by its full name for the whole docstring."
                     : "Nothing in pyrevitlib or rpw matches. Use the Revit API directly (lookup_revit_api).",
+            };
+        }
+
+        /// <summary>
+        /// Lists explicitly marked automation symbols in stable identifier order.
+        /// </summary>
+        public static JObject ListAutomation(int offset = 0, int limit = DefaultAutomationResults) {
+            if (offset < 0)
+                throw new AgentClientException("invalid_params", "'offset' must not be negative.");
+            if (limit < 1 || limit > MaxAutomationResults)
+                throw new AgentClientException("invalid_params", $"'limit' must be between 1 and {MaxAutomationResults}.");
+
+            var symbols = Load()
+                .Where(symbol => symbol.Automation != null)
+                .OrderBy(symbol => symbol.Automation.Id, StringComparer.Ordinal)
+                .ThenBy(symbol => symbol.FullName, StringComparer.Ordinal)
+                .ToList();
+            var duplicate = symbols
+                .GroupBy(symbol => symbol.Automation.Id, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault(group => group.Count() > 1);
+            if (duplicate != null) {
+                var names = string.Join(", ", duplicate.Select(symbol => symbol.FullName));
+                throw new AgentClientException("duplicate_automation_id", $"Automation id '{duplicate.Key}' is used by {names}.");
+            }
+
+            var page = symbols.Skip(offset).Take(limit).ToList();
+            var nextOffset = offset + page.Count;
+            return new JObject {
+                ["total"] = symbols.Count,
+                ["offset"] = offset,
+                ["limit"] = limit,
+                ["next_offset"] = nextOffset < symbols.Count ? new JValue(nextOffset) : JValue.CreateNull(),
+                ["operations"] = new JArray(page.Select(Brief)),
             };
         }
 

@@ -482,6 +482,16 @@ namespace pyRevitCLI {
                         }),
                     arguments => PyRevitLibraryIndex.Lookup(arguments.Value<string>("query"))),
 
+                new McpTool("list_automation", readOnly: true, new string[0],
+                    () => ("List the reviewed pyRevit and rpw automation APIs by stable identifier. Results are paginated and work without Revit.",
+                        new JObject {
+                            ["offset"] = new JObject { ["type"] = "integer", ["minimum"] = 0, ["description"] = "Zero-based result offset." },
+                            ["limit"] = new JObject { ["type"] = "integer", ["minimum"] = 1, ["maximum"] = 50, ["description"] = "Results to return, default 25." },
+                        }),
+                    arguments => PyRevitLibraryIndex.ListAutomation(
+                        arguments.Value<int?>("offset") ?? 0,
+                        arguments.Value<int?>("limit") ?? 25)),
+
                 new McpTool("lookup_revit_api", readOnly: true, new[] { "name" },
                     () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers.",
                         new JObject {
