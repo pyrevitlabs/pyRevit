@@ -2,8 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI {
     /// <summary>
@@ -15,6 +19,7 @@ namespace pyRevitCLI {
         public string Description { get; set; }
         public string Directory { get; set; }
         public string Source { get; set; }
+        public string Hash { get; set; }
     }
 
     /// <summary>
@@ -33,6 +38,8 @@ namespace pyRevitCLI {
         private const string SkillFile = "SKILL.md";
         private const string InstructionsFile = "INSTRUCTIONS.md";
         private const int MaxParentLevels = 8;
+        private const int MaxSkillBytes = 128 * 1024;
+        private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}$", RegexOptions.Compiled);
 
         public static string UserSkillsDir => Path.Combine(PyRevitAgentClient.AgentDir, "skills");
 
@@ -62,12 +69,12 @@ namespace pyRevitCLI {
 
         public static List<AgentSkill> Load() {
             var skills = new Dictionary<string, AgentSkill>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (root, source) in new[] { (ShippedSkillsDir, "pyrevit"), (UserSkillsDir, "user") }) {
+            foreach (var (root, source) in SkillRoots()) {
                 if (root == null || !System.IO.Directory.Exists(root))
                     continue;
-                foreach (var skillDir in System.IO.Directory.GetDirectories(root)) {
+                foreach (var skillDir in System.IO.Directory.GetDirectories(root).OrderBy(path => path, StringComparer.OrdinalIgnoreCase)) {
                     var skill = ReadSkill(skillDir, source);
-                    if (skill != null)
+                    if (skill != null && !skills.ContainsKey(skill.Name))
                         skills[skill.Name] = skill;
                 }
             }
@@ -78,12 +85,24 @@ namespace pyRevitCLI {
         }
 
         public static string Instructions(List<AgentSkill> skills) {
-            var list = string.Join("\n", skills.Select(skill => $"- {skill.Name}: {skill.Description}"));
+            var list = string.Join("\n", skills.Select(skill => $"- {skill.Name} ({skill.Source}, sha256:{skill.Hash})"));
             var shipped = ShippedSkillsDir;
             var template = shipped != null && File.Exists(Path.Combine(shipped, InstructionsFile))
                 ? File.ReadAllText(Path.Combine(shipped, InstructionsFile))
                 : "pyRevit MCP server for Revit. Call get_context, then get_skill(\"" + CoreSkill + "\"), then the skill for your task.\n\nAvailable skills:\n{skills}\n";
             return template.Replace("{skills}", list.Length > 0 ? list : "(no skills found)");
+        }
+
+        /// <summary>
+        /// Returns bounded, attributable metadata for the skills available to this MCP server.
+        /// </summary>
+        public static JArray List() {
+            return new JArray(Load().Select(skill => new JObject {
+                ["name"] = skill.Name,
+                ["description"] = skill.Description,
+                ["source"] = skill.Source,
+                ["sha256"] = skill.Hash,
+            }));
         }
 
         /// <summary>
@@ -101,13 +120,15 @@ namespace pyRevitCLI {
 
             var root = Path.GetFullPath(skill.Directory) + Path.DirectorySeparatorChar;
             var path = Path.GetFullPath(Path.Combine(skill.Directory, string.IsNullOrWhiteSpace(file) ? SkillFile : file));
-            if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || IsReparsePoint(path))
                 throw new AgentClientException("invalid_params", "'file' must be a markdown file inside the skill folder.");
             if (!File.Exists(path))
                 throw new AgentClientException("skill_not_found", $"Skill '{skill.Name}' has no file '{file}'.");
+            if (new FileInfo(path).Length > MaxSkillBytes)
+                throw new AgentClientException("invalid_params", $"Skill file '{file}' exceeds the {MaxSkillBytes / 1024} KiB limit.");
 
             var text = File.ReadAllText(path);
-            var others = System.IO.Directory.GetFiles(skill.Directory, "*.md", SearchOption.AllDirectories)
+            var others = MarkdownFiles(skill.Directory)
                 .Select(other => other.Substring(root.Length).Replace('\\', '/'))
                 .Where(other => !string.Equals(Path.GetFullPath(Path.Combine(skill.Directory, other)), path, StringComparison.OrdinalIgnoreCase))
                 .ToList();
@@ -118,7 +139,7 @@ namespace pyRevitCLI {
 
         private static AgentSkill ReadSkill(string skillDir, string source) {
             var path = Path.Combine(skillDir, SkillFile);
-            if (!File.Exists(path))
+            if (IsReparsePoint(skillDir) || !File.Exists(path) || new FileInfo(path).Length > MaxSkillBytes)
                 return null;
 
             var lines = File.ReadAllLines(path);
@@ -131,12 +152,47 @@ namespace pyRevitCLI {
                 }
             }
 
+            var name = frontMatter.TryGetValue("name", out var declaredName) && declaredName.Length > 0 ? declaredName : Path.GetFileName(skillDir);
+            if (!SkillName.IsMatch(name))
+                return null;
+            var description = frontMatter.TryGetValue("description", out var declaredDescription) ? declaredDescription : string.Empty;
+            if (description.Length > 240)
+                return null;
             return new AgentSkill {
-                Name = frontMatter.TryGetValue("name", out var name) && name.Length > 0 ? name : Path.GetFileName(skillDir),
-                Description = frontMatter.TryGetValue("description", out var description) ? description : string.Empty,
+                Name = name,
+                Description = description,
                 Directory = skillDir,
                 Source = source,
+                Hash = Hash(path),
             };
+        }
+
+        private static IEnumerable<(string Root, string Source)> SkillRoots() {
+            yield return (ShippedSkillsDir, "pyrevit");
+            if (PyRevitConfigs.GetAgentUserSkillsEnabled())
+                yield return (UserSkillsDir, "user");
+        }
+
+        private static IEnumerable<string> MarkdownFiles(string root) {
+            foreach (var file in System.IO.Directory.GetFiles(root, "*.md"))
+                if (!IsReparsePoint(file))
+                    yield return file;
+            foreach (var directory in System.IO.Directory.GetDirectories(root)) {
+                if (IsReparsePoint(directory))
+                    continue;
+                foreach (var file in MarkdownFiles(directory))
+                    yield return file;
+            }
+        }
+
+        private static bool IsReparsePoint(string path) {
+            return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+        }
+
+        private static string Hash(string path) {
+            using (var sha256 = SHA256.Create())
+            using (var stream = File.OpenRead(path))
+                return BitConverter.ToString(sha256.ComputeHash(stream)).Replace("-", string.Empty).ToLowerInvariant();
         }
     }
 }

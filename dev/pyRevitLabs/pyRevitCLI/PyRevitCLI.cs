@@ -842,7 +842,11 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("agent")) {
-                    if (all("policy"))
+                    if (all("skills"))
+                        PyRevitCLIAgentCmds.ConfigureUserSkills(
+                            any("enable", "disable") ? arguments["enable"].IsTrue : null);
+
+                    else if (all("policy"))
                         PyRevitCLIAgentCmds.ConfigurePolicy(
                             arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
                             : arguments["ask"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAsk

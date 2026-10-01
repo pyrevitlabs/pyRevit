@@ -137,11 +137,15 @@ rebuild:
   server sends on `initialize`. `{skills}` is replaced with the list of skills.
 - Each skill is a folder with a `SKILL.md` that starts with `name` and `description`
   front matter. PR 1 ships `revit-scripting`, the core contract for raw Revit API scripts.
-  Additional domain guidance and firm customization are delivered separately.
+  PR 2 adds domain guidance and library integration.
 
 Agents read a skill with `get_skill(name)`, and other markdown files in its folder with
-`get_skill(name, file)`. The foundation runtime loads only shipped skills from its selected
-clone; it does not load user-supplied skill directories.
+`get_skill(name, file)`. `list_skills` reports each skill's source and SHA-256 digest before
+the agent reads it. The server loads only shipped skills by default. Enable user skills with
+`pyrevit configs agent skills enable` to load folders from `%APPDATA%\pyRevit\agent\skills`.
+Those folders are trusted-account guidance, not organizational policy: a same-name user skill
+is ignored, and user guidance cannot replace shipped safety instructions or host enforcement.
+Names, descriptions, files and paths are bounded and validated; reparse-point paths are ignored.
 
 ### Script contract
 

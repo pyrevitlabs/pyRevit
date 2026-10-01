@@ -398,11 +398,16 @@ namespace pyRevitCLI {
         /// </remarks>
         private List<McpTool> CreateTools() {
             return new List<McpTool> {
+                new McpTool("list_skills", readOnly: true, new string[0],
+                    () => ("List the available task skills with their source and content hash. User skills are disabled until the user explicitly enables them in pyRevit configuration.",
+                        new JObject()),
+                    _ => PyRevitAgentSkills.List()),
+
                 new McpTool("get_skill", readOnly: true, new[] { "name" },
                     () => {
                         var skills = PyRevitAgentSkills.Load();
                         return ("Read a skill: task guidance for Revit scripting. Read revit-scripting before your first script, then the skill for your task. "
-                            + "Skills: " + string.Join("; ", skills.Select(skill => skill.Name + " - " + skill.Description)),
+                            + "Use list_skills for source and hash metadata. Skills: " + string.Join(", ", skills.Select(skill => skill.Name)),
                             new JObject {
                                 ["name"] = new JObject {
                                     ["type"] = "string",
