@@ -14,6 +14,7 @@ pyRevit ships two maintained libraries that agent scripts can import on every en
 - `lookup_pyrevit_api(query="section box")` searches names and docstrings.
 - `lookup_pyrevit_api(query="create_gable_roof")` returns the signature, the full docstring and the import line.
 - `lookup_pyrevit_api(query="pyrevit.revit.db.create")` lists a module.
+- `list_automation(offset=0, limit=25)` lists reviewed APIs with stable IDs, effects, context and transaction requirements. Use an ID with `lookup_pyrevit_api` to read its full contract.
 
 When a script fails on a name from these libraries, the error hint lists similar names.
 
