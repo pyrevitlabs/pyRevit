@@ -73,6 +73,23 @@ class ModuleSurfaceTests(unittest.TestCase):
         self.assertTrue(callable(events.stop_events))
 
 
+class UnitConversionTests(unittest.TestCase):
+    """Length parsing delegates conversion to Revit's unit API."""
+
+    def test_parse_length_matches_unit_utils(self):
+        """Metric text converts through the Revit millimeter unit identifier."""
+        from pyrevit import DB, HOST_APP
+        from pyrevit.revit import units
+
+        if HOST_APP.is_newer_than(2021):
+            unit_id = DB.UnitTypeId.Millimeters
+        else:
+            unit_id = DB.DisplayUnitType.DUT_MILLIMETERS
+
+        expected = DB.UnitUtils.ConvertToInternalUnits(900.0, unit_id)
+        self.assertEqual(expected, units.parse_length("900mm"))
+
+
 class DocumentGatedTests(unittest.TestCase):
     """Helpers that need an active project document (skip when absent)."""
 

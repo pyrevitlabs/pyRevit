@@ -13,11 +13,28 @@ _FEET_INCHES = re.compile(
     r"(?:(?P<inches>\d+(?:\.\d+)?)?\s*(?:(?P<num>\d+)\s*/\s*(?P<den>\d+))?\s*\")?\s*$"
 )
 _METRIC = re.compile(r"^\s*(?P<value>-?\d+(?:\.\d+)?)\s*(?P<unit>mm|cm|m)\s*$")
-_METRIC_TO_FEET = {"mm": 304.8, "cm": 30.48, "m": 0.3048}
 _SLOPE_RATIO = re.compile(
     r"^\s*(?P<rise>\d+(?:\.\d+)?)\s*(?::|/|\s+in\s+)\s*(?P<run>\d+(?:\.\d+)?)\s*$"
 )
 _SLOPE_DEGREES = re.compile(r"^\s*(?P<deg>\d+(?:\.\d+)?)\s*deg(?:rees)?\s*$")
+
+
+def _to_internal_length(value, unit):
+    if HOST_APP.is_newer_than(2021):
+        unit_ids = {
+            "ft": DB.UnitTypeId.Feet,
+            "mm": DB.UnitTypeId.Millimeters,
+            "cm": DB.UnitTypeId.Centimeters,
+            "m": DB.UnitTypeId.Meters,
+        }
+    else:
+        unit_ids = {
+            "ft": DB.DisplayUnitType.DUT_DECIMAL_FEET,
+            "mm": DB.DisplayUnitType.DUT_MILLIMETERS,
+            "cm": DB.DisplayUnitType.DUT_CENTIMETERS,
+            "m": DB.DisplayUnitType.DUT_METERS,
+        }
+    return DB.UnitUtils.ConvertToInternalUnits(float(value), unit_ids[unit])
 
 
 def get_unit_info(spec_type_id, doc=None):
@@ -215,7 +232,7 @@ def get_unit_name(forge_id):
     context="none",
 )
 def parse_length(value):
-    """Convert a length written the way drawings write it to feet.
+    """Convert a length written the way drawings write it to Revit internal feet.
 
     Args:
         value (float | int | str): feet as a number, or a string such as
@@ -229,15 +246,15 @@ def parse_length(value):
         PyRevitException: when the string is not a length in a known format.
 
     Note:
-        Independent of the document's units, so it gives the same answer
-        in any project and needs no open document.
+        Parses text independently of the document's units, then delegates
+        conversion of the parsed double value to ``DB.UnitUtils``.
     """
     if isinstance(value, (int, float)):
-        return float(value)
+        return _to_internal_length(value, "ft")
     text = str(value).strip()
     metric = _METRIC.match(text)
     if metric:
-        return float(metric.group("value")) / _METRIC_TO_FEET[metric.group("unit")]
+        return _to_internal_length(metric.group("value"), metric.group("unit"))
     imperial = _FEET_INCHES.match(text)
     if imperial and ("'" in text or '"' in text):
         feet = float(imperial.group("feet") or 0.0)
@@ -245,9 +262,9 @@ def parse_length(value):
         if imperial.group("num"):
             inches += float(imperial.group("num")) / float(imperial.group("den"))
         sign = -1.0 if text.startswith("-") else 1.0
-        return sign * (abs(feet) + inches / 12.0)
+        return _to_internal_length(sign * (abs(feet) + inches / 12.0), "ft")
     try:
-        return float(text)
+        return _to_internal_length(text, "ft")
     except ValueError:
         raise PyRevitException(
             "Can't read length {!r}. Use feet as a number, 32'-6\", 6\", "
