@@ -28,9 +28,9 @@ namespace pyRevitCLI {
     /// </summary>
     /// <remarks>
     /// Shipped skills live in <c>pyrevitlib/pyrevit/agent/skills</c> of the clone this CLI
-    /// belongs to, or, for a standalone CLI install, of the first registered clone that has them. Skills in <c>%APPDATA%\pyRevit\agent\skills</c> are added, and replace a
-    /// shipped skill of the same name, so a firm can add its own standards without touching the
-    /// clone. The entry text is <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the
+    /// belongs to, or, for a standalone CLI install, of the first registered clone that has them. When enabled, skills in <c>%APPDATA%\pyRevit\agent\skills</c> are added so a firm
+    /// can add its own standards without touching the clone; a user skill with the same name as a
+    /// shipped skill is ignored, and an unreadable one is skipped. The entry text is <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the
     /// generated skill list, so adding a skill folder needs no code change.
     /// </remarks>
     internal static class PyRevitAgentSkills {
@@ -39,6 +39,7 @@ namespace pyRevitCLI {
         private const string InstructionsFile = "INSTRUCTIONS.md";
         private const int MaxParentLevels = 8;
         private const int MaxSkillBytes = 128 * 1024;
+        private const int MaxUserDescriptionChars = 240;
         private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}$", RegexOptions.Compiled);
 
         public static string UserSkillsDir => Path.Combine(PyRevitAgentClient.AgentDir, "skills");
@@ -72,8 +73,21 @@ namespace pyRevitCLI {
             foreach (var (root, source) in SkillRoots()) {
                 if (root == null || !System.IO.Directory.Exists(root))
                     continue;
-                foreach (var skillDir in System.IO.Directory.GetDirectories(root).OrderBy(path => path, StringComparer.OrdinalIgnoreCase)) {
-                    var skill = ReadSkill(skillDir, source);
+                string[] skillDirs;
+                try {
+                    skillDirs = System.IO.Directory.GetDirectories(root);
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+                    continue;
+                }
+                foreach (var skillDir in skillDirs.OrderBy(path => path, StringComparer.OrdinalIgnoreCase)) {
+                    AgentSkill skill;
+                    try {
+                        skill = ReadSkill(skillDir, source);
+                    }
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+                        continue;
+                    }
                     if (skill != null && !skills.ContainsKey(skill.Name))
                         skills[skill.Name] = skill;
                 }
@@ -156,8 +170,8 @@ namespace pyRevitCLI {
             if (!SkillName.IsMatch(name))
                 return null;
             var description = frontMatter.TryGetValue("description", out var declaredDescription) ? declaredDescription : string.Empty;
-            if (description.Length > 240)
-                return null;
+            if (source == "user" && description.Length > MaxUserDescriptionChars)
+                description = description.Substring(0, MaxUserDescriptionChars - 3) + "...";
             return new AgentSkill {
                 Name = name,
                 Description = description,
