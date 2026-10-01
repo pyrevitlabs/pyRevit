@@ -234,6 +234,31 @@ namespace pyRevitCLI {
                 (JObject)CallRevit(arguments, "run", RunParameters(arguments, mode))));
         }
 
+        private JToken NavigateRevitLink(JObject arguments) {
+            var link = arguments["link"] as JObject
+                ?? throw new AgentClientException("invalid_params", "'link' must be an element reference returned by inspect_elements.");
+            if (link.Value<string>("destination") != "element" || link["ids"] is not JArray ids || ids.Count == 0)
+                throw new AgentClientException("invalid_params", "Only non-empty element links are supported.");
+            var expected = link["document"] as JObject
+                ?? throw new AgentClientException("invalid_params", "The link has no document reference.");
+            var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
+            var active = context?["document"] as JObject;
+            if (active == null || !SameDocument(active, expected))
+                throw new AgentClientException("stale_link", "The link belongs to a different or closed document. Activate its document, then inspect the elements again.");
+            return CallRevit(arguments, "show", new JObject {
+                ["action"] = arguments.Value<string>("action") ?? "select",
+                ["ids"] = ids,
+                ["zoom"] = arguments.Value<bool?>("zoom") ?? true,
+            });
+        }
+
+        private static bool SameDocument(JObject active, JObject expected) {
+            var expectedPath = expected.Value<string>("path");
+            if (!string.IsNullOrEmpty(expectedPath))
+                return string.Equals(active.Value<string>("path"), expectedPath, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(active.Value<string>("title"), expected.Value<string>("title"), StringComparison.Ordinal);
+        }
+
         private static JObject RunParameters(JObject arguments, string mode) {
             var script = arguments.Value<string>("script");
             if (string.IsNullOrWhiteSpace(script))
@@ -495,6 +520,16 @@ namespace pyRevitCLI {
                         ["categories"] = arguments["categories"],
                         ["zoom"] = arguments["zoom"] ?? false,
                     })),
+
+                new McpTool("navigate_revit_link", readOnly: true, new[] { "link" },
+                    () => ("Navigate an element link returned by inspect_elements. The active Revit document must still match the link; stale links return an actionable error. This selects or temporarily presents elements only.",
+                        new JObject {
+                            ["link"] = new JObject { ["type"] = "object", ["description"] = "An element link from inspect_elements." },
+                            ["action"] = new JObject { ["type"] = "string", ["enum"] = new JArray("select", "isolate", "hide") },
+                            ["zoom"] = new JObject { ["type"] = "boolean", ["description"] = "Zoom to the linked elements (default true)." },
+                            ["revit"] = RevitProperty(),
+                        }),
+                    NavigateRevitLink),
 
                 new McpTool("capture_view", readOnly: true, new string[0],
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
