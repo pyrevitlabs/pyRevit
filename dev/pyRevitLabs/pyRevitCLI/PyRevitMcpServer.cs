@@ -279,6 +279,22 @@ namespace pyRevitCLI {
             return parameters;
         }
 
+        private JToken RunAutomation(JObject arguments) {
+            var operation = PyRevitAutomationOperations.Resolve(
+                arguments.Value<string>("id"), arguments["inputs"]);
+            var parameters = new JObject {
+                ["script"] = operation.Value<string>("source"),
+                ["mode"] = "query",
+                ["title"] = operation.Value<string>("title"),
+                ["inputs"] = operation["inputs"],
+            };
+            if (arguments["engine"] != null)
+                parameters["engine"] = arguments["engine"];
+            if (arguments["timeout_s"] != null)
+                parameters["timeout_s"] = arguments["timeout_s"];
+            return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
+        }
+
         private static JToken GetRun(JObject arguments) {
             var runId = arguments.Value<string>("run_id");
             var runDir = PyRevitAgentClient.FindRunDir(runId)
@@ -491,6 +507,17 @@ namespace pyRevitCLI {
                     arguments => PyRevitLibraryIndex.ListAutomation(
                         arguments.Value<int?>("offset") ?? 0,
                         arguments.Value<int?>("limit") ?? 25)),
+
+                new McpTool("run_automation", readOnly: true, new[] { "id", "inputs" },
+                    () => ("Run a reviewed read-only automation operation with its bounded JSON input. This does not accept Python source, module names or callable names.",
+                        new JObject {
+                            ["id"] = new JObject { ["type"] = "string", ["description"] = "Invocable automation identifier, such as pyrevit.units.parse-length." },
+                            ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
+                            ["engine"] = new JObject { ["type"] = "string", ["enum"] = new JArray("ironpython", "cpython") },
+                            ["timeout_s"] = new JObject { ["type"] = "number", ["minimum"] = 0.001, ["maximum"] = 3600 },
+                            ["revit"] = RevitProperty(),
+                        }),
+                    RunAutomation),
 
                 new McpTool("lookup_revit_api", readOnly: true, new[] { "name" },
                     () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers.",
