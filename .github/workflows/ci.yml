@@ -2,7 +2,7 @@ name: pyRevit CI
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     branches: [develop, master]
     paths:
       - '.github/workflows/**'
@@ -12,6 +12,7 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
+      - 'tests/**'
   push:
     branches: [develop, master]
     tags: ['v*']
@@ -23,6 +24,7 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
+      - 'tests/**'
   workflow_dispatch:
 
 permissions:
