@@ -62,11 +62,13 @@ doesn't start the `claude` or `codex` command line tools, so those two entries s
 `pyrevit mcp uninstall claude` (or `codex`) from a normal prompt. Project-level entries
 (`--project`) are never removed automatically. To turn the host off: `pyrevit configs agent disable`.
 
-!!! note "Model data leaves the machine"
+!!! warning "Model data leaves the machine and is recorded locally"
 
     Whatever the agent reads (element names, parameter values, results) is sent to
     the agent's model provider. Check this against your project's confidentiality rules
-    before enabling the agent runtime.
+    before enabling the agent runtime. The runtime also stores each run's script, request,
+    response, large result, and captured images in plaintext under `%APPDATA%\pyRevit\agent`
+    for up to 14 days.
 
 ## Reference
 
@@ -75,7 +77,7 @@ doesn't start the `claude` or `codex` command line tools, so those two entries s
 | Setting | Command | Values |
 |---|---|---|
 | `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
-| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
+| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
 
 Run any of these commands without a value to print the current setting.
@@ -315,7 +317,8 @@ Why two processes:
 
 Why a named pipe: no TCP port, no firewall prompt, and nothing on the network. The pipe's
 access list allows only the current Windows user and denies network logons, and that is
-the authentication.
+the authentication. The trust boundary is the Windows account: any process running as that
+user can connect to the host and submit scripts.
 
 The CLI also checks that the process serving the pipe is the Revit recorded in the instance
 file, and refuses to send a request otherwise, so another local process can't take over a
@@ -412,7 +415,8 @@ approves inside Revit, and the agent can't approve itself.
 
 Honest limits:
 
-- Rollback protects the model, not the file system or the network. There is no sandbox.
+- Rollback protects the model, not the file system or the network. There is no sandbox;
+  `readonly` means query-only model access, not restricted Python execution.
 - Revit serves one agent request at a time. While one session's run is executing, which can
   last until its `timeout_s`, a second agent session can't connect and gets `revit_busy`
   after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
