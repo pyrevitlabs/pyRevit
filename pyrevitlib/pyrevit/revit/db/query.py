@@ -123,6 +123,11 @@ def get_type(element):
     return element.Document.GetElement(type_id)
 
 
+@automation.operation(
+    "pyrevit.elements.symbol-name",
+    PlainEnglish="Read the family symbol name used by an element.",
+    effects=("model.read",),
+)
 def get_symbol_name(element):
     """
     Retrieves the name of the symbol associated with the given Revit element.
@@ -136,6 +141,11 @@ def get_symbol_name(element):
     return get_name(element.Symbol)
 
 
+@automation.operation(
+    "pyrevit.elements.family-name",
+    PlainEnglish="Read the family name used by an element.",
+    effects=("model.read",),
+)
 def get_family_name(element):
     """
     Retrieves the family name of a given Revit element.
@@ -392,6 +402,11 @@ def get_all_elements_in_view(view):
     )
 
 
+@automation.operation(
+    "pyrevit.parameters.read",
+    PlainEnglish="Read a parameter's stored value in Revit internal units when numeric.",
+    effects=("model.read",),
+)
 def get_param_value(targetparam):
     """
     Retrieves the value of a given Revit parameter.
@@ -742,6 +757,11 @@ def get_noteblock_families(doc=None):
     ]
 
 
+@automation.operation(
+    "pyrevit.elements.by-family",
+    PlainEnglish="Find placed elements whose family name exactly matches a supplied name.",
+    effects=("model.read",),
+)
 def get_elements_by_family(family_name, doc=None):
     """
     Retrieves elements from a Revit document based on the specified family name.
@@ -1110,6 +1130,11 @@ def get_phases_names(doc=None):
     return ", ".join(phase.Name for phase in doc.Phases)
 
 
+@automation.operation(
+    "pyrevit.revisions.list",
+    PlainEnglish="List revision elements in the current document.",
+    effects=("model.read",),
+)
 def get_revisions(doc=None):
     """
     Retrieves a list of revision elements from the given Revit document.
@@ -1155,6 +1180,11 @@ def get_current_sheet_revision(sheet):
     return doc.GetElement(sheet.GetCurrentRevision())
 
 
+@automation.operation(
+    "pyrevit.sheets.list",
+    PlainEnglish="List sheets, with optional placeholder and project-browser filtering.",
+    effects=("model.read",),
+)
 def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     """
     Retrieves a list of sheets from the Revit document.
@@ -1401,6 +1431,11 @@ def compare_revisions(src_rev, dest_rev, case_sensitive=False):
     )
 
 
+@automation.operation(
+    "pyrevit.views.list",
+    PlainEnglish="List Revit views with optional type and graphical-view filtering.",
+    effects=("model.read",),
+)
 def get_all_views(doc=None, view_types=None, include_nongraphical=False):
     """
     Retrieves all views from the given Revit document, with optional filtering by view types and graphical views.
@@ -1536,6 +1571,11 @@ def is_schedule(view):
     return False
 
 
+@automation.operation(
+    "pyrevit.schedules.list",
+    PlainEnglish="List schedule views that can be placed on a sheet.",
+    effects=("model.read",),
+)
 def get_all_schedules(doc=None):
     """
     Retrieves all schedule views from the given Revit document.
