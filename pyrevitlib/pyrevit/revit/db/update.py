@@ -2,7 +2,7 @@
 
 import os.path as op
 
-from pyrevit import DOCS, PyRevitException
+from pyrevit import DOCS
 from pyrevit.framework import List, to_clr_list
 from pyrevit import DB
 from pyrevit.revit.db import query

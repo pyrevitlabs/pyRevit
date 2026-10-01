@@ -198,7 +198,7 @@ def copy_elements(element_ids, src_doc, dest_doc, return_ids=False):
     if element_ids:
         copied_ids = DB.ElementTransformUtils.CopyElements(
             src_doc,
-            framework.List[DB.ElementId](element_ids),
+            framework.to_clr_list(DB.ElementId, element_ids),
             dest_doc,
             None,
             cp_options,
@@ -612,11 +612,11 @@ def create_param_value_filter(
     filter_cats = []
     for cat in category_set:
         if DB.ParameterFilterElement.AllRuleParametersApplicable(
-            doc, framework.List[DB.ElementId]([cat.Id]), rules
+            doc, framework.to_clr_list(DB.ElementId, [cat.Id]), rules
         ):
             filter_cats.append(cat.Id)
 
     # create filter
     return DB.ParameterFilterElement.Create(
-        doc, filter_name, framework.List[DB.ElementId](filter_cats), rules
+        doc, filter_name, framework.to_clr_list(DB.ElementId, filter_cats), rules
     )

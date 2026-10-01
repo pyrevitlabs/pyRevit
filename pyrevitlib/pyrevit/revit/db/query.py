@@ -330,7 +330,7 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
         filters.append(bip_valuerule)
 
     if filters:
-        return DB.ElementParameterFilter(framework.List[DB.FilterRule](filters))
+        return DB.ElementParameterFilter(framework.to_clr_list(DB.FilterRule, filters))
     else:
         raise PyRevitException("Error creating filters.")
 
@@ -572,7 +572,9 @@ def get_elements_by_categories(categories, elements=None, doc=None, view_id=None
     if not cat_filters:
         return []
 
-    elcats_filter = DB.LogicalOrFilter(framework.List[DB.ElementFilter](cat_filters))
+    elcats_filter = DB.LogicalOrFilter(
+        framework.to_clr_list(DB.ElementFilter, cat_filters)
+    )
 
     fec = (
         DB.FilteredElementCollector(doc, view_id)
