@@ -8,6 +8,7 @@ Parameter Wrapper
 
 """  #
 from rpw import revit, DB
+import pyrevit_automation as automation
 from rpw.db.builtins import BipEnum
 from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwException, RpwWrongStorageType
@@ -16,6 +17,10 @@ from rpw.utils.logger import logger
 from pyrevit.compat import get_elementid_value_func
 
 
+@automation.type(
+    "rpw.types.parameter-set",
+    PlainEnglish="Access an element's parameters by name through the rpw wrapper.",
+)
 class ParameterSet(BaseObjectWrapper):
     """
     Allows you to treat an element's parameters as a dictionary.
@@ -48,6 +53,11 @@ class ParameterSet(BaseObjectWrapper):
         super(ParameterSet, self).__init__(element)
         self.builtins = _BuiltInParameterSet(self._revit_object)
 
+    @automation.operation(
+        "rpw.parameters.get-value",
+        PlainEnglish="Read a named parameter value with an optional fallback.",
+        effects=("model.read",),
+    )
     def get_value(self, param_name, default_value=None):
         try:
             return self.__getitem__(param_name).value
@@ -86,6 +96,11 @@ class ParameterSet(BaseObjectWrapper):
         """
         return [Parameter(parameter) for parameter in self._revit_object.Parameters]
 
+    @automation.operation(
+        "rpw.parameters.to-dict-list",
+        PlainEnglish="Read an element's parameters as rpw parameter dictionaries.",
+        effects=("model.read",),
+    )
     def to_dict(self):
         """ WIP: Returns a Serializable Dictionary """
         return [p.to_dict() for p in self.all]
@@ -139,6 +154,10 @@ class _BuiltInParameterSet(BaseObjectWrapper):
         return super(_BuiltInParameterSet, self).__repr__()
 
 
+@automation.type(
+    "rpw.types.parameter",
+    PlainEnglish="Wrap a Revit parameter and expose its typed stored value.",
+)
 class Parameter(BaseObjectWrapper):
     """
     Primarily for internal use by :any:`rpw.db.Element`, but can be used on it's own.
@@ -217,6 +236,11 @@ class Parameter(BaseObjectWrapper):
         return self._revit_object.Id
 
     @property
+    @automation.operation(
+        "rpw.parameter.value",
+        PlainEnglish="Read a parameter's typed stored value through the rpw wrapper.",
+        effects=("model.read",),
+    )
     def value(self):
         """
         Gets Parameter Value:
@@ -288,6 +312,11 @@ class Parameter(BaseObjectWrapper):
         return self._revit_object.AsValueString() or \
                self._revit_object.AsString()
 
+    @automation.operation(
+        "rpw.parameter.to-dict",
+        PlainEnglish="Read a parameter as its rpw name, type, value and display value dictionary.",
+        effects=("model.read",),
+    )
     def to_dict(self):
         """
         Returns Parameter as a dictionary. Included properties are:
