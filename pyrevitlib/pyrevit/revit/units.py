@@ -311,7 +311,8 @@ def parse_slope(value):
         (float): rise over run.
 
     Raises:
-        PyRevitException: when the string is not a pitch in a known format.
+        PyRevitException: when the string is not a pitch in a known format,
+            or its run is zero.
 
     Important:
         ``FootPrintRoof.set_SlopeAngle`` and the ``ROOF_SLOPE`` parameter
@@ -320,10 +321,17 @@ def parse_slope(value):
     """
     if isinstance(value, (int, float)):
         return float(value)
-    text = str(value)
+    text = str(value).strip()
+    try:
+        return float(text)
+    except ValueError:
+        pass
     ratio = _SLOPE_RATIO.match(text)
     if ratio:
-        return float(ratio.group("rise")) / float(ratio.group("run"))
+        run = float(ratio.group("run"))
+        if run == 0:
+            raise PyRevitException("Pitch {!r} has a run of zero.".format(value))
+        return float(ratio.group("rise")) / run
     degrees = _SLOPE_DEGREES.match(text)
     if degrees:
         return math.tan(math.radians(float(degrees.group("deg"))))
