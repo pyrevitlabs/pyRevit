@@ -266,7 +266,8 @@ namespace pyRevitCLI {
             try {
                 var registered = ReadFileClientCommand(client, path);
                 if (!IsThisInstall(registered)) {
-                    Console.WriteLine($"Kept {client} in {path}: not registered to {Environment.ProcessPath}.");
+                    if (registered != null)
+                        Console.WriteLine($"Kept {client} in {path}: not registered to {Environment.ProcessPath}.");
                     return;
                 }
                 UpdateJsonConfig(path, ServersKey(client), null);
