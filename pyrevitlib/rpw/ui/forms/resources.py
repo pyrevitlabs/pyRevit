@@ -23,7 +23,10 @@ from System.Windows import Window
 from System.IO import StringReader
 
 # Console
-from System.Environment import Exit, NewLine
+from System import Environment
+
+Exit = Environment.Exit
+NewLine = Environment.NewLine
 from System.Drawing import FontFamily
 from System.Windows.Input import Key
 

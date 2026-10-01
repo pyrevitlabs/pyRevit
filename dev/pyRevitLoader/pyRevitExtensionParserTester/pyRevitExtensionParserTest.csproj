@@ -87,6 +87,7 @@
     <Compile Include="LoadTimelineTests.cs" />
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
+    <Compile Include="ScriptBuiltinsTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -212,6 +212,22 @@ class _HostApplication(object):
     info on the active screen, active document and ui-document, available
     postable commands, and other functionality.
 
+    Note:
+        Every accessor resolves through the ``__revit__`` builtin, which pyRevit
+        always injects as a ``UI.UIApplication`` - in commands and in event
+        hooks alike, including DB-only ``Application_*`` hooks. It is ``None``
+        when no UI handle can be resolved, including early host startup.
+        Read accessors return ``None`` or empty collections without a host;
+        version comparisons return False. Operations that change UI state still
+        require a usable host. The type checks tolerate third-party
+        hosts that bind ``__revit__`` themselves.
+
+    Note:
+        ``uidoc``, ``doc`` and ``active_view`` are also ``None`` while a
+        DB-only event hook is running: the ``UIApplication`` is live, but Revit
+        does not guarantee an ``ActiveUIDocument`` until the event returns. Read
+        the document the event carries from ``EXEC_PARAMS.event_doc``.
+
     Examples:
             ```python
             hostapp = _HostApplication()
@@ -222,34 +238,61 @@ class _HostApplication(object):
     def __init__(self):
         self._postable_cmds = []
 
+    @staticmethod
+    def _get_handle():
+        """Return the ``__revit__`` builtin, or None where nothing injected it.
+
+        Note:
+            Read live on every access rather than cached at construction: with
+            a cached engine this module stays imported across runs while the
+            runtime re-injects the builtin for each execution.
+        """
+        try:
+            return __revit__  # pylint: disable=undefined-variable
+        except NameError:
+            return None
+
     @property
     def uiapp(self):
-        """Return UIApplication provided to the running command."""
-        if isinstance(__revit__, UI.UIApplication):  # pylint: disable=undefined-variable
-            return __revit__  # pylint: disable=undefined-variable
+        """Return UIApplication provided to the running command, or None."""
+        handle = self._get_handle()
+        if isinstance(handle, UI.UIApplication):
+            return handle
 
     @property
     def app(self):
-        """Return Application provided to the running command."""
+        """Return Application provided to the running command, or None."""
         if self.uiapp:
             return self.uiapp.Application
-        elif isinstance(__revit__, ApplicationServices.Application):  # pylint: disable=undefined-variable
-            return __revit__  # pylint: disable=undefined-variable
+        handle = self._get_handle()
+        if isinstance(handle, ApplicationServices.Application):
+            return handle
 
     @property
     def addin_id(self):
         """Return active addin id."""
-        return self.app.ActiveAddInId
+        return getattr(self.app, "ActiveAddInId", None)
 
     @property
     def has_api_context(self):
         """Determine if host application is in API context."""
-        return self.app.ActiveAddInId is not None
+        return self.addin_id is not None
 
     @property
     def uidoc(self):
-        """Return active UIDocument."""
-        return getattr(self.uiapp, "ActiveUIDocument", None)
+        """Return active UIDocument, or None when there is no UI context.
+
+        Note:
+            ``getattr`` alone only swallows ``AttributeError``, but the handle
+            is real in DB-only event hooks where Revit can refuse
+            ``ActiveUIDocument`` outright. That refusal is the same condition as
+            having no active document, so it degrades to None instead of
+            propagating an API exception out of a hook.
+        """
+        try:
+            return getattr(self.uiapp, "ActiveUIDocument", None)
+        except Exception:
+            return None
 
     @property
     def doc(self):
@@ -274,34 +317,34 @@ class _HostApplication(object):
     @property
     def available_servers(self):
         """Return :obj:`list` of available Revit server names."""
-        return list(self.app.GetRevitServerNetworkHosts())
+        return list(self.app.GetRevitServerNetworkHosts()) if self.app else []
 
     @property
     def version(self):
         """str: Return version number (e.g. '2018')."""
-        return self.app.VersionNumber
+        return getattr(self.app, "VersionNumber", None)
 
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        return self.app.SubVersionNumber
+        return getattr(self.app, "SubVersionNumber", None)
 
     @property
     def version_name(self):
         """str: Return version name (e.g. 'Autodesk Revit 2018')."""
-        return self.app.VersionName
+        return getattr(self.app, "VersionName", None)
 
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
         # Revit 2021+ VersionBuild reports the same value as VersionNumber.
         # uses labs module that is imported later in this code
-        return labs.extract_build_from_exe(self.proc_path)
+        return labs.extract_build_from_exe(self.proc_path) if self.app else None
 
     @property
     def serial_no(self):
         """str: Return serial number number (e.g. '569-09704828')."""
-        return api.get_product_serial_number()
+        return api.get_product_serial_number() if self.app else None
 
     @property
     def pretty_name(self):
@@ -313,22 +356,26 @@ class _HostApplication(object):
         Returns:
             (str): Pretty name of the host
         """
+        if self.app is None:
+            return None
         host_name = self.version_name.replace(self.version, self.subversion)
         return "%s build: %s" % (host_name, self.build)
 
     @property
     def is_demo(self):
         """bool: Determine if product is using demo license."""
-        return api.is_product_demo()
+        return api.is_product_demo() if self.app else None
 
     @property
     def language(self):
         """str: Return language type (e.g. 'LanguageType.English_USA')."""
-        return self.app.Language
+        return getattr(self.app, "Language", None)
 
     @property
     def username(self):
         """str: Return the username from Revit API (Application.Username)."""
+        if self.app is None:
+            return None
         uname = self.app.Username
         uname = uname.split("@")[0]  # if username is email
         # removing dots since username will be used in file naming
@@ -358,12 +405,12 @@ class _HostApplication(object):
     @property
     def proc_window(self):
         """``intptr``: Return handle to current process window."""
-        return self.uiapp.MainWindowHandle
+        return getattr(self.uiapp, "MainWindowHandle", None)
 
     @property
     def proc_screen(self):
         """``intptr``: Return handle to screen hosting current process."""
-        return Forms.Screen.FromHandle(self.proc_window)
+        return Forms.Screen.FromHandle(self.proc_window) if self.uiapp else None
 
     @property
     def proc_screen_workarea(self):
@@ -388,6 +435,8 @@ class _HostApplication(object):
             version (str or int): version to check against.
             or_equal (bool): Whether to include `version` in the comparison
         """
+        if self.version is None:
+            return False
         if or_equal:
             return int(self.version) >= int(version)
         else:
@@ -399,7 +448,7 @@ class _HostApplication(object):
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) < int(version)
+        return self.version is not None and int(self.version) < int(version)
 
     def is_exactly(self, version):
         """bool: Return True if host app is equal to provided version.
@@ -407,7 +456,7 @@ class _HostApplication(object):
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) == int(version)
+        return self.version is not None and int(self.version) == int(version)
 
     def get_postable_commands(self):
         """Return list of postable commands.
@@ -417,6 +466,8 @@ class _HostApplication(object):
         """
         # if list of postable commands is _not_ already created
         # make the list and store in instance parameter
+        if self.uiapp is None:
+            return []
         if not self._postable_cmds:
             for pc in UI.PostableCommand.GetValues(UI.PostableCommand):
                 try:
@@ -447,15 +498,7 @@ class _HostApplication(object):
         self.uiapp.PostCommand(command_id)
 
 
-try:
-    # Create an intance of host application wrapper
-    # making sure __revit__ is available
-    HOST_APP = _HostApplication()
-except Exception:
-    raise Exception(
-        "Critical Error: Host software is not supported. "
-        "(__revit__ handle is not available)"
-    )
+HOST_APP = _HostApplication()
 
 
 # -----------------------------------------------------------------------------

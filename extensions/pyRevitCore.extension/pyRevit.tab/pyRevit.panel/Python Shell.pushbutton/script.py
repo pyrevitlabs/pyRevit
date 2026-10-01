@@ -8,7 +8,7 @@ choose the mode.
 
 import sys
 
-from pyrevit import script, forms, framework
+from pyrevit import script, forms, framework, HOST_APP
 from System import AppDomain
 from System.IO import File, Path
 from System.Collections.Generic import List
@@ -62,8 +62,11 @@ def _load_shell():
     return Shell, search_paths
 
 
+if HOST_APP.uiapp is None:
+    forms.alert("Python Shell requires a Revit UI session.", exitscript=True)
+
 if shell_mode in ("Docked", "Docked Editor"):
-    if __revit__.ActiveUIDocument is None:
+    if HOST_APP.uidoc is None:
         forms.alert(
             "Docked Python Shell requires an open Revit project.\n\n"
             "To use Python Shell without a project, Shift+Click this button "

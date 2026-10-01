@@ -1047,9 +1047,9 @@ class ColorSplasherWindow(forms.WPFWindow):
             if self.list_box2.Items.Count <= 0:
                 return
 
-            uidoc = HOST_APP.uiapp.ActiveUIDocument
+            uidoc = HOST_APP.uidoc
             if uidoc is None:
-                uidoc = __revit__.ActiveUIDocument
+                return
 
             all_element_ids = List[DB.ElementId]()
 
@@ -1082,9 +1082,9 @@ class ColorSplasherWindow(forms.WPFWindow):
     def button_click_select_none(self, sender, e):
         """Clear the current selection in Revit."""
         try:
-            uidoc = HOST_APP.uiapp.ActiveUIDocument
+            uidoc = HOST_APP.uidoc
             if uidoc is None:
-                uidoc = __revit__.ActiveUIDocument
+                return
 
             empty_list = List[DB.ElementId]()
             uidoc.Selection.SetElementIds(empty_list)
@@ -1206,8 +1206,7 @@ class ColorSplasherWindow(forms.WPFWindow):
         self.uns_event.Raise()
 
     def list_box2_mouse_down(self, sender, e):
-        """
-        track clicking on dialogbox
+        """Track clicking on dialogbox
 
         :param self: Description
         :param sender: Description
@@ -1316,9 +1315,9 @@ class ColorSplasherWindow(forms.WPFWindow):
                         and value_item.ele_id is not None
                         and value_item.ele_id.Count > 0
                     ):
-                        uidoc = HOST_APP.uiapp.ActiveUIDocument
+                        uidoc = HOST_APP.uidoc
                         if uidoc is None:
-                            uidoc = __revit__.ActiveUIDocument
+                            return
                         element_ids = value_item.ele_id
                         uidoc.Selection.SetElementIds(element_ids)
                         uidoc.RefreshActiveView()
@@ -1930,7 +1929,7 @@ class FormSaveLoadScheme(Forms.Form):
 
 
 def get_active_view(ac_doc):
-    uidoc = HOST_APP.uiapp.ActiveUIDocument
+    uidoc = HOST_APP.uidoc
     selected_view = ac_doc.ActiveView
     if (
         selected_view.ViewType == DB.ViewType.ProjectBrowser

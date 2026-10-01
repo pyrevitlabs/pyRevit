@@ -10,6 +10,7 @@ layout:
   - Test IronPython Threading
   - Test IronPython Events
   - Test IronPython Debugger
+  - Test IronPython Revit Handle
   - -----
   - Test CPython Command
   - Test CPython Namespace
@@ -18,5 +19,8 @@ layout:
   - Test CPython Events
   - Test CPython Debugger
   - Test CPython Regressions
+  - Test CPython Revit Handle
   - -----
   - Test CLR Engine Debugger
+  - -----
+  - Test Smart Button Revit Handle

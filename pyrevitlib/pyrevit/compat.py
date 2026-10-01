@@ -67,20 +67,37 @@ else:
 
 
 def _get_revit_version():
-    """Returns the current Revit version as an integer."""
-    if __revit__ is None:
+    """Returns the current Revit version as an integer, or NO_REVIT.
+
+    Note:
+        pyRevit injects ``__revit__`` as a UIApplication, so the UIApplication
+        branch is the one that fires under a pyRevit engine. The remaining
+        branches tolerate third-party hosts that bind the name to an Application
+        or ControlledApplication themselves, and an undefined name outside any
+        host resolves to NO_REVIT instead of raising.
+    """
+    try:
+        host_app = __revit__
+    except NameError:
+        return NO_REVIT
+
+    if host_app is None:
         return NO_REVIT
     try:
         # UIApplication
-        return int(__revit__.Application.VersionNumber)
+        return int(host_app.Application.VersionNumber)
     except AttributeError:
         pass
     try:
         # Application, (ControlledApplication)
-        return int(__revit__.VersionNumber)
+        return int(host_app.VersionNumber)
     except AttributeError:
+        pass
+    try:
         # ControlledApplication
-        return int(__revit__.ControlledApplication.VersionNumber)
+        return int(host_app.ControlledApplication.VersionNumber)
+    except AttributeError:
+        return NO_REVIT
 
 
 # pylint: disable=C0103
