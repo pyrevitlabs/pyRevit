@@ -62,6 +62,7 @@ namespace pyRevitCLI {
         private static readonly Regex DefStart = new Regex(@"^(?<indent>\s*)def\s+(?<name>\w+)\s*\(", RegexOptions.Compiled);
         private static readonly Regex Decorator = new Regex(@"^\s*@(?<name>[\w.]+)", RegexOptions.Compiled);
         private static readonly Regex AutomationOperation = new Regex(@"^\s*@automation\.operation\s*\(", RegexOptions.Compiled);
+        private static readonly Regex AutomationType = new Regex(@"^\s*@automation\.type\s*\(", RegexOptions.Compiled);
         private static readonly Regex AutomationId = new Regex(@"^\s*(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex AutomationValue = new Regex(@"(?:^|,)\s*(?<name>PlainEnglish|mode|context|transaction)\s*=\s*(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex AutomationEffects = new Regex(@"(?:^|,)\s*effects\s*=\s*\((?<values>.*?)\)", RegexOptions.Compiled | RegexOptions.Singleline);
@@ -287,8 +288,8 @@ namespace pyRevitCLI {
             AutomationMetadata automation = null;
             for (var index = 0; index < lines.Length; index++) {
                 var line = lines[index];
-                if (AutomationOperation.IsMatch(line)) {
-                    automation = ReadAutomation(lines, ref index);
+                if (AutomationOperation.IsMatch(line) || AutomationType.IsMatch(line)) {
+                    automation = ReadAutomation(lines, ref index, AutomationType.IsMatch(line));
                     continue;
                 }
                 var decorator = Decorator.Match(line);
@@ -299,6 +300,7 @@ namespace pyRevitCLI {
 
                 var classMatch = ClassLine.Match(line);
                 if (classMatch.Success) {
+                    var classAutomation = automation;
                     currentClass = classMatch.Groups["name"].Value;
                     currentClassSymbol = null;
                     decorators.Clear();
@@ -313,6 +315,7 @@ namespace pyRevitCLI {
                         Kind = "class",
                         Signature = "()",
                         Doc = bases.Length > 0 ? ((classDoc ?? string.Empty) + "\n\nBases: " + bases + ".").Trim() : classDoc,
+                        Automation = classAutomation,
                     };
                     symbols.Add(currentClassSymbol);
                     continue;
@@ -356,7 +359,7 @@ namespace pyRevitCLI {
             return symbols;
         }
 
-        private static AutomationMetadata ReadAutomation(string[] lines, ref int index) {
+        private static AutomationMetadata ReadAutomation(string[] lines, ref int index, bool isType) {
             var decorator = ReadDecorator(lines, ref index);
             var arguments = decorator.Substring(decorator.IndexOf('(') + 1);
             arguments = arguments.Substring(0, arguments.Length - 1);
@@ -373,9 +376,9 @@ namespace pyRevitCLI {
             return new AutomationMetadata {
                 Id = id,
                 PlainEnglish = values["PlainEnglish"],
-                Mode = values.ContainsKey("mode") ? values["mode"] : "query",
+                Mode = values.ContainsKey("mode") ? values["mode"] : isType ? "infrastructure" : "query",
                 Effects = effectValues,
-                Context = values.ContainsKey("context") ? values["context"] : "document",
+                Context = values.ContainsKey("context") ? values["context"] : isType ? "none" : "document",
                 Transaction = values.ContainsKey("transaction") ? values["transaction"] : "none",
             };
         }
