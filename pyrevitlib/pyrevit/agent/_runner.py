@@ -73,10 +73,15 @@ class _NarrowBroadHandlers(ast.NodeTransformer):
     because Python removes the trace function once it has raised.
     """
 
+    def __init__(self):
+        ast.NodeTransformer.__init__(self)
+        self.narrowed = 0
+
     def visit_ExceptHandler(self, node):
         self.generic_visit(node)
         if _catches_base_exception(node.type):
             node.type = ast.Name(id="Exception", ctx=ast.Load())
+            self.narrowed += 1
         return node
 
 
@@ -99,9 +104,16 @@ def _compile_source(source):
         rewrite fails, so a syntax error keeps its original message and line
         number; the caller must report the skipped rewrite, because a script
         compiled that way can swallow its own timeout.
+
+    Note:
+        IronPython reports every line as line 1 for code compiled from an AST,
+        so the source text is compiled whenever no handler needed narrowing.
     """
     try:
-        tree = _NarrowBroadHandlers().visit(ast.parse(source, SOURCE_NAME, "exec"))
+        narrower = _NarrowBroadHandlers()
+        tree = narrower.visit(ast.parse(source, SOURCE_NAME, "exec"))
+        if not narrower.narrowed:
+            return compile(source, SOURCE_NAME, "exec"), None
         ast.fix_missing_locations(tree)
         return compile(tree, SOURCE_NAME, "exec"), None
     except Exception as ex:
