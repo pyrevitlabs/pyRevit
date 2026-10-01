@@ -67,6 +67,12 @@ def get_unit_info(spec_type_id, doc=None):
     return unit, unit_label, symbol, symbol_label
 
 
+@automation.operation(
+    "pyrevit.units.format-area",
+    PlainEnglish="Format an internal area value using the project's display units.",
+    mode="query",
+    effects=("model.read",),
+)
 def format_area(area_value, doc=None):
     """Return formatted area value in document units.
 
@@ -95,6 +101,12 @@ def format_area(area_value, doc=None):
         )
 
 
+@automation.operation(
+    "pyrevit.units.format-length",
+    PlainEnglish="Format an internal length value using the project's display units.",
+    mode="query",
+    effects=("model.read",),
+)
 def format_length(length_value, doc=None):
     """Return formatted length value in document units.
 
@@ -123,6 +135,12 @@ def format_length(length_value, doc=None):
         )
 
 
+@automation.operation(
+    "pyrevit.units.format-slope",
+    PlainEnglish="Format a rise-over-run slope using the project's display units.",
+    mode="query",
+    effects=("model.read",),
+)
 def format_slope(slope_value, doc=None):
     """Return formatted slope value in document units.
 

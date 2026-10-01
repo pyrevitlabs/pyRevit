@@ -697,6 +697,12 @@ def _point_pairs(points, closed):
     return [(points[i], points[(i + 1) % len(points)]) for i in range(count)]
 
 
+@automation.operation(
+    "pyrevit.geometry.curve-loop",
+    PlainEnglish="Create a closed Revit curve loop from drawing points.",
+    mode="pure",
+    context="none",
+)
 def create_curve_loop(points, z=0.0):
     """Return a closed DB.CurveLoop of lines through ``points`` at elevation ``z``."""
     loop = DB.CurveLoop()
@@ -705,6 +711,12 @@ def create_curve_loop(points, z=0.0):
     return loop
 
 
+@automation.operation(
+    "pyrevit.geometry.curve-array",
+    PlainEnglish="Create Revit line curves from drawing points.",
+    mode="pure",
+    context="none",
+)
 def create_curve_array(points, z=0.0, closed=True):
     """Return a DB.CurveArray of lines through ``points`` at elevation ``z``."""
     curves = DB.CurveArray()
