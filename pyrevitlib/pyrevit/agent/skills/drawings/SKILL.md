@@ -35,7 +35,7 @@ Annotation belongs to a view. Pass the plan, not the sheet.
 
 ## Schedules
 
-`create.create_schedule("OST_Rooms", ["Number", "Name", "Level", "Area"], view_name="Room Schedule", sort_by=["Number"], totals=["Area"])`. A field name that doesn't exist raises with the available names. For filters, grouping and formatting, see the `scheduling` skill.
+`create.create_schedule` takes the display names returned by `GetSchedulableFields()`, which are localized by Revit. Discover those names in the current session before creating a schedule; for filters, grouping and formatting, see the `scheduling` skill.
 
 ## Sheets
 
@@ -52,17 +52,10 @@ create.place_on_sheet(sheet, schedule, anchor="top_right")
 - **Title block parameters** such as drawn by and date are parameters on the title block instance on the sheet.
 - **Re-runnable:** delete the previous sheet, view and schedule by number and name before creating them again.
 
-## Exporting to PDF (Revit 2022 and later)
+## Exporting to PDF
 
-```python
-from System.Collections.Generic import List
-options = DB.PDFExportOptions()
-options.FileName = "Set A"
-options.Combine = True
-doc.Export(folder, List[DB.ElementId]([sheet.Id for sheet in sheets]), options)
-```
-
-- **Where to write:** only to folders the user named. Tell them where the file is.
+Guarded agent runs block Revit file and view exports. Use a run to prepare sheets and verify
+them, then have the user export from Revit after the run ends.
 
 ## Before you report done
 

@@ -32,7 +32,7 @@ mark = definition.AddField(fields["Mark"])
 width = definition.AddField(fields["Width"])
 ```
 
-- **Available fields:** `GetSchedulableFields()` lists what can be scheduled for that category. Pick fields by name.
+- **Available fields:** `GetSchedulableFields()` lists what can be scheduled for that category. Its display names are localized, so discover them in the active Revit session instead of hardcoding English labels.
 - **Field ids:** `AddField` returns a `ScheduleField`. Its `FieldId` is what filters and sorting use.
 - **Order:** fields appear in the order they are added.
 - **Hiding a field:** set `field.IsHidden = True` to keep it for filtering or sorting but not show it.
@@ -74,12 +74,8 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 
 ## Exporting
 
-```python
-options = DB.ViewScheduleExportOptions()
-schedule.Export(folder, "doors.txt", options)
-```
-
-- **Output:** a delimited text file. Tell the user where it is.
+Guarded agent runs block schedule exports. Prepare and verify the schedule in a run, then have
+the user export it from Revit after the run ends.
 - **Where to write:** only to folders the user named, or the run's own folder.
 
 ## Before you report done
