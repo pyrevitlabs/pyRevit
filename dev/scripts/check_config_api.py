@@ -66,7 +66,12 @@ SECTION_ACCESSORS = ("core", "routes", "telemetry", "environment")
 
 IDENTITY_PROPERTIES = ("config_service", "is_readonly")
 
-DIRECT_CONFIG_ACCESSORS = ("agent_enabled", "agent_policy", "agent_engine")
+DIRECT_CONFIG_ACCESSORS = (
+    "agent_enabled",
+    "agent_policy",
+    "agent_engine",
+    "agent_user_skills_enabled",
+)
 
 SECTION_MEMBER_EXEMPT = ("get_option", "set_option", "has_option", "remove_option")
 

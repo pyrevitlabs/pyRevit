@@ -686,6 +686,19 @@ class PyRevitConfig(object):
     def agent_engine(self, engine):
         PyRevit.PyRevitConfigs.SetAgentEngine(engine)
 
+    @property
+    def agent_user_skills_enabled(self):
+        """Whether the MCP server loads user-authored skills for this user.
+
+        User skills are trusted-account guidance. They cannot replace shipped
+        skills or relax host policy.
+        """
+        return PyRevit.PyRevitConfigs.GetAgentUserSkillsEnabled()
+
+    @agent_user_skills_enabled.setter
+    def agent_user_skills_enabled(self, state):
+        PyRevit.PyRevitConfigs.SetAgentUserSkillsEnabled(bool(state))
+
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
