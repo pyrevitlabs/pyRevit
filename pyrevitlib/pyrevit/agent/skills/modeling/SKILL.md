@@ -126,11 +126,11 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 - Create it empty, then set the shape, with a material or it will have none:
 
   ```python
-  from System.Collections.Generic import List
+  from pyrevit import framework
   options = DB.SolidOptions(material_id, DB.ElementId.InvalidElementId)
   solid = DB.GeometryCreationUtilities.CreateExtrusionGeometry(loops, DB.XYZ.BasisZ, height, options)
   shape = DB.DirectShape.CreateElement(doc, DB.ElementId(DB.BuiltInCategory.OST_GenericModel))
-  shape.SetShape(List[DB.GeometryObject]([solid]))
+  shape.SetShape(framework.to_net_list(DB.GeometryObject, [solid]))
   ```
 
 ## Materials

@@ -1,6 +1,6 @@
 ---
 name: revit-files
-description: Revit file types and working with files. Covers what .rvt, .rte, .rfa and .rft files are, where templates and libraries live, creating a new family from a family template, creating a new project from a project template, opening and saving documents from a run, and loading a family file into the project. Use it for "make a new family", "start a project from the mechanical template", "open this model", "save the family" and similar tasks.
+description: Revit file types and working with files. Covers what .rvt, .rte, .rfa and .rft files are, where templates and libraries live, and opening documents. Guarded runs cannot save or export documents. Use it for "open this model", "find the mechanical template", and similar tasks.
 ---
 
 # Revit files
@@ -11,7 +11,7 @@ description: Revit file types and working with files. Covers what .rvt, .rte, .r
 |---|---|---|
 | `.rvt` | A project: the building model, its views and sheets. Also used for central and local models of a workshared project; `Name.0001.rvt` files next to it are backups. | `app.OpenDocumentFile(path)`, or `uiapp.OpenAndActivateDocument(path)` to show it to the user |
 | `.rte` | A project template: the starting settings, types, views and families of a new project. | `app.NewProjectDocument(path)` |
-| `.rfa` | A loadable family: doors, furniture, equipment, fixtures. | `doc.LoadFamily(path)` to load it into a project; `app.OpenDocumentFile(path)` to read it. A family opened from disk can't be changed or saved; to change the file, load it, edit it with `EditFamily`, and `SaveAs` its path |
+| `.rfa` | A loadable family: doors, furniture, equipment, fixtures. | `doc.LoadFamily(path)` to load it into a project; `app.OpenDocumentFile(path)` to read it. A family opened from disk cannot be changed or saved in a guarded run. |
 | `.rft` | A family template: fixes the new family's category and how it is hosted. | `app.NewFamilyDocument(path)` |
 
 Text files often travel with them: a type catalog (`Door.txt` next to `Door.rfa`) lists the family's types, a shared parameters file defines parameters shared across families and projects (`app.SharedParametersFilename`), and a keynote file holds keynote text.
@@ -37,84 +37,16 @@ generic_model = os.path.join(family_templates, "English", "Metric Generic Model.
 
 ## Saving: what a run can and can't do
 
-- **New documents and families from `EditFamily`** can be saved (`SaveAs`) and closed (`Close(False)`) from the same run. Documents opened from a file with `OpenDocumentFile` or `OpenAndActivateDocument` cannot be saved, even if their `PathName` is empty (for example a detached model).
-- **Create, build and save a new document in one run.** When a run ends, the host closes every background document it created or opened, without saving, and lists them in `closed_documents`; a failed run loses whatever it built there. Never keep an unsaved model across runs: a crash or a closed document loses it. `get_context.open_documents` shows what is open.
+- **Guarded runs cannot save documents.** The host blocks `Save` and `SaveAs` for documents that were open, created, or opened from disk during a run. It also closes background documents it created or opened without saving when the run ends. Use a run to inspect or prepare a document, then have the user save it in Revit after the run.
 - **The document that was open when the run started can't be saved from a run.** Revit refuses with "Operation is not permitted when there is any open transaction phase started by API client", because the run holds a transaction group on it. Ask the user to save it in Revit.
 - **Files written during a dry run stay on disk.** A dry run rolls back model changes, not files.
 - **Check cleanup outcomes.** `changes.other_documents` reports `rolled_back` only after a successful transaction-group rollback, and `discarded_on_close` only after a document opened from disk has actually closed. `rollback_incomplete` means changes remain in memory: tell the user to close that document without saving. Check `unclosed_documents` and `warnings` before reporting success.
-- **`SaveAs` fails when the file exists.** Check with `os.path.exists` first and ask the user before replacing a file; overwrite only with `DB.SaveAsOptions()` and `OverwriteExistingFile = True` after they agree.
-- **Save only where the user agreed**, and tell them the full path you wrote.
 
-## New family from a family template
+## Creating files from templates
 
-1. **Pick the template** by category and hosting. A family's hosting can't be changed later, so a light that must sit on a ceiling needs a ceiling-based template.
-2. **Create and build it** in the family document, in its own transaction. Close it in a `finally`, so it never stays open in memory.
-3. **Save it** as `.rfa`, then **load it** into the project in a guarded run: `run_modify` with `dry_run=true` first.
+Pick a family template by category and hosting before creating a family. A family's hosting cannot be changed later, so a light that must sit on a ceiling needs a ceiling-based template. Project templates sit in language folders under one root, and the default template can be in a different one (`English-Imperial` while the metric templates are in `English`).
 
-```python
-import os
-
-MM = 1 / 304.8
-template = os.path.join(app.FamilyTemplatePath, "English", "Metric Generic Model.rft")
-target = os.path.join(inputs["folder"], "Planter Box.rfa")
-if os.path.exists(target):
-    raise ValueError("{} exists; ask the user before replacing it.".format(target))
-
-family_doc = app.NewFamilyDocument(template)
-try:
-    t = DB.Transaction(family_doc, "Build planter box")
-    t.Start()
-    manager = family_doc.FamilyManager
-    manager.NewType("600 x 400")
-    width = manager.AddParameter("Width", DB.GroupTypeId.Geometry, DB.SpecTypeId.Length, False)
-    manager.Set(width, 600 * MM)
-    corners = [DB.XYZ(0, 0, 0), DB.XYZ(600 * MM, 0, 0), DB.XYZ(600 * MM, 400 * MM, 0), DB.XYZ(0, 400 * MM, 0)]
-    profile = DB.CurveArray()
-    for start, end in zip(corners, corners[1:] + corners[:1]):
-        profile.Append(DB.Line.CreateBound(start, end))
-    loops = DB.CurveArrArray()
-    loops.Append(profile)
-    plane = DB.SketchPlane.Create(family_doc, DB.Plane.CreateByNormalAndOrigin(DB.XYZ.BasisZ, DB.XYZ.Zero))
-    family_doc.FamilyCreate.NewExtrusion(True, loops, plane, 300 * MM)
-    t.Commit()
-    family_doc.SaveAs(target)
-finally:
-    family_doc.Close(False)
-
-t = DB.Transaction(doc, "Load Planter Box")
-t.Start()
-doc.LoadFamily(target)
-t.Commit()
-family = [f for f in DB.FilteredElementCollector(doc).OfClass(DB.Family) if f.Name == "Planter Box"]
-result = {"saved": target, "loaded": bool(family)}
-```
-
-- **Find the loaded family by name.** Depending on the engine, `doc.LoadFamily(path)` returns only `True`, not the `Family`.
-- **Parameters:** `AddParameter(name, group, spec, is_instance)` takes `DB.GroupTypeId` and `DB.SpecTypeId` values. A new family has no type until you call `manager.NewType(...)`; set values after that.
-- **Load without saving:** when the user doesn't want a file, `family_doc.LoadFamily(doc, options)` loads straight from the family document; see the `family-editing` skill for the options handler.
-- **Editing an existing family** is the `family-editing` skill's job.
-
-## New project from a project template
-
-```python
-import os
-
-templates_root = os.path.dirname(os.path.dirname(app.DefaultProjectTemplate))
-template = os.path.join(templates_root, "English", "Mechanical-Default_Metric.rte")
-if not os.path.exists(template):
-    raise ValueError("No {}; language folders: {}".format(template, sorted(os.listdir(templates_root))))
-target = os.path.join(inputs["folder"], "Office HVAC.rvt")
-if os.path.exists(target):
-    raise ValueError("{} exists; ask the user before replacing it.".format(target))
-
-project = app.NewProjectDocument(template)
-project.SaveAs(target)
-project.Close(False)
-result = {"saved": target}
-```
-
-- `app.NewProjectDocument` creates the project in memory, with no window. Save it, close it, then show it to the user as below.
-- Templates sit in language folders under one root, and the default template can be in a different one (`English-Imperial` while the metric templates are in `English`). Name the language folder explicitly, as above.
+A guarded run can inspect template paths and make reversible changes to an existing document, but it cannot create a durable `.rfa` or `.rvt`: it blocks both `Save` and `SaveAs`. Have the user create and save a new family or project in Revit, then use a later run to work on that open document.
 
 ## Opening a document for the user
 

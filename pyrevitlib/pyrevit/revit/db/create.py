@@ -1622,13 +1622,19 @@ def create_dimension(view, references, axis="x", position=0.0, doc=None):
             "Nothing to dimension across: the model has no elements with a bounding box."
         )
     position = units.parse_length(position)
+    level = view.GenLevel
+    if level is None:
+        raise PyRevitException("A dimension view needs an associated level.")
+    elevation = level.Elevation
     if axis == "x":
         line = DB.Line.CreateBound(
-            DB.XYZ(box.Min.X, position, 0), DB.XYZ(box.Max.X, position, 0)
+            DB.XYZ(box.Min.X, position, elevation),
+            DB.XYZ(box.Max.X, position, elevation),
         )
     else:
         line = DB.Line.CreateBound(
-            DB.XYZ(position, box.Min.Y, 0), DB.XYZ(position, box.Max.Y, 0)
+            DB.XYZ(position, box.Min.Y, elevation),
+            DB.XYZ(position, box.Max.Y, elevation),
         )
     reference_array = DB.ReferenceArray()
     for reference in references:
