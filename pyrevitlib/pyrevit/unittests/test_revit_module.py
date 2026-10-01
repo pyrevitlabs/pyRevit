@@ -89,6 +89,23 @@ class UnitConversionTests(unittest.TestCase):
         expected = DB.UnitUtils.ConvertToInternalUnits(900.0, unit_id)
         self.assertEqual(expected, units.parse_length("900mm"))
 
+    def test_parse_length_converts_imperial_components_with_unit_utils(self):
+        """Feet and inches text converts each component through Revit's unit API."""
+        from pyrevit import DB, HOST_APP
+        from pyrevit.revit import units
+
+        if HOST_APP.is_newer_than(2021):
+            feet_id = DB.UnitTypeId.Feet
+            inches_id = DB.UnitTypeId.Inches
+        else:
+            feet_id = DB.DisplayUnitType.DUT_DECIMAL_FEET
+            inches_id = DB.DisplayUnitType.DUT_DECIMAL_INCHES
+
+        expected = DB.UnitUtils.ConvertToInternalUnits(
+            32.0, feet_id
+        ) + DB.UnitUtils.ConvertToInternalUnits(6.5, inches_id)
+        self.assertEqual(expected, units.parse_length("32' 6 1/2\""))
+
 
 class DocumentGatedTests(unittest.TestCase):
     """Helpers that need an active project document (skip when absent)."""
