@@ -23,18 +23,15 @@ namespace pyRevitCLI {
     /// </summary>
     /// <remarks>
     /// Shipped skills live in <c>pyrevitlib/pyrevit/agent/skills</c> of the clone this CLI
-    /// belongs to, or, for a standalone CLI install, of the first registered clone that has them. Skills in <c>%APPDATA%\pyRevit\agent\skills</c> are added, and replace a
-    /// shipped skill of the same name, so a firm can add its own standards without touching the
-    /// clone. The entry text is <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the
-    /// generated skill list, so adding a skill folder needs no code change.
+    /// belongs to, or, for a standalone CLI install, of the first registered clone that has them.
+    /// The entry text is <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the generated
+    /// skill list. User-supplied skill directories are not loaded by the foundation runtime.
     /// </remarks>
     internal static class PyRevitAgentSkills {
         public const string CoreSkill = "revit-scripting";
         private const string SkillFile = "SKILL.md";
         private const string InstructionsFile = "INSTRUCTIONS.md";
         private const int MaxParentLevels = 8;
-
-        public static string UserSkillsDir => Path.Combine(PyRevitAgentClient.AgentDir, "skills");
 
         public static string ShippedSkillsDir {
             get {
@@ -62,11 +59,10 @@ namespace pyRevitCLI {
 
         public static List<AgentSkill> Load() {
             var skills = new Dictionary<string, AgentSkill>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (root, source) in new[] { (ShippedSkillsDir, "pyrevit"), (UserSkillsDir, "user") }) {
-                if (root == null || !System.IO.Directory.Exists(root))
-                    continue;
+            var root = ShippedSkillsDir;
+            if (root != null && System.IO.Directory.Exists(root)) {
                 foreach (var skillDir in System.IO.Directory.GetDirectories(root)) {
-                    var skill = ReadSkill(skillDir, source);
+                    var skill = ReadSkill(skillDir, "pyrevit");
                     if (skill != null)
                         skills[skill.Name] = skill;
                 }

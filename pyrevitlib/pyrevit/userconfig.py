@@ -30,10 +30,10 @@ Examples:
     ```
 
 
-Typed section access is the canonical way to reach the built-in settings.
+Typed section access is the preferred way to reach the built-in settings.
 The `core`, `routes`, and `telemetry` properties expose the strongly-typed
-sections backed by the shared configuration service, so a setting is read and
-written by its section and its C# property name:
+sections backed by the shared configuration service, so a setting can be read
+or written by its section and name directly:
 
 Examples:
     ```python
@@ -41,29 +41,10 @@ Examples:
     value = user_config.core.RocketMode
     ```
 
-The flat snake_case accessors (e.g. `user_config.rocket_mode`) are aliases
-over these sections. They are **frozen, not deprecated**: they keep working
-for reads and writes indefinitely, none is scheduled for removal, and no new
-one may be added. That is a decision, not an oversight - see
-`docs/config-api.md` for the naming contract, the full alias inventory, and
-the reasoning.
-
-Important: a typed section falls back to a raw option for any name the C#
-schema does not declare, on read and on write alike. So
-`user_config.core.rocket_mode = True` stores a raw key named `rocket_mode` in a
-section whose real key is `rocketmode`; it does not raise, and it leaves
-`RocketMode` untouched. Use the PascalCase property name, or `set_option` for a
-key the schema has no property for.
-
-Examples:
-    ```python
-    user_config.core.set_option("my_key", value)   # explicit: raw option
-    user_config.core.my_key                        # reads it back
-    ```
-
-`add_section`/`get_section` and the per-section `get_option`/`set_option` are
-the escape hatch for anything outside the typed schema, and
-`pyrevit.coreutils.configparser.open_config_file` covers a tool's own ini.
+The flat snake_case accessors (e.g. `user_config.rocket_mode`) are convenience
+aliases over these sections and are considered legacy: prefer the typed
+`section.name` form in new code. The aliases are expected to be deprecated in a
+future release once callers have migrated, so avoid adding new ones.
 """
 
 # pylint: disable=C0103,C0413,W0703
@@ -646,45 +627,6 @@ class PyRevitConfig(object):
     @routes_server.setter
     def routes_server(self, state):
         self.routes.Status = state
-
-    @property
-    def agent_enabled(self):
-        """Whether the agent host (MCP) starts on the next pyRevit load.
-
-        The agent host is independent of the routes server: it listens on a
-        current-user named pipe, never on the network.
-
-        Note:
-            The setters write the config file immediately, through the same
-            accessors the agent host and the ``pyrevit`` CLI use.
-        """
-        return PyRevit.PyRevitConfigs.GetAgentEnabled()
-
-    @agent_enabled.setter
-    def agent_enabled(self, state):
-        PyRevit.PyRevitConfigs.SetAgentEnabled(bool(state))
-
-    @property
-    def agent_policy(self):
-        """What agent runs may do.
-
-        ``readonly`` allows queries and dry runs only, ``ask`` needs approval in
-        Revit for every change, and ``auto`` commits changes without the prompt.
-        """
-        return PyRevit.PyRevitConfigs.GetAgentPolicy()
-
-    @agent_policy.setter
-    def agent_policy(self, policy):
-        PyRevit.PyRevitConfigs.SetAgentPolicy(policy)
-
-    @property
-    def agent_engine(self):
-        """Script engine for agent runs that don't name one: ``ironpython`` or ``cpython``."""
-        return PyRevit.PyRevitConfigs.GetAgentEngine()
-
-    @agent_engine.setter
-    def agent_engine(self, engine):
-        PyRevit.PyRevitConfigs.SetAgentEngine(engine)
 
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.

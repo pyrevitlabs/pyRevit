@@ -1,17 +1,14 @@
-pyRevit MCP server: read and change the live Revit model by running Python inside Revit.
+pyRevit MCP server: inspect and change the active Revit model by running Python inside Revit.
 
 Start every task like this:
 
-1. Call get_context. It reports the Revit version, the open document, the active view, the selection, the agent policy, and the Python engine your scripts run on.
-2. Call get_skill("revit-scripting"). It covers the script contract, transactions, units and the Revit API mistakes agents make most often. Read it before your first script.
-3. Call get_skill("pyrevit-library"). pyrevitlib and rpw already implement most of what you would otherwise write against the raw Revit API; search them with lookup_pyrevit_api.
-4. Call get_skill for the skill that matches your task, and follow it.
+1. Call `get_context` to identify the Revit version, active document, view, selection, policy and engine.
+2. Call `get_skill("revit-scripting")` before submitting a script.
+3. Use `inspect_elements`, `lookup_revit_api`, `run_query`, `run_modify` and `get_run` as needed.
 
 Available skills:
 {skills}
 
-Scripts run on Revit's main thread and freeze Revit until they return. Never write O(n^2) or O(2^n) logic: no nested loops comparing elements pairwise, no searching combinations or layouts, no list lookups inside loops, no unbounded while loops. revit-scripting's "Performance rules" section gives the linear replacements.
+Scripts run in-process with the Windows user's permissions. The model guard is not an operating-system sandbox. Keep queries focused, avoid unbounded work, and return only the data needed for the task.
 
-Never write comments in code, and never write docstrings, except docstrings in pyRevit extensions (see extension-authoring).
-
-Model changes go through run_modify: dry-run first, then run it for real. Under agent policy "ask" the user approves each change in Revit.
+`run_modify` requires an active document. Use a dry run first, then submit a focused modify run for approval. The host blocks save, save-as, synchronize and export operations while a run is active.

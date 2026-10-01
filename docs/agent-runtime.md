@@ -127,75 +127,12 @@ rebuild:
 - `pyrevitlib/pyrevit/agent/skills/INSTRUCTIONS.md` is the short entry text the MCP
   server sends on `initialize`. `{skills}` is replaced with the list of skills.
 - Each skill is a folder with a `SKILL.md` that starts with `name` and `description`
-  front matter (the Agent Skills layout). `revit-scripting` covers the rules every
-  script needs, and `pyrevit-library` maps the shared libraries; `modeling`, `views`,
-  `family-editing`, `scheduling` and `drawings` cover tasks. `extension-authoring` turns a
-  working script into a ribbon button once the user agrees: it writes the bundle, registers
-  its folder as an extension search path when needed, reloads pyRevit from a run, and checks
-  the tab loaded. `revit-files` explains `.rvt`, `.rte`, `.rfa` and `.rft` files, and
-  creating a family from a family template and a project from a project template.
-- Skills in `%APPDATA%\pyRevit\agent\skills\<name>\SKILL.md` are added, and replace a
-  shipped skill with the same name, so a firm can add its own standards.
+  front matter. PR 1 ships `revit-scripting`, the core contract for raw Revit API scripts.
+  Additional domain guidance and firm customization are delivered separately.
 
 Agents read a skill with `get_skill(name)`, and other markdown files in its folder with
-`get_skill(name, file)`. `pyrevit-library/revit-utilities.md` maps Revit's static `...Utils`
-classes by task; its domains were checked against the map in
-[Nice3point/revit-skills](https://github.com/Nice3point/revit-skills) (MIT), and every entry
-was read from Revit's own API.
-
-#### Writing a skill
-
-The same rules apply to shipped skills and to a firm's own skills in
-`%APPDATA%\pyRevit\agent\skills`. The build checks the shipped ones.
-
-- **Front matter:** `name`, equal to the folder name, in lowercase kebab-case, and a
-  `description` of 20 to 1,024 characters.
-- **The description routes.** Agents see only the descriptions in the skill list, so say
-  what the skill covers and the requests it's for ("Use it for ... and similar tasks").
-  Don't list method names; they change.
-- **One task per skill,** for example drawings, not "everything about views and sheets".
-  Put rarely needed detail in another markdown file in the folder, and say in `SKILL.md`
-  when to read it.
-- **Size:** at most 500 lines. A skill over about 5,000 tokens takes context from the work;
-  split it.
-- **Ground every snippet.** Run it in Revit before writing it down, and check names with
-  `lookup_revit_api`. A snippet that doesn't run teaches the wrong API.
-- **End with "Before you report done":** a short checklist the agent can verify through the
-  API or `capture_view`.
-- **Links** point only to files inside the skill's own folder.
-
-The structure follows ideas from Nice3point/revit-skills: a routing description, one task
-per skill, a size budget and a closing checklist.
-
-### Shared libraries
-
-Agents are pointed at pyrevitlib (`pyrevit.revit`) and rpw first, and at the raw Revit
-API only for what those don't cover. The libraries are large and maintained, handle
-differences between Revit versions and engines, and every addition helps pyRevit tool
-authors too.
-
-- `lookup_pyrevit_api` indexes the public functions, classes and docstrings of
-  `pyrevit.revit`, `pyrevit.compat`, `rpw.db` and parts of `rpw.ui` and `rpw.utils` from the
-  clone's source. It needs no Revit and follows edits to the source. A failed script that
-  used a missing library name gets similar names in its hint.
-- The `pyrevit-library` skill maps tasks to modules.
-- Where agents kept failing and the libraries had nothing, functions were added to them:
-
-| Module | Added |
-|---|---|
-| `pyrevit.revit.db.query` | `find_level`, `find_type`, `find_family_symbol`, `find_view`, `find_plan_view` (raise with the valid names instead of returning None), `get_model_elements`, `get_face_references`; `get_category` accepts `"OST_..."` names |
-| `pyrevit.revit.db.create` | `create_wall(s)`, `create_profile_wall`, `create_gable_wall`, `create_floor`, `create_ceiling`, `create_footprint_roof`, `create_gable_roof`, `create_hip_roof`, `create_shed_roof`, `place_hosted_instance`, `place_family_instance`, `create_column`, `create_room`, `create_room_separation_lines`, `create_model_lines`, `create_plan_view`, `create_model_3d_view`, `create_section_view`, `create_elevation_view`, `create_dimension`, `tag_elements`, `create_room_tags`, `create_schedule`, `place_on_sheet` |
-| `pyrevit.revit.db.update` | `attach_wall_tops`, `orient_3d_view`, `set_3d_view_camera`, `set_section_box`, `crop_view_to_elements`, `hide_non_model_categories`, `hide_categories` |
-| `pyrevit.revit.units` | `parse_length` (`32'-6"`, `900mm`), `parse_slope` (`8:12`, `30deg`) |
-| `pyrevit.revit.ui` | `request_view_change`, `get_active_ui_view`, `zoom_to_elements`, `zoom_fit` |
-
-The roof functions call `NewFootPrintRoof` through reflection, because IronPython 3.4
-doesn't marshal its out parameter, and the gable, hip and shed variants measure the built
-roof and raise when its rise doesn't match the pitch. `create_room` raises when the point
-isn't enclosed, which turns rooms into a check for gaps in a layout.
-
-rpw methods that defaulted to `doc=revit.doc` bound the document once, at import. Agent
-runs reuse the script engine, so those defaults now resolve the document on each call.
+`get_skill(name, file)`. The foundation runtime loads only shipped skills from its selected
+clone; it does not load user-supplied skill directories.
 
 ### Script contract
 

@@ -44,7 +44,7 @@ class Selection(BaseObjectWrapper, ElementSet):
 
     _revit_object_class = UI.Selection.Selection
 
-    def __init__(self, elements_or_ids=None, uidoc=None):
+    def __init__(self, elements_or_ids=None, uidoc=revit.uidoc):
         """
         Initializes Selection. Elements or ElementIds are optional.
         If no elements are provided on intiialization,
@@ -59,7 +59,6 @@ class Selection(BaseObjectWrapper, ElementSet):
 
         """
 
-        uidoc = uidoc or revit.uidoc
         BaseObjectWrapper.__init__(self, uidoc.Selection)
         self.uidoc = uidoc
 
