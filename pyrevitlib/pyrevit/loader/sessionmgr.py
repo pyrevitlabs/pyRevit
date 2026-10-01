@@ -555,7 +555,9 @@ def execute_command_cls(
     command_instance = extcmd_type()
     # pass the arguments to the instance
     if arguments:
-        command_instance.ScriptRuntimeConfigs.Arguments = framework.List[str](arguments)
+        command_instance.ScriptRuntimeConfigs.Arguments = framework.to_clr_list(
+            str, arguments
+        )
     # this is a manual execution from python code and not by user
     command_instance.ExecConfigs.MimicExecFromUI = exec_from_ui
     # force using the config script

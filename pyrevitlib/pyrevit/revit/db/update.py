@@ -3,7 +3,7 @@
 import os.path as op
 
 from pyrevit import DOCS
-from pyrevit.framework import List
+from pyrevit.framework import List, to_clr_list
 from pyrevit import DB
 from pyrevit.revit.db import query
 from pyrevit.compat import get_elementid_value_func
@@ -34,7 +34,7 @@ def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
                     elif get_elementid_value(rev.Id) in addrevs:
                         addrevs.remove(get_elementid_value(rev.Id))
             rev_elids = [DB.ElementId(x) for x in addrevs]
-            sheet.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
+            sheet.SetAdditionalRevisionIds(to_clr_list(DB.ElementId, rev_elids))
             updated_sheets.append(sheet)
     return updated_sheets
 

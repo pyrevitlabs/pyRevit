@@ -1075,7 +1075,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             filterable_vals = set(
                 get_elementid_value(fid)
                 for fid in DB.ParameterFilterUtilities.GetFilterableParametersInCommon(
-                    doc, framework.List[DB.ElementId](cat_ids)
+                    doc, framework.to_clr_list(DB.ElementId, cat_ids)
                 )
             )
         except AttributeError:
@@ -1390,7 +1390,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 return False
             filterable = DB.ParameterFilterUtilities.GetFilterableParametersInCommon(
                 doc,
-                framework.List[DB.ElementId](cat_ids),
+                framework.to_clr_list(DB.ElementId, cat_ids),
             )
             param_id_val = get_elementid_value(param_id)
             return any(get_elementid_value(fid) == param_id_val for fid in filterable)

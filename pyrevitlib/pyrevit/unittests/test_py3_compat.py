@@ -436,11 +436,29 @@ class OutParamMarshalingTests(unittest.TestCase):
         self.assertEqual([existing_symbol], symbols)
 
     def test_load_family_symbol_out_param(self):
-        """create.load_family_symbol marshals the out-param symbol reference."""
+        """create.load_family_symbol marshals the out-param symbol reference.
+
+        Two host-API details shape this test.
+
+        The symbol is checked against ``DB.FamilySymbol`` rather than through
+        rpw: rpw's ``Element`` constructor always returns the base
+        ``rpw.db.Element`` wrapper, never the specific subclass, so an
+        ``isinstance`` check against ``rpw.db.family.FamilySymbol`` cannot pass
+        on any input. Revit hands back a generated subclass (this family's type
+        is an ``AnnotationSymbolType``) whose MRO still derives from
+        ``FamilySymbol``, so the host-type check is the one that expresses the
+        claim.
+
+        That same generated subclass is why the type name cannot be read as
+        ``.Name``: the member is present in the binding but raises
+        ``AttributeError`` on read, on IronPython and CPython alike. The
+        symbol-name parameter is the stable read for a family type name.
+        """
         import os.path as op
 
         from pyrevit.revit import create, query
         from pyrevit import coreutils
+        from pyrevit import DB
 
         if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
             self.skipTest("No family file fixture provided")
@@ -452,11 +470,10 @@ class OutParamMarshalingTests(unittest.TestCase):
             symbols = create.load_family(FAMILY_FILE, doc=self.doc)
             if not symbols:
                 self.skipTest("Family fixture contains no loadable symbols")
-            if IRONPY:
-                from rpw import db
-
-                self.assertIsInstance(db.Element(symbols[0]), db.FamilySymbol)
-            symbol_name = symbols[0].Name
+            self.assertIsInstance(symbols[0], DB.FamilySymbol)
+            name_param = symbols[0].get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM)
+            self.assertIsNotNone(name_param, "family symbol carries no symbol name")
+            symbol_name = name_param.AsString()
         finally:
             discovery_txn.RollBack()
 

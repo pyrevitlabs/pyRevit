@@ -705,8 +705,8 @@ class PyRevitConfig(object):
                 raise PyRevitException('Path "%s" does not exist.' % ext_path)
 
         try:
-            self.core.UserExtensions = framework.List[str](
-                [op.normpath(x) for x in path_list]
+            self.core.UserExtensions = framework.to_clr_list(
+                str, [op.normpath(x) for x in path_list]
             )
         except Exception as write_err:
             mlogger.error(

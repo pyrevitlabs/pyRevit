@@ -58,7 +58,7 @@ Example:
 """
 
 from pyrevit import DB
-from pyrevit.framework import Guid, List, IList
+from pyrevit.framework import Guid, IList, to_clr_list
 
 
 class BaseSchema(object):
@@ -226,7 +226,7 @@ class ElementDataStorage(object):
         for field_name, field_type in self._schema_cls.array_fields.items():
             if field_name in field_values:
                 entity.Set[IList[field_type]](
-                    field_name, List[field_type](field_values[field_name])
+                    field_name, to_clr_list(field_type, field_values[field_name])
                 )
         element.SetEntity(entity)
 
