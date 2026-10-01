@@ -147,6 +147,10 @@ namespace pyRevitCLI {
         /// <summary>
         /// Lists explicitly marked automation symbols in stable identifier order.
         /// </summary>
+        /// <remarks>
+        /// A malformed marker, or an id used by more than one symbol, is left out instead of
+        /// failing the listing; <c>dev/scripts/test_automation_marker.py</c> fails on both.
+        /// </remarks>
         public static JObject ListAutomation(int offset = 0, int limit = DefaultAutomationResults) {
             if (offset < 0)
                 throw new AgentClientException("invalid_params", "'offset' must not be negative.");
@@ -155,16 +159,12 @@ namespace pyRevitCLI {
 
             var symbols = Load()
                 .Where(symbol => symbol.Automation != null)
+                .GroupBy(symbol => symbol.Automation.Id, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() == 1)
+                .Select(group => group.Single())
                 .OrderBy(symbol => symbol.Automation.Id, StringComparer.Ordinal)
                 .ThenBy(symbol => symbol.FullName, StringComparer.Ordinal)
                 .ToList();
-            var duplicate = symbols
-                .GroupBy(symbol => symbol.Automation.Id, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault(group => group.Count() > 1);
-            if (duplicate != null) {
-                var names = string.Join(", ", duplicate.Select(symbol => symbol.FullName));
-                throw new AgentClientException("duplicate_automation_id", $"Automation id '{duplicate.Key}' is used by {names}.");
-            }
 
             var page = symbols.Skip(offset).Take(limit).ToList();
             var nextOffset = offset + page.Count;
@@ -324,7 +324,14 @@ namespace pyRevitCLI {
             for (var index = 0; index < lines.Length; index++) {
                 var line = lines[index];
                 if (AutomationOperation.IsMatch(line) || AutomationType.IsMatch(line)) {
-                    automation = ReadAutomation(lines, ref index, AutomationType.IsMatch(line));
+                    var markerLine = index;
+                    try {
+                        automation = ReadAutomation(lines, ref index, AutomationType.IsMatch(line));
+                    }
+                    catch (Exception ex) when (ex is AgentClientException || ex is ArgumentException) {
+                        automation = null;
+                        index = markerLine;
+                    }
                     continue;
                 }
                 var decorator = Decorator.Match(line);
