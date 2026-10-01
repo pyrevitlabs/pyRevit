@@ -355,7 +355,7 @@ namespace pyRevitCLI {
                         new List<string>() { "mcp" },
                         header: "Run the pyRevit MCP server over stdio, or register it with an MCP client",
                         commands: new Dictionary<string, string>() {
-                            { "install",                "Register 'pyrevit mcp' with an MCP client and enable the agent host" },
+                            { "install",                "Register 'pyrevit mcp' with an MCP client" },
                             { "uninstall",              "Remove 'pyrevit mcp' from an MCP client" },
                         },
                         options: new Dictionary<string, string>() {

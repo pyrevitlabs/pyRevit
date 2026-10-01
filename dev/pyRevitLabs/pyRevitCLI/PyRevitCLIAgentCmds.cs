@@ -148,7 +148,7 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Registers <c>pyrevit mcp</c> with an MCP client and enables the agent host.
+        /// Registers <c>pyrevit mcp</c> with an MCP client.
         /// </summary>
         /// <remarks>
         /// Registers the path of the <c>pyrevit.exe</c> that runs this command, so run it from
@@ -191,11 +191,11 @@ namespace pyRevitCLI {
                     break;
             }
 
-            if (!PyRevitConfigs.GetAgentEnabled())
-                PyRevitConfigs.SetAgentEnabled(true);
-
             Console.WriteLine($"Registered MCP server \"{McpServerName}\" ({command} mcp) with {client}.");
-            Console.WriteLine("Agent host is enabled. Reload pyRevit or restart Revit, then restart the MCP client.");
+            if (PyRevitConfigs.GetAgentEnabled())
+                Console.WriteLine("Agent host remains enabled. Reload pyRevit or restart Revit, then restart the MCP client.");
+            else
+                Console.WriteLine("Enable the agent host with 'pyrevit configs agent enable', reload pyRevit or restart Revit, then restart the MCP client.");
         }
 
         public static void UninstallMcp(McpClientKind client, bool project) {

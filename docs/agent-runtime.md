@@ -18,8 +18,15 @@ Everything below is also available in Revit under **pyRevit → Settings → Age
 the host is listening, and has one button per MCP client to register the server. The agent
 runtime is independent of the Routes server and doesn't need it enabled.
 
-1. **Register the MCP server with your client.** Run it with the `pyrevit.exe` of the
-   clone you want the agent to use. The command also turns the agent host on.
+1. **Enable the agent host.** Run this with the `pyrevit.exe` of the clone you want the
+   agent to use, then reload pyRevit or restart Revit.
+
+    ```shell
+    pyrevit configs agent enable
+    ```
+
+2. **Register the MCP server with your client.** The registration command does not change
+   whether the host is enabled.
 
     ```shell
     pyrevit mcp install claude        # Claude Code, user scope
