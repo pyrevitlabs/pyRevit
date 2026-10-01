@@ -40,7 +40,7 @@ namespace pyRevitCLI {
             ["pyrevit.elements.by-category"] = new Operation {
                 Id = "pyrevit.elements.by-category",
                 Title = "Find elements by category",
-                Source = "from pyrevit.revit.db import query\nelements = query.get_elements_by_categories(inputs['categories'], doc=doc)\nlimited = elements[:inputs['limit']]\nresult = {'elements': limited, 'total': len(elements), 'truncated': len(elements) > len(limited)}\n",
+                Source = "from pyrevit.revit.db import query\nelements = list(query.get_elements_by_categories(inputs['categories'], doc=doc))\nlimited = elements[:inputs['limit']]\nresult = {'elements': limited, 'total': len(elements), 'truncated': len(elements) > len(limited)}\n",
                 RequiresDocument = true,
                 ValidateInputs = ValidateCategoryCollection,
             },
