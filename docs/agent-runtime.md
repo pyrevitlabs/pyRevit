@@ -233,7 +233,8 @@ Rules the host enforces:
   active document.
 - Background documents a run created or opened (no view in Revit, not linked, not open when
   the run started) are closed without saving when the run ends, whatever its outcome, and
-  listed in `closed_documents`. Save a new document within the run that builds it.
+  listed in `closed_documents`. The host blocks their save and save-as operations while a run is
+  active.
   `get_context.open_documents` lists every open document and marks the background ones.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens

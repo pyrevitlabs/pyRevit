@@ -22,16 +22,16 @@ namespace AgentRuntime.Tests {
         }
 
         [TestMethod]
-        public void CreatedDocumentsCanStillBeSaved() {
+        public void CreatedDocumentsCannotBeSaved() {
             var app = new UIApplication();
             using (var guard = new AgentRunGuard(app, null)) {
                 guard.Arm("Test");
                 var created = new Document();
-                app.Application.Documents.Add(created);
+                app.Application.Create(created);
                 app.Application.Change(created);
-                Assert.IsTrue(app.Application.SaveAs(created));
+                Assert.IsFalse(app.Application.SaveAs(created));
                 created.PathName = "created.rfa";
-                Assert.IsTrue(app.Application.Save(created));
+                Assert.IsFalse(app.Application.Save(created));
                 Assert.IsFalse(guard.ChangedOtherOpenDocument);
             }
         }

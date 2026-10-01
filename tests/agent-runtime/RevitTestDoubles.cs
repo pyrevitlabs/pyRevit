@@ -80,6 +80,7 @@ namespace Autodesk.Revit.DB.Events {
     internal sealed class DocumentSavingAsEventArgs : DocumentEventArgs { }
     internal sealed class DocumentClosingEventArgs : DocumentEventArgs { }
     internal sealed class DocumentSynchronizingWithCentralEventArgs : DocumentEventArgs { }
+    internal sealed class DocumentCreatedEventArgs : DocumentEventArgs { }
     internal sealed class DocumentOpenedEventArgs : DocumentEventArgs { }
     internal sealed class DocumentChangedEventArgs : EventArgs {
         public Document Document { get; set; }
@@ -101,12 +102,17 @@ namespace Autodesk.Revit.ApplicationServices {
         public event EventHandler<FailuresProcessingEventArgs> FailuresProcessing;
         public event EventHandler<DocumentSavingEventArgs> DocumentSaving;
         public event EventHandler<DocumentSavingAsEventArgs> DocumentSavingAs;
+        public event EventHandler<DocumentCreatedEventArgs> DocumentCreated;
         public event EventHandler<DocumentOpenedEventArgs> DocumentOpened;
         public event EventHandler<DocumentClosingEventArgs> DocumentClosing;
         public event EventHandler<DocumentSynchronizingWithCentralEventArgs> DocumentSynchronizingWithCentral;
         public void Open(Document document) {
             Documents.Add(document);
             DocumentOpened?.Invoke(this, new DocumentOpenedEventArgs { Document = document });
+        }
+        public void Create(Document document) {
+            Documents.Add(document);
+            DocumentCreated?.Invoke(this, new DocumentCreatedEventArgs { Document = document });
         }
         public void Change(Document document) => DocumentChanged?.Invoke(this, new DocumentChangedEventArgs { Document = document });
         public bool Save(Document document) {

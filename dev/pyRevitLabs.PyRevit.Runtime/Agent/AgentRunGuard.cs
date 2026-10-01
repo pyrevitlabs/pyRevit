@@ -25,10 +25,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// have errors, in every non-linked document, so a failure in a family or a new document
     /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
-    /// <item>cancels synchronize requests, and saving, saving as or closing any document that was
-    /// open when the run started, and saving or saving as any project or family the script
-    /// opened from a file on disk. A family from <c>EditFamily</c> or a new document the script
-    /// created itself has no file yet and may be saved and closed.</item>
+    /// <item>cancels synchronize requests and every save or save-as operation while the run is
+    /// armed. It cancels closing only for documents that were open when the run started.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -39,7 +37,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// A project or family the script opens from disk during the run counts as a document that
     /// was already open: changing it fails the run. It gets no group, so the script can still
     /// close it; its changes are discarded when it is closed without saving, by the script or by
-    /// the host when the run ends.
+    /// the host when the run ends. Documents created during a run are also never saved while the
+    /// guard is armed, so an unapproved run cannot persist them to disk.
     /// </remarks>
     internal sealed class AgentRunGuard : IDisposable {
         private const int MaxRecordedEntries = 200;
@@ -52,6 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly JArray blocked = new JArray();
         private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
         private readonly List<Document> openAtStart = new List<Document>();
+        private readonly List<Document> documentsCreatedDuringRun = new List<Document>();
         private readonly List<Document> documentsOpenedFromDisk = new List<Document>();
         private TransactionGroup group;
         private bool documentEventsArmed;
@@ -90,6 +90,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             app.FailuresProcessing += OnFailuresProcessing;
             app.DocumentSaving += OnDocumentSaving;
             app.DocumentSavingAs += OnDocumentSavingAs;
+            app.DocumentCreated += OnDocumentCreated;
             app.DocumentOpened += OnDocumentOpened;
             app.DocumentClosing += OnDocumentClosing;
             app.DocumentSynchronizingWithCentral += OnDocumentSynchronizingWithCentral;
@@ -180,6 +181,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     app.FailuresProcessing -= OnFailuresProcessing;
                     app.DocumentSaving -= OnDocumentSaving;
                     app.DocumentSavingAs -= OnDocumentSavingAs;
+                    app.DocumentCreated -= OnDocumentCreated;
                     app.DocumentOpened -= OnDocumentOpened;
                     app.DocumentClosing -= OnDocumentClosing;
                     app.DocumentSynchronizingWithCentral -= OnDocumentSynchronizingWithCentral;
@@ -249,6 +251,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 hasErrors ? FailureProcessingResult.ProceedWithRollBack : FailureProcessingResult.Continue);
         }
 
+        private void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            var created = e.Document;
+            if (created == null || created.IsLinked)
+                return;
+            documentsCreatedDuringRun.Add(created);
+            if (IsWatchedDocument(created))
+                return;
+            others.Add(new AgentOtherDocument(created, openedDuringRun: true));
+        }
+
         private void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
             var opened = e.Document;
             if (opened == null || opened.IsLinked)
@@ -275,6 +287,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private bool IsProtectedFromSave(Document target) {
             return WasOpenAtStart(target)
+                || documentsCreatedDuringRun.Any(created => IsSameDocument(created, target))
                 || documentsOpenedFromDisk.Any(opened => IsSameDocument(opened, target));
         }
 
