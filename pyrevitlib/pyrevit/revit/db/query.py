@@ -9,6 +9,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework
+from pyrevit import automation
 from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
 from pyrevit import DB
 from pyrevit.revit import db
@@ -68,6 +69,11 @@ SheetRefInfo = namedtuple(
 ElementHistory = namedtuple("ElementHistory", ["creator", "owner", "last_changed_by"])
 
 
+@automation.operation(
+    "pyrevit.elements.name",
+    PlainEnglish="Read an element name, including a view title on a sheet when requested.",
+    effects=("model.read",),
+)
 def get_name(element, title_on_sheet=False):
     """
     Retrieves the name of a Revit element, with special handling for views.
@@ -99,6 +105,11 @@ def get_name(element, title_on_sheet=False):
         return Element.Name.GetValue(element)
 
 
+@automation.operation(
+    "pyrevit.elements.type",
+    PlainEnglish="Get the element type for a Revit element.",
+    effects=("model.read",),
+)
 def get_type(element):
     """Get element type.
 
@@ -215,6 +226,11 @@ def _get_param_by_element_id(element, param_id):
     return None
 
 
+@automation.operation(
+    "pyrevit.parameters.resolve",
+    PlainEnglish="Find a parameter on an element by name, built-in parameter, GUID or id.",
+    effects=("model.read",),
+)
 def get_param(element, param_identifier, default=None):
     """
     Retrieve a single parameter from a Revit element.
@@ -438,6 +454,11 @@ def get_value_range(param_name, doc=None, elements=None):
     return values
 
 
+@automation.operation(
+    "pyrevit.elements.by-parameter",
+    PlainEnglish="Find elements whose named parameter matches a supplied value.",
+    effects=("model.read",),
+)
 def get_elements_by_parameter(
     param_name, param_value, doc=None, partial=False, view_id=None
 ):
@@ -527,6 +548,11 @@ def get_elements_by_param_value(
         return []
 
 
+@automation.operation(
+    "pyrevit.elements.by-category",
+    PlainEnglish="Find elements in one or more Revit categories.",
+    effects=("model.read",),
+)
 def get_elements_by_categories(categories, elements=None, doc=None, view_id=None):
     """
     Retrieves elements from a Revit document based on specified categories.
@@ -3410,6 +3436,11 @@ def _name_listing(names):
     return shown or "(none)"
 
 
+@automation.operation(
+    "pyrevit.levels.resolve",
+    PlainEnglish="Find a level by name and list valid levels when it is missing.",
+    effects=("model.read",),
+)
 def find_level(level_name=None, doc=None):
     """Return a level by name, or raise an error that lists the existing levels.
 
@@ -3457,6 +3488,11 @@ def find_level(level_name=None, doc=None):
     )
 
 
+@automation.operation(
+    "pyrevit.types.resolve",
+    PlainEnglish="Find an element type by class and exact name.",
+    effects=("model.read",),
+)
 def find_type(type_class, type_name, doc=None):
     """Return an element type of a class by exact name, or raise listing the names.
 
@@ -3485,6 +3521,11 @@ def find_type(type_class, type_name, doc=None):
     )
 
 
+@automation.operation(
+    "pyrevit.family-symbols.resolve",
+    PlainEnglish="Find a family type by name, family and optional category.",
+    effects=("model.read",),
+)
 def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     """Return a family type by name, or raise listing the family types.
 
@@ -3545,6 +3586,11 @@ def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     return matches[0]
 
 
+@automation.operation(
+    "pyrevit.views.resolve",
+    PlainEnglish="Find a Revit view by name or id.",
+    effects=("model.read",),
+)
 def find_view(view_name_or_id, doc=None):
     """Return a view (or view template) by name or id, or raise listing similar names.
 
@@ -3586,6 +3632,11 @@ def find_view(view_name_or_id, doc=None):
     )
 
 
+@automation.operation(
+    "pyrevit.plan-views.resolve",
+    PlainEnglish="Find a floor plan for a level.",
+    effects=("model.read",),
+)
 def find_plan_view(level, doc=None):
     """Return a floor plan of a level, or raise when the level has none.
 

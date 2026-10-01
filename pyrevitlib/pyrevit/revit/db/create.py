@@ -14,6 +14,7 @@ import sys
 
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework
+from pyrevit import automation
 from pyrevit.framework import clr
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
@@ -647,6 +648,12 @@ _PLAN_VIEW_FAMILIES = {
 }
 
 
+@automation.operation(
+    "pyrevit.geometry.point",
+    PlainEnglish="Convert a point tuple with drawing units to a Revit XYZ point.",
+    mode="pure",
+    context="none",
+)
 def to_xyz(point, z=None):
     """Return a DB.XYZ from an XYZ or an (x, y[, z]) tuple.
 
@@ -664,6 +671,12 @@ def to_xyz(point, z=None):
     return DB.XYZ(values[0], values[1], own_z if z is None else z)
 
 
+@automation.operation(
+    "pyrevit.geometry.rectangle",
+    PlainEnglish="Create counter-clockwise rectangle corners from opposite drawing points.",
+    mode="pure",
+    context="none",
+)
 def rectangle_points(x1, y1, x2, y2):
     """Return the corners of an axis-aligned rectangle, counter-clockwise.
 
@@ -715,6 +728,13 @@ def _activate(symbol, doc):
     return symbol
 
 
+@automation.operation(
+    "pyrevit.walls.create",
+    PlainEnglish="Create a straight wall using a wall type, level and endpoints.",
+    mode="modify",
+    effects=("model.write",),
+    transaction="caller",
+)
 def create_wall(
     start,
     end,
@@ -771,6 +791,13 @@ def create_wall(
     return wall
 
 
+@automation.operation(
+    "pyrevit.walls.create-polyline",
+    PlainEnglish="Create walls along the segments of a polyline.",
+    mode="modify",
+    effects=("model.write",),
+    transaction="caller",
+)
 def create_walls(
     points, wall_type, level=None, height=10.0, closed=True, top_level=None, doc=None
 ):
