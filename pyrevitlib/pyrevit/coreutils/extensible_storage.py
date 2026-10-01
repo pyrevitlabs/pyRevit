@@ -22,6 +22,7 @@ are covered directly. A schema that also needs SchemaBuilder.AddMapField
 can add it via the BaseSchema.extend_builder hook (see below).
 
 Example:
+
     from pyrevit import DB
     from pyrevit.coreutils import extensible_storage
 
@@ -117,9 +118,10 @@ class ElementDataStorage(object):
     """
 
     def __init__(self, schema_cls):
-        """Args:
-        schema_cls: a BaseSchema subclass describing the schema to
-            read/write
+        """
+        Args:
+            schema_cls: a BaseSchema subclass describing the schema to
+                read/write
         """
         if not schema_cls.guid or not schema_cls.schema_name:
             raise ValueError(
@@ -145,16 +147,14 @@ class ElementDataStorage(object):
     def schema(self):
         """DB.ExtensibleStorage.Schema: the registered schema, built
         and registered on first access if not already present in this
-        document/session.
-        """
+        document/session."""
         if self._schema is None:
             self._schema = self._get_or_create_schema()
         return self._schema
 
     def has_data(self, element):
         """bool: whether `element` currently has an Entity for this
-        schema.
-        """
+        schema."""
         schema = self._lookup_schema()
         if schema is None:
             return False
@@ -208,7 +208,9 @@ class ElementDataStorage(object):
 
         Must be called inside an open transaction.
         """
-        known_fields = set(self._schema_cls.fields) | set(self._schema_cls.array_fields)
+        known_fields = set(self._schema_cls.fields) | set(
+            self._schema_cls.array_fields
+        )
         for field_name in field_values:
             if field_name not in known_fields:
                 raise KeyError(
