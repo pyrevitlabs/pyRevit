@@ -23,6 +23,7 @@ def _to_internal_length(value, unit):
     if HOST_APP.is_newer_than(2021):
         unit_ids = {
             "ft": DB.UnitTypeId.Feet,
+            "in": DB.UnitTypeId.Inches,
             "mm": DB.UnitTypeId.Millimeters,
             "cm": DB.UnitTypeId.Centimeters,
             "m": DB.UnitTypeId.Meters,
@@ -30,6 +31,7 @@ def _to_internal_length(value, unit):
     else:
         unit_ids = {
             "ft": DB.DisplayUnitType.DUT_DECIMAL_FEET,
+            "in": DB.DisplayUnitType.DUT_DECIMAL_INCHES,
             "mm": DB.DisplayUnitType.DUT_MILLIMETERS,
             "cm": DB.DisplayUnitType.DUT_CENTIMETERS,
             "m": DB.DisplayUnitType.DUT_METERS,
@@ -262,7 +264,9 @@ def parse_length(value):
         if imperial.group("num"):
             inches += float(imperial.group("num")) / float(imperial.group("den"))
         sign = -1.0 if text.startswith("-") else 1.0
-        return _to_internal_length(sign * (abs(feet) + inches / 12.0), "ft")
+        return sign * (
+            _to_internal_length(abs(feet), "ft") + _to_internal_length(inches, "in")
+        )
     try:
         return _to_internal_length(text, "ft")
     except ValueError:
