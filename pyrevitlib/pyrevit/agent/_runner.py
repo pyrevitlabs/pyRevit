@@ -267,7 +267,7 @@ def run(context):
     finally:
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-        _leave_workspace(workspace)
+        _leave_workspace(context.Workspace, workspace)
         context.SetOutput(captured.getvalue())
 
     if failed or "result" not in namespace:
@@ -313,10 +313,7 @@ def _enter_workspace(workspace):
     """
     if not workspace:
         return None
-    root = op.normcase(op.abspath(workspace)).rstrip("/\\") + op.sep
-    for name, module in list(sys.modules.items()):
-        if _is_under(getattr(module, "__file__", None), root):
-            del sys.modules[name]
+    _unload_modules_under(workspace)
     added = workspace not in sys.path
     if added:
         sys.path.insert(0, workspace)
@@ -338,9 +335,24 @@ def _is_under(module_file, root):
         return False
 
 
-def _leave_workspace(workspace):
-    if workspace and workspace in sys.path:
-        sys.path.remove(workspace)
+def _unload_modules_under(folder):
+    root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+    for name, module in list(sys.modules.items()):
+        if _is_under(getattr(module, "__file__", None), root):
+            del sys.modules[name]
+
+
+def _leave_workspace(workspace, added_to_path):
+    """Unload the workspace's modules and drop the ``sys.path`` entry the run added.
+
+    A module left loaded would shadow a module of the same name in a different
+    workspace folder on a later run, since ``import`` returns the cached module
+    without looking at ``sys.path``.
+    """
+    if workspace:
+        _unload_modules_under(workspace)
+    if added_to_path and added_to_path in sys.path:
+        sys.path.remove(added_to_path)
 
 
 def _elementid_value(element_id):
