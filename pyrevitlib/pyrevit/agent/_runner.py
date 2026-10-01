@@ -223,6 +223,8 @@ def run(context):
     sys.stderr = captured
     failed = False
     workspace = None
+    namespace = None
+    left_open = 0
     try:
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
@@ -265,11 +267,21 @@ def run(context):
         error_type, message = _describe_error(ex)
         context.SetError(error_type, message, _format_script_traceback())
     finally:
+        if namespace is not None:
+            left_open = _roll_back_open_transactions(namespace)
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
         _leave_workspace(context.Workspace, workspace)
         context.SetOutput(captured.getvalue())
 
+    if left_open and not failed:
+        context.SetError(
+            "transaction_left_open",
+            "The script left {} transaction(s) open; they were rolled back. Commit or "
+            "roll back every transaction it starts.".format(left_open),
+            None,
+        )
+        return
     if failed or "result" not in namespace:
         return
 
@@ -279,6 +291,51 @@ def run(context):
         context.SetError(
             "ResultSerializationError", _safe_text(ex), _format_script_traceback()
         )
+
+
+_TRANSACTION_ORDER = (
+    (DB.SubTransaction, 0),
+    (DB.Transaction, 1),
+    (DB.TransactionGroup, 2),
+)
+
+
+def _roll_back_open_transactions(namespace):
+    """Roll back Revit transactions the script started and never ended.
+
+    Revit keeps such a transaction open after the run, and the abandoned
+    object is later finalized off the main thread, which crashes Revit. Only
+    objects still reachable from the script's globals, directly or one level
+    inside a list, tuple or dict, can be found here.
+
+    Returns:
+        int: how many transactions were rolled back.
+    """
+    found = {}
+    for value in _reachable_values(namespace):
+        for kind, rank in _TRANSACTION_ORDER:
+            if isinstance(value, kind):
+                found[id(value)] = (rank, value)
+    rolled_back = 0
+    for _, transaction in sorted(found.values(), key=lambda item: item[0]):
+        try:
+            if transaction.HasStarted() and not transaction.HasEnded():
+                transaction.RollBack()
+                rolled_back += 1
+        except Exception:
+            pass
+    return rolled_back
+
+
+def _reachable_values(namespace):
+    for value in list(namespace.values()):
+        yield value
+        if isinstance(value, dict):
+            for item in list(value.values()):
+                yield item
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                yield item
 
 
 def _implementation():
