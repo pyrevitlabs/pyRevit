@@ -228,12 +228,13 @@ namespace pyRevitCLI {
         /// <param name="ownedOnly">
         /// Keeps a registration whose command is not this <c>pyrevit.exe</c>, or whose command
         /// can't be read, so uninstalling one installation leaves another one's registration.
-        /// Run elevated, it checks the Cursor, VS Code and OpenCode configs of every user profile,
-        /// because an all-users uninstall may be elevated with another account than the user who
-        /// registered the server.
         /// </param>
+        /// <remarks>
+        /// Only the running account's own configs are touched, elevated or not. An elevated
+        /// process must not rewrite files in another user's profile: that user controls the path
+        /// and can redirect the write elsewhere with a junction or symlink.
+        /// </remarks>
         public static void UninstallMcpFromAllClients(bool ownedOnly) {
-            var everyProfile = ownedOnly && IsElevated();
             foreach (McpClientKind client in Enum.GetValues(typeof(McpClientKind))) {
                 try {
                     if (IsClientCliManaged(client))
@@ -241,8 +242,7 @@ namespace pyRevitCLI {
                     else if (!ownedOnly)
                         UninstallMcp(client, project: false);
                     else
-                        foreach (var path in UserConfigPaths(client, everyProfile))
-                            UninstallOwnedFileRegistration(client, path, reportKept: !everyProfile);
+                        UninstallOwnedFileRegistration(client, UserConfigPath(client));
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Skipped {client}: {ex.Message}");
@@ -262,12 +262,11 @@ namespace pyRevitCLI {
             UninstallMcp(client, project: false);
         }
 
-        private static void UninstallOwnedFileRegistration(McpClientKind client, string path, bool reportKept) {
+        private static void UninstallOwnedFileRegistration(McpClientKind client, string path) {
             try {
                 var registered = ReadFileClientCommand(client, path);
                 if (!IsThisInstall(registered)) {
-                    if (reportKept || registered != null)
-                        Console.WriteLine($"Kept {client} in {path}: not registered to {Environment.ProcessPath}.");
+                    Console.WriteLine($"Kept {client} in {path}: not registered to {Environment.ProcessPath}.");
                     return;
                 }
                 UpdateJsonConfig(path, ServersKey(client), null);
@@ -333,17 +332,11 @@ namespace pyRevitCLI {
             }
         }
 
-        private static IEnumerable<string> UserConfigPaths(McpClientKind client, bool everyProfile) {
-            var paths = new List<string> {
-                UserConfigPath(
-                    client,
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)),
-            };
-            if (everyProfile)
-                paths.AddRange(UserProfileDirectories()
-                    .Select(home => UserConfigPath(client, home, Path.Combine(home, "AppData", "Roaming"))));
-            return paths.Distinct(StringComparer.OrdinalIgnoreCase);
+        private static string UserConfigPath(McpClientKind client) {
+            return UserConfigPath(
+                client,
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
         }
 
         private static string UserConfigPath(McpClientKind client, string home, string appData) {
@@ -357,27 +350,6 @@ namespace pyRevitCLI {
                 default:
                     throw new ArgumentOutOfRangeException(nameof(client));
             }
-        }
-
-        private static List<string> UserProfileDirectories() {
-            var directories = new List<string>();
-            using (var profiles = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList")) {
-                if (profiles == null)
-                    return directories;
-                foreach (var sid in profiles.GetSubKeyNames()) {
-                    if (!sid.StartsWith("S-1-5-21-") && !sid.StartsWith("S-1-12-1-"))
-                        continue;
-                    using (var profile = profiles.OpenSubKey(sid)) {
-                        var directory = profile?.GetValue("ProfileImagePath") as string;
-                        if (string.IsNullOrEmpty(directory))
-                            continue;
-                        directory = Environment.ExpandEnvironmentVariables(directory);
-                        if (Directory.Exists(directory))
-                            directories.Add(directory);
-                    }
-                }
-            }
-            return directories;
         }
 
         private static string ReadCodexCommand(string path) {

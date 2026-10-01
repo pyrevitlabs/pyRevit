@@ -56,10 +56,11 @@ runtime is independent of the Routes server and doesn't need it enabled.
 
 To remove the server: `pyrevit mcp uninstall <client>`. `pyrevit mcp uninstall --all` removes
 the user-level entry from every client, and the pyRevit uninstaller runs it with `--owned`, which
-keeps entries that point at another pyRevit install. When that command runs elevated, it
-checks the Cursor, VS Code and OpenCode entries of every user profile on the machine, and it
-doesn't start the `claude` or `codex` command line tools, so those two entries stay; run
-`pyrevit mcp uninstall claude` (or `codex`) from a normal prompt. Project-level entries
+keeps entries that point at another pyRevit install. It only cleans the profile of the account
+running it, never other users' profiles, so on a shared machine each user who registered the
+server removes their own entry. When that command runs elevated, it doesn't start the `claude`
+or `codex` command line tools, so those two entries stay; run `pyrevit mcp uninstall claude`
+(or `codex`) from a normal prompt. Project-level entries
 (`--project`) are never removed automatically. To turn the host off: `pyrevit configs agent disable`.
 
 !!! warning "Model data leaves the machine and is recorded locally"
