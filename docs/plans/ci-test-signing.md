@@ -46,6 +46,27 @@ build with it, and trusts it only on the machine that runs Revit.
    the Engine Tests pulldown scripts, `pyrevitlib/pyrevit/unittests`, and agent runtime runs
    driven through the named pipe (`pyrevit agent run`) once the agent runtime has merged.
 
+## Local mode: `dotnet run -- ci local`
+
+The same signing step runs on a developer machine, so testing a change in Revit doesn't wait
+for CI or stop at the unsigned add-in dialog after every rebuild.
+
+- `dotnet run -c Debug -- ci local` runs the normal `ci` build, then signs `bin/` with a
+  per-machine developer certificate. Modes are plain words in `build/Program.cs`
+  (`ci`, `pack`, `sign`), so `local` is one more; `--local` can be accepted as an alias.
+- The first run creates `CN=pyRevit Local Dev (<machine>)` in `CurrentUser\My` with a
+  one-year lifetime and a non-exportable key, and trusts it in the developer's own
+  `CurrentUser\Root` and `CurrentUser\TrustedPublisher`. Windows asks once to confirm the
+  root. Later runs reuse the certificate by subject and renew it when it is near expiry.
+- `dotnet run -- ci local --remove-cert` deletes the certificate from all three stores.
+- `local` refuses to run when `CI` is set or `Build__Channel` is `wip` or `release`, so a
+  developer certificate can never sign a CI or shipped build. `pack`, `sign` and `publish`
+  can't be combined with it.
+- `local` signs only `bin/`, which `pyrevit attach` points Revit at. Locally signed binaries
+  are never uploaded, and the installers keep using production signing.
+- The CI test job calls the same module with the throwaway certificate, so the local and CI
+  paths sign the same files the same way.
+
 ## Guard rails
 
 - The test certificate never signs anything that is uploaded, released, or installed
@@ -73,7 +94,8 @@ build with it, and trusts it only on the machine that runs Revit.
 
 1. Prove the trust check by hand on one Revit year: sign with a self-signed certificate,
    trust it, and confirm there is no dialog.
-2. Add the `sign-test` mode and its module, with tests in `build/tests`.
+2. Add the `sign-test` module and the `ci local` mode, with tests in `build/tests`, so
+   developers get dialog-free local builds first.
 3. Add a workflow for the self-hosted runner that runs one Engine Test end to end.
 4. Add the remaining suites and the JUnit results.
 5. Document the job in `docs/ci-cd.md`.
