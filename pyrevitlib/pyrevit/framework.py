@@ -97,7 +97,6 @@ from System.Linq import Enumerable
 _perfmark("pyrevit.framework:after `from System.* import` block")
 
 import pyrevit.engine as eng
-from pyrevit import dedupe_sys_path
 
 
 def to_clr_list(item_type, iterable):
@@ -160,8 +159,6 @@ else:
     clr.AddReference(sqlite3_dllpath)
 import sqlite3
 
-dedupe_sys_path()
-
 
 CPDialogs = None
 try:
@@ -187,7 +184,9 @@ _perfmark("pyrevit.framework:after IronPython+WPF+SQLite+CPDialogs+Emojis refs")
 
 
 # do not import anything from pyrevit before this
-from pyrevit import BIN_DIR
+from pyrevit import BIN_DIR, dedupe_sys_path
+
+dedupe_sys_path()
 
 
 def get_type(fw_object):

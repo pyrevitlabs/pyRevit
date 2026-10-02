@@ -32,6 +32,17 @@ def _count(paths, folder):
     return [p for p in paths if _key(p) == _key(folder)]
 
 
+def _repeated():
+    """Return every folder listed more than once on the live sys.path."""
+    counts = {}
+    for entry in sys.path:
+        if not isinstance(entry, str) or not entry:
+            continue
+        key = _key(entry)
+        counts[key] = counts.get(key, 0) + 1
+    return sorted(path for path, count in counts.items() if count > 1)
+
+
 class SysPathDedupeTests(unittest.TestCase):
     """Contract of ``pyrevit.add_to_sys_path`` and ``pyrevit.dedupe_sys_path``."""
 
@@ -144,14 +155,7 @@ class LiveSysPathTests(unittest.TestCase):
 
     def test_no_folder_is_repeated(self):
         """Nothing on the live sys.path is listed twice."""
-        counts = {}
-        for entry in sys.path:
-            if not isinstance(entry, str) or not entry:
-                continue
-            key = _key(entry)
-            counts[key] = counts.get(key, 0) + 1
-
-        repeated = sorted(path for path, count in counts.items() if count > 1)
+        repeated = _repeated()
         self.assertEqual(
             [], repeated, "duplicated sys.path entries: {}".format(repeated)
         )
@@ -161,3 +165,17 @@ class LiveSysPathTests(unittest.TestCase):
         before = list(sys.path)
         dedupe_sys_path()
         self.assertEqual(before, list(sys.path))
+
+    def test_rpw_import_does_not_restore_a_repeat(self):
+        """Importing rpw.ui.forms.resources leaves the invariant intact.
+
+        That module references the IronPython and WPF assemblies by path,
+        which on IronPython appends the engine folder to sys.path - after
+        framework.py has already collapsed it.
+        """
+        import rpw.ui.forms.resources  # noqa: F401 pylint: disable=unused-import
+
+        repeated = _repeated()
+        self.assertEqual(
+            [], repeated, "duplicated sys.path entries: {}".format(repeated)
+        )
