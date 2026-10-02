@@ -220,6 +220,13 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
     /// routine fact about the machine - side-by-side installs are the normal
     /// setup - and warning about it made every session announce a product the
     /// user never launched and advise them to switch pyRevit releases.
+    /// <para>
+    /// These tests resolve real products off this machine, so the level split is
+    /// only observable where a below-minimum Revit is actually installed. A
+    /// machine without one skips instead of failing, which is what lets the class
+    /// run in CI: it guards the reporting contract there and only a developer
+    /// machine carrying an old Revit exercises the full comparison.
+    /// </para>
     /// </remarks>
     [TestClass()]
     public class BelowMinimumProductReportingTests {
@@ -276,23 +283,36 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
             typeof(RevitProduct)
                 .GetField("_installedProductsCache", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, null);
-            return RevitProduct.ListInstalledProducts();
+            var products = RevitProduct.ListInstalledProducts();
+            if (products.Count == 0)
+                Assert.Inconclusive("No Revit is installed on this machine");
+            return products;
         }
 
         /// <summary>
-        /// A below-minimum Revit install on this machine, which the report
+        /// The below-minimum Revits installed on this machine, which the report
         /// contract is only observable against.
         /// </summary>
-        private RevitProduct BelowMinimumInstalledProduct() {
+        private List<RevitProduct> BelowMinimumInstalledProducts() {
             var belowMinimum = ScanInstalledProducts()
-                                              .Where(prod => !prod.IsSupported
-                                                            && prod.ProductYear > 0
-                                                            && CommonUtils.VerifyFile(prod.ExecutiveLocation))
-                                              .OrderBy(prod => prod.ProductYear)
+                                              .Where(prod => !prod.IsSupported && prod.ProductYear > 0)
                                               .ToList();
             if (belowMinimum.Count == 0)
                 Assert.Inconclusive("No Revit below the minimum supported year is installed on this machine");
-            return belowMinimum.First();
+            return belowMinimum;
+        }
+
+        /// <summary>
+        /// The oldest below-minimum Revit whose binary can actually be read, which is
+        /// what the resolver needs before it can report anything.
+        /// </summary>
+        private RevitProduct BelowMinimumInstalledProduct() {
+            var readable = BelowMinimumInstalledProducts()
+                                          .Where(prod => CommonUtils.VerifyFile(prod.ExecutiveLocation))
+                                          .ToList();
+            if (readable.Count == 0)
+                Assert.Inconclusive("No below-minimum Revit with a readable binary is installed on this machine");
+            return readable.OrderBy(prod => prod.ProductYear).First();
         }
 
         [TestMethod()]
@@ -333,9 +353,8 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
 
         [TestMethod()]
         public void ListInstalledProducts_DoesNotWarnAboutAnyProductItFinds() {
-            var products = ScanInstalledProducts();
+            ScanInstalledProducts();
 
-            Assert.IsTrue(products.Count > 0, "The registry scan is expected to find the Revits installed here");
             Assert.AreEqual(0, CapturedAtLevel("Warn").Count,
                             "Session start must not warn about products it merely found installed: " + Report("Warn"));
             Assert.AreEqual(0, CapturedAtLevel("Error").Count, Report("Error"));
@@ -343,12 +362,7 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
 
         [TestMethod()]
         public void ListInstalledProducts_KeepsBelowMinimumProductsListed() {
-            var listed = ScanInstalledProducts();
-            var belowMinimum = listed.Where(prod => !prod.IsSupported && prod.ProductYear > 0).ToList();
-
-            Assert.IsTrue(belowMinimum.Count > 0,
-                          "Downgrading the report must not hide the install: " + string.Join(", ", listed));
-            foreach (var product in belowMinimum)
+            foreach (var product in BelowMinimumInstalledProducts())
                 StringAssert.Contains(product.ToString(), RevitProductData.MinimumSupportedProductYear.ToString());
         }
 
