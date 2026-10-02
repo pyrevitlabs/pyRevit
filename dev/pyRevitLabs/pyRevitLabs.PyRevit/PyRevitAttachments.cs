@@ -31,13 +31,27 @@ namespace pyRevitLabs.PyRevit {
         private static readonly object _attachmentCacheLock = new object();
 
         // managing attachments ======================================================================================
-        // attach primary or given clone to revit version
+        /// <summary>
+        /// Attach the given clone to one Revit product year.
+        /// </summary>
+        /// <exception cref="PyRevitException">
+        /// The year is below <see cref="RevitProductData.MinimumSupportedProductYear"/>,
+        /// or the engine cannot be used as a runtime. An attachment is only a manifest
+        /// file, so writing one for an unsupported year would leave that Revit pointing
+        /// at a loader it cannot load, with nothing on disk to show why.
+        /// </exception>
         // @handled @logs
         public static void Attach(int revitYear,
                                   PyRevitClone clone,
                                   PyRevitEngineVersion engineVer,
                                   bool allUsers = false,
                                   bool force = false) {
+            if (!IsAttachableProductYear(revitYear))
+                throw new PyRevitException(
+                    $"Can not attach to Revit {revitYear}: this pyRevit line supports Revit "
+                    + $"{RevitProductData.MinimumSupportedProductYear} or newer. Use a pyRevit release "
+                    + $"that supports Revit {revitYear} to run pyRevit there.");
+
             // make the addin manifest file
             var engine = clone.GetEngine(revitYear, engineVer);
 
@@ -67,6 +81,18 @@ namespace pyRevitLabs.PyRevit {
         }
 
         /// <summary>
+        /// Whether this pyRevit line can run on a Revit product year at all.
+        /// </summary>
+        /// <remarks>
+        /// The single source of truth for the year rule. It depends on nothing but the
+        /// year, so a caller holding only a year - an explicit attach, a manifest found
+        /// on disk - can apply the same rule the bulk paths apply.
+        /// </remarks>
+        public static bool IsAttachableProductYear(int revitYear) {
+            return RevitProductData.IsSupportedProductYear(revitYear);
+        }
+
+        /// <summary>
         /// Installed Revit products this pyRevit line can actually be attached to.
         /// </summary>
         /// <remarks>
@@ -79,9 +105,21 @@ namespace pyRevitLabs.PyRevit {
         /// silently, but a caller must never treat "installed" as "attachable".
         /// </remarks>
         public static List<RevitProduct> GetAttachableProducts() {
+            return GetAttachableProducts(RevitProduct.ListInstalledProducts());
+        }
+
+        /// <summary>
+        /// Filter a set of installed products down to the ones this line can be attached to.
+        /// </summary>
+        /// <remarks>
+        /// Takes the products as an argument so the filter can be exercised against a
+        /// known set instead of only against whatever happens to be installed. The
+        /// registry-backed overload delegates here.
+        /// </remarks>
+        public static List<RevitProduct> GetAttachableProducts(IEnumerable<RevitProduct> products) {
             var attachable = new List<RevitProduct>();
-            foreach (var product in RevitProduct.ListInstalledProducts()) {
-                if (!product.IsSupported) {
+            foreach (var product in products) {
+                if (!IsAttachableProductYear(product.ProductYear)) {
                     logger.Warn("Not attaching to Revit {0}: this pyRevit line supports Revit {1} or newer. " +
                                 "Use a pyRevit release that supports Revit {0} to run pyRevit there.",
                                 product.ProductYear, RevitProductData.MinimumSupportedProductYear);
@@ -97,7 +135,13 @@ namespace pyRevitLabs.PyRevit {
             return attachable;
         }
 
-        // attach clone to all revit versions this pyRevit line can run on
+        /// <summary>
+        /// Attach a clone to every installed Revit this pyRevit line can run on.
+        /// </summary>
+        /// <remarks>
+        /// Products this line cannot run on are skipped with the reason logged, rather
+        /// than aborting the ones it can.
+        /// </remarks>
         // @handled @logs
         public static void AttachToAll(PyRevitClone clone, PyRevitEngineVersion engineVer, bool allUsers = false) {
             foreach (var revit in GetAttachableProducts())

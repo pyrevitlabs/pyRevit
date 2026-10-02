@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -478,6 +479,127 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
             foreach (var product in supported)
                 Assert.IsTrue(attachableYears.Contains(product.ProductYear),
                               "Revit " + product.ProductYear + " is supported and installed, so it must stay attachable");
+        }
+    }
+
+    /// <summary>
+    /// Covers the attachable-product filter against a known set of products, so the
+    /// rule is checked on every machine rather than only where an old Revit happens
+    /// to be installed.
+    /// </summary>
+    [TestClass()]
+    public class AttachableProductFilterTests {
+        private const int BelowMinimumYear = 2017;
+        private const int SupportedYear = 2025;
+        private const string BelowMinimumVersion = "17.0.416.0";
+        private const string SupportedVersion = "25.0.2.419";
+
+        private string _tempRoot;
+
+        [TestInitialize()]
+        public void CreateFakeRevitInstalls() {
+            _tempRoot = Path.Combine(Path.GetTempPath(), "pyrevit-attachable-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(_tempRoot);
+        }
+
+        [TestCleanup()]
+        public void RemoveFakeRevitInstalls() {
+            try {
+                if (_tempRoot != null && Directory.Exists(_tempRoot))
+                    Directory.Delete(_tempRoot, recursive: true);
+            }
+            catch (IOException) {
+            }
+        }
+
+        /// <summary>
+        /// Build a product the way the registry scan would, then point it at a fake
+        /// install directory so the executable check is decided by that directory.
+        /// </summary>
+        private static RevitProduct FakeProduct(string release, string version, string installPath, bool withExecutable) {
+            var hostInfo = new HostProductInfo {
+                meta = new HostProductInfoMeta { schema = "1.0" },
+                product = "Autodesk Revit",
+                release = release,
+                version = version,
+                build = "20200101_0000",
+                target = "x64"
+            };
+            var product = (RevitProduct)Activator.CreateInstance(
+                typeof(RevitProduct),
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null,
+                new object[] { hostInfo, false },
+                null);
+            Directory.CreateDirectory(installPath);
+            if (withExecutable)
+                File.WriteAllText(Path.Combine(installPath, "Revit.exe"), string.Empty);
+            product.InstallLocation = installPath;
+            return product;
+        }
+
+        private RevitProduct BelowMinimumWithExecutable() {
+            return FakeProduct("Autodesk Revit 2017", BelowMinimumVersion,
+                               Path.Combine(_tempRoot, "Revit 2017"), withExecutable: true);
+        }
+
+        private RevitProduct SupportedWithExecutable() {
+            return FakeProduct("2025 First Customer Ship", SupportedVersion,
+                               Path.Combine(_tempRoot, "Revit 2025"), withExecutable: true);
+        }
+
+        private RevitProduct SupportedWithoutExecutable() {
+            return FakeProduct("2026 First Customer Ship", "26.0.4.409",
+                               Path.Combine(_tempRoot, "Revit 2026"), withExecutable: false);
+        }
+
+        [TestMethod()]
+        public void IsAttachableProductYear_RejectsBelowMinimumAndAcceptsSupported() {
+            Assert.IsFalse(PyRevitAttachments.IsAttachableProductYear(BelowMinimumYear));
+            Assert.IsTrue(PyRevitAttachments.IsAttachableProductYear(SupportedYear));
+            Assert.IsTrue(PyRevitAttachments.IsAttachableProductYear(RevitProductData.MinimumSupportedProductYear));
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_DropsBelowMinimumProductFromAKnownSet() {
+            var belowMinimum = BelowMinimumWithExecutable();
+
+            var attachable = PyRevitAttachments.GetAttachableProducts(new[] { belowMinimum });
+
+            Assert.AreEqual(0, attachable.Count,
+                            "A below-minimum product with a perfectly good executable is still not attachable");
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_KeepsSupportedProductFromAKnownSet() {
+            var supported = SupportedWithExecutable();
+
+            var attachable = PyRevitAttachments.GetAttachableProducts(new[] { supported });
+
+            Assert.AreEqual(1, attachable.Count);
+            Assert.AreEqual(SupportedYear, attachable[0].ProductYear);
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_DropsSupportedProductWithNoExecutableOnDisk() {
+            var missing = SupportedWithoutExecutable();
+
+            var attachable = PyRevitAttachments.GetAttachableProducts(new[] { missing });
+
+            Assert.AreEqual(0, attachable.Count,
+                            "A registry entry whose Revit.exe is gone must not get a manifest written for it");
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_KeepsOnlyTheSupportedOnesFromAMixedSet() {
+            var attachable = PyRevitAttachments.GetAttachableProducts(new[] {
+                BelowMinimumWithExecutable(),
+                SupportedWithExecutable(),
+                SupportedWithoutExecutable()
+            });
+
+            Assert.AreEqual(1, attachable.Count);
+            Assert.AreEqual(SupportedYear, attachable[0].ProductYear);
         }
     }
 }
