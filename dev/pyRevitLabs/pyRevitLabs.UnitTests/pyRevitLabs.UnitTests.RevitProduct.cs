@@ -561,6 +561,41 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
         }
 
         [TestMethod()]
+        public void IsAttachable_RejectsBelowMinimumEvenWithAWorkingExecutable() {
+            Assert.IsFalse(PyRevitAttachments.IsAttachable(BelowMinimumWithExecutable()));
+        }
+
+        [TestMethod()]
+        public void IsAttachable_RejectsSupportedYearWithNoExecutableOnDisk() {
+            Assert.IsFalse(PyRevitAttachments.IsAttachable(SupportedWithoutExecutable()));
+        }
+
+        [TestMethod()]
+        public void IsAttachable_AcceptsSupportedYearWithExecutableOnDisk() {
+            Assert.IsTrue(PyRevitAttachments.IsAttachable(SupportedWithExecutable()));
+        }
+
+        /// <summary>
+        /// A bulk reattachment must not apply a looser rule than a direct attach, so
+        /// the two have to agree about every product in a known set.
+        /// </summary>
+        [TestMethod()]
+        public void IsAttachable_AgreesWithTheFilterUsedForBulkAttach() {
+            var products = new[] {
+                BelowMinimumWithExecutable(),
+                SupportedWithExecutable(),
+                SupportedWithoutExecutable()
+            };
+            var filtered = PyRevitAttachments.GetAttachableProducts(products);
+
+            foreach (var product in products) {
+                var expected = PyRevitAttachments.IsAttachable(product);
+                Assert.AreEqual(expected, filtered.Contains(product),
+                                "Revit " + product.ProductYear + ": the bulk filter and the per-product rule disagree");
+            }
+        }
+
+        [TestMethod()]
         public void GetAttachableProducts_DropsBelowMinimumProductFromAKnownSet() {
             var belowMinimum = BelowMinimumWithExecutable();
 

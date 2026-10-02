@@ -296,11 +296,12 @@ namespace pyRevitCLI {
                 PyRevitAttachments.AttachToAll(clone, engineVersion, allUsers: allUsers);
             else if (attached)
                 foreach (var attachment in PyRevitAttachments.GetAttachments())
-                    if (PyRevitAttachments.IsAttachableProductYear(attachment.Product.ProductYear))
+                    if (PyRevitAttachments.IsAttachable(attachment.Product))
                         PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
                     else
-                        logger.Warn("Not reattaching to Revit {0}: this pyRevit line supports Revit {1} or newer. " +
-                                    "The existing attachment was written by a release that supported it and is left as it is.",
+                        logger.Warn("Not reattaching to Revit {0}: this pyRevit line supports Revit {1} or newer, " +
+                                    "or its executable is missing. The existing attachment was written by a release " +
+                                    "that supported it and is left as it is.",
                                     attachment.Product.ProductYear, RevitProductData.MinimumSupportedProductYear);
             else if (int.TryParse(revitYear, out revitYearNumber))
                 PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVersion, allUsers: allUsers);
@@ -364,9 +365,10 @@ namespace pyRevitCLI {
             else {
                 // read current attachments and reattach using the same config with the new clone
                 foreach (var attachment in PyRevitAttachments.GetAttachments()) {
-                    if (!PyRevitAttachments.IsAttachableProductYear(attachment.Product.ProductYear)) {
-                        logger.Warn("Not switching the clone on Revit {0}: this pyRevit line supports Revit {1} or newer. " +
-                                    "Its existing attachment was written by a release that supported it and is left as it is.",
+                    if (!PyRevitAttachments.IsAttachable(attachment.Product)) {
+                        logger.Warn("Not switching the clone on Revit {0}: this pyRevit line supports Revit {1} or newer, " +
+                                    "or its executable is missing. Its existing attachment was written by a release " +
+                                    "that supported it and is left as it is.",
                                     attachment.Product.ProductYear, RevitProductData.MinimumSupportedProductYear);
                         continue;
                     }

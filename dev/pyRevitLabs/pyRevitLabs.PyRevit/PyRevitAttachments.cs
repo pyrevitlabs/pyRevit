@@ -36,9 +36,12 @@ namespace pyRevitLabs.PyRevit {
         /// </summary>
         /// <exception cref="PyRevitException">
         /// The year is below <see cref="RevitProductData.MinimumSupportedProductYear"/>,
-        /// or the engine cannot be used as a runtime. An attachment is only a manifest
-        /// file, so writing one for an unsupported year would leave that Revit pointing
-        /// at a loader it cannot load, with nothing on disk to show why.
+        /// the year is a known install whose executable is missing, or the engine cannot
+        /// be used as a runtime. An attachment is only a manifest file, so writing one
+        /// for an unsupported year would leave that Revit pointing at a loader it
+        /// cannot load, with nothing on disk to show why. The executable check runs
+        /// before the existing attachment is removed, so a year that cannot be attached
+        /// never leaves the Revit it was already attached to with no attachment at all.
         /// </exception>
         // @handled @logs
         public static void Attach(int revitYear,
@@ -51,6 +54,13 @@ namespace pyRevitLabs.PyRevit {
                     $"Can not attach to Revit {revitYear}: this pyRevit line supports Revit "
                     + $"{RevitProductData.MinimumSupportedProductYear} or newer. Use a pyRevit release "
                     + $"that supports Revit {revitYear} to run pyRevit there.");
+
+            var knownProduct = RevitProduct.ListInstalledProducts()
+                                           .FirstOrDefault(prod => prod.ProductYear == revitYear);
+            if (knownProduct != null && !CommonUtils.VerifyFile(knownProduct.ExecutiveLocation))
+                throw new PyRevitException(
+                    $"Can not attach to Revit {revitYear}: no executable found at "
+                    + $"\"{knownProduct.ExecutiveLocation}\". The existing attachment was left as it is.");
 
             // make the addin manifest file
             var engine = clone.GetEngine(revitYear, engineVer);
@@ -93,6 +103,23 @@ namespace pyRevitLabs.PyRevit {
         }
 
         /// <summary>
+        /// Whether this pyRevit line can be attached to an installed product.
+        /// </summary>
+        /// <remarks>
+        /// The product-level form of <see cref="IsAttachableProductYear"/>, adding the
+        /// check that the product's executable is actually on disk. Every path that
+        /// writes or rewrites a manifest decides through this, so a bulk reattachment
+        /// can never apply a looser rule than a direct attach. Callers log their own
+        /// message, because the right wording differs: a first attach says the product
+        /// is not a target, while a reattachment also has to say that the manifest
+        /// already there is being kept.
+        /// </remarks>
+        public static bool IsAttachable(RevitProduct product) {
+            return IsAttachableProductYear(product.ProductYear)
+                   && CommonUtils.VerifyFile(product.ExecutiveLocation);
+        }
+
+        /// <summary>
         /// Installed Revit products this pyRevit line can actually be attached to.
         /// </summary>
         /// <remarks>
@@ -119,15 +146,14 @@ namespace pyRevitLabs.PyRevit {
         public static List<RevitProduct> GetAttachableProducts(IEnumerable<RevitProduct> products) {
             var attachable = new List<RevitProduct>();
             foreach (var product in products) {
-                if (!IsAttachableProductYear(product.ProductYear)) {
-                    logger.Warn("Not attaching to Revit {0}: this pyRevit line supports Revit {1} or newer. " +
-                                "Use a pyRevit release that supports Revit {0} to run pyRevit there.",
-                                product.ProductYear, RevitProductData.MinimumSupportedProductYear);
-                    continue;
-                }
-                if (!CommonUtils.VerifyFile(product.ExecutiveLocation)) {
-                    logger.Warn("Not attaching to Revit {0}: no executable found at \"{1}\".",
-                                product.ProductYear, product.ExecutiveLocation);
+                if (!IsAttachable(product)) {
+                    if (!IsAttachableProductYear(product.ProductYear))
+                        logger.Warn("Not attaching to Revit {0}: this pyRevit line supports Revit {1} or newer. " +
+                                    "Use a pyRevit release that supports Revit {0} to run pyRevit there.",
+                                    product.ProductYear, RevitProductData.MinimumSupportedProductYear);
+                    else
+                        logger.Warn("Not attaching to Revit {0}: no executable found at \"{1}\".",
+                                    product.ProductYear, product.ExecutiveLocation);
                     continue;
                 }
                 attachable.Add(product);
