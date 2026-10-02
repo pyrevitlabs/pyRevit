@@ -58,15 +58,32 @@ namespace Autodesk.Revit.DB {
         }
     }
     internal sealed class FailureMessage {
-        public FailureSeverity GetSeverity() => FailureSeverity.Error;
-        public string GetDescriptionText() => "Failure";
+        private readonly FailureSeverity severity;
+        private readonly string description;
+
+        public FailureMessage(FailureSeverity severity = FailureSeverity.Error, string description = "Failure") {
+            this.severity = severity;
+            this.description = description;
+        }
+
+        public FailureSeverity GetSeverity() => severity;
+        public string GetDescriptionText() => description;
         public IEnumerable<ElementId> GetFailingElementIds() => new ElementId[0];
     }
     internal sealed class FailuresAccessor {
-        public Document GetDocument() => null;
-        public IEnumerable<FailureMessage> GetFailureMessages() => new FailureMessage[0];
+        private readonly Document document;
+        private readonly List<FailureMessage> messages;
+
+        public FailuresAccessor(Document document = null, params FailureMessage[] messages) {
+            this.document = document;
+            this.messages = new List<FailureMessage>(messages);
+        }
+
+        public List<FailureMessage> DeletedWarnings { get; } = new List<FailureMessage>();
+        public Document GetDocument() => document;
+        public IEnumerable<FailureMessage> GetFailureMessages() => messages;
         public string GetTransactionName() => "Test transaction";
-        public void DeleteWarning(FailureMessage message) { }
+        public void DeleteWarning(FailureMessage message) { DeletedWarnings.Add(message); }
     }
 }
 namespace Autodesk.Revit.DB.Events {
@@ -96,8 +113,15 @@ namespace Autodesk.Revit.DB.Events {
         public IEnumerable<string> GetTransactionNames() => new[] { "Test transaction" };
     }
     internal sealed class FailuresProcessingEventArgs : EventArgs {
-        public FailuresAccessor GetFailuresAccessor() => new FailuresAccessor();
-        public void SetProcessingResult(FailureProcessingResult result) { }
+        private readonly FailuresAccessor accessor;
+
+        public FailuresProcessingEventArgs(FailuresAccessor accessor = null) {
+            this.accessor = accessor ?? new FailuresAccessor();
+        }
+
+        public FailureProcessingResult? Result { get; private set; }
+        public FailuresAccessor GetFailuresAccessor() => accessor;
+        public void SetProcessingResult(FailureProcessingResult result) { Result = result; }
     }
 }
 namespace Autodesk.Revit.ApplicationServices {
@@ -133,9 +157,19 @@ namespace Autodesk.Revit.ApplicationServices {
                 Modified = modified ?? new ElementId[0],
             });
         }
-        public bool Save(Document document) {
-            var args = new DocumentSavingEventArgs { Document = document };
+        public FailureProcessingResult? ProcessFailures(FailuresAccessor accessor) {
+            var args = new FailuresProcessingEventArgs(accessor);
+            FailuresProcessing?.Invoke(this, args);
+            return args.Result;
+        }
+        public bool Save(Document document, bool cancellable = true) {
+            var args = new DocumentSavingEventArgs { Document = document, Cancellable = cancellable };
             DocumentSaving?.Invoke(this, args);
+            return !args.Cancelled;
+        }
+        public bool CloseDocument(Document document) {
+            var args = new DocumentClosingEventArgs { Document = document };
+            DocumentClosing?.Invoke(this, args);
             return !args.Cancelled;
         }
         public bool SaveAs(Document document) {
