@@ -10,8 +10,14 @@ The live assertion is the one that matters. The helpers are only half the
 fix, because IronPython's ``clr.AddReferenceToFileAndPath`` appends the
 referenced assembly's folder to ``sys.path`` itself, once per call, and
 pyRevit references several assemblies from the one engine folder. #3687.
+
+The text-type filter is tested against every text type the running engine
+actually exposes. pyRevit's patched IronPython unifies ``str`` and
+``unicode`` into one type, so on that engine a unicode-specific repeat
+cannot exist and the cases that need one skip rather than pass quietly.
 """
 
+import os
 import os.path as op
 import shutil
 import sys
@@ -20,6 +26,30 @@ import unittest
 
 import pyrevit
 from pyrevit import add_to_sys_path, dedupe_sys_path
+from pyrevit.compat import safe_strtype
+
+
+try:
+    basestring  # noqa: B018 pylint: disable=used-before-assignment
+except NameError:
+    basestring = str
+
+try:
+    _UNICODE_TYPE = unicode  # noqa: F821 pylint: disable=undefined-variable
+except NameError:
+    _UNICODE_TYPE = str
+
+# Mirrors pyrevit._TEXT_TYPES. A bare unicode literal cannot be used here: ruff
+# format strips the u prefix, collapsing it to str on IronPython 2.
+_TEXT_TYPES = (basestring,)
+
+# pyRevit's patched IronPython collapses str and unicode into a single type, so
+# a repeat that differs only by text type cannot exist there. Cases that need
+# the distinction skip on that engine instead of passing vacuously.
+needs_separate_unicode = unittest.skipIf(
+    str is _UNICODE_TYPE,
+    "this engine unifies str and unicode, so a unicode-only repeat cannot exist",
+)
 
 
 def _key(path):
@@ -36,7 +66,7 @@ def _repeated():
     """Return every folder listed more than once on the live sys.path."""
     counts = {}
     for entry in sys.path:
-        if not isinstance(entry, str) or not entry:
+        if not isinstance(entry, _TEXT_TYPES) or not entry:
             continue
         key = _key(entry)
         counts[key] = counts.get(key, 0) + 1
@@ -122,6 +152,62 @@ class SysPathDedupeTests(unittest.TestCase):
         add_to_sys_path(missing, None, "")
 
         self.assertEqual(before, list(sys.path))
+
+    def test_text_types_cover_every_text_type_this_engine_has(self):
+        """The filter accepts every text type the running engine exposes.
+
+        Runs everywhere, and is what catches a narrowing back to ``(str,)``:
+        on an engine where ``unicode`` is a separate type, dropping it makes
+        a unicode repeat invisible to the dedupe.
+        """
+        for text_type in (str, _UNICODE_TYPE):
+            self.assertIsInstance(
+                text_type("x"),
+                tuple(_TEXT_TYPES),
+                "{} is not accepted".format(text_type.__name__),
+            )
+
+    def test_accepts_a_unicode_folder(self):
+        """A unicode folder is registered, and only once.
+
+        IronPython 2 makes ``str`` and ``unicode`` unrelated types, so a
+        filter that accepts one silently drops the other - and a dropped
+        entry is a repeat the dedupe never sees.
+        """
+        folder = safe_strtype(tempfile.mkdtemp())
+        try:
+            add_to_sys_path(folder)
+            add_to_sys_path(folder)
+
+            self.assertEqual(1, len(_count(sys.path, folder)))
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+
+    @needs_separate_unicode
+    def test_repeated_unicode_entries_are_counted(self):
+        """The live assertion itself must see a repeated unicode entry.
+
+        Guards the assertion rather than the code under it: if
+        ``_repeated()`` skipped unicode entries it would report nothing and
+        both live-path tests would pass on a path list that does have a
+        repeat.
+        """
+        marker = safe_strtype("pyrevit-unicode-repeat-{}".format(os.getpid()))
+        sys.path.append(marker)
+        sys.path.append(marker)
+
+        self.assertIn(_key(marker), _repeated())
+
+    @needs_separate_unicode
+    def test_dedupe_drops_a_repeated_unicode_entry(self):
+        """dedupe_sys_path removes a repeat held as a unicode entry."""
+        marker = safe_strtype("pyrevit-unicode-dedupe-{}".format(os.getpid()))
+        sys.path.append(marker)
+        sys.path.append(marker)
+
+        dedupe_sys_path()
+
+        self.assertEqual([], _repeated())
 
 
 class EngineDirectoryTests(unittest.TestCase):

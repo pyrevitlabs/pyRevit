@@ -111,6 +111,19 @@ else:
     ENGINES_DIR = None
 
 
+try:
+    basestring  # noqa: B018 pylint: disable=used-before-assignment
+except NameError:
+    basestring = str
+
+# IronPython 2 makes str and unicode unrelated types, so a check against one
+# alone silently skips entries of the other - and a skipped entry is a repeat
+# the dedupe never sees. A bare unicode literal cannot be used here: ruff format
+# strips the u prefix, which would collapse this back to str on the default
+# engine.
+_TEXT_TYPES = (basestring,)
+
+
 def _sys_path_key(path):
     """Normalize a path for identity comparison against other sys.path entries."""
     return op.normcase(op.normpath(path))
@@ -135,7 +148,7 @@ def dedupe_sys_path():
     seen = set()
     duplicates = []
     for index, entry in enumerate(sys.path):
-        if not isinstance(entry, str) or not entry:
+        if not isinstance(entry, _TEXT_TYPES) or not entry:
             continue
         key = _sys_path_key(entry)
         if key in seen:
@@ -163,10 +176,14 @@ def add_to_sys_path(*paths):
     folder that is already present leaves the resolution order untouched.
     """
     keys = set(
-        _sys_path_key(entry) for entry in sys.path if isinstance(entry, str) and entry
+        _sys_path_key(entry)
+        for entry in sys.path
+        if isinstance(entry, _TEXT_TYPES) and entry
     )
     for path in paths:
-        if not isinstance(path, str) or not path or not op.isdir(path):
+        if not isinstance(path, _TEXT_TYPES) or not path:
+            continue
+        if not op.isdir(path):
             continue
         key = _sys_path_key(path)
         if key in keys:
