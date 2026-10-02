@@ -8,6 +8,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
+using pyRevitLabs.PyRevit;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.UnitTests.RevitProducts {
@@ -375,6 +376,108 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
             Assert.IsTrue(roleParameter.IsOptional,
                           "Callers that omit the role resolve the host they are launching into");
             Assert.AreEqual(ResolvedProductRole.RunningHost, roleParameter.DefaultValue);
+        }
+    }
+
+    /// <summary>
+    /// Covers which installed Revits a clone may be attached to.
+    /// </summary>
+    /// <remarks>
+    /// An attachment is a manifest file, so writing one for a product this line
+    /// cannot run on leaves a host pointing at a loader it will fail to load, and
+    /// writing one for a stale registry entry points a Revit that is not installed.
+    /// "Installed" is therefore not the same question as "attachable".
+    /// </remarks>
+    [TestClass()]
+    public class AttachableProductTests {
+        private const string LevelSeparator = "|";
+        private const string NotAttaching = "Not attaching to Revit";
+
+        private LoggingConfiguration _previousConfig;
+        private MemoryTarget _capture;
+
+        [TestInitialize()]
+        public void StartCapturingLog() {
+            _previousConfig = LogManager.Configuration;
+            _capture = new MemoryTarget("attachableProductReports") {
+                Layout = "${level}" + LevelSeparator + "${message}"
+            };
+            var config = new LoggingConfiguration();
+            config.AddTarget(_capture);
+            config.AddRuleForAllLevels(_capture);
+            LogManager.Configuration = config;
+            LogManager.ReconfigExistingLoggers();
+        }
+
+        [TestCleanup()]
+        public void StopCapturingLog() {
+            LogManager.Configuration = _previousConfig;
+            LogManager.ReconfigExistingLoggers();
+            _capture?.Dispose();
+        }
+
+        private string Report(string level) {
+            var prefix = level + LevelSeparator;
+            return string.Join(Environment.NewLine, _capture.Logs.Where(line => line.StartsWith(prefix)));
+        }
+
+        private static List<RevitProduct> BelowMinimumInstalledProducts() {
+            var belowMinimum = RevitProduct.ListInstalledProducts()
+                                              .Where(prod => !prod.IsSupported && prod.ProductYear > 0)
+                                              .ToList();
+            if (belowMinimum.Count == 0)
+                Assert.Inconclusive("No Revit below the minimum supported year is installed on this machine");
+            return belowMinimum;
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_NeverReturnsAProductThisLineCanNotRunOn() {
+            foreach (var product in PyRevitAttachments.GetAttachableProducts()) {
+                Assert.IsTrue(product.IsSupported,
+                              "Revit " + product.ProductYear + " is below the minimum supported year but was offered as attachable");
+                Assert.IsTrue(CommonUtils.VerifyFile(product.ExecutiveLocation),
+                              "Revit " + product.ProductYear + " has no executable at \"" + product.ExecutiveLocation
+                              + "\" but was offered as attachable");
+            }
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_ExcludesBelowMinimumInstalledRevits() {
+            var belowMinimum = BelowMinimumInstalledProducts();
+            var attachableYears = PyRevitAttachments.GetAttachableProducts().Select(prod => prod.ProductYear).ToList();
+
+            foreach (var product in belowMinimum)
+                Assert.IsFalse(attachableYears.Contains(product.ProductYear),
+                               "pyrevit attach --installed would write a manifest for Revit " + product.ProductYear
+                               + ", pointing it at a loader that line can not load");
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_SaysWhyItSkippedEachBelowMinimumRevit() {
+            var belowMinimum = BelowMinimumInstalledProducts();
+
+            PyRevitAttachments.GetAttachableProducts();
+
+            var report = Report("Warn");
+            StringAssert.Contains(report, NotAttaching);
+            foreach (var product in belowMinimum)
+                StringAssert.Contains(report, product.ProductYear.ToString());
+        }
+
+        [TestMethod()]
+        public void GetAttachableProducts_KeepsEverySupportedInstalledRevit() {
+            var supported = RevitProduct.ListInstalledProducts()
+                                           .Where(prod => prod.IsSupported
+                                                         && prod.ProductYear > 0
+                                                         && CommonUtils.VerifyFile(prod.ExecutiveLocation))
+                                           .ToList();
+            if (supported.Count == 0)
+                Assert.Inconclusive("No supported Revit with a readable executable is installed on this machine");
+            var attachableYears = PyRevitAttachments.GetAttachableProducts().Select(prod => prod.ProductYear).ToList();
+
+            foreach (var product in supported)
+                Assert.IsTrue(attachableYears.Contains(product.ProductYear),
+                              "Revit " + product.ProductYear + " is supported and installed, so it must stay attachable");
         }
     }
 }

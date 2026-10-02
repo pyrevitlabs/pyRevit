@@ -66,10 +66,41 @@ namespace pyRevitLabs.PyRevit {
             ClearAttachmentCache();
         }
 
-        // attach clone to all installed revit versions
+        /// <summary>
+        /// Installed Revit products this pyRevit line can actually be attached to.
+        /// </summary>
+        /// <remarks>
+        /// A product qualifies only when this line supports its product year and its
+        /// executable is on disk. Both checks matter because an attachment is just a
+        /// manifest file: written for a below-minimum year it points a host that
+        /// cannot load the loader named in it, and written for a stale registry entry
+        /// it points a Revit that is not installed. Side-by-side installs are a normal
+        /// setup, so excluded products are named in the log rather than dropped
+        /// silently, but a caller must never treat "installed" as "attachable".
+        /// </remarks>
+        public static List<RevitProduct> GetAttachableProducts() {
+            var attachable = new List<RevitProduct>();
+            foreach (var product in RevitProduct.ListInstalledProducts()) {
+                if (!product.IsSupported) {
+                    logger.Warn("Not attaching to Revit {0}: this pyRevit line supports Revit {1} or newer. " +
+                                "Use a pyRevit release that supports Revit {0} to run pyRevit there.",
+                                product.ProductYear, RevitProductData.MinimumSupportedProductYear);
+                    continue;
+                }
+                if (!CommonUtils.VerifyFile(product.ExecutiveLocation)) {
+                    logger.Warn("Not attaching to Revit {0}: no executable found at \"{1}\".",
+                                product.ProductYear, product.ExecutiveLocation);
+                    continue;
+                }
+                attachable.Add(product);
+            }
+            return attachable;
+        }
+
+        // attach clone to all revit versions this pyRevit line can run on
         // @handled @logs
         public static void AttachToAll(PyRevitClone clone, PyRevitEngineVersion engineVer, bool allUsers = false) {
-            foreach (var revit in RevitProduct.ListInstalledProducts())
+            foreach (var revit in GetAttachableProducts())
                 Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
         }
 

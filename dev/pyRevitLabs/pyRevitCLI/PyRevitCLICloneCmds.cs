@@ -10,7 +10,6 @@ using System.Diagnostics;
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonCLI;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.PyRevit;
 using pyRevitLabs.Language.Properties;
 
@@ -293,8 +292,7 @@ namespace pyRevitCLI {
             // decide targets revits to attach to
             int revitYearNumber = 0;
             if (installed)
-                foreach (var revit in RevitProduct.ListInstalledProducts())
-                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
+                PyRevitAttachments.AttachToAll(clone, engineVersion, allUsers: allUsers);
             else if (attached)
                 foreach (var attachment in PyRevitAttachments.GetAttachments())
                     PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
