@@ -5,6 +5,8 @@ import os.path as op
 import shutil
 from unittest import TestCase
 
+from pyrevit.labs import PyRevit
+
 import agent_harness as harness
 from agent_harness import AgentRequestError, run
 
@@ -73,6 +75,65 @@ class DecisionTests(TestCase):
         self.assertEqual("policy_readonly", raised.exception.code)
         self.assertEqual("ok", dry["status"])
         self.assertEqual(before, harness.comment(_wall()))
+
+
+class PolicyTests(TestCase):
+    """How the policy at the start and at the end of a run decides it."""
+
+    def test_a_modify_run_with_nothing_to_change_reports_no_changes(self):
+        """A modify run that changes nothing is reported as no_changes."""
+        response = _modify("result = 'nothing to do'")
+        self.assertEqual("ok", response["status"])
+        self.assertEqual("no_changes", response["decision"])
+
+    def test_auto_policy_reports_that_nobody_was_asked(self):
+        """A committed run under policy auto says its approval was auto."""
+        response = _modify(
+            harness.set_comment_script(),
+            inputs={"id": _wall(), "text": "agent-approval"},
+        )
+        self.assertEqual("committed", response["decision"])
+        self.assertEqual("auto", response["approval"])
+
+    def test_a_policy_switched_to_readonly_during_the_run_rolls_it_back(self):
+        """The policy is read again before committing, so a run can't outlive a stricter policy."""
+        before = harness.comment(_wall())
+        try:
+            response = _modify(
+                "from pyrevit.labs import PyRevit\n"
+                "PyRevit.PyRevitConfigs.SetAgentPolicy('readonly')\n"
+                + harness.set_comment_script(),
+                inputs={"id": _wall(), "text": "agent-too-late"},
+            )
+        finally:
+            PyRevit.PyRevitConfigs.SetAgentPolicy("auto")
+        self.assertEqual("rejected", response["status"])
+        self.assertEqual("policy_readonly", response["error"]["type"])
+        self.assertEqual("rolled_back", response["decision"])
+        self.assertEqual(before, harness.comment(_wall()))
+
+    def test_a_policy_changed_outside_revit_applies_to_the_next_request(self):
+        """The command pyrevit configs agent policy takes effect without reloading pyRevit."""
+        if not op.exists(harness.CLI):
+            self.skipTest("bin/pyrevit.exe is not built.")
+        before = harness.comment(_wall())
+        try:
+            harness.run_cli("configs", "agent", "policy", "readonly")
+            with self.assertRaises(AgentRequestError) as raised:
+                _modify(
+                    harness.set_comment_script(),
+                    inputs={"id": _wall(), "text": "agent-outside"},
+                )
+            unchanged = harness.comment(_wall())
+        finally:
+            harness.run_cli("configs", "agent", "policy", "auto")
+        self.assertEqual("policy_readonly", raised.exception.code)
+        self.assertEqual(before, unchanged)
+        restored = _modify(
+            harness.set_comment_script(),
+            inputs={"id": _wall(), "text": "agent-restored"},
+        )
+        self.assertEqual("committed", restored["decision"])
 
 
 class RollbackTests(TestCase):

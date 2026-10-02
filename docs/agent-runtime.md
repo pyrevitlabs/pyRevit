@@ -509,13 +509,15 @@ itself: the pipe executes requests through an ExternalEvent that never fires whi
 
 | Button | Covers |
 |---|---|
-| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; query runs on both engines (results, error lines, timeouts, workspaces, records); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`) |
+| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
 | Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
 | Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
 
 The tests create two scratch projects in the temp folder, set the policy to `auto` (or `ask` for the
 approval tests) while they run, then close the projects without saving, reactivate the document
-that was open before, and restore the policy. They don't need the pipe host to be enabled.
+that was open before, and restore the policy. The settings tests change the real pyRevit config and
+put every value back. The pipe tests are skipped when the host is disabled, and the other tests have
+only been run with it enabled.
 
 Anything the MCP server adds on top of the host, such as hints in run errors and the library
 tools, runs in the CLI and is not covered by these buttons.

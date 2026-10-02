@@ -17,6 +17,13 @@ agent_harness = importlib.import_module("agent_harness")
 agent_harness.run_suites(
     [
         importlib.import_module(name)
-        for name in ("agent_requests_tests", "agent_query_tests", "agent_modify_tests")
+        for name in (
+            "agent_requests_tests",
+            "agent_validation_tests",
+            "agent_query_tests",
+            "agent_modify_tests",
+            "agent_settings_tests",
+            "agent_pipe_tests",
+        )
     ]
 )

@@ -86,6 +86,26 @@ class ModelGuardTests(TestCase):
         self.assertEqual(before, harness.comment(wall))
 
 
+class DialogTests(TestCase):
+    """Dialogs Revit raises while a run executes."""
+
+    def test_a_dialog_shown_by_a_script_is_dismissed_and_reported(self):
+        """A TaskDialog opened by the script is closed, listed in the response, and doesn't stall the run."""
+        response = run(
+            "UI.TaskDialog.Show('Agent test', 'dialog from a run')\n"
+            "result = 'after the dialog'"
+        )
+        self.assertEqual("ok", response["status"])
+        self.assertEqual("after the dialog", response["result"])
+        self.assertTrue(response["dialogs"])
+        for dialog in response["dialogs"]:
+            self.assertTrue(dialog["dismissed"])
+        self.assertIn(
+            "dialog from a run",
+            " ".join(dialog["message"] for dialog in response["dialogs"]),
+        )
+
+
 class WorkspaceTests(TestCase):
     """The workspace folder put on sys.path for a run."""
 

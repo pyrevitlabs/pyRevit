@@ -18,16 +18,19 @@ import tempfile
 from contextlib import contextmanager
 
 import System
+from System.Diagnostics import Process, ProcessStartInfo
 
-from pyrevit import DB, HOST_APP
+from pyrevit import DB, HOME_DIR, HOST_APP
 from pyrevit.coreutils import assmutils
-from pyrevit.labs import PyRevit
+from pyrevit.labs import Common, PyRevit
 from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
 COMMENTS = "DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS"
 CPYTHON_HOST = platform.python_implementation() == "CPython"
 ENGINES = ("ironpython",) if CPYTHON_HOST else ("ironpython", "cpython")
+
+CLI = op.join(HOME_DIR, "bin", "pyrevit.exe")
 
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"
@@ -78,6 +81,33 @@ def run(script, mode="query", engine=None, inputs=None, timeout=None, **extra):
     if timeout is not None:
         params["timeout_s"] = timeout
     return request("run", **params)
+
+
+def host_running():
+    """Whether the agent host started its pipe in this Revit session."""
+    return bool(_HOST_TYPE.GetProperty("IsRunning").GetValue(None))
+
+
+def pipe_name():
+    """The name of the host's named pipe."""
+    return str(_HOST_TYPE.GetProperty("PipeName").GetValue(None))
+
+
+def agent_dir():
+    """The folder holding host registrations, run records and captures."""
+    return op.join(str(Common.PyRevitLabsConsts.PyRevitPath), "agent")
+
+
+def run_cli(*arguments):
+    """Run the attached clone's ``pyrevit`` CLI and return its output text."""
+    info = ProcessStartInfo(CLI, " ".join(arguments))
+    info.UseShellExecute = False
+    info.RedirectStandardOutput = True
+    info.CreateNoWindow = True
+    process = Process.Start(info)
+    output = process.StandardOutput.ReadToEnd()
+    process.WaitForExit(60000)
+    return str(output)
 
 
 def comment(element_id):
