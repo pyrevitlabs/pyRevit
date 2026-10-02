@@ -553,6 +553,11 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
                                Path.Combine(_tempRoot, "Revit 2026"), withExecutable: false);
         }
 
+        private RevitProduct Supported2025WithoutExecutable() {
+            return FakeProduct("2025 First Customer Ship - German", SupportedVersion,
+                               Path.Combine(_tempRoot, "Revit 2025 German"), withExecutable: false);
+        }
+
         [TestMethod()]
         public void IsAttachableProductYear_RejectsBelowMinimumAndAcceptsSupported() {
             Assert.IsFalse(PyRevitAttachments.IsAttachableProductYear(BelowMinimumYear));
@@ -593,6 +598,40 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
                 Assert.AreEqual(expected, filtered.Contains(product),
                                 "Revit " + product.ProductYear + ": the bulk filter and the per-product rule disagree");
             }
+        }
+
+        /// <summary>
+        /// The registry scan also matches localized installs such as "Revit 2025 - German"
+        /// and does not merge them, so one year can come back twice. A stale entry must
+        /// not veto the year when a good install of the same year also exists.
+        /// </summary>
+        [TestMethod()]
+        public void SelectProductForAttach_PrefersTheInstallThatWorksOverAStaleOneOfTheSameYear() {
+            var staleLocalized = Supported2025WithoutExecutable();
+            var good = SupportedWithExecutable();
+
+            var selected = PyRevitAttachments.SelectProductForAttach(SupportedYear, new[] { staleLocalized, good });
+
+            Assert.AreSame(good, selected,
+                           "A broken 2025 entry must not block attaching to a working 2025 install");
+        }
+
+        [TestMethod()]
+        public void SelectProductForAttach_FallsBackToAStaleEntrySoTheReasonIsStillReported() {
+            var stale = Supported2025WithoutExecutable();
+
+            var selected = PyRevitAttachments.SelectProductForAttach(SupportedYear, new[] { stale });
+
+            Assert.AreSame(stale, selected,
+                           "With only a stale entry the year must still be reported rather than silently accepted");
+        }
+
+        [TestMethod()]
+        public void SelectProductForAttach_ReturnsNullForAYearThatIsNotInstalled() {
+            Assert.IsNull(PyRevitAttachments.SelectProductForAttach(
+                              SupportedYear,
+                              new[] { BelowMinimumWithExecutable() }),
+                          "Attaching ahead of an install must keep working");
         }
 
         [TestMethod()]

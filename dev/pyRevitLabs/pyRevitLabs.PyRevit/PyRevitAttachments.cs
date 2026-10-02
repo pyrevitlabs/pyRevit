@@ -55,8 +55,12 @@ namespace pyRevitLabs.PyRevit {
                     + $"{RevitProductData.MinimumSupportedProductYear} or newer. Use a pyRevit release "
                     + $"that supports Revit {revitYear} to run pyRevit there.");
 
-            var knownProduct = RevitProduct.ListInstalledProducts()
-                                           .FirstOrDefault(prod => prod.ProductYear == revitYear);
+            // A year can carry more than one entry: the registry scan also matches
+            // localized installs such as "Revit 2025 - German", and the set it returns
+            // does not merge them, so two 2025 products can come back.
+            var knownProduct = SelectProductForAttach(
+                revitYear,
+                RevitProduct.ListInstalledProducts());
             if (knownProduct != null && !CommonUtils.VerifyFile(knownProduct.ExecutiveLocation))
                 throw new PyRevitException(
                     $"Can not attach to Revit {revitYear}: no executable found at "
@@ -117,6 +121,25 @@ namespace pyRevitLabs.PyRevit {
         public static bool IsAttachable(RevitProduct product) {
             return IsAttachableProductYear(product.ProductYear)
                    && CommonUtils.VerifyFile(product.ExecutiveLocation);
+        }
+
+        /// <summary>
+        /// Pick the installed product an attach to a year should be validated against.
+        /// </summary>
+        /// <remarks>
+        /// A single product year can yield more than one entry: the registry scan also
+        /// matches localized installs such as "Revit 2025 - German", and the set it
+        /// returns does not merge them, so the same year can come back twice. Choosing
+        /// the first match would let a stale entry veto a year that has a perfectly good
+        /// install, and in a bulk attach that aborts every year after it. An attachable
+        /// entry therefore wins, and the fallback to any entry exists so a year whose
+        /// only entry is stale still reports why it cannot be attached. Null when the
+        /// year is not installed at all, which is not an error: attaching ahead of an
+        /// install has to keep working.
+        /// </remarks>
+        public static RevitProduct SelectProductForAttach(int revitYear, IEnumerable<RevitProduct> products) {
+            var yearProducts = products.Where(prod => prod.ProductYear == revitYear).ToList();
+            return yearProducts.FirstOrDefault(IsAttachable) ?? yearProducts.FirstOrDefault();
         }
 
         /// <summary>
