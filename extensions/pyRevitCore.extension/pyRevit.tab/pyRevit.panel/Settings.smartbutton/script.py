@@ -446,13 +446,13 @@ class SettingsWindow(forms.WPFWindow):
             )
 
     def _setup_agent(self):
-        self._agent_enabled_at_open = user_config.agent_enabled
-        self.agent_cb.IsChecked = user_config.agent_enabled
-        policy = user_config.agent_policy
+        self._agent_enabled_at_open = PyRevit.PyRevitConfigs.GetAgentEnabled()
+        self.agent_cb.IsChecked = self._agent_enabled_at_open
+        policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
         self.agent_policy_ask_rb.IsChecked = policy not in ("readonly", "auto")
-        cpython = user_config.agent_engine == "cpython"
+        cpython = PyRevit.PyRevitConfigs.GetAgentEngine() == "cpython"
         self.agent_engine_cpython_rb.IsChecked = cpython
         self.agent_engine_ironpython_rb.IsChecked = not cpython
 
@@ -1059,14 +1059,14 @@ class SettingsWindow(forms.WPFWindow):
                 self.get_locale_string("Agent.Changed"), yes=True, no=True
             )
 
-        user_config.agent_enabled = enabled
+        PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
         if self.agent_policy_readonly_rb.IsChecked:
-            user_config.agent_policy = "readonly"
+            PyRevit.PyRevitConfigs.SetAgentPolicy("readonly")
         elif self.agent_policy_auto_rb.IsChecked:
-            user_config.agent_policy = "auto"
+            PyRevit.PyRevitConfigs.SetAgentPolicy("auto")
         else:
-            user_config.agent_policy = "ask"
-        user_config.agent_engine = (
+            PyRevit.PyRevitConfigs.SetAgentPolicy("ask")
+        PyRevit.PyRevitConfigs.SetAgentEngine(
             "cpython" if self.agent_engine_cpython_rb.IsChecked else "ironpython"
         )
         return request_reload
