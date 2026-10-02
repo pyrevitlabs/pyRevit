@@ -117,6 +117,11 @@ class LoadedBuildVersionTests(unittest.TestCase):
         major, minor, patch = versionmgr.get_pyrevit_version().as_int_tuple()
         self.assertEqual((7, 0, 1), (major, minor, patch))
 
+    def test_int_tuple_keeps_a_two_digit_patch_decimal(self):
+        """A two-digit patch is not reinterpreted with a base."""
+        envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, "7.0.10.26250+1610")
+        self.assertEqual((7, 0, 10), versionmgr.get_pyrevit_version().as_int_tuple())
+
     def test_str_tuple_carries_the_patch(self):
         """The string tuple reports the patch as written."""
         envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, "7.0.1.26250+1610")

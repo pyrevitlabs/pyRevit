@@ -104,14 +104,14 @@ class _PyRevitVersion(object):
             self.metadata = _PyRevitVersion.metadata
 
     def as_int_tuple(self):
-        """Returns version as an int tuple (major, minor, patch)."""
-        try:
-            signature = int(safe_strtype(self.patch), 16)
-        except Exception:
-            signature = 0
+        """Returns version as an int tuple (major, minor, patch).
 
-        ver_tuple = (self.major, self.minor, signature)
-        return ver_tuple
+        Every source of `patch` is already an int: `pyrevit.VERSION_PATCH` is
+        parsed with `int()` and so is `parse_version_string`. Reinterpreting it
+        with a base would turn a two-digit decimal patch into a different
+        number.
+        """
+        return (self.major, self.minor, self.patch)
 
     def as_str_tuple(self):
         """Returns version as an string tuple ('major', 'minor', 'patch')."""
