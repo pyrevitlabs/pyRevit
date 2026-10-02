@@ -103,17 +103,80 @@ ADDIN_DIR = op.join(LOADER_DIR, "addin")
 # if loader module is available means pyRevit is being executed by Revit.
 import pyrevit.engine as eng
 
-if eng.EngineVersion != 000:
-    ENGINES_DIR = op.join(BIN_DIR, "engines", eng.EngineVersion)
+if eng.EnginePath:
+    ENGINES_DIR = eng.EnginePath
 # otherwise it might be under test, or documentation processing.
 # so let's keep the symbols but set to None (fake the symbols)
 else:
     ENGINES_DIR = None
 
+
+def _sys_path_key(path):
+    """Normalize a path for identity comparison against other sys.path entries."""
+    return op.normcase(op.normpath(path))
+
+
+def dedupe_sys_path():
+    """Drop repeated entries from ``sys.path``, keeping the first occurrence.
+
+    ``sys.path`` is a resolution order, not a set: on a duplicated entry the
+    first match wins, so a stale copy earlier in the list shadows a corrected
+    one later and an updated module silently keeps loading from the old folder.
+    A folder is therefore only ever useful once.
+
+    Note: some appends happen behind Python's back - IronPython's
+    ``clr.AddReferenceToFileAndPath`` puts the referenced assembly's folder on
+    ``sys.path`` itself, once per call - so insertion-time dedupe alone cannot
+    guarantee the invariant and this pass is still required.
+
+    Important: the first occurrence is kept, so module resolution priority is
+    unchanged by the pass.
+    """
+    seen = set()
+    duplicates = []
+    for index, entry in enumerate(sys.path):
+        if not isinstance(entry, str) or not entry:
+            continue
+        key = _sys_path_key(entry)
+        if key in seen:
+            duplicates.append(index)
+        else:
+            seen.add(key)
+    for index in reversed(duplicates):
+        del sys.path[index]
+
+
+def add_to_sys_path(*paths):
+    """Append folders to ``sys.path``, skipping any folder already on it.
+
+    Every pyRevit code path that contributes a folder goes through here, so a
+    folder lands on ``sys.path`` once however many times it is contributed -
+    directly, from a library extension, or as a side effect of referencing an
+    assembly. Paths that are empty or that do not resolve to a directory are
+    skipped: they can never satisfy an import, and a stale one shadows nothing
+    while making the path list lie about what is actually searchable.
+
+    Args:
+        *paths (str): folders to make importable, in priority order.
+
+    Note: existing entries are never reordered or removed, so appending a
+    folder that is already present leaves the resolution order untouched.
+    """
+    keys = set(
+        _sys_path_key(entry) for entry in sys.path if isinstance(entry, str) and entry
+    )
+    for path in paths:
+        if not isinstance(path, str) or not path or not op.isdir(path):
+            continue
+        key = _sys_path_key(path)
+        if key in keys:
+            continue
+        keys.add(key)
+        sys.path.append(path)
+
+
 # add the framework dll path to the search paths
-sys.path.append(BIN_DIR)
-sys.path.append(ADDIN_DIR)
-sys.path.append(ENGINES_DIR)
+add_to_sys_path(BIN_DIR, ADDIN_DIR, ENGINES_DIR)
 
 
 PYREVIT_CLI_PATH = op.join(HOME_DIR, "bin", PYREVIT_CLI_NAME)
@@ -834,13 +897,13 @@ for pyrvt_app_dir in [
     if not op.isdir(pyrvt_app_dir):
         try:
             os.mkdir(pyrvt_app_dir)
-            sys.path.append(pyrvt_app_dir)
+            add_to_sys_path(pyrvt_app_dir)
         except Exception as err:
             raise PyRevitException(
                 "Can not access pyRevit folder at: {} | {}".format(pyrvt_app_dir, err)
             )
     else:
-        sys.path.append(pyrvt_app_dir)
+        add_to_sys_path(pyrvt_app_dir)
 
 
 # -----------------------------------------------------------------------------

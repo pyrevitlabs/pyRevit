@@ -97,6 +97,7 @@ from System.Linq import Enumerable
 _perfmark("pyrevit.framework:after `from System.* import` block")
 
 import pyrevit.engine as eng
+from pyrevit import dedupe_sys_path
 
 
 def to_clr_list(item_type, iterable):
@@ -159,6 +160,11 @@ else:
     clr.AddReference(sqlite3_dllpath)
 import sqlite3
 
+# Under IronPython, every clr.AddReferenceToFileAndPath above appended its own
+# assembly's folder to sys.path. All three assemblies ship from the one engine
+# folder, so the engine folder landed on sys.path three times. #3687.
+dedupe_sys_path()
+
 
 CPDialogs = None
 try:
@@ -212,9 +218,16 @@ def add_reference_to_file(asm_file):
 
     Returns:
         (Assembly | None): the loaded assembly; None under IronPython
+
+    Note: IronPython's ``clr.AddReferenceToFileAndPath`` appends the
+    assembly's own folder to ``sys.path`` on every call, so referencing
+    several assemblies from the same folder would otherwise list that
+    folder once per assembly. #3687.
     """
     if IRONPY:
-        return clr.AddReferenceToFileAndPath(asm_file)
+        assembly = clr.AddReferenceToFileAndPath(asm_file)
+        dedupe_sys_path()
+        return assembly
     # assembly names can contain dots (IxMilia.Dxf), so detect the
     # extension by suffix, not by splitext
     if not op.isfile(asm_file) and not asm_file.lower().endswith(ASSEMBLY_FILE_EXT):
