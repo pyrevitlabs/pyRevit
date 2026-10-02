@@ -11,6 +11,7 @@ closes again, never against the user's model.
 import json
 import os
 import os.path as op
+import platform
 import shutil
 import sys
 import tempfile
@@ -25,7 +26,7 @@ from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
 COMMENTS = "DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS"
-CPYTHON_HOST = sys.version_info[0] >= 3 and "IronPython" not in sys.version
+CPYTHON_HOST = platform.python_implementation() == "CPython"
 ENGINES = ("ironpython",) if CPYTHON_HOST else ("ironpython", "cpython")
 
 _HOST_TYPE = assmutils.find_type_by_name(
