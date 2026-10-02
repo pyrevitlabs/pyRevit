@@ -1,7 +1,13 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
+using pyRevitLabs.Common;
+using pyRevitLabs.NLog;
+using pyRevitLabs.NLog.Config;
+using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.UnitTests.RevitProducts {
@@ -202,6 +208,173 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
             Assert.AreEqual(2022, RevitProductData.GetProductYearFromVersionString("22.1.21.13"));
             Assert.AreEqual(0, RevitProductData.GetProductYearFromVersionString("not-a-version"));
             Assert.AreEqual(0, RevitProductData.GetProductYearFromVersionString(null));
+        }
+    }
+
+    /// <summary>
+    /// Covers how loudly a product below the minimum supported year is reported.
+    /// </summary>
+    /// <remarks>
+    /// pyRevit warns about a below-minimum year only when that year is the host
+    /// being launched into. The same product found by the registry scan is a
+    /// routine fact about the machine - side-by-side installs are the normal
+    /// setup - and warning about it made every session announce a product the
+    /// user never launched and advise them to switch pyRevit releases.
+    /// <para>
+    /// These tests resolve real products off this machine, so the level split is
+    /// only observable where a below-minimum Revit is actually installed. A
+    /// machine without one skips instead of failing, which is what lets the class
+    /// run in CI: it guards the reporting contract there and only a developer
+    /// machine carrying an old Revit exercises the full comparison.
+    /// </para>
+    /// </remarks>
+    [TestClass()]
+    public class BelowMinimumProductReportingTests {
+        private const string LevelSeparator = "|";
+        private const string SwitchReleaseAdvice = "Use a pyRevit release that supports Revit";
+        private const string NotATargetStatement = "is not a target for this pyRevit line";
+
+        private LoggingConfiguration _previousConfig;
+        private MemoryTarget _capture;
+
+        [TestInitialize()]
+        public void StartCapturingLog() {
+            _previousConfig = LogManager.Configuration;
+            _capture = new MemoryTarget("belowMinimumProductReports") {
+                Layout = "${level}" + LevelSeparator + "${message}"
+            };
+            var config = new LoggingConfiguration();
+            config.AddTarget(_capture);
+            config.AddRuleForAllLevels(_capture);
+            LogManager.Configuration = config;
+            LogManager.ReconfigExistingLoggers();
+        }
+
+        [TestCleanup()]
+        public void StopCapturingLog() {
+            LogManager.Configuration = _previousConfig;
+            LogManager.ReconfigExistingLoggers();
+            _capture?.Dispose();
+        }
+
+        private List<string> CapturedLines() {
+            return _capture.Logs.ToList();
+        }
+
+        private List<string> CapturedAtLevel(string level) {
+            var prefix = level + LevelSeparator;
+            return CapturedLines().Where(line => line.StartsWith(prefix)).ToList();
+        }
+
+        private string Report(string level) {
+            return string.Join(Environment.NewLine, CapturedAtLevel(level));
+        }
+
+        /// <summary>
+        /// Run the registry scan for real.
+        /// </summary>
+        /// <remarks>
+        /// The scan memoizes its result in a static, so a test that happens to run
+        /// after another already scanned would find an empty log and pass without
+        /// proving anything. Every test that asserts on what the scan logged clears
+        /// the memo first, which also makes the tests independent of run order.
+        /// </remarks>
+        private List<RevitProduct> ScanInstalledProducts() {
+            typeof(RevitProduct)
+                .GetField("_installedProductsCache", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, null);
+            var products = RevitProduct.ListInstalledProducts();
+            if (products.Count == 0)
+                Assert.Inconclusive("No Revit is installed on this machine");
+            return products;
+        }
+
+        /// <summary>
+        /// The below-minimum Revits installed on this machine, which the report
+        /// contract is only observable against.
+        /// </summary>
+        private List<RevitProduct> BelowMinimumInstalledProducts() {
+            var belowMinimum = ScanInstalledProducts()
+                                              .Where(prod => !prod.IsSupported && prod.ProductYear > 0)
+                                              .ToList();
+            if (belowMinimum.Count == 0)
+                Assert.Inconclusive("No Revit below the minimum supported year is installed on this machine");
+            return belowMinimum;
+        }
+
+        /// <summary>
+        /// The oldest below-minimum Revit whose binary can actually be read, which is
+        /// what the resolver needs before it can report anything.
+        /// </summary>
+        private RevitProduct BelowMinimumInstalledProduct() {
+            var readable = BelowMinimumInstalledProducts()
+                                          .Where(prod => CommonUtils.VerifyFile(prod.ExecutiveLocation))
+                                          .ToList();
+            if (readable.Count == 0)
+                Assert.Inconclusive("No below-minimum Revit with a readable binary is installed on this machine");
+            return readable.OrderBy(prod => prod.ProductYear).First();
+        }
+
+        [TestMethod()]
+        public void ResolveProduct_RunningHost_BelowMinimumProduct_WarnsToSwitchRelease() {
+            var installed = BelowMinimumInstalledProduct();
+
+            var resolved = RevitProduct.ResolveProduct(installed.BuildNumber,
+                                                        installed.ExecutiveLocation,
+                                                        installed.InstallLocation,
+                                                        ResolvedProductRole.RunningHost);
+
+            Assert.IsNotNull(resolved);
+            Assert.IsFalse(resolved.IsSupported);
+            var warnings = Report("Warn");
+            StringAssert.Contains(warnings, SwitchReleaseAdvice);
+            StringAssert.Contains(warnings, installed.ProductYear.ToString());
+        }
+
+        [TestMethod()]
+        public void ResolveProduct_InstalledSibling_BelowMinimumProduct_OnlyReportsInfo() {
+            var installed = BelowMinimumInstalledProduct();
+
+            var resolved = RevitProduct.ResolveProduct(installed.BuildNumber,
+                                                        installed.ExecutiveLocation,
+                                                        installed.InstallLocation,
+                                                        ResolvedProductRole.InstalledSibling);
+
+            Assert.IsNotNull(resolved, "A below-minimum install is still detected, only the report changes");
+            Assert.IsFalse(resolved.IsSupported);
+            Assert.AreEqual(0, CapturedAtLevel("Warn").Count,
+                            "An installed product the user did not launch must never warn: " + Report("Warn"));
+            var reports = Report("Info");
+            StringAssert.Contains(reports, NotATargetStatement);
+            StringAssert.Contains(reports, installed.ProductYear.ToString());
+            Assert.IsFalse(reports.Contains(SwitchReleaseAdvice),
+                           "The scan must not tell the user to switch pyRevit releases for a product they did not launch");
+        }
+
+        [TestMethod()]
+        public void ListInstalledProducts_DoesNotWarnAboutAnyProductItFinds() {
+            ScanInstalledProducts();
+
+            Assert.AreEqual(0, CapturedAtLevel("Warn").Count,
+                            "Session start must not warn about products it merely found installed: " + Report("Warn"));
+            Assert.AreEqual(0, CapturedAtLevel("Error").Count, Report("Error"));
+        }
+
+        [TestMethod()]
+        public void ListInstalledProducts_KeepsBelowMinimumProductsListed() {
+            foreach (var product in BelowMinimumInstalledProducts())
+                StringAssert.Contains(product.ToString(), RevitProductData.MinimumSupportedProductYear.ToString());
+        }
+
+        [TestMethod()]
+        public void ResolveProduct_DefaultsToTreatingTheProductAsTheRunningHost() {
+            var roleParameter = typeof(RevitProduct).GetMethod("ResolveProduct")
+                                                        .GetParameters()
+                                                        .Single(par => par.Name == "role");
+
+            Assert.IsTrue(roleParameter.IsOptional,
+                          "Callers that omit the role resolve the host they are launching into");
+            Assert.AreEqual(ResolvedProductRole.RunningHost, roleParameter.DefaultValue);
         }
     }
 }
