@@ -12,7 +12,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     /// <remarks>
     /// Runs on the pipe thread. Anything that touches the Revit API must go through
-    /// <see cref="AgentDispatcher.Invoke"/>. Errors reach the client as JSON-RPC errors whose
+    /// <see cref="AgentDispatcher.Invoke"/>, except a request made in-process through
+    /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
+    /// executes the work directly. Errors reach the client as JSON-RPC errors whose
     /// <c>data.type</c> carries the <see cref="AgentException.Code"/>.
     /// </remarks>
     internal static class AgentRequestHandler {
@@ -106,6 +108,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
+            var inline = AgentHost.InlineApplication;
+            if (inline != null)
+                return work(inline);
             var dispatcher = AgentHost.Dispatcher
                 ?? throw new AgentException("host_not_ready", "The agent host is not started.");
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");

@@ -39,6 +39,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static string configWatchedPath;
         private static DateTime configLastWrite = DateTime.MinValue;
 
+        [ThreadStatic]
+        private static UIApplication inlineApplication;
+
         public static string PipeName => "pyrevit-agent-" + Process.GetCurrentProcess().Id;
 
         public static bool IsRunning {
@@ -66,6 +69,41 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             get {
                 lock (sync)
                     return revitVersion;
+            }
+        }
+
+        internal static UIApplication InlineApplication => inlineApplication;
+
+        /// <summary>
+        /// Handles one agent request in-process and synchronously: the same JSON-RPC request
+        /// and response the pipe carries, for tools and tests that run inside Revit.
+        /// </summary>
+        /// <remarks>
+        /// A pyRevit command can't use the pipe, because the pipe executes requests through an
+        /// ExternalEvent that never fires while a command is running. This runs the request on
+        /// the calling thread instead, through the same policy, guard and dialog handling.
+        /// It works whether or not the pipe host is enabled.
+        /// Warning: a CPython caller must save and restore <c>sys.stdout</c>, <c>sys.stderr</c>,
+        /// <c>sys.path</c>, <c>sys.argv</c> and the trace function around the call; a nested
+        /// CPython run replaces them and doesn't put them back.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Called off the Revit main thread, where the Revit API can't be used.
+        /// </exception>
+        public static string HandleRequest(UIApplication app, string requestJson) {
+            if (app == null)
+                throw new ArgumentNullException(nameof(app));
+            if (!ScriptExecutor.IsOnMainThread)
+                throw new InvalidOperationException(
+                    "HandleRequest must be called on the Revit main thread, from a command or another Revit API callback.");
+
+            var previous = inlineApplication;
+            inlineApplication = app;
+            try {
+                return AgentRequestHandler.Handle(requestJson);
+            }
+            finally {
+                inlineApplication = previous;
             }
         }
 
@@ -110,17 +148,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// session manager on every load and reload.
         /// </summary>
         public static void Configure(UIApplication uiApp, IList<string> scriptSearchPaths) {
+            lock (sync) {
+                searchPaths = scriptSearchPaths != null
+                    ? new List<string>(scriptSearchPaths)
+                    : new List<string>();
+                revitVersion = uiApp.Application.VersionNumber;
+            }
+
             if (!IsEnabled()) {
                 Stop();
                 return;
             }
 
             lock (sync) {
-                searchPaths = scriptSearchPaths != null
-                    ? new List<string>(scriptSearchPaths)
-                    : new List<string>();
-                revitVersion = uiApp.Application.VersionNumber;
-
                 if (dispatcher == null) {
                     dispatcher = new AgentDispatcher();
                     dispatcher.Attach(ExternalEvent.Create(dispatcher));
