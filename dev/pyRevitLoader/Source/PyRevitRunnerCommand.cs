@@ -266,7 +266,11 @@ namespace PyRevitRunner
                 attachment = PyRevitAttachments.GetAttached(revitYear);
 
             var cloneName = attachment?.Clone?.Name ?? "Unknown";
-            var pyRevitVersion = attachment?.Clone?.ModuleVersion ?? "Unknown";
+            var pyRevitVersion = attachment?.Clone == null
+                ? "Unknown"
+                : PyRevitClone.GetDeployedVersion(
+                    attachment.Clone.ClonePath,
+                    attachment.Engine?.IsNetCore);
             var ipyVersion = attachment?.Engine != null ? attachment.Engine.Version.Version.ToString() : "0";
             var cpyVersion = PyRevitConfigs.GetCpythonEngineVersion().ToString();
 

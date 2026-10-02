@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
+using pyRevitLabs.Common;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -76,7 +77,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 [KeyRevitVersion] = !string.IsNullOrEmpty(seededAppVersion)
                                               ? seededAppVersion!
                                               : (uiApp?.Application?.VersionNumber ?? string.Empty),
-                [KeyVersion] = ReadPyRevitVersion(pyRevitRoot),
+                [KeyVersion] = ResolveRuntimeVersion(runtimeAssembly, pyRevitRoot),
                 [KeyClone] = "Unknown",
                 [KeyIPYVersion] = ReadIPYVersion(pyRevitRoot),
                 [KeyCPYVersion] = ReadCPYVersion(pyRevitRoot),
@@ -145,6 +146,25 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             catch { /* fall back to the loader-supplied version */ }
             return null;
+        }
+
+        /// <summary>
+        /// Version of the build this session is actually running.
+        /// <para>
+        /// The loaded Runtime assembly is the build under test, and its informational version is
+        /// stamped from the same <c>&lt;Version&gt;</c> property as every other pyRevit assembly,
+        /// so it is the one value that identifies the code executing in Revit. The version file in
+        /// <c>pyrevitlib/pyrevit/version</c> describes the checkout instead, and the two disagree
+        /// whenever a clone's <c>bin/</c> came from a release image or from CI artifacts - which
+        /// is exactly when the About window and the output window title must not be trusted.
+        /// </para>
+        /// </summary>
+        /// <param name="runtimeAssembly">The already-loaded pyRevit Runtime assembly.</param>
+        /// <param name="pyRevitRoot">Clone root, used only as a fallback.</param>
+        internal static string ResolveRuntimeVersion(Assembly runtimeAssembly, string pyRevitRoot)
+        {
+            return PyRevitBuildVersion.FromAssembly(runtimeAssembly)
+                   ?? ReadPyRevitVersion(pyRevitRoot);
         }
 
         internal static string ReadPyRevitVersion(string pyRevitRoot)
