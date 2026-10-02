@@ -193,7 +193,12 @@ class ScratchSession(object):
             if document is None or not document.IsValidObject:
                 continue
             if self._is_active(document) and not self._reactivate_original():
-                print("Left {} open: it is the active document.".format(document.Title))
+                print(
+                    "Left {} open: Revit can't close the active document, and no saved "
+                    "document was open before the tests. Close it without saving.".format(
+                        document.Title
+                    )
+                )
                 continue
             try:
                 document.Close(False)
@@ -237,7 +242,9 @@ class ScratchSession(object):
 
 
 def _id_value(element_id):
-    return getattr(element_id, "Value", None) or element_id.IntegerValue
+    """The numeric id as a Python int; ``ElementId.Value`` is an Int64 that ``json`` rejects."""
+    value = getattr(element_id, "Value", None)
+    return int(value if value is not None else element_id.IntegerValue)
 
 
 def _save_interpreter_state():

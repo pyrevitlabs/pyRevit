@@ -29,7 +29,7 @@ class ResultTests(TestCase):
                 inputs={"n": 21, "who": "agent"},
             )
             self.assertEqual("ok", response["status"], engine)
-            self.assertTrue(response["engine"].startswith(engine), engine)
+            self.assertEqual(engine, response["engine"]["implementation"])
             self.assertIn("hello agent", response["output"], engine)
             result = response["result"]
             self.assertEqual(42, result["doubled"], engine)

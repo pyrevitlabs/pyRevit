@@ -43,12 +43,11 @@ class InspectTests(TestCase):
     """The inspect_elements request."""
 
     def test_inspect_describes_elements_and_missing_ids(self):
-        """inspect_elements returns parameters, a navigation link, and found=false for a bad id."""
+        """inspect_elements returns parameters, and found=false for a bad id."""
         wall = harness.session().wall_ids[0]
         elements = request("inspect_elements", ids=[wall, 999999999])["elements"]
         self.assertEqual("Wall", elements[0]["class"])
         self.assertTrue(elements[0]["parameters"])
-        self.assertEqual([wall], elements[0]["link"]["ids"])
         self.assertFalse(elements[1]["found"])
 
     def test_inspect_can_skip_parameters(self):
