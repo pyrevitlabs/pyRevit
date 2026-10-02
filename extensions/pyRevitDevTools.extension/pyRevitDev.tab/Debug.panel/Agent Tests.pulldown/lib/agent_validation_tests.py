@@ -17,7 +17,9 @@ CLOSED_PLAN_VIEW = (
     "open_ids = [uv.ViewId for uv in uidoc.GetOpenUIViews()]\n"
     "plans = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.ViewPlan)"
     " if not v.IsTemplate and not any(o.Equals(v.Id) for o in open_ids)]\n"
-    "result = plans[0].Name if plans else None\n"
+    "result = None\n"
+    "if plans:\n"
+    "    result = plans[0].Id.Value if hasattr(plans[0].Id, 'Value') else plans[0].Id.IntegerValue\n"
 )
 
 
@@ -168,10 +170,12 @@ class CaptureValidationTests(TestCase):
 
     def test_a_view_that_is_not_open_cannot_be_captured_as_a_viewport(self):
         """Viewport mode needs an open view."""
-        name = harness.run(CLOSED_PLAN_VIEW)["result"]
-        if name is None:
+        view_id = harness.run(CLOSED_PLAN_VIEW)["result"]
+        if view_id is None:
             self.skipTest("Every plan view is open.")
-        self.assertEqual("view_not_open", _code("capture", mode="viewport", view=name))
+        self.assertEqual(
+            "view_not_open", _code("capture", mode="viewport", view=str(view_id))
+        )
 
 
 class LookupValidationTests(TestCase):
