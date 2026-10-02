@@ -531,6 +531,7 @@ itself: the pipe executes requests through an ExternalEvent that never fires whi
 |---|---|
 | Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
 | Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
+| Run Agent Library Tests | The shipped and user skills, `lookup_pyrevit_api` and `list_automation` through a short-lived `pyrevit mcp` process, and the pyrevitlib side of the automation operations on both engines |
 | Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
 
 The tests create two scratch projects in the temp folder, set the policy to `auto` (or `ask` for the
@@ -541,5 +542,5 @@ only been run with it enabled.
 Each test is written to `%TEMP%\pyrevit-agent-tests.log` before it starts, so if Revit ever hangs, the
 last line of that file names the test that was running.
 
-Anything the MCP server adds on top of the host, such as hints in run errors and the library
-tools, runs in the CLI and is not covered by these buttons.
+`run_automation`, `navigate_revit_link` and the hints the MCP server adds to run errors call back
+into Revit through the pipe, which can't answer while a command runs, so these buttons don't cover them.
