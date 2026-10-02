@@ -200,7 +200,8 @@ namespace pyRevitCLI {
         }
 
         private static bool IsReparsePoint(string path) {
-            return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            return (File.Exists(path) || System.IO.Directory.Exists(path))
+                && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
         }
 
         private static string Hash(string path) {
