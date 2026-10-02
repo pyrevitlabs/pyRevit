@@ -37,6 +37,8 @@
         <Compile Include="..\..\pyRevitCLI\PyRevitMcpRunResults.cs" Link="Sources\PyRevitMcpRunResults.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIAgentCmds.cs" Link="Sources\PyRevitCLIAgentCmds.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentClient.cs" Link="Sources\PyRevitAgentClient.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitMcpServer.cs" Link="Sources\PyRevitMcpServer.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitAgentSkills.cs" Link="Sources\PyRevitAgentSkills.cs"/>
     </ItemGroup>
 
 </Project>

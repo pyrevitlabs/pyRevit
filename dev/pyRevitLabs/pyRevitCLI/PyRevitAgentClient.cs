@@ -6,6 +6,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -57,9 +58,20 @@ namespace pyRevitCLI {
     /// </remarks>
     internal static class PyRevitAgentClient {
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
-        private const int ConnectTimeoutMs = 10000;
+        private static readonly Regex RunIdPattern = new Regex("^[A-Za-z0-9]+$", RegexOptions.Compiled);
 
-        public static string AgentDir => Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
+        /// <summary>
+        /// How long <see cref="Call"/> waits for the host's pipe. Shortened by tests.
+        /// </summary>
+        internal static int ConnectTimeoutMs = 10000;
+
+        /// <summary>
+        /// Replaces the folder that holds host registrations and run records. Set by tests so
+        /// they never read or write the real user profile.
+        /// </summary>
+        internal static string AgentDirOverride;
+
+        public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
@@ -187,8 +199,12 @@ namespace pyRevitCLI {
         /// <summary>
         /// Finds a recorded run folder by its run id (the folder name ends with the id).
         /// </summary>
+        /// <remarks>
+        /// An id that isn't letters and digits matches nothing: it is used in a directory search
+        /// pattern, where a wildcard would match an unrelated run and a path segment would throw.
+        /// </remarks>
         public static string FindRunDir(string runId) {
-            if (string.IsNullOrWhiteSpace(runId) || !Directory.Exists(RunsDir))
+            if (string.IsNullOrWhiteSpace(runId) || !RunIdPattern.IsMatch(runId.Trim()) || !Directory.Exists(RunsDir))
                 return null;
             return Directory.GetDirectories(RunsDir, "*-" + runId.Trim()).FirstOrDefault();
         }

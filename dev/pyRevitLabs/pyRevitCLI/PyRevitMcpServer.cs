@@ -44,14 +44,24 @@ namespace pyRevitCLI {
         }
 
         public static void Serve(string defaultRevit) {
-            new PyRevitMcpServer(defaultRevit).Run();
+            var utf8 = new UTF8Encoding(false);
+            Serve(
+                defaultRevit,
+                new StreamReader(System.Console.OpenStandardInput(), utf8),
+                new StreamWriter(System.Console.OpenStandardOutput(), utf8) { AutoFlush = true, NewLine = "\n" });
         }
 
-        private void Run() {
+        /// <summary>
+        /// Serves requests read from <paramref name="input"/> until it ends, writing responses to
+        /// <paramref name="output"/>. Lets tests drive the server without a process.
+        /// </summary>
+        internal static void Serve(string defaultRevit, TextReader input, TextWriter output) {
+            new PyRevitMcpServer(defaultRevit).Run(input, output);
+        }
+
+        private void Run(TextReader input, TextWriter output) {
             LogManager.Configuration = new LoggingConfiguration();
-            var utf8 = new UTF8Encoding(false);
-            var input = new StreamReader(System.Console.OpenStandardInput(), utf8);
-            output = new StreamWriter(System.Console.OpenStandardOutput(), utf8) { AutoFlush = true, NewLine = "\n" };
+            this.output = output;
 
             var inFlight = new List<Task>();
             string line;
