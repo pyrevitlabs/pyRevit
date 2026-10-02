@@ -382,6 +382,19 @@
             "website": "https://github.com/ndev16/NdevTools",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "RevitMCP",
+            "description": "Model Context Protocol (MCP) Bridge for Google Antigravity & AI agents to inspect, query, and automate Autodesk Revit.",
+            "author": "Andrey Startsev",
+            "author_profile": "https://github.com/AndreyStartsev",
+            "url": "https://github.com/AndreyStartsev/revit-mcp.git",
+            "website": "https://github.com/AndreyStartsev/revit-mcp",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
