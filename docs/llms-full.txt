@@ -2120,7 +2120,7 @@ from pyrevit import EXEC_PARAMS
 
 ### `ADDIN_DIR = op.join(LOADER_DIR, 'addin')``module-attribute`
 
-### `ENGINES_DIR = op.join(BIN_DIR, 'engines', eng.EngineVersion)``module-attribute`
+### `ENGINES_DIR = eng.EnginePath``module-attribute`
 
 ### `PYREVIT_CLI_PATH = op.join(HOME_DIR, 'bin', PYREVIT_CLI_NAME)``module-attribute`
 

@@ -2,7 +2,6 @@
 
 import os
 import os.path as op
-import sys
 import json
 
 from pyrevit._perf import mark as _perfmark
@@ -15,7 +14,7 @@ from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
 from pyrevit.compat import safe_strtype, NETCORE
-from pyrevit import BIN_DIR, RUNTIME_DIR
+from pyrevit import BIN_DIR, RUNTIME_DIR, add_to_sys_path
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import logger
@@ -170,7 +169,7 @@ def _get_framework_module(fw_module, fw64=False):
         mlogger.debug("Searching for installed: %s", fw_module_file)
         if op.exists(fw_module_file):
             mlogger.debug("Found installed: %s", fw_module_file)
-            sys.path.append(op.join(fw_dir, fw_folder))
+            add_to_sys_path(op.join(fw_dir, fw_folder))
             return fw_module_file
 
     return None
@@ -188,7 +187,7 @@ def _get_framework_sdk_module(fw_module):
         mlogger.debug("Searching for sdk: %s", fw_module_file)
         if op.exists(fw_module_file):
             mlogger.debug("Found sdk: %s", fw_module_file)
-            sys.path.append(op.join(DOTNET_SDK_DIR, sdk_folder))
+            add_to_sys_path(op.join(DOTNET_SDK_DIR, sdk_folder))
             return fw_module_file
 
     return None

@@ -184,7 +184,9 @@ _perfmark("pyrevit.framework:after IronPython+WPF+SQLite+CPDialogs+Emojis refs")
 
 
 # do not import anything from pyrevit before this
-from pyrevit import BIN_DIR
+from pyrevit import BIN_DIR, dedupe_sys_path
+
+dedupe_sys_path()
 
 
 def get_type(fw_object):
@@ -212,9 +214,16 @@ def add_reference_to_file(asm_file):
 
     Returns:
         (Assembly | None): the loaded assembly; None under IronPython
+
+    Note: IronPython's ``clr.AddReferenceToFileAndPath`` appends the
+    assembly's own folder to ``sys.path`` on every call, so referencing
+    several assemblies from the same folder would otherwise list that
+    folder once per assembly. #3687.
     """
     if IRONPY:
-        return clr.AddReferenceToFileAndPath(asm_file)
+        assembly = clr.AddReferenceToFileAndPath(asm_file)
+        dedupe_sys_path()
+        return assembly
     # assembly names can contain dots (IxMilia.Dxf), so detect the
     # extension by suffix, not by splitext
     if not op.isfile(asm_file) and not asm_file.lower().endswith(ASSEMBLY_FILE_EXT):

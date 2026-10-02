@@ -180,7 +180,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     paths.Add(sitePackagesDir);
             }
 
-            return paths.ToArray();
+            return SearchPaths.DedupeKeepingFirstOccurrence(paths).ToArray();
         }
 
         /// <summary>
