@@ -102,7 +102,7 @@ class _PyRevitVersion(object):
     def as_int_tuple(self):
         """Returns version as an int tuple (major, minor, patch)."""
         try:
-            signature = int(self.patch, 16)
+            signature = int(safe_strtype(self.patch), 16)
         except Exception:
             signature = 0
 

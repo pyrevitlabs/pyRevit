@@ -410,6 +410,14 @@ namespace pyRevitLabs.PyRevit {
         /// release image or from CI artifacts ships a source tree stamped with a different build
         /// number, and reporting that would misidentify the binaries the clone runs. The version
         /// file stays as the fallback for clones that were never built.
+        /// <para>
+        /// <c>netcore</c> and <c>netfx</c> are both stamped from the single <c>&lt;Version&gt;</c>
+        /// property in <c>dev/Directory.Build.props</c> by one build pipeline pass, so the two
+        /// agree and the order below only decides the answer when they cannot - a hand-assembled
+        /// <c>bin/</c>. A clone serves Revit years from both trees at once, so this call has no
+        /// per-year answer to give; the surfaces that must identify one specific host (About, the
+        /// output window title) read the Runtime assembly loaded for that host instead.
+        /// </para>
         /// </remarks>
         /// <param name="clonePath">Root of the clone to report on.</param>
         /// <returns>
