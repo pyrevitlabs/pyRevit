@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
@@ -59,6 +60,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var runRequest = AgentRunRequest.FromJson(parameters);
                     EnforcePolicy(runRequest);
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
+                    RefuseNestedCPython(runRequest);
                     return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters);
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
@@ -76,6 +78,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
             }
+        }
+
+        /// <summary>
+        /// Refuses a CPython run requested in-process while a CPython script is already executing.
+        /// </summary>
+        /// <remarks>
+        /// CPython has one interpreter per process, so the agent run would execute nested inside the
+        /// caller's script on the same thread, and that crashed Revit outright. A pipe request never
+        /// nests, since it runs from Revit's idle callback.
+        /// </remarks>
+        private static void RefuseNestedCPython(AgentRunRequest request) {
+            if (request.Engine != AgentEngine.CPython || AgentHost.InlineApplication == null)
+                return;
+            var cpythonRunning = ScriptEngineManager.ActiveEngineDict
+                .Any(entry => entry.Value > 0 && entry.Key.Split(':').ElementAtOrDefault(1) == ScriptEngineType.CPython.ToString());
+            if (cpythonRunning)
+                throw new AgentException(
+                    "nested_cpython",
+                    "A CPython agent run can't start from inside a CPython script. Use engine 'ironpython', or call from an IronPython command.");
         }
 
         private static void EnforcePolicy(AgentRunRequest request) {
