@@ -82,7 +82,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// A pyRevit command can't use the pipe, because the pipe executes requests through an
         /// ExternalEvent that never fires while a command is running. This runs the request on
         /// the calling thread instead, through the same policy, guard and dialog handling.
-        /// It works whether or not the pipe host is enabled.
         /// Warning: a CPython caller must save and restore <c>sys.stdout</c>, <c>sys.stderr</c>,
         /// <c>sys.path</c>, <c>sys.argv</c> and the trace function around the call; a nested
         /// CPython run replaces them and doesn't put them back.

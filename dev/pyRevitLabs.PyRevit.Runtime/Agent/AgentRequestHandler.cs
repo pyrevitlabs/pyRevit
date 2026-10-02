@@ -129,16 +129,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
-            var inline = AgentHost.InlineApplication;
-            if (inline != null)
-                return work(inline);
-            var dispatcher = AgentHost.Dispatcher
-                ?? throw new AgentException("host_not_ready", "The agent host is not started.");
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
+            var inline = AgentHost.InlineApplication;
+            if (inline != null)
+                return work(inline);
+            var dispatcher = AgentHost.Dispatcher
+                ?? throw new AgentException("host_not_ready", "The agent host is not started.");
             var startTimeout = startTimeoutSeconds.HasValue
                 ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
                 : DefaultStartTimeout;
