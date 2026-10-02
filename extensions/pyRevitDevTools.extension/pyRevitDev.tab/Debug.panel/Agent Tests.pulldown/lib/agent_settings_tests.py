@@ -4,13 +4,13 @@ These tests change the real pyRevit config and put every value back afterwards.
 """
 
 import os.path as op
-from unittest import TestCase
 
 import System
 
 from pyrevit.labs import PyRevit
 
 import agent_harness as harness
+from agent_harness import TestCase
 
 CONFIGS = PyRevit.PyRevitConfigs
 

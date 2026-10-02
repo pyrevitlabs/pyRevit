@@ -3,10 +3,9 @@
 import json
 import os
 import os.path as op
-from unittest import TestCase
 
 import agent_harness as harness
-from agent_harness import ENGINES, run
+from agent_harness import ENGINES, TestCase, run
 
 
 def _script_lines(response):

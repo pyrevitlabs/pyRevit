@@ -7,8 +7,8 @@ thread time out as revit_busy while a command runs, which is also checked here.
 
 import json
 import os.path as op
+import threading
 import time
-from unittest import TestCase
 
 from System.Diagnostics import Process
 from System.IO import StreamReader, StreamWriter
@@ -18,22 +18,43 @@ from System.Text import UTF8Encoding
 from pyrevit import HOST_APP
 
 import agent_harness as harness
+from agent_harness import TestCase
+
+
+ANSWER_TIMEOUT_S = 15
 
 
 def _exchange(line, timeout_ms=5000):
-    pipe = NamedPipeClientStream(".", harness.pipe_name(), PipeDirection.InOut)
-    pipe.Connect(timeout_ms)
-    try:
-        encoding = UTF8Encoding(False)
-        writer = StreamWriter(pipe, encoding)
-        writer.AutoFlush = True
-        writer.NewLine = "\n"
-        reader = StreamReader(pipe, encoding)
-        writer.WriteLine(line)
-        answer = reader.ReadLine()
-        return None if answer is None else json.loads(str(answer))
-    finally:
-        pipe.Dispose()
+    outcome = {}
+
+    def talk():
+        pipe = NamedPipeClientStream(".", harness.pipe_name(), PipeDirection.InOut)
+        try:
+            pipe.Connect(timeout_ms)
+            encoding = UTF8Encoding(False)
+            writer = StreamWriter(pipe, encoding)
+            writer.AutoFlush = True
+            writer.NewLine = "\n"
+            reader = StreamReader(pipe, encoding)
+            writer.WriteLine(line)
+            answer = reader.ReadLine()
+            outcome["answer"] = None if answer is None else json.loads(str(answer))
+        except Exception as error:
+            outcome["error"] = error
+        finally:
+            pipe.Dispose()
+
+    worker = threading.Thread(target=talk)
+    worker.daemon = True
+    worker.start()
+    worker.join(ANSWER_TIMEOUT_S)
+    if worker.is_alive():
+        raise AssertionError(
+            "The pipe gave no answer within {} seconds.".format(ANSWER_TIMEOUT_S)
+        )
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["answer"]
 
 
 def _call(method, request_id=1, **params):

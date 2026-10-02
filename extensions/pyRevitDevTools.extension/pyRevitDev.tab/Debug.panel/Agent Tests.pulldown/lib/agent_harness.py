@@ -16,6 +16,20 @@ import shutil
 import sys
 import tempfile
 from contextlib import contextmanager
+from unittest import TestCase as _TestCase
+
+import clr
+
+for _assembly in (
+    "System",
+    "System.Core",
+    "System.Diagnostics.Process",
+    "System.IO.Pipes",
+):
+    try:
+        clr.AddReference(_assembly)
+    except Exception:
+        pass
 
 import System
 from System.Diagnostics import Process, ProcessStartInfo
@@ -31,6 +45,8 @@ CPYTHON_HOST = platform.python_implementation() == "CPython"
 ENGINES = ("ironpython",) if CPYTHON_HOST else ("ironpython", "cpython")
 
 CLI = op.join(HOME_DIR, "bin", "pyrevit.exe")
+CLI_TIMEOUT_MS = 60000
+PROGRESS_LOG = op.join(tempfile.gettempdir(), "pyrevit-agent-tests.log")
 
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"
@@ -105,9 +121,35 @@ def run_cli(*arguments):
     info.RedirectStandardOutput = True
     info.CreateNoWindow = True
     process = Process.Start(info)
-    output = process.StandardOutput.ReadToEnd()
-    process.WaitForExit(60000)
-    return str(output)
+    reading = process.StandardOutput.ReadToEndAsync()
+    if not reading.Wait(CLI_TIMEOUT_MS):
+        process.Kill()
+        raise AssertionError(
+            "pyrevit {} did not finish within {} ms".format(
+                " ".join(arguments), CLI_TIMEOUT_MS
+            )
+        )
+    process.WaitForExit(CLI_TIMEOUT_MS)
+    return str(reading.Result)
+
+
+def log_progress(text):
+    """Append a line to the progress log, which survives a hung or killed Revit."""
+    with open(PROGRESS_LOG, "a") as handle:
+        handle.write(text + "\n")
+
+
+class TestCase(_TestCase):
+    """Base class of the agent tests: records each test before it starts.
+
+    If Revit hangs, the last line of the progress log names the test that was
+    running.
+    """
+
+    def run(self, result=None):
+        """Log the test id, then run the test."""
+        log_progress(self.id())
+        return _TestCase.run(self, result)
 
 
 def comment(element_id):
@@ -157,6 +199,8 @@ def run_suites(modules):
     """
     global _session
     print("Host engine: {}".format(sys.version.split()[0]))
+    with open(PROGRESS_LOG, "w") as handle:
+        handle.write("progress log of the last agent test run\n")
     _session = ScratchSession()
     problems = []
     try:
@@ -173,6 +217,7 @@ def run_suites(modules):
     finally:
         _session.close()
         _session = None
+        log_progress("finished")
     if problems:
         raise AssertionError("Agent test failures: " + "; ".join(problems))
     print("All agent test modules passed.")

@@ -3,12 +3,11 @@
 import os
 import os.path as op
 import shutil
-from unittest import TestCase
 
 from pyrevit.labs import PyRevit
 
 import agent_harness as harness
-from agent_harness import AgentRequestError, run
+from agent_harness import AgentRequestError, TestCase, run
 
 
 def _modify(script, dry_run=False, **kwargs):

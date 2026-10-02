@@ -5,11 +5,11 @@ click the button named in its title to let the test finish.
 """
 
 from contextlib import contextmanager
-from unittest import TestCase
 
 from pyrevit import HOST_APP, UI
 
 import agent_harness as harness
+from agent_harness import TestCase
 
 KEEP = 1001
 DISCARD = 1002

@@ -518,6 +518,8 @@ approval tests) while they run, then close the projects without saving, reactiva
 that was open before, and restore the policy. The settings tests change the real pyRevit config and
 put every value back. The pipe tests are skipped when the host is disabled, and the other tests have
 only been run with it enabled.
+Each test is written to `%TEMP%\pyrevit-agent-tests.log` before it starts, so if Revit ever hangs, the
+last line of that file names the test that was running.
 
 Anything the MCP server adds on top of the host, such as hints in run errors and the library
 tools, runs in the CLI and is not covered by these buttons.

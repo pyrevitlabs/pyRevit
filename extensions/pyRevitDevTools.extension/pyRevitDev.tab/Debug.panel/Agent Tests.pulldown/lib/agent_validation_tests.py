@@ -1,10 +1,9 @@
 """Parameter validation of the agent host requests: what each one refuses to run."""
 
 import os.path as op
-from unittest import TestCase
 
 import agent_harness as harness
-from agent_harness import AgentRequestError, request
+from agent_harness import AgentRequestError, TestCase, request
 
 NOT_PRINTABLE_VIEW = (
     "views = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.View)"
