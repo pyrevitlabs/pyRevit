@@ -1,7 +1,7 @@
 """Agent host requests other than runs: context, inspection, presentation and capture."""
 
 import os.path as op
-from unittest import TestCase
+from unittest import TestCase, skipUnless
 
 import agent_harness as harness
 from agent_harness import AgentRequestError, request
@@ -24,6 +24,13 @@ class ContextTests(TestCase):
         engines = request("get_context")["scripting"]["engines"]
         for engine in harness.ENGINES:
             self.assertTrue(engines[engine]["available"], engine)
+
+    @skipUnless(harness.CPYTHON_HOST, "only a CPython command can nest a CPython run")
+    def test_cpython_run_from_a_cpython_command_is_refused(self):
+        """A CPython run requested from a CPython command is refused instead of crashing Revit."""
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.run("result = 1", engine="cpython")
+        self.assertEqual("nested_cpython", raised.exception.code)
 
     def test_unknown_method_is_rejected(self):
         """An unknown method comes back as method_not_found."""

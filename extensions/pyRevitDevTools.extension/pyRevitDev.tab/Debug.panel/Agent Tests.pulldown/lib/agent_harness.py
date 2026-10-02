@@ -24,9 +24,9 @@ from pyrevit.labs import PyRevit
 from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
-ENGINES = ("ironpython", "cpython")
 COMMENTS = "DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS"
 CPYTHON_HOST = sys.version_info[0] >= 3 and "IronPython" not in sys.version
+ENGINES = ("ironpython",) if CPYTHON_HOST else ("ironpython", "cpython")
 
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"

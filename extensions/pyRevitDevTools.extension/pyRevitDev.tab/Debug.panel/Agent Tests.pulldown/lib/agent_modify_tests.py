@@ -2,6 +2,7 @@
 
 import os
 import os.path as op
+import shutil
 from unittest import TestCase
 
 import agent_harness as harness
@@ -137,11 +138,7 @@ class BlockTests(TestCase):
     def test_document_opened_in_the_background_cannot_be_saved_and_is_closed(self):
         """A document the run opens can't be saved, and it is closed after the run."""
         copy = op.join(harness.session().folder, "background.rvt")
-        with (
-            open(harness.session().other_path, "rb") as source,
-            open(copy, "wb") as target,
-        ):
-            target.write(source.read())
+        shutil.copyfile(harness.session().other_path, copy)
         stamp = os.path.getmtime(copy)
         response = _modify(
             "other = app.OpenDocumentFile(inputs['path'])\n"
