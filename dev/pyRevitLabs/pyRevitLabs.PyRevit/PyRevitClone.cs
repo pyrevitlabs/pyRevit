@@ -402,15 +402,39 @@ namespace pyRevitLabs.PyRevit {
             return GetConfiguredDeployments(clonePath).Count > 0;
         }
 
-        // get pyrevit version from deployed clone
-        // @handled @logs
+        /// <summary>
+        /// Gets the version of the build a deployed clone would actually run.
+        /// </summary>
+        /// <remarks>
+        /// The clone's built assemblies are authoritative: a clone whose <c>bin/</c> came from a
+        /// release image or from CI artifacts ships a source tree stamped with a different build
+        /// number, and reporting that would misidentify the binaries the clone runs. The version
+        /// file stays as the fallback for clones that were never built.
+        /// </remarks>
+        /// <param name="clonePath">Root of the clone to report on.</param>
+        /// <returns>
+        /// Build version of the clone's assemblies, else the version file content, else
+        /// "Unknown".
+        /// </returns>
         public static string GetDeployedVersion(string clonePath) {
             VerifyCloneValidity(clonePath);
+
+            foreach (var runtimeAssembly in GetBuiltRuntimeAssemblyPaths(clonePath)) {
+                var buildVersion = PyRevitBuildVersion.FromAssemblyFile(runtimeAssembly);
+                if (!string.IsNullOrEmpty(buildVersion))
+                    return buildVersion;
+            }
+
             var vesionFile = GetPyRevitVersionFilePath(clonePath);
             if (CommonUtils.VerifyFile(vesionFile))
-                return File.ReadAllText(vesionFile);
+                return File.ReadAllText(vesionFile).Trim();
             else
                 return "Unknown";
+        }
+
+        private static IEnumerable<string> GetBuiltRuntimeAssemblyPaths(string clonePath) {
+            foreach (var net in new[] { PyRevitConsts.NetCoreFolder, PyRevitConsts.NetFxFolder })
+                yield return Path.Combine(clonePath, PyRevitConsts.BinDirName, net, "pyRevitLabs.PyRevit.dll");
         }
 
         // get branch from deployed clone
