@@ -15,6 +15,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// and they block every later request. Naming the window lets the agent ask the user to
     /// answer it instead of guessing, or closing windows it doesn't understand. Read-only:
     /// it never sends messages to the windows. Safe to call from any thread.
+    /// Important: window titles are read with <c>InternalGetWindowText</c>, not
+    /// <c>GetWindowText</c>. For a window owned by another thread of this process,
+    /// <c>GetWindowText</c> sends WM_GETTEXT and waits for that thread to answer, so a busy
+    /// UI thread would block the caller and the <c>revit_busy</c> answer would never be sent.
     /// </remarks>
     internal static class AgentWindows {
         private const int MaxWindows = 6;
@@ -31,7 +35,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static extern bool IsWindowVisible(IntPtr window);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-        private static extern int GetWindowText(IntPtr window, StringBuilder text, int maxCount);
+        private static extern int InternalGetWindowText(IntPtr window, StringBuilder text, int maxCount);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetClassName(IntPtr window, StringBuilder className, int maxCount);
@@ -49,7 +53,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (owner != processId)
                         return true;
                     var text = new StringBuilder(256);
-                    GetWindowText(window, text, text.Capacity);
+                    InternalGetWindowText(window, text, text.Capacity);
                     var className = new StringBuilder(256);
                     GetClassName(window, className, className.Capacity);
                     if (text.Length == 0 && className.ToString().StartsWith("Tooltip", StringComparison.OrdinalIgnoreCase))
