@@ -258,6 +258,29 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static void RefreshIfStale() => _dstore.UpdateData(forceUpdate: false);
     }
 
+    /// <summary>
+    /// What a resolved product means for the session in progress, which decides how
+    /// loudly a below-minimum product year is reported.
+    /// </summary>
+    public enum ResolvedProductRole {
+        /// <summary>
+        /// The product pyRevit is being launched into. A year below
+        /// <see cref="RevitProductData.MinimumSupportedProductYear"/> is a warning:
+        /// the user started something this pyRevit cannot run on, and only a
+        /// different pyRevit release will help.
+        /// </summary>
+        RunningHost,
+
+        /// <summary>
+        /// A product found by scanning the machine for installed Revits. Side-by-side
+        /// installs are the normal setup, so a pre-minimum year found this way says
+        /// nothing about the session in progress and is only informational. Reporting
+        /// it as a warning made every session announce a product the user never
+        /// launched, and told them to switch pyRevit releases to fix it.
+        /// </summary>
+        InstalledSibling
+    }
+
     public class RevitProduct {
         private string _registeredName = string.Empty;
         private string _registeredInstallPath = string.Empty;
@@ -430,22 +453,37 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// identity, which is what keeps a build number shared by two releases
         /// from resolving to the wrong host record.
         /// </param>
+        /// <param name="role">
+        /// What the product means for the session in progress. A below-minimum year
+        /// is a warning for <see cref="ResolvedProductRole.RunningHost"/> and
+        /// informational for <see cref="ResolvedProductRole.InstalledSibling"/>, so
+        /// callers scanning the machine must not pass the default.
+        /// </param>
         /// <returns>
         /// The resolved product, or null when nothing could be determined. A
         /// product that is not in the host database is returned rather than
         /// null, flagged with <see cref="IsListedInHostsDatabase"/> false.
         /// </returns>
-        public static RevitProduct ResolveProduct(string identifier, string binaryFilePath = null, string installPath = null) {
+        public static RevitProduct ResolveProduct(string identifier,
+                                                  string binaryFilePath = null,
+                                                  string installPath = null,
+                                                  ResolvedProductRole role = ResolvedProductRole.RunningHost) {
             logger.Debug("Looking up Revit Product in database...");
             var pathHint = installPath ?? binaryFilePath;
             var revitProduct = LookupRevitProduct(identifier, pathHint);
             if (revitProduct != null && binaryFilePath != null)
                 revitProduct = ConfirmAgainstBinary(revitProduct, identifier, binaryFilePath, pathHint);
             if (revitProduct != null) {
-                if (!revitProduct.IsSupported)
-                    logger.Warn("Host database record \"{0}\" (product year {1}) is below the minimum supported Revit year ({2}). " +
-                                "Use a pyRevit release that supports Revit {1} to run pyRevit here.",
-                                revitProduct.Name, revitProduct.ProductYear, RevitProductData.MinimumSupportedProductYear);
+                if (!revitProduct.IsSupported) {
+                    if (role == ResolvedProductRole.RunningHost)
+                        logger.Warn("Host database record \"{0}\" (product year {1}) is below the minimum supported Revit year ({2}). " +
+                                    "Use a pyRevit release that supports Revit {1} to run pyRevit here.",
+                                    revitProduct.Name, revitProduct.ProductYear, RevitProductData.MinimumSupportedProductYear);
+                    else
+                        logger.Info("Installed Revit \"{0}\" (product year {1}) is below the minimum supported Revit year ({2}) " +
+                                    "and is not a target for this pyRevit line.",
+                                    revitProduct.Name, revitProduct.ProductYear, RevitProductData.MinimumSupportedProductYear);
+                }
                 return revitProduct;
             }
 
@@ -467,10 +505,15 @@ namespace pyRevitLabs.TargetApps.Revit {
                         logger.Info("Version \"{0}\" (build: {1}) not found in pyrevit-hosts.json. Using product information from binary file. " +
                                     "Consider updating pyrevit-hosts.json if this version should be officially supported.",
                                     identifier, prodInfo.build);
-                    else
+                    else if (role == ResolvedProductRole.RunningHost)
                         logger.Warn("Version \"{0}\" (build: {1}, product year {2}) is not supported by this version of pyRevit, " +
                                     "which requires Revit {3} or newer. Use a pyRevit release that supports Revit {2} to run pyRevit here.",
                                     identifier, prodInfo.build, binaryYear, RevitProductData.MinimumSupportedProductYear);
+                    else
+                        logger.Info("Installed Revit \"{0}\" (build: {1}, product year {2}) is below the minimum supported Revit year ({3}) " +
+                                    "and is not a target for this pyRevit line.",
+                                    identifier, prodInfo.build, binaryYear, RevitProductData.MinimumSupportedProductYear);
+
                     revitProduct = new RevitProduct(prodInfo, isListedInHostsDatabase: false);
                 }
                 return revitProduct;
@@ -482,6 +525,17 @@ namespace pyRevitLabs.TargetApps.Revit {
             return null;
         }
 
+        /// <summary>
+        /// Every Revit product installed on this machine, from the registry.
+        /// </summary>
+        /// <remarks>
+        /// This list spans products the user may never launch, and side-by-side
+        /// installs of a range of product years are a normal setup, so a product
+        /// below <see cref="RevitProductData.MinimumSupportedProductYear"/> is
+        /// returned rather than dropped and reported at information level only.
+        /// Callers that need a launchable target must check
+        /// <see cref="RevitProduct.IsSupported"/> themselves.
+        /// </remarks>
         public static List<RevitProduct> ListInstalledProducts() {
             if (_installedProductsCache != null)
                 return _installedProductsCache.ToList();
@@ -590,7 +644,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
-            return ResolveProduct(regVersion, binaryFilePath, installPath);
+            return ResolveProduct(regVersion, binaryFilePath, installPath, ResolvedProductRole.InstalledSibling);
         }
 
         public static List<RevitProduct> ListSupportedProducts() {
