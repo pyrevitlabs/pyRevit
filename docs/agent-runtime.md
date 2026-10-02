@@ -363,7 +363,6 @@ Deliberately **not** reused:
 | `pyrevitlib/pyrevit/agent/` | In-engine runner: executes the agent source, captures output, serializes `result`. Must stay parseable by IronPython 2.7, IronPython 3.4 and CPython 3. |
 | `pyRevitLabs.PyRevit` `PyRevitConfigs` | `Get/SetAgentEnabled`, `Get/SetAgentPolicy`, `Get/SetAgentEngine`. |
 | `pyRevitCLI` | `PyRevitAgentClient` (discovery and pipe protocol), `PyRevitCLIAgentCmds` (`agent`, `configs agent`, `mcp install` and `uninstall`), `PyRevitMcpServer` (`pyrevit mcp`). |
-| `extras/agent-spike/` | Phase 0 test client and scenario scripts. |
 | `pyRevitDevTools` `Debug.panel/Agent Tests.pulldown` | In-Revit end-to-end tests that drive the host through `AgentHost.HandleRequest`. |
 | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles; run in CI. |
 
@@ -500,31 +499,6 @@ Validated on Revit 2024 (build 24.1.11.26), IronPython 3.4.2, Snowdon Towers sam
 | Transaction left open | Detected; Revit cleans up the open transaction |
 | Modify, Keep / Discard | Committed or rolled back as chosen, verified in the model |
 | Isolate preview | View isolation cleared after the prompt |
-
-### Running the Phase 0 scenarios
-
-1. Build the runtime for the Revit version and engine you test. For example:
-   `dotnet build dev/pyRevitLabs.PyRevit.Runtime/2026/pyRevitLabs.PyRevit.Runtime.2026.csproj -c "Debug IPY2712PR"`.
-   Also build `pyRevitLabs.PyRevit` and `pyRevitAssemblyBuilder`.
-2. Enable the host (`pyrevit configs agent enable`) and reload pyRevit.
-3. Run each scenario with
-   `pyrevit agent run extras/agent-spike/scenarios/<file> --mode=<mode>`
-   (or `python extras/agent-spike/agent_client.py run ...`) and compare the response with
-   the expectation in the scenario's docstring.
-
-| Scenario | Mode | Verifies |
-|---|---|---|
-| `01_query_walls.py` | query | Execution, output capture, result serialization |
-| `02_query_that_writes.py` | query | `DocumentChanged` fires inside a transaction group; query rollback |
-| `03_set_comments.py` | dry_run, then modify | Diff, approval prompt with isolate preview, single undo entry |
-| `04_overlapping_walls.py` | dry_run | `FailuresProcessing` capture, no warning popup |
-| `05_dialogs_and_save.py` | query | `DialogBoxShowing` dismissal, save blocking (use a writable model) |
-| `06_transaction_left_open.py` | dry_run | Revit's behavior when a script leaves a transaction open |
-| `07_script_error.py` | modify | Error rollback, traceback quality |
-| `08_other_document.py` | query, then modify | A change in another open document fails the run and is rolled back (open two projects first) |
-| `09_timeout.py` | query with `--timeout 5` | The script is stopped even though it swallows exceptions with a bare `except` |
-
-Repeat the set with `--engine=cpython`, and run it on Revit 2026 (net8).
 
 ### In-Revit agent tests
 
