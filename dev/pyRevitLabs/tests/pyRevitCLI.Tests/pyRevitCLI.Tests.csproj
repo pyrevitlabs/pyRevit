@@ -40,6 +40,8 @@
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentClient.cs" Link="Sources\PyRevitAgentClient.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitMcpServer.cs" Link="Sources\PyRevitMcpServer.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentSkills.cs" Link="Sources\PyRevitAgentSkills.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitLibraryIndex.cs" Link="Sources\PyRevitLibraryIndex.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitAutomationOperations.cs" Link="Sources\PyRevitAutomationOperations.cs"/>
     </ItemGroup>
 
 </Project>
