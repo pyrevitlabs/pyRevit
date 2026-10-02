@@ -48,6 +48,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.CliTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
         foreach (string framework in new[] { "net48", "net8.0-windows" })
             await RunTestsAsync(
                 context,

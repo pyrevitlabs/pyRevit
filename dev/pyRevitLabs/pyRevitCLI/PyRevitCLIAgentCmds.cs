@@ -235,14 +235,29 @@ namespace pyRevitCLI {
         /// and can redirect the write elsewhere with a junction or symlink.
         /// </remarks>
         public static void UninstallMcpFromAllClients(bool ownedOnly) {
+            UninstallMcpFromAllClients(
+                ownedOnly,
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+        }
+
+        /// <summary>
+        /// Same as <see cref="UninstallMcpFromAllClients(bool)"/> for the profile folders given,
+        /// so a test can run it against a temporary profile.
+        /// </summary>
+        /// <remarks>
+        /// Without <paramref name="ownedOnly"/> the user-level configs are those of the running
+        /// account, whatever folders are passed.
+        /// </remarks>
+        internal static void UninstallMcpFromAllClients(bool ownedOnly, string home, string appData) {
             foreach (McpClientKind client in Enum.GetValues(typeof(McpClientKind))) {
                 try {
                     if (IsClientCliManaged(client))
-                        UninstallCliManagedClient(client, ownedOnly);
+                        UninstallCliManagedClient(client, ownedOnly, home);
                     else if (!ownedOnly)
                         UninstallMcp(client, project: false);
                     else
-                        UninstallOwnedFileRegistration(client, UserConfigPath(client));
+                        UninstallOwnedFileRegistration(client, UserConfigPath(client, home, appData));
                 }
                 catch (Exception ex) {
                     Console.WriteLine($"Skipped {client}: {ex.Message}");
@@ -250,8 +265,8 @@ namespace pyRevitCLI {
             }
         }
 
-        private static void UninstallCliManagedClient(McpClientKind client, bool ownedOnly) {
-            if (ownedOnly && !IsThisInstall(ReadCliClientCommand(client))) {
+        private static void UninstallCliManagedClient(McpClientKind client, bool ownedOnly, string home) {
+            if (ownedOnly && !IsThisInstall(ReadCliClientCommand(client, home))) {
                 Console.WriteLine($"Kept {client}: not registered to {Environment.ProcessPath}.");
                 return;
             }
@@ -301,13 +316,12 @@ namespace pyRevitCLI {
             }
         }
 
-        private static string ReadCliClientCommand(McpClientKind client) {
-            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        private static string ReadCliClientCommand(McpClientKind client, string home) {
             switch (client) {
                 case McpClientKind.Claude:
-                    return TryReadJson(Path.Combine(userProfile, ".claude.json"))?["mcpServers"]?[McpServerName]?.Value<string>("command");
+                    return TryReadJson(Path.Combine(home, ".claude.json"))?["mcpServers"]?[McpServerName]?.Value<string>("command");
                 case McpClientKind.Codex:
-                    return ReadCodexCommand(Path.Combine(userProfile, ".codex", "config.toml"));
+                    return ReadCodexCommand(Path.Combine(home, ".codex", "config.toml"));
                 default:
                     return null;
             }
@@ -331,13 +345,6 @@ namespace pyRevitCLI {
                 default:
                     throw new ArgumentOutOfRangeException(nameof(client));
             }
-        }
-
-        private static string UserConfigPath(McpClientKind client) {
-            return UserConfigPath(
-                client,
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
         }
 
         private static string UserConfigPath(McpClientKind client, string home, string appData) {
@@ -432,6 +439,16 @@ namespace pyRevitCLI {
             Console.WriteLine("Updated " + path);
         }
 
+        private static void RunClientCli(string tool, string arguments, bool ignoreFailure = false) {
+            ClientCli(tool, arguments, ignoreFailure);
+        }
+
+        /// <summary>
+        /// Starts a client's own CLI. Replaced by tests so they never run the real <c>claude</c>
+        /// or <c>codex</c> against the developer's profile.
+        /// </summary>
+        internal static Action<string, string, bool> ClientCli = RunClientCliProcess;
+
         /// <summary>
         /// Runs a client's own CLI (<c>claude</c>, <c>codex</c>) by full path.
         /// </summary>
@@ -441,7 +458,7 @@ namespace pyRevitCLI {
         /// So the tool is located on the PATH freshly read from the registry plus the usual install
         /// folders, and the child process gets that fresh PATH too.
         /// </remarks>
-        private static void RunClientCli(string tool, string arguments, bool ignoreFailure = false) {
+        private static void RunClientCliProcess(string tool, string arguments, bool ignoreFailure) {
             var executable = ResolveClientTool(tool);
             if (executable == null) {
                 if (ignoreFailure)
