@@ -364,6 +364,8 @@ Deliberately **not** reused:
 | `pyRevitLabs.PyRevit` `PyRevitConfigs` | `Get/SetAgentEnabled`, `Get/SetAgentPolicy`, `Get/SetAgentEngine`. |
 | `pyRevitCLI` | `PyRevitAgentClient` (discovery and pipe protocol), `PyRevitCLIAgentCmds` (`agent`, `configs agent`, `mcp install` and `uninstall`), `PyRevitMcpServer` (`pyrevit mcp`). |
 | `extras/agent-spike/` | Phase 0 test client and scenario scripts. |
+| `pyRevitDevTools` `Debug.panel/Agent Tests.pulldown` | In-Revit end-to-end tests that drive the host through `AgentHost.HandleRequest`. |
+| `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles; run in CI. |
 
 ### Pipe protocol
 
@@ -523,3 +525,23 @@ Validated on Revit 2024 (build 24.1.11.26), IronPython 3.4.2, Snowdon Towers sam
 | `09_timeout.py` | query with `--timeout 5` | The script is stopped even though it swallows exceptions with a bare `except` |
 
 Repeat the set with `--engine=cpython`, and run it on Revit 2026 (net8).
+
+### In-Revit agent tests
+
+The pyRevitDevTools extension has an **Agent Tests** pulldown under *pyRevitDev > Debug*. Its buttons
+drive the host from inside Revit through `AgentHost.HandleRequest`, which runs the same JSON-RPC
+requests the pipe carries synchronously on the Revit main thread. A command can't use the pipe
+itself: the pipe executes requests through an ExternalEvent that never fires while a command runs.
+
+| Button | Covers |
+|---|---|
+| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; query runs on both engines (results, error lines, timeouts, workspaces, records); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`) |
+| Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
+| Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
+
+The tests create two scratch projects in the temp folder, set the policy to `auto` (or `ask` for the
+approval tests) while they run, then close the projects without saving, reactivate the document
+that was open before, and restore the policy. They don't need the pipe host to be enabled.
+
+Anything the MCP server adds on top of the host, such as hints in run errors and the library
+tools, runs in the CLI and is not covered by these buttons.
