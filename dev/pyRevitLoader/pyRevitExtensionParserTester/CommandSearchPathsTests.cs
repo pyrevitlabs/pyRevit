@@ -123,8 +123,6 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void NoEntryIsRepeatedWhenALibraryExtensionIsListedTwice()
         {
-            // A library extension contributed twice is the overlap the dedupe has to absorb:
-            // the same folder twice would put a duplicate entry on sys.path.
             var libRoot = CreateSubDirectory("Shared.lib");
             Directory.CreateDirectory(Path.Combine(libRoot, "lib"));
             var duplicate = new ParsedExtension { Directory = libRoot, Name = "DummyLib" };

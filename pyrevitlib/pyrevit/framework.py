@@ -160,9 +160,6 @@ else:
     clr.AddReference(sqlite3_dllpath)
 import sqlite3
 
-# Under IronPython, every clr.AddReferenceToFileAndPath above appended its own
-# assembly's folder to sys.path. All three assemblies ship from the one engine
-# folder, so the engine folder landed on sys.path three times. #3687.
 dedupe_sys_path()
 
 
