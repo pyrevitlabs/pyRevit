@@ -20,7 +20,7 @@ from pyrevit import HOME_DIR
 from pyrevit.labs import PyRevit
 
 import agent_harness as harness
-from agent_harness import ENGINES, run
+from agent_harness import ENGINES, request, run
 
 SHIPPED_SKILLS = (
     "revit-scripting",
@@ -209,6 +209,21 @@ class LookupTests(TestCase):
         self.assertEqual(10, results[0][1]["next_offset"])
         self.assertFalse(set(first) & set(second))
         self.assertEqual("invalid_params", results[2][1]["error"])
+
+
+class LinkTests(TestCase):
+    """The element navigation links that inspect_elements returns."""
+
+    def test_inspect_returns_a_link_naming_the_document_and_element(self):
+        """inspect_elements returns a link naming the active document and the element."""
+        wall = harness.session().wall_ids[0]
+        element = request("inspect_elements", ids=[wall], parameters=False)["elements"][
+            0
+        ]
+        link = element["link"]
+        self.assertEqual("element", link["destination"])
+        self.assertEqual([wall], link["ids"])
+        self.assertEqual(harness.session().project_title, link["document"]["title"])
 
 
 class AutomationTests(TestCase):
