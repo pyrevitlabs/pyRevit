@@ -33,6 +33,16 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void Normalize_KeepsEveryMetadataIdentifierButTheCommitHash() {
+            Assert.AreEqual(
+                "7.0.0.26273+1554.2",
+                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554.2"));
+            Assert.AreEqual(
+                "7.0.0.26273+1554.2",
+                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554.2." + CommitHash));
+        }
+
+        [TestMethod]
         public void Normalize_KeepsChannelSuffix() {
             Assert.AreEqual(
                 "7.0.0.26273-wip+1554",

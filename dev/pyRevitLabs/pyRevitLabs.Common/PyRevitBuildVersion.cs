@@ -27,6 +27,11 @@ namespace pyRevitLabs.Common {
         /// Reduces an <see cref="AssemblyInformationalVersionAttribute"/> value to the version
         /// string pyRevit reports, i.e. <c>7.0.0.26273+1554</c>.
         /// </summary>
+        /// <remarks>
+        /// Everything the build stamped is preserved. Only a trailing SemVer build-metadata
+        /// identifier that is a commit hash is dropped, because that is the one identifier the
+        /// .NET SDK adds on its own.
+        /// </remarks>
         /// <param name="informationalVersion">Raw informational version, or null.</param>
         /// <returns>Normalized version, or null when there is nothing usable.</returns>
         public static string NormalizeInformationalVersion(string informationalVersion) {
@@ -40,12 +45,16 @@ namespace pyRevitLabs.Common {
                 return value;
 
             var head = value.Substring(0, buildMetadataAt);
+            var metadata = value.Substring(buildMetadataAt + 1);
 
-            var metadata = value.Substring(buildMetadataAt + 1).Split('.')[0];
-            if (metadata.Length == 0 || CommitHash.IsMatch(metadata))
-                return head;
+            var lastSeparatorAt = metadata.LastIndexOf('.');
+            var finalIdentifier =
+                lastSeparatorAt < 0 ? metadata : metadata.Substring(lastSeparatorAt + 1);
 
-            return head + "+" + metadata;
+            if (CommitHash.IsMatch(finalIdentifier))
+                metadata = lastSeparatorAt < 0 ? string.Empty : metadata.Substring(0, lastSeparatorAt);
+
+            return metadata.Length == 0 ? head : head + "+" + metadata;
         }
 
         /// <summary>

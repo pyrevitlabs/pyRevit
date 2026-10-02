@@ -54,6 +54,18 @@ class ParseVersionStringTests(unittest.TestCase):
                 versionmgr.parse_version_string(value), "value=%r" % (value,)
             )
 
+    def test_a_version_embedded_in_junk_is_rejected(self):
+        """A version behind leading text must not be extracted.
+
+        The metadata slot stays permissive on purpose - it has to carry both
+        the ``yyDDD+HHmm`` build number and the ``-wip`` channel suffix - so
+        only the anchoring of the version itself is asserted here.
+        """
+        for value in ("pyRevit 7.0.0.26273+1554", "v7.0.0", "PYREVIT_VERSION=7.0.0.1"):
+            self.assertIsNone(
+                versionmgr.parse_version_string(value), "value=%r" % (value,)
+            )
+
 
 class LoadedBuildVersionTests(unittest.TestCase):
     """The loaded build outranks the clone's version file."""

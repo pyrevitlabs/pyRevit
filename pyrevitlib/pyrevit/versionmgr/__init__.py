@@ -25,11 +25,15 @@ from pyrevit.coreutils import git
 # pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
-VERSION_REGEX = r"(\d+)\.(\d+)\.(\d+)\.?(.+)?"
+VERSION_REGEX = r"\A(\d+)\.(\d+)\.(\d+)\.?(.+)?\Z"
 
 
 def parse_version_string(version_string):
     """Split a version string into (major, minor, patch, metadata) parts.
+
+    The whole value has to be a version. An unanchored match would let a malformed
+    session value contribute a version to the string the About window shows, which
+    is the same class of stale report this module exists to prevent.
 
     Args:
         version_string (str): version string, e.g. "7.0.0.26273+1554"

@@ -411,12 +411,14 @@ namespace pyRevitLabs.PyRevit {
         /// number, and reporting that would misidentify the binaries the clone runs. The version
         /// file stays as the fallback for clones that were never built.
         /// <para>
-        /// <c>netcore</c> and <c>netfx</c> are both stamped from the single <c>&lt;Version&gt;</c>
-        /// property in <c>dev/Directory.Build.props</c> by one build pipeline pass, so the two
-        /// agree and the order below only decides the answer when they cannot - a hand-assembled
-        /// <c>bin/</c>. A clone serves Revit years from both trees at once, so this call has no
-        /// per-year answer to give; the surfaces that must identify one specific host (About, the
-        /// output window title) read the Runtime assembly loaded for that host instead.
+        /// A clone serves Revit years from both the <c>netfx</c> and the <c>netcore</c> tree at
+        /// once, so this year-agnostic form has no single host to answer for. Both trees are
+        /// stamped from the single <c>&lt;Version&gt;</c> property in
+        /// <c>dev/Directory.Build.props</c> by one build pipeline pass and therefore agree; the
+        /// order below only decides the answer for a hand-assembled <c>bin/</c>, which no build
+        /// produces. Callers that do know the host framework must use
+        /// <see cref="GetDeployedVersion(string, bool?)"/>, and the surfaces that must identify
+        /// one specific host read the Runtime assembly loaded for that host instead.
         /// </para>
         /// </remarks>
         /// <param name="clonePath">Root of the clone to report on.</param>
@@ -425,9 +427,25 @@ namespace pyRevitLabs.PyRevit {
         /// "Unknown".
         /// </returns>
         public static string GetDeployedVersion(string clonePath) {
+            return GetDeployedVersion(clonePath, null);
+        }
+
+        /// <summary>
+        /// Gets the version of the build a deployed clone would actually run on one framework.
+        /// </summary>
+        /// <param name="clonePath">Root of the clone to report on.</param>
+        /// <param name="isNetCore">
+        /// Framework the reporting host runs on, or null when it is not known and any framework
+        /// will do.
+        /// </param>
+        /// <returns>
+        /// Build version of the clone's assemblies for that framework, else the version file
+        /// content, else "Unknown".
+        /// </returns>
+        public static string GetDeployedVersion(string clonePath, bool? isNetCore) {
             VerifyCloneValidity(clonePath);
 
-            foreach (var runtimeAssembly in GetBuiltRuntimeAssemblyPaths(clonePath)) {
+            foreach (var runtimeAssembly in GetBuiltRuntimeAssemblyPaths(clonePath, isNetCore)) {
                 var buildVersion = PyRevitBuildVersion.FromAssemblyFile(runtimeAssembly);
                 if (!string.IsNullOrEmpty(buildVersion))
                     return buildVersion;
@@ -440,9 +458,14 @@ namespace pyRevitLabs.PyRevit {
                 return "Unknown";
         }
 
-        private static IEnumerable<string> GetBuiltRuntimeAssemblyPaths(string clonePath) {
-            foreach (var net in new[] { PyRevitConsts.NetCoreFolder, PyRevitConsts.NetFxFolder })
-                yield return Path.Combine(clonePath, PyRevitConsts.BinDirName, net, "pyRevitLabs.PyRevit.dll");
+        private static IEnumerable<string> GetBuiltRuntimeAssemblyPaths(string clonePath, bool? isNetCore) {
+            IEnumerable<string> frameworkFolders = isNetCore.HasValue
+                ? new[] { isNetCore.Value ? PyRevitConsts.NetCoreFolder : PyRevitConsts.NetFxFolder }
+                : new[] { PyRevitConsts.NetCoreFolder, PyRevitConsts.NetFxFolder };
+
+            foreach (var frameworkFolder in frameworkFolders)
+                yield return Path.Combine(
+                    clonePath, PyRevitConsts.BinDirName, frameworkFolder, "pyRevitLabs.PyRevit.dll");
         }
 
         // get branch from deployed clone
