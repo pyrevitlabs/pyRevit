@@ -200,7 +200,7 @@ def to_net_list(item_type, items):
     Use it wherever a Revit API method takes an ``IList`` or ``ICollection``.
     ``List[T](python_list)`` and ``AddRange(python_list)`` work on IronPython
     but raise ``TypeError`` on CPython (pythonnet); adding items one by one
-    works on every engine.
+    works on every engine. Same as ``to_clr_list``, which builds the list.
 
     Args:
         item_type (type): .NET element type, such as ``DB.ElementId``.
@@ -209,10 +209,7 @@ def to_net_list(item_type, items):
     Returns:
         (List): the new list.
     """
-    net_list = List[item_type]()
-    for item in items:
-        net_list.Add(item)
-    return net_list
+    return to_clr_list(item_type, items)
 
 
 def get_dll_file(assembly_name):

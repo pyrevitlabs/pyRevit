@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using pyRevitLabs.Json.Linq;
 
@@ -16,6 +17,8 @@ namespace pyRevitCLI {
             public bool RequiresDocument { get; set; }
             public Func<JObject, JObject> ValidateInputs { get; set; }
         }
+
+        private static readonly Regex BuiltInCategoryName = new Regex("^OST_[A-Za-z0-9_]{1,124}$");
 
         private static readonly Dictionary<string, Operation> Operations = new Dictionary<string, Operation>(StringComparer.OrdinalIgnoreCase) {
             ["pyrevit.units.parse-length"] = new Operation {
@@ -40,7 +43,7 @@ namespace pyRevitCLI {
             ["pyrevit.elements.by-category"] = new Operation {
                 Id = "pyrevit.elements.by-category",
                 Title = "Find elements by category",
-                Source = "from pyrevit.revit.db import query\nelements = list(query.get_elements_by_categories(inputs['categories'], doc=doc))\nlimited = elements[:inputs['limit']]\nresult = {'elements': limited, 'total': len(elements), 'truncated': len(elements) > len(limited)}\n",
+                Source = "from pyrevit.revit.db import query\nelements = list(query.get_elements_by_categories(inputs['categories'], doc=doc))\nlimited = elements[:inputs['limit']]\nunknown = [name for name in inputs['categories'] if query.get_category(name, doc=doc) is None]\nresult = {'elements': limited, 'total': len(elements), 'truncated': len(elements) > len(limited), 'unknown_categories': unknown}\n",
                 RequiresDocument = true,
                 ValidateInputs = ValidateCategoryCollection,
             },
@@ -93,8 +96,8 @@ namespace pyRevitCLI {
             if (inputs.Properties().Any(property => property.Name != "categories" && property.Name != "limit"))
                 throw new AgentClientException("invalid_params", "'inputs' accepts only 'categories' and 'limit'.");
             var categories = inputs["categories"] as JArray;
-            if (categories == null || categories.Count == 0 || categories.Count > 20 || categories.Any(category => category.Type != JTokenType.String || string.IsNullOrWhiteSpace(category.Value<string>()) || category.Value<string>().Length > 128))
-                throw new AgentClientException("invalid_params", "'inputs.categories' must contain 1 to 20 non-empty category names of at most 128 characters.");
+            if (categories == null || categories.Count == 0 || categories.Count > 20 || categories.Any(category => category.Type != JTokenType.String || !BuiltInCategoryName.IsMatch(category.Value<string>())))
+                throw new AgentClientException("invalid_params", "'inputs.categories' must contain 1 to 20 BuiltInCategory names such as OST_Walls. Display names like 'Walls' depend on the Revit language.");
             var limit = inputs["limit"];
             if (limit == null) {
                 inputs["limit"] = 50;

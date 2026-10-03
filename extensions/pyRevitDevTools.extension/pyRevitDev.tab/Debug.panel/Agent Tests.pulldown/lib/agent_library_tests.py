@@ -74,8 +74,14 @@ def _mcp(*calls):
     for line in lines:
         process.StandardInput.WriteLine(json.dumps(line))
     process.StandardInput.Close()
-    output = process.StandardOutput.ReadToEnd()
-    process.WaitForExit(60000)
+    reading = process.StandardOutput.ReadToEndAsync()
+    if not reading.Wait(harness.CLI_TIMEOUT_MS):
+        process.Kill()
+        raise AssertionError(
+            "pyrevit mcp did not finish within {} ms".format(harness.CLI_TIMEOUT_MS)
+        )
+    process.WaitForExit(harness.CLI_TIMEOUT_MS)
+    output = str(reading.Result)
     responses = {}
     for line in output.splitlines():
         if line.strip().startswith("{"):

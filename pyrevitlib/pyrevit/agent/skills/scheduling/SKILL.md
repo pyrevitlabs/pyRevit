@@ -1,6 +1,6 @@
 ---
 name: scheduling
-description: Schedules and quantities. Covers creating schedules, adding fields, filters, sorting and grouping, reading schedule contents, placing schedules on sheets, and exporting them. Use it for "make a door schedule", "count windows by type", "export the room schedule" and similar tasks.
+description: Schedules and quantities. Covers creating schedules, adding fields, filters, sorting and grouping, reading schedule contents, placing schedules on sheets, and preparing them for export. Use it for "make a door schedule", "count windows by type", "export the room schedule" and similar tasks.
 ---
 
 # Scheduling
@@ -76,11 +76,10 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 
 Guarded agent runs block schedule exports. Prepare and verify the schedule in a run, then have
 the user export it from Revit after the run ends.
-- **Where to write:** only to folders the user named, or the run's own folder.
 
 ## Before you report done
 
 - [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
 - [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
 - [ ] `capture_view(view="Door Schedule")` shows how it looks.
-- [ ] An exported file exists where the user asked, and you told them the path.
+- [ ] You told the user the schedule's name and that it is ready to export from Revit.

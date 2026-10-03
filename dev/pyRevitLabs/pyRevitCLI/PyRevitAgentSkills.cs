@@ -35,6 +35,8 @@ namespace pyRevitCLI {
     /// </remarks>
     internal static class PyRevitAgentSkills {
         public const string CoreSkill = "revit-scripting";
+        public const string ShippedSource = "pyrevit";
+        public const string UserSource = "user";
         private const string SkillFile = "SKILL.md";
         private const string InstructionsFile = "INSTRUCTIONS.md";
         private const int MaxParentLevels = 8;
@@ -98,8 +100,21 @@ namespace pyRevitCLI {
                 .ToList();
         }
 
+        /// <summary>
+        /// The skill's name, followed by its description when the skill is shipped with pyRevit.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a user skill's description never reaches the server instructions or tool
+        /// descriptions; agents read it through <c>list_skills</c>, which attributes it.
+        /// </remarks>
+        public static string Summary(AgentSkill skill) {
+            return skill.Source == ShippedSource && !string.IsNullOrWhiteSpace(skill.Description)
+                ? $"{skill.Name}: {skill.Description}"
+                : skill.Name;
+        }
+
         public static string Instructions(List<AgentSkill> skills) {
-            var list = string.Join("\n", skills.Select(skill => $"- {skill.Name} ({skill.Source}, sha256:{skill.Hash})"));
+            var list = string.Join("\n", skills.Select(skill => $"- {Summary(skill)} ({skill.Source}, sha256:{skill.Hash})"));
             var shipped = ShippedSkillsDir;
             var template = shipped != null && File.Exists(Path.Combine(shipped, InstructionsFile))
                 ? File.ReadAllText(Path.Combine(shipped, InstructionsFile))
@@ -170,7 +185,7 @@ namespace pyRevitCLI {
             if (!SkillName.IsMatch(name))
                 return null;
             var description = frontMatter.TryGetValue("description", out var declaredDescription) ? declaredDescription : string.Empty;
-            if (source == "user" && description.Length > MaxUserDescriptionChars)
+            if (source == UserSource && description.Length > MaxUserDescriptionChars)
                 description = description.Substring(0, MaxUserDescriptionChars - 3) + "...";
             return new AgentSkill {
                 Name = name,
@@ -182,9 +197,9 @@ namespace pyRevitCLI {
         }
 
         private static IEnumerable<(string Root, string Source)> SkillRoots() {
-            yield return (ShippedSkillsDir, "pyrevit");
+            yield return (ShippedSkillsDir, ShippedSource);
             if (PyRevitConfigs.GetAgentUserSkillsEnabled())
-                yield return (UserSkillsDir, "user");
+                yield return (UserSkillsDir, UserSource);
         }
 
         private static IEnumerable<string> MarkdownFiles(string root) {

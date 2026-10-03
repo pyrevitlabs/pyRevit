@@ -1,6 +1,6 @@
 ---
 name: drawings
-description: Producing drawings and blueprints. Covers sheets with title blocks, placing views and schedules on sheets, tags, room tags, dimensions, text, and PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
+description: Producing drawings and blueprints. Covers sheets with title blocks, placing views and schedules on sheets, tags, room tags, dimensions, text, and preparing sheets for PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
 ---
 
 # Drawings (views, sheets, annotation)
@@ -62,4 +62,4 @@ them, then have the user export from Revit after the run ends.
 - [ ] `capture_view(view="A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
 - [ ] Tag and dimension counts match the element counts you intended.
 - [ ] Each view is on one sheet only; duplicates were made where a view is needed twice.
-- [ ] Every exported file exists in the folder the user named, and you told them the path.
+- [ ] You told the user which sheets are ready to export from Revit.
