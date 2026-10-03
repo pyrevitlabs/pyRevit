@@ -6,12 +6,6 @@ using pyRevitLabs.Json.Linq;
 using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
-    internal enum AgentRunMode {
-        Query,
-        DryRun,
-        Modify,
-    }
-
     internal enum AgentEngine {
         IronPython,
         CPython,

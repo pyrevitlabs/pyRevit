@@ -49,14 +49,67 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxOutputChars = 64 * 1024;
         private const int MaxChangeSamples = 50;
 
-        private static string StricterPolicy(string first, string second) {
-            return PolicyRank(first) <= PolicyRank(second) ? first : second;
+        private static AgentPolicy ReadPolicy() {
+            var policy = PyRevitConfigs.GetAgentPolicy();
+            if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly)
+                return AgentPolicy.ReadOnly;
+            return policy == PyRevitConsts.ConfigsAgentPolicyAuto ? AgentPolicy.Auto : AgentPolicy.Ask;
         }
 
-        private static int PolicyRank(string policy) {
-            if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly)
-                return 0;
-            return policy == PyRevitConsts.ConfigsAgentPolicyAuto ? 2 : 1;
+        private static AgentRunVerdict CarryOut(
+            AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, UIDocument uidoc,
+            AgentRunRequest request, string runId, int exitCode, JObject changes) {
+            switch (verdict) {
+                case AgentRunVerdict.TransactionLeftOpen:
+                    SetErrorIfMissing(context, "transaction_left_open",
+                        "The script left a transaction open. Commit or roll back every transaction it starts.");
+                    return verdict;
+                case AgentRunVerdict.ScriptFailed:
+                    SetErrorIfMissing(context, "engine_error",
+                        "The script engine failed with exit code " + exitCode + ". Check the pyRevit log.");
+                    guard.RollBack();
+                    return verdict;
+                case AgentRunVerdict.OtherDocumentChanged:
+                    context.SetError("other_document_modified",
+                        "The script changed another open document. Agent runs may change only the active "
+                        + "document. See 'changes.other_documents' for rollback and discard outcomes.",
+                        null);
+                    guard.RollBack();
+                    return verdict;
+                case AgentRunVerdict.NoDocument:
+                    return verdict;
+                case AgentRunVerdict.QueryModifiedModel:
+                    guard.RollBack();
+                    context.SetError("query_modified_model",
+                        "A query run changed the model. The changes were rolled back; use mode 'dry_run' or 'modify'.",
+                        null);
+                    return verdict;
+                case AgentRunVerdict.PolicyReadOnly:
+                    context.SetError("policy_readonly",
+                        "The pyRevit agent policy changed to 'readonly' during the run; its changes were rolled back.",
+                        null);
+                    guard.RollBack();
+                    return verdict;
+                case AgentRunVerdict.AutoCommit:
+                    Commit(guard, uidoc.Document, request, runId);
+                    return verdict;
+                case AgentRunVerdict.AskUser:
+                    guard.DisarmDialogCapture();
+                    if (AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures)) {
+                        Commit(guard, uidoc.Document, request, runId);
+                        return AgentRunVerdict.UserApproved;
+                    }
+                    guard.RollBack();
+                    return AgentRunVerdict.UserDiscarded;
+                default:
+                    guard.RollBack();
+                    return verdict;
+            }
+        }
+
+        private static void Commit(AgentRunGuard guard, Document doc, AgentRunRequest request, string runId) {
+            guard.Assimilate();
+            AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
         }
 
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
@@ -80,7 +133,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 warnings.Add(lostBefore);
 
             AgentHost.RefreshConfigIfChanged();
-            var policyAtStart = PyRevitConfigs.GetAgentPolicy();
+            var policyAtStart = ReadPolicy();
 
             var stopwatch = Stopwatch.StartNew();
             var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
@@ -111,81 +164,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (otherDocuments.Count > 0)
                         changes["other_documents"] = otherDocuments;
                     AgentHost.RefreshConfigIfChanged();
-                    var policy = StricterPolicy(policyAtStart, PyRevitConfigs.GetAgentPolicy());
-                    var status = "ok";
-                    string decision;
+                    var verdict = AgentRunDecision.Decide(new AgentRunFacts {
+                        Mode = request.Mode,
+                        HasDocument = doc != null,
+                        TransactionLeftOpen = transactionLeftOpen,
+                        ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
+                        ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
+                        HasChanges = !guard.Changes.IsEmpty,
+                        Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
+                    });
+                    verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes);
 
-                    if (transactionLeftOpen) {
-                        status = "error";
-                        decision = "rolled_back";
-                        SetErrorIfMissing(context, "transaction_left_open",
-                            "The script left a transaction open. Commit or roll back every transaction it starts.");
-                    }
-                    else if (context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded) {
-                        status = "error";
-                        decision = "rolled_back";
-                        SetErrorIfMissing(context, "engine_error",
-                            "The script engine failed with exit code " + exitCode + ". Check the pyRevit log.");
-                        guard.RollBack();
-                    }
-                    else if (guard.ChangedOtherOpenDocument) {
-                        status = "error";
-                        decision = "rolled_back";
-                        context.SetError("other_document_modified",
-                            "The script changed another open document. Agent runs may change only the active "
-                            + "document. See 'changes.other_documents' for rollback and discard outcomes.",
-                            null);
-                        guard.RollBack();
-                    }
-                    else if (doc == null) {
-                        decision = "no_document";
-                    }
-                    else if (request.Mode == AgentRunMode.Query) {
-                        decision = "rolled_back";
-                        guard.RollBack();
-                        if (!guard.Changes.IsEmpty) {
-                            status = "error";
-                            context.SetError("query_modified_model",
-                                "A query run changed the model. The changes were rolled back; use mode 'dry_run' or 'modify'.",
-                                null);
-                        }
-                    }
-                    else if (request.Mode == AgentRunMode.DryRun || guard.Changes.IsEmpty) {
-                        decision = guard.Changes.IsEmpty ? "no_changes" : "rolled_back";
-                        guard.RollBack();
-                    }
-                    else if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly) {
-                        status = "rejected";
-                        decision = "rolled_back";
-                        context.SetError("policy_readonly",
-                            "The pyRevit agent policy changed to 'readonly' during the run; its changes were rolled back.",
-                            null);
-                        guard.RollBack();
-                    }
-                    else if (policy == PyRevitConsts.ConfigsAgentPolicyAuto) {
-                        guard.Assimilate();
-                        AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
-                        decision = "committed";
-                        response["approval"] = "auto";
-                    }
-                    else {
-                        guard.DisarmDialogCapture();
-                        var approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
-                        response["approval"] = "user";
-                        if (approved) {
-                            guard.Assimilate();
-                            AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
-                            decision = "committed";
-                        }
-                        else {
-                            guard.RollBack();
-                            decision = "discarded";
-                            status = "rejected";
-                        }
-                    }
-
-                    response["status"] = status;
-                    response["decision"] = decision;
+                    var approval = AgentRunDecision.Approval(verdict);
+                    if (approval != null)
+                        response["approval"] = approval;
+                    response["status"] = AgentRunDecision.Status(verdict);
+                    response["decision"] = AgentRunDecision.Decision(verdict);
                     response["exit_code"] = exitCode;
                     response["changes"] = changes;
                     response["failures"] = guard.Failures;
