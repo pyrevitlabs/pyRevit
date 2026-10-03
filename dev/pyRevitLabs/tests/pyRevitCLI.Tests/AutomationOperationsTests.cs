@@ -13,7 +13,7 @@ public class AutomationOperationsTests {
     private static JObject Valid(string id) {
         return id switch {
             "pyrevit.levels.resolve" => new JObject { ["name"] = "Level 1" },
-            "pyrevit.elements.by-category" => new JObject { ["categories"] = new JArray("Walls") },
+            "pyrevit.elements.by-category" => new JObject { ["categories"] = new JArray("OST_Walls") },
             _ => new JObject { ["value"] = "8:12" },
         };
     }
@@ -100,18 +100,20 @@ public class AutomationOperationsTests {
     }
 
     [Fact]
-    public void CategoriesNeedBetweenOneAndTwentyNonBlankShortNames() {
-        PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray(Enumerable.Repeat("Walls", 20)) });
-        PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray(new string('c', 128)) });
+    public void CategoriesNeedBetweenOneAndTwentyBuiltInCategoryNames() {
+        PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray(Enumerable.Repeat("OST_Walls", 20)) });
+        PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("OST_" + new string('c', 124)) });
 
         foreach (var categories in new JToken[] {
             new JArray(),
-            new JArray(Enumerable.Repeat("Walls", 21)),
+            new JArray(Enumerable.Repeat("OST_Walls", 21)),
             new JArray(""),
             new JArray("  "),
-            new JArray(new string('c', 129)),
+            new JArray("Walls"),
+            new JArray("OST_"),
+            new JArray("OST_" + new string('c', 125)),
             new JArray(1),
-            new JValue("Walls"),
+            new JValue("OST_Walls"),
         })
             Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = categories })));
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject())));
@@ -119,14 +121,14 @@ public class AutomationOperationsTests {
 
     [Fact]
     public void TheCategoryLimitDefaultsToFiftyAndIsBoundedToTwoHundred() {
-        var defaulted = PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("Walls") });
+        var defaulted = PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("OST_Walls") });
         Assert.Equal(50, defaulted["inputs"].Value<int>("limit"));
-        Assert.Equal(1, PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("Walls"), ["limit"] = 1 })["inputs"].Value<int>("limit"));
-        Assert.Equal(200, PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("Walls"), ["limit"] = 200 })["inputs"].Value<int>("limit"));
+        Assert.Equal(1, PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("OST_Walls"), ["limit"] = 1 })["inputs"].Value<int>("limit"));
+        Assert.Equal(200, PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("OST_Walls"), ["limit"] = 200 })["inputs"].Value<int>("limit"));
 
         foreach (var limit in new JToken[] { 0, -1, 201, 1.5, "5", true })
-            Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("Walls"), ["limit"] = limit })));
-        Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("Walls"), ["extra"] = 1 })));
+            Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("OST_Walls"), ["limit"] = limit })));
+        Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.elements.by-category", new JObject { ["categories"] = new JArray("OST_Walls"), ["extra"] = 1 })));
     }
 
     [Theory]
@@ -135,7 +137,7 @@ public class AutomationOperationsTests {
     [InlineData("pyrevit.levels.resolve")]
     [InlineData("pyrevit.elements.by-category")]
     public void TheScriptNeverContainsTheCallersInput(string id) {
-        var marker = "SENTINEL_" + Guid.NewGuid().ToString("N");
+        var marker = "OST_SENTINEL_" + Guid.NewGuid().ToString("N");
         var inputs = Valid(id);
         foreach (var property in inputs.Properties().ToList())
             if (property.Value.Type == JTokenType.String)

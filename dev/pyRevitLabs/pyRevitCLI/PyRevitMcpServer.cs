@@ -443,7 +443,7 @@ namespace pyRevitCLI {
                     () => {
                         var skills = PyRevitAgentSkills.Load();
                         return ("Read a skill: task guidance for Revit scripting. Read revit-scripting before your first script, then the skill for your task. "
-                            + "Use list_skills for source and hash metadata. Skills: " + string.Join(", ", skills.Select(skill => skill.Name)),
+                            + "Use list_skills for source and hash metadata. Skills: " + string.Join("; ", skills.Select(PyRevitAgentSkills.Summary)),
                             new JObject {
                                 ["name"] = new JObject {
                                     ["type"] = "string",
