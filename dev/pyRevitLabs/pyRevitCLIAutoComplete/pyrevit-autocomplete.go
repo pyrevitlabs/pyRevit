@@ -444,11 +444,13 @@ func main() {
 					"run": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--engine": complete.PredictNothing,
-							"--inputs": complete.PredictNothing,
-							"--mode":   complete.PredictNothing,
-							"--revit":  complete.PredictNothing,
-							"--title":  complete.PredictNothing,
+							"--engine":    complete.PredictNothing,
+							"--inputs":    complete.PredictNothing,
+							"--mode":      complete.PredictNothing,
+							"--revit":     complete.PredictNothing,
+							"--timeout":   complete.PredictNothing,
+							"--title":     complete.PredictNothing,
+							"--workspace": complete.PredictNothing,
 						},
 					},
 					"runs": complete.Command{
