@@ -75,6 +75,7 @@
     <Compile Include="PyRevitRootResolutionTests.cs" />
     <Compile Include="ScriptIoReadlineTests.cs" />
     <Compile Include="CommandSearchPathsTests.cs" />
+    <Compile Include="SearchPathsTests.cs" />
     <Compile Include="EnginePortableRequestsImportTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
     <Compile Include="ScriptOutputUiGateTests.cs" />

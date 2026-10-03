@@ -11,6 +11,7 @@ import clr
 import os.path as op
 from pyrevit.compat import PY3, PY2
 import pyrevit.engine as eng
+from pyrevit import dedupe_sys_path
 
 # WPF/Form Imports
 clr.AddReference("PresentationFramework")  # System.Windows: Controls, ?
@@ -65,3 +66,5 @@ except Exception:
         wpf = IronPython.Modules.Wpf
     else:
         import wpf
+
+dedupe_sys_path()

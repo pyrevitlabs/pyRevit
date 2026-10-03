@@ -70,6 +70,17 @@ namespace pyRevitExtensionParserTester
         private string BundleDir => Path.Combine(TestTempDir,
             ExtensionFolder, "Dummy.tab", "Smoke.panel", "Check.pushbutton");
 
+        private string GenerateWithLibraries(ParsedExtension[] libs)
+        {
+            string bundle = ExtensionFolder + "/Dummy.tab/Smoke.panel/Check.pushbutton";
+            CreateFile(bundle + "/script.py", "print(1)");
+            var uiDir = Path.Combine(TestTempDir, ExtensionFolder);
+            var ui = ParseInstalledExtensions(new[] { uiDir }).First();
+
+            return new RoslynCommandTypeGenerator(new MockPythonLogger())
+                .GenerateExtensionCode(ui, "2024", libs);
+        }
+
         [Test]
         public void BundleFolderAppearsOnce()
         {
@@ -110,6 +121,30 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void NoEntryIsRepeatedWhenALibraryExtensionIsListedTwice()
+        {
+            var libRoot = CreateSubDirectory("Shared.lib");
+            Directory.CreateDirectory(Path.Combine(libRoot, "lib"));
+            var duplicate = new ParsedExtension { Directory = libRoot, Name = "DummyLib" };
+
+            var paths = SearchPathsFrom(GenerateWithLibraries(new[] { duplicate, duplicate }));
+
+            var repeated = paths
+                .GroupBy(p => p, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            Assert.That(repeated, Is.Empty,
+                "repeated search path entries: " + string.Join(" | ", repeated));
+            Assert.Multiple(() =>
+            {
+                Assert.That(paths, Does.Contain(libRoot));
+                Assert.That(paths, Does.Contain(Path.Combine(libRoot, "lib")));
+            });
+        }
+
+        [Test]
         public void BundleFolderIsFirst()
         {
             var paths = SearchPathsFrom(Generate());
@@ -124,7 +159,8 @@ namespace pyRevitExtensionParserTester
             var paths = SearchPathsFrom(Generate());
             var bundleBin = Path.Combine(BundleDir, "bin");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(paths, Does.Contain(BundleDir));
                 Assert.That(paths, Does.Contain(bundleBin));
             });
@@ -138,7 +174,8 @@ namespace pyRevitExtensionParserTester
             var paths = SearchPathsFrom(Generate());
             var bundleLib = Path.Combine(BundleDir, "lib");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(paths, Does.Contain(BundleDir));
                 Assert.That(paths, Does.Contain(bundleLib));
             });
@@ -153,7 +190,8 @@ namespace pyRevitExtensionParserTester
 
             var paths = SearchPathsFrom(Generate());
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(paths, Does.Contain(Path.Combine(extDir, "bin")));
                 Assert.That(paths, Does.Contain(Path.Combine(extDir, "lib")));
             });
@@ -167,7 +205,8 @@ namespace pyRevitExtensionParserTester
 
             var paths = SearchPathsFrom(Generate(libRoot));
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(paths, Does.Contain(libRoot));
                 Assert.That(paths, Does.Contain(Path.Combine(libRoot, "lib")));
             });
@@ -197,7 +236,8 @@ namespace pyRevitExtensionParserTester
             int libExt = paths.IndexOf(libRoot);
             int pyrevitLib = paths.FindIndex(p => p.EndsWith("pyrevitlib"));
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(bundle, Is.EqualTo(0));
                 Assert.That(extLib, Is.GreaterThan(bundle), "ext lib should follow the script dir");
                 Assert.That(libExt, Is.GreaterThan(extLib), "library extensions come after lib folders");

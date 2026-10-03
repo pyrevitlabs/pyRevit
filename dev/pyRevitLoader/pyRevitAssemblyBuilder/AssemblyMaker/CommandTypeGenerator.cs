@@ -147,7 +147,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     searchPathsList.Add(sitePackagesDir);
                 }
 
-                string searchPaths = string.Join(";", DedupeKeepingFirstOccurrence(searchPathsList));
+                string searchPaths = string.Join(";", SearchPaths.DedupeKeepingFirstOccurrence(searchPathsList));
                 string tooltip = cmd.Tooltip ?? string.Empty;
                 string bundle = string.IsNullOrEmpty(scriptDir) ? string.Empty : Path.GetFileName(scriptDir);
                 string extName = extension.Name;
@@ -239,24 +239,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
         private static string EscapeForVerbatim(string str) =>
             (str ?? string.Empty).Replace("\"", "\"\"");
-
-        /// <summary>
-        /// Collapses repeated folders, keeping the earliest occurrence.
-        /// </summary>
-        /// <remarks>
-        /// The search-path sources overlap by design and are not individually aware of each
-        /// other: the collected binary paths always end with the command's own directory, which
-        /// is also its script directory, and a component hierarchy can reach the same lib/ folder
-        /// by more than one route. Each collector dedupes only within itself, so the overlap has
-        /// to be resolved once the list is assembled.
-        ///
-        /// <b>Invariant:</b> order is the module-resolution priority, so a later duplicate must
-        /// never displace an earlier entry. Comparison is case-insensitive because Windows paths
-        /// are, and a folder differing only in case would otherwise resolve to a redundant scan.
-        /// </remarks>
-        private static IEnumerable<string> DedupeKeepingFirstOccurrence(IEnumerable<string> paths) =>
-            paths.Where(p => !string.IsNullOrEmpty(p))
-                 .Distinct(StringComparer.OrdinalIgnoreCase);
 
         private static string Escape(string str) =>
             (str ?? string.Empty)
