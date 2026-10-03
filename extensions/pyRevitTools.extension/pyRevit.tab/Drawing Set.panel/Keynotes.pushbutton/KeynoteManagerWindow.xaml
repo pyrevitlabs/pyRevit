@@ -597,6 +597,10 @@
                     <Button Style="{StaticResource AccentButton}"
                             Content="Update Model" Padding="14,4"
                             Click="update_model"/>
+                    <Button Style="{StaticResource ToolbarButton}" Margin="4,0,0,0"
+                            Content="&#xE785;" FontSize="14" FontFamily="Segoe MDL2 Assets"
+                            ToolTip="Release locks left behind when someone's Revit closed or crashed"
+                            Click="release_stale_locks"/>
                 </StackPanel>
             </DockPanel>
         </Border>
