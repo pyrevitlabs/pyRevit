@@ -12,7 +12,7 @@ public class LibraryIndexTests : IDisposable {
     private List<LibrarySymbol> Parse(string source, string file = "sample.py") {
         var path = Path.Combine(root, file);
         File.WriteAllText(path, source);
-        return PyRevitLibraryIndex.ParseFile(root, path);
+        return PyRevitLibraryParser.ParseFile(root, path);
     }
 
     private static LibrarySymbol Named(List<LibrarySymbol> symbols, string name) => Assert.Single(symbols, symbol => symbol.Name == name);
@@ -142,7 +142,7 @@ public class LibraryIndexTests : IDisposable {
         var init = Parse("def package_level():\n    pass\n", Path.Combine("pkg", "__init__.py"));
 
         Assert.Equal("pkg", Named(init, "package_level").Module);
-        var nested = PyRevitLibraryIndex.ParseFile(root, Path.Combine(root, "pkg", "sub", "mod.py"));
+        var nested = PyRevitLibraryParser.ParseFile(root, Path.Combine(root, "pkg", "sub", "mod.py"));
         Assert.Equal("pkg.sub.mod", Named(nested, "top").Module);
     }
 
