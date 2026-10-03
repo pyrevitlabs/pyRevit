@@ -194,24 +194,6 @@ def get_type(fw_object):
     return clr.GetClrType(fw_object)
 
 
-def to_net_list(item_type, items):
-    """Return a .NET ``List[item_type]`` holding ``items``.
-
-    Use it wherever a Revit API method takes an ``IList`` or ``ICollection``.
-    ``List[T](python_list)`` and ``AddRange(python_list)`` work on IronPython
-    but raise ``TypeError`` on CPython (pythonnet); adding items one by one
-    works on every engine. Same as ``to_clr_list``, which builds the list.
-
-    Args:
-        item_type (type): .NET element type, such as ``DB.ElementId``.
-        items (Iterable): the items to add.
-
-    Returns:
-        (List): the new list.
-    """
-    return to_clr_list(item_type, items)
-
-
 def get_dll_file(assembly_name):
     """Return path to given assembly name."""
     addin_file = op.join(BIN_DIR, assembly_name + ".dll")
