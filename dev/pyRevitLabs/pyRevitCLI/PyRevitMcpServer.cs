@@ -254,8 +254,12 @@ namespace pyRevitCLI {
 
         private static bool SameDocument(JObject active, JObject expected) {
             var expectedPath = expected.Value<string>("path");
-            if (!string.IsNullOrEmpty(expectedPath))
-                return string.Equals(active.Value<string>("path"), expectedPath, StringComparison.OrdinalIgnoreCase);
+            var expectedTitle = expected.Value<string>("title");
+            if (!string.IsNullOrEmpty(expectedPath)) {
+                var samePath = string.Equals(active.Value<string>("path"), expectedPath, StringComparison.OrdinalIgnoreCase);
+                return samePath && (string.IsNullOrEmpty(expectedTitle)
+                    || string.Equals(active.Value<string>("title"), expectedTitle, StringComparison.OrdinalIgnoreCase));
+            }
             return string.Equals(active.Value<string>("title"), expected.Value<string>("title"), StringComparison.Ordinal);
         }
 

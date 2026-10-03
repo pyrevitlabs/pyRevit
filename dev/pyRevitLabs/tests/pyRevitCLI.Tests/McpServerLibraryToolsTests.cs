@@ -84,7 +84,7 @@ public partial class McpServerTests {
     [Fact]
     public void ALinkToTheActiveDocumentSelectsAndZoomsByDefault() {
         host.Handler = request => request.Value<string>("method") == "get_context"
-            ? DocumentContext(request, path: "C:\\Models\\Tower.rvt")
+            ? DocumentContext(request, "Tower", "C:\\Models\\Tower.rvt")
             : FakeAgentHost.Result(request, new JObject { ["count"] = 2 });
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
@@ -148,6 +148,22 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void ALinkWithTheSamePathButADifferentTitleIsStale() {
+        host.Handler = request => DocumentContext(request, "Tower", "C:\\Models\\Tower.rvt");
+
+        var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["link"] = new JObject {
+                ["destination"] = "element",
+                ["document"] = new JObject { ["title"] = "Tower-renamed", ["path"] = "C:\\Models\\Tower.rvt" },
+                ["ids"] = new JArray(1),
+            },
+        }));
+
+        Assert.Equal("stale_link", Payload(response).Value<string>("error"));
+        Assert.Empty(host.RequestsFor("show"));
+    }
+
+    [Fact]
     public void ALinkWithoutAnActiveDocumentIsStale() {
         host.Handler = request => NoDocumentContext(request);
 
@@ -200,6 +216,28 @@ public partial class McpServerTests {
         Assert.True(lookup.Value<bool>("found"));
         Assert.Contains("pyrevit.revit.db.query.find_level", lookup["matches"].Select(match => match.Value<string>("name")));
         Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void AMarkedButUnexposedAutomationIsNotReportedAsUnknown() {
+        var listing = Payload(Single(ToolCall(1, "list_automation", new JObject { ["limit"] = 50 })));
+        var notInvocable = listing["operations"].Select(operation => operation["automation"]).First(automation => !automation.Value<bool>("invocable"));
+        var invocable = listing["operations"].Select(operation => operation["automation"]).Count(automation => automation.Value<bool>("invocable"));
+
+        var response = Single(ToolCall(2, "run_automation", new JObject { ["id"] = notInvocable.Value<string>("id"), ["inputs"] = new JObject() }));
+
+        Assert.Equal(4, invocable);
+        Assert.Equal("automation_not_exposed", Payload(response).Value<string>("error"));
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void ThePyrevitLookupReportsAMissWhenNoSymbolCoversTheQuery() {
+        var lookup = Payload(Single(ToolCall(1, "lookup_pyrevit_api", new JObject { ["query"] = "zzz_not_a_real_helper" })));
+
+        Assert.False(lookup.Value<bool>("found"));
+        Assert.Empty(lookup["matches"]);
+        Assert.NotNull(lookup["near_matches"]);
     }
 
     [Fact]

@@ -46,6 +46,10 @@ namespace pyRevitCLI {
             },
         };
 
+        public static bool IsInvocable(string id) {
+            return !string.IsNullOrWhiteSpace(id) && Operations.ContainsKey(id);
+        }
+
         /// <summary>
         /// Resolves a reviewed operation and validates its bounded input object.
         /// </summary>
@@ -53,8 +57,11 @@ namespace pyRevitCLI {
             if (string.IsNullOrWhiteSpace(id))
                 throw new AgentClientException("invalid_params", "'id' is required.");
             Operation operation;
-            if (!Operations.TryGetValue(id, out operation))
+            if (!Operations.TryGetValue(id, out operation)) {
+                if (PyRevitLibraryIndex.IsMarkedAutomation(id))
+                    throw new AgentClientException("automation_not_exposed", $"'{id}' is listed by list_automation but cannot be run through run_automation. Call it from a run_query or run_modify script instead.");
                 throw new AgentClientException("unknown_automation_id", $"'{id}' is not an invocable automation operation.");
+            }
 
             var inputs = input as JObject
                 ?? throw new AgentClientException("invalid_params", "'inputs' must be an object.");

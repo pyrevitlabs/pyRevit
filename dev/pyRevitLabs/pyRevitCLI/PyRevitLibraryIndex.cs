@@ -126,22 +126,24 @@ namespace pyRevitCLI {
             }
 
             var tokens = Tokens(query);
-            var ranked = symbols
-                .Select(symbol => new { Symbol = symbol, Score = Score(symbol, tokens) })
+            var scored = symbols
+                .Select(symbol => new { Symbol = symbol, Score = Score(symbol, tokens), Covers = CoversEveryToken(symbol, tokens) })
                 .Where(entry => entry.Score > 0)
                 .OrderByDescending(entry => entry.Score)
                 .ThenBy(entry => entry.Symbol.FullName.Length)
-                .Take(MaxResults)
-                .Select(entry => Brief(entry.Symbol))
                 .ToList();
-            return new JObject {
+            var ranked = scored.Where(entry => entry.Covers).Take(MaxResults).Select(entry => Brief(entry.Symbol)).ToList();
+            var result = new JObject {
                 ["found"] = ranked.Count > 0,
                 ["query"] = query,
                 ["matches"] = new JArray(ranked),
                 ["note"] = ranked.Count > 0
                     ? "Ranked by name and docstring. Look one up by its full name for the whole docstring."
-                    : "Nothing in pyrevitlib or rpw matches. Use the Revit API directly (lookup_revit_api).",
+                    : "Nothing in pyrevitlib or rpw matches every word. Use the Revit API directly (lookup_revit_api).",
             };
+            if (ranked.Count == 0)
+                result["near_matches"] = new JArray(scored.Take(MaxResults).Select(entry => Brief(entry.Symbol)));
+            return result;
         }
 
         /// <summary>
@@ -175,6 +177,15 @@ namespace pyRevitCLI {
                 ["next_offset"] = nextOffset < symbols.Count ? new JValue(nextOffset) : JValue.CreateNull(),
                 ["operations"] = new JArray(page.Select(Brief)),
             };
+        }
+
+        public static bool IsMarkedAutomation(string id) {
+            try {
+                return Load().Any(symbol => string.Equals(symbol.Automation?.Id, id, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (AgentClientException) {
+                return false;
+            }
         }
 
         private static bool IsReExport(LibrarySymbol symbol, string query) {
@@ -228,6 +239,7 @@ namespace pyRevitCLI {
                 ["effects"] = new JArray(symbol.Automation.Effects),
                 ["context"] = symbol.Automation.Context,
                 ["transaction"] = symbol.Automation.Transaction,
+                ["invocable"] = PyRevitAutomationOperations.IsInvocable(symbol.Automation.Id),
             };
         }
 
@@ -248,6 +260,15 @@ namespace pyRevitCLI {
                 + tokens.Count(token => doc.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
                 + tokens.Count(token => automation.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) * 4;
         }
+
+        private static bool CoversEveryToken(LibrarySymbol symbol, List<string> tokens) {
+            var text = symbol.FullName + " " + symbol.Doc + " " + symbol.Automation?.Id + " " + symbol.Automation?.PlainEnglish;
+            return tokens
+                .Where(token => !LookupStopWords.Contains(token))
+                .All(token => text.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static readonly HashSet<string> LookupStopWords = new HashSet<string> { "by", "in", "of", "to", "for", "an", "and", "or", "with", "is", "it", "on", "as", "not" };
 
         private static int NameScore(string name, List<string> tokens) {
             var nameTokens = Tokens(name);
