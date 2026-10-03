@@ -6,6 +6,7 @@ import os
 import os.path as op
 import re
 import time
+import uuid
 import codecs
 from collections import defaultdict
 
@@ -640,7 +641,11 @@ def release_key(conn, key, category=False):
 
 LOCKS_DB = "txn_db"
 LOCKS_TABLE = "locks_table"
-DATASTORE_LOCK_STALE_SECONDS = 30
+DATASTORE_LOCK_STALE_SECONDS = 300
+
+
+class DataStoreLockChanged(Exception):
+    """The write sidecar is no longer the stale one the user agreed to clear."""
 
 
 def datastore_lock_path(keynotes_file):
@@ -653,27 +658,98 @@ def datastore_lock_path(keynotes_file):
     return op.splitext(keynotes_file)[0] + ".lock"
 
 
-def datastore_lock_age(keynotes_file):
-    """Return how many seconds the write sidecar has existed, or None.
+def datastore_lock_stamp(keynotes_file):
+    """Return the write sidecar's modified time, or None when there is none.
 
-    A live sidecar exists only for the milliseconds a write takes, so one
-    older than DATASTORE_LOCK_STALE_SECONDS was left by a Revit session
-    that closed or crashed mid-write.
+    The stamp identifies one particular sidecar: a save that replaces it
+    writes a new one with a new modified time.
     """
     try:
-        created = op.getmtime(datastore_lock_path(keynotes_file))
+        return op.getmtime(datastore_lock_path(keynotes_file))
     except OSError:
         return None
-    return max(0.0, time.time() - created)
 
 
-def clear_datastore_lock(keynotes_file):
-    """Delete the write sidecar; return True when there was one."""
-    lock_path = datastore_lock_path(keynotes_file)
-    if not op.exists(lock_path):
+def datastore_lock_age(stamp):
+    """Return how many seconds ago the sidecar with `stamp` was written."""
+    return max(0.0, time.time() - stamp)
+
+
+def is_stale_datastore_lock(stamp):
+    """Tell whether a sidecar is too old to belong to a save in progress.
+
+    Note:
+        DeffrelDB puts no upper bound on how long a save holds the
+        sidecar: its reads retry for up to 10 seconds, but the merge and
+        the write itself have no timeout, so a save to a slow network or
+        synced folder can hold it for a while.  Those saves run on Revit's
+        UI thread, so DATASTORE_LOCK_STALE_SECONDS is set far beyond what
+        any save could take without Revit visibly hanging.
+    """
+    if stamp is None:
         return False
-    os.remove(lock_path)
-    return True
+    return datastore_lock_age(stamp) >= DATASTORE_LOCK_STALE_SECONDS
+
+
+def clear_datastore_lock(keynotes_file, expected_stamp):
+    """Delete the stale write sidecar the user agreed to release.
+
+    Returns True when it was deleted and False when it was already gone.
+
+    Important:
+        The user may sit in the confirmation dialog for minutes, and in
+        that time the stale sidecar can be cleared by someone else and a
+        live save can create a new one.  Deleting a live save's sidecar
+        would let another write overlap it and lose changes.
+
+        DeffrelDB's own protocol has no atomic acquire to join: a writer
+        checks that the sidecar is absent and then creates it.  So the
+        sidecar is first CLAIMED with an atomic rename, which takes exactly
+        the file present at that instant, and only the claimed file is
+        checked and deleted.  Checking the path and then deleting the path
+        could delete a sidecar a live save created in between.  A claimed
+        file that is not the stale one is put back; if a new sidecar
+        already took its place, the path is guarded either way and the
+        claimed copy is discarded.
+
+    Raises:
+        DataStoreLockChanged: the sidecar is not the one stamped
+            `expected_stamp`, or is no longer stale.
+    """
+    lock_path = datastore_lock_path(keynotes_file)
+    current = datastore_lock_stamp(keynotes_file)
+    if current is None:
+        return False
+    if current != expected_stamp:
+        raise DataStoreLockChanged(lock_path)
+
+    claimed = "{}.release-{}".format(lock_path, uuid.uuid4().hex[:8])
+    try:
+        os.rename(lock_path, claimed)
+    except OSError:
+        if op.exists(lock_path):
+            raise
+        return False
+
+    claimed_stamp = op.getmtime(claimed)
+    if claimed_stamp == expected_stamp and is_stale_datastore_lock(claimed_stamp):
+        os.remove(claimed)
+        return True
+    try:
+        os.rename(claimed, lock_path)
+    except OSError:
+        os.remove(claimed)
+    raise DataStoreLockChanged(lock_path)
+
+
+def foreign_locks(conn, own_conns):
+    """Return the locks on the file that none of `own_conns` holds.
+
+    Release Locks offers only these, so it can never release a lock the
+    current Revit session is still using.
+    """
+    own_ids = set(own.ConnectionId for own in own_conns)
+    return [lk for lk in get_locks(conn) if lk.LockConnId not in own_ids]
 
 
 def release_locks(keynotes_file, lock_ids, username=None):
