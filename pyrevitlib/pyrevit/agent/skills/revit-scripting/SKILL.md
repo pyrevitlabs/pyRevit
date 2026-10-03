@@ -5,7 +5,7 @@ description: Core Revit API scripting rules for the pyRevit agent runtime. Read 
 
 # Revit scripting through pyRevit
 
-Use the raw Revit API through pyRevit. Get context first, inspect the Revit API when uncertain, then run a focused script.
+Read the `pyrevit-library` skill first and use `lookup_pyrevit_api` to find a maintained pyrevitlib or rpw function before writing raw Revit API code. Get context first, inspect the Revit API when uncertain, then run a focused script.
 
 ## Workflow
 
