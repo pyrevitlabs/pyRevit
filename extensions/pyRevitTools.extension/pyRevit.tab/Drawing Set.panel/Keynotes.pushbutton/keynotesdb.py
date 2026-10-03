@@ -2,7 +2,10 @@
 """Module for managing keynotes using DeffrelDB."""
 
 # pylint: disable=E0401,W0613
+import os
+import os.path as op
 import re
+import time
 import codecs
 from collections import defaultdict
 
@@ -633,6 +636,72 @@ def reserve_key(conn, key, category=False):
 
 def release_key(conn, key, category=False):
     conn.END()
+
+
+LOCKS_DB = "txn_db"
+LOCKS_TABLE = "locks_table"
+DATASTORE_LOCK_STALE_SECONDS = 30
+
+
+def datastore_lock_path(keynotes_file):
+    """Return the sidecar file DeffrelDB holds while it writes the file.
+
+    Note:
+        DeffrelDB names the sidecar after the file WITHOUT its extension:
+        'Keynotes.txt' is guarded by 'Keynotes.lock'.
+    """
+    return op.splitext(keynotes_file)[0] + ".lock"
+
+
+def datastore_lock_age(keynotes_file):
+    """Return how many seconds the write sidecar has existed, or None.
+
+    A live sidecar exists only for the milliseconds a write takes, so one
+    older than DATASTORE_LOCK_STALE_SECONDS was left by a Revit session
+    that closed or crashed mid-write.
+    """
+    try:
+        created = op.getmtime(datastore_lock_path(keynotes_file))
+    except OSError:
+        return None
+    return max(0.0, time.time() - created)
+
+
+def clear_datastore_lock(keynotes_file):
+    """Delete the write sidecar; return True when there was one."""
+    lock_path = datastore_lock_path(keynotes_file)
+    if not op.exists(lock_path):
+        return False
+    os.remove(lock_path)
+    return True
+
+
+def release_locks(keynotes_file, lock_ids, username=None):
+    """Drop the given lock records from the file and return how many went.
+
+    DeffrelDB has no public call for clearing another connection's locks,
+    so this drops their rows from its internal LOCKS_DB/LOCKS_TABLE.
+
+    Important:
+        Every drop runs on its own throwaway connection.  When DeffrelDB
+        fails to take a lock it leaves that connection inside a transaction
+        block, and every later write on it is silently never committed, so
+        a failed drop must not poison the window's connection or the drops
+        after it.
+    """
+    released = 0
+    for lock_id in lock_ids:
+        conn = dfdb.DataBase.Connect(
+            keynotes_file,
+            username or HOST_APP.username,
+            sourceEncoding=framework.Encoding.GetEncoding("utf-16"),
+        )
+        try:
+            conn.DropRecord(LOCKS_DB, LOCKS_TABLE, lock_id)
+            released += 1
+        finally:
+            conn.Dispose()
+    return released
 
 
 # categories ------------------------------------------------------------------
