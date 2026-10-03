@@ -87,6 +87,7 @@ public sealed class TestCertificateHelperTests
         StringAssert.Contains(script, "AddDays(365)");
         StringAssert.Contains(script, "AddDays(30)");
         StringAssert.Contains(script, "'Root', 'TrustedPublisher'");
+        StringAssert.Contains(script, "$store.Remove($stale)");
     }
 
     [TestMethod]

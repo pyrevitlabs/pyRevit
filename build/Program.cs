@@ -28,7 +28,7 @@ var runWinget = argsSet.Contains("winget");
 var runLocal = argsSet.Contains("local") || argsSet.Contains("--local");
 var runSignTest = argsSet.Contains("sign-test");
 var runRemoveCert = argsSet.Contains("--remove-cert");
-var runCi = argsSet.Count == 0 || argsSet.Contains("ci") || (runLocal && !runRemoveCert);
+var runCi = !runRemoveCert && (argsSet.Count == 0 || argsSet.Contains("ci") || runLocal);
 
 TestCertificateHelper.EnsureModesAllowed(
     runLocal,

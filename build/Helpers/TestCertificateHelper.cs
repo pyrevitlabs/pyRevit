@@ -82,6 +82,9 @@ public static class TestCertificateHelper
                 $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
                 $store.Open('ReadWrite')
                 try {
+                    foreach ($stale in @($store.Certificates | Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint })) {
+                        $store.Remove($stale)
+                    }
                     if (-not $store.Certificates.Find('FindByThumbprint', $cert.Thumbprint, $false).Count) {
                         $store.Add((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(,$cert.RawData)))
                     }
