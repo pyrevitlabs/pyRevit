@@ -1777,6 +1777,26 @@ def create_room_tags(view, rooms=None, tag_type=None, doc=None):
     return tags
 
 
+def _schedulable_fields_by_name(definition, doc):
+    """Index schedulable fields by display name and by locale-invariant name.
+
+    Built-in parameter fields are also reachable by their ``BuiltInParameter``
+    name (``ROOM_AREA``), which does not change with the Revit UI language.
+    Display names win when both spell the same key.
+    """
+    available = {}
+    for field in definition.GetSchedulableFields():
+        parameter_id = field.ParameterId
+        if parameter_id is not None and parameter_id.IntegerValue < -1:
+            try:
+                available[str(DB.BuiltInParameter(parameter_id.IntegerValue))] = field
+            except Exception:
+                pass
+    for field in definition.GetSchedulableFields():
+        available[field.GetName(doc)] = field
+    return available
+
+
 def create_schedule(
     category,
     fields,
@@ -1819,9 +1839,7 @@ def create_schedule(
     if view_name:
         schedule.Name = unique_view_name(view_name, doc=doc)
     definition = schedule.Definition
-    available = dict(
-        (field.GetName(doc), field) for field in definition.GetSchedulableFields()
-    )
+    available = _schedulable_fields_by_name(definition, doc)
     wanted = list(fields) + [
         name for name in (sort_by or []) + (totals or []) if name not in fields
     ]
