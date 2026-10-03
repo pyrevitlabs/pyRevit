@@ -121,4 +121,48 @@ public sealed class TestCertificateHelperTests
         Assert.ThrowsExactly<InvalidOperationException>(() => TestCertificateHelper.ParseFingerprint("oops"));
         Assert.ThrowsExactly<InvalidOperationException>(() => TestCertificateHelper.ParseFingerprint(""));
     }
+
+    [TestMethod]
+    [DataRow("CN=pyRevit Local Dev (BOX)", true)]
+    [DataRow("CN=pyRevit CI Test 123", true)]
+    [DataRow("cn=pyrevit local dev (box)", true)]
+    [DataRow("CN=pyRevit Labs", false)]
+    [DataRow("", false)]
+    [DataRow(null, false)]
+    public void IsTestSigner_matches_only_test_certificate_subjects(string? subject, bool expected)
+    {
+        Assert.AreEqual(expected, TestCertificateHelper.IsTestSigner(subject));
+    }
+
+    [TestMethod]
+    public void FindTestSignedFiles_ignores_unsigned_files()
+    {
+        var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll");
+        File.WriteAllBytes(file, [0x4D, 0x5A]);
+        try
+        {
+            Assert.AreEqual(0, TestCertificateHelper.FindTestSignedFiles([file]).Count);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [TestMethod]
+    public void BuildEnsureScript_removes_superseded_certificates_with_their_keys()
+    {
+        var script = TestCertificateHelper.BuildEnsureScript("CN=x", 1, 0);
+
+        StringAssert.Contains(script, "$_.Thumbprint -ne $cert.Thumbprint } |");
+        StringAssert.Contains(script, "Remove-Item $_.PSPath -DeleteKey }");
+    }
+
+    [TestMethod]
+    public void BuildRemoveScript_does_not_swallow_errors()
+    {
+        var script = TestCertificateHelper.BuildRemoveScript("CN=x");
+
+        Assert.IsFalse(script.Contains("SilentlyContinue"));
+    }
 }

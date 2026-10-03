@@ -83,6 +83,7 @@ if (runCi)
 
 if (runPack || runSign || runPublish)
 {
+    builder.Services.AddModule<RejectTestSignedBinariesModule>();
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
     builder.Services.AddModule<BuildChocoModule>();

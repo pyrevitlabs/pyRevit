@@ -18,9 +18,53 @@ public static class TestCertificateHelper
 {
     public const int LocalLifetimeDays = 365;
     public const int LocalRenewBeforeDays = 30;
+    public const string LocalSubjectPrefix = "CN=pyRevit Local Dev";
+    public const string CiSubjectPrefix = "CN=pyRevit CI Test";
 
-    public static string LocalSubject(string machineName) => $"CN=pyRevit Local Dev ({machineName})";
+    /// <summary>Subject of the per-machine developer certificate; also what <c>--remove-cert</c> deletes.</summary>
+    public static string LocalSubject(string machineName) => $"{LocalSubjectPrefix} ({machineName})";
 
+    public static bool IsTestSigner(string? subject) =>
+        subject is not null
+        && (subject.StartsWith(LocalSubjectPrefix, StringComparison.OrdinalIgnoreCase)
+            || subject.StartsWith(CiSubjectPrefix, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Returns the files whose Authenticode signer is a test certificate. Unsigned files and files
+    /// signed by any other identity are not reported.
+    /// </summary>
+    public static IReadOnlyList<string> FindTestSignedFiles(IEnumerable<string> files)
+    {
+        var found = new List<string>();
+        foreach (var file in files)
+        {
+            if (IsTestSigner(ReadSignerSubject(file)))
+            {
+                found.Add(file);
+            }
+        }
+
+        return found;
+    }
+
+    private static string? ReadSignerSubject(string file)
+    {
+        try
+        {
+#pragma warning disable SYSLIB0057
+            return System.Security.Cryptography.X509Certificates.X509Certificate.CreateFromSignedFile(file).Subject;
+#pragma warning restore SYSLIB0057
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Guards the test-signing modes. Throws when they are combined with production modes, run on a shipping
+    /// channel, or (for the developer-certificate modes) run under CI.
+    /// </summary>
     public static void EnsureModesAllowed(
         bool local,
         bool signTest,
@@ -78,6 +122,9 @@ public static class TestCertificateHelper
                     -KeyExportPolicy NonExportable -KeyAlgorithm RSA -KeyLength 3072 -HashAlgorithm SHA256 `
                     -NotAfter (Get-Date).AddDays({{lifetimeDays}}) -CertStoreLocation Cert:\CurrentUser\My
             }
+            Get-ChildItem Cert:\CurrentUser\My |
+                Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint } |
+                ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
             foreach ($name in 'Root', 'TrustedPublisher') {
                 $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
                 $store.Open('ReadWrite')
@@ -106,7 +153,7 @@ public static class TestCertificateHelper
             foreach ($store in 'My', 'Root', 'TrustedPublisher') {
                 Get-ChildItem "Cert:\CurrentUser\$store" |
                     Where-Object { $_.Subject -eq $subject } |
-                    ForEach-Object { Remove-Item $_.PSPath -DeleteKey -ErrorAction SilentlyContinue }
+                    ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
             }
             """;
     }
@@ -125,17 +172,25 @@ public static class TestCertificateHelper
         return fingerprint.ToUpperInvariant();
     }
 
+    /// <summary>
+    /// Creates the developer certificate if missing or near expiry, trusts it for the current user, and removes
+    /// superseded certificates with the same subject (including their private keys).
+    /// </summary>
+    /// <returns>The SHA-256 fingerprint of the certificate to sign with.</returns>
     public static async Task<string> EnsureLocalCertificateAsync(CancellationToken cancellationToken)
     {
         var script = BuildEnsureScript(LocalSubject(Environment.MachineName), LocalLifetimeDays, LocalRenewBeforeDays);
         return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken));
     }
 
+    /// <summary>Deletes the developer certificate and its private key from <c>My</c>, <c>Root</c> and <c>TrustedPublisher</c>.</summary>
     public static async Task RemoveLocalCertificateAsync(CancellationToken cancellationToken)
     {
         await RunPowerShellAsync(BuildRemoveScript(LocalSubject(Environment.MachineName)), cancellationToken);
     }
 
+    /// <summary>Signs <paramref name="files"/> in place with the certificate in the current user store.</summary>
+    /// <param name="fingerprint">SHA-256 fingerprint; the sign tool rejects a SHA-1 thumbprint.</param>
     public static async Task<CommandResult> SignFilesAsync(
         IModuleContext context,
         string fingerprint,
@@ -194,7 +249,16 @@ public static class TestCertificateHelper
             ?? throw new InvalidOperationException("Could not start powershell.exe.");
         var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(CancellationToken.None);
+            throw;
+        }
 
         if (process.ExitCode != 0)
         {
