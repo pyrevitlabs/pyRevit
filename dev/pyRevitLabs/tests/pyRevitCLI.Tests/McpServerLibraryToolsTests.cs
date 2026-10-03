@@ -83,9 +83,7 @@ public partial class McpServerTests {
 
     [Fact]
     public void ALinkToTheActiveDocumentSelectsAndZoomsByDefault() {
-        host.Handler = request => request.Value<string>("method") == "get_context"
-            ? DocumentContext(request, "Tower", "C:\\Models\\Tower.rvt")
-            : FakeAgentHost.Result(request, new JObject { ["count"] = 2 });
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["count"] = 2 });
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
             ["link"] = new JObject {
@@ -99,14 +97,15 @@ public partial class McpServerTests {
         Assert.Equal("select", show.Value<string>("action"));
         Assert.True(show.Value<bool>("zoom"));
         Assert.Equal(new[] { 10, 11 }, show["ids"].Select(id => id.Value<int>()));
+        Assert.Equal("Tower", show["document"].Value<string>("title"));
+        Assert.Equal("c:\\models\\TOWER.rvt", show["document"].Value<string>("path"));
+        Assert.Empty(host.RequestsFor("get_context"));
         Assert.Equal(2, Payload(response).Value<int>("count"));
     }
 
     [Fact]
     public void ALinkHonoursTheRequestedActionAndZoom() {
-        host.Handler = request => request.Value<string>("method") == "get_context"
-            ? DocumentContext(request)
-            : FakeAgentHost.Result(request, new JObject());
+        host.Handler = request => FakeAgentHost.Result(request, new JObject());
 
         Single(ToolCall(1, "navigate_revit_link", new JObject {
             ["link"] = new JObject {
@@ -125,7 +124,11 @@ public partial class McpServerTests {
 
     [Fact]
     public void ALinkToAnotherDocumentIsStaleAndNothingIsShown() {
-        host.Handler = request => DocumentContext(request, "Tower", "C:\\Models\\Tower.rvt");
+        host.Handler = request => FakeAgentHost.Failure(
+            request,
+            "stale_link",
+            "The link belongs to a different or closed document."
+        );
 
         var byPath = Single(ToolCall(1, "navigate_revit_link", new JObject {
             ["link"] = new JObject {
@@ -144,12 +147,16 @@ public partial class McpServerTests {
 
         Assert.Equal("stale_link", Payload(byPath).Value<string>("error"));
         Assert.Equal("stale_link", Payload(byTitle).Value<string>("error"));
-        Assert.Empty(host.RequestsFor("show"));
+        Assert.Equal(2, host.RequestsFor("show").Count);
     }
 
     [Fact]
     public void ALinkWithTheSamePathButADifferentTitleIsStale() {
-        host.Handler = request => DocumentContext(request, "Tower", "C:\\Models\\Tower.rvt");
+        host.Handler = request => FakeAgentHost.Failure(
+            request,
+            "stale_link",
+            "The link belongs to a different or closed document."
+        );
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
             ["link"] = new JObject {
@@ -160,12 +167,16 @@ public partial class McpServerTests {
         }));
 
         Assert.Equal("stale_link", Payload(response).Value<string>("error"));
-        Assert.Empty(host.RequestsFor("show"));
+        Assert.Single(host.RequestsFor("show"));
     }
 
     [Fact]
     public void ALinkWithoutAnActiveDocumentIsStale() {
-        host.Handler = request => NoDocumentContext(request);
+        host.Handler = request => FakeAgentHost.Failure(
+            request,
+            "stale_link",
+            "The link belongs to a different or closed document."
+        );
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
             ["link"] = new JObject {
