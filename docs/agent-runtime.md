@@ -263,6 +263,7 @@ pyrevit agent status [--json]              running Revit sessions with the agent
 pyrevit agent context [--revit=<year>]     get_context of a session
 pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year>]
+                  [--timeout=<seconds>] [--workspace=<folder>]
 pyrevit agent runs [--limit=<n>]           recent runs
 pyrevit agent show <run_id>                request, script and response of a run
 pyrevit mcp [--revit=<year>]               the MCP server (stdio); started by MCP clients
@@ -270,6 +271,12 @@ pyrevit mcp (install | uninstall) (claude | codex | cursor | vscode | opencode) 
 pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --owned keeps
                                            entries that point at another pyRevit install
 ```
+
+`--timeout` defaults to 300 and is capped at 3600. `--workspace` must be an existing folder.
+
+The `agent` and `mcp` commands ship with the pyRevit CLI of the same build. An older `pyrevit`
+on `PATH` doesn't know them and prints the global usage; upgrade the CLI or call the one from
+the build that provides the agent runtime.
 
 ### Run records
 

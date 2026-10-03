@@ -6,6 +6,10 @@ Each row is a name that doesn't exist in the Revit API (or does something else),
 |---|---|
 | `doc.WallTypes`, `doc.Families`, `doc.GetViews()` | `DB.FilteredElementCollector(doc).OfClass(DB.WallType)` (or `query.get_types_by_class`, `query.get_all_views`) |
 | `doc.FilteredElementCollector` | `DB.FilteredElementCollector(doc)` |
+| `doc.Walls`, `doc.Rooms`, any `doc.<Category>` property | `DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_Walls).WhereElementIsNotElementType()` |
+| `collector.ToList()` | `list(collector)`; `collector.ToElementIds()` for ids |
+| `element.SetParameterValue(...)`, `element.GetParameterValue(...)` | `element.get_Parameter(DB.BuiltInParameter.X).Set(value)` and the `As*()` getters |
+| `__revit__.db`, `__revit__.ActiveUIDocument.Document` | the injected `doc` and `uidoc` |
 | `Family.GetSymbols()` | `family.GetFamilySymbolIds()` |
 | `Parameter.Value` | `AsDouble()`, `AsString()`, `AsInteger()`, `AsElementId()`; rpw's `db.Element(e).parameters["Name"].value` |
 | `doc.NewDirectShape`, `DirectShape.Create` | `DB.DirectShape.CreateElement(doc, category_id)` + `SetShape` |

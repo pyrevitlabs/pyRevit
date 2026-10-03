@@ -580,7 +580,9 @@ namespace pyRevitCLI {
                         engine: TryGetValue("--engine"),
                         title: TryGetValue("--title"),
                         inputsJson: TryGetValue("--inputs"),
-                        revitSelector: TryGetValue("--revit")
+                        revitSelector: TryGetValue("--revit"),
+                        timeoutSeconds: TryGetValue("--timeout"),
+                        workspace: TryGetValue("--workspace")
                         );
 
                 else if (all("runs"))

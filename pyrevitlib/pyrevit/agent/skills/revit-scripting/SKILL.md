@@ -17,6 +17,7 @@ Use the raw Revit API through pyRevit. Get context first, inspect the Revit API 
 ## Runtime contract
 
 - Import APIs with `from pyrevit.api import DB, UI`.
+- Only the raw Revit API is available. pyRevit's convenience methods on API types are not applied: use `list(collector)` not `.ToList()`, `get_Parameter(...)` and `Parameter.Set(...)` not `SetParameterValue`, and a collector rather than `doc.Walls`. `__revit__` is a plain `UIApplication`.
 - Scripts receive `uiapp`, `app`, `uidoc`, and `doc`. A modifying run requires an active `doc`.
 - `run_query` and dry runs roll model changes back. A modify run commits only after its configured policy permits it.
 - Open a Revit transaction for every model edit, then commit or roll it back before the script ends.

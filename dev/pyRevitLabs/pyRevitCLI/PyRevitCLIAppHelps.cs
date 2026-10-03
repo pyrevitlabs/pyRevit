@@ -344,6 +344,8 @@ namespace pyRevitCLI {
                             { "--title=<run_title>",    "Run title; used as the undo name for modify runs" },
                             { "--inputs=<inputs_json>", "JSON object exposed to the script as `inputs`" },
                             { "--revit=<revit_year>",   "Target Revit year or process id when several are running" },
+                            { "--timeout=<seconds>",    "Stop the script after this many seconds (default 300, max 3600)" },
+                            { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs'" },
                             { "--json",                 "Print status as json" },
