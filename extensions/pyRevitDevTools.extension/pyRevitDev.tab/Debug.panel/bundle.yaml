@@ -12,6 +12,7 @@ layout:
 - -----
 - Unit Tests
 - Engine Tests
+- Agent Tests
 - Bundle Tests
 - Icon Inheritance Examples
 - Context Tests

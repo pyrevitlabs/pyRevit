@@ -16,9 +16,7 @@ def get_unit_info(spec_type_id, doc=None):
         (tuple): unit, unit label, symbol, symbol label
     """
     if HOST_APP.is_older_than(2022):
-        raise PyRevitException(
-            "get_unit_info() requires Revit 2022 or newer."
-        )
+        raise PyRevitException("get_unit_info() requires Revit 2022 or newer.")
 
     doc = doc or DOCS.doc
 

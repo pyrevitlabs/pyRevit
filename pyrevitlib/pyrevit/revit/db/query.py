@@ -330,9 +330,7 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
         filters.append(bip_valuerule)
 
     if filters:
-        return DB.ElementParameterFilter(
-            framework.to_clr_list(DB.FilterRule, filters)
-        )
+        return DB.ElementParameterFilter(framework.to_clr_list(DB.FilterRule, filters))
     else:
         raise PyRevitException("Error creating filters.")
 

@@ -93,6 +93,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             extExecEvent = ExternalEvent.Create(extExecEventHandler);
         }
 
+        internal static bool IsOnMainThread =>
+            mainThreadId != 0 && Thread.CurrentThread.ManagedThreadId == mainThreadId;
+
         /// Run the script and print the output to a new output window.
         public static int ExecuteScript(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs = null) {
             // make sure there is base configs

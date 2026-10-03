@@ -49,6 +49,16 @@ namespace pyRevitLabs.PyRevit {
         public static void ReloadConfig() => PyRevitConfigService.Reload();
 
         /// <summary>
+        /// Returns the file the shared config service reads, building the service first if
+        /// needed. Unlike <see cref="PyRevitConsts.ConfigFilePath"/>, this is the local clone
+        /// config when one is active, so it is the file to watch for outside edits.
+        /// </summary>
+        public static string GetLoadedConfigFilePath() {
+            GetConfigFile();
+            return PyRevitConfigService.LoadedConfigPath ?? PyRevitConsts.ConfigFilePath;
+        }
+
+        /// <summary>
         /// Writes the disabled flag for shipped extensions whose definition sets
         /// default_enabled=false, so freshly installed clones honor the shipped
         /// default. An existing entry is never overwritten, preserving any explicit
@@ -274,6 +284,73 @@ namespace pyRevitLabs.PyRevit {
 
             IConfigurationService cfg = GetConfigFile();
             cfg.SaveSection(new RoutesSection() { LoadCoreApi = state });
+        }
+
+        public static bool GetAgentEnabled() {
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentEnabledKey,
+                PyRevitConsts.ConfigsAgentEnabledDefault);
+        }
+
+        public static void SetAgentEnabled(bool state) {
+            _logger.Debug("Setting agent host status to {@Status}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentEnabledKey, state);
+        }
+
+        /// <summary>
+        /// What agent runs may do: <c>readonly</c> allows queries and dry runs only;
+        /// <c>ask</c> also allows modify runs, each approved by the user in Revit;
+        /// <c>auto</c> commits modify runs without the approval prompt.
+        /// Unknown values read as <c>ask</c>, so a typo never loosens the policy.
+        /// </summary>
+        public static string GetAgentPolicy() {
+            IConfigurationService cfg = GetConfigFile();
+            var policy = cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentPolicyKey,
+                PyRevitConsts.ConfigsAgentPolicyDefault);
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyReadOnly, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyReadOnly;
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyAuto, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyAuto;
+            return PyRevitConsts.ConfigsAgentPolicyAsk;
+        }
+
+        public static void SetAgentPolicy(string policy) {
+            if (policy != PyRevitConsts.ConfigsAgentPolicyReadOnly
+                && policy != PyRevitConsts.ConfigsAgentPolicyAsk
+                && policy != PyRevitConsts.ConfigsAgentPolicyAuto)
+                throw new PyRevitException($"Unknown agent policy \"{policy}\"");
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentPolicyKey, policy);
+        }
+
+        /// <summary>
+        /// Script engine used for agent runs that don't name one. Unknown values read as
+        /// <c>ironpython</c>.
+        /// </summary>
+        public static string GetAgentEngine() {
+            IConfigurationService cfg = GetConfigFile();
+            var engine = cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentEngineKey,
+                PyRevitConsts.ConfigsAgentEngineDefault);
+            return string.Equals(engine, PyRevitConsts.ConfigsAgentEngineCPython, StringComparison.OrdinalIgnoreCase)
+                ? PyRevitConsts.ConfigsAgentEngineCPython
+                : PyRevitConsts.ConfigsAgentEngineIronPython;
+        }
+
+        public static void SetAgentEngine(string engine) {
+            if (engine != PyRevitConsts.ConfigsAgentEngineIronPython && engine != PyRevitConsts.ConfigsAgentEngineCPython)
+                throw new PyRevitException($"Unknown agent engine \"{engine}\"");
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentEngineKey, engine);
         }
 
         // telemetry
