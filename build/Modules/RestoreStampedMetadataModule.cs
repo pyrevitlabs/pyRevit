@@ -1,4 +1,5 @@
 using Build.Helpers;
+using ModularPipelines.Attributes;
 using ModularPipelines.Context;
 using ModularPipelines.Modules;
 
@@ -8,6 +9,7 @@ namespace Build.Modules;
 /// Applies CI-stamped metadata downloaded from the stamped-release-metadata artifact
 /// back onto the working tree before pack/sign steps run on a fresh checkout.
 /// </summary>
+[DependsOn<RejectTestSignedBinariesModule>]
 public sealed class RestoreStampedMetadataModule : Module
 {
     protected override Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)

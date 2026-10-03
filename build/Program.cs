@@ -19,16 +19,34 @@ builder.Configuration.AddJsonFile(
 builder.Configuration.AddCommandLine(args);
 
 var argsSet = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
-var runCi = argsSet.Count == 0 || argsSet.Contains("ci");
 var runPack = argsSet.Contains("pack");
 var runSign = argsSet.Contains("sign");
 var runPublish = argsSet.Contains("publish");
 var runNotify = argsSet.Contains("notify");
 var runRelease = argsSet.Contains("release");
 var runWinget = argsSet.Contains("winget");
+var runLocal = argsSet.Contains("local") || argsSet.Contains("--local");
+var runSignTest = argsSet.Contains("sign-test");
+var runRemoveCert = argsSet.Contains("--remove-cert");
+var runCi = !runRemoveCert && (argsSet.Count == 0 || argsSet.Contains("ci") || runLocal);
+
+TestCertificateHelper.EnsureModesAllowed(
+    runLocal,
+    runSignTest,
+    runRemoveCert,
+    runPack,
+    runSign,
+    runPublish,
+    builder.Configuration["Build:Channel"] ?? "none",
+    string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase));
 
 builder.Services.AddOptions<BuildOptions>().Bind(builder.Configuration.GetSection("Build"));
 builder.Services.AddOptions<SigningOptions>().Bind(builder.Configuration.GetSection("Signing"));
+builder.Services.AddOptions<TestSigningOptions>().Bind(builder.Configuration.GetSection("TestSigning"));
+builder.Services.Configure<TestSigningOptions>(options =>
+{
+    options.Local = runLocal && !runRemoveCert;
+});
 builder.Services.AddOptions<PublishOptions>().Bind(builder.Configuration.GetSection("Publish"));
 
 var requireInstallerTooling = runPack || runSign || runPublish;
@@ -64,6 +82,7 @@ if (runCi)
 
 if (runPack || runSign || runPublish)
 {
+    builder.Services.AddModule<RejectTestSignedBinariesModule>();
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
     builder.Services.AddModule<BuildChocoModule>();
@@ -74,6 +93,16 @@ if (runSign || runPublish)
     builder.Services.AddModule<SignBinariesModule>();
     builder.Services.AddModule<SignDistInstallersModule>();
     builder.Services.AddModule<SignChocoPackageModule>();
+}
+
+if ((runLocal && !runRemoveCert) || runSignTest)
+{
+    builder.Services.AddModule<SignTestBinariesModule>();
+}
+
+if (runRemoveCert)
+{
+    builder.Services.AddModule<RemoveTestCertificateModule>();
 }
 
 if (runPublish)
