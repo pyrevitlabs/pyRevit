@@ -130,7 +130,7 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
   options = DB.SolidOptions(material_id, DB.ElementId.InvalidElementId)
   solid = DB.GeometryCreationUtilities.CreateExtrusionGeometry(loops, DB.XYZ.BasisZ, height, options)
   shape = DB.DirectShape.CreateElement(doc, DB.ElementId(DB.BuiltInCategory.OST_GenericModel))
-  shape.SetShape(framework.to_net_list(DB.GeometryObject, [solid]))
+  shape.SetShape(framework.to_clr_list(DB.GeometryObject, [solid]))
   ```
 
 ## Materials

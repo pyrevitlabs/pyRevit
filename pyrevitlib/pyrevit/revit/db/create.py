@@ -210,7 +210,7 @@ def copy_elements(element_ids, src_doc, dest_doc, return_ids=False):
     if element_ids:
         copied_ids = DB.ElementTransformUtils.CopyElements(
             src_doc,
-            framework.to_net_list(DB.ElementId, element_ids),
+            framework.to_clr_list(DB.ElementId, element_ids),
             dest_doc,
             None,
             cp_options,
@@ -623,13 +623,13 @@ def create_param_value_filter(
     filter_cats = []
     for cat in category_set:
         if DB.ParameterFilterElement.AllRuleParametersApplicable(
-            doc, framework.to_net_list(DB.ElementId, [cat.Id]), rules
+            doc, framework.to_clr_list(DB.ElementId, [cat.Id]), rules
         ):
             filter_cats.append(cat.Id)
 
     # create filter
     return DB.ParameterFilterElement.Create(
-        doc, filter_name, framework.to_net_list(DB.ElementId, filter_cats), rules
+        doc, filter_name, framework.to_clr_list(DB.ElementId, filter_cats), rules
     )
 
 
@@ -956,7 +956,7 @@ def create_floor(
     level = query.find_level(level, doc=doc)
     floor_type = query.find_type(DB.FloorType, floor_type, doc=doc)
     if hasattr(DB.Floor, "Create"):
-        loops = framework.to_net_list(
+        loops = framework.to_clr_list(
             DB.CurveLoop, [create_curve_loop(points, level.Elevation)]
         )
         floor = DB.Floor.Create(
@@ -990,7 +990,7 @@ def create_ceiling(points, ceiling_type, level=None, offset=8.0, doc=None):
     _require_transaction(doc, "create ceilings")
     level = query.find_level(level, doc=doc)
     ceiling_type = query.find_type(DB.CeilingType, ceiling_type, doc=doc)
-    loops = framework.to_net_list(
+    loops = framework.to_clr_list(
         DB.CurveLoop, [create_curve_loop(points, level.Elevation)]
     )
     ceiling = DB.Ceiling.Create(doc, loops, ceiling_type.Id, level.Id)
