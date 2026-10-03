@@ -162,6 +162,32 @@ class RollbackTests(TestCase):
         self.assertEqual(before, harness.comment(_wall()))
         self.assertFalse(harness.session().project.IsModifiable)
 
+    def test_function_local_transaction_is_rolled_back_after_an_error(self):
+        """An error cannot orphan a transaction that only a helper function can reach."""
+        before = harness.comment(_wall())
+        response = _modify(
+            "def change():\n"
+            "    transaction = DB.Transaction(doc, 'helper transaction')\n"
+            "    transaction.Start()\n"
+            "    doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-local')\n"
+            "    raise ValueError('boom')\n"
+            "change()\n".format(harness.COMMENTS),
+            inputs={"id": _wall()},
+        )
+        self.assertEqual("ValueError", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+        self.assertFalse(harness.session().project.IsModifiable)
+
+    def test_nonzero_system_exit_rolls_back_a_modify_run(self):
+        """A failing explicit exit rolls the guarded run back."""
+        before = harness.comment(_wall())
+        response = _modify(
+            harness.set_comment_script() + "raise SystemExit(1)\n",
+            inputs={"id": _wall(), "text": "agent-exit"},
+        )
+        self.assertEqual("SystemExit", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+
     def test_timeout_rolls_back_a_modify_run(self):
         """A modify run past its timeout is stopped and rolled back."""
         response = _modify("while True:\n    pass\n", timeout=3)

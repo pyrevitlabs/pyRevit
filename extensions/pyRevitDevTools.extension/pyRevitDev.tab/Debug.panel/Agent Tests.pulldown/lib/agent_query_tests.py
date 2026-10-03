@@ -36,6 +36,20 @@ class ResultTests(TestCase):
             self.assertEqual(result["wall"]["id"], result["id"], engine)
             self.assertEqual([1, "a", None], result["items"], engine)
 
+    def test_timeout_applies_while_serializing_an_iterable_result(self):
+        """Result materialization cannot continue after the run deadline."""
+        script = (
+            "import time\n"
+            "def values():\n"
+            "    for index in range(4):\n"
+            "        time.sleep(0.4)\n"
+            "        yield index\n"
+            "result = values()\n"
+        )
+        for engine in ENGINES:
+            response = run(script, engine=engine, timeout=1)
+            self.assertEqual("timeout", response["error"]["type"], engine)
+
 
 class ErrorTests(TestCase):
     """How script errors are reported."""

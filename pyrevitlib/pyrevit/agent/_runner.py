@@ -122,13 +122,19 @@ def _compile_source(source):
         )
 
 
-def _deadline_tracer(timeout_s, state):
-    deadline = time.time() + timeout_s
+def _execution_tracer(timeout_s, state, transactions):
+    """Track script-local transactions and enforce the execution deadline."""
+    deadline = time.time() + timeout_s if timeout_s else None
     events = [0]
 
     def trace(frame, event, arg):
+        _track_frame_transactions(frame, transactions)
         events[0] += 1
-        if events[0] % _DEADLINE_CHECK_INTERVAL == 0 and time.time() > deadline:
+        if (
+            deadline
+            and events[0] % _DEADLINE_CHECK_INTERVAL == 0
+            and time.time() > deadline
+        ):
             state["timed_out"] = True
             raise RunTimedOut(timeout_s)
         return trace
@@ -225,6 +231,9 @@ def run(context):
     workspace = None
     namespace = None
     left_open = 0
+    timeout_s = getattr(context, "TimeoutSeconds", None)
+    state = {"timed_out": False}
+    tracked_transactions = {}
     try:
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
@@ -235,24 +244,43 @@ def run(context):
                 "handlers ({}); a handler that catches everything can swallow "
                 "the timeout.".format(rewrite_problem)
             )
-        timeout_s = getattr(context, "TimeoutSeconds", None)
-        state = {"timed_out": False}
         started = time.time()
         stop_watchdog = None
+        sys.settrace(_execution_tracer(timeout_s, state, tracked_transactions))
         if timeout_s:
-            sys.settrace(_deadline_tracer(timeout_s, state))
             stop_watchdog = _start_watchdog(timeout_s, state)
         try:
-            exec(code, namespace)
+            script_exit = None
+            try:
+                exec(code, namespace)
+            except SystemExit as ex:
+                script_exit = ex
+
+            if script_exit is not None:
+                if not _is_successful_exit(script_exit):
+                    failed = True
+                    context.SetError(
+                        "SystemExit", _system_exit_message(script_exit), ""
+                    )
+            if not failed and "result" in namespace:
+                try:
+                    context.SetResult(
+                        json.dumps(namespace["result"], default=_to_jsonable)
+                    )
+                except Exception as ex:
+                    failed = True
+                    context.SetError(
+                        "ResultSerializationError",
+                        _safe_text(ex),
+                        _format_script_traceback(),
+                    )
+
+            if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
+                raise RunTimedOut(timeout_s)
         finally:
             if stop_watchdog:
                 stop_watchdog()
-            if timeout_s:
-                sys.settrace(None)
-        if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
-            raise RunTimedOut(timeout_s)
-    except SystemExit:
-        pass
+            sys.settrace(None)
     except RunTimedOut:
         failed = True
         context.SetError(
@@ -268,7 +296,7 @@ def run(context):
         context.SetError(error_type, message, _format_script_traceback())
     finally:
         if namespace is not None:
-            left_open = _roll_back_open_transactions(namespace)
+            left_open = _roll_back_open_transactions(namespace, tracked_transactions)
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
         _leave_workspace(context.Workspace, workspace)
@@ -285,12 +313,13 @@ def run(context):
     if failed or "result" not in namespace:
         return
 
-    try:
-        context.SetResult(json.dumps(namespace["result"], default=_to_jsonable))
-    except Exception as ex:
-        context.SetError(
-            "ResultSerializationError", _safe_text(ex), _format_script_traceback()
-        )
+
+def _is_successful_exit(error):
+    return error.code is None or error.code == 0
+
+
+def _system_exit_message(error):
+    return "The script exited with code {}".format(error.code)
 
 
 _TRANSACTION_ORDER = (
@@ -300,22 +329,21 @@ _TRANSACTION_ORDER = (
 )
 
 
-def _roll_back_open_transactions(namespace):
+def _roll_back_open_transactions(namespace, tracked_transactions):
     """Roll back Revit transactions the script started and never ended.
 
     Revit keeps such a transaction open after the run, and the abandoned
-    object is later finalized off the main thread, which crashes Revit. Only
-    objects still reachable from the script's globals, directly or one level
-    inside a list, tuple or dict, can be found here.
+    object is later finalized off the main thread, which crashes Revit. The
+    runner records transactions reachable from script-local frames while the
+    script executes, then also inspects script globals and their immediate
+    containers.
 
     Returns:
         int: how many transactions were rolled back.
     """
-    found = {}
+    found = tracked_transactions
     for value in _reachable_values(namespace):
-        for kind, rank in _TRANSACTION_ORDER:
-            if isinstance(value, kind):
-                found[id(value)] = (rank, value)
+        _track_transaction(value, found)
     rolled_back = 0
     for _, transaction in sorted(found.values(), key=lambda item: item[0]):
         try:
@@ -325,6 +353,27 @@ def _roll_back_open_transactions(namespace):
         except Exception:
             pass
     return rolled_back
+
+
+def _track_frame_transactions(frame, transactions):
+    try:
+        if frame.f_code.co_filename != SOURCE_NAME:
+            return
+        values = frame.f_locals.values()
+    except Exception:
+        return
+    for value in values:
+        _track_transaction(value, transactions)
+
+
+def _track_transaction(value, transactions):
+    for kind, rank in _TRANSACTION_ORDER:
+        try:
+            if isinstance(value, kind):
+                transactions[id(value)] = (rank, value)
+                return
+        except Exception:
+            pass
 
 
 def _reachable_values(namespace):
