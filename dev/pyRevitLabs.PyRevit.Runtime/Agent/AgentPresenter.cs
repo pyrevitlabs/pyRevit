@@ -84,11 +84,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// while the selection or isolation already applied stays in place.
         /// </remarks>
         public static JToken Show(UIApplication app, Request request, AgentDialogCapture dialogs) {
-            var uidoc = app.ActiveUIDocument
-                ?? throw new AgentException("no_active_document", "Revit has no active document.");
-            var doc = uidoc.Document;
-            if (!MatchesDocument(doc, request))
+            var uidoc = app.ActiveUIDocument;
+            var linksDocument = request.Action != "reset"
+                && (!string.IsNullOrEmpty(request.DocumentTitle) || !string.IsNullOrEmpty(request.DocumentPath));
+            if (linksDocument && (uidoc == null || !MatchesDocument(uidoc.Document, request)))
                 throw new AgentException("stale_link", "The link belongs to a different or closed document. Activate its document, then inspect the elements again.");
+            if (uidoc == null)
+                throw new AgentException("no_active_document", "Revit has no active document.");
+            var doc = uidoc.Document;
             var view = uidoc.ActiveView;
             if (doc.IsModifiable)
                 throw new AgentException("revit_busy", "Another transaction is open in the active document.");

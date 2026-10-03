@@ -297,8 +297,13 @@ namespace pyRevitCLI {
                     return cached;
 
                 var symbols = new List<LibrarySymbol>();
-                foreach (var file in files)
-                    symbols.AddRange(ParseFile(root, file));
+                foreach (var file in files) {
+                    try {
+                        symbols.AddRange(ParseFile(root, file));
+                    }
+                    catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException) {
+                    }
+                }
                 cached = symbols;
                 cachedFingerprint = fingerprint;
                 cachedRoot = root;
@@ -309,7 +314,10 @@ namespace pyRevitCLI {
         internal static string SourceFingerprint(IEnumerable<string> files) {
             return string.Join("\n", files
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .Select(path => path + "\0" + File.GetLastWriteTimeUtc(path).Ticks + "\0" + new FileInfo(path).Length));
+                .Select(path => {
+                    var info = new FileInfo(path);
+                    return path + "\0" + info.LastWriteTimeUtc.Ticks + "\0" + (info.Exists ? info.Length : -1);
+                }));
         }
 
         private static IEnumerable<string> SourceFiles(string root) {
