@@ -353,6 +353,28 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentEngineKey, engine);
         }
 
+        /// <summary>
+        /// Whether the MCP server loads user-authored skills from the current user's agent directory.
+        /// </summary>
+        public static bool GetAgentUserSkillsEnabled() {
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentUserSkillsEnabledKey,
+                PyRevitConsts.ConfigsAgentUserSkillsEnabledDefault);
+        }
+
+        /// <summary>
+        /// Enables or disables user-authored MCP skills for the current user.
+        /// </summary>
+        public static void SetAgentUserSkillsEnabled(bool state) {
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentUserSkillsEnabledKey,
+                state);
+        }
+
         // telemetry
         public static bool GetTelemetryStatus() {
             IConfigurationService cfg = GetConfigFile();

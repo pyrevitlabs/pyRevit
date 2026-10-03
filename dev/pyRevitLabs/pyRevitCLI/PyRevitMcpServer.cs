@@ -166,6 +166,22 @@ namespace pyRevitCLI {
         /// </summary>
         private JObject ResolveMissingApiName(JObject arguments, JObject run) {
             var error = run["error"] as JObject;
+            var library = error == null ? null : PyRevitMcpRunResults.MissingLibraryName(error);
+            if (library != null) {
+                try {
+                    var similar = PyRevitLibraryIndex.Similar(library.Value.Member, library.Value.Module);
+                    if (similar.Count == 0 && library.Value.Module != null)
+                        similar = PyRevitLibraryIndex.Similar(library.Value.Member);
+                    error["hint"] = similar.Count > 0
+                        ? $"'{library.Value.Member}' is not in {library.Value.Module ?? "that module"}. Similar: {string.Join("; ", similar)}. "
+                            + "lookup_pyrevit_api(query=...) shows the full docstring."
+                        : $"Nothing named like '{library.Value.Member}' in pyrevitlib or rpw; search with lookup_pyrevit_api(query='<what you need>').";
+                }
+                catch (Exception) {
+                }
+                return run;
+            }
+
             var missing = error == null ? null : PyRevitMcpRunResults.MissingRevitApiName(error);
             if (missing == null)
                 return run;
@@ -176,7 +192,7 @@ namespace pyRevitCLI {
                 if (hint != null)
                     error["hint"] = hint;
             }
-            catch (AgentClientException) {
+            catch (Exception) {
             }
             return run;
         }
@@ -218,6 +234,21 @@ namespace pyRevitCLI {
                 (JObject)CallRevit(arguments, "run", RunParameters(arguments, mode))));
         }
 
+        private JToken NavigateRevitLink(JObject arguments) {
+            var link = arguments["link"] as JObject
+                ?? throw new AgentClientException("invalid_params", "'link' must be an element reference returned by inspect_elements.");
+            if (link.Value<string>("destination") != "element" || link["ids"] is not JArray ids || ids.Count == 0)
+                throw new AgentClientException("invalid_params", "Only non-empty element links are supported.");
+            var expected = link["document"] as JObject
+                ?? throw new AgentClientException("invalid_params", "The link has no document reference.");
+            return CallRevit(arguments, "show", new JObject {
+                ["action"] = arguments.Value<string>("action") ?? "select",
+                ["ids"] = ids,
+                ["zoom"] = arguments.Value<bool?>("zoom") ?? true,
+                ["document"] = expected,
+            });
+        }
+
         private static JObject RunParameters(JObject arguments, string mode) {
             var script = arguments.Value<string>("script");
             if (string.IsNullOrWhiteSpace(script))
@@ -236,6 +267,27 @@ namespace pyRevitCLI {
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
             return parameters;
+        }
+
+        private JToken RunAutomation(JObject arguments) {
+            var operation = PyRevitAutomationOperations.Resolve(
+                arguments.Value<string>("id"), arguments["inputs"]);
+            if (operation.Value<bool>("requires_document")) {
+                var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
+                if (context?["document"] == null || context["document"].Type == JTokenType.Null)
+                    throw new AgentClientException("no_active_document", $"'{operation.Value<string>("id")}' requires an active document.");
+            }
+            var parameters = new JObject {
+                ["script"] = operation.Value<string>("source"),
+                ["mode"] = "query",
+                ["title"] = operation.Value<string>("title"),
+                ["inputs"] = operation["inputs"],
+            };
+            if (arguments["engine"] != null)
+                parameters["engine"] = arguments["engine"];
+            if (arguments["timeout_s"] != null)
+                parameters["timeout_s"] = arguments["timeout_s"];
+            return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
         }
 
         private static JToken GetRun(JObject arguments) {
@@ -382,11 +434,16 @@ namespace pyRevitCLI {
         /// </remarks>
         private List<McpTool> CreateTools() {
             return new List<McpTool> {
+                new McpTool("list_skills", readOnly: true, new string[0],
+                    () => ("List the available task skills with their source and content hash. User skills are disabled until the user explicitly enables them in pyRevit configuration.",
+                        new JObject()),
+                    _ => PyRevitAgentSkills.List()),
+
                 new McpTool("get_skill", readOnly: true, new[] { "name" },
                     () => {
                         var skills = PyRevitAgentSkills.Load();
                         return ("Read a skill: task guidance for Revit scripting. Read revit-scripting before your first script, then the skill for your task. "
-                            + "Skills: " + string.Join("; ", skills.Select(skill => skill.Name + " - " + skill.Description)),
+                            + "Use list_skills for source and hash metadata. Skills: " + string.Join("; ", skills.Select(PyRevitAgentSkills.Summary)),
                             new JObject {
                                 ["name"] = new JObject {
                                     ["type"] = "string",
@@ -426,6 +483,37 @@ namespace pyRevitCLI {
                         ["parameters"] = arguments["parameters"] ?? true,
                     })),
 
+                new McpTool("lookup_pyrevit_api", readOnly: true, new[] { "query" },
+                    () => ("Search pyrevitlib (pyrevit.revit: query, create, update, units, ui, Transaction) and rpw (rpw.db) before writing "
+                        + "raw Revit API code. Pass a module ('pyrevit.revit.db.create') to list its functions, a function name ('find_type', "
+                        + "'pyrevit.revit.db.create.create_gable_roof') for its signature and docstring, or words ('section box', 'room') to search. "
+                        + "Works without Revit.",
+                        new JObject {
+                            ["query"] = new JObject { ["type"] = "string", ["description"] = "Module, function or class name, or search words." },
+                        }),
+                    arguments => PyRevitLibraryIndex.Lookup(arguments.Value<string>("query"))),
+
+                new McpTool("list_automation", readOnly: true, new string[0],
+                    () => ("List the reviewed pyRevit and rpw automation APIs by stable identifier. Results are paginated and work without Revit.",
+                        new JObject {
+                            ["offset"] = new JObject { ["type"] = "integer", ["minimum"] = 0, ["description"] = "Zero-based result offset." },
+                            ["limit"] = new JObject { ["type"] = "integer", ["minimum"] = 1, ["maximum"] = 50, ["description"] = "Results to return, default 25." },
+                        }),
+                    arguments => PyRevitLibraryIndex.ListAutomation(
+                        arguments.Value<int?>("offset") ?? 0,
+                        arguments.Value<int?>("limit") ?? 25)),
+
+                new McpTool("run_automation", readOnly: true, new[] { "id", "inputs" },
+                    () => ("Run a reviewed read-only automation operation with its bounded JSON input. This does not accept Python source, module names or callable names.",
+                        new JObject {
+                            ["id"] = new JObject { ["type"] = "string", ["description"] = "Invocable automation identifier, such as pyrevit.units.parse-length." },
+                            ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
+                            ["engine"] = new JObject { ["type"] = "string", ["enum"] = new JArray("ironpython", "cpython") },
+                            ["timeout_s"] = new JObject { ["type"] = "number", ["minimum"] = 0.001, ["maximum"] = 3600 },
+                            ["revit"] = RevitProperty(),
+                        }),
+                    RunAutomation),
+
                 new McpTool("lookup_revit_api", readOnly: true, new[] { "name" },
                     () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers.",
                         new JObject {
@@ -464,6 +552,16 @@ namespace pyRevitCLI {
                         ["categories"] = arguments["categories"],
                         ["zoom"] = arguments["zoom"] ?? false,
                     })),
+
+                new McpTool("navigate_revit_link", readOnly: true, new[] { "link" },
+                    () => ("Navigate an element link returned by inspect_elements. The active Revit document must still match the link; stale links return an actionable error. This selects or temporarily presents elements only.",
+                        new JObject {
+                            ["link"] = new JObject { ["type"] = "object", ["description"] = "An element link from inspect_elements." },
+                            ["action"] = new JObject { ["type"] = "string", ["enum"] = new JArray("select", "isolate", "hide") },
+                            ["zoom"] = new JObject { ["type"] = "boolean", ["description"] = "Zoom to the linked elements (default true)." },
+                            ["revit"] = RevitProperty(),
+                        }),
+                    NavigateRevitLink),
 
                 new McpTool("capture_view", readOnly: true, new string[0],
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "

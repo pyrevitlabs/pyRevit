@@ -29,6 +29,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             public List<long> Ids = new List<long>();
             public List<BuiltInCategory> Categories = new List<BuiltInCategory>();
             public bool Zoom;
+            public string DocumentTitle;
+            public string DocumentPath;
         }
 
         public static Request Parse(JObject parameters) {
@@ -62,6 +64,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (action != "reset" && request.Ids.Count == 0 && request.Categories.Count == 0)
                 throw new AgentException("invalid_params", "Pass 'ids' and/or 'categories'.");
 
+            if (parameters["document"] is JObject document) {
+                request.DocumentTitle = document.Value<string>("title");
+                request.DocumentPath = document.Value<string>("path");
+                if (string.IsNullOrEmpty(request.DocumentTitle) && string.IsNullOrEmpty(request.DocumentPath))
+                    throw new AgentException("invalid_params", "'document' must name the source document.");
+            }
+
             return request;
         }
 
@@ -75,8 +84,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// while the selection or isolation already applied stays in place.
         /// </remarks>
         public static JToken Show(UIApplication app, Request request, AgentDialogCapture dialogs) {
-            var uidoc = app.ActiveUIDocument
-                ?? throw new AgentException("no_active_document", "Revit has no active document.");
+            var uidoc = app.ActiveUIDocument;
+            var linksDocument = request.Action != "reset"
+                && (!string.IsNullOrEmpty(request.DocumentTitle) || !string.IsNullOrEmpty(request.DocumentPath));
+            if (linksDocument && (uidoc == null || !MatchesDocument(uidoc.Document, request)))
+                throw new AgentException("stale_link", "The link belongs to a different or closed document. Activate its document, then inspect the elements again.");
+            if (uidoc == null)
+                throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
             var view = uidoc.ActiveView;
             if (doc.IsModifiable)
@@ -134,6 +148,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Zoom(uidoc, targets, dialogs, response);
             uidoc.RefreshActiveView();
             return response;
+        }
+
+        private static bool MatchesDocument(Document document, Request request) {
+            if (string.IsNullOrEmpty(request.DocumentTitle) && string.IsNullOrEmpty(request.DocumentPath))
+                return true;
+            if (!string.IsNullOrEmpty(request.DocumentPath)
+                && !string.Equals(document.PathName, request.DocumentPath, StringComparison.OrdinalIgnoreCase))
+                return false;
+            return string.IsNullOrEmpty(request.DocumentTitle)
+                || string.Equals(
+                    document.Title,
+                    request.DocumentTitle,
+                    string.IsNullOrEmpty(request.DocumentPath)
+                        ? StringComparison.Ordinal
+                        : StringComparison.OrdinalIgnoreCase);
         }
 
         private static void Zoom(UIDocument uidoc, ICollection<ElementId> targets, AgentDialogCapture dialogs, JObject response) {

@@ -5,9 +5,10 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
-public class McpServerTests : IDisposable {
+public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
-        "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_revit_api", "show_elements", "capture_view", "get_run",
+        "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
+        "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "get_run",
     };
 
     private readonly FakeAgentHost host = new FakeAgentHost();
@@ -102,7 +103,10 @@ public class McpServerTests : IDisposable {
         var tools = ((JArray)Single(Request(1, "tools/list"))["result"]["tools"]).Cast<JObject>().ToList();
 
         Assert.Equal(
-            new[] { "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_revit_api", "show_elements", "capture_view", "run_query", "run_modify", "get_run" },
+            new[] {
+                "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
+                "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "run_query", "run_modify", "get_run",
+            },
             tools.Select(tool => tool.Value<string>("name")));
         foreach (var tool in tools) {
             var name = tool.Value<string>("name");
@@ -125,6 +129,9 @@ public class McpServerTests : IDisposable {
         Assert.Equal(new[] { "script", "title" }, tools["run_modify"]["inputSchema"]["required"].Select(token => token.Value<string>()));
         Assert.Equal(new[] { "run_id" }, tools["get_run"]["inputSchema"]["required"].Select(token => token.Value<string>()));
         Assert.Equal(new[] { "ids" }, tools["inspect_elements"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "id", "inputs" }, tools["run_automation"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "query" }, tools["lookup_pyrevit_api"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "link" }, tools["navigate_revit_link"]["inputSchema"]["required"].Select(token => token.Value<string>()));
         Assert.Contains("revit-scripting", tools["get_skill"]["inputSchema"]["properties"]["name"]["enum"].Select(token => token.Value<string>()));
     }
 

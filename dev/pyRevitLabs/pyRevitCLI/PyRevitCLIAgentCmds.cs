@@ -33,10 +33,11 @@ namespace pyRevitCLI {
                 return;
             }
 
-            Console.WriteLine(string.Format("Agent host: {0} (policy: {1}, default engine: {2})",
+            Console.WriteLine(string.Format("Agent host: {0} (policy: {1}, default engine: {2}, user skills: {3})",
                 PyRevitConfigs.GetAgentEnabled() ? "enabled" : "disabled",
                 PyRevitConfigs.GetAgentPolicy(),
-                PyRevitConfigs.GetAgentEngine()));
+                PyRevitConfigs.GetAgentEngine(),
+                PyRevitConfigs.GetAgentUserSkillsEnabled() ? "enabled" : "disabled"));
 
             if (instances.Count == 0) {
                 Console.WriteLine("No running Revit with the agent host.");
@@ -148,6 +149,15 @@ namespace pyRevitCLI {
                 PyRevitConfigs.SetAgentEngine(engine);
             else
                 Console.WriteLine("Agent default engine: " + PyRevitConfigs.GetAgentEngine());
+        }
+
+        public static void ConfigureUserSkills(bool? enable) {
+            if (enable.HasValue) {
+                PyRevitConfigs.SetAgentUserSkillsEnabled(enable.Value);
+                Console.WriteLine("Agent user skills {0}.", enable.Value ? "enabled" : "disabled");
+            }
+            else
+                Console.WriteLine("Agent user skills are {0}", PyRevitConfigs.GetAgentUserSkillsEnabled() ? "Enabled" : "Disabled");
         }
 
         /// <summary>
