@@ -900,14 +900,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     searchPaths.Add(sitePackagesDir);
             }
 
-            return searchPaths;
+            return SearchPaths.DedupeKeepingFirstOccurrence(searchPaths).ToList();
         }
 
         /// <summary>
         /// Builds the search paths for a startup script, including extension lib folders and pyRevit core paths.
         /// </summary>
         /// <param name="extension">The extension for which to build search paths.</param>
-        /// <returns>List of search paths.</returns>
+        /// <returns>List of search paths, each folder present once.</returns>
         private List<string> BuildSearchPaths(ParsedExtension extension)
         {
             var searchPaths = new List<string> { extension.Directory };
@@ -945,7 +945,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
             }
 
-            return searchPaths;
+            return SearchPaths.DedupeKeepingFirstOccurrence(searchPaths).ToList();
         }
 
         /// <summary>
