@@ -354,8 +354,7 @@ def create_revision_sheetset(
 
 
 def load_family(family_file, doc=None):
-    """
-    Loads Family from specified file
+    """Loads Family from specified file.
 
     Args:
         family_file (str): Required. Fully qualified filename of the Family file, usually ending in .rfa.
@@ -1785,11 +1784,14 @@ def _schedulable_fields_by_name(definition, doc):
     Display names win when both spell the same key.
     """
     available = {}
+    get_elementid_value = get_elementid_value_func()
     for field in definition.GetSchedulableFields():
         parameter_id = field.ParameterId
-        if parameter_id is not None and parameter_id.IntegerValue < -1:
+        if parameter_id is not None and get_elementid_value(parameter_id) < -1:
             try:
-                available[str(DB.BuiltInParameter(parameter_id.IntegerValue))] = field
+                available[
+                    str(DB.BuiltInParameter(get_elementid_value(parameter_id)))
+                ] = field
             except Exception:
                 pass
     for field in definition.GetSchedulableFields():

@@ -72,7 +72,7 @@ namespace pyRevitCLI {
 
         private static readonly object cacheLock = new object();
         private static List<LibrarySymbol> cached;
-        private static DateTime cachedStamp;
+        private static string cachedFingerprint;
         private static string cachedRoot;
 
         public static string LibraryRoot {
@@ -291,19 +291,25 @@ namespace pyRevitCLI {
                 throw new AgentClientException("library_not_found", "pyrevitlib was not found next to this CLI or in a registered clone.");
 
             var files = SourceFiles(root).ToList();
-            var stamp = files.Count == 0 ? DateTime.MinValue : files.Max(File.GetLastWriteTimeUtc);
+            var fingerprint = SourceFingerprint(files);
             lock (cacheLock) {
-                if (cached != null && cachedRoot == root && cachedStamp >= stamp)
+                if (cached != null && cachedRoot == root && cachedFingerprint == fingerprint)
                     return cached;
 
                 var symbols = new List<LibrarySymbol>();
                 foreach (var file in files)
                     symbols.AddRange(ParseFile(root, file));
                 cached = symbols;
-                cachedStamp = stamp;
+                cachedFingerprint = fingerprint;
                 cachedRoot = root;
                 return symbols;
             }
+        }
+
+        internal static string SourceFingerprint(IEnumerable<string> files) {
+            return string.Join("\n", files
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Select(path => path + "\0" + File.GetLastWriteTimeUtc(path).Ticks + "\0" + new FileInfo(path).Length));
         }
 
         private static IEnumerable<string> SourceFiles(string root) {

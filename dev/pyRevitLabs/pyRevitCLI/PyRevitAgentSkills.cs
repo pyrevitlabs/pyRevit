@@ -134,7 +134,7 @@ namespace pyRevitCLI {
 
             var root = Path.GetFullPath(skill.Directory) + Path.DirectorySeparatorChar;
             var path = Path.GetFullPath(Path.Combine(skill.Directory, string.IsNullOrWhiteSpace(file) ? SkillFile : file));
-            if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || IsReparsePoint(path))
+            if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !path.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || HasReparsePoint(skill.Directory, path))
                 throw new AgentClientException("invalid_params", "'file' must be a markdown file inside the skill folder.");
             if (!File.Exists(path))
                 throw new AgentClientException("skill_not_found", $"Skill '{skill.Name}' has no file '{file}'.");
@@ -202,6 +202,19 @@ namespace pyRevitCLI {
         private static bool IsReparsePoint(string path) {
             return (File.Exists(path) || System.IO.Directory.Exists(path))
                 && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+        }
+
+        private static bool HasReparsePoint(string root, string path) {
+            if (IsReparsePoint(path))
+                return true;
+            var boundary = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            for (var current = new DirectoryInfo(Path.GetDirectoryName(path)); current != null; current = current.Parent) {
+                if (IsReparsePoint(current.FullName))
+                    return true;
+                if (string.Equals(current.FullName, boundary, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+            return true;
         }
 
         private static string Hash(string path) {

@@ -145,4 +145,18 @@ public class LibraryIndexTests : IDisposable {
         var nested = PyRevitLibraryIndex.ParseFile(root, Path.Combine(root, "pkg", "sub", "mod.py"));
         Assert.Equal("pkg.sub.mod", Named(nested, "top").Module);
     }
+
+    [Fact]
+    public void SourceFingerprintChangesWhenAFileIsRemoved() {
+        var first = Path.Combine(root, "first.py");
+        var second = Path.Combine(root, "second.py");
+        File.WriteAllText(first, "def first():\n    pass\n");
+        File.WriteAllText(second, "def second():\n    pass\n");
+
+        var before = PyRevitLibraryIndex.SourceFingerprint(new[] { first, second });
+        File.Delete(second);
+        var after = PyRevitLibraryIndex.SourceFingerprint(new[] { first });
+
+        Assert.NotEqual(before, after);
+    }
 }

@@ -151,10 +151,10 @@ Names, descriptions, files and paths are bounded and validated; reparse-point pa
 
 `inspect_elements` returns an element `link` with a destination, document reference and element
 ids. Pass that object to `navigate_revit_link` to select, zoom to, isolate or temporarily hide
-the same elements. The server resolves the selected Revit session first and compares its active
-document with the link. If the document has closed or changed, it returns `stale_link`; activate
-the intended document and inspect the elements again. Navigation only uses the fixed
-presentation operation and never executes a command or changes model elements.
+the same elements. The Revit host compares its active document with the link immediately before
+presenting elements. If the document has closed or changed, it returns `stale_link`; activate the
+intended document and inspect the elements again. Navigation only uses the fixed presentation
+operation and never executes a command or changes model elements.
 
 ### Script contract
 

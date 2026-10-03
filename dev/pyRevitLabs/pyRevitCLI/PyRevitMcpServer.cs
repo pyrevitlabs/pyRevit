@@ -241,26 +241,12 @@ namespace pyRevitCLI {
                 throw new AgentClientException("invalid_params", "Only non-empty element links are supported.");
             var expected = link["document"] as JObject
                 ?? throw new AgentClientException("invalid_params", "The link has no document reference.");
-            var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
-            var active = context?["document"] as JObject;
-            if (active == null || !SameDocument(active, expected))
-                throw new AgentClientException("stale_link", "The link belongs to a different or closed document. Activate its document, then inspect the elements again.");
             return CallRevit(arguments, "show", new JObject {
                 ["action"] = arguments.Value<string>("action") ?? "select",
                 ["ids"] = ids,
                 ["zoom"] = arguments.Value<bool?>("zoom") ?? true,
+                ["document"] = expected,
             });
-        }
-
-        private static bool SameDocument(JObject active, JObject expected) {
-            var expectedPath = expected.Value<string>("path");
-            var expectedTitle = expected.Value<string>("title");
-            if (!string.IsNullOrEmpty(expectedPath)) {
-                var samePath = string.Equals(active.Value<string>("path"), expectedPath, StringComparison.OrdinalIgnoreCase);
-                return samePath && (string.IsNullOrEmpty(expectedTitle)
-                    || string.Equals(active.Value<string>("title"), expectedTitle, StringComparison.OrdinalIgnoreCase));
-            }
-            return string.Equals(active.Value<string>("title"), expected.Value<string>("title"), StringComparison.Ordinal);
         }
 
         private static JObject RunParameters(JObject arguments, string mode) {
