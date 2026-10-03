@@ -159,4 +159,14 @@ public class LibraryIndexTests : IDisposable {
 
         Assert.NotEqual(before, after);
     }
+
+    [Fact]
+    public void SourceFingerprintToleratesAFileDeletedAfterListing() {
+        var present = Path.Combine(root, "present.py");
+        File.WriteAllText(present, "def present():\n    pass\n");
+
+        var fingerprint = PyRevitLibraryIndex.SourceFingerprint(new[] { present, Path.Combine(root, "gone.py") });
+
+        Assert.Contains("gone.py", fingerprint);
+    }
 }
