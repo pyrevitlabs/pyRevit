@@ -103,6 +103,11 @@ public static class TestCertificateHelper
         {
             throw new InvalidOperationException("'local' and 'sign-test' cannot be combined.");
         }
+
+        if (signTest && removeCert)
+        {
+            throw new InvalidOperationException("'sign-test' and '--remove-cert' cannot be combined.");
+        }
     }
 
     public static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays)

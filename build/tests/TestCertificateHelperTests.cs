@@ -72,6 +72,18 @@ public sealed class TestCertificateHelperTests
     }
 
     [TestMethod]
+    public void EnsureModesAllowed_rejects_sign_test_with_remove_cert()
+    {
+        Assert.ThrowsExactly<InvalidOperationException>(() => Ensure(signTest: true, removeCert: true));
+    }
+
+    [TestMethod]
+    public void EnsureModesAllowed_accepts_local_with_remove_cert()
+    {
+        Ensure(local: true, removeCert: true);
+    }
+
+    [TestMethod]
     public void LocalSubject_includes_machine_name()
     {
         Assert.AreEqual("CN=pyRevit Local Dev (BOX)", TestCertificateHelper.LocalSubject("BOX"));
