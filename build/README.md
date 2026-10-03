@@ -123,7 +123,7 @@ The `ci` pipeline also runs the configuration core, INI backend, and parser pari
 | `winget` | Generate WinGet manifests (machine-scope installers only), strip `elevationProhibited` if present, submit PRs to winget-pkgs |
 | `notify` | Comment on linked GitHub issues |
 
-`local` creates `CN=pyRevit Local Dev (<machine>)` on first use (one year, non-exportable key), trusts it for the current user (Windows asks once to confirm the root), and renews it when near expiry:
+`local` creates `CN=pyRevit Local Dev (<machine>)` on first use (one-year, non-exportable key), trusts it for the current user (Windows asks once to confirm the root), and renews it when near expiry:
 
 ```powershell
 dotnet run -c Debug -- ci local

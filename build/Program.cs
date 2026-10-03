@@ -38,7 +38,7 @@ TestCertificateHelper.EnsureModesAllowed(
     runSign,
     runPublish,
     builder.Configuration["Build:Channel"] ?? "none",
-    !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")));
+    string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase));
 
 builder.Services.AddOptions<BuildOptions>().Bind(builder.Configuration.GetSection("Build"));
 builder.Services.AddOptions<SigningOptions>().Bind(builder.Configuration.GetSection("Signing"));
@@ -46,7 +46,6 @@ builder.Services.AddOptions<TestSigningOptions>().Bind(builder.Configuration.Get
 builder.Services.Configure<TestSigningOptions>(options =>
 {
     options.Local = runLocal && !runRemoveCert;
-    options.RemoveCert = runRemoveCert;
 });
 builder.Services.AddOptions<PublishOptions>().Bind(builder.Configuration.GetSection("Publish"));
 
