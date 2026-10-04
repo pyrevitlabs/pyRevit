@@ -29,4 +29,24 @@ public sealed class SigningHelperTests
 
         Assert.AreEqual("1 file(s): 1 .nupkg", summary);
     }
+
+    [TestMethod]
+    public void BuildSignArguments_places_files_before_shared_and_provider_options()
+    {
+        var invocation = new SignInvocation("certificate-store", ["--certificate-fingerprint", "AB"], "Test signing", "Binaries");
+
+        var arguments = SigningHelper.BuildSignArguments(invocation, ["a.dll", "b.exe"]);
+
+        CollectionAssert.AreEqual(
+            new[] { "code", "certificate-store", "a.dll", "b.exe", "--file-digest", "SHA256", "--certificate-fingerprint", "AB" },
+            arguments);
+    }
+
+    [TestMethod]
+    public void SignInvocation_defaults_to_an_empty_environment()
+    {
+        var invocation = new SignInvocation("certificate-store", [], "Test signing", "Binaries");
+
+        Assert.AreEqual(0, invocation.EnvironmentVariables.Count);
+    }
 }

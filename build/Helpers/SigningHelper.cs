@@ -61,11 +61,7 @@ public static class SigningHelper
         string summaryLabel,
         CancellationToken cancellationToken)
     {
-        return RunSignToolAsync(
-            context,
-            files,
-            "Signing",
-            summaryLabel,
+        var invocation = new SignInvocation(
             "trusted-signing",
             [
                 "--trusted-signing-account", signingOptions.SigningAccountName,
@@ -74,16 +70,40 @@ public static class SigningHelper
                 "--timestamp-url", buildOptions.TimestampUrl,
                 "--timestamp-digest", "SHA256",
             ],
-            new CommandExecutionOptions
+            "Signing",
+            summaryLabel)
+        {
+            EnvironmentVariables = new Dictionary<string, string?>
             {
-                EnvironmentVariables = new Dictionary<string, string?>
-                {
-                    ["AZURE_TENANT_ID"] = signingOptions.TenantId,
-                    ["AZURE_CLIENT_ID"] = signingOptions.ClientId,
-                    ["AZURE_CLIENT_SECRET"] = signingOptions.ClientSecret,
-                },
+                ["AZURE_TENANT_ID"] = signingOptions.TenantId,
+                ["AZURE_CLIENT_ID"] = signingOptions.ClientId,
+                ["AZURE_CLIENT_SECRET"] = signingOptions.ClientSecret,
             },
-            cancellationToken);
+        };
+
+        return RunSignToolAsync(context, invocation, files, cancellationToken);
+    }
+
+    /// <summary>
+    /// Signs <paramref name="files"/> in place with a test certificate from the Windows certificate store.
+    /// Never touches <see cref="SigningOptions"/>, so production credentials cannot reach this path.
+    /// </summary>
+    /// <param name="fingerprint">SHA-256 fingerprint; the sign tool rejects a SHA-1 thumbprint.</param>
+    /// <remarks>Re-signing an already signed file replaces its signature, so repeated <c>ci local</c> runs succeed.</remarks>
+    public static Task<CommandResult> SignFilesWithTestCertificateAsync(
+        IModuleContext context,
+        string fingerprint,
+        IEnumerable<string> files,
+        string summaryLabel,
+        CancellationToken cancellationToken)
+    {
+        var invocation = new SignInvocation(
+            "certificate-store",
+            ["--certificate-fingerprint", fingerprint],
+            "Test signing",
+            summaryLabel);
+
+        return RunSignToolAsync(context, invocation, files, cancellationToken);
     }
 
     /// <summary>
@@ -92,12 +112,8 @@ public static class SigningHelper
     /// </summary>
     internal static async Task<CommandResult> RunSignToolAsync(
         IModuleContext context,
+        SignInvocation invocation,
         IEnumerable<string> files,
-        string summarySection,
-        string summaryLabel,
-        string provider,
-        IEnumerable<string> providerArguments,
-        CommandExecutionOptions executionOptions,
         CancellationToken cancellationToken)
     {
         var fileList = files.ToArray();
@@ -106,22 +122,29 @@ public static class SigningHelper
             throw new InvalidOperationException("No files were provided for signing.");
         }
 
-        context.Summary.KeyValue(summarySection, summaryLabel, BuildSigningSummary(fileList));
+        context.Summary.KeyValue(invocation.SummarySection, invocation.SummaryLabel, BuildSigningSummary(fileList));
 
         await EnsureSignToolInstalledAsync(context, cancellationToken);
-
-        var arguments = new List<string> { "code", provider };
-        arguments.AddRange(fileList);
-        arguments.AddRange(["--file-digest", "SHA256"]);
-        arguments.AddRange(providerArguments);
 
         return await context.Shell.Command.ExecuteCommandLineTool(
             new GenericCommandLineToolOptions(GetSignExecutablePath())
             {
-                Arguments = arguments,
+                Arguments = BuildSignArguments(invocation, fileList),
             },
-            executionOptions,
+            new CommandExecutionOptions
+            {
+                EnvironmentVariables = invocation.EnvironmentVariables.ToDictionary(),
+            },
             cancellationToken: cancellationToken);
+    }
+
+    internal static List<string> BuildSignArguments(SignInvocation invocation, IEnumerable<string> files)
+    {
+        var arguments = new List<string> { "code", invocation.Provider };
+        arguments.AddRange(files);
+        arguments.AddRange(["--file-digest", "SHA256"]);
+        arguments.AddRange(invocation.ProviderArguments);
+        return arguments;
     }
 
     public static IEnumerable<string> FindPyRevitBinaries(string rootFolder)

@@ -23,7 +23,7 @@ public sealed class RejectTestSignedBinariesModule : Module
 {
     protected override Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
     {
-        TestCertificateHelper.EnsureNoTestSignedBinaries(PyRevitPaths.BinPath);
+        TestSignatureDetector.EnsureNoTestSignedBinaries(PyRevitPaths.BinPath);
         return Task.CompletedTask;
     }
 }

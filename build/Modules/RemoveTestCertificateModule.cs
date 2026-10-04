@@ -9,7 +9,7 @@ public sealed class RemoveTestCertificateModule : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
     {
-        await TestCertificateHelper.RemoveLocalCertificateAsync(cancellationToken);
+        await TestCertificateStore.RemoveLocalCertificateAsync(cancellationToken);
         context.Summary.KeyValue("Test signing", "Certificate", "removed");
     }
 }

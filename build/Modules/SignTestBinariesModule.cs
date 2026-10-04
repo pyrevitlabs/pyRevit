@@ -26,7 +26,7 @@ public sealed class SignTestBinariesModule(IOptions<TestSigningOptions> testSign
     {
         var options = testSigningOptions.Value;
         var fingerprint = options.Local
-            ? await TestCertificateHelper.EnsureLocalCertificateAsync(cancellationToken)
+            ? await TestCertificateStore.EnsureLocalCertificateAsync(cancellationToken)
             : options.Fingerprint;
 
         if (string.IsNullOrWhiteSpace(fingerprint))
@@ -35,9 +35,9 @@ public sealed class SignTestBinariesModule(IOptions<TestSigningOptions> testSign
                 "sign-test needs the throwaway certificate fingerprint in TestSigning__Fingerprint.");
         }
 
-        TestCertificateHelper.EnsureFingerprintIsTestCertificate(fingerprint);
+        TestCertificateStore.EnsureFingerprintIsTestCertificate(fingerprint);
 
         var files = SigningHelper.FindPyRevitBinaries(PyRevitPaths.BinPath).ToArray();
-        await TestCertificateHelper.SignFilesAsync(context, fingerprint, files, "Binaries", cancellationToken);
+        await SigningHelper.SignFilesWithTestCertificateAsync(context, fingerprint, files, "Binaries", cancellationToken);
     }
 }

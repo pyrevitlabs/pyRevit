@@ -53,4 +53,56 @@ public sealed record PipelineModes(
 
     /// <summary>Runs <c>SignTestBinariesModule</c>, with either the developer or the CI throwaway certificate.</summary>
     public bool SignsTestBinaries => SignsWithLocalCertificate || SignTest;
+
+    /// <summary>
+    /// Guards the test-signing modes. Throws when they are combined with production modes, run on a shipping
+    /// channel, run off Windows, or (for the developer-certificate modes) run under CI.
+    /// </summary>
+    /// <param name="channel">
+    /// Read from the bound <c>Build</c> configuration section before the host is built, so a later
+    /// <c>Configure&lt;BuildOptions&gt;</c> override of <c>Channel</c> would not be seen here.
+    /// </param>
+    /// <remarks>Runs before any module is registered, so a refused combination fails in under a second.</remarks>
+    public void EnsureTestSigningAllowed(string channel, bool runningOnCi, bool runningOnWindows)
+    {
+        if (!UsesTestCertificates)
+        {
+            return;
+        }
+
+        if (!runningOnWindows)
+        {
+            throw new PlatformNotSupportedException(
+                "Test signing (local, sign-test, --remove-cert) is only supported on Windows.");
+        }
+
+        if (Packages)
+        {
+            throw new InvalidOperationException(
+                "Test signing (local, sign-test, --remove-cert) cannot be combined with pack, sign or publish.");
+        }
+
+        if (string.Equals(channel, "wip", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(channel, "release", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"Test signing refuses to run on the '{channel}' channel.");
+        }
+
+        if ((Local || RemoveCert) && runningOnCi)
+        {
+            throw new InvalidOperationException(
+                "'local' and '--remove-cert' use a developer certificate and cannot run when CI is set.");
+        }
+
+        if (Local && SignTest)
+        {
+            throw new InvalidOperationException("'local' and 'sign-test' cannot be combined.");
+        }
+
+        if (SignTest && RemoveCert)
+        {
+            throw new InvalidOperationException("'sign-test' and '--remove-cert' cannot be combined.");
+        }
+    }
 }

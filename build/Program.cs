@@ -20,8 +20,7 @@ builder.Configuration.AddCommandLine(args);
 
 var modes = PipelineModes.Parse(args);
 
-TestCertificateHelper.EnsureModesAllowed(
-    modes,
+modes.EnsureTestSigningAllowed(
     (builder.Configuration.GetSection("Build").Get<BuildOptions>() ?? new BuildOptions()).Channel,
     string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase),
     OperatingSystem.IsWindows());
