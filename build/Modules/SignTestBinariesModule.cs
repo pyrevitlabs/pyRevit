@@ -16,10 +16,8 @@ namespace Build.Modules;
 /// in local mode the developer certificate is created, trusted and renewed on demand. Either way the certificate
 /// must carry a test subject, so <see cref="RejectTestSignedBinariesModule"/> can recognise what it signed.
 /// </remarks>
-[DependsOn<WriteCiBinManifestModule>(Optional = true)]
+[DependsOn<BinCompleteModule>(Optional = true)]
 [DependsOn<StageReleaseMetadataModule>(Optional = true)]
-[DependsOn<BuildShellModule>(Optional = true)]
-[DependsOn<TestConfigurationsModule>(Optional = true)]
 public sealed class SignTestBinariesModule(IOptions<TestSigningOptions> testSigningOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)

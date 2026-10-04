@@ -117,7 +117,7 @@ The `ci` pipeline also runs the configuration core, INI backend, and parser pari
 | `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
 | `local` | Run `ci`, then sign `bin/` with a per-machine developer certificate so Revit loads it without the unsigned add-in dialog. Local only; refuses when `CI` is set or the channel is `wip`/`release` |
-| `sign-test` | Sign `bin/` with the certificate whose SHA-256 fingerprint is in `TestSigning__Fingerprint` (CI test runners). The certificate subject must start with `CN=pyRevit CI Test` so packaging can detect it. Refuses `wip`/`release` and cannot be combined with `pack`, `sign` or `publish` |
+| `sign-test` | Sign `bin/` with the certificate whose SHA-256 fingerprint is in `TestSigning__Fingerprint` (CI test runners). The certificate must be in `CurrentUser\My` and its subject must start with `CN=pyRevit CI Test` so packaging can detect it. Refuses `wip`/`release` and cannot be combined with `pack`, `sign` or `publish` |
 | `--remove-cert` | Delete the developer certificate created by `local` from `CurrentUser\My`, `Root` and `TrustedPublisher` |
 | `publish` | Generate release notes, create draft GitHub release, push Chocolatey |
 | `winget` | Generate WinGet manifests (machine-scope installers only), strip `elevationProhibited` if present, submit PRs to winget-pkgs |

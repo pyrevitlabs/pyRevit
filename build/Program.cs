@@ -59,6 +59,7 @@ if (modes.Ci)
     builder.Services.AddModule<VerifyLibGit2Module>();
     builder.Services.AddModule<StageReleaseMetadataModule>();
     builder.Services.AddModule<WriteCiBinManifestModule>();
+    builder.Services.AddModule<BinCompleteModule>();
 }
 
 if (modes.Packages)

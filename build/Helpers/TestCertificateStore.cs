@@ -48,38 +48,36 @@ public static class TestCertificateStore
     }
 
     /// <summary>
-    /// Finds the certificate with SHA-256 <paramref name="fingerprint"/> in the current user or local machine
-    /// <c>My</c> store and refuses it unless its subject marks it as a test certificate.
+    /// Finds the certificate with SHA-256 <paramref name="fingerprint"/> in <c>CurrentUser\My</c> and refuses it
+    /// unless its subject marks it as a test certificate.
     /// </summary>
     /// <remarks>
     /// Whatever certificate a workflow hands to <c>sign-test</c>, it can only sign if packaging will recognise and
-    /// reject its signatures later.
+    /// reject its signatures later. Only <c>CurrentUser\My</c> is searched because that is where the sign tool's
+    /// certificate-store provider is known to find certificates, so an accepted certificate is always the one used.
     /// </remarks>
     /// <exception cref="InvalidOperationException">No such certificate, or it is not a test certificate.</exception>
     public static void EnsureFingerprintIsTestCertificate(string fingerprint)
     {
-        foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+        using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+        store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+        foreach (var certificate in store.Certificates)
         {
-            using var store = new X509Store(StoreName.My, location);
-            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-            foreach (var certificate in store.Certificates)
+            using (certificate)
             {
-                using (certificate)
+                if (string.Equals(
+                        certificate.GetCertHashString(HashAlgorithmName.SHA256),
+                        fingerprint,
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.Equals(
-                            certificate.GetCertHashString(HashAlgorithmName.SHA256),
-                            fingerprint,
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        TestSignatureDetector.EnsureTestSigner(certificate);
-                        return;
-                    }
+                    TestSignatureDetector.EnsureTestSigner(certificate);
+                    return;
                 }
             }
         }
 
         throw new InvalidOperationException(
-            $"No certificate with SHA-256 fingerprint {fingerprint} is in the CurrentUser or LocalMachine My store.");
+            $"No certificate with SHA-256 fingerprint {fingerprint} is in CurrentUser\\My; import the test certificate there.");
     }
 
     internal static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays)
