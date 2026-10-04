@@ -18,6 +18,7 @@ Reset window configurations and open.
 # pylint: disable=raise-missing-from
 import os
 import os.path as op
+import re
 import shutil
 import math
 import uuid
@@ -248,6 +249,134 @@ class KeynoteSetupError(Exception):
     """
 
     pass
+
+
+LOCK_ALERT_TITLE = "Keynote Manager - Locked"
+RELEASE_LOCKS_HINT = (
+    "If nobody is working on it - for example their Revit closed or "
+    "crashed - click the padlock button next to Update Model to release "
+    "the lock."
+)
+_RESTRICTING_LOCK_RE = re.compile(
+    r'restricted by <ConnectionLock id:"[^"]*" '
+    r'sig:"(?P<pc>[^:"]*):(?P<user>[^:"]*):[^"]*" '
+    r'locking:"(?P<target>[^"]*)"'
+)
+
+
+def lock_owner_label(user, pc):
+    """Name a lock holder the way the person reading the dialog knows them."""
+    user = user or "someone"
+    pc = (pc or "").upper()
+    if user.lower() == (HOST_APP.username or "").lower():
+        if pc.lower() == System.Environment.MachineName.lower():
+            return "You (another Revit session on this computer)"
+        return "You (on computer {})".format(pc)
+    if pc:
+        return "{} (on computer {})".format(user, pc)
+    return user
+
+
+def lock_target_label(db_name, table_name, record_key):
+    """Describe what a DeffrelDB lock covers in keynote terms."""
+    if record_key:
+        if table_name == kdb.CATEGORIES_TABLE:
+            return "group {}".format(record_key)
+        return "keynote {}".format(record_key)
+    return "the whole keynote file"
+
+
+def describe_lock_error(ex):
+    """Return (headline, details) for a lock failure, or None.
+
+    DeffrelDB reports locks as raw signatures such as
+    '<ConnectionLock id:"..." sig:"pc:user:conn" locking:"db:table:key">',
+    which mean nothing to the person editing keynotes; this names the
+    holder and says what to do instead.
+    """
+    text = getattr(ex, "Message", None) or str(ex)
+    holder = _RESTRICTING_LOCK_RE.search(text)
+    if holder:
+        target = (holder.group("target").split(":", 2) + ["", ""])[:3]
+        return (
+            "{} is editing {}.".format(
+                lock_owner_label(holder.group("user"), holder.group("pc")),
+                lock_target_label(*target),
+            ),
+            "Only one person can change a keynote at a time. Wait for them "
+            "to finish, or ask them to close their edit window.\n\n"
+            + RELEASE_LOCKS_HINT,
+        )
+    if "Active lock must be released first" in text:
+        return (
+            "An earlier change in this window did not finish.",
+            "Close Keynote Manager, open it again, and retry.",
+        )
+    if "Wait for unlock timeout" in text:
+        return (
+            "The keynote file is busy.",
+            "Someone else is saving changes to it right now. Wait a few "
+            "seconds and try again.\n\nIf this keeps happening, a Revit "
+            "session may have closed or crashed while saving. " + RELEASE_LOCKS_HINT,
+        )
+    if "Read timeout" in text:
+        return (
+            "The keynote file could not be read.",
+            "Another program, such as Desktop Connector or OneDrive, may be "
+            "syncing it. Wait a moment and try again.",
+        )
+    return None
+
+
+def alert_db_error(ex, fallback=None):
+    """Tell the user a keynote-file operation failed, in plain words.
+
+    Lock failures get the friendly explanation; anything else shows
+    `fallback`, or the raw message when there is none.
+    """
+    friendly = describe_lock_error(ex)
+    if friendly:
+        forms.alert(friendly[0], sub_msg=friendly[1], title=LOCK_ALERT_TITLE)
+    else:
+        forms.alert(fallback or getattr(ex, "Message", None) or str(ex))
+
+
+def adc_lock_message(owner):
+    """Explain a Desktop Connector lock held by someone else."""
+    owner = owner or "another user"
+    return (
+        "The keynote file is locked by {0} in Desktop Connector.\n\n"
+        "Only one person can have it open in Keynote Manager at a time. "
+        "Ask {0} to close Keynote Manager, then try again.\n\n"
+        "If their Revit closed or crashed, they can open and close "
+        "Keynote Manager once to release the file, or unlock it from "
+        "Desktop Connector (right-click the file in File Explorer)."
+    ).format(owner)
+
+
+def alert_write_lock_changed():
+    """Explain why a lock that changed under the confirmation was kept."""
+    forms.alert(
+        "The lock changed while this message was open.",
+        sub_msg=(
+            "Someone may be saving to the keynote file right now, so "
+            "the lock was left in place. Wait a moment and try again."
+        ),
+        title=LOCK_ALERT_TITLE,
+    )
+
+
+def format_age(seconds):
+    """Say roughly how long ago something happened."""
+    minutes = int(seconds // 60)
+    if minutes < 1:
+        return "less than a minute ago"
+    if minutes < 120:
+        return "{} minute{} ago".format(minutes, "" if minutes == 1 else "s")
+    hours = minutes // 60
+    if hours < 48:
+        return "{} hours ago".format(hours)
+    return "{} days ago".format(hours // 24)
 
 
 def ui_guard(fn, _logger=logger, _alert=forms.alert):
@@ -654,10 +783,10 @@ class EditRecordWindow(forms.WPFWindow):
                 )
                 kdb.end_edit(self._conn)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                alert_db_error(toutex)
                 return False
             except Exception as dbex:
-                forms.alert("Could not save changes:\n%s" % dbex)
+                alert_db_error(dbex, "Could not save changes:\n%s" % dbex)
                 return False
 
         elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
@@ -671,10 +800,10 @@ class EditRecordWindow(forms.WPFWindow):
                     )
                 kdb.end_edit(self._conn)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                alert_db_error(toutex)
                 return False
             except Exception as dbex:
-                forms.alert("Could not save changes:\n%s" % dbex)
+                alert_db_error(dbex, "Could not save changes:\n%s" % dbex)
                 return False
 
         elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
@@ -696,10 +825,10 @@ class EditRecordWindow(forms.WPFWindow):
                 )
                 kdb.end_edit(self._conn)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                alert_db_error(toutex)
                 return False
             except Exception as dbex:
-                forms.alert("Could not save changes:\n%s" % dbex)
+                alert_db_error(dbex, "Could not save changes:\n%s" % dbex)
                 return False
 
         elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
@@ -717,10 +846,10 @@ class EditRecordWindow(forms.WPFWindow):
                     )
                 kdb.end_edit(self._conn)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                alert_db_error(toutex)
                 return False
             except Exception as dbex:
-                forms.alert("Could not save changes:\n%s" % dbex)
+                alert_db_error(dbex, "Could not save changes:\n%s" % dbex)
                 return False
 
         return True
@@ -734,14 +863,14 @@ class EditRecordWindow(forms.WPFWindow):
             try:
                 kdb.release_key(self._conn, self._reserved_key, category=self._cat)
             except Exception as ex:
-                forms.alert(str(ex))
+                alert_db_error(ex)
                 return
         try:
             categories = kdb.get_categories(self._conn)
             keynotes = kdb.get_keynotes(self._conn)
             locks = kdb.get_locks(self._conn)
         except Exception as ex:
-            forms.alert("Cannot read keynote file:\n%s" % ex)
+            alert_db_error(ex, "Cannot read keynote file:\n%s" % ex)
             return
         reserved_keys = [x.key for x in categories]
         reserved_keys.extend([x.key for x in keynotes])
@@ -756,7 +885,7 @@ class EditRecordWindow(forms.WPFWindow):
             try:
                 kdb.reserve_key(self._conn, new_key, category=self._cat)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                alert_db_error(toutex)
                 return
             self._reserved_key = new_key
             self.active_key = new_key
@@ -766,7 +895,7 @@ class EditRecordWindow(forms.WPFWindow):
             categories = kdb.get_categories(self._conn)
             keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
-            forms.alert("Cannot read keynote file:\n%s" % ex)
+            alert_db_error(ex, "Cannot read keynote file:\n%s" % ex)
             return
         available = [x.key for x in categories]
         available.extend([x.key for x in keynotes])
@@ -782,7 +911,7 @@ class EditRecordWindow(forms.WPFWindow):
             try:
                 kdb.reserve_key(self._conn, self.active_key, category=self._cat)
             except Exception as ex:
-                forms.alert(str(ex))
+                alert_db_error(ex)
                 return
             self._reserved_key = self.active_key
             self.active_parent_key = new_parent
@@ -1126,12 +1255,17 @@ class _DocBinding(object):
     The keynote FILE is deliberately not held here.  Two open projects
     usually share one, and they must then share a single connection and a
     single ADC lock; see KeynoteManagerWindow._files.
+
+    `failed_kfile` is the file a silent connect gave up on.  kfile stays
+    None then, and Release Locks needs the path to clear whatever lock
+    stopped the connect.
     """
 
     def __init__(self, doc):
         self.doc = doc
         self.kfile = None      # key into KeynoteManagerWindow._files
         self.error = None      # why this project shows no tree, or None
+        self.failed_kfile = None
         self.needs_update = False
         self.used_keysdict = defaultdict(list)
         self.used_typesdict = defaultdict(set)
@@ -1593,10 +1727,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             rows = self._subtree_rows(root_keys)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Could not read the keynotes to copy.\n%s" % ex)
+            alert_db_error(ex, "Could not read the keynotes to copy.\n%s" % ex)
             return
         if not rows:
             return
@@ -1685,10 +1819,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             rows = self._classify_paste(self._clipboard["items"],
                                         sel.key if sel else None)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Could not read the target keynote file.\n%s" % ex)
+            alert_db_error(ex, "Could not read the target keynote file.\n%s" % ex)
             return
         if not rows:
             return
@@ -1705,10 +1839,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             written = kdb.paste_records(self._conn, approved)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Paste failed — nothing was written.\n%s" % ex)
+            alert_db_error(ex, "Paste failed — nothing was written.\n%s" % ex)
             return
 
         # every open project on THIS file now has a stale keynote table;
@@ -1753,6 +1887,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """
         binding.error = None
         binding.kfile = None
+        binding.failed_kfile = None
         try:
             kfile, kfile_ext, handler = self._resolve_kfile_for(binding.doc)
         except KeynoteSetupError as kex:
@@ -1780,9 +1915,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             conn = self._open_kfile(kfile)
         except KeynoteSetupError as kex:
             binding.error = str(kex)
+            binding.failed_kfile = kfile
             return False
         except Exception as ex:
             binding.error = "Cannot connect to the keynote file.\n%s" % ex
+            binding.failed_kfile = kfile
             return False
 
         self._files[kfile] = {"conn": conn, "ext": kfile_ext,
@@ -2585,9 +2722,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 locked, owner = adc.is_locked(kfile_ext)
                 if locked:
-                    raise KeynoteSetupError(
-                        "Keynote file is locked by {}.".format(owner)
-                    )
+                    raise KeynoteSetupError(adc_lock_message(owner))
             except KeynoteSetupError:
                 raise
             except Exception:
@@ -2650,7 +2785,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             return kdb.connect(kfile)
         except System.TimeoutException as toutex:
-            raise KeynoteSetupError(toutex.Message)
+            logger.debug("keynote file connect timed out | %s", toutex.Message)
+            raise KeynoteSetupError(
+                "The keynote file is busy or was left locked by a Revit "
+                "session that closed. Use the padlock button next to "
+                "Update Model to release it."
+            )
         except Exception as ex:
             raise KeynoteSetupError(
                 "Cannot connect to this project's keynote file.\n%s\n\n"
@@ -2763,7 +2903,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 self._conn = kdb.connect(self._kfile)
             except System.TimeoutException as toutex:
-                raise KeynoteSetupError(toutex.Message)
+                if self._offer_write_lock_release(self._kfile):
+                    continue
+                logger.debug("keynote file connect timed out | %s", toutex.Message)
+                raise KeynoteSetupError(
+                    "The keynote file is busy.\n\n"
+                    "Someone else is saving changes to it right now. Wait a "
+                    "few seconds and open Keynote Manager again."
+                )
             except Exception as ex:
                 logger.debug("Connection failed | %s" % ex)
                 res = forms.alert(
@@ -2881,7 +3028,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             categories = kdb.get_categories(self._conn)
             all_knotes = kdb.get_keynotes(self._conn)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return []
         except Exception as ex:
             # Keep the window alive: the file may be temporarily locked by
@@ -3159,10 +3306,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             kdb.EXPANSION.expand(new_parent.key)
             self._needs_update = True
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Indent failed: %s" % ex)
+            alert_db_error(ex, "Indent failed: %s" % ex)
             return
 
         self._update_full_tree()
@@ -3205,10 +3352,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             kdb.EXPANSION.expand(grandparent_key)
             self._needs_update = True
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Outdent failed: %s" % ex)
+            alert_db_error(ex, "Outdent failed: %s" % ex)
             return
 
         self._update_full_tree()
@@ -3269,10 +3416,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._revit_run(lambda: self._swap_keynote_refs(sk, ok))
             self._needs_update = True
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Swap failed: %s" % ex)
+            alert_db_error(ex, "Swap failed: %s" % ex)
             return
 
         self._update_full_tree()
@@ -3318,7 +3465,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             kns = kdb.get_keynotes(self._conn)
             locks = kdb.get_locks(self._conn)
         except Exception as ex:
-            forms.alert("Cannot read keynote file:\n%s" % ex)
+            alert_db_error(ex, "Cannot read keynote file:\n%s" % ex)
             return
         reserved = [x.key for x in cats]
         reserved.extend([x.key for x in kns])
@@ -4064,9 +4211,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             kdb.EXPANSION.expand(new_parent_key)
             self._needs_update = True
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
         except Exception as ex:
-            forms.alert("Move failed: %s" % ex)
+            alert_db_error(ex, "Move failed: %s" % ex)
 
         self._update_full_tree()
         self._update_status_bar()
@@ -4101,7 +4248,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if new_cat:
                 self._needs_update = True
         except Exception as ex:
-            forms.alert(str(ex))
+            alert_db_error(ex)
         finally:
             self._update_full_tree()
             self._update_status_bar()
@@ -4116,7 +4263,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 ).show()
                 self._needs_update = True
             except Exception as ex:
-                forms.alert(str(ex))
+                alert_db_error(ex)
             finally:
                 self._update_full_tree()
                 self._update_status_bar()
@@ -4143,7 +4290,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         getattr(new_kn, "parent_key", None) or parent_key)
                 self._needs_update = True
             except Exception as ex:
-                forms.alert(str(ex))
+                alert_db_error(ex)
             finally:
                 self._update_full_tree()
                 self._update_status_bar()
@@ -4164,7 +4311,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         getattr(new_kn, "parent_key", None) or sel.parent_key)
                 self._needs_update = True
             except Exception as ex:
-                forms.alert(str(ex))
+                alert_db_error(ex)
             finally:
                 self._update_full_tree()
                 self._update_status_bar()
@@ -4188,7 +4335,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     kdb.EXPANSION.expand(now_parent)
             self._needs_update = True
         except Exception as ex:
-            forms.alert(str(ex))
+            alert_db_error(ex)
         finally:
             self._update_full_tree()
 
@@ -4207,8 +4354,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
-            forms.alert("Keynote file is busy — nothing was deleted.\n"
-                        "%s\n\nPlease try again." % ex)
+            alert_db_error(
+                ex,
+                "Keynote file is busy — nothing was deleted.\n"
+                "%s\n\nPlease try again." % ex,
+            )
             return
 
         children_of = defaultdict(list)
@@ -4286,10 +4436,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             removed = kdb.delete_records(self._conn, rows)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Delete failed — nothing was removed.\n%s" % ex)
+            alert_db_error(ex, "Delete failed — nothing was removed.\n%s" % ex)
             return
 
         self._needs_update = True
@@ -4341,7 +4491,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     kdb.remove_category(self._conn, sel.key)
                     self._needs_update = True
                 except Exception as ex:
-                    forms.alert(str(ex))
+                    alert_db_error(ex)
         else:
             # Removing a keynote
             if has_any_children:
@@ -4355,7 +4505,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     kdb.remove_keynote(self._conn, sel.key)
                     self._needs_update = True
                 except Exception as ex:
-                    forms.alert(str(ex))
+                    alert_db_error(ex)
 
         self._update_full_tree()
         self._update_status_bar()
@@ -4414,7 +4564,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._revit_run(lambda: self._rekey_refs(fk, tk))
                 self._needs_update = True
         except Exception as ex:
-            forms.alert(str(ex))
+            alert_db_error(ex)
 
         self._update_full_tree()
         self._update_status_bar()
@@ -4495,10 +4645,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             kdb.update_texts(self._conn, updates)
             self._needs_update = True
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            alert_db_error(toutex)
             return
         except Exception as ex:
-            forms.alert("Case change failed: %s" % ex)
+            alert_db_error(ex, "Case change failed: %s" % ex)
             return
 
         self._update_full_tree()
@@ -4724,7 +4874,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 kdb.import_legacy_keynotes(self._conn, kfile, skip_dup=res)
             except Exception as ex:
-                forms.alert("Import failed: %s" % ex)
+                alert_db_error(ex, "Import failed: %s" % ex)
             finally:
                 self._update_full_tree()
                 self._update_status_bar()
@@ -4747,6 +4897,208 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 kdb.export_legacy_keynotes(self._conn, kfile, include_keys=include)
             except Exception as ex:
                 forms.alert(str(ex))
+
+    def _offer_write_lock_release(self, kfile):
+        """Offer to clear a write sidecar that a dead session left behind.
+
+        Returns True when the sidecar was removed and connecting is worth
+        retrying.  A sidecar younger than DATASTORE_LOCK_STALE_SECONDS
+        belongs to a save still in progress and is never offered.
+        """
+        stamp = kdb.datastore_lock_stamp(kfile)
+        if not kdb.is_stale_datastore_lock(stamp):
+            return False
+        release = "Release the lock and continue"
+        choice = forms.alert(
+            "The keynote file is locked.",
+            sub_msg=(
+                "A save to this file started {} and never finished. The "
+                "Revit session that made it most likely closed or crashed."
+                "\n\nIf someone is working in Keynote Manager right now, "
+                "ask them to close it first. Otherwise it is safe to "
+                "release the lock.".format(format_age(kdb.datastore_lock_age(stamp)))
+            ),
+            title=LOCK_ALERT_TITLE,
+            options=[release, "Cancel"],
+        )
+        if choice != release:
+            return False
+        try:
+            kdb.clear_datastore_lock(kfile, stamp)
+        except kdb.DataStoreLockChanged:
+            alert_write_lock_changed()
+            return False
+        except Exception as ex:
+            forms.alert(
+                "Could not release the lock.",
+                sub_msg="{}\n\n{}".format(kdb.datastore_lock_path(kfile), ex),
+                title=LOCK_ALERT_TITLE,
+            )
+            return False
+        return True
+
+    def _locks_held_elsewhere(self):
+        """Return every lock on the active file not held by this window."""
+        if self._conn is None:
+            return []
+        return kdb.foreign_locks(
+            self._conn,
+            [
+                entry["conn"]
+                for entry in self._files.values()
+                if entry.get("conn") is not None
+            ],
+        )
+
+    def release_stale_locks(self, sender, args):
+        """Clear locks a closed or crashed Revit session left on the file.
+
+        Important:
+            DeffrelDB cannot tell a lock left by a dead session from one a
+            colleague is holding right now, so the confirmation names every
+            holder and tells the user to check with them first.  Locks held
+            by this window's own connections are never offered.
+        """
+        kfile = self._kfile or getattr(self._binding, "failed_kfile", None)
+        if not kfile:
+            forms.alert(
+                "No keynote file is connected for this project.", title=LOCK_ALERT_TITLE
+            )
+            return
+        write_lock = kdb.datastore_lock_stamp(kfile)
+        if write_lock is not None and not kdb.is_stale_datastore_lock(write_lock):
+            forms.alert(
+                "A save to the keynote file is in progress.",
+                sub_msg=(
+                    "It started {}. Wait for it to finish. If the file is "
+                    "still locked {} minutes after the save started, its "
+                    "Revit session most likely closed or crashed and you "
+                    "can release the lock here.".format(
+                        format_age(kdb.datastore_lock_age(write_lock)),
+                        kdb.DATASTORE_LOCK_STALE_SECONDS // 60,
+                    )
+                ),
+                title=LOCK_ALERT_TITLE,
+            )
+            return
+        try:
+            locks = self._locks_held_elsewhere()
+        except Exception as ex:
+            alert_db_error(ex, "Could not read the locks.\n%s" % ex)
+            return
+
+        found = [
+            "{} - editing {}".format(
+                lock_owner_label(lk.LockRequester, lk.LockSource),
+                lock_target_label(
+                    lk.LockTargetDB, lk.LockTargetTable, lk.LockTargetRecordKey
+                ),
+            )
+            for lk in locks
+        ]
+        if write_lock is not None:
+            found.append(
+                "A save that started {} and never finished".format(
+                    format_age(kdb.datastore_lock_age(write_lock))
+                )
+            )
+        if not found:
+            forms.alert(
+                "No locks found.",
+                sub_msg="Nobody is holding this keynote file or any keynote in it.",
+                title=LOCK_ALERT_TITLE,
+                warn_icon=False,
+            )
+            return
+
+        me = (HOST_APP.username or "").lower()
+        others = sorted(
+            set(
+                lk.LockRequester
+                for lk in locks
+                if lk.LockRequester and lk.LockRequester.lower() != me
+            )
+        )
+        if others:
+            ask = (
+                "Ask {} whether they are still working in Keynote "
+                "Manager. If they are, have them finish and close it "
+                "instead of releasing their lock here.".format(", ".join(others))
+            )
+        else:
+            ask = (
+                "If you still have Keynote Manager open in another Revit "
+                "session, close it there instead."
+            )
+        release = "Release the locks"
+        choice = forms.alert(
+            "Release {} lock{} on this keynote file?".format(
+                len(found), "" if len(found) == 1 else "s"
+            ),
+            sub_msg=(
+                "Locks found:\n"
+                + "\n".join("  - " + f for f in found)
+                + "\n\n"
+                + ask
+                + "\n\nOnly release a lock nobody is using - "
+                "for example after Revit closed or crashed. Releasing a lock "
+                "someone is still using can make them lose their changes or "
+                "save over yours."
+            ),
+            title=LOCK_ALERT_TITLE,
+            options=[release, "Cancel"],
+        )
+        if choice != release:
+            return
+
+        released = 0
+        try:
+            if write_lock is not None and kdb.clear_datastore_lock(kfile, write_lock):
+                released += 1
+            for lk in locks:
+                released += kdb.release_locks(kfile, [lk.LockId])
+        except kdb.DataStoreLockChanged:
+            alert_write_lock_changed()
+        except Exception as ex:
+            logger.debug("lock release failed | %s", ex)
+            alert_db_error(ex, "Could not release every lock.\n%s" % ex)
+        self._show_after_lock_release(released)
+
+    def _show_after_lock_release(self, released):
+        """Redraw with the locks gone, reconnecting if a lock blocked it.
+
+        Note:
+            While a stale write sidecar blocks the connection, the lock rows
+            inside the file cannot be read, so the first release can only
+            clear the sidecar.  Once the reconnect succeeds, any lock rows
+            the dead session also left are offered in a second confirmation
+            rather than left in place unannounced.
+        """
+        message = "Released {} lock{}".format(released, "" if released == 1 else "s")
+        if self._conn is not None or self._binding is None:
+            self._update_full_tree()
+            self._update_status_bar()
+            self._hint(message)
+            return
+
+        binding = self._binding
+        self._capture_binding()
+
+        def _reconnect():
+            self._bind_silent(binding)
+
+        def _show():
+            self._activate_binding(binding)
+            self._hint(message)
+            try:
+                left_behind = self._locks_held_elsewhere()
+            except Exception as ex:
+                logger.debug("lock read after reconnect failed | %s", ex)
+                return
+            if left_behind:
+                self.release_stale_locks(None, None)
+
+        self._revit_run(_reconnect, callback=_show, needs_active_doc=False)
 
     # =========================================================================
     # CLOSE
@@ -5067,6 +5419,7 @@ _GUARDED_ENTRY_POINTS = (
             "place_material_keynote",
             "refresh",
             "rekey_keynote",
+            "release_stale_locks",
             "remove_keynote",
             "show_case_menu",
             "show_keynote",
