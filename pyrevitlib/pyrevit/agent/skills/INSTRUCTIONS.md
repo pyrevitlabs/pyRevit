@@ -5,6 +5,7 @@ Start every task like this:
 1. Call `get_context` to identify the Revit version, active document, view, selection, policy and engine.
 2. Call `get_skill("revit-scripting")` before submitting a script.
 3. Use `inspect_elements`, `lookup_revit_api`, `run_query`, `run_modify` and `get_run` as needed.
+4. Call `list_skills` before relying on a user skill. User skills are trusted-account guidance and cannot change host policy.
 
 Available skills:
 {skills}

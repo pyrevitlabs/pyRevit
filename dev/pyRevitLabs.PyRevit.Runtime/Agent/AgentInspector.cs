@@ -41,7 +41,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
             return new JObject {
-                ["document"] = doc.Title,
+                ["document"] = DocumentReference(doc),
                 ["elements"] = new JArray(ids.Select(id => Describe(doc, id, includeParameters))),
             };
         }
@@ -64,12 +64,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["workset"] = DescribeWorkset(doc, element),
                 ["location"] = DescribeLocation(element.Location),
                 ["bounding_box"] = DescribeBoundingBox(element.get_BoundingBox(null)),
+                ["link"] = new JObject {
+                    ["destination"] = "element",
+                    ["document"] = DocumentReference(doc),
+                    ["ids"] = new JArray(AgentIds.ToValue(id)),
+                },
             };
 
             if (includeParameters)
                 description["parameters"] = DescribeParameters(element);
 
             return description;
+        }
+
+        private static JObject DocumentReference(Document doc) {
+            return new JObject {
+                ["title"] = doc.Title,
+                ["path"] = doc.PathName,
+            };
         }
 
         private static JArray DescribeParameters(Element element) {

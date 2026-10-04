@@ -137,11 +137,24 @@ rebuild:
   server sends on `initialize`. `{skills}` is replaced with the list of skills.
 - Each skill is a folder with a `SKILL.md` that starts with `name` and `description`
   front matter. PR 1 ships `revit-scripting`, the core contract for raw Revit API scripts.
-  Additional domain guidance and firm customization are delivered separately.
+  PR 2 adds domain guidance and library integration.
 
 Agents read a skill with `get_skill(name)`, and other markdown files in its folder with
-`get_skill(name, file)`. The foundation runtime loads only shipped skills from its selected
-clone; it does not load user-supplied skill directories.
+`get_skill(name, file)`. `list_skills` reports each skill's source and SHA-256 digest before
+the agent reads it. The server loads only shipped skills by default. Enable user skills with
+`pyrevit configs agent skills enable` to load folders from `%APPDATA%\pyRevit\agent\skills`.
+Those folders are trusted-account guidance, not organizational policy: a same-name user skill
+is ignored, and user guidance cannot replace shipped safety instructions or host enforcement.
+Names, descriptions, files and paths are bounded and validated; reparse-point paths are ignored.
+
+### Navigation links
+
+`inspect_elements` returns an element `link` with a destination, document reference and element
+ids. Pass that object to `navigate_revit_link` to select, zoom to, isolate or temporarily hide
+the same elements. The Revit host compares its active document with the link immediately before
+presenting elements. If the document has closed or changed, it returns `stale_link`; activate the
+intended document and inspect the elements again. Navigation only uses the fixed presentation
+operation and never executes a command or changes model elements.
 
 ### Script contract
 
@@ -518,6 +531,7 @@ itself: the pipe executes requests through an ExternalEvent that never fires whi
 |---|---|
 | Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
 | Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
+| Run Agent Library Tests | The shipped and user skills, `lookup_pyrevit_api` and `list_automation` through a short-lived `pyrevit mcp` process, and the pyrevitlib side of the automation operations on both engines |
 | Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
 
 The tests create two scratch projects in the temp folder, set the policy to `auto` (or `ask` for the
@@ -528,5 +542,5 @@ only been run with it enabled.
 Each test is written to `%TEMP%\pyrevit-agent-tests.log` before it starts, so if Revit ever hangs, the
 last line of that file names the test that was running.
 
-Anything the MCP server adds on top of the host, such as hints in run errors and the library
-tools, runs in the CLI and is not covered by these buttons.
+`run_automation`, `navigate_revit_link` and the hints the MCP server adds to run errors call back
+into Revit through the pipe, which can't answer while a command runs, so these buttons don't cover them.

@@ -942,6 +942,25 @@ func main() {
 									"--log": complete.PredictNothing,
 								},
 							},
+							"skills": complete.Command{
+								Sub: complete.Commands{
+									"enable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"disable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
 						},
 						Flags: complete.Flags{
 							"--help": complete.PredictNothing,
