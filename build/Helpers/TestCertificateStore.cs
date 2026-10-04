@@ -14,8 +14,7 @@ namespace Build.Helpers;
 /// <see cref="EnsureFingerprintIsTestCertificate"/> keeps every test signature recognisable, and
 /// <see cref="TestSignatureDetector.EnsureNoTestSignedBinaries"/> rejects recognised signatures before packaging.
 /// </remarks>
-public static class TestCertificateStore
-{
+public static class TestCertificateStore {
     internal const int LocalLifetimeDays = 365;
     internal const int LocalRenewBeforeDays = 30;
     internal const string FingerprintMarker = "FINGERPRINT=";
@@ -32,18 +31,17 @@ public static class TestCertificateStore
     /// <remarks>
     /// Windows only accepts the signature when the self-signed certificate is in <c>Root</c>; <c>TrustedPublisher</c>
     /// alone leaves it untrusted. The certificate is created as a non-CA end entity with only the digital signature
-    /// key usage, so that root trust cannot extend to any certificate it might issue.
+    /// key usage, so that root trust cannot extend to any certificate it might issue. An existing certificate must
+    /// satisfy the same profile and have a non-exportable private key before it is reused or trusted.
     /// </remarks>
     /// <returns>The SHA-256 fingerprint of the certificate to sign with.</returns>
-    public static async Task<string> EnsureLocalCertificateAsync(CancellationToken cancellationToken)
-    {
+    public static async Task<string> EnsureLocalCertificateAsync(CancellationToken cancellationToken) {
         var script = BuildEnsureScript(LocalSubject(Environment.MachineName), LocalLifetimeDays, LocalRenewBeforeDays);
         return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken));
     }
 
     /// <summary>Deletes the developer certificate and its private key from <c>My</c>, <c>Root</c> and <c>TrustedPublisher</c>.</summary>
-    public static async Task RemoveLocalCertificateAsync(CancellationToken cancellationToken)
-    {
+    public static async Task RemoveLocalCertificateAsync(CancellationToken cancellationToken) {
         await RunPowerShellAsync(BuildRemoveScript(LocalSubject(Environment.MachineName)), cancellationToken);
     }
 
@@ -57,19 +55,15 @@ public static class TestCertificateStore
     /// certificate-store provider is known to find certificates, so an accepted certificate is always the one used.
     /// </remarks>
     /// <exception cref="InvalidOperationException">No such certificate, or it is not a test certificate.</exception>
-    public static void EnsureFingerprintIsTestCertificate(string fingerprint)
-    {
+    public static void EnsureFingerprintIsTestCertificate(string fingerprint) {
         using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
         store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-        foreach (var certificate in store.Certificates)
-        {
-            using (certificate)
-            {
+        foreach (var certificate in store.Certificates) {
+            using (certificate) {
                 if (string.Equals(
                         certificate.GetCertHashString(HashAlgorithmName.SHA256),
                         fingerprint,
-                        StringComparison.OrdinalIgnoreCase))
-                {
+                        StringComparison.OrdinalIgnoreCase)) {
                     TestSignatureDetector.EnsureTestSigner(certificate);
                     return;
                 }
@@ -80,16 +74,48 @@ public static class TestCertificateStore
             $"No certificate with SHA-256 fingerprint {fingerprint} is in CurrentUser\\My; import the test certificate there.");
     }
 
-    internal static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays)
-    {
+    internal static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays) {
         var escaped = EscapeSingleQuoted(subject);
         return $$"""
             $ErrorActionPreference = 'Stop'
             $ProgressPreference = 'SilentlyContinue'
             $subject = '{{escaped}}'
             $threshold = (Get-Date).AddDays({{renewBeforeDays}})
+            function Test-LocalCertificate($candidate, $expectedSubject, $renewalThreshold) {
+                if ($candidate.Subject -ne $expectedSubject -or $candidate.Issuer -ne $expectedSubject -or
+                    $candidate.NotAfter -le $renewalThreshold -or -not $candidate.HasPrivateKey) {
+                    return $false
+                }
+                $basicExtension = $candidate.Extensions['2.5.29.19']
+                $usageExtension = $candidate.Extensions['2.5.29.15']
+                $enhancedUsageExtension = $candidate.Extensions['2.5.29.37']
+                if (-not $basicExtension -or -not $basicExtension.Critical -or
+                    -not $usageExtension -or -not $enhancedUsageExtension) {
+                    return $false
+                }
+                $basicConstraints = [System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension]::new($basicExtension, $basicExtension.Critical)
+                $keyUsage = [System.Security.Cryptography.X509Certificates.X509KeyUsageExtension]::new($usageExtension, $usageExtension.Critical)
+                $enhancedKeyUsage = [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]::new($enhancedUsageExtension, $enhancedUsageExtension.Critical)
+                if ($basicConstraints.CertificateAuthority -or
+                    ($keyUsage.KeyUsages -band [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature) -eq 0 -or
+                    ($keyUsage.KeyUsages -band [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::KeyCertSign) -ne 0 -or
+                    -not @($enhancedKeyUsage.EnhancedKeyUsages | Where-Object { $_.Value -eq '1.3.6.1.5.5.7.3.3' }).Count) {
+                    return $false
+                }
+                $privateKey = $null
+                try {
+                    $privateKey = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($candidate)
+                    return ($privateKey -is [System.Security.Cryptography.RSACng] -and
+                        $privateKey.Key.ExportPolicy -eq [System.Security.Cryptography.CngExportPolicies]::None -and
+                        $privateKey.Key.KeySize -ge 3072)
+                } catch [System.Security.Cryptography.CryptographicException] {
+                    return $false
+                } finally {
+                    if ($privateKey) { $privateKey.Dispose() }
+                }
+            }
             $cert = Get-ChildItem Cert:\CurrentUser\My |
-                Where-Object { $_.Subject -eq $subject -and $_.NotAfter -gt $threshold -and $_.HasPrivateKey } |
+                Where-Object { Test-LocalCertificate $_ $subject $threshold } |
                 Sort-Object NotAfter -Descending |
                 Select-Object -First 1
             if (-not $cert) {
@@ -97,6 +123,9 @@ public static class TestCertificateStore
                     -KeyUsage DigitalSignature -TextExtension @('2.5.29.19={critical}{text}ca=false') `
                     -KeyExportPolicy NonExportable -KeyAlgorithm RSA -KeyLength 3072 -HashAlgorithm SHA256 `
                     -NotAfter (Get-Date).AddDays({{lifetimeDays}}) -CertStoreLocation Cert:\CurrentUser\My
+            }
+            if (-not (Test-LocalCertificate $cert $subject $threshold)) {
+                throw 'The local test certificate does not meet the required code-signing profile.'
             }
             Get-ChildItem Cert:\CurrentUser\My |
                 Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint } |
@@ -120,8 +149,7 @@ public static class TestCertificateStore
             """;
     }
 
-    internal static string BuildRemoveScript(string subject)
-    {
+    internal static string BuildRemoveScript(string subject) {
         var escaped = EscapeSingleQuoted(subject);
         return $$"""
             $ErrorActionPreference = 'Stop'
@@ -134,16 +162,14 @@ public static class TestCertificateStore
             """;
     }
 
-    internal static string ParseFingerprint(string scriptOutput)
-    {
+    internal static string ParseFingerprint(string scriptOutput) {
         var fingerprints = scriptOutput
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => line.StartsWith(FingerprintMarker, StringComparison.Ordinal))
             .Select(line => line[FingerprintMarker.Length..])
             .ToArray();
 
-        if (fingerprints.Length != 1 || fingerprints[0].Length != 64 || !fingerprints[0].All(Uri.IsHexDigit))
-        {
+        if (fingerprints.Length != 1 || fingerprints[0].Length != 64 || !fingerprints[0].All(Uri.IsHexDigit)) {
             throw new InvalidOperationException("Certificate script did not return a valid SHA-256 fingerprint.");
         }
 
@@ -152,16 +178,13 @@ public static class TestCertificateStore
 
     private static string EscapeSingleQuoted(string value) => value.Replace("'", "''");
 
-    private static async Task<string> RunPowerShellAsync(string script, CancellationToken cancellationToken)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
+    private static async Task<string> RunPowerShellAsync(string script, CancellationToken cancellationToken) {
+        if (!OperatingSystem.IsWindows()) {
             throw new PlatformNotSupportedException("Test certificates are only supported on Windows.");
         }
 
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var startInfo = new ProcessStartInfo("powershell.exe")
-        {
+        var startInfo = new ProcessStartInfo("powershell.exe") {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -178,16 +201,13 @@ public static class TestCertificateStore
             ?? throw new InvalidOperationException("Could not start powershell.exe.");
         var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
         var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
-        try
-        {
+        try {
             await process.WaitForExitAsync(timeout.Token);
         }
-        catch (OperationCanceledException)
-        {
+        catch (OperationCanceledException) {
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync(CancellationToken.None);
-            if (!cancellationToken.IsCancellationRequested)
-            {
+            if (!cancellationToken.IsCancellationRequested) {
                 throw new TimeoutException(
                     $"Certificate script did not finish within {PowerShellTimeout.TotalMinutes} minutes. " +
                     "If Windows is asking whether to trust the pyRevit Local Dev root certificate, answer it and rerun.");
@@ -196,8 +216,7 @@ public static class TestCertificateStore
             throw;
         }
 
-        if (process.ExitCode != 0)
-        {
+        if (process.ExitCode != 0) {
             throw new InvalidOperationException($"Certificate script failed: {await stderr}");
         }
 
