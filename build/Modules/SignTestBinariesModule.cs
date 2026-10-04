@@ -13,7 +13,8 @@ namespace Build.Modules;
 /// </summary>
 /// <remarks>
 /// Never reads <see cref="SigningOptions"/>. In CI the fingerprint comes from <c>TestSigning__Fingerprint</c>;
-/// in local mode the developer certificate is created, trusted and renewed on demand.
+/// in local mode the developer certificate is created, trusted and renewed on demand. Either way the certificate
+/// must carry a test subject, so <see cref="RejectTestSignedBinariesModule"/> can recognise what it signed.
 /// </remarks>
 [DependsOn<WriteCiBinManifestModule>(Optional = true)]
 [DependsOn<StageReleaseMetadataModule>(Optional = true)]
@@ -33,6 +34,8 @@ public sealed class SignTestBinariesModule(IOptions<TestSigningOptions> testSign
             throw new InvalidOperationException(
                 "sign-test needs the throwaway certificate fingerprint in TestSigning__Fingerprint.");
         }
+
+        TestCertificateHelper.EnsureFingerprintIsTestCertificate(fingerprint);
 
         var files = SigningHelper.FindPyRevitBinaries(PyRevitPaths.BinPath).ToArray();
         await TestCertificateHelper.SignFilesAsync(context, fingerprint, files, "Binaries", cancellationToken);

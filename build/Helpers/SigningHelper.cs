@@ -53,7 +53,7 @@ public static class SigningHelper
         return string.Format("{0} file(s): {1}", total, breakdown);
     }
 
-    public static async Task<CommandResult> SignFilesAsync(
+    public static Task<CommandResult> SignFilesAsync(
         IModuleContext context,
         SigningOptions signingOptions,
         BuildOptions buildOptions,
@@ -61,38 +61,19 @@ public static class SigningHelper
         string summaryLabel,
         CancellationToken cancellationToken)
     {
-        var fileList = files.ToArray();
-        if (fileList.Length == 0)
-        {
-            throw new InvalidOperationException("No files were provided for signing.");
-        }
-
-        context.Summary.KeyValue("Signing", summaryLabel, BuildSigningSummary(fileList));
-
-        await EnsureSignToolInstalledAsync(context, cancellationToken);
-
-        var signExe = GetSignExecutablePath();
-        var arguments = new List<string>
-        {
-            "code",
+        return RunSignToolAsync(
+            context,
+            files,
+            "Signing",
+            summaryLabel,
             "trusted-signing",
-        };
-        arguments.AddRange(fileList);
-        arguments.AddRange(
-        [
-            "--trusted-signing-account", signingOptions.SigningAccountName,
-            "--trusted-signing-certificate-profile", signingOptions.CertificateProfileName,
-            "--trusted-signing-endpoint", signingOptions.Endpoint,
-            "--file-digest", "SHA256",
-            "--timestamp-url", buildOptions.TimestampUrl,
-            "--timestamp-digest", "SHA256",
-        ]);
-
-        return await context.Shell.Command.ExecuteCommandLineTool(
-            new GenericCommandLineToolOptions(signExe)
-            {
-                Arguments = arguments,
-            },
+            [
+                "--trusted-signing-account", signingOptions.SigningAccountName,
+                "--trusted-signing-certificate-profile", signingOptions.CertificateProfileName,
+                "--trusted-signing-endpoint", signingOptions.Endpoint,
+                "--timestamp-url", buildOptions.TimestampUrl,
+                "--timestamp-digest", "SHA256",
+            ],
             new CommandExecutionOptions
             {
                 EnvironmentVariables = new Dictionary<string, string?>
@@ -102,6 +83,44 @@ public static class SigningHelper
                     ["AZURE_CLIENT_SECRET"] = signingOptions.ClientSecret,
                 },
             },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Runs <c>sign code &lt;provider&gt;</c> over <paramref name="files"/>. Production and test signing both go
+    /// through here, so they always share the file list handling, file digest and summary reporting.
+    /// </summary>
+    internal static async Task<CommandResult> RunSignToolAsync(
+        IModuleContext context,
+        IEnumerable<string> files,
+        string summarySection,
+        string summaryLabel,
+        string provider,
+        IEnumerable<string> providerArguments,
+        CommandExecutionOptions executionOptions,
+        CancellationToken cancellationToken)
+    {
+        var fileList = files.ToArray();
+        if (fileList.Length == 0)
+        {
+            throw new InvalidOperationException("No files were provided for signing.");
+        }
+
+        context.Summary.KeyValue(summarySection, summaryLabel, BuildSigningSummary(fileList));
+
+        await EnsureSignToolInstalledAsync(context, cancellationToken);
+
+        var arguments = new List<string> { "code", provider };
+        arguments.AddRange(fileList);
+        arguments.AddRange(["--file-digest", "SHA256"]);
+        arguments.AddRange(providerArguments);
+
+        return await context.Shell.Command.ExecuteCommandLineTool(
+            new GenericCommandLineToolOptions(GetSignExecutablePath())
+            {
+                Arguments = arguments,
+            },
+            executionOptions,
             cancellationToken: cancellationToken);
     }
 

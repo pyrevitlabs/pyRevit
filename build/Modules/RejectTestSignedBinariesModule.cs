@@ -11,21 +11,19 @@ namespace Build.Modules;
 /// </summary>
 /// <remarks>
 /// Inspects the actual Authenticode signer of each binary, so it also catches a <c>bin/</c> signed by an earlier,
-/// separate <c>ci local</c> run. Run <c>ci</c> to rebuild unsigned binaries.
+/// separate <c>ci local</c> run or downloaded from a <c>sign-test</c> job.
+/// <para>
+/// Every module that packages or signs <c>bin/</c> depends on this one directly, so the guard does not rely on
+/// registration order. The optional dependency on <see cref="WriteCiBinManifestModule"/> is load-bearing: in a
+/// <c>ci pack</c> run it forces the scan to happen after the build has produced <c>bin/</c>, not before.
+/// </para>
 /// </remarks>
 [DependsOn<WriteCiBinManifestModule>(Optional = true)]
 public sealed class RejectTestSignedBinariesModule : Module
 {
     protected override Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
     {
-        var offenders = TestCertificateHelper.FindTestSignedFiles(SigningHelper.FindPyRevitBinaries(PyRevitPaths.BinPath));
-        if (offenders.Count > 0)
-        {
-            throw new InvalidOperationException(
-                $"{offenders.Count} binaries in bin/ are signed with a test certificate (first: {offenders[0]}). " +
-                "Rebuild with 'ci' before pack, sign or publish.");
-        }
-
+        TestCertificateHelper.EnsureNoTestSignedBinaries(PyRevitPaths.BinPath);
         return Task.CompletedTask;
     }
 }

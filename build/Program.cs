@@ -18,46 +18,28 @@ builder.Configuration.AddJsonFile(
     reloadOnChange: false);
 builder.Configuration.AddCommandLine(args);
 
-var argsSet = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
-var runPack = argsSet.Contains("pack");
-var runSign = argsSet.Contains("sign");
-var runPublish = argsSet.Contains("publish");
-var runNotify = argsSet.Contains("notify");
-var runRelease = argsSet.Contains("release");
-var runWinget = argsSet.Contains("winget");
-var runLocal = argsSet.Contains("local") || argsSet.Contains("--local");
-var runSignTest = argsSet.Contains("sign-test");
-var runRemoveCert = argsSet.Contains("--remove-cert");
-var runCi = !runRemoveCert && (argsSet.Count == 0 || argsSet.Contains("ci") || runLocal);
+var modes = PipelineModes.Parse(args);
 
 TestCertificateHelper.EnsureModesAllowed(
-    runLocal,
-    runSignTest,
-    runRemoveCert,
-    runPack,
-    runSign,
-    runPublish,
-    builder.Configuration["Build:Channel"] ?? "none",
-    string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase));
+    modes,
+    (builder.Configuration.GetSection("Build").Get<BuildOptions>() ?? new BuildOptions()).Channel,
+    string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase),
+    OperatingSystem.IsWindows());
 
 builder.Services.AddOptions<BuildOptions>().Bind(builder.Configuration.GetSection("Build"));
 builder.Services.AddOptions<SigningOptions>().Bind(builder.Configuration.GetSection("Signing"));
 builder.Services.AddOptions<TestSigningOptions>().Bind(builder.Configuration.GetSection("TestSigning"));
-builder.Services.Configure<TestSigningOptions>(options =>
-{
-    options.Local = runLocal && !runRemoveCert;
-});
+builder.Services.Configure<TestSigningOptions>(options => options.Local = modes.SignsWithLocalCertificate);
 builder.Services.AddOptions<PublishOptions>().Bind(builder.Configuration.GetSection("Publish"));
 
-var requireInstallerTooling = runPack || runSign || runPublish;
-builder.Services.Configure<BuildOptions>(options => options.RequireInstallerTooling = requireInstallerTooling);
+builder.Services.Configure<BuildOptions>(options => options.RequireInstallerTooling = modes.Packages);
 
-if (runRelease)
+if (modes.Release)
 {
     builder.Services.AddModule<ValidateTagMatchesVersionModule>();
 }
 
-if (runCi)
+if (modes.Ci)
 {
     builder.Services.AddModule<CheckEnvironmentModule>();
     builder.Services.AddModule<ResolveVersioningModule>();
@@ -80,7 +62,7 @@ if (runCi)
     builder.Services.AddModule<WriteCiBinManifestModule>();
 }
 
-if (runPack || runSign || runPublish)
+if (modes.Packages)
 {
     builder.Services.AddModule<RejectTestSignedBinariesModule>();
     builder.Services.AddModule<RestoreStampedMetadataModule>();
@@ -88,36 +70,36 @@ if (runPack || runSign || runPublish)
     builder.Services.AddModule<BuildChocoModule>();
 }
 
-if (runSign || runPublish)
+if (modes.Sign || modes.Publish)
 {
     builder.Services.AddModule<SignBinariesModule>();
     builder.Services.AddModule<SignDistInstallersModule>();
     builder.Services.AddModule<SignChocoPackageModule>();
 }
 
-if ((runLocal && !runRemoveCert) || runSignTest)
+if (modes.SignsTestBinaries)
 {
     builder.Services.AddModule<SignTestBinariesModule>();
 }
 
-if (runRemoveCert)
+if (modes.RemoveCert)
 {
     builder.Services.AddModule<RemoveTestCertificateModule>();
 }
 
-if (runPublish)
+if (modes.Publish)
 {
     builder.Services.AddModule<GenerateReleaseNotesModule>();
     builder.Services.AddModule<PublishGithubReleaseModule>();
     builder.Services.AddModule<PublishChocoModule>();
 }
 
-if (runWinget)
+if (modes.Winget)
 {
     builder.Services.AddModule<PublishWingetModule>();
 }
 
-if (runNotify)
+if (modes.Notify)
 {
     builder.Services.AddModule<NotifyIssuesModule>();
 }

@@ -1,6 +1,7 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Build.Options;
 using ModularPipelines.Context;
 using ModularPipelines.Models;
 using ModularPipelines.Options;
@@ -12,19 +13,30 @@ namespace Build.Helpers;
 /// </summary>
 /// <remarks>
 /// These certificates must never sign anything that is uploaded, released or installed outside the machine
-/// that created them. <see cref="EnsureModesAllowed"/> is the guard that keeps them away from production signing.
+/// that created them. <see cref="EnsureModesAllowed"/> keeps them away from production signing,
+/// <see cref="EnsureFingerprintIsTestCertificate"/> keeps every test signature recognisable, and
+/// <see cref="EnsureNoTestSignedBinaries"/> rejects recognised signatures before packaging.
 /// </remarks>
 public static class TestCertificateHelper
 {
-    public const int LocalLifetimeDays = 365;
-    public const int LocalRenewBeforeDays = 30;
-    public const string LocalSubjectPrefix = "CN=pyRevit Local Dev";
-    public const string CiSubjectPrefix = "CN=pyRevit CI Test";
+    internal const int LocalLifetimeDays = 365;
+    internal const int LocalRenewBeforeDays = 30;
+    internal const string LocalSubjectPrefix = "CN=pyRevit Local Dev";
+    internal const string CiSubjectPrefix = "CN=pyRevit CI Test";
+    internal const string FingerprintMarker = "FINGERPRINT=";
+    internal static readonly TimeSpan PowerShellTimeout = TimeSpan.FromMinutes(5);
 
     /// <summary>Subject of the per-machine developer certificate; also what <c>--remove-cert</c> deletes.</summary>
     public static string LocalSubject(string machineName) => $"{LocalSubjectPrefix} ({machineName})";
 
-    public static bool IsTestSigner(string? subject) =>
+    /// <summary>
+    /// True when <paramref name="subject"/> names a pyRevit test certificate (local developer or CI throwaway).
+    /// </summary>
+    /// <remarks>
+    /// An accident guard, not a security check: it prefix-matches a name anyone can put in a certificate CN.
+    /// Test signing refuses any other subject, so every test signature it produces is caught by this match.
+    /// </remarks>
+    internal static bool IsTestSigner(string? subject) =>
         subject is not null
         && (subject.StartsWith(LocalSubjectPrefix, StringComparison.OrdinalIgnoreCase)
             || subject.StartsWith(CiSubjectPrefix, StringComparison.OrdinalIgnoreCase));
@@ -47,15 +59,29 @@ public static class TestCertificateHelper
         return found;
     }
 
+    /// <summary>Throws when any pyRevit binary under <paramref name="binPath"/> carries a test signature.</summary>
+    /// <exception cref="InvalidOperationException">At least one test-signed binary was found.</exception>
+    public static void EnsureNoTestSignedBinaries(string binPath)
+    {
+        var offenders = FindTestSignedFiles(SigningHelper.FindPyRevitBinaries(binPath));
+        if (offenders.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"{offenders.Count} binaries in bin/ are signed with a test certificate (first: {offenders[0]}). " +
+                "Packaging needs unsigned binaries: rebuild them with 'ci', or in a pack job restore bin/ from " +
+                "the unsigned-bin-<sha> artifact.");
+        }
+    }
+
     private static string? ReadSignerSubject(string file)
     {
         try
         {
 #pragma warning disable SYSLIB0057
-            return System.Security.Cryptography.X509Certificates.X509Certificate.CreateFromSignedFile(file).Subject;
+            return X509Certificate.CreateFromSignedFile(file).Subject;
 #pragma warning restore SYSLIB0057
         }
-        catch (System.Security.Cryptography.CryptographicException)
+        catch (CryptographicException)
         {
             return null;
         }
@@ -63,24 +89,27 @@ public static class TestCertificateHelper
 
     /// <summary>
     /// Guards the test-signing modes. Throws when they are combined with production modes, run on a shipping
-    /// channel, or (for the developer-certificate modes) run under CI.
+    /// channel, run off Windows, or (for the developer-certificate modes) run under CI.
     /// </summary>
-    public static void EnsureModesAllowed(
-        bool local,
-        bool signTest,
-        bool removeCert,
-        bool pack,
-        bool sign,
-        bool publish,
-        string channel,
-        bool runningOnCi)
+    /// <param name="channel">
+    /// Read from the bound <c>Build</c> configuration section before the host is built, so a later
+    /// <c>Configure&lt;BuildOptions&gt;</c> override of <c>Channel</c> would not be seen here.
+    /// </param>
+    /// <remarks>Runs before any module is registered, so a refused combination fails in under a second.</remarks>
+    public static void EnsureModesAllowed(PipelineModes modes, string channel, bool runningOnCi, bool runningOnWindows)
     {
-        if (!local && !signTest && !removeCert)
+        if (!modes.UsesTestCertificates)
         {
             return;
         }
 
-        if (pack || sign || publish)
+        if (!runningOnWindows)
+        {
+            throw new PlatformNotSupportedException(
+                "Test signing (local, sign-test, --remove-cert) is only supported on Windows.");
+        }
+
+        if (modes.Packages)
         {
             throw new InvalidOperationException(
                 "Test signing (local, sign-test, --remove-cert) cannot be combined with pack, sign or publish.");
@@ -93,24 +122,69 @@ public static class TestCertificateHelper
                 $"Test signing refuses to run on the '{channel}' channel.");
         }
 
-        if ((local || removeCert) && runningOnCi)
+        if ((modes.Local || modes.RemoveCert) && runningOnCi)
         {
             throw new InvalidOperationException(
                 "'local' and '--remove-cert' use a developer certificate and cannot run when CI is set.");
         }
 
-        if (local && signTest)
+        if (modes.Local && modes.SignTest)
         {
             throw new InvalidOperationException("'local' and 'sign-test' cannot be combined.");
         }
 
-        if (signTest && removeCert)
+        if (modes.SignTest && modes.RemoveCert)
         {
             throw new InvalidOperationException("'sign-test' and '--remove-cert' cannot be combined.");
         }
     }
 
-    public static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays)
+    /// <summary>
+    /// Finds the certificate with SHA-256 <paramref name="fingerprint"/> in the current user or local machine
+    /// <c>My</c> store and refuses it unless its subject marks it as a test certificate.
+    /// </summary>
+    /// <remarks>
+    /// This is what lets <see cref="EnsureNoTestSignedBinaries"/> catch every test signature: whatever certificate
+    /// a workflow hands to <c>sign-test</c>, it can only sign if <see cref="IsTestSigner"/> recognises it later.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">No such certificate, or it is not a test certificate.</exception>
+    public static void EnsureFingerprintIsTestCertificate(string fingerprint)
+    {
+        foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+        {
+            using var store = new X509Store(StoreName.My, location);
+            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            foreach (var certificate in store.Certificates)
+            {
+                using (certificate)
+                {
+                    if (string.Equals(
+                            certificate.GetCertHashString(HashAlgorithmName.SHA256),
+                            fingerprint,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        EnsureTestSigner(certificate);
+                        return;
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No certificate with SHA-256 fingerprint {fingerprint} is in the CurrentUser or LocalMachine My store.");
+    }
+
+    internal static void EnsureTestSigner(X509Certificate2 certificate)
+    {
+        if (!IsTestSigner(certificate.Subject))
+        {
+            throw new InvalidOperationException(
+                $"Refusing to test-sign with '{certificate.Subject}': the subject must start with " +
+                $"'{LocalSubjectPrefix}' or '{CiSubjectPrefix}' so packaging can detect and reject the signature.");
+        }
+    }
+
+    internal static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays)
     {
         var escaped = EscapeSingleQuoted(subject);
         return $$"""
@@ -145,11 +219,11 @@ public static class TestCertificateHelper
                 }
             }
             $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($cert.RawData)
-            Write-Output (($hash | ForEach-Object { $_.ToString('X2') }) -join '')
+            Write-Output ('{{FingerprintMarker}}' + (($hash | ForEach-Object { $_.ToString('X2') }) -join ''))
             """;
     }
 
-    public static string BuildRemoveScript(string subject)
+    internal static string BuildRemoveScript(string subject)
     {
         var escaped = EscapeSingleQuoted(subject);
         return $$"""
@@ -163,18 +237,20 @@ public static class TestCertificateHelper
             """;
     }
 
-    public static string ParseFingerprint(string scriptOutput)
+    internal static string ParseFingerprint(string scriptOutput)
     {
-        var fingerprint = scriptOutput
+        var fingerprints = scriptOutput
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .LastOrDefault();
+            .Where(line => line.StartsWith(FingerprintMarker, StringComparison.Ordinal))
+            .Select(line => line[FingerprintMarker.Length..])
+            .ToArray();
 
-        if (string.IsNullOrEmpty(fingerprint) || fingerprint.Length != 64 || !fingerprint.All(Uri.IsHexDigit))
+        if (fingerprints.Length != 1 || fingerprints[0].Length != 64 || !fingerprints[0].All(Uri.IsHexDigit))
         {
             throw new InvalidOperationException("Certificate script did not return a valid SHA-256 fingerprint.");
         }
 
-        return fingerprint.ToUpperInvariant();
+        return fingerprints[0].ToUpperInvariant();
     }
 
     /// <summary>
@@ -196,37 +272,23 @@ public static class TestCertificateHelper
 
     /// <summary>Signs <paramref name="files"/> in place with the certificate in the current user store.</summary>
     /// <param name="fingerprint">SHA-256 fingerprint; the sign tool rejects a SHA-1 thumbprint.</param>
-    public static async Task<CommandResult> SignFilesAsync(
+    /// <remarks>Re-signing an already signed file replaces its signature, so repeated <c>ci local</c> runs succeed.</remarks>
+    public static Task<CommandResult> SignFilesAsync(
         IModuleContext context,
         string fingerprint,
         IEnumerable<string> files,
         string summaryLabel,
         CancellationToken cancellationToken)
     {
-        var fileList = files.ToArray();
-        if (fileList.Length == 0)
-        {
-            throw new InvalidOperationException("No files were provided for signing.");
-        }
-
-        context.Summary.KeyValue("Test signing", summaryLabel, SigningHelper.BuildSigningSummary(fileList));
-
-        await SigningHelper.EnsureSignToolInstalledAsync(context, cancellationToken);
-
-        var arguments = new List<string> { "code", "certificate-store" };
-        arguments.AddRange(fileList);
-        arguments.AddRange(
-        [
-            "--certificate-fingerprint", fingerprint,
-            "--file-digest", "SHA256",
-        ]);
-
-        return await context.Shell.Command.ExecuteCommandLineTool(
-            new GenericCommandLineToolOptions(SigningHelper.GetSignExecutablePath())
-            {
-                Arguments = arguments,
-            },
-            cancellationToken: cancellationToken);
+        return SigningHelper.RunSignToolAsync(
+            context,
+            files,
+            "Test signing",
+            summaryLabel,
+            "certificate-store",
+            ["--certificate-fingerprint", fingerprint],
+            new CommandExecutionOptions(),
+            cancellationToken);
     }
 
     private static string EscapeSingleQuoted(string value) => value.Replace("'", "''");
@@ -250,18 +312,28 @@ public static class TestCertificateHelper
         startInfo.ArgumentList.Add("-EncodedCommand");
         startInfo.ArgumentList.Add(encoded);
 
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(PowerShellTimeout);
+
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Could not start powershell.exe.");
-        var stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderr = process.StandardError.ReadToEndAsync(cancellationToken);
+        var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
+        var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
         try
         {
-            await process.WaitForExitAsync(cancellationToken);
+            await process.WaitForExitAsync(timeout.Token);
         }
         catch (OperationCanceledException)
         {
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync(CancellationToken.None);
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException(
+                    $"Certificate script did not finish within {PowerShellTimeout.TotalMinutes} minutes. " +
+                    "If Windows is asking whether to trust the pyRevit Local Dev root certificate, answer it and rerun.");
+            }
+
             throw;
         }
 
