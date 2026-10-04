@@ -199,8 +199,8 @@ public static class TestCertificateStore {
 
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Could not start powershell.exe.");
-        var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
-        var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
+        var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
         try {
             await process.WaitForExitAsync(timeout.Token);
         }

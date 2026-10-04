@@ -94,6 +94,7 @@ public sealed class TestSignatureDetectorTests {
 
         var script = $$"""
             $ErrorActionPreference = 'Stop'
+            Import-Module Microsoft.PowerShell.Security
             $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('{{pfx}}', '{{password}}')
             $result = Set-AuthenticodeSignature -FilePath '{{file}}' -Certificate $cert -HashAlgorithm SHA256
             if (-not $result.SignerCertificate) { throw $result.StatusMessage }
@@ -103,6 +104,11 @@ public sealed class TestSignatureDetectorTests {
             UseShellExecute = false,
             CreateNoWindow = true,
         };
+        startInfo.Environment["PSModulePath"] = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell",
+            "v1.0",
+            "Modules");
         startInfo.ArgumentList.Add("-NoProfile");
         startInfo.ArgumentList.Add("-EncodedCommand");
         startInfo.ArgumentList.Add(Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script)));
