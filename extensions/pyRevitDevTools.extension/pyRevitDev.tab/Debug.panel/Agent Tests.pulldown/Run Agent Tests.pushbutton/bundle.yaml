@@ -1,0 +1,8 @@
+title: Run Agent Tests
+tooltip: >-
+  Run the agent runtime end-to-end tests from IronPython. They create two
+  scratch projects in the temp folder, run requests and agent scripts on both
+  engines against them, and close them again; your open model is not changed.
+context: zero-doc
+engine:
+  clean: true

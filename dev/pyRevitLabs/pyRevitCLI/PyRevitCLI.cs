@@ -61,6 +61,8 @@ namespace pyRevitCLI {
         Config,
         Configs,
         Doctor,
+        Agent,
+        Mcp,
     }
 
     internal static class PyRevitCLI {
@@ -561,6 +563,61 @@ namespace pyRevitCLI {
                     PyRevitCLIRevitCmds.PrintLocalRevits(running: arguments["--installed"].IsFalse);
             }
 
+            else if (all("agent") && !all("configs")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
+
+                else if (all("status"))
+                    PyRevitCLIAgentCmds.PrintStatus(json: arguments["--json"].IsTrue);
+
+                else if (all("context"))
+                    PyRevitCLIAgentCmds.PrintContext(TryGetValue("--revit"));
+
+                else if (all("run"))
+                    PyRevitCLIAgentCmds.RunScript(
+                        scriptFile: TryGetValue("<script_file>"),
+                        mode: TryGetValue("--mode"),
+                        engine: TryGetValue("--engine"),
+                        title: TryGetValue("--title"),
+                        inputsJson: TryGetValue("--inputs"),
+                        revitSelector: TryGetValue("--revit"),
+                        timeoutSeconds: TryGetValue("--timeout"),
+                        workspace: TryGetValue("--workspace")
+                        );
+
+                else if (all("runs"))
+                    PyRevitCLIAgentCmds.PrintRuns(TryGetValue("--limit"));
+
+                else if (all("show"))
+                    PyRevitCLIAgentCmds.ShowRun(TryGetValue("<run_id>"));
+
+                else
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
+            }
+
+            else if (all("mcp")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Mcp);
+
+                else if (all("uninstall") && arguments["--all"].IsTrue)
+                    PyRevitCLIAgentCmds.UninstallMcpFromAllClients(ownedOnly: arguments["--owned"].IsTrue);
+
+                else if (any("install", "uninstall")) {
+                    var client = arguments["claude"].IsTrue ? McpClientKind.Claude
+                        : arguments["codex"].IsTrue ? McpClientKind.Codex
+                        : arguments["cursor"].IsTrue ? McpClientKind.Cursor
+                        : arguments["opencode"].IsTrue ? McpClientKind.OpenCode
+                        : McpClientKind.VSCode;
+                    if (all("install"))
+                        PyRevitCLIAgentCmds.InstallMcp(client, project: arguments["--project"].IsTrue);
+                    else
+                        PyRevitCLIAgentCmds.UninstallMcp(client, project: arguments["--project"].IsTrue);
+                }
+
+                else
+                    PyRevitMcpServer.Serve(TryGetValue("--revit"));
+            }
+
             else if (all("run")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Run);
@@ -782,6 +839,27 @@ namespace pyRevitCLI {
                         Console.WriteLine(string.Format("Routes Server is {0}",
                                                         PyRevitConfigs.GetRoutesServerStatus() ? "Enabled" : "Disabled"));
                     }
+                }
+
+                else if (all("agent")) {
+                    if (all("policy"))
+                        PyRevitCLIAgentCmds.ConfigurePolicy(
+                            arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
+                            : arguments["ask"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAsk
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAuto
+                            : null);
+
+                    else if (all("engine"))
+                        PyRevitCLIAgentCmds.ConfigureEngine(
+                            arguments["ironpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineIronPython
+                            : arguments["cpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineCPython
+                            : null);
+
+                    else if (any("enable", "disable"))
+                        PyRevitCLIAgentCmds.ConfigureEnabled(arguments["enable"].IsTrue);
+
+                    else
+                        PyRevitCLIAgentCmds.ConfigureEnabled(null);
                 }
 
                 else if (all("telemetry")) {

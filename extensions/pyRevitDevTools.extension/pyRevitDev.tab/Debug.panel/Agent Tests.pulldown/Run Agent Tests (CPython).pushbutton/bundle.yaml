@@ -1,0 +1,7 @@
+title: Run Agent Tests (CPython)
+tooltip: >-
+  Run the agent runtime end-to-end tests from a CPython command, which also
+  checks that a CPython command survives nested agent runs.
+context: zero-doc
+engine:
+  clean: true
