@@ -1,6 +1,7 @@
 """Database elements deletion functions."""
 
 from pyrevit import DOCS
+from pyrevit import automation
 from pyrevit.framework import to_clr_list
 from pyrevit import DB
 from pyrevit.revit.db import query
@@ -11,6 +12,13 @@ def clear_sheet_revisions(sheet):
     sheet.SetAdditionalRevisionIds(to_clr_list(DB.ElementId, []))
 
 
+@automation.operation(
+    "pyrevit.elements.delete",
+    PlainEnglish="Delete one or more elements and return all affected element identifiers.",
+    mode="modify",
+    effects=("model.write", "model.delete"),
+    transaction="caller",
+)
 def delete_elements(element_list, doc=None):
     doc = doc or DOCS.doc
     element_ids = ensure.ensure_element_ids(element_list)
