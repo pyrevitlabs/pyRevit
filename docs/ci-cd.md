@@ -20,12 +20,12 @@ pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://g
 | Workflow | File | What it does |
 |----------|------|--------------|
 | **`pyRevit CI`** | [`ci.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/ci.yml) | Runs `dotnet run -- ci` to build unsigned DLLs, runs `dotnet test` on the build project, uploads `unsigned-bin-<sha>` (Actions artifact for WIP/release), and publishes the same zip to the public **`ci-binaries`** GitHub Release (for `pyrevit clone`). Runs on every push to `develop` / `master` / `v*` tag (with a path filter), on PRs to those branches, and on manual dispatch. Tag pushes also refresh `unsigned-bin-master-latest.zip`. |
-| **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | Downloads CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. |
+| **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | **Reusable workflow** (`workflow_call`) — it has no trigger of its own. The **`wip` job** of `ci.yml` calls it on `develop` pushes to the main repo. It downloads the CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. Because it runs as a job, WIP activity appears **inside the `pyRevit CI` run**, not as a separate workflow run. |
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
 | **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches every supported Revit year, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
 
-The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment.
+The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment. It `needs` both `build` and `wip`, so a failed WIP pack also holds back the notification.
 
 This split guarantees that:
 
@@ -74,23 +74,23 @@ Confirmed on a Windows 11 host with Revit 2021-2027 installed, using a self-sign
 
 `ci.yml` runs when changes touch build-related paths:
 
-- `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`
+- `.github/workflows/`, `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`
 
 It is triggered by:
 
 - **Push** to `develop`, `master`, or any `v*` tag (with the path filter above).
-- **Pull request** (`opened`, `reopened`) targeting `develop` or `master` (with the path filter).
+- **Pull request** (`opened`, `reopened`, `synchronize`) targeting `develop` or `master` (with the path filter).
 - **`workflow_dispatch`** for manual runs.
 
 Doc-only or other out-of-scope changes skip CI entirely.
 
-!!! warning "PR pushes do not re-run CI"
+!!! note "New commits to an open PR do re-run CI"
 
-    The PR trigger is restricted to `opened` and `reopened`. New commits pushed to an **open** PR do **not** trigger another run. Close and reopen the PR, or push to the head branch after closing and reopening, if you need a fresh CI run after fixes.
+    The pull-request trigger includes `synchronize`, so every push to an open PR's head branch starts a fresh run — no need to close and reopen to get one after fixes. Concurrency is keyed by `pyrevit-ci-<pr number>` with `cancel-in-progress`, so a push supersedes the PR's previous run instead of queueing behind it.
 
 ### Official repository vs forks
 
-The version, year, and product-data stamping modules only run when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is the main repo (`pyrevitlabs/pyRevit`). The downstream `wip.yml` and `release.yml` jobs are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an **unsigned** product build via `ci.yml` (useful for PR validation). Unsigned builds (`Channel=none`) still seed `bin/pyrevit-products.json` from `release/` before the labs build so fork PR validation succeeds.
+The version, year, and product-data stamping modules only run when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is the main repo (`pyrevitlabs/pyRevit`). The downstream `wip` job and the whole `release.yml` workflow are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an **unsigned** product build via `ci.yml` (useful for PR validation). Unsigned builds (`Channel=none`) still seed `bin/pyrevit-products.json` from `release/` before the labs build so fork PR validation succeeds.
 
 ## Prebuilt binaries for clone
 
@@ -145,10 +145,10 @@ See also [`build/README.md`](../build/README.md) and the [developer guide](dev-g
     - Stamps copyright/year, applies WIP versioning, refreshes product metadata, builds products, verifies LibGit2, and stages release metadata.
     - Uploads the unsigned `bin/` tree as `unsigned-bin-<sha>`.
 
-3. `wip.yml` is triggered automatically when that CI run finishes successfully on `develop`. On the main repo:
+3. The same CI run's **`wip` job** (`needs: build`, gated on the main repo) calls the reusable `wip.yml` workflow — there is no separate WIP trigger to wait for. It:
 
     - Downloads CI artifacts and runs `dotnet run -- pack sign` to sign DLLs, build/sign installers and the Chocolatey `.nupkg`, and upload `pyrevit-wip-installers-<install-version>`.
-    - The **`notify`** job in `ci.yml` runs `dotnet run -- notify` with a link to the **WIP workflow run** (where signed installers are published).
+    - Exports its run id, which the **`notify`** job in `ci.yml` (`needs: [build, wip]`) passes to `dotnet run -- notify` as the link to the **WIP job** of the same run (where signed installers are published).
 
 **Push to `develop` ⇒ signed WIP installers and notification, not a public GitHub Release.**
 
@@ -158,7 +158,7 @@ Releases are no longer auto-triggered by merging into `master`. A maintainer run
 
 ### Pre-flight
 
-- Confirm **`develop`** is green: the latest CI run on `develop` succeeded and `wip.yml` produced the signed artifact.
+- Confirm **`develop`** is green: the latest `pyRevit CI` run on `develop` succeeded and its **`wip` job** produced the signed artifact (`pyrevit-wip-installers-<install-version>`). The WIP job is part of that run, not a workflow of its own — check it in the run's job list.
 - Confirm `pyrevitlib/pyrevit/version` and `release/version` reflect the version you intend to publish. `release.yml` hard-fails if the tag name does not match `pyrevitlib/pyrevit/version`.
 - On **tag** pushes, CI preserves the committed build version (including the `+HHMM` suffix) from git. **`develop`** and **`master`** branch pushes still re-stamp the build number as before.
 - Make sure the required secrets are configured in the **`production`** GitHub environment:
@@ -207,6 +207,8 @@ Releases are no longer auto-triggered by merging into `master`. A maintainer run
 !!! tip "Manual re-run"
 
     Running **`workflow_dispatch`** on `release.yml` is supported but the `if` guard still requires `github.ref_type == 'tag'`, so the dispatch must be invoked against an existing `v*` tag — not a branch. Use it to retry a failed release without re-pushing the tag.
+
+    The dispatch takes three inputs: `notify_only` (run only the `notify` job, for example to re-post the release URL to linked issues), `release_url` (the published release URL passed to `notify` — required when `notify_only` is set), and `tag_ref` (the `v*` tag the run checks out).
 
 ### Post-release
 
@@ -272,7 +274,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 | Goal | Action |
 |------|--------|
 | Validate a change in CI | PR to **`develop`**; ensure changed paths match the workflow filter. |
-| WIP installers + issue ping | Merge PR → **`develop`** (push triggers `ci.yml` → `wip.yml`). |
+| WIP installers + issue ping | Merge PR → **`develop`** (the push runs `ci.yml`; its `wip` job calls `wip.yml`, then `notify`). |
 | Ship a release | Stamp release on `develop`, merge to `master`, tag `v<version>` on `master`, push the tag. |
 | Publish the release | Open the **draft** release on GitHub and publish when ready. |
 | Next dev version after release | Increment both version files on `develop`, commit, and push. |
