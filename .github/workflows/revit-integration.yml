@@ -200,7 +200,7 @@ jobs:
                   <VendorId>eirannejad</VendorId>
               </AddIn>
           </RevitAddIns>
-          "@@ | Set-Content -Path $manifest -Encoding UTF8
+          "@ | Set-Content -Path $manifest -Encoding UTF8
 
             $journals = Join-Path $env:LOCALAPPDATA "Autodesk\Revit\Autodesk Revit $year\Journals"
             $existing = @(Get-ChildItem $journals -Filter 'journal*.txt' -ErrorAction SilentlyContinue |
