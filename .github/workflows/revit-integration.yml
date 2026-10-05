@@ -1,0 +1,285 @@
+name: pyRevit Revit integration tests
+
+# Signs bin/ with a throwaway certificate, then launches Revit and asserts the add-in
+# loads without the unsigned add-in dialog. Requires a self-hosted runner with Revit
+# installed; GitHub-hosted windows runners cannot run Revit.
+#
+# Deliberately not run for pull requests from forks: the job needs a runner holding a
+# trusted certificate, and running unreviewed code on that runner would let a PR sign
+# binaries with a certificate the runner trusts.
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/revit-integration.yml'
+      - 'build/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+  workflow_dispatch:
+    inputs:
+      revit_years:
+        description: 'Revit years to test, comma separated. Defaults to 2022-2027.'
+        required: false
+        default: '2022,2023,2024,2025,2026,2027'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pyrevit-revit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Guards the modes that need a human, so a misconfigured runner fails in under a second
+  # instead of blocking on the Windows root confirmation.
+  CI: 'true'
+
+jobs:
+  revit:
+    # Set these labels on the runner that has Revit installed.
+    runs-on: [self-hosted, windows, revit]
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN || github.token }}
+
+      - name: Resolve Revit years
+        id: years
+        shell: pwsh
+        env:
+          REQUESTED: ${{ github.event.inputs.revit_years || '' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # 2021 is excluded deliberately: it is .NET Framework like 2022-2024, but the
+          # runner image for it has no schema folder and Revit aborts at startup before
+          # add-ins are considered.
+          $years = if ($env:REQUESTED) {
+            $env:REQUESTED -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          }
+          else {
+            @('2022', '2023', '2024', '2025', '2026', '2027')
+          }
+          $unsupported = $years | Where-Object { [int]$_ -lt 2022 -or [int]$_ -gt 2027 }
+          if ($unsupported) {
+            throw "Unsupported Revit years: $($unsupported -join ', '). Supported: 2022-2027."
+          }
+          "years=$($years -join ',')" >> $env:GITHUB_OUTPUT
+
+      - name: Build bin
+        working-directory: build
+        shell: pwsh
+        env:
+          Build__Channel: none
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run -c Release -- ci
+          dotnet test tests/Build.Tests.csproj -c Release
+
+      - name: Create throwaway certificate
+        id: certificate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Subject prefix is what TestSignatureDetector looks for, and what
+          # RejectTestSignedBinariesModule later refuses to let into an installer.
+          $subject = "CN=pyRevit CI Test ${{ github.run_id }}-${{ github.run_attempt }}"
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $subject `
+            -KeyUsage DigitalSignature -TextExtension @('2.5.29.19={critical}{text}ca=false') `
+            -KeyExportPolicy NonExportable -KeyAlgorithm RSA -KeyLength 3072 -HashAlgorithm SHA256 `
+            -NotAfter (Get-Date).AddDays(1) -CertStoreLocation Cert:\CurrentUser\My
+
+          function Add-ToStore([string]$Name, [System.Security.Cryptography.X509Certificates.X509Certificate2]$Cert) {
+            $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($Name, 'CurrentUser')
+            $store.Open('ReadWrite')
+            try {
+              $store.Add((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(, $Cert.RawData)))
+            }
+            finally {
+              $store.Close()
+            }
+          }
+
+          # TrustedPublisher never prompts.
+          Add-ToStore 'TrustedPublisher' $cert
+
+          # Adding a root DOES raise a modal Windows Security Warning, and the runner session
+          # is not guaranteed to be non-interactive: a session that can show UI leaves the add
+          # blocked forever with nothing to answer it. Run it under a watchdog so the job fails
+          # in seconds with an actionable message instead of hanging until the job timeout.
+          $addRoot = @"
+          `$ErrorActionPreference = 'Stop'
+          `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(, [Convert]::FromBase64String('$([Convert]::ToBase64String($cert.RawData))'))
+          `$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root', 'CurrentUser')
+          `$store.Open('ReadWrite')
+          try { `$store.Add(`$cert) } finally { `$store.Close() }
+          "@
+          $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($addRoot))
+          $info = New-Object System.Diagnostics.ProcessStartInfo
+          $info.FileName = 'powershell.exe'
+          $info.RedirectStandardOutput = $true
+          $info.RedirectStandardError = $true
+          $info.UseShellExecute = $false
+          $info.CreateNoWindow = $true
+          $info.Arguments = "-NoProfile -EncodedCommand $encoded"
+          $child = [System.Diagnostics.Process]::Start($info)
+          if (-not $child.WaitForExit(90000)) {
+            $child.Kill()
+            $child.WaitForExit()
+            throw ('Adding the certificate to CurrentUser\Root did not complete within 90s, which means ' +
+              'Windows put up a root confirmation dialog nobody can answer on this runner. Configure the ' +
+              'runner session as non-interactive (service or session 0), or pre-provision a CI certificate ' +
+              'and pass its fingerprint in TestSigning__Fingerprint instead.')
+          }
+          if ($child.ExitCode -ne 0) {
+            throw "Trusting the CI certificate failed: $($child.StandardError.ReadToEnd())"
+          }
+
+          # sign-test takes a SHA-256 fingerprint; the sign tool rejects a SHA-1 thumbprint.
+          $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($cert.RawData)
+          "fingerprint=$(($hash | ForEach-Object { $_.ToString('X2') }) -join '')" >> $env:GITHUB_OUTPUT
+          "subject=$subject" >> $env:GITHUB_OUTPUT
+
+      - name: Sign bin with the throwaway certificate
+        working-directory: build
+        shell: pwsh
+        env:
+          TestSigning__Fingerprint: ${{ steps.certificate.outputs.fingerprint }}
+        run: dotnet run -c Release -- sign-test
+
+      - name: Verify every candidate is signed
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidates = Get-ChildItem bin -Recurse -Include *.dll, *.exe |
+            Where-Object { $_.Name -like 'pyrevit*' -or $_.Name -like 'pyRevit*' }
+          if (-not $candidates) { throw 'No signing candidates found in bin/.' }
+          $bad = @()
+          foreach ($file in $candidates) {
+            $signature = Get-AuthenticodeSignature -LiteralPath $file.FullName
+            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notlike 'CN=pyRevit CI Test*') {
+              $bad += "$($file.Name): $($signature.Status)"
+            }
+          }
+          if ($bad) { throw "Unsigned or wrongly signed binaries:`n$($bad -join "`n")" }
+          Write-Host "$($candidates.Count) binaries signed and Valid."
+
+      - name: Test each Revit year
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = $env:GITHUB_WORKSPACE
+          $results = @()
+          foreach ($year in '${{ steps.years.outputs.years }}'.Split(',')) {
+            # pyrevitlib/pyrevit/compat.py: NETCORE is Revit 2025 onwards, NETFRAMEWORK is
+            # 2024 and earlier. Pointing a year at the wrong runtime makes Revit refuse the
+            # add-in outright, which looks like a trust failure but is not.
+            $engine = if ([int]$year -ge 2025) { 'netcore' } else { 'netfx' }
+            $loader = Join-Path $root "bin/$engine/engines/IPY2712PR/pyRevitLoader.dll"
+            if (-not (Test-Path $loader)) { throw "Loader missing for $year : $loader" }
+
+            $revit = Join-Path $env:ProgramFiles "Autodesk\Revit $year\Revit.exe"
+            if (-not (Test-Path $revit)) { throw "Revit $year is not installed on this runner." }
+
+            $addins = Join-Path $env:APPDATA "Autodesk\Revit\Addins\$year"
+            $null = New-Item -ItemType Directory -Path $addins -Force
+            $manifest = Join-Path $addins 'pyRevit.addin'
+            @"
+          <?xml version="1.0" encoding="utf-8" standalone="no"?>
+          <RevitAddIns>
+              <AddIn Type = "Application">
+                  <Name>PyRevitLoader</Name>
+                  <Assembly>$loader</Assembly>
+                  <AddInId>B39107C3-A1D7-47F4-A5A1-532DDF6EDB5D</AddInId>
+                  <FullClassName>PyRevitLoader.PyRevitLoaderApplication</FullClassName>
+                  <VendorId>eirannejad</VendorId>
+              </AddIn>
+          </RevitAddIns>
+          "@@ | Set-Content -Path $manifest -Encoding UTF8
+
+            $journals = Join-Path $env:LOCALAPPDATA "Autodesk\Revit\Autodesk Revit $year\Journals"
+            $existing = @(Get-ChildItem $journals -Filter 'journal*.txt' -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+            $previous = if ($existing) { $existing[0].Name } else { $null }
+
+            Write-Host "=== Revit $year ($engine) ==="
+            $process = Start-Process -FilePath $revit -ArgumentList '/language', 'ENU' -PassThru
+
+            $journal = $null
+            $deadline = (Get-Date).AddSeconds(180)
+            while ((Get-Date) -lt $deadline -and -not $process.HasExited) {
+              Start-Sleep -Seconds 5
+              $candidate = Get-ChildItem $journals -Filter 'journal*.txt' -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1
+              if (-not $candidate) { continue }
+              if ($previous -and $candidate.Name -eq $previous) { continue }
+              $lines = @(Get-Content $candidate.FullName -ErrorAction SilentlyContinue)
+              if ($lines | Where-Object { $_ -match 'PyRevitLoader' } | Select-Object -First 1) {
+                Start-Sleep -Seconds 12
+                $journal = $candidate
+                break
+              }
+            }
+
+            $registrations = 0
+            $unsignedDialog = $false
+            $refused = $false
+            if ($journal) {
+              $lines = @(Get-Content $journal.FullName)
+              $registrations = @($lines | Where-Object { $_ -match 'Registering \w+ event by application PyRevitLoader' }).Count
+              $unsignedDialog = [bool]($lines | Where-Object { $_ -match 'TaskDialog_Security_Unsigned_File_Loading' } | Select-Object -First 1)
+              $refused = [bool]($lines | Where-Object { $_ -match 'TaskDialog_External_Tools_External_Tool_Failure' -and $_ -match 'PyRevitLoader' } | Select-Object -First 1)
+            }
+
+            $null = $process.CloseMainWindow()
+            if (-not $process.WaitForExit(45000)) {
+              Stop-Process -Id $process.Id -Force
+            }
+            Remove-Item $manifest -Force -ErrorAction SilentlyContinue
+
+            # Any dialog means the job failed. A silently accepted add-in is the whole point
+            # of the signing, so an unattended prompt must not be tolerated.
+            $verdict = if ($registrations -gt 0 -and -not $unsignedDialog -and -not $refused) { 'loaded' }
+            elseif ($unsignedDialog) { 'unsigned add-in dialog' }
+            elseif ($refused) { 'refused by Revit' }
+            else { 'never recorded the add-in' }
+            Write-Host "  $year -> $verdict ($registrations registrations)"
+            $results += [pscustomobject]@{ Year = $year; Engine = $engine; Verdict = $verdict }
+          }
+
+          $failed = @($results | Where-Object { $_.Verdict -ne 'loaded' })
+          $results | Format-Table -AutoSize | Out-String | Write-Host
+          if ($failed) {
+            throw "Revit $($failed.Year -join ', ') did not load the signed add-in cleanly."
+          }
+
+      - name: Remove throwaway certificate
+        if: always() && steps.certificate.outputs.subject != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $subject = '${{ steps.certificate.outputs.subject }}'
+          foreach ($name in 'My', 'Root', 'TrustedPublisher') {
+            $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
+            $store.Open('ReadWrite')
+            try {
+              foreach ($stale in @($store.Certificates | Where-Object { $_.Subject -eq $subject })) {
+                $store.Remove($stale)
+              }
+            }
+            finally {
+              $store.Close()
+            }
+          }
+
+      - name: Upload signed build
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: revit-test-signed-bin-${{ github.sha }}
+          path: bin/**

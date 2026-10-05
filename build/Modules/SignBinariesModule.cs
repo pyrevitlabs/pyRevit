@@ -1,12 +1,14 @@
 using Build.Helpers;
 using Build.Options;
 using Microsoft.Extensions.Options;
+using ModularPipelines.Attributes;
 using ModularPipelines.Configuration;
 using ModularPipelines.Context;
 using ModularPipelines.Modules;
 
 namespace Build.Modules;
 
+[DependsOn<RejectTestSignedBinariesModule>]
 public sealed class SignBinariesModule(
     IOptions<BuildOptions> buildOptions,
     IOptions<SigningOptions> signingOptions) : Module

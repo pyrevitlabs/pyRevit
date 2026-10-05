@@ -23,6 +23,7 @@ pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://g
 | **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | Downloads CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. |
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
+| **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches every supported Revit year, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
 
 The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment.
 
@@ -32,6 +33,42 @@ This split guarantees that:
 - the installer `.exe`/`.msi` themselves are Authenticode-signed,
 - the `.nupkg`'s embedded checksum matches the signed installer users actually download, and
 - the `.nupkg` itself carries a NuGet author signature so Chocolatey clients can verify it.
+
+## Revit integration tests
+
+GitHub-hosted runners cannot run Revit, so [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) targets a self-hosted runner labelled `self-hosted, windows, revit`. It answers one question the unit tests cannot: **does Revit load the build without the unsigned add-in dialog?**
+
+The job builds `bin/`, signs it with a throwaway certificate via `dotnet run -- sign-test`, then launches each Revit year and reads the outcome out of that session's journal:
+
+| Journal evidence | Meaning |
+|---|---|
+| `Registering <event> event by application PyRevitLoader` | The add-in loaded and initialised |
+| `TaskDialog_Security_Unsigned_File_Loading` | The Unsigned Add-In dialog appeared — the failure this job exists to catch |
+| `TaskDialog_External_Tools_External_Tool_Failure` naming `PyRevitLoader` | Revit refused the add-in outright |
+
+Any dialog fails the job. An unattended prompt that nobody answers would otherwise hang Revit until the job timed out, and "it eventually loaded after a prompt" is exactly the regression being guarded against.
+
+The engine directory per year is not a free choice. `pyrevitlib/pyrevit/compat.py` defines `NETCORE` as Revit 2025 onwards and `NETFRAMEWORK` as 2024 and earlier, so the job points 2025-2027 at `bin/netcore/engines/` and 2022-2024 at `bin/netfx/engines/`. Handing a year the wrong one makes Revit refuse the add-in, which reads like a trust failure but is not.
+
+### Runner requirements
+
+- The runner session must be **non-interactive** (service or session 0). Adding the certificate to `CurrentUser\Root` raises a modal Windows Security Warning; a session that can display it blocks the add forever with nobody to answer, so the job runs that add under a 90-second watchdog and fails with an actionable message instead of hanging.
+- Either let the job create the throwaway certificate, or pre-provision one and pass its SHA-256 fingerprint in `TestSigning__Fingerprint`. The subject must start with `CN=pyRevit CI Test` so `RejectTestSignedBinariesModule` can detect the signatures and keep them out of installers.
+- The certificate is removed from `My`, `Root` and `TrustedPublisher` in an `if: always()` step.
+
+### Why not on pull requests
+
+The job does not run for pull requests, and in particular never for fork PRs. It needs a runner that holds a trusted certificate and executes the code under test; running unreviewed code there would let a PR sign binaries with a certificate the runner trusts. It is also slow, because each Revit year needs its own launch. Pushes to `develop` cover the change before it lands, and `workflow_dispatch` takes a `revit_years` input for targeted re-runs.
+
+### Verified support matrix
+
+Confirmed on a Windows 11 host with Revit 2021-2027 installed, using a self-signed code-signing certificate in `CurrentUser\Root` plus `CurrentUser\TrustedPublisher`:
+
+| Revit | Engine | Result |
+|---|---|---|
+| 2021 | `netfx` | Not verified: this host's Revit 2021 install is missing `Autodesk Shared\Revit Schemas 2021` and aborts at startup before add-ins are considered |
+| 2022-2024 | `netfx` | Loads silently |
+| 2025-2027 | `netcore` | Loads silently |
 
 ### `ci.yml` triggers and path filter
 
