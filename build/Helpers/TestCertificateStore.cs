@@ -18,32 +18,138 @@ public static class TestCertificateStore {
     internal const int LocalLifetimeDays = 365;
     internal const int LocalRenewBeforeDays = 30;
     internal const string FingerprintMarker = "FINGERPRINT=";
-    internal static readonly TimeSpan PowerShellTimeout = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// How long a certificate script may run. Deliberately short: the only step that can legitimately wait is the
+    /// Windows root confirmation dialog on <c>--trust-cert</c>, so a build that reaches the timeout is
+    /// unattended and must fail fast rather than hold the pipeline open for minutes.
+    /// </summary>
+    internal static readonly TimeSpan PowerShellTimeout = TimeSpan.FromSeconds(60);
+
+    /// <summary>How long the post-failure cleanup script may run before it is abandoned.</summary>
+    internal static readonly TimeSpan RollbackTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>Subject of the per-machine developer certificate; also what <c>--remove-cert</c> deletes.</summary>
     public static string LocalSubject(string machineName) =>
         $"{TestSignatureDetector.LocalSubjectPrefix} ({machineName})";
 
     /// <summary>
-    /// Creates the developer certificate if missing or near expiry, trusts it for the current user, and removes
-    /// superseded certificates with the same subject (including their private keys).
+    /// Creates the developer certificate if missing or near expiry and removes superseded certificates with the same
+    /// subject, including their private keys. Does not change any trust store.
     /// </summary>
     /// <remarks>
-    /// Windows only accepts the signature when the self-signed certificate is in <c>Root</c>; <c>TrustedPublisher</c>
-    /// alone leaves it untrusted. The certificate is created as a non-CA end entity with only the digital signature
-    /// key usage, so that root trust cannot extend to any certificate it might issue. An existing certificate must
-    /// satisfy the same profile and have a non-exportable private key before it is reused or trusted.
+    /// Adding to <c>Root</c> raises a modal Windows Security Warning, so trust is never written from here; see
+    /// <see cref="TrustLocalCertificateAsync"/>. Windows only accepts the signature when the self-signed certificate
+    /// is in <c>Root</c>; <c>TrustedPublisher</c> alone leaves it untrusted. The certificate is created as a non-CA
+    /// end entity with only the digital signature key usage, so that root trust cannot extend to any certificate it
+    /// might issue. An existing certificate must satisfy the same profile and have a non-exportable private key
+    /// before it is reused.
     /// </remarks>
     /// <returns>The SHA-256 fingerprint of the certificate to sign with.</returns>
     public static async Task<string> EnsureLocalCertificateAsync(CancellationToken cancellationToken) {
         var script = BuildEnsureScript(LocalSubject(Environment.MachineName), LocalLifetimeDays, LocalRenewBeforeDays);
-        return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken));
+        return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken, trustStoreChanges: false));
+    }
+
+    /// <summary>
+    /// Creates or reuses the developer certificate and adds it to <c>Root</c> and <c>TrustedPublisher</c> for the
+    /// current user, which is the only operation that can prompt.
+    /// </summary>
+    /// <remarks>
+    /// Run this on its own (<c>--trust-cert</c>) and answer the Windows Security Warning, so that
+    /// <c>ci local</c> afterwards never has to prompt mid-build. Already-trusted certificates are left alone, so
+    /// the prompt happens once per certificate rather than once per run.
+    /// </remarks>
+    /// <returns>The SHA-256 fingerprint of the trusted certificate.</returns>
+    public static async Task<string> TrustLocalCertificateAsync(CancellationToken cancellationToken) {
+        var script = BuildEnsureScript(
+            LocalSubject(Environment.MachineName),
+            LocalLifetimeDays,
+            LocalRenewBeforeDays,
+            trustInRootStore: true);
+        return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken, trustStoreChanges: true));
+    }
+
+    /// <summary>
+    /// Refuses to sign unless some certificate with the developer subject is trusted in <c>Root</c> and
+    /// <c>TrustedPublisher</c>.
+    /// </summary>
+    /// <remarks>
+    /// Cheap side-effect-free precondition, so a developer who has never trusted anything is told what to run before
+    /// a certificate is created. It cannot stand in for <see cref="EnsureCertificateIsTrusted(string)"/>: trust is per
+    /// certificate, not per subject, so a stale trusted certificate must not vouch for a freshly renewed one.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Nothing with this subject is trusted.</exception>
+    public static void EnsureLocalCertificateIsTrusted() =>
+        EnsureCertificateIsTrusted(LocalSubject(Environment.MachineName));
+
+    /// <summary>Refuses unless anything with <paramref name="subject"/> is trusted in both trust stores.</summary>
+    /// <exception cref="InvalidOperationException">Nothing with this subject is trusted.</exception>
+    public static void EnsureCertificateIsTrusted(string subject) {
+        var missing = TrustedStores().Where(store => !ContainsSubject(store, subject)).ToArray();
+        if (missing.Length == 0) {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"The developer certificate '{subject}' is not trusted in CurrentUser\\{string.Join(" and CurrentUser\\", missing)}. "
+            + "Run '--trust-cert' on its own once and answer the Windows root confirmation, then rerun.");
+    }
+
+    /// <summary>
+    /// Refuses unless the certificate with SHA-256 <paramref name="fingerprint"/> — the one signing will use — is
+    /// itself trusted in <c>Root</c> and <c>TrustedPublisher</c>.
+    /// </summary>
+    /// <remarks>
+    /// Matched on the certificate, not the subject: after a renewal the trusted certificate and the signing one differ,
+    /// and signing with an untrusted certificate produces binaries Windows reports as unverified.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The certificate is not trusted where it needs to be.</exception>
+    public static void EnsureFingerprintIsTrusted(string fingerprint) {
+        foreach (var storeName in TrustedStores())
+        {
+            using var store = new X509Store(storeName, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            var trusted = store.Certificates
+                .Any(candidate => string.Equals(
+                    candidate.GetCertHashString(HashAlgorithmName.SHA256),
+                    fingerprint,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (!trusted)
+            {
+                throw new InvalidOperationException(
+                    $"Certificate {fingerprint} is not trusted in CurrentUser\\{storeName}, so Windows would report "
+                    + "the binaries it signs as unverified. Run '--trust-cert' on its own once and answer the Windows "
+                    + "root confirmation, then rerun.");
+            }
+        }
     }
 
     /// <summary>Deletes the developer certificate and its private key from <c>My</c>, <c>Root</c> and <c>TrustedPublisher</c>.</summary>
     public static async Task RemoveLocalCertificateAsync(CancellationToken cancellationToken) {
-        await RunPowerShellAsync(BuildRemoveScript(LocalSubject(Environment.MachineName)), cancellationToken);
+        await RunPowerShellAsync(
+            BuildRemoveScript(LocalSubject(Environment.MachineName)),
+            cancellationToken,
+            trustStoreChanges: true);
     }
+
+    private static IEnumerable<string> TrustedStores() => ["Root", "TrustedPublisher"];
+
+    private static bool ContainsSubject(string storeName, string subject) {
+        using var store = new X509Store(storeName, StoreLocation.CurrentUser);
+        store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+        return ContainsSubject(store.Certificates, subject);
+    }
+
+    /// <summary>True when a certificate whose subject is exactly <paramref name="subject"/> is in the collection.</summary>
+    /// <remarks>
+    /// Matched on the full distinguished name, not on
+    /// <see cref="X509FindType.FindBySubjectName"/>, which treats its argument as a partial name and silently matches
+    /// nothing for a subject with spaces and parentheses — which is exactly this certificate's subject.
+    /// </remarks>
+    internal static bool ContainsSubject(X509Certificate2Collection certificates, string subject) =>
+        certificates.Find(X509FindType.FindBySubjectDistinguishedName, subject, validOnly: false).Count > 0;
 
     /// <summary>
     /// Finds the certificate with SHA-256 <paramref name="fingerprint"/> in <c>CurrentUser\My</c> and refuses it
@@ -74,8 +180,39 @@ public static class TestCertificateStore {
             $"No certificate with SHA-256 fingerprint {fingerprint} is in CurrentUser\\My; import the test certificate there.");
     }
 
-    internal static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays) {
+    internal static string BuildEnsureScript(string subject, int lifetimeDays, int renewBeforeDays) =>
+        BuildEnsureScript(subject, lifetimeDays, renewBeforeDays, trustInRootStore: false);
+
+    /// <param name="trustInRootStore">
+    /// When <see langword="true"/> the certificate is added to <c>Root</c> and <c>TrustedPublisher</c>, which raises
+    /// the modal Windows root confirmation. When <see langword="false"/> only <c>My</c> is written, so the caller can
+    /// never block on a prompt.
+    /// </param>
+    internal static string BuildEnsureScript(
+        string subject,
+        int lifetimeDays,
+        int renewBeforeDays,
+        bool trustInRootStore) {
         var escaped = EscapeSingleQuoted(subject);
+        var trustBlock = trustInRootStore
+            ? $$"""
+                foreach ($name in 'Root', 'TrustedPublisher') {
+                    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
+                    $store.Open('ReadWrite')
+                    try {
+                        foreach ($stale in @($store.Certificates | Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint })) {
+                            $store.Remove($stale)
+                        }
+                        if (-not $store.Certificates.Find('FindByThumbprint', $cert.Thumbprint, $false).Count) {
+                            $store.Add((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(,$cert.RawData)))
+                        }
+                    } finally {
+                        $store.Close()
+                    }
+                }
+                """
+            : "            # Trust-store writes happen only in '--trust-cert', which can prompt.";
+
         return $$"""
             $ErrorActionPreference = 'Stop'
             $ProgressPreference = 'SilentlyContinue'
@@ -130,20 +267,7 @@ public static class TestCertificateStore {
             Get-ChildItem Cert:\CurrentUser\My |
                 Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint } |
                 ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
-            foreach ($name in 'Root', 'TrustedPublisher') {
-                $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
-                $store.Open('ReadWrite')
-                try {
-                    foreach ($stale in @($store.Certificates | Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint })) {
-                        $store.Remove($stale)
-                    }
-                    if (-not $store.Certificates.Find('FindByThumbprint', $cert.Thumbprint, $false).Count) {
-                        $store.Add((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(,$cert.RawData)))
-                    }
-                } finally {
-                    $store.Close()
-                }
-            }
+            {{trustBlock}}
             $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($cert.RawData)
             Write-Output ('{{FingerprintMarker}}' + (($hash | ForEach-Object { $_.ToString('X2') }) -join ''))
             """;
@@ -156,6 +280,28 @@ public static class TestCertificateStore {
             $subject = '{{escaped}}'
             foreach ($store in 'My', 'Root', 'TrustedPublisher') {
                 Get-ChildItem "Cert:\CurrentUser\$store" |
+                    Where-Object { $_.Subject -eq $subject } |
+                    ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
+            }
+            """;
+    }
+
+    /// <summary>
+    /// Deletes an untrusted developer certificate from <c>My</c> so an interrupted run leaves no private key behind.
+    /// </summary>
+    /// <remarks>
+    /// Skips anything already present in <c>Root</c>: that developer answered the confirmation, and taking the key away
+    /// would break a working setup. Only <c>My</c> is written, so this never prompts either.
+    /// </remarks>
+    internal static string BuildRollbackScript(string subject) {
+        var escaped = EscapeSingleQuoted(subject);
+        return $$"""
+            $ErrorActionPreference = 'Stop'
+            $subject = '{{escaped}}'
+            $trusted = @(Get-ChildItem Cert:\CurrentUser\Root |
+                Where-Object { $_.Subject -eq $subject }).Count -gt 0
+            if (-not $trusted) {
+                Get-ChildItem Cert:\CurrentUser\My |
                     Where-Object { $_.Subject -eq $subject } |
                     ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
             }
@@ -178,7 +324,10 @@ public static class TestCertificateStore {
 
     private static string EscapeSingleQuoted(string value) => value.Replace("'", "''");
 
-    private static async Task<string> RunPowerShellAsync(string script, CancellationToken cancellationToken) {
+    private static async Task<string> RunPowerShellAsync(
+        string script,
+        CancellationToken cancellationToken,
+        bool trustStoreChanges) {
         if (!OperatingSystem.IsWindows()) {
             throw new PlatformNotSupportedException("Test certificates are only supported on Windows.");
         }
@@ -207,17 +356,66 @@ public static class TestCertificateStore {
         catch (OperationCanceledException) {
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync(CancellationToken.None);
-            if (!cancellationToken.IsCancellationRequested) {
-                throw new TimeoutException(
-                    $"Certificate script did not finish within {PowerShellTimeout.TotalMinutes} minutes. " +
-                    "If Windows is asking whether to trust the pyRevit Local Dev root certificate, answer it and rerun.");
+            if (cancellationToken.IsCancellationRequested) {
+                throw;
             }
 
-            throw;
+            await RollBackCertificateAsync(cancellationToken);
+            throw new TimeoutException(
+                $"Certificate script did not finish within {PowerShellTimeout.TotalSeconds:0} seconds"
+                + (trustStoreChanges
+                    ? ". If Windows is asking whether to trust the pyRevit Local Dev root certificate, answer it and rerun."
+                    : "."));
         }
 
         if (process.ExitCode != 0) {
+            await RollBackCertificateAsync(cancellationToken);
             throw new InvalidOperationException($"Certificate script failed: {await stderr}");
+        }
+
+        return await stdout;
+    }
+
+    /// <summary>
+    /// Removes an untrusted developer certificate after a failed or interrupted script, so no private key is left in
+    /// <c>My</c> for a trust step the developer never completed.
+    /// </summary>
+    /// <remarks>
+    /// Best effort by design: the original failure is what the caller needs to see, so nothing here can mask it. It
+    /// goes through <see cref="ExecutePowerShellAsync"/> rather than <see cref="RunPowerShellAsync"/>, which would
+    /// recurse back into this rollback on its own failure.
+    /// </remarks>
+    private static async Task RollBackCertificateAsync(CancellationToken cancellationToken) {
+        try {
+            using var rollback = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            rollback.CancelAfter(RollbackTimeout);
+            await ExecutePowerShellAsync(BuildRollbackScript(LocalSubject(Environment.MachineName)), rollback.Token);
+        }
+        catch (Exception) {
+            // A failed rollback only leaves the key for 'ci local --remove-cert' to clear.
+        }
+    }
+
+    /// <summary>Runs a certificate script and returns its output, with no rollback of its own.</summary>
+    private static async Task<string> ExecutePowerShellAsync(string script, CancellationToken cancellationToken) {
+        var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        var startInfo = new ProcessStartInfo("powershell.exe") {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-EncodedCommand");
+        startInfo.ArgumentList.Add(encoded);
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Could not start powershell.exe.");
+        var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        await process.WaitForExitAsync(cancellationToken);
+        if (process.ExitCode != 0) {
+            throw new InvalidOperationException(
+                $"Certificate script failed: {await process.StandardError.ReadToEndAsync(CancellationToken.None)}");
         }
 
         return await stdout;

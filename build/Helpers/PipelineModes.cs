@@ -17,20 +17,23 @@ public sealed record PipelineModes(
     bool Winget,
     bool Local,
     bool SignTest,
-    bool RemoveCert)
+    bool RemoveCert,
+    bool TrustCert)
 {
     /// <summary>
     /// Parses mode words case-insensitively. No arguments means <c>ci</c>; <c>local</c> implies <c>ci</c> unless
-    /// <c>--remove-cert</c> is present, which runs only the certificate removal.
+    /// <c>--remove-cert</c> or <c>--trust-cert</c> is present, which run only their certificate step.
     /// </summary>
     public static PipelineModes Parse(IEnumerable<string> args)
     {
         var argsSet = new HashSet<string>(args, StringComparer.OrdinalIgnoreCase);
         var local = argsSet.Contains("local") || argsSet.Contains("--local");
         var removeCert = argsSet.Contains("--remove-cert");
+        var trustCert = argsSet.Contains("--trust-cert");
+        var certificateOnly = removeCert || trustCert;
 
         return new PipelineModes(
-            Ci: !removeCert && (argsSet.Count == 0 || argsSet.Contains("ci") || local),
+            Ci: !certificateOnly && (argsSet.Count == 0 || argsSet.Contains("ci") || local),
             Pack: argsSet.Contains("pack"),
             Sign: argsSet.Contains("sign"),
             Publish: argsSet.Contains("publish"),
@@ -39,24 +42,25 @@ public sealed record PipelineModes(
             Winget: argsSet.Contains("winget"),
             Local: local,
             SignTest: argsSet.Contains("sign-test"),
-            RemoveCert: removeCert);
+            RemoveCert: removeCert,
+            TrustCert: trustCert);
     }
 
     /// <summary>Any mode that runs installer packaging; these must be gated on unsigned <c>bin/</c>.</summary>
     public bool Packages => Pack || Sign || Publish;
 
-    /// <summary>Any mode that creates, uses or removes a test certificate.</summary>
-    public bool UsesTestCertificates => Local || SignTest || RemoveCert;
+    /// <summary>Any mode that creates, uses, trusts or removes a test certificate.</summary>
+    public bool UsesTestCertificates => Local || SignTest || RemoveCert || TrustCert;
 
     /// <summary>Signs <c>bin/</c> with the per-developer certificate created on demand.</summary>
-    public bool SignsWithLocalCertificate => Local && !RemoveCert;
+    public bool SignsWithLocalCertificate => Local && !RemoveCert && !TrustCert;
 
     /// <summary>Runs <c>SignTestBinariesModule</c>, with either the developer or the CI throwaway certificate.</summary>
     public bool SignsTestBinaries => SignsWithLocalCertificate || SignTest;
 
     /// <summary>
     /// Guards the test-signing modes. Throws when they are combined with production modes, run on a shipping
-    /// channel, run off Windows, or (for the developer-certificate modes) run under CI.
+    /// channel, run off Windows, or (for the modes that need a human) run under CI.
     /// </summary>
     /// <param name="channel">
     /// Read from the bound <c>Build</c> configuration section before the host is built, so a later
@@ -73,13 +77,13 @@ public sealed record PipelineModes(
         if (!runningOnWindows)
         {
             throw new PlatformNotSupportedException(
-                "Test signing (local, sign-test, --remove-cert) is only supported on Windows.");
+                "Test signing (local, sign-test, --remove-cert, --trust-cert) is only supported on Windows.");
         }
 
         if (Packages)
         {
             throw new InvalidOperationException(
-                "Test signing (local, sign-test, --remove-cert) cannot be combined with pack, sign or publish.");
+                "Test signing (local, sign-test, --remove-cert, --trust-cert) cannot be combined with pack, sign or publish.");
         }
 
         if (string.Equals(channel, "wip", StringComparison.OrdinalIgnoreCase)
@@ -89,10 +93,12 @@ public sealed record PipelineModes(
                 $"Test signing refuses to run on the '{channel}' channel.");
         }
 
-        if ((Local || RemoveCert) && runningOnCi)
+        // local and --remove-cert create or delete a certificate in this developer's profile, and --trust-cert needs
+        // someone to answer the Windows root prompt, so none of them can run unattended.
+        if ((Local || RemoveCert || TrustCert) && runningOnCi)
         {
             throw new InvalidOperationException(
-                "'local' and '--remove-cert' use a developer certificate and cannot run when CI is set.");
+                "'local', '--remove-cert' and '--trust-cert' use a developer certificate and cannot run when CI is set.");
         }
 
         if (Local && SignTest)
@@ -100,9 +106,15 @@ public sealed record PipelineModes(
             throw new InvalidOperationException("'local' and 'sign-test' cannot be combined.");
         }
 
-        if (SignTest && RemoveCert)
+        if (SignTest && (RemoveCert || TrustCert))
         {
-            throw new InvalidOperationException("'sign-test' and '--remove-cert' cannot be combined.");
+            throw new InvalidOperationException(
+                "'sign-test' cannot be combined with '--remove-cert' or '--trust-cert'.");
+        }
+
+        if (Local && TrustCert)
+        {
+            throw new InvalidOperationException("'local' and '--trust-cert' cannot be combined.");
         }
     }
 }

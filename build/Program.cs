@@ -87,6 +87,11 @@ if (modes.RemoveCert)
     builder.Services.AddModule<RemoveTestCertificateModule>();
 }
 
+if (modes.TrustCert)
+{
+    builder.Services.AddModule<TrustTestCertificateModule>();
+}
+
 if (modes.Publish)
 {
     builder.Services.AddModule<GenerateReleaseNotesModule>();

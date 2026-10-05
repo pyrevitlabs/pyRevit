@@ -25,6 +25,20 @@ public sealed class BinCompleteModuleTests
         CollectionAssert.Contains(DependenciesOf(reader), typeof(BinCompleteModule));
     }
 
+    [TestMethod]
+    [DataRow(typeof(BuildInstallersModule))]
+    [DataRow(typeof(BuildChocoModule))]
+    [DataRow(typeof(SignBinariesModule))]
+    [DataRow(typeof(SignChocoPackageModule))]
+    // winget, release and notify are not gated by PipelineModes.Packages, so they carry the guard themselves.
+    // Without this, the next publish mode that reads bin/ becomes a hole in the containment.
+    [DataRow(typeof(PublishWingetModule))]
+    [DataRow(typeof(NotifyIssuesModule))]
+    public void Every_mode_that_touches_bin_waits_for_the_reject_guard(Type module)
+    {
+        CollectionAssert.Contains(DependenciesOf(module), typeof(RejectTestSignedBinariesModule));
+    }
+
     private static List<Type> DependenciesOf(Type module) =>
         module.GetCustomAttributes()
             .Select(attribute => attribute.GetType())

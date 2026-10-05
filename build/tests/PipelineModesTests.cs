@@ -51,6 +51,29 @@ public sealed class PipelineModesTests
     }
 
     [TestMethod]
+    public void Parse_trust_cert_runs_only_the_trust_step()
+    {
+        var modes = PipelineModes.Parse(["--trust-cert"]);
+
+        Assert.IsFalse(modes.Ci);
+        Assert.IsTrue(modes.TrustCert);
+        Assert.IsFalse(modes.SignsTestBinaries);
+        Assert.IsTrue(modes.UsesTestCertificates);
+    }
+
+    [TestMethod]
+    [DataRow("local", "--trust-cert")]
+    [DataRow("--trust-cert", "local")]
+    public void Parse_local_with_trust_cert_neither_builds_nor_signs(string first, string second)
+    {
+        var modes = PipelineModes.Parse([first, second]);
+
+        Assert.IsFalse(modes.Ci);
+        Assert.IsFalse(modes.SignsWithLocalCertificate);
+        Assert.IsFalse(modes.SignsTestBinaries);
+    }
+
+    [TestMethod]
     public void Parse_sign_test_signs_without_local_certificate()
     {
         var modes = PipelineModes.Parse(["ci", "sign-test"]);
@@ -96,6 +119,7 @@ public sealed class PipelineModesTests
         bool local = false,
         bool signTest = false,
         bool removeCert = false,
+        bool trustCert = false,
         bool pack = false,
         bool sign = false,
         bool publish = false,
@@ -112,7 +136,8 @@ public sealed class PipelineModesTests
                 Winget: false,
                 Local: local,
                 SignTest: signTest,
-                RemoveCert: removeCert)
+                RemoveCert: removeCert,
+                TrustCert: trustCert)
             .EnsureTestSigningAllowed(channel, ci, windows);
 
     [TestMethod]
@@ -143,6 +168,13 @@ public sealed class PipelineModesTests
     public void EnsureTestSigningAllowed_rejects_remove_cert_on_ci()
     {
         Assert.ThrowsExactly<InvalidOperationException>(() => Ensure(removeCert: true, ci: true));
+    }
+
+    [TestMethod]
+    public void EnsureTestSigningAllowed_rejects_trust_cert_on_ci()
+    {
+        // Trusting a root needs someone to answer the Windows prompt, so it can never run unattended.
+        Assert.ThrowsExactly<InvalidOperationException>(() => Ensure(trustCert: true, ci: true));
     }
 
     [TestMethod]
@@ -177,6 +209,24 @@ public sealed class PipelineModesTests
     }
 
     [TestMethod]
+    public void EnsureTestSigningAllowed_rejects_sign_test_with_trust_cert()
+    {
+        Assert.ThrowsExactly<InvalidOperationException>(() => Ensure(signTest: true, trustCert: true));
+    }
+
+    [TestMethod]
+    public void EnsureTestSigningAllowed_rejects_local_with_trust_cert()
+    {
+        Assert.ThrowsExactly<InvalidOperationException>(() => Ensure(local: true, trustCert: true));
+    }
+
+    [TestMethod]
+    public void EnsureTestSigningAllowed_accepts_trust_cert_alone()
+    {
+        Ensure(trustCert: true);
+    }
+
+    [TestMethod]
     public void EnsureTestSigningAllowed_accepts_local_with_remove_cert()
     {
         Ensure(local: true, removeCert: true);
@@ -188,6 +238,7 @@ public sealed class PipelineModesTests
         Assert.ThrowsExactly<PlatformNotSupportedException>(() => Ensure(local: true, windows: false));
         Assert.ThrowsExactly<PlatformNotSupportedException>(() => Ensure(signTest: true, ci: true, windows: false));
         Assert.ThrowsExactly<PlatformNotSupportedException>(() => Ensure(removeCert: true, windows: false));
+        Assert.ThrowsExactly<PlatformNotSupportedException>(() => Ensure(trustCert: true, windows: false));
     }
 
     [TestMethod]
