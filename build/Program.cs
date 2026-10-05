@@ -41,6 +41,7 @@ if (modes.Release)
 if (modes.Ci)
 {
     builder.Services.AddModule<CheckEnvironmentModule>();
+    builder.Services.AddModule<ValidateAgentSkillsModule>();
     builder.Services.AddModule<ResolveVersioningModule>();
     builder.Services.AddModule<SetCopyrightYearModule>();
     builder.Services.AddModule<StampVersionModule>();

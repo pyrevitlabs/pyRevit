@@ -1,0 +1,7 @@
+title: Run Agent Approval Tests
+tooltip: >-
+  Check the approval prompt of the 'ask' policy, answered through Revit's
+  dialog event. If a prompt stays on screen, click the button its title names.
+context: zero-doc
+engine:
+  clean: true

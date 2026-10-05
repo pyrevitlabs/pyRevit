@@ -415,16 +415,39 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private string GetPythonDll(ScriptRuntime runtime) {
             // PyRevitConfigs.GetCPythonEngineVersion()
             var engineVersion = new PyRevitEngineVersion(int.Parse(runtime.EngineVersion));
-            var attachment = PyRevitAttachments.GetAttachedCached(int.Parse(runtime.App.VersionNumber));
-            if (attachment?.Clone is null)
-                throw new PyRevitException("pyRevit is not attached to this Revit version; cannot resolve the CPython engine.");
-            var clone = attachment.Clone;
-            var engine = clone.GetCPythonEngine(engineVersion);
+            var clonePath = ResolveEngineClonePath(int.Parse(runtime.App.VersionNumber))
+                ?? throw new PyRevitException("Cannot resolve the CPython engine: pyRevit is not attached to this Revit version, and the running clone could not be found.");
+            var engine = PyRevitClone.GetCPythonEngine(clonePath, engineVersion);
             var dllPath = engine.AssemblyPath;
             if (!File.Exists(dllPath)) {
                 throw new Exception(string.Format("Python DLL not found at {0}", dllPath));
             }
             return dllPath;
+        }
+
+        /// <summary>
+        /// Returns the clone whose CPython engines this session uses: the one attached to
+        /// <paramref name="revitYear"/>, or else the clone this runtime was loaded from, so a
+        /// session pyRevit isn't attached to (for example one loaded from a hand-installed
+        /// manifest) can still run CPython. Null when neither resolves.
+        /// </summary>
+        internal static string ResolveEngineClonePath(int revitYear) {
+            var attached = PyRevitAttachments.GetAttachedCached(revitYear)?.Clone?.ClonePath;
+            return !string.IsNullOrEmpty(attached) ? attached : FindLoadedClonePath();
+        }
+
+        private static string FindLoadedClonePath() {
+            const int maxLevels = 4;
+            var location = typeof(CPythonEngine).Assembly.Location;
+            if (string.IsNullOrEmpty(location))
+                return null;
+            var directory = Path.GetDirectoryName(location);
+            for (var level = 0; level < maxLevels && !string.IsNullOrEmpty(directory); level++) {
+                if (PyRevitClone.GetPyRevitFilePath(directory) != null)
+                    return directory;
+                directory = Path.GetDirectoryName(directory);
+            }
+            return null;
         }
     }
 }

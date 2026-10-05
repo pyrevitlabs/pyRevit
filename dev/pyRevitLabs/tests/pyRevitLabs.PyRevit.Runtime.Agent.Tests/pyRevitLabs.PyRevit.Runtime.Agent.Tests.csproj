@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+
+        <PermitDeploy>true</PermitDeploy>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\modules\pyRevitLabs.Newtonsoft.Json\Src\Newtonsoft.Json\Newtonsoft.Json.csproj"
+                          AdditionalProperties="LibraryFrameworks=net6.0;Configuration=Debug"
+                          ReferenceOutputAssembly="false"/>
+        <Reference Include="pyRevitLabs.Json"
+                   HintPath="..\..\..\modules\pyRevitLabs.Newtonsoft.Json\Src\Newtonsoft.Json\bin\Debug\net6.0\pyRevitLabs.Json.dll"
+                   Private="true"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunGuard.cs" Link="Sources\AgentRunGuard.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocuments.cs" Link="Sources\AgentDocuments.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunDecision.cs" Link="Sources\AgentRunDecision.cs"/>
+    </ItemGroup>
+
+</Project>

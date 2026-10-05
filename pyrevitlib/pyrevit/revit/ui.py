@@ -2,7 +2,7 @@
 # pylint: disable=import-error,invalid-name,broad-except
 
 import os.path as op
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, PyRevitException
 from pyrevit.framework import clr
 from pyrevit.framework import IntPtr
 from pyrevit.framework import Interop, Windows
@@ -162,3 +162,52 @@ def resolve_icon_file(directory, icon_name):
         full_file_path = dark_file_path if op.exists(dark_file_path) else full_file_path
 
     return full_file_path if op.exists(full_file_path) else None
+
+
+def request_view_change(view, uidoc=None):
+    """Ask Revit to make a view active once the current command or script ends.
+
+    Unlike setting ``revit.active_view``, this works while a transaction or
+    transaction group is open. The switch is asynchronous, so zoom the new
+    view in a later command.
+
+    Args:
+        view (DB.View): view to open.
+        uidoc (UI.UIDocument, optional): defaults to the active document.
+    """
+    (uidoc or HOST_APP.uidoc).RequestViewChange(view)
+
+
+def get_active_ui_view(uidoc=None):
+    """Return the UIView of the active view.
+
+    Raises:
+        PyRevitException: when the active view has no open window.
+    """
+    uidoc = uidoc or HOST_APP.uidoc
+    active_id = uidoc.ActiveView.Id
+    for ui_view in uidoc.GetOpenUIViews():
+        if ui_view.ViewId == active_id:
+            return ui_view
+    raise PyRevitException("The active view has no open window.")
+
+
+def zoom_to_elements(elements, padding=3.0, uidoc=None):
+    """Zoom the active view to elements.
+
+    Args:
+        elements (list[DB.Element]): elements to show.
+        padding (float, optional): clearance around them, in feet.
+        uidoc (UI.UIDocument, optional): defaults to the active document.
+    """
+    from pyrevit.revit.db import query
+
+    box = query.get_elements_bounding_box(elements, padding=padding)
+    if box is None:
+        raise PyRevitException("Nothing to zoom to: no elements with a bounding box.")
+    get_active_ui_view(uidoc).ZoomAndCenterRectangle(box.Min, box.Max)
+
+
+def zoom_fit(uidoc=None):
+    """Zoom the active view to fit everything visible."""
+    get_active_ui_view(uidoc).ZoomToFit()
