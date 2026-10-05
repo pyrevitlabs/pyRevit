@@ -74,6 +74,15 @@ jobs:
         working-directory: build
         run: dotnet test tests/Build.Tests.csproj -c Release
 
+      # The suites under tests/ are plain CPython and need no Revit host, so they can run
+      # here rather than waiting for the Revit integration workflow.
+      - name: Run standalone Python unit tests
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -m unittest discover -s tests -p 'test_*.py' -v
+
       - name: Capture build versions
         id: versionmeta
         shell: bash
