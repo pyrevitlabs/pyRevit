@@ -5,7 +5,6 @@ using System.Linq;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -17,6 +16,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
     /// <c>data.type</c> carries the <see cref="AgentException.Code"/>.
+    /// Invariant: every request that needs the Revit main thread reads or changes the model, so
+    /// <see cref="InvokeOnMainThread"/> is the session gate. It checks the session when the
+    /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
+    /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
+    /// The pipe can request, pause and end a session but never start or resume one.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -53,15 +57,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["pid"] = Process.GetCurrentProcess().Id,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
+                        ["session"] = AgentSessions.Describe(),
                     };
+                case "session_status":
+                    return AgentSessions.Describe();
+                case "request_session":
+                    var requested = AgentSessions.Tracker.Request(parameters.Value<string>("reason"), DateTime.UtcNow);
+                    return new JObject {
+                        ["requested"] = requested,
+                        ["session"] = AgentSessions.Describe(),
+                    };
+                case "pause_session":
+                    AgentSessions.Pause();
+                    return AgentSessions.Describe();
+                case "end_session":
+                    AgentSessions.EndByClient();
+                    return AgentSessions.Describe();
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
-                    EnforcePolicy(runRequest);
+                    AgentPermissions.CheckRun(runRequest.Mode, AgentRunService.ReadPolicy());
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
-                    return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters);
+                    return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters, runRequest.Mode);
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
@@ -99,14 +118,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "A CPython agent run can't start from inside a CPython script. Use engine 'ironpython', or call from an IronPython command.");
         }
 
-        private static void EnforcePolicy(AgentRunRequest request) {
-            if (request.Mode == AgentRunMode.Modify
-                && PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyReadOnly)
-                throw new AgentException(
-                    "policy_readonly",
-                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
-        }
-
         /// <summary>
         /// Runs a fixed, non-script request on the main thread with Revit dialogs closed and
         /// reported, so a dialog Revit opens mid-request can't hang the call.
@@ -127,22 +138,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }, parameters);
         }
 
+        /// <summary>
+        /// Runs model work on the main thread behind the session gate.
+        /// </summary>
+        /// <param name="runMode">
+        /// The mode of a <c>run</c> request, whose permission is checked again when Revit picks it
+        /// up, because the policy may have changed while it was queued.
+        /// </param>
         private static JToken InvokeOnMainThread(
-            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
+            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, AgentRunMode? runMode = null) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
+            AgentSessions.CheckOnArrival();
+            JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
+                AgentSessions.CheckOnDequeue(app);
+                if (runMode.HasValue) {
+                    AgentHost.RefreshConfigIfChanged();
+                    AgentPermissions.CheckRun(runMode.Value, AgentRunService.ReadPolicy());
+                }
+                return work(app);
+            }
             var inline = AgentHost.InlineApplication;
             if (inline != null)
-                return work(inline);
+                return GatedWork(inline);
             var dispatcher = AgentHost.Dispatcher
                 ?? throw new AgentException("host_not_ready", "The agent host is not started.");
             var startTimeout = startTimeoutSeconds.HasValue
                 ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
                 : DefaultStartTimeout;
-            return dispatcher.Invoke(work, startTimeout);
+            return dispatcher.Invoke(GatedWork, startTimeout);
         }
 
         private static string Success(JToken id, JToken result) {

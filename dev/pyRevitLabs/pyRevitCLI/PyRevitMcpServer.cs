@@ -203,8 +203,10 @@ namespace pyRevitCLI {
                 var entry = instance.ToJson();
                 revitGate.Wait();
                 try {
-                    PyRevitAgentClient.Call(instance, "ping");
+                    var pong = PyRevitAgentClient.Call(instance, "ping") as JObject;
                     entry["responding"] = true;
+                    if (pong?["session"] is JObject session)
+                        entry["session"] = session;
                 }
                 catch (AgentClientException) {
                     entry["responding"] = false;
@@ -458,12 +460,24 @@ namespace pyRevitCLI {
                     arguments => new JValue(PyRevitAgentSkills.Read(arguments.Value<string>("name"), arguments.Value<string>("file")))),
 
                 new McpTool("list_revit_instances", readOnly: true, new string[0],
-                    () => ("List running Revit sessions that have the pyRevit agent host, with their version and process id.",
+                    () => ("List running Revit sessions that have the pyRevit agent host, with their version, process id and agent session state.",
                         new JObject()),
                     _ => ListInstances()),
 
+                new McpTool("request_session", readOnly: true, new string[0],
+                    () => ("Ask the user to start an agent session in Revit. Model tools answer session_inactive until the user starts one; "
+                        + "only the user can, in Revit. Tell the user what you asked for and that you are waiting.",
+                        new JObject {
+                            ["reason"] = new JObject {
+                                ["type"] = "string",
+                                ["description"] = "What you want to do in the model, shown to the user in Revit (at most 300 characters).",
+                            },
+                            ["revit"] = RevitProperty(),
+                        }),
+                    arguments => CallRevit(arguments, "request_session", new JObject { ["reason"] = arguments["reason"] })),
+
                 new McpTool("get_context", readOnly: true, new string[0],
-                    () => ("Snapshot of the target Revit: versions, engines, agent policy, open document, active view, selection and levels. Call this first.",
+                    () => ("Snapshot of the target Revit: versions, engines, agent policy and session, open document, active view, selection and levels. Call this first.",
                         new JObject { ["revit"] = RevitProperty() }),
                     arguments => CallRevit(arguments, "get_context", new JObject())),
 

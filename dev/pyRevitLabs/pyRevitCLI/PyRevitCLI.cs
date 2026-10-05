@@ -567,6 +567,16 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
 
+                else if (all("session"))
+                    PyRevitCLIAgentCmds.ControlSession(
+                        action: all("request") ? "request"
+                            : all("pause") ? "pause"
+                            : all("end") ? "end"
+                            : "status",
+                        reason: TryGetValue("--reason"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
                 else if (all("status"))
                     PyRevitCLIAgentCmds.PrintStatus(json: arguments["--json"].IsTrue);
 
@@ -845,6 +855,10 @@ namespace pyRevitCLI {
                     if (all("skills"))
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
+
+                    else if (all("requiresession"))
+                        PyRevitCLIAgentCmds.ConfigureRequireSession(
+                            any("yes", "no") ? arguments["yes"].IsTrue : null);
 
                     else if (all("policy"))
                         PyRevitCLIAgentCmds.ConfigurePolicy(

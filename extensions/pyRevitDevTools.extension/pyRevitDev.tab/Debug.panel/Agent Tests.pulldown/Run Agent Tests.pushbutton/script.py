@@ -6,6 +6,7 @@ import agent_modify_tests
 import agent_pipe_tests
 import agent_query_tests
 import agent_requests_tests
+import agent_session_tests
 import agent_settings_tests
 import agent_validation_tests
 
@@ -16,6 +17,7 @@ agent_harness.run_suites(
         agent_query_tests,
         agent_modify_tests,
         agent_settings_tests,
+        agent_session_tests,
         agent_pipe_tests,
     ]
 )

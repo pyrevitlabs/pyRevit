@@ -135,6 +135,8 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentEngineDefault = ConfigsAgentEngineIronPython;
         public const string ConfigsAgentUserSkillsEnabledKey = "user_skills";
         public const bool ConfigsAgentUserSkillsEnabledDefault = false;
+        public const string ConfigsAgentRequireSessionKey = "require_session";
+        public const bool ConfigsAgentRequireSessionDefault = false;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";

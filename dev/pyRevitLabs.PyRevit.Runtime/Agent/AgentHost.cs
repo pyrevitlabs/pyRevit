@@ -81,7 +81,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <remarks>
         /// A pyRevit command can't use the pipe, because the pipe executes requests through an
         /// ExternalEvent that never fires while a command is running. This runs the request on
-        /// the calling thread instead, through the same policy, guard and dialog handling.
+        /// the calling thread instead, through the same session gate, policy, guard and dialog
+        /// handling.
         /// Warning: a CPython caller must save and restore <c>sys.stdout</c>, <c>sys.stderr</c>,
         /// <c>sys.path</c>, <c>sys.argv</c> and the trace function around the call; a nested
         /// CPython run replaces them and doesn't put them back.
@@ -132,6 +133,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        private static bool ReadRequireSession() {
+            try {
+                return PyRevitConfigs.GetAgentRequireSession();
+            }
+            catch (Exception ex) {
+                logger.Warn("Could not read [agent] require_session, so a session is required: {0}", ex.Message);
+                return true;
+            }
+        }
+
         public static bool IsEnabled() {
             try {
                 return PyRevitConfigs.GetAgentEnabled();
@@ -146,6 +157,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Starts, refreshes, or stops the host to match the current config. Called by the
         /// session manager on every load and reload.
         /// </summary>
+        /// <remarks>
+        /// <c>[agent] require_session</c> is applied here only, so a config edit from outside
+        /// Revit can't turn the session gate off mid-session.
+        /// </remarks>
         public static void Configure(UIApplication uiApp, IList<string> scriptSearchPaths) {
             lock (sync) {
                 searchPaths = scriptSearchPaths != null
@@ -158,6 +173,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Stop();
                 return;
             }
+
+            AgentSessions.Configure(uiApp.Application, ReadRequireSession());
 
             lock (sync) {
                 if (dispatcher == null) {
@@ -183,6 +200,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static void Stop() {
+            AgentSessions.EndForHostStop();
             lock (sync) {
                 if (pipeServer == null)
                     return;

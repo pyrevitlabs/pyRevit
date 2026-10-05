@@ -13,3 +13,5 @@ Available skills:
 Scripts run in-process with the Windows user's permissions. The model guard is not an operating-system sandbox. Keep queries focused, avoid unbounded work, and return only the data needed for the task.
 
 `run_modify` requires an active document. Use a dry run first, then submit a focused modify run for approval. The host blocks save, save-as, synchronize and export operations while a run is active.
+
+Tools that read or change the model may need an agent session that the user starts in Revit; only the user can start one. On `session_inactive`, call `request_session` with a short reason, tell the user what you asked for, and wait for them. On `paused_by_user`, tell the user you are waiting until they resume the session. On `wrong_document`, ask the user to switch back to the document the session is bound to.

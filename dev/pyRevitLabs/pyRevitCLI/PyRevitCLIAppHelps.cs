@@ -336,6 +336,7 @@ namespace pyRevitCLI {
                             { "run",                    "Run a Python script in Revit through the agent host" },
                             { "runs",                   "List recent agent runs" },
                             { "show",                   "Print the record of an agent run" },
+                            { "session",                "Show (status), request, pause or end the agent session; only Revit can start one" },
                         },
                         options: new Dictionary<string, string>() {
                             { "<script_file>",          "Python script to run" },
@@ -348,6 +349,7 @@ namespace pyRevitCLI {
                             { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs'" },
+                            { "--reason=<reason>",      "Why the session is needed; shown to the user in Revit" },
                             { "--json",                 "Print status as json" },
                         });
                     break;
@@ -377,7 +379,7 @@ namespace pyRevitCLI {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
                             { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
                             { "routes",                 "Routes configurations" },
-                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills)" },
+                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, required session)" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },
                         },

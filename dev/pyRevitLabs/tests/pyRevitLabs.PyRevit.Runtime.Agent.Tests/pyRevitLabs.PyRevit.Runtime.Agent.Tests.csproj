@@ -33,6 +33,8 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunGuard.cs" Link="Sources\AgentRunGuard.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocuments.cs" Link="Sources\AgentDocuments.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunDecision.cs" Link="Sources\AgentRunDecision.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentException.cs" Link="Sources\AgentException.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSession.cs" Link="Sources\AgentSession.cs"/>
     </ItemGroup>
 
 </Project>

@@ -49,7 +49,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxOutputChars = 64 * 1024;
         private const int MaxChangeSamples = 50;
 
-        private static AgentPolicy ReadPolicy() {
+        internal static AgentPolicy ReadPolicy() {
             var policy = PyRevitConfigs.GetAgentPolicy();
             if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly)
                 return AgentPolicy.ReadOnly;
@@ -112,7 +112,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
         }
 
+        /// <remarks>
+        /// The session is locked for the whole run, approval prompt included: the script can pause
+        /// or end it, but can't start, resume or stop requiring one.
+        /// </remarks>
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
+            using (AgentSessions.Tracker.BeginRun())
+                return ExecuteRun(app, request);
+        }
+
+        private static JToken ExecuteRun(UIApplication app, AgentRunRequest request) {
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
             if (doc == null && request.Mode == AgentRunMode.Modify)

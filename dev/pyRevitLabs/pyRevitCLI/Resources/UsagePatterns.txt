@@ -75,6 +75,8 @@ Usage:
 	pyrevit agent run <script_file> [--mode=<run_mode>] [--engine=<engine_name>] [--title=<run_title>] [--inputs=<inputs_json>] [--revit=<revit_year>] [--timeout=<seconds>] [--workspace=<folder>]
 	pyrevit agent runs [--limit=<count>]
 	pyrevit agent show <run_id>
+	pyrevit agent session (status | pause | end) [--revit=<revit_year>]
+	pyrevit agent session request [--reason=<reason>] [--revit=<revit_year>]
 	pyrevit mcp (-h | --help)
 	pyrevit mcp [--revit=<revit_year>]
 	pyrevit mcp install (claude | codex | cursor | vscode | opencode) [--project] [--log=<log_file>]
@@ -108,6 +110,7 @@ Usage:
 	pyrevit configs agent policy [(readonly | ask | auto)] [--log=<log_file>]
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs agent skills [(enable | disable)] [--log=<log_file>]
+	pyrevit configs agent requiresession [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
