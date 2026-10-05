@@ -52,8 +52,8 @@ The engine directory per year is not a free choice. `pyrevitlib/pyrevit/compat.p
 
 ### Runner requirements
 
-- The runner session must be **non-interactive** (service or session 0). Adding the certificate to `CurrentUser\Root` raises a modal Windows Security Warning; a session that can display it blocks the add forever with nobody to answer, so the job runs that add under a 90-second watchdog and fails with an actionable message instead of hanging.
-- Either let the job create the throwaway certificate, or pre-provision one and pass its SHA-256 fingerprint in `TestSigning__Fingerprint`. The subject must start with `CN=pyRevit CI Test` so `RejectTestSignedBinariesModule` can detect the signatures and keep them out of installers.
+- The runner session must be **non-interactive** (service or session 0). Adding the certificate to `CurrentUser\Root` raises a modal Windows Security Warning; a session that can display it blocks the add forever with nobody to answer, so the job runs that add under a 90-second watchdog and fails with an actionable message instead of hanging. `CurrentUser\TrustedPublisher` never prompts, which is why the job adds the certificate there without a watchdog.
+- Either let the job create the throwaway certificate, or pre-provision one and pass its SHA-256 fingerprint in `TestSigning__Fingerprint` — the sign tool rejects a SHA-1 thumbprint, so the job computes SHA-256 over `RawData`. The subject must start with `CN=pyRevit CI Test` so `RejectTestSignedBinariesModule` can detect the signatures and keep them out of installers.
 - The certificate is removed from `My`, `Root` and `TrustedPublisher` in an `if: always()` step.
 
 ### Why not on pull requests
@@ -265,6 +265,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 |---------|----------------|
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
+| `python -m unittest discover -s tests` | Standalone CPython suites under `tests/` (also run in CI). They need no Revit host, so they run in the `build` job instead of waiting for the Revit integration workflow. `tests/` is not in the `ci.yml` path filter, so deleting or adding files there does not trigger CI by itself. |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |
 | `dotnet run -- notify` | Post WIP/release URL to linked issues |

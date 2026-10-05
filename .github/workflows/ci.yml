@@ -74,8 +74,6 @@ jobs:
         working-directory: build
         run: dotnet test tests/Build.Tests.csproj -c Release
 
-      # The suites under tests/ are plain CPython and need no Revit host, so they can run
-      # here rather than waiting for the Revit integration workflow.
       - name: Run standalone Python unit tests
         shell: pwsh
         working-directory: ${{ github.workspace }}
@@ -110,8 +108,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $sha = $env:COMMIT_SHA
-          # Tags are cut from master. Publish as master-latest so clone-of-master
-          # still works when the master push event never ran.
           if ($env:GITHUB_REF -like 'refs/tags/v*') {
             $safeBranch = 'master'
           } else {
@@ -141,8 +137,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $keep = New-Object System.Collections.Generic.HashSet[string]
-          # status=completed omits this in-progress run, so keep github.sha or the
-          # zip just uploaded is deleted as "not in the last 3 completed runs".
           [void]$keep.Add($env:COMMIT_SHA)
           foreach ($branch in @('develop', 'master')) {
             $runs = gh api "repos/pyrevitlabs/pyRevit/actions/workflows/ci.yml/runs" `
@@ -150,10 +144,6 @@ jobs:
               --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
             $runs | Select-Object -First 3 | ForEach-Object { [void]$keep.Add($_) }
           }
-          # Tag CI reports head_branch as the tag name, so those runs never appear
-          # in the develop/master queries. Keep recent v* tag SHAs so a tagged
-          # release's per-commit zip survives the next develop prune when master
-          # CI never ran.
           git tag -l "v*" --sort=-creatordate |
             Select-Object -First 3 |
             ForEach-Object {
@@ -227,8 +217,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $keep = New-Object System.Collections.Generic.HashSet[string]
-          # status=completed omits this in-progress run, so keep github.sha or the
-          # package just pushed is deleted as "not in the last 2 completed runs".
           [void]$keep.Add($env:COMMIT_SHA)
           foreach ($branch in @('develop', 'master')) {
             $runs = gh api "repos/pyrevitlabs/pyRevit/actions/workflows/ci.yml/runs" `
@@ -236,7 +224,6 @@ jobs:
               --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
             $runs | Select-Object -First 2 | ForEach-Object { [void]$keep.Add($_) }
           }
-          # Same as release-asset prune: tag runs are invisible to branch= queries.
           git tag -l "v*" --sort=-creatordate |
             Select-Object -First 2 |
             ForEach-Object {

@@ -381,9 +381,10 @@ public static class TestCertificateStore {
     /// <c>My</c> for a trust step the developer never completed.
     /// </summary>
     /// <remarks>
-    /// Best effort by design: the original failure is what the caller needs to see, so nothing here can mask it. It
-    /// goes through <see cref="ExecutePowerShellAsync"/> rather than <see cref="RunPowerShellAsync"/>, which would
-    /// recurse back into this rollback on its own failure.
+    /// Best effort by design: the original failure is what the caller needs to see, so nothing here can mask it. A
+    /// failed rollback only leaves the key for <c>ci local --remove-cert</c> to clear. It goes through
+    /// <see cref="ExecutePowerShellAsync"/> rather than <see cref="RunPowerShellAsync"/>, which would recurse back
+    /// into this rollback on its own failure.
     /// </remarks>
     private static async Task RollBackCertificateAsync(CancellationToken cancellationToken) {
         try {
@@ -392,7 +393,6 @@ public static class TestCertificateStore {
             await ExecutePowerShellAsync(BuildRollbackScript(LocalSubject(Environment.MachineName)), rollback.Token);
         }
         catch (Exception) {
-            // A failed rollback only leaves the key for 'ci local --remove-cert' to clear.
         }
     }
 

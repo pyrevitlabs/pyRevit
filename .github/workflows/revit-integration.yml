@@ -1,12 +1,5 @@
 name: pyRevit Revit integration tests
 
-# Signs bin/ with a throwaway certificate, then launches Revit and asserts the add-in
-# loads without the unsigned add-in dialog. Requires a self-hosted runner with Revit
-# installed; GitHub-hosted windows runners cannot run Revit.
-#
-# Deliberately not run for pull requests from forks: the job needs a runner holding a
-# trusted certificate, and running unreviewed code on that runner would let a PR sign
-# binaries with a certificate the runner trusts.
 on:
   push:
     branches: [develop]
@@ -31,13 +24,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Guards the modes that need a human, so a misconfigured runner fails in under a second
-  # instead of blocking on the Windows root confirmation.
   CI: 'true'
 
 jobs:
   revit:
-    # Set these labels on the runner that has Revit installed.
     runs-on: [self-hosted, windows, revit]
     timeout-minutes: 120
 
@@ -56,9 +46,6 @@ jobs:
           REQUESTED: ${{ github.event.inputs.revit_years || '' }}
         run: |
           $ErrorActionPreference = 'Stop'
-          # 2021 is excluded deliberately: it is .NET Framework like 2022-2024, but the
-          # runner image for it has no schema folder and Revit aborts at startup before
-          # add-ins are considered.
           $years = if ($env:REQUESTED) {
             $env:REQUESTED -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
           }
@@ -86,8 +73,6 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          # Subject prefix is what TestSignatureDetector looks for, and what
-          # RejectTestSignedBinariesModule later refuses to let into an installer.
           $subject = "CN=pyRevit CI Test ${{ github.run_id }}-${{ github.run_attempt }}"
           $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $subject `
             -KeyUsage DigitalSignature -TextExtension @('2.5.29.19={critical}{text}ca=false') `
@@ -105,13 +90,8 @@ jobs:
             }
           }
 
-          # TrustedPublisher never prompts.
           Add-ToStore 'TrustedPublisher' $cert
 
-          # Adding a root DOES raise a modal Windows Security Warning, and the runner session
-          # is not guaranteed to be non-interactive: a session that can show UI leaves the add
-          # blocked forever with nothing to answer it. Run it under a watchdog so the job fails
-          # in seconds with an actionable message instead of hanging until the job timeout.
           $addRoot = @"
           `$ErrorActionPreference = 'Stop'
           `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(, [Convert]::FromBase64String('$([Convert]::ToBase64String($cert.RawData))'))
@@ -140,7 +120,6 @@ jobs:
             throw "Trusting the CI certificate failed: $($child.StandardError.ReadToEnd())"
           }
 
-          # sign-test takes a SHA-256 fingerprint; the sign tool rejects a SHA-1 thumbprint.
           $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($cert.RawData)
           "fingerprint=$(($hash | ForEach-Object { $_.ToString('X2') }) -join '')" >> $env:GITHUB_OUTPUT
           "subject=$subject" >> $env:GITHUB_OUTPUT
@@ -176,9 +155,6 @@ jobs:
           $root = $env:GITHUB_WORKSPACE
           $results = @()
           foreach ($year in '${{ steps.years.outputs.years }}'.Split(',')) {
-            # pyrevitlib/pyrevit/compat.py: NETCORE is Revit 2025 onwards, NETFRAMEWORK is
-            # 2024 and earlier. Pointing a year at the wrong runtime makes Revit refuse the
-            # add-in outright, which looks like a trust failure but is not.
             $engine = if ([int]$year -ge 2025) { 'netcore' } else { 'netfx' }
             $loader = Join-Path $root "bin/$engine/engines/IPY2712PR/pyRevitLoader.dll"
             if (-not (Test-Path $loader)) { throw "Loader missing for $year : $loader" }
@@ -242,8 +218,6 @@ jobs:
             }
             Remove-Item $manifest -Force -ErrorAction SilentlyContinue
 
-            # Any dialog means the job failed. A silently accepted add-in is the whole point
-            # of the signing, so an unattended prompt must not be tolerated.
             $verdict = if ($registrations -gt 0 -and -not $unsignedDialog -and -not $refused) { 'loaded' }
             elseif ($unsignedDialog) { 'unsigned add-in dialog' }
             elseif ($refused) { 'refused by Revit' }

@@ -43,15 +43,18 @@ public sealed class SignTestBinariesModule(IOptions<TestSigningOptions> testSign
         await SigningHelper.SignFilesWithTestCertificateAsync(context, fingerprint, files, "Binaries", cancellationToken);
     }
 
+    /// <summary>Returns the fingerprint of a trusted developer certificate, creating or renewing it on demand.</summary>
+    /// <remarks>
+    /// Refuses before creating anything, so a developer who never trusted anything is not left with a private key,
+    /// and refuses again on the certificate that will actually sign, because trust is per certificate: a renewed one
+    /// is not the one that was trusted, and signing with it yields binaries Windows calls unverified.
+    /// </remarks>
     private static async Task<string> EnsureTrustedLocalCertificateAsync(CancellationToken cancellationToken)
     {
-        // Refuse before creating anything, so a developer who never trusted anything is not left with a private key.
         TestCertificateStore.EnsureLocalCertificateIsTrusted();
 
         var fingerprint = await TestCertificateStore.EnsureLocalCertificateAsync(cancellationToken);
 
-        // Then refuse again on the certificate that will actually sign, because trust is per certificate: a renewed
-        // one is not the one that was trusted, and signing with it yields binaries Windows calls unverified.
         TestCertificateStore.EnsureFingerprintIsTrusted(fingerprint);
 
         return fingerprint;
