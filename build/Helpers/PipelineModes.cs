@@ -66,7 +66,11 @@ public sealed record PipelineModes(
     /// Read from the bound <c>Build</c> configuration section before the host is built, so a later
     /// <c>Configure&lt;BuildOptions&gt;</c> override of <c>Channel</c> would not be seen here.
     /// </param>
-    /// <remarks>Runs before any module is registered, so a refused combination fails in under a second.</remarks>
+    /// <remarks>
+    /// Runs before any module is registered, so a refused combination fails in under a second.
+    /// <c>local</c> and <c>--remove-cert</c> create or delete a certificate in the developer's profile and
+    /// <c>--trust-cert</c> needs someone to answer the Windows root prompt, so none of them can run unattended.
+    /// </remarks>
     public void EnsureTestSigningAllowed(string channel, bool runningOnCi, bool runningOnWindows)
     {
         if (!UsesTestCertificates)
@@ -93,8 +97,6 @@ public sealed record PipelineModes(
                 $"Test signing refuses to run on the '{channel}' channel.");
         }
 
-        // local and --remove-cert create or delete a certificate in this developer's profile, and --trust-cert needs
-        // someone to answer the Windows root prompt, so none of them can run unattended.
         if ((Local || RemoveCert || TrustCert) && runningOnCi)
         {
             throw new InvalidOperationException(
