@@ -136,7 +136,7 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentUserSkillsEnabledKey = "user_skills";
         public const bool ConfigsAgentUserSkillsEnabledDefault = false;
         public const string ConfigsAgentRequireSessionKey = "require_session";
-        public const bool ConfigsAgentRequireSessionDefault = false;
+        public const bool ConfigsAgentRequireSessionDefault = true;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";

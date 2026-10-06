@@ -338,6 +338,9 @@
                             <WrapPanel Margin="0,15,0,0">
                                 <CheckBox x:Name="agent_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Agent.Check}"/>
                             </WrapPanel>
+                            <CheckBox x:Name="agent_require_session_cb" IsChecked="True" Margin="0,10,0,0">
+                                <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.RequireSession}"/>
+                            </CheckBox>
                             <GroupBox Header="{DynamicResource Agent.Policy}" Padding="10" Margin="0,10,0,0">
                                 <StackPanel>
                                     <RadioButton x:Name="agent_policy_ask_rb" GroupName="agent_policy" Content="{DynamicResource Agent.Policy.Ask}"/>
