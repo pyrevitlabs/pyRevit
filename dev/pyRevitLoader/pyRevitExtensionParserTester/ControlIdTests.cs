@@ -25,7 +25,7 @@ namespace pyRevitExtensionParserTester
             var testDir = TestContext.CurrentContext.TestDirectory;
             var repoRoot = Path.GetFullPath(Path.Combine(testDir, "..", "..", "..", "..", "..", ".."));
             var extensionPath = Path.Combine(repoRoot, "extensions", "pyRevitDevTools.extension");
-            
+
             if (!Directory.Exists(extensionPath))
             {
                 Assert.Ignore($"pyRevitDevTools.extension not found at: {extensionPath}");
@@ -36,22 +36,22 @@ namespace pyRevitExtensionParserTester
             var extensions = ExtensionParser.ParseInstalledExtensions(extensionPath).ToList();
             Assert.That(extensions.Count, Is.GreaterThan(0), "Should parse at least one extension");
             var extension = extensions[0];
-            
+
             // Collect command components (this builds control IDs)
             var commands = extension.CollectCommandComponents().ToList();
-            
+
             // Find the "Test C# Script" button
             // Note: cmd.Name has spaces stripped, cmd.DisplayName has original name with spaces
             var csharpScript = commands.FirstOrDefault(c => c.DisplayName == "Test C# Script");
             Assert.That(csharpScript, Is.Not.Null, $"Test C# Script button should exist. All display names: {string.Join(", ", commands.Select(c => c.DisplayName).Take(20))}");
-            
+
             // Verify the control ID format
             // Path: pyRevitDevTools.extension -> pyRevitDev.tab -> Debug.panel -> Bundle Tests.pulldown -> Test C# Script.pushbutton
             // Expected: CustomCtrl_%CustomCtrl_%CustomCtrl_%pyRevitDev%Debug%Bundle Tests%Test C# Script
             Assert.That(csharpScript.ControlId, Is.EqualTo("CustomCtrl_%CustomCtrl_%CustomCtrl_%pyRevitDev%Debug%Bundle Tests%Test C# Script"),
                 $"Control ID mismatch. Actual: {csharpScript.ControlId}");
         }
-        
+
         /// <summary>
         /// Tests control ID for a simple button directly in a panel.
         /// Expected format: CustomCtrl_%CustomCtrl_%{tab}%{panel}%{button}
@@ -259,10 +259,10 @@ namespace pyRevitExtensionParserTester
 
             // Assert
             Assert.That(commands.Count, Is.EqualTo(2));
-            
+
             var directBtn = commands.First(c => c.Name == "DirectButton");
             Assert.That(directBtn.ControlId, Is.EqualTo("CustomCtrl_%CustomCtrl_%TestTab%TestPanel%DirectButton"));
-            
+
             var pulldownBtn = commands.First(c => c.Name == "PulldownButton");
             Assert.That(pulldownBtn.ControlId, Is.EqualTo("CustomCtrl_%CustomCtrl_%CustomCtrl_%TestTab%TestPanel%MyPulldown%PulldownButton"));
         }

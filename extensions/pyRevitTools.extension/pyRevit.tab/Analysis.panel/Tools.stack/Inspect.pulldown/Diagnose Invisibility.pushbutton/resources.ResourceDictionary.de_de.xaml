@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">Element(e) zum Diagnostizieren auswählen</sys:String>
+    <sys:String x:Key="select_view_title">Ansicht auswählen</sys:String>
+    <sys:String x:Key="select_view_button">In dieser Ansicht diagnostizieren</sys:String>
+    <sys:String x:Key="no_elements_error">Keine Elemente ausgewählt oder aufgenommen.</sys:String>
+    <sys:String x:Key="no_view_error">Keine Ansicht ausgewählt.</sys:String>
+    <sys:String x:Key="report_title">Sichtbarkeitsdiagnose</sys:String>
+    <sys:String x:Key="status_visible">In dieser Ansicht sichtbar.</sys:String>
+    <sys:String x:Key="status_hidden">In dieser Ansicht NICHT sichtbar:</sys:String>
+    <sys:String x:Key="status_error">Fehler bei der Diagnose des Elements</sys:String>
+    <sys:String x:Key="summary_line">{} sichtbar, {} nicht sichtbar.</sys:String>
+    <sys:String x:Key="reason_workset_hidden">Bauteilbereich '{}' ist in dieser Ansicht explizit ausgeblendet</sys:String>
+    <sys:String x:Key="reason_workset_closed">Bauteilbereich '{}' ist geschlossen (globale Einstellung)</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">Bauteilbereich '{}' ist durch die Standard-Sichtbarkeitseinstellung des Modells ausgeblendet</sys:String>
+    <sys:String x:Key="reason_phase_filter">Durch Phasenfilter ausgeblendet (Phasenstatus des Elements: '{}')</sys:String>
+    <sys:String x:Key="reason_design_option">Element gehört zur Planungsoption '{}', die von der in dieser Ansicht angezeigten Option abweicht</sys:String>
+    <sys:String x:Key="reason_category_hidden">Kategorie '{}' ist in dieser Ansicht ausgeblendet</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">Unterkategorie '{}' von '{}' ist in dieser Ansicht ausgeblendet (Element gehört möglicherweise dazu)</sys:String>
+    <sys:String x:Key="reason_element_hidden">Element ist in dieser Ansicht explizit ausgeblendet (Ausblenden/Isolieren)</sys:String>
+    <sys:String x:Key="reason_view_filter">Durch Ansichtsfilter '{}' ausgeblendet</sys:String>
+    <sys:String x:Key="reason_section_box">Die Begrenzungsbox des Elements liegt vollständig außerhalb der aktiven 3D-Schnittbox der Ansicht</sys:String>
+    <sys:String x:Key="reason_crop_box">Die Begrenzungsbox des Elements liegt vollständig außerhalb des Ausschnittbereichs der Ansicht</sys:String>
+    <sys:String x:Key="reason_viewrange_above">Element liegt oberhalb der oberen Schnittebene des Ansichtsbereichs (min. Z des Elements {:.3f} ft &gt; oben {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_below">Element liegt unterhalb der unteren Grenze des Ansichtsbereichs (untere Schnittebene / Ansichtstiefe) (max. Z des Elements {:.3f} ft &lt; untere Grenze {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_view_template">Ansichtsvorlage '{}' ist angewendet - einige Sichtbarkeitseinstellungen sind möglicherweise gesperrt und müssen in der Vorlage geändert werden</sys:String>
+    <sys:String x:Key="reason_view_specific">Element ist ansichtsspezifisch und gehört zu einer anderen Ansicht ('{}'), kann hier also nicht erscheinen</sys:String>
+    <sys:String x:Key="reason_view_discipline">Die Ansichtsdisziplin ist auf '{}' eingestellt - einige Kategorien werden abhängig von der Disziplin automatisch ein- oder ausgeblendet, unabhängig von den Sichtbarkeits-/Grafikeinstellungen</sys:String>
+    <sys:String x:Key="reason_unknown">Element ist nicht sichtbar, es konnte jedoch keine genaue Ursache ermittelt werden. Mögliche Ursachen: ansichtsspezifischer Elementtyp (z. B. Annotation aus einer anderen Ansicht), Sichtbarkeit in einem verknüpften Modell oder Detailgrad.</sys:String>
+
+</ResourceDictionary>

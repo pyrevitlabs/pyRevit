@@ -64,8 +64,8 @@ else:
     output.print_md("**Config:** defaults only")
 
 output.print_md("**Runtime overrides:**")
-for k, v in sorted(overrides.items()):
-    output.print_md("- `{}` = `{}`".format(k, v))
+for k in sorted(overrides):
+    output.print_md("- `{}` = `{}`".format(k, overrides[k]))
 
 # ---------------------------------------------------------------------------
 # Run the export

@@ -59,16 +59,11 @@
 
     <system:String x:Key="CoreSettings.Loader">Loader</system:String>
     <system:String x:Key="CoreSettings.Loader.Description">Configure pyRevit's assembly loading mechanism. The new loader is a C# implementation that uses Roslyn build strategy</system:String>
-    <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new pyRevit loader (beta) (Restarting Revit is required)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Read script metadata (Reload Required)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         When enabled, pyRevit reads script metadata (__title__, __author__, __doc__, etc.) from Python script files.
         Disabling this option can improve startup performance but commands may lose metadata defined in scripts.
         Bundle.yaml values will still be used regardless of this setting.
-    </system:String>
-    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
-        The new loader setting has changed. Reloading pyRevit is required for this
-        change to take effect. Do you want to reload now?
     </system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
         The read script metadata setting has changed. Reloading pyRevit is required
@@ -403,4 +398,22 @@
 
     <system:String x:Key="pyRevit.AdminInstall">pyRevit settings are set by your admin.</system:String>
 
+    <system:String x:Key="Agent.Title">Agent Runtime (MCP)</system:String>
+    <system:String x:Key="Agent.Description">Lets MCP coding agents such as Claude Code, Codex, Cursor, VS Code and OpenCode read and change the open model by running Python inside Revit. Agents connect through a local named pipe that only your Windows user can open; unlike the Routes server, nothing is reachable over the network. By default, every agent run that changes the model needs your approval in Revit. This guards against an agent's mistakes, not against a hostile script, so only connect agents you trust.</system:String>
+    <system:String x:Key="Agent.Privacy">Whatever the agent reads (element names, parameter values, results) is sent to the agent's model provider.</system:String>
+    <system:String x:Key="Agent.Check">Agent Host (Beta)</system:String>
+    <system:String x:Key="Agent.Policy">Model Changes</system:String>
+    <system:String x:Key="Agent.Policy.Ask">Ask for my approval in Revit before every change</system:String>
+    <system:String x:Key="Agent.Policy.Auto">Auto: apply changes without asking (each change is still one undo entry)</system:String>
+    <system:String x:Key="Agent.Policy.ReadOnly">Read-only: allow queries and dry runs only</system:String>
+    <system:String x:Key="Agent.Engine">Default Script Engine</system:String>
+    <system:String x:Key="Agent.Engine.IronPython">IronPython (attached engine)</system:String>
+    <system:String x:Key="Agent.Engine.CPython">CPython</system:String>
+    <system:String x:Key="Agent.Connect">Connect an Agent</system:String>
+    <system:String x:Key="Agent.Connect.Description">Registers the pyRevit MCP server with the selected client and enables the agent host. Restart the client afterwards.</system:String>
+    <system:String x:Key="Agent.Running">Agent host is listening on pipe {}</system:String>
+    <system:String x:Key="Agent.NotRunning">Agent host is not running</system:String>
+    <system:String x:Key="Agent.Changed">Agent host setting has changed. Reloading pyRevit is required for this change to take effect. Do you want to reload now?</system:String>
+    <system:String x:Key="Agent.InstallDone">Registered the pyRevit MCP server with {}. Restart it to start using pyRevit tools.</system:String>
+    <system:String x:Key="Agent.InstallFailed">Could not register the pyRevit MCP server with {}.</system:String>
 </ResourceDictionary>

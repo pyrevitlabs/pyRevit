@@ -5,9 +5,10 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "new-lines": len(args.NewJournalLines),
     },
-    log_doc_access=False
+    log_doc_access=False,
 )

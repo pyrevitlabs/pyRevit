@@ -14,19 +14,25 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 from . import Extension
 from ..treeprocessors import Treeprocessor
-from ..util import etree, parseBoolValue, AMP_SUBSTITUTE, HTML_PLACEHOLDER_RE, string_type
+from ..util import (
+    etree,
+    parseBoolValue,
+    AMP_SUBSTITUTE,
+    HTML_PLACEHOLDER_RE,
+    string_type,
+)
 import re
 import unicodedata
 
 
 def slugify(value, separator):
     """Slugify a string, to make it URL friendly."""
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-    value = re.sub(r'[^\w\s-]', '', value.decode('ascii')).strip().lower()
-    return re.sub(r'[%s\s]+' % separator, separator, value)
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore")
+    value = re.sub(r"[^\w\s-]", "", value.decode("ascii")).strip().lower()
+    return re.sub(r"[%s\s]+" % separator, separator, value)
 
 
-IDCOUNT_RE = re.compile(r'^(.*)_([0-9]+)$')
+IDCOUNT_RE = re.compile(r"^(.*)_([0-9]+)$")
 
 
 def unique(id, ids):
@@ -34,15 +40,16 @@ def unique(id, ids):
     while id in ids or not id:
         m = IDCOUNT_RE.match(id)
         if m:
-            id = '%s_%d' % (m.group(1), int(m.group(2))+1)
+            id = "%s_%d" % (m.group(1), int(m.group(2)) + 1)
         else:
-            id = '%s_%d' % (id, 1)
+            id = "%s_%d" % (id, 1)
     ids.add(id)
     return id
 
 
 def stashedHTML2text(text, md):
     """Extract raw HTML from stash, reduce to plain text and swap with placeholder."""
+
     def _html_sub(m):
         """Substitute raw html with plain text."""
         try:
@@ -50,9 +57,9 @@ def stashedHTML2text(text, md):
         except (IndexError, TypeError):  # pragma: no cover
             return m.group(0)
         if md.safeMode and not safe:  # pragma: no cover
-            return ''
+            return ""
         # Strip out tags and entities - leaveing text
-        return re.sub(r'(<[^>]+>)|(&[\#a-zA-Z0-9]+;)', '', raw)
+        return re.sub(r"(<[^>]+>)|(&[\#a-zA-Z0-9]+;)", "", raw)
 
     return HTML_PLACEHOLDER_RE.sub(_html_sub, text)
 
@@ -74,16 +81,16 @@ def nest_toc_tokens(toc_list):
     if len(toc_list):
         # Initialize everything by processing the first entry
         last = toc_list.pop(0)
-        last['children'] = []
-        levels = [last['level']]
+        last["children"] = []
+        levels = [last["level"]]
         ordered_list.append(last)
         parents = []
 
         # Walk the rest nesting the entries properly
         while toc_list:
             t = toc_list.pop(0)
-            current_level = t['level']
-            t['children'] = []
+            current_level = t["level"]
+            t["children"] = []
 
             # Reduce depth if current level < last item's level
             if current_level < levels[-1]:
@@ -93,7 +100,7 @@ def nest_toc_tokens(toc_list):
                 # Pop parents and levels we are less than or equal to
                 to_pop = 0
                 for p in reversed(parents):
-                    if current_level <= p['level']:
+                    if current_level <= p["level"]:
                         to_pop += 1
                     else:  # pragma: no cover
                         break
@@ -107,13 +114,12 @@ def nest_toc_tokens(toc_list):
             # Level is the same, so append to
             # the current parent (if available)
             if current_level == levels[-1]:
-                (parents[-1]['children'] if parents
-                 else ordered_list).append(t)
+                (parents[-1]["children"] if parents else ordered_list).append(t)
 
             # Current level is > last item's level,
             # So make last item a parent and append current as child
             else:
-                last['children'].append(t)
+                last["children"].append(t)
                 parents.append(last)
                 levels.append(current_level)
             last = t
@@ -123,6 +129,7 @@ def nest_toc_tokens(toc_list):
 
 class TocTreeprocessor(Treeprocessor):
     """TOC Tree processor."""
+
     def __init__(self, md, config):
         super(TocTreeprocessor, self).__init__(md)
 
@@ -146,8 +153,8 @@ class TocTreeprocessor(Treeprocessor):
 
     def replace_marker(self, root, elem):
         """Replace marker with elem."""
-        for (p, c) in self.iterparent(root):
-            text = ''.join(c.itertext()).strip()
+        for p, c in self.iterparent(root):
+            text = "".join(c.itertext()).strip()
             if not text:
                 continue
 
@@ -157,8 +164,12 @@ class TocTreeprocessor(Treeprocessor):
             # We do not allow the marker inside a header as that
             # would causes an enless loop of placing a new TOC
             # inside previously generated TOC.
-            if c.text and c.text.strip() == self.marker and \
-               not self.header_rgx.match(c.tag) and c.tag not in ['pre', 'code']:
+            if (
+                c.text
+                and c.text.strip() == self.marker
+                and not self.header_rgx.match(c.tag)
+                and c.tag not in ["pre", "code"]
+            ):
                 for i in range(len(p)):
                     if p[i] == c:
                         p[i] = elem
@@ -169,7 +180,7 @@ class TocTreeprocessor(Treeprocessor):
         level = int(elem.tag[-1]) + self.base_level
         if level > 6:
             level = 6
-        elem.tag = 'h%d' % level
+        elem.tag = "h%d" % level
 
     def add_anchor(self, c, elem_id):  # @ReservedAssignment
         anchor = etree.Element("a")
@@ -185,9 +196,11 @@ class TocTreeprocessor(Treeprocessor):
 
     def add_permalink(self, c, elem_id):
         permalink = etree.Element("a")
-        permalink.text = ("%spara;" % AMP_SUBSTITUTE
-                          if self.use_permalinks is True
-                          else self.use_permalinks)
+        permalink.text = (
+            "%spara;" % AMP_SUBSTITUTE
+            if self.use_permalinks is True
+            else self.use_permalinks
+        )
         permalink.attrib["href"] = "#" + elem_id
         permalink.attrib["class"] = "headerlink"
         permalink.attrib["title"] = "Permanent link"
@@ -210,14 +223,14 @@ class TocTreeprocessor(Treeprocessor):
                 # List item link, to be inserted into the toc div
                 li = etree.SubElement(ul, "li")
                 link = etree.SubElement(li, "a")
-                link.text = item.get('name', '')
-                link.attrib["href"] = '#' + item.get('id', '')
-                if item['children']:
-                    build_etree_ul(item['children'], li)
+                link.text = item.get("name", "")
+                link.attrib["href"] = "#" + item.get("id", "")
+                if item["children"]:
+                    build_etree_ul(item["children"], li)
             return ul
 
         build_etree_ul(toc_list, div)
-        prettify = self.markdown.treeprocessors.get('prettify')
+        prettify = self.markdown.treeprocessors.get("prettify")
         if prettify:
             prettify.run(div)
         return div
@@ -233,18 +246,18 @@ class TocTreeprocessor(Treeprocessor):
         for el in doc.iter():
             if isinstance(el.tag, string_type) and self.header_rgx.match(el.tag):
                 self.set_level(el)
-                text = ''.join(el.itertext()).strip()
+                text = "".join(el.itertext()).strip()
 
                 # Do not override pre-existing ids
                 if "id" not in el.attrib:
                     innertext = stashedHTML2text(text, self.markdown)
-                    el.attrib["id"] = unique(self.slugify(innertext, self.sep), used_ids)
+                    el.attrib["id"] = unique(
+                        self.slugify(innertext, self.sep), used_ids
+                    )
 
-                toc_tokens.append({
-                    'level': int(el.tag[-1]),
-                    'id': el.attrib["id"],
-                    'name': text
-                })
+                toc_tokens.append(
+                    {"level": int(el.tag[-1]), "id": el.attrib["id"], "name": text}
+                )
 
                 if self.use_anchors:
                     self.add_anchor(el, el.attrib["id"])
@@ -269,23 +282,31 @@ class TocExtension(Extension):
 
     def __init__(self, *args, **kwargs):
         self.config = {
-            "marker": ['[TOC]',
-                       'Text to find and replace with Table of Contents - '
-                       'Set to an empty string to disable. Defaults to "[TOC]"'],
-            "title": ["",
-                      "Title to insert into TOC <div> - "
-                      "Defaults to an empty string"],
-            "anchorlink": [False,
-                           "True if header should be a self link - "
-                           "Defaults to False"],
-            "permalink": [0,
-                          "True or link text if a Sphinx-style permalink should "
-                          "be added - Defaults to False"],
-            "baselevel": ['1', 'Base level for headers.'],
-            "slugify": [slugify,
-                        "Function to generate anchors based on header text - "
-                        "Defaults to the headerid ext's slugify function."],
-            'separator': ['-', 'Word separator. Defaults to "-".']
+            "marker": [
+                "[TOC]",
+                "Text to find and replace with Table of Contents - "
+                'Set to an empty string to disable. Defaults to "[TOC]"',
+            ],
+            "title": [
+                "",
+                "Title to insert into TOC <div> - Defaults to an empty string",
+            ],
+            "anchorlink": [
+                False,
+                "True if header should be a self link - Defaults to False",
+            ],
+            "permalink": [
+                0,
+                "True or link text if a Sphinx-style permalink should "
+                "be added - Defaults to False",
+            ],
+            "baselevel": ["1", "Base level for headers."],
+            "slugify": [
+                slugify,
+                "Function to generate anchors based on header text - "
+                "Defaults to the headerid ext's slugify function.",
+            ],
+            "separator": ["-", 'Word separator. Defaults to "-".'],
         }
 
         super(TocExtension, self).__init__(*args, **kwargs)
@@ -303,7 +324,7 @@ class TocExtension(Extension):
         md.treeprocessors.add("toc", tocext, "_end")
 
     def reset(self):
-        self.md.toc = ''
+        self.md.toc = ""
 
 
 def makeExtension(*args, **kwargs):

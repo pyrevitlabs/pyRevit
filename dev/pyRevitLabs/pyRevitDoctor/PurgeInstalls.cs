@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Microsoft.Win32;
 
@@ -47,7 +47,7 @@ namespace pyRevitDoctor {
                         Console.WriteLine($"Can not open \"({target.BaseKey})\\{target.SubKeyName}\". Run this command as admin");
                         continue;
                     }
-                    
+
                     // for each subkey
                     foreach (string subkeyName in key.GetSubKeyNames())
                         // test if it references any of the pyrevit products
@@ -82,7 +82,7 @@ namespace pyRevitDoctor {
                 var productIcon = (string)targetKey.GetValue("ProductIcon");
                 targetKey.Close();
                 if (productName == product.Name && productIcon.Contains(product.Key)) {
-                    
+
                     // cleanup reference under Features
                     var featuresKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default).OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\Features"), writable: true);
                     if (featuresKey.GetSubKeyNames().Contains(subKeyName))
@@ -98,10 +98,10 @@ namespace pyRevitDoctor {
                             Console.WriteLine($"Error Deleting {featuresKey.Name}\\{subKeyName}\\ ({product.Name} {product.Version}) | {delEx.Message}");
                         }
                     featuresKey.Close();
-                    
+
                     // cleanup reference under UpgradeCodes
                     var upgradeInfoKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default).OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\UpgradeCodes"), writable: true);
-                    foreach(var upgradeInfoSubKeyName in upgradeInfoKey.GetSubKeyNames()) {
+                    foreach (var upgradeInfoSubKeyName in upgradeInfoKey.GetSubKeyNames()) {
                         var subUpgradeInfoKey = upgradeInfoKey.OpenSubKey(upgradeInfoSubKeyName, writable: true);
                         if (subUpgradeInfoKey.GetValueNames().Contains(subKeyName))
                             try {
@@ -117,13 +117,13 @@ namespace pyRevitDoctor {
                             }
                     }
                     upgradeInfoKey.Close();
-                    
+
                     // return true so the root key gets deleted also
                     return true;
                 }
             }
             catch { }
-            
+
             // close opened key and return
             if (targetKey != null)
                 targetKey.Close();

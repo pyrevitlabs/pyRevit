@@ -1,8 +1,8 @@
 """Advanced Collection of Data: Collects all the walls of height 10"""
 
-
 # for timing -------------------------------------------------------------------
 from pyrevit.coreutils import Timer
+
 timer = Timer()
 # ------------------------------------------------------------------------------
 
@@ -19,21 +19,15 @@ height_param_prov = DB.ParameterValueProvider(height_param_id)
 
 param_equality = DB.FilterNumericEquals()
 
-heigh_value_rule = DB.FilterDoubleRule(height_param_prov,
-                                       param_equality,
-                                       10.0,
-                                       1E-6)
+heigh_value_rule = DB.FilterDoubleRule(height_param_prov, param_equality, 10.0, 1e-6)
 
 param_filter = DB.ElementParameterFilter(heigh_value_rule)
 
 
-walls = DB.FilteredElementCollector(doc) \
-          .WherePasses(param_filter) \
-          .ToElementIds()
+walls = DB.FilteredElementCollector(doc).WherePasses(param_filter).ToElementIds()
 
 
 uidoc.Selection.SetElementIds(walls)
-
 
 
 # for timing -------------------------------------------------------------------

@@ -13,4 +13,4 @@ for element in revit.get_selection():
             linkel = revit.doc.GetElement(linkelid)
             if isinstance(linkel, DB.RevitLinkInstance):
                 clink = output.linkify(element.Id)
-                print('{} : {}'.format(clink, linkel.Name))
+                print("{} : {}".format(clink, linkel.Name))

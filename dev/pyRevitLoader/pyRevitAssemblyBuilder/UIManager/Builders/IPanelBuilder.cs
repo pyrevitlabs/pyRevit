@@ -21,6 +21,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <summary>
         /// Applies background colors to a panel based on component settings.
         /// </summary>
+        /// <remarks>
+        /// Picks the light or dark colors for the active Revit theme and registers the panel with
+        /// <see cref="RibbonThemeRegistry"/> so a theme switch repaints it without a session reload.
+        /// </remarks>
         /// <param name="revitPanel">The Revit ribbon panel.</param>
         /// <param name="component">The component containing color settings.</param>
         /// <param name="tabName">The name of the tab containing this panel.</param>

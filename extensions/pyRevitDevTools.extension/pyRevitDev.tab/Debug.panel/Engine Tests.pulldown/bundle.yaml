@@ -3,11 +3,14 @@ layout:
   - Test Cached Engines
   - Test FullFrame Engine
   - Test Persistent Engine
+  - Rocket Mode Cache Warmup
+  - Rocket Mode Scope Test
   - Test IronPython Compile
   - Test IronPython Search Paths
   - Test IronPython Threading
   - Test IronPython Events
   - Test IronPython Debugger
+  - Test IronPython Revit Handle
   - -----
   - Test CPython Command
   - Test CPython Namespace
@@ -16,5 +19,8 @@ layout:
   - Test CPython Events
   - Test CPython Debugger
   - Test CPython Regressions
+  - Test CPython Revit Handle
   - -----
   - Test CLR Engine Debugger
+  - -----
+  - Test Smart Button Revit Handle

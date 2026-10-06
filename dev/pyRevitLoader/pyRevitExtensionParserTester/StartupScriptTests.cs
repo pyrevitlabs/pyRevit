@@ -29,7 +29,7 @@ namespace pyRevitExtensionParserTest
 
             // Assert - Check that StartupScript property is accessible
             var startupScript = _testExtension.StartupScript;
-            Assert.DoesNotThrow(() => { var _ = _testExtension.StartupScript; }, 
+            Assert.DoesNotThrow(() => { var _ = _testExtension.StartupScript; },
                 "StartupScript property should be accessible without throwing");
         }
 
@@ -38,15 +38,15 @@ namespace pyRevitExtensionParserTest
         {
             // Arrange
             Assert.IsNotNull(_testExtension, "Test extension should be parsed");
-            
+
             // Act
             var startupScript = _testExtension.StartupScript;
-            
+
             // Assert
             Assert.IsNotNull(startupScript, "Startup script should be found");
             Assert.IsTrue(File.Exists(startupScript), "Startup script file should exist at the returned path");
             Assert.That(startupScript, Does.EndWith("startup.py"), "Should find Python startup script");
-            
+
             TestContext.Out.WriteLine($"Found startup script: {startupScript}");
         }
 
@@ -55,14 +55,14 @@ namespace pyRevitExtensionParserTest
         {
             // Arrange
             Assert.IsNotNull(_testExtension, "Test extension should be parsed");
-            
+
             // Act
             var startupScript = _testExtension.StartupScript;
-            
+
             // Assert
             Assert.IsNotNull(startupScript, "Startup script should be found");
             Assert.IsTrue(Path.IsPathRooted(startupScript), "Startup script path should be absolute");
-            
+
             TestContext.Out.WriteLine($"Startup script full path: {startupScript}");
         }
 
@@ -73,18 +73,18 @@ namespace pyRevitExtensionParserTest
             Assert.IsNotNull(_testExtension, "Test extension should be parsed");
             var startupScript = _testExtension.StartupScript;
             Assert.IsNotNull(startupScript, "Startup script should be found");
-            
+
             // Act
             var content = File.ReadAllText(startupScript);
-            
+
             // Assert
             Assert.IsNotEmpty(content, "Startup script should have content");
             // Check for content that actually exists in the pyRevitDevTools startup.py
-            Assert.That(content, Does.Contain("startup.py"), 
+            Assert.That(content, Does.Contain("startup.py"),
                 "Startup script should be a valid Python startup script");
-            Assert.That(content, Does.Contain("pyrevit") | Does.Contain("pyRevit"), 
+            Assert.That(content, Does.Contain("pyrevit") | Does.Contain("pyRevit"),
                 "Startup script should reference pyRevit");
-            
+
             TestContext.Out.WriteLine($"Startup script found at: {startupScript}");
             TestContext.Out.WriteLine($"Content length: {content.Length} characters");
             TestContext.Out.WriteLine($"First 200 characters:\n{content.Substring(0, Math.Min(200, content.Length))}...");
@@ -99,10 +99,10 @@ namespace pyRevitExtensionParserTest
                 Name = "TestEmpty",
                 Directory = Path.Combine(Path.GetTempPath(), "NonExistentDirectory_" + Guid.NewGuid())
             };
-            
+
             // Act
             var startupScript = emptyExtension.StartupScript;
-            
+
             // Assert
             Assert.IsNull(startupScript, "Startup script should be null for non-existent directory");
         }
@@ -113,7 +113,7 @@ namespace pyRevitExtensionParserTest
             // Arrange - Create a temporary directory without startup script
             var tempDir = Path.Combine(Path.GetTempPath(), "TestExtensionNoStartup_" + Guid.NewGuid());
             Directory.CreateDirectory(tempDir);
-            
+
             try
             {
                 var extensionWithoutStartup = new ParsedExtension
@@ -121,10 +121,10 @@ namespace pyRevitExtensionParserTest
                     Name = "TestNoStartup",
                     Directory = tempDir
                 };
-                
+
                 // Act
                 var startupScript = extensionWithoutStartup.StartupScript;
-                
+
                 // Assert
                 Assert.IsNull(startupScript, "Startup script should be null when no startup file exists");
             }
@@ -142,28 +142,28 @@ namespace pyRevitExtensionParserTest
             // Arrange - Create a temporary directory with multiple startup files
             var tempDir = Path.Combine(Path.GetTempPath(), "TestExtensionMultiStartup_" + Guid.NewGuid());
             Directory.CreateDirectory(tempDir);
-            
+
             try
             {
                 // Create startup files in different formats
                 File.WriteAllText(Path.Combine(tempDir, "startup.cs"), "// C# startup");
                 File.WriteAllText(Path.Combine(tempDir, "startup.py"), "# Python startup");
                 File.WriteAllText(Path.Combine(tempDir, "startup.vb"), "' VB startup");
-                
+
                 var extension = new ParsedExtension
                 {
                     Name = "TestMultiFormat",
                     Directory = tempDir
                 };
-                
+
                 // Act
                 var startupScript = extension.StartupScript;
-                
+
                 // Assert
                 Assert.IsNotNull(startupScript, "Startup script should be found");
-                Assert.That(startupScript, Does.EndWith("startup.py"), 
+                Assert.That(startupScript, Does.EndWith("startup.py"),
                     "Should prioritize Python startup script when multiple formats exist");
-                
+
                 TestContext.Out.WriteLine($"Selected startup script: {startupScript}");
             }
             finally
@@ -180,25 +180,25 @@ namespace pyRevitExtensionParserTest
             // Arrange - Create a temporary directory with only C# startup
             var tempDir = Path.Combine(Path.GetTempPath(), "TestExtensionCSharpStartup_" + Guid.NewGuid());
             Directory.CreateDirectory(tempDir);
-            
+
             try
             {
                 File.WriteAllText(Path.Combine(tempDir, "startup.cs"), "// C# startup script");
-                
+
                 var extension = new ParsedExtension
                 {
                     Name = "TestCSharpStartup",
                     Directory = tempDir
                 };
-                
+
                 // Act
                 var startupScript = extension.StartupScript;
-                
+
                 // Assert
                 Assert.IsNotNull(startupScript, "Startup script should be found");
-                Assert.That(startupScript, Does.EndWith("startup.cs"), 
+                Assert.That(startupScript, Does.EndWith("startup.cs"),
                     "Should find C# startup script when Python is not available");
-                
+
                 TestContext.Out.WriteLine($"Found C# startup script: {startupScript}");
             }
             finally

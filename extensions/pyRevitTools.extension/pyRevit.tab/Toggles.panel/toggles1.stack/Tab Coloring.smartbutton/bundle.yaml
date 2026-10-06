@@ -20,5 +20,4 @@ tooltip:
     sortiert nach Projekt und Familie eingefärbt. Das verbessert den Überblick wenn man
     mehrere Projekte gleichzeitig geöffnet hat.
   pt_br: Faz o melhor possivel para separar visualmente os documentos abertos
-min_revit_version: 2019
 context: zero-doc

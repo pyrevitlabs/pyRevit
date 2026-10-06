@@ -8,13 +8,16 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using PyRevitLabs.PyRevit.Runtime;
 
-namespace pyRevitExtensionParserTester {
+namespace pyRevitExtensionParserTester
+{
     [TestFixture]
-    public class ScriptLoggerServiceTests {
+    public class ScriptLoggerServiceTests
+    {
         private string _tempDirectory;
 
         [SetUp]
-        public void SetUp() {
+        public void SetUp()
+        {
             _tempDirectory = Path.Combine(
                 Path.GetTempPath(),
                 "pyrevit-script-logger-" + Guid.NewGuid().ToString("N"));
@@ -22,13 +25,15 @@ namespace pyRevitExtensionParserTester {
         }
 
         [TearDown]
-        public void TearDown() {
+        public void TearDown()
+        {
             if (Directory.Exists(_tempDirectory))
                 Directory.Delete(_tempDirectory, true);
         }
 
         [Test]
-        public void LevelFilteringUsesRuntimeDebugOverride() {
+        public void LevelFilteringUsesRuntimeDebugOverride()
+        {
             var service = ScriptLoggerService.GetDefault();
             service.SetMinimumLevel((int)ScriptLogLevel.Warning);
 
@@ -43,7 +48,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void RuntimeResolutionIsStableAndPerRuntime() {
+        public void RuntimeResolutionIsStableAndPerRuntime()
+        {
             var firstRuntime = CreateRuntime(suppressOutput: true);
             var secondRuntime = CreateRuntime(suppressOutput: true);
 
@@ -59,7 +65,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void ErrorsAreTrackedByTheRuntimeService() {
+        public void ErrorsAreTrackedByTheRuntimeService()
+        {
             var path = Path.Combine(_tempDirectory, "errors.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
             var service = ScriptLoggerService.GetForRuntime(runtime);
@@ -70,7 +77,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void SuppressedRuntimeStillWritesConfiguredUnicodeLog() {
+        public void SuppressedRuntimeStillWritesConfiguredUnicodeLog()
+        {
             var path = Path.Combine(_tempDirectory, "suppressed.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
 
@@ -84,7 +92,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void FileFormattingIncludesTimestampLevelAndCommand() {
+        public void FileFormattingIncludesTimestampLevelAndCommand()
+        {
             var path = Path.Combine(_tempDirectory, "formatted.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
 
@@ -98,7 +107,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void ConcurrentFileWritesRemainWhole() {
+        public void ConcurrentFileWritesRemainWhole()
+        {
             var path = Path.Combine(_tempDirectory, "concurrent.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
             var service = ScriptLoggerService.GetForRuntime(runtime);
@@ -112,7 +122,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void DisposedRuntimeIgnoresFurtherRecords() {
+        public void DisposedRuntimeIgnoresFurtherRecords()
+        {
             var path = Path.Combine(_tempDirectory, "disposed.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
             var service = ScriptLoggerService.GetForRuntime(runtime);
@@ -125,7 +136,8 @@ namespace pyRevitExtensionParserTester {
         }
 
         [Test]
-        public void DisposedRuntimeResolutionUsesSessionService() {
+        public void DisposedRuntimeResolutionUsesSessionService()
+        {
             var runtime = CreateRuntime(suppressOutput: true);
             SetProperty(runtime, "IsDisposed", true);
 
@@ -141,7 +153,8 @@ namespace pyRevitExtensionParserTester {
         [TestCase(ScriptLogLevel.Critical, "&clt;div class=\"logdefault logcritical\"&cgt;&clt;strong&cgt;CRITICAL&clt;/strong&cgt; [sample] value <tag>&clt;/div&cgt;")]
         public void VisibleFormattingMatchesLegacyMainDocumentOutput(
             ScriptLogLevel level,
-            string expected) {
+            string expected)
+        {
             Assert.That(FormatVisibleEntry(level, "sample", "value <tag>"), Is.EqualTo(expected));
         }
 
@@ -150,7 +163,8 @@ namespace pyRevitExtensionParserTester {
         public void HeaderOnlyLevelsOmitLoggerName(
             ScriptLogLevel level,
             string style,
-            string levelName) {
+            string levelName)
+        {
             var expected = string.Format(
                 "&clt;div class=\"logdefault {0}\"&cgt;&clt;strong&cgt;{1}&clt;/strong&cgt;{2}value <tag>&clt;/div&cgt;",
                 style,
@@ -163,14 +177,17 @@ namespace pyRevitExtensionParserTester {
         private static ScriptRuntime CreateRuntime(
             bool debugMode = false,
             bool suppressOutput = false,
-            string logFilePath = null) {
+            string logFilePath = null)
+        {
             var runtime = (ScriptRuntime)FormatterServices.GetUninitializedObject(
                 typeof(ScriptRuntime));
-            SetProperty(runtime, "ScriptData", new ScriptData {
+            SetProperty(runtime, "ScriptData", new ScriptData
+            {
                 CommandName = "Test Command",
                 CommandUniqueId = "test-command"
             });
-            SetProperty(runtime, "ScriptRuntimeConfigs", new ScriptRuntimeConfigs {
+            SetProperty(runtime, "ScriptRuntimeConfigs", new ScriptRuntimeConfigs
+            {
                 DebugMode = debugMode,
                 SuppressOutput = suppressOutput,
                 LogFilePath = logFilePath
@@ -178,7 +195,8 @@ namespace pyRevitExtensionParserTester {
             return runtime;
         }
 
-        private static void SetProperty(object target, string propertyName, object value) {
+        private static void SetProperty(object target, string propertyName, object value)
+        {
             target.GetType().GetProperty(
                 propertyName,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
@@ -188,7 +206,8 @@ namespace pyRevitExtensionParserTester {
         private static string FormatVisibleEntry(
             ScriptLogLevel level,
             string loggerName,
-            string message) {
+            string message)
+        {
             return (string)typeof(ScriptLoggerService).GetMethod(
                 "FormatVisibleEntry",
                 BindingFlags.Static | BindingFlags.NonPublic)

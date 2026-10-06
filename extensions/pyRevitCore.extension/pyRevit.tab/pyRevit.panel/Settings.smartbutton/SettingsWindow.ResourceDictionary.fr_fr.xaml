@@ -59,16 +59,11 @@
 
     <system:String x:Key="CoreSettings.Loader">Chargeur</system:String>
     <system:String x:Key="CoreSettings.Loader.Description">Configurer le mécanisme de chargement des assemblies de pyRevit. Le nouveau chargeur est une implémentation C# qui utilise la stratégie de compilation Roslyn</system:String>
-    <system:String x:Key="CoreSettings.Loader.NewLoader">Active une nouvelle version du chargeur pyRevit (bêta) (Le redémarrage de Revit est requis)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Lire les métadonnées des scripts (Redémarrage requis)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         Lorsqu'elle est activée, pyRevit lit les métadonnées des scripts (__title__, __author__, __doc__, etc.) à partir des fichiers de scripts Python.
         La désactivation de cette option peut améliorer les performances de démarrage, mais les commandes peuvent perdre les métadonnées définies dans les scripts.
         Les valeurs de bundle.yaml seront toujours utilisées quelle que soit ce paramètre.
-    </system:String>
-    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
-        Le paramètre du nouveau chargeur a changé. Un rechargement de pyRevit est requis pour
-        que ce changement prenne effet. Voulez-vous recharger maintenant ?
     </system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
         Le paramètre de lecture des métadonnées des scripts a changé. Un rechargement de
@@ -390,4 +385,22 @@
 
     <system:String x:Key="pyRevit.AdminInstall">Les paramètres de pyRevit sont définis par votre administrateur.</system:String>
 
+    <system:String x:Key="Agent.Title">Environnement d'agents (MCP)</system:String>
+    <system:String x:Key="Agent.Description">Permet aux agents de programmation MCP comme Claude Code, Codex, Cursor, VS Code et OpenCode de lire et de modifier le modèle ouvert en exécutant du Python dans Revit. Les agents se connectent par un canal nommé local que seul votre utilisateur Windows peut ouvrir ; contrairement au serveur de routes, rien n'est accessible depuis le réseau. Par défaut, chaque exécution d'un agent qui modifie le modèle nécessite votre approbation dans Revit. Cela protège des erreurs d'un agent, pas d'un script malveillant : ne connectez que des agents de confiance.</system:String>
+    <system:String x:Key="Agent.Privacy">Tout ce que l'agent lit (noms d'éléments, valeurs de paramètres, résultats) est envoyé au fournisseur du modèle de l'agent.</system:String>
+    <system:String x:Key="Agent.Check">Hôte d'agents (bêta)</system:String>
+    <system:String x:Key="Agent.Policy">Modifications du modèle</system:String>
+    <system:String x:Key="Agent.Policy.Ask">Demander mon approbation dans Revit avant chaque modification</system:String>
+    <system:String x:Key="Agent.Policy.Auto">Automatique : appliquer les modifications sans demander (chaque modification reste une seule annulation)</system:String>
+    <system:String x:Key="Agent.Policy.ReadOnly">Lecture seule : autoriser uniquement les requêtes et les essais</system:String>
+    <system:String x:Key="Agent.Engine">Moteur de script par défaut</system:String>
+    <system:String x:Key="Agent.Engine.IronPython">IronPython (moteur attaché)</system:String>
+    <system:String x:Key="Agent.Engine.CPython">CPython</system:String>
+    <system:String x:Key="Agent.Connect">Connecter un agent</system:String>
+    <system:String x:Key="Agent.Connect.Description">Enregistre le serveur MCP de pyRevit dans le client choisi et active l'hôte d'agents. Redémarrez ensuite le client.</system:String>
+    <system:String x:Key="Agent.Running">L'hôte d'agents écoute sur le canal {}</system:String>
+    <system:String x:Key="Agent.NotRunning">L'hôte d'agents n'est pas démarré</system:String>
+    <system:String x:Key="Agent.Changed">Le paramètre de l'hôte d'agents a changé. Le rechargement de pyRevit est nécessaire pour que ce changement prenne effet. Voulez-vous recharger maintenant ?</system:String>
+    <system:String x:Key="Agent.InstallDone">Le serveur MCP de pyRevit a été enregistré dans {}. Redémarrez-le pour utiliser les outils pyRevit.</system:String>
+    <system:String x:Key="Agent.InstallFailed">Impossible d'enregistrer le serveur MCP de pyRevit dans {}.</system:String>
 </ResourceDictionary>

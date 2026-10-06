@@ -183,9 +183,7 @@ class RequestHandler(UI.IExternalEventHandler):
                     clsx_message=clsx.Message if clsx else str(hndlr_ex),
                     clsx_source=clsx.Source if clsx else "",
                     clsx_stacktrace=clsx.StackTrace if clsx else tb_report,
-                    clsx_targetsite=(
-                        clsx.TargetSite.ToString() if clsx else ""
-                    ),
+                    clsx_targetsite=(clsx.TargetSite.ToString() if clsx else ""),
                 )
         else:
             response = excp.RouteHandlerIsNotCallableException(handler.__name__)
@@ -223,7 +221,9 @@ class RequestHandler(UI.IExternalEventHandler):
         # if query parameters are present, provide those as well
         if request.query_params:
             reserved = {ARGS_REQUEST, ARGS_UIAPP, ARGS_UIDOC, ARGS_DOC}
-            kwargs.update({k: v for k, v in request.query_params.items() if k not in reserved})
+            kwargs.update(
+                {k: v for k, v in request.query_params.items() if k not in reserved}
+            )
         # add host api context params
         kwargs[ARGS_UIAPP] = uiapp
         kwargs[ARGS_UIDOC] = uidoc
@@ -234,6 +234,7 @@ class RequestHandler(UI.IExternalEventHandler):
     @staticmethod
     def parse_response(response):
         """Parse any given response data and return Response object."""
+
         def _json_dumps_safe(value):
             # IronPython may raise different encoding/runtime exceptions
             # for non-ASCII payloads; always fall back to manual serializer.

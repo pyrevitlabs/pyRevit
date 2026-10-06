@@ -8,9 +8,8 @@ import os.path as op
 from collections import OrderedDict
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit.compat import safe_strtype, IRONPY
+from pyrevit.compat import safe_strtype
 from pyrevit import framework
-from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
 
@@ -24,10 +23,7 @@ LIBGIT_DLL = framework.get_dll_file(GIT_LIB)
 mlogger.debug("Loading dll: %s", LIBGIT_DLL)
 
 try:
-    if IRONPY:
-        clr.AddReferenceToFileAndPath(LIBGIT_DLL)
-    else:
-        clr.AddReference(LIBGIT_DLL)
+    framework.add_reference_to_file(LIBGIT_DLL)
 
     import LibGit2Sharp as libgit  # pylint: disable=import-error
 
@@ -149,8 +145,7 @@ def _make_clone_options(username=None, password=None):
 
 
 def _make_pull_signature():
-    mlogger.debug("Creating pull signature for username: %s",
-                  HOST_APP.username)
+    mlogger.debug("Creating pull signature for username: %s", HOST_APP.username)
     return libgit.Signature(
         HOST_APP.username, HOST_APP.username, DateTimeOffset(DateTime.Now)
     )
@@ -158,7 +153,19 @@ def _make_pull_signature():
 
 def _process_git_error(exception_err):
     exception_msg = safe_strtype(exception_err)
-    if "401" in exception_msg:
+    # libgit2 reports a missing or rejected authentication callback with its own
+    # wording rather than a 401. Left untranslated it reads like a libgit2
+    # internal, sends the user looking at the wrong thing, and hides the real
+    # cause: a token that is absent, expired, or stored under a different
+    # Windows profile. Map every authentication-shaped message onto the one
+    # exception the callers already know how to report.
+    auth_markers = (
+        "401",
+        "remote authentication required but no callback set",
+        "too many redirects or authentication replays",
+        "credentials could not be read",
+    )
+    if any(marker in exception_msg for marker in auth_markers):
         raise PyRevitGitAuthenticationError(exception_msg)
     else:
         raise PyRevitException(exception_msg)
@@ -199,8 +206,7 @@ def git_pull(repo_info):
         return RepoInfo(repo)
 
     except Exception as pull_err:
-        mlogger.debug("Failed git pull: %s | %s",
-                      repo_info.directory, pull_err)
+        mlogger.debug("Failed git pull: %s | %s", repo_info.directory, pull_err)
         _process_git_error(pull_err)
 
 
@@ -230,8 +236,7 @@ def git_fetch(repo_info):
         return RepoInfo(repo)
 
     except Exception as fetch_err:
-        mlogger.debug("Failed git fetch: %s | %s",
-                      repo_info.directory, fetch_err)
+        mlogger.debug("Failed git fetch: %s | %s", repo_info.directory, fetch_err)
         _process_git_error(fetch_err)
 
 
@@ -309,8 +314,7 @@ def get_all_new_commits(repo_info):
     repo = repo_info.repo
     current_commit = repo_info.last_commit_hash
 
-    ref_commit = repo.Lookup(libgit.ObjectId(current_commit),
-                             libgit.ObjectType.Commit)
+    ref_commit = repo.Lookup(libgit.ObjectId(current_commit), libgit.ObjectType.Commit)
 
     # Let's only consider the refs that lead to this commit...
     refs = repo.Refs.ReachableFrom([ref_commit])

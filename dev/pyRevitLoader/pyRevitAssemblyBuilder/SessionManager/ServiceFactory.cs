@@ -213,8 +213,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
             BuildContext buildContext,
-            IUIRibbonScanner? ribbonScanner = null,
-            SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
+            IUIRibbonScanner? ribbonScanner = null)
         {
             return new UIManagerService(
                 uiApplication,
@@ -226,8 +225,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 stackBuilder,
                 comboBoxBuilder,
                 buildContext,
-                ribbonScanner,
-                smartButtonScriptInitializer);
+                ribbonScanner);
         }
 
         /// <summary>
@@ -246,18 +244,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Create logger first - it's used by all other services.
             var logger = CreateLogger();
             ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));
-            
+
             // Create core services
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, logger);
             int.TryParse(revitVersion, out int revitYear);
             var extensionManager = CreateExtensionManagerService(revitYear, uiApplication, logger);
             var hookManager = CreateHookManager(logger);
-            
+
             // Create icon and tooltip managers
             var iconManager = CreateIconManager(logger);
             var tooltipManager = CreateTooltipManager(logger);
             var buttonPostProcessor = CreateButtonPostProcessor(logger, iconManager, tooltipManager);
-            
+
             // Create UI builders. The BuildContext is shared by reference between the UIManager
             // (writer) and every builder that needs to know the current beta / version snapshot,
             // so all readers observe the same value within a single BuildUI call.
@@ -284,8 +282,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 stackBuilder,
                 comboBoxBuilder,
                 buildContext,
-                ribbonScanner,
-                smartButtonScriptInitializer);
+                ribbonScanner);
 
             return new SessionManagerService(
                 assemblyBuilder,
@@ -295,7 +292,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ribbonScanner,
                 logger);
         }
-        
+
         /// <summary>
         /// Creates a SessionManagerService instance with custom service implementations.
         /// Use this overload for testing or when custom implementations are needed.

@@ -55,7 +55,7 @@ namespace pyRevitExtensionParser
                 var fileInfo = new FileInfo(filePath);
                 FileSize = fileInfo.Length;
             }
-            
+
             IsDark = DetectDarkIcon();
             Type = IsDark ? IconType.DarkStandard : IconType.Standard;
         }
@@ -86,7 +86,7 @@ namespace pyRevitExtensionParser
         /// Standard icon (icon.png)
         /// </summary>
         Standard,
-        
+
         /// <summary>
         /// Dark theme variant (icon.dark.png)
         /// </summary>
@@ -102,8 +102,8 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Gets the primary icon (standard light icon)
         /// </summary>
-        public ComponentIcon PrimaryIcon => 
-            this.FirstOrDefault(i => i.Type == IconType.Standard) ?? 
+        public ComponentIcon PrimaryIcon =>
+            this.FirstOrDefault(i => i.Type == IconType.Standard) ??
             this.FirstOrDefault(i => !i.IsDark);
 
         /// <summary>
@@ -115,13 +115,13 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Gets icon by type
         /// </summary>
-        public ComponentIcon GetByType(IconType type) => 
+        public ComponentIcon GetByType(IconType type) =>
             this.FirstOrDefault(i => i.Type == type);
 
         /// <summary>
         /// Gets all icons of a specific file extension
         /// </summary>
-        public IEnumerable<ComponentIcon> GetByExtension(string extension) => 
+        public IEnumerable<ComponentIcon> GetByExtension(string extension) =>
             this.Where(i => string.Equals(i.Extension, extension, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Gets supported image file extensions
         /// </summary>
-        public static readonly string[] SupportedExtensions = 
+        public static readonly string[] SupportedExtensions =
         {
             ".png", ".ico", ".jpg", ".jpeg", ".bmp", ".gif", ".svg"
         };

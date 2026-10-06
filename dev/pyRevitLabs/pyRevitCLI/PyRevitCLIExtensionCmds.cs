@@ -80,7 +80,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        Extend(bool ui, bool lib, string extName, string destPath, string repoUrl, string branchName, GitInstallerCredentials credentials) {
+        Extend(bool ui, bool lib, string extName, string destPath, string repoUrl, string branchName, GitInstallerCredentials credentials, bool persistCredentials = false) {
             PyRevitExtensionTypes extType = PyRevitExtensionTypes.Unknown;
             if (ui)
                 extType = PyRevitExtensionTypes.UIExtension;
@@ -88,6 +88,22 @@ namespace pyRevitCLI {
                 extType = PyRevitExtensionTypes.LibraryExtension;
 
             PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName, credentials);
+
+            if (persistCredentials) {
+                if (credentials is null)
+                    logger.Warn("No credentials provided. Skipping saving credentials to config file.");
+                else {
+                    try {
+                        PyRevitExtensions.SaveExtensionCredentials(extName, extType, credentials);
+                        logger.Debug("Credentials for \"{0}\" are sealed with Windows DPAPI and stored in the "
+                                     + "pyRevit config file. They are readable only by this Windows user, and "
+                                     + "are lost if the user profile is rebuilt without a backup.", extName);
+                    }
+                    catch (Exception ex) {
+                        logger.Warn(ex, "Failed to save credentials to the pyRevit config file. Extension was installed but credentials were not persisted.");
+                    }
+                }
+            }
         }
 
         internal static void
@@ -175,7 +191,7 @@ namespace pyRevitCLI {
             if (extName != null) {
                 PyRevitClone clone = null;
                 if (cloneName != null)
-                    clone = PyRevitClones.GetRegisteredClone(cloneName);
+                    clone = TryResolveShippedClone(cloneName);
 
                 if (enable) {
                     if (clone != null)
@@ -189,6 +205,30 @@ namespace pyRevitCLI {
                     else
                         PyRevitExtensions.DisableInstalledExtension(extName);
                 }
+            }
+        }
+
+        private static PyRevitClone TryResolveShippedClone(string cloneName) {
+            try {
+                return PyRevitClones.GetRegisteredClone(cloneName);
+            }
+            catch {
+                PyRevitClone fallbackClone = null;
+                foreach (var attachment in PyRevitAttachments.GetAttachments()) {
+                    try {
+                        var manifestClone = PyRevitClone.GetCloneFromManifest(attachment.Manifest);
+                        if (manifestClone.Matches(cloneName))
+                            return manifestClone;
+                        if (fallbackClone == null)
+                            fallbackClone = manifestClone;
+                    }
+                    catch {
+                        continue;
+                    }
+                }
+                if (fallbackClone != null)
+                    return new PyRevitClone(fallbackClone.ClonePath, name: cloneName);
+                return null;
             }
         }
 

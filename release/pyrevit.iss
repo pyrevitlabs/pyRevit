@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "6.5.0.26173"
+#define MyAppVersion "7.0.0.26278"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -29,7 +29,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=lowest
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_{#MyAppVersion}_signed
 SetupIconFile=..\bin\pyrevit.ico
 Compression=lzma
@@ -79,14 +79,16 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NotAdminAndPathNotExists
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Seeding extension defaults..."; Parameters: "configs seedshippeddefaults"; Flags: runhidden; Check: not IsAdmin
 
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden
 
 [Code]
 function NotAdminAndPathNotExists: Boolean;
@@ -103,6 +105,40 @@ begin
   end;
 end;
 
+function RunPyRevitCommand(const Params: String): Boolean;
+var
+  ResultCode: Integer;
+  PyRevitExe: String;
+begin
+  Result := False;
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not FileExists(PyRevitExe) then
+  begin
+    Log('pyrevit.exe not found: ' + PyRevitExe);
+    Exit;
+  end;
+  Result := ExecAsOriginalUser(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not Result then
+    Log('Failed to execute pyrevit ' + Params)
+  else if ResultCode <> 0 then
+  begin
+    Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
+    Result := False;
+  end;
+end;
+
+procedure RunElevatedUserPostInstallCommands;
+begin
+  RunPyRevitCommand('caches clear --all');
+  RunPyRevitCommand('detach --all');
+  if not RunPyRevitCommand('clones add this master --force') then
+    Log('Elevated install: pyrevit clones add failed for original user');
+  if not RunPyRevitCommand('attach master default --installed') then
+    Log('Elevated install: pyrevit attach failed for original user');
+  if not RunPyRevitCommand('configs seedshippeddefaults') then
+    Log('Elevated install: pyrevit configs seedshippeddefaults failed for original user');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   Params: String;
@@ -111,6 +147,7 @@ var
 begin
   if (CurStep = ssPostInstall) and IsAdmin then
   begin
+    RunElevatedUserPostInstallCommands;
     InstallPathEscaped := ExpandConstant('{app}\bin');
     StringChangeEx(InstallPathEscaped, '''', '''''', True);
     Params := '-NoProfile -ExecutionPolicy Bypass -Command "' +
@@ -131,6 +168,8 @@ end;
 
 function InitializeSetup: Boolean;
 begin
+  // WebView2 Runtime for the output window renderer
+  Dependency_AddWebView2;
   // .NET 8 for Revit 2025-2026
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;

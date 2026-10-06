@@ -24,29 +24,33 @@ class Extension(object):
         if len(args):
             if args[0] is not None:
                 self.setConfigs(args[0])
-            warnings.warn('Extension classes accepting positional args is '
-                          'pending Deprecation. Each setting should be '
-                          'passed into the Class as a keyword. Positional '
-                          'args are deprecated and will raise '
-                          'an error in version 2.7. See the Release Notes for '
-                          'Python-Markdown version 2.6 for more info.',
-                          DeprecationWarning)
+            warnings.warn(
+                "Extension classes accepting positional args is "
+                "pending Deprecation. Each setting should be "
+                "passed into the Class as a keyword. Positional "
+                "args are deprecated and will raise "
+                "an error in version 2.7. See the Release Notes for "
+                "Python-Markdown version 2.6 for more info.",
+                DeprecationWarning,
+            )
         # check for configs kwarg for backward compat.
-        if 'configs' in kwargs.keys():
-            if kwargs['configs'] is not None:
-                self.setConfigs(kwargs.pop('configs', {}))
-            warnings.warn('Extension classes accepting a dict on the single '
-                          'keyword "config" is pending Deprecation. Each '
-                          'setting should be passed into the Class as a '
-                          'keyword directly. The "config" keyword is '
-                          'deprecated and raise an error in '
-                          'version 2.7. See the Release Notes for '
-                          'Python-Markdown version 2.6 for more info.',
-                          DeprecationWarning)
+        if "configs" in kwargs.keys():
+            if kwargs["configs"] is not None:
+                self.setConfigs(kwargs.pop("configs", {}))
+            warnings.warn(
+                "Extension classes accepting a dict on the single "
+                'keyword "config" is pending Deprecation. Each '
+                "setting should be passed into the Class as a "
+                'keyword directly. The "config" keyword is '
+                "deprecated and raise an error in "
+                "version 2.7. See the Release Notes for "
+                "Python-Markdown version 2.6 for more info.",
+                DeprecationWarning,
+            )
         # finally, use kwargs
         self.setConfigs(kwargs)
 
-    def getConfig(self, key, default=''):
+    def getConfig(self, key, default=""):
         """Return a setting for the given key or an empty string."""
         if key in self.config:
             return self.config[key][0]
@@ -71,7 +75,7 @@ class Extension(object):
 
     def setConfigs(self, items):
         """Set multiple config settings given a dict or list of tuples."""
-        if hasattr(items, 'items'):
+        if hasattr(items, "items"):
             # it's a dict
             items = items.items()
         for key, value in items:
@@ -89,5 +93,5 @@ class Extension(object):
         """
         raise NotImplementedError(
             'Extension "%s.%s" must define an "extendMarkdown"'
-            'method.' % (self.__class__.__module__, self.__class__.__name__)
+            "method." % (self.__class__.__module__, self.__class__.__name__)
         )

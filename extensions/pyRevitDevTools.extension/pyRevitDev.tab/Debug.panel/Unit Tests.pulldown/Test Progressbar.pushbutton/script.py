@@ -1,8 +1,6 @@
 from pyrevit.forms import ProgressBar
 
 
-
-
 # with ProgressBar(indeterminate=True) as pb:
 # with ProgressBar(title='Test Title', indeterminate=True) as pb:
 cancelcount = 0
@@ -23,11 +21,11 @@ with ProgressBar(cancellable=True, step=10) as pb:
             pb.update_progress(counter, max_value)
 
     pb.indeterminate = True
-    pb.title = 'Indeterminate Process... ({value} of {max_value})'
-    for counter in range(0, max_value/4):
+    pb.title = "Indeterminate Process... ({value} of {max_value})"
+    for counter in range(0, max_value / 4):
         if pb.cancelled:
             cancelcount += 1
             if cancelcount >= cancelcounttimeout:
                 break
 
-        pb.update_progress(counter, max_value/4)
+        pb.update_progress(counter, max_value / 4)

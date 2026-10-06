@@ -18,7 +18,7 @@ bin/
 **/.vs
 **/.suo
 **/obj
-**/packages
+dev/**/packages
 **/dev/**/bin
 **/dev/pyRevitLabs/TestResults/
 
@@ -37,6 +37,9 @@ Icon?
 
 # ignore local config file
 *.ini
+# but not the configurations project and tests
+!dev/pyRevitLabs/pyRevitLabs.Configurations.Ini/
+!dev/pyRevitLabs/tests/**/Fixtures/*.ini
 
 # Release and installer files
 release/pyrevit*cache
@@ -72,3 +75,9 @@ build/tests/bin/*
 build/tests/obj/*
 ci-stamped/
 ci-bin-manifest.json
+
+# local-only build overrides (never shipped)
+build/appsettings.Development.json
+
+# Python virtualenv created by pipenv (PIPENV_VENV_IN_PROJECT)
+.venv/

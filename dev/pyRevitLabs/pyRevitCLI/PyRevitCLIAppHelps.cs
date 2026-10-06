@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using pyRevitLabs.Common.Extensions;
 
-namespace pyRevitCLI
-{
+namespace pyRevitCLI {
     internal static class PyRevitCLIAppHelps {
-        internal static void PrintHelp(PyRevitCLICommandType commandType)
-        {
+        internal static void PrintHelp(PyRevitCLICommandType commandType) {
             PrintHelp(commandType, 0);
         }
         internal static void PrintHelp(PyRevitCLICommandType commandType, int exitCode) {
@@ -28,6 +26,7 @@ namespace pyRevitCLI
                             { "revits",                 "Manage installed Revits" },
                             { "caches",                 "Manage pyRevit caches" },
                             { "configs",                "Manage pyRevit configurations" },
+                            { "agent",                  "Talk to Revit sessions through the pyRevit agent host" },
                         },
                         commands: new Dictionary<string, string>() {
                             { "clone",                  "Create a clone of pyRevit (downloads pre-built bin/ from public GitHub Release assets)" },
@@ -38,6 +37,7 @@ namespace pyRevitCLI
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
                             { "doctor",                 "Fix potential or real problems" },
+                            { "mcp",                    "Run the pyRevit MCP server, or register it with an MCP client" },
                         },
                         helpCommands: new Dictionary<string, string>() {
                             { "wiki",                   "Open pyRevit Wiki" },
@@ -85,7 +85,8 @@ namespace pyRevitCLI
                             { "--source=<image_url>",   "Clone source image url or path" },
                             { "--source=<repo_url>",    "Clone source git repo url" },
                             { "--image=<image_path>",   "Clone from a custom image (.zip archive)" },
-                            { "--branch=<branch_name>", "Branch to clone from" },
+                            { "--branch=<branch_name>", "Branch or release tag to clone from" },
+                            { "--skip-bin",             "Skip downloading pre-built binaries" },
                         });
                     break;
 
@@ -184,7 +185,9 @@ namespace pyRevitCLI
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
-                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" }
+                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" },
+                            { "--token=<auth_token>",   "Access token to access private repo" },
+                            { "--persist-credentials",  "Save credentials to the pyRevit config file (encrypted with Windows DPAPI, readable only by your Windows user) so the extension can be updated later e.g. by the in-Revit extension manager" }
                         }
                     );
                     break;
@@ -323,13 +326,58 @@ namespace pyRevitCLI
                         });
                     break;
 
+                case PyRevitCLICommandType.Agent:
+                    BuildHelp(
+                        new List<string>() { "agent" },
+                        header: "Talk to running Revit sessions through the pyRevit agent host",
+                        commands: new Dictionary<string, string>() {
+                            { "status",                 "List running Revit sessions with the agent host" },
+                            { "context",                "Print the context of a Revit session (document, view, selection...)" },
+                            { "run",                    "Run a Python script in Revit through the agent host" },
+                            { "runs",                   "List recent agent runs" },
+                            { "show",                   "Print the record of an agent run" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "<script_file>",          "Python script to run" },
+                            { "--mode=<run_mode>",      "query (default), dry_run or modify" },
+                            { "--engine=<engine_name>", "ironpython or cpython (default: configured agent engine)" },
+                            { "--title=<run_title>",    "Run title; used as the undo name for modify runs" },
+                            { "--inputs=<inputs_json>", "JSON object exposed to the script as `inputs`" },
+                            { "--revit=<revit_year>",   "Target Revit year or process id when several are running" },
+                            { "--timeout=<seconds>",    "Stop the script after this many seconds (default 300, max 3600)" },
+                            { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
+                            { "--limit=<count>",        "Number of runs to list (default 20)" },
+                            { "<run_id>",               "Run id printed by 'agent run' or 'agent runs'" },
+                            { "--json",                 "Print status as json" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.Mcp:
+                    BuildHelp(
+                        new List<string>() { "mcp" },
+                        header: "Run the pyRevit MCP server over stdio, or register it with an MCP client",
+                        commands: new Dictionary<string, string>() {
+                            { "install",                "Register 'pyrevit mcp' with an MCP client" },
+                            { "uninstall",              "Remove 'pyrevit mcp' from an MCP client" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "claude | codex",         "Claude Code, OpenAI Codex (configured through their CLIs)" },
+                            { "cursor | vscode",        "Cursor, Visual Studio Code (configured through mcp.json)" },
+                            { "opencode",               "OpenCode (configured through opencode.json / opencode.jsonc)" },
+                            { "--project",              "Register for the current directory instead of the user" },
+                            { "--revit=<revit_year>",   "Default target Revit year or process id for the server" },
+                        });
+                    break;
+
                 case PyRevitCLICommandType.Configs:
                     BuildHelp(
                         new List<string>() { "configs" },
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
+                            { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
                             { "routes",                 "Routes configurations" },
+                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills)" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },
                         },

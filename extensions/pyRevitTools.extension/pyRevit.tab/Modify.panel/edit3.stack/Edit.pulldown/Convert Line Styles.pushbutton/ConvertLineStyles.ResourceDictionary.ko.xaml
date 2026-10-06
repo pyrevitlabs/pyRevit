@@ -11,5 +11,5 @@
     <system:String x:Key="ConvertModelLines">모델 선 변환</system:String>
     <system:String x:Key="ConvertFilledRegionLines">채워진 영역 선 변환 (채워진 영역 흔들기 필요)</system:String>
     <system:String x:Key="ConvertGroupedLines">그룹화된 선 변환 (API 지원 없음)</system:String>
-    <system:String x:Key="DeleteConvertedStyles">완료 후 변환된 스타일 삭제</system:String>
+    <system:String x:Key="RetireConvertedStyles">완료 시 원본 스타일 병합 및 폐기</system:String>
 </ResourceDictionary>

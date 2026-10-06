@@ -7,9 +7,7 @@ import pyrevit.unittests as tests_pkg
 from pyrevit.unittests.runner import run_module_tests
 
 
-
-
-TEST_MODULE_PREFIX = 'test_routes_'
+TEST_MODULE_PREFIX = "test_routes_"
 
 
 def _discover_routes_modules():
@@ -21,13 +19,13 @@ def _discover_routes_modules():
 
 
 def _import_module(qualified_name):
-    return __import__(qualified_name, fromlist=['*'])
+    return __import__(qualified_name, fromlist=["*"])
 
 
 def _format_exception_info(exc_info):
     if isinstance(exc_info, tuple) and len(exc_info) == 3:
         try:
-            return ''.join(
+            return "".join(
                 traceback.format_exception(exc_info[0], exc_info[1], exc_info[2])
             )
         except Exception:
@@ -55,14 +53,14 @@ if not routes_test_modules:
         )
     )
 
-print('Discovered routes unit test modules:')
+print("Discovered routes unit test modules:")
 for module_name in routes_test_modules:
-    print(' - {}'.format(module_name))
+    print(" - {}".format(module_name))
 
 failures = []
 for module_name in routes_test_modules:
-    qualified_name = '{}.{}'.format(tests_pkg.__name__, module_name)
-    print('\nRunning {}'.format(qualified_name))
+    qualified_name = "{}.{}".format(tests_pkg.__name__, module_name)
+    print("\nRunning {}".format(qualified_name))
     module = _import_module(qualified_name)
     result = run_module_tests(module)
     if not result.wasSuccessful():
@@ -70,8 +68,6 @@ for module_name in routes_test_modules:
         failures.append(qualified_name)
 
 if failures:
-    raise AssertionError(
-        'Routes unit test failures: {}'.format(', '.join(failures))
-    )
+    raise AssertionError("Routes unit test failures: {}".format(", ".join(failures)))
 
-print('\nAll routes unit tests passed.')
+print("\nAll routes unit tests passed.")

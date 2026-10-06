@@ -10,48 +10,92 @@ using CpyRuntime = Python.Runtime.Runtime;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Json;
 using pyRevitLabs.NLog;
 using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    public class CPythonEngineConfigs : ScriptEngineConfigs {
+        public bool clean = false;
+    }
+
+    /// <summary>
+    /// Runs <c>#! python3</c> commands on the process-wide CPython interpreter via pythonnet.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The interpreter and its pythonnet metatype are a process-wide singleton that outlives the
+    /// engine object: a Reload drops the engine from the session cache and the next CPython command
+    /// re-attaches to the still-running interpreter instead of starting a new one. See
+    /// <see cref="Shutdown"/> for why the interpreter is never torn down mid-session.
+    /// </para>
+    /// <para>
+    /// Invariant: <see cref="PythonEngine.Initialize"/> is only ever called on the first CPython
+    /// command of the Revit process. Everything pythonnet treats as initialize-only configuration
+    /// (<see cref="CpyRuntime.PythonDLL"/>, <see cref="PythonEngine.ProgramName"/>) must stay
+    /// behind the same guard, because pythonnet rejects those assignments once the runtime is up.
+    /// </para>
+    /// <para>
+    /// Consequence: the <c>clean</c> engine config yields a fresh engine object but not a fresh
+    /// interpreter, so <c>sys.modules</c> entries imported before a Reload survive it, as do the
+    /// CLR type wrappers the metatype holds for the pre-Reload runtime assembly.
+    /// </para>
+    /// </remarks>
     public class CPythonEngine : ScriptEngine {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+        public CPythonEngineConfigs ExecEngineConfigs = new CPythonEngineConfigs();
         private List<string> _sysPaths = new List<string>();
+
+        private const string InterpreterSearchPathsKey = "PyRevitCPythonInterpreterSearchPaths";
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
+            try {
+                ExecEngineConfigs = JsonConvert.DeserializeObject<CPythonEngineConfigs>(
+                    runtime.ScriptRuntimeConfigs.EngineConfigs
+                ) ?? ExecEngineConfigs;
+            }
+            catch { }
+
             // If the user is asking to refresh the cached engine for the command,
-            UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = ExecEngineConfigs.clean || runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override void Start(ref ScriptRuntime runtime) {
             // if this is the first run
             if (!RecoveredFromCache) {
-                // load Python DLL
-                CpyRuntime.PythonDLL = GetPythonDll(runtime);
-                // initialize
-                PythonEngine.ProgramName = "pyrevit";
                 if (!PythonEngine.IsInitialized) {
-                        try {
-                            PythonEngine.Initialize();
+                    // load Python DLL
+                    CpyRuntime.PythonDLL = GetPythonDll(runtime);
+                    // initialize
+                    PythonEngine.ProgramName = "pyrevit";
+                    try {
+                        PythonEngine.Initialize();
+                    }
+                    catch (Exception ex) when (
+                        ex.ToString().IndexOf("DesktopConnector", StringComparison.OrdinalIgnoreCase) >= 0) {
+                        // Pythonnet scans all AppDomain assemblies during Initialize().
+                        // If a Revit document was opened, ADC assemblies are loaded but
+                        // DesktopConnectorInterop may be missing (ADC not installed).
+                        // Pythonnet may still have initialized successfully despite this.
+                        logger.Warn("CPython init encountered missing DesktopConnector assembly: {0}", ex.Message);
+                        if (!PythonEngine.IsInitialized) {
+                            throw new Exception(
+                                "CPython engine failed to initialize. "
+                                + "DesktopConnectorInterop assembly could not be loaded. "
+                                + "Install Autodesk Desktop Connector or retry before opening a document.",
+                                ex);
                         }
-                        catch (Exception ex) when (
-                            ex.ToString().IndexOf("DesktopConnector", StringComparison.OrdinalIgnoreCase) >= 0) {
-                            // Pythonnet scans all AppDomain assemblies during Initialize().
-                            // If a Revit document was opened, ADC assemblies are loaded but
-                            // DesktopConnectorInterop may be missing (ADC not installed).
-                            // Pythonnet may still have initialized successfully despite this.
-                            logger.Warn("CPython init encountered missing DesktopConnector assembly: {0}", ex.Message);
-                            if (!PythonEngine.IsInitialized) {
-                                throw new Exception(
-                                    "CPython engine failed to initialize. "
-                                    + "DesktopConnectorInterop assembly could not be loaded. "
-                                    + "Install Autodesk Desktop Connector or retry before opening a document.",
-                                    ex);
-                            }
-                        }
+                    }
+                }
+                else {
+                    logger.Debug(
+                        "CPython engine {0} re-attaching to the interpreter already up in this process.",
+                        Id
+                        );
+                    WarnOnPythonVersionChange(ref runtime);
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
@@ -138,10 +182,42 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Stop(ref ScriptRuntime runtime) {
         }
 
+        /// <summary>
+        /// Releases the engine back to the session cache, on Reload or on Refresh Engine.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The CPython interpreter is deliberately left running. pythonnet's
+        /// <c>PythonEngine.Shutdown</c> is a soft shutdown: it disposes the CLR metatype, import
+        /// hook and managed type wrappers while the interpreter stays alive, and stashes that state
+        /// as a <c>BinaryFormatter</c> blob in <c>sys.clr_data</c> for the next
+        /// <c>PythonEngine.Initialize</c> to read back. Reload duplicates assemblies into Revit's
+        /// assembly load context, so deserializing that blob fails with "Invalid BinaryFormatter
+        /// stream" and leaves pythonnet flagged as initialized but missing the metatype it skipped
+        /// re-creating, wedging every later CPython command for the rest of the Revit session.
+        /// </para>
+        /// <para>
+        /// Leaving the interpreter up skips the stash entirely, so post-Reload commands reuse the
+        /// live runtime. Final process shutdown is unaffected: pythonnet subscribes to
+        /// <see cref="AppDomain"/>'s process-exit notification on initialize and tears the runtime
+        /// down there with <c>Runtime.ProcessIsTerminating</c> set, so nothing is stashed at Revit
+        /// exit. That hook is also the reason this path must not call
+        /// <c>PythonEngine.Shutdown</c>: doing so unsubscribes it.
+        /// </para>
+        /// <para>
+        /// Invariant: never call <c>PythonEngine.Shutdown</c> from this path. It is the single
+        /// funnel for both Reload (<c>ScriptEngineManager.ClearEngines</c>) and Refresh Engine
+        /// (<c>ScriptEngineManager.SetCachedEngine</c>), so a single call here would break every
+        /// post-Reload CPython command, not just the reloaded one.
+        /// </para>
+        /// </remarks>
         public override void Shutdown() {
             CleanupBuiltins();
             CleanupStreams();
-            PythonEngine.Shutdown();
+            logger.Debug(
+                "CPython engine {0} released; interpreter left up for the lifetime of the Revit process.",
+                Id
+                );
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
@@ -150,20 +226,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Add timestamp and executuin uuid
             SetVariable(builtins, "__execid__", runtime.ExecId);
             SetVariable(builtins, "__timestamp__", runtime.ExecTimestamp);
-            
+
             // set builtins
             SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
             SetVariable(builtins, "__cachedengineid__", TypeId);
             SetVariable(builtins, "__scriptruntime__", runtime);
 
-            if (runtime.UIApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIApp);
-            else if (runtime.UIControlledApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIControlledApp);
-            else if (runtime.App != null)
-                SetVariable(builtins, "__revit__", runtime.App);
-            else
-                builtins.SetItem("__revit__".ToPython(), PyObject.FromManagedObject(null));
+            SetVariable(builtins, "__revit__", runtime.UIApp);
 
             // Adding data provided by IExternalCommand.Execute
             SetVariable(builtins, "__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
@@ -192,11 +261,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
 
-            if (runtime.ScriptRuntimeConfigs?.Variables != null) {
-                foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
-                    SetVariable(builtins, variable.Key, variable.Value);
-                }
-            }
+            foreach (var variable in ScriptBuiltins.FilterUserVariables(runtime.ScriptRuntimeConfigs?.Variables))
+                SetVariable(builtins, variable.Key, variable.Value);
 
             module.SetBuiltins(builtins);
         }
@@ -224,21 +290,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // manually add each path in PYTHONPATH since we are overwriting the sys paths
             var pythonPath = Environment.GetEnvironmentVariable("PYTHONPATH");
-            if (!string.IsNullOrEmpty(pythonPath))
-            {
+            if (!string.IsNullOrEmpty(pythonPath)) {
                 var paths = pythonPath.Split(Path.PathSeparator);
-                foreach (var path in paths)
-                {
-                    if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) 
-                    {
-                        sysPaths.Append(new PyString(path)); 
+                foreach (var path in paths) {
+                    if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) {
+                        sysPaths.Append(new PyString(path));
                     }
                 }
             }
 
             // now add the search paths for the script bundle
-            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths)
-            {
+            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths) {
                 sysPaths.Append(new PyString(searchPath));
             }
         }
@@ -270,13 +332,59 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         }
 
-        private void StoreSearchPaths() {
-            var currentSysPath = GetSysPaths();
-            _sysPaths = new List<string>();
-            foreach (var path in currentSysPath)
-            {
-                _sysPaths.Add(path.As<string>());
+        /// <summary>
+        /// Warn when the configured CPython version is not the one this process is running.
+        /// </summary>
+        /// <remarks>
+        /// The interpreter is initialized once per process, so a version change only takes effect
+        /// after Revit restarts. Silently keeping the old interpreter would run every tool on a
+        /// version the user no longer asked for.
+        /// </remarks>
+        private void WarnOnPythonVersionChange(ref ScriptRuntime runtime) {
+            string configured = null;
+            try {
+                configured = GetPythonDll(runtime);
+                if (!string.IsNullOrEmpty(CpyRuntime.PythonDLL)
+                        && !string.Equals(configured, CpyRuntime.PythonDLL, StringComparison.OrdinalIgnoreCase)) {
+                    logger.Warn(
+                        "CPython is configured for \"{0}\" but this Revit process is running \"{1}\". "
+                            + "The change takes effect the next time Revit starts.",
+                        configured, CpyRuntime.PythonDLL);
+                }
             }
+            catch (Exception ex) {
+                logger.Warn(ex, "Could not resolve the configured CPython version \"{0}\"; this process keeps running the interpreter it started with", configured);
+            }
+        }
+
+        /// <summary>
+        /// The interpreter's own <c>sys.path</c>, captured once and kept where a session reload
+        /// cannot replace it.
+        /// </summary>
+        /// <remarks>
+        /// A reload brings a new copy of this assembly, so a field or a static on it starts empty
+        /// while the interpreter it describes keeps running. The baseline therefore lives in
+        /// AppDomain data, which every copy of this assembly reads and writes alike; capturing it
+        /// per engine would snapshot the live <c>sys.path</c> and let each session inherit the
+        /// previous one's bundle paths.
+        /// </remarks>
+        private static List<string> InterpreterSearchPaths {
+            get { return AppDomain.CurrentDomain.GetData(InterpreterSearchPathsKey) as List<string>; }
+            set { AppDomain.CurrentDomain.SetData(InterpreterSearchPathsKey, value); }
+        }
+
+        private void StoreSearchPaths() {
+            var baseline = InterpreterSearchPaths;
+            if (baseline == null) {
+                baseline = new List<string>();
+                foreach (var path in GetSysPaths()) {
+                    baseline.Add(path.As<string>());
+                }
+
+                InterpreterSearchPaths = baseline;
+            }
+
+            _sysPaths = new List<string>(baseline);
         }
 
         private PyList RestoreSearchPaths() {
@@ -304,21 +412,42 @@ namespace PyRevitLabs.PyRevit.Runtime {
             container.SetItem(key.ToPython(), value.ToPython());
         }
 
-        private string GetPythonDll(ScriptRuntime runtime)
-        {
+        private string GetPythonDll(ScriptRuntime runtime) {
             // PyRevitConfigs.GetCPythonEngineVersion()
             var engineVersion = new PyRevitEngineVersion(int.Parse(runtime.EngineVersion));
-            var attachment = PyRevitAttachments.GetAttachedCached(int.Parse(runtime.App.VersionNumber));
-            if (attachment?.Clone is null)
-                throw new PyRevitException("pyRevit is not attached to this Revit version; cannot resolve the CPython engine.");
-            var clone = attachment.Clone;
-            var engine = clone.GetCPythonEngine(engineVersion);
+            var clonePath = ResolveEngineClonePath(int.Parse(runtime.App.VersionNumber))
+                ?? throw new PyRevitException("Cannot resolve the CPython engine: pyRevit is not attached to this Revit version, and the running clone could not be found.");
+            var engine = PyRevitClone.GetCPythonEngine(clonePath, engineVersion);
             var dllPath = engine.AssemblyPath;
-            if (!File.Exists(dllPath))
-            {
+            if (!File.Exists(dllPath)) {
                 throw new Exception(string.Format("Python DLL not found at {0}", dllPath));
             }
             return dllPath;
+        }
+
+        /// <summary>
+        /// Returns the clone whose CPython engines this session uses: the one attached to
+        /// <paramref name="revitYear"/>, or else the clone this runtime was loaded from, so a
+        /// session pyRevit isn't attached to (for example one loaded from a hand-installed
+        /// manifest) can still run CPython. Null when neither resolves.
+        /// </summary>
+        internal static string ResolveEngineClonePath(int revitYear) {
+            var attached = PyRevitAttachments.GetAttachedCached(revitYear)?.Clone?.ClonePath;
+            return !string.IsNullOrEmpty(attached) ? attached : FindLoadedClonePath();
+        }
+
+        private static string FindLoadedClonePath() {
+            const int maxLevels = 4;
+            var location = typeof(CPythonEngine).Assembly.Location;
+            if (string.IsNullOrEmpty(location))
+                return null;
+            var directory = Path.GetDirectoryName(location);
+            for (var level = 0; level < maxLevels && !string.IsNullOrEmpty(directory); level++) {
+                if (PyRevitClone.GetPyRevitFilePath(directory) != null)
+                    return directory;
+                directory = Path.GetDirectoryName(directory);
+            }
+            return null;
         }
     }
 }

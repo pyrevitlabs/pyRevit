@@ -294,10 +294,7 @@ def ensure_schedulable_parameters(category, parameter_defs, doc=None):
         for param_def in parameter_defs:
             if param_def[0] not in fsched_field_names:
                 logger.critical(
-                    "Missing schedulable parameter.\n"
-                    'Name: "%s"\n'
-                    "Type: %s\n"
-                    "Category %s",
+                    'Missing schedulable parameter.\nName: "%s"\nType: %s\nCategory %s',
                     param_def[0],
                     param_def[1],
                     category.Name,
@@ -327,10 +324,7 @@ def ensure_parameters(category, parameter_defs, doc=None):
         for param_def in parameter_defs:
             if not revit.query.model_has_parameter(param_def[0]):
                 logger.critical(
-                    "Missing project parameter.\n"
-                    'Name: "%s"\n'
-                    "Type: %s\n"
-                    "Category %s",
+                    'Missing project parameter.\nName: "%s"\nType: %s\nCategory %s',
                     param_def[0],
                     param_def[1],
                     category.Name,

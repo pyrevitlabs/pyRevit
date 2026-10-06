@@ -16,7 +16,11 @@ logger = script.get_logger()
 
 def main():
     sel = revit.get_selection()
-    elem = sel[0] if len(sel) == 1 else revit.pick_element(message="Pick Element to gather Parameter Value")
+    elem = (
+        sel[0]
+        if len(sel) == 1
+        else revit.pick_element(message="Pick Element to gather Parameter Value")
+    )
     if not elem:
         return
     param_id, ogs = get_color_source_parameter(revit.doc, revit.active_view, elem)
@@ -32,7 +36,9 @@ def main():
             PropKeyValue(
                 name=tparam.Definition.Name,
                 datatype=tparam.StorageType,
-                value=get_elementid_value(value) if isinstance(value, DB.ElementId) else value,
+                value=get_elementid_value(value)
+                if isinstance(value, DB.ElementId)
+                else value,
                 istype=False,
                 display_value=tparam.AsValueString() or str(value),
                 categories=[elem.Category],

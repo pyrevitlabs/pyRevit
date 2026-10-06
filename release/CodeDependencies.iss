@@ -774,10 +774,24 @@ begin
   end;
 end;
 
+function Dependency_IsWebView2RuntimeInstalled: Boolean;
+var
+  Version: String;
+  PackedVersion: Int64;
+begin
+  Result := False;
+  if RegQueryStringValue(HKLM, Dependency_String('SOFTWARE', 'SOFTWARE\WOW6432Node') + '\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version) and StrToVersion(Version, PackedVersion) and (ComparePackedVersion(PackedVersion, PackVersionComponents(0, 0, 0, 0)) > 0) then begin
+    Result := True;
+    exit;
+  end;
+  if RegQueryStringValue(HKCU, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version) and StrToVersion(Version, PackedVersion) and (ComparePackedVersion(PackedVersion, PackVersionComponents(0, 0, 0, 0)) > 0) then begin
+    Result := True;
+  end;
+end;
+
 procedure Dependency_AddWebView2;
 begin
-  // https://developer.microsoft.com/en-us/microsoft-edge/webview2
-  if not RegValueExists(HKLM, Dependency_String('SOFTWARE', 'SOFTWARE\WOW6432Node') + '\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv') then begin
+  if not Dependency_IsWebView2RuntimeInstalled then begin
     Dependency_Add('MicrosoftEdgeWebview2Setup.exe',
       '/silent /install',
       'WebView2 Runtime',

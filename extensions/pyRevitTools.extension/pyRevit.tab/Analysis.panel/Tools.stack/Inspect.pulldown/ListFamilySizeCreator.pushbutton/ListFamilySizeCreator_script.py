@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """List all families and their sizes."""
+
 import os
 import math
 import tempfile
@@ -30,8 +31,10 @@ def convert_size(size_bytes):
 
 def print_totals(families):
     total_size = sum([fam_item.get("Size") or 0 for fam_item in families])
-    output.print_md("### %d families, found total size: %s\n\n" % (
-        len(families), convert_size(total_size)))
+    output.print_md(
+        "### %d families, found total size: %s\n\n"
+        % (len(families), convert_size(total_size))
+    )
 
 
 def print_sorted(families, group_by):
@@ -49,15 +52,13 @@ def print_sorted(families, group_by):
                 "": sorted(
                     families,
                     key=lambda fam_item: fam_item.get(group_by) or 0,
-                    reverse=True
+                    reverse=True,
                 )
             }
         else:
             families_grouped = {
                 "": sorted(
-                    families,
-                    key=lambda fam_item: fam_item.get(group_by),
-                    reverse=False
+                    families, key=lambda fam_item: fam_item.get(group_by), reverse=False
                 )
             }
     else:
@@ -68,15 +69,11 @@ def print_sorted(families, group_by):
         # Handle numeric sorting for Size and Count fields
         if sort_by in ["Size", "Count"]:
             sorted_families = sorted(
-                families,
-                key=lambda fam_item: fam_item.get(sort_by) or 0,
-                reverse=True
+                families, key=lambda fam_item: fam_item.get(sort_by) or 0, reverse=True
             )
         else:
             sorted_families = sorted(
-                families,
-                key=lambda fam_item: fam_item.get(sort_by),
-                reverse=False
+                families, key=lambda fam_item: fam_item.get(sort_by), reverse=False
             )
 
         for fam_item in sorted_families:
@@ -105,10 +102,7 @@ def print_sorted(families, group_by):
             table_data.append(row)
 
         # Print table using output.print_table()
-        output.print_table(
-            table_data,
-            columns=fields_sorted
-        )
+        output.print_table(table_data, columns=fields_sorted)
 
         print_totals(families_grouped[group_value])
 
@@ -122,24 +116,23 @@ sort_by = forms.CommandSwitchWindow.show(
 if not sort_by:
     script.exit()
 
-all_fams = DB.FilteredElementCollector(revit.doc)\
-             .OfClass(DB.Family)\
-             .ToElements()
+all_fams = DB.FilteredElementCollector(revit.doc).OfClass(DB.Family).ToElements()
 
 all_family_items = []
-opened_families = [od.Title for od in HOST_APP.uiapp.Application.Documents
-                   if od.IsFamilyDocument]
+opened_families = [
+    od.Title for od in HOST_APP.uiapp.Application.Documents if od.IsFamilyDocument
+]
 
 # Get all family instances to count them
-all_family_instances = DB.FilteredElementCollector(revit.doc)\
-                        .OfClass(DB.FamilyInstance)\
-                        .ToElements()
+all_family_instances = (
+    DB.FilteredElementCollector(revit.doc).OfClass(DB.FamilyInstance).ToElements()
+)
 
 # Create a dictionary to count instances per family
 family_instance_counts = defaultdict(int)
 for instance in all_family_instances:
     try:
-        if hasattr(instance, 'Symbol') and instance.Symbol:
+        if hasattr(instance, "Symbol") and instance.Symbol:
             family_name = instance.Symbol.Family.Name
             family_instance_counts[family_name] += 1
     except Exception:
@@ -156,35 +149,40 @@ with forms.ProgressBar(title="List family sizes", cancellable=True) as pb:
                 except Exception as ex:
                     logger.warning(
                         "Skipping family '%s': could not open for edit: %s",
-                        fam.Name, ex
+                        fam.Name,
+                        ex,
                     )
                     continue
                 fam_path = fam_doc.PathName
                 # if the family path does not exists, save it temporary
                 #  only if the wasn't opened when the script was started
                 if fam_doc.Title not in opened_families and (
-                        not fam_path or not os.path.exists(fam_path)):
+                    not fam_path or not os.path.exists(fam_path)
+                ):
                     # save with temporary path, to know family size
                     fam_path = os.path.join(temp_dir, fam_doc.Title)
                     fam_doc.SaveAs(fam_path, save_as_options)
 
                 fam_size = 0
-                fam_category = fam.FamilyCategory.Name if fam.FamilyCategory \
-                    else "N/A"
-                fam_creator = \
-                    DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
-                                                                  fam.Id).Creator
+                fam_category = fam.FamilyCategory.Name if fam.FamilyCategory else "N/A"
+                fam_creator = DB.WorksharingUtils.GetWorksharingTooltipInfo(
+                    revit.doc, fam.Id
+                ).Creator
                 if fam_path and os.path.exists(fam_path):
                     fam_size = os.path.getsize(fam_path)
 
                 # Get instance count for this family
                 fam_count = family_instance_counts.get(fam.Name, 0)
 
-                all_family_items.append({"Size": fam_size,
-                                         "Creator": fam_creator,
-                                         "Category": fam_category,
-                                         "Name": fam.Name,
-                                         "Count": fam_count})
+                all_family_items.append(
+                    {
+                        "Size": fam_size,
+                        "Creator": fam_creator,
+                        "Category": fam_category,
+                        "Name": fam.Name,
+                        "Count": fam_count,
+                    }
+                )
                 # if the family wasn't opened before, close it
                 if fam_doc.Title not in opened_families:
                     fam_doc.Close(False)

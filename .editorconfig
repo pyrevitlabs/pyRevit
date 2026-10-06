@@ -1,0 +1,22 @@
+root = true
+
+[*]
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+[*.{cs,vb}]
+indent_style = space
+indent_size = 4
+
+# Matches this codebase's prevailing brace style (opening brace on the same
+# line) in pyRevitLabs.*, pyRevitLabs.PyRevit.Runtime, and pyRevitLoader/Source.
+csharp_new_line_before_open_brace = none
+
+# The newer C#-first loader rewrite - pyRevitAssemblyBuilder, pyRevitExtensionParser,
+# and its test project - uses Allman-style braces (opening brace on its own
+# line) instead. Scoped here so `dotnet format` follows whichever convention
+# a given area of the codebase already uses, instead of fighting either one.
+[dev/pyRevitLoader/{pyRevitAssemblyBuilder,pyRevitExtensionParser,pyRevitExtensionParserTester}/**.cs]
+csharp_new_line_before_open_brace = all

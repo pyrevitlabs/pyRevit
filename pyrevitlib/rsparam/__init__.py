@@ -11,11 +11,11 @@ from collections import namedtuple, defaultdict
 # pylama:ignore=D105
 
 # rsparam version
-__version__ = '0.1.15'
+__version__ = "0.1.15"
 __sparamversion__ = (2, 1)
 
 
-SharedParamEntries = namedtuple('SharedParamEntries', ['groups', 'params'])
+SharedParamEntries = namedtuple("SharedParamEntries", ["groups", "params"])
 
 
 class SharedParamFileItem(object):
@@ -47,8 +47,9 @@ class SharedParamGroup(SharedParamFileItem):
         return iter([self.guid, self.desc])
 
     def __repr__(self):
-        return '<{} desc:"{}" guid:{}>'.format(self.__class__.__name__,
-                                               self.desc, self.guid)
+        return '<{} desc:"{}" guid:{}>'.format(
+            self.__class__.__name__, self.desc, self.guid
+        )
 
     def __hash__(self):
         return hash(self.guid + self.desc)
@@ -70,32 +71,48 @@ class SharedParam(SharedParamFileItem):
         return self.desc
 
     def __iter__(self):
-        return iter([self.guid, self.name, self.datatype,
-                     self.datacategory, self.group, self.visible,
-                     self.desc, self.usermod])
+        return iter(
+            [
+                self.guid,
+                self.name,
+                self.datatype,
+                self.datacategory,
+                self.group,
+                self.visible,
+                self.desc,
+                self.usermod,
+            ]
+        )
 
     def __repr__(self):
-        return '<{} name:"{}" guid:{}>'.format(self.__class__.__name__,
-                                               self.name, self.guid)
+        return '<{} name:"{}" guid:{}>'.format(
+            self.__class__.__name__, self.name, self.guid
+        )
 
     def __hash__(self):
-        return hash(self.guid + self.name
-                    + self.datatype + self.datacategory
-                    + self.visible + self.desc + self.usermod)
+        return hash(
+            self.guid
+            + self.name
+            + self.datatype
+            + self.datacategory
+            + self.visible
+            + self.desc
+            + self.usermod
+        )
 
 
 def read_entries(src_file, encoding=None):
     # open file and collect shared param and groups
     spgroups = []
     sparams = []
-    with codecs.open(src_file, 'r', encoding) as spf:
+    with codecs.open(src_file, "r", encoding) as spf:
         count = 0
         for line in csv.reader(spf, delimiter="\t"):
             if len(line) >= 1:
-                if line[0] == 'PARAM':
+                if line[0] == "PARAM":
                     sparam = SharedParam(line[1:], lineno=count)
                     sparams.append(sparam)
-                elif line[0] == 'GROUP':
+                elif line[0] == "GROUP":
                     spgroup = SharedParamGroup(line[1:], lineno=count)
                     spgroups.append(spgroup)
             count += 1
@@ -110,13 +127,15 @@ def read_entries(src_file, encoding=None):
 
 
 def write_entries(entries, out_file, encoding=None):
-    with codecs.open(out_file, 'w', encoding) as spf:
+    with codecs.open(out_file, "w", encoding) as spf:
         spf.write("# This is a Revit shared parameter file.\r\n")
         spf.write("# Do not edit manually unless you know better!\r\n")
         spf.write("*META\tVERSION\tMINVERSION\r\n")
-        spf.write("META\t{max_ver}\t{min_ver}\r\n"
-                  .format(max_ver=__sparamversion__[0],
-                          min_ver=__sparamversion__[1]))
+        spf.write(
+            "META\t{max_ver}\t{min_ver}\r\n".format(
+                max_ver=__sparamversion__[0], min_ver=__sparamversion__[1]
+            )
+        )
 
         sparamwriter = csv.writer(spf, delimiter="\t")
 
@@ -135,20 +154,31 @@ def write_entries(entries, out_file, encoding=None):
         except locale.Error:  # Fix for python/ironpython 2
             locale.setlocale(locale.LC_ALL, sys_language)
         for spg in sorted(spgroups, key=lambda x: locale.strxfrm(x.name)):
-            sparamwriter.writerow(['GROUP', spg.guid, spg.name])
+            sparamwriter.writerow(["GROUP", spg.guid, spg.name])
 
         # write SharedParam in entries
-        spf.write("*PARAM\tGUID\tNAME\tDATATYPE\tDATACATEGORY\tGROUP\t"
-                  "VISIBLE\tDESCRIPTION\tUSERMODIFIABLE\r\n")
+        spf.write(
+            "*PARAM\tGUID\tNAME\tDATATYPE\tDATACATEGORY\tGROUP\t"
+            "VISIBLE\tDESCRIPTION\tUSERMODIFIABLE\r\n"
+        )
         if isinstance(entries, SharedParamEntries):
             sparams = {x for x in entries.params}
         else:
             sparams = {x for x in entries if isinstance(x, SharedParam)}
         for sp in sorted(sparams, key=lambda x: locale.strxfrm(x.name)):
             sparamwriter.writerow(
-                ['PARAM', sp.guid, sp.name, sp.datatype, sp.datacategory,
-                 sp.group.guid, sp.visible, sp.desc, sp.usermod]
-                )
+                [
+                    "PARAM",
+                    sp.guid,
+                    sp.name,
+                    sp.datatype,
+                    sp.datacategory,
+                    sp.group.guid,
+                    sp.visible,
+                    sp.desc,
+                    sp.usermod,
+                ]
+            )
 
 
 def get_paramgroups(src_file, encoding=None):
@@ -170,7 +200,7 @@ def find_duplicates(src_file, encoding=None, byname=False):
 
     spgroups, sparams = read_entries(src_file, encoding=encoding)
 
-    duplparam = 'name' if byname else 'guid'
+    duplparam = "name" if byname else "guid"
 
     for sparam in sparams:
         param_guid_lut[getattr(sparam, duplparam)].append(sparam)
@@ -201,8 +231,9 @@ def compare(first_file, second_file, encoding=None):
     uniqgroups2 = [x for x in spgroups2 if x not in spgroups1]
     uniqparams2 = [x for x in sparams2 if x not in sparams1]
 
-    return SharedParamEntries(uniqgroups1, uniqparams1), \
-        SharedParamEntries(uniqgroups2, uniqparams2)
+    return SharedParamEntries(uniqgroups1, uniqparams1), SharedParamEntries(
+        uniqgroups2, uniqparams2
+    )
 
 
 def merge(source_files, out_file=None, encoding=None):
@@ -214,8 +245,9 @@ def merge(source_files, out_file=None, encoding=None):
         merged_sparams = merged_sparams.union(sparams)
 
     if out_file:
-        write_entries(list(merged_spgroups) + list(merged_sparams),
-                      out_file, encoding=encoding)
+        write_entries(
+            list(merged_spgroups) + list(merged_sparams), out_file, encoding=encoding
+        )
     else:
         return SharedParamEntries(list(merged_spgroups), list(merged_sparams))
 
@@ -230,7 +262,10 @@ def subtract(first_file, source_files, out_file=None, encoding=None):
         subtracted_sparams = subtracted_sparams.difference(sparams)
 
     if out_file:
-        write_entries(list(subtracted_spgroups) + list(subtracted_sparams),
-                      out_file, encoding=encoding)
+        write_entries(
+            list(subtracted_spgroups) + list(subtracted_sparams),
+            out_file,
+            encoding=encoding,
+        )
     else:
         return SharedParamEntries(subtracted_spgroups, subtracted_sparams)

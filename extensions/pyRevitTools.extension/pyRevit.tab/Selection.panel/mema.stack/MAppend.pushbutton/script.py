@@ -13,13 +13,13 @@ get_elementid_value = get_elementid_value_func()
 selected_ids = {str(get_elementid_value(elid)) for elid in selection.element_ids}
 
 try:
-    f = open(datafile, 'rb')
+    f = open(datafile, "rb")
     prevsel = pickle.load(f)
     new_selection = prevsel.union(selected_ids)
     f.close()
 except Exception:
     new_selection = selected_ids
 
-f = open(datafile, 'wb')
+f = open(datafile, "wb")
 pickle.dump(new_selection, f)
 f.close()

@@ -1,9 +1,9 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace pyRevitLabs.PyRevit.Controls {
     public class PyRevitWindow : Window {
-        static PyRevitWindow(){
+        static PyRevitWindow() {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PyRevitWindow), new FrameworkPropertyMetadata(typeof(PyRevitWindow)));
         }
 

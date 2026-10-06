@@ -105,7 +105,6 @@ namespace pyRevitAssemblyBuilder.UIManager
                     var tabKey = BuildKey("tab", tabName, null);
                     _elementRegistry[tabKey] = false; // Will be marked true when touched
                     tabCount++;
-                    _logger.Debug($"Discovered existing pyRevit tab: {tabName}");
 
                     // Register panels in this tab
                     if (tab.Panels != null)
@@ -122,7 +121,6 @@ namespace pyRevitAssemblyBuilder.UIManager
                             var panelKey = BuildKey("panel", panelName, tabName);
                             _elementRegistry[panelKey] = false;
                             panelCount++;
-                            _logger.Debug($"Discovered existing pyRevit panel: {panelName} in tab {tabName}");
 
                             // Register buttons in this panel
                             if (panel.Source?.Items != null)
@@ -277,8 +275,6 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             var key = BuildKey(elementType, elementId, parentId);
             _elementRegistry[key] = true; // Mark as touched
-
-            _logger.Debug($"Marked element as touched: {key}");
         }
 
         /// <inheritdoc/>

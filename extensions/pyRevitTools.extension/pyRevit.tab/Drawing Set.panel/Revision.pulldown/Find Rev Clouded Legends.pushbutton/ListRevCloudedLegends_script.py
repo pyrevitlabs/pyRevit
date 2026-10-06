@@ -8,10 +8,12 @@ output = script.get_output()
 
 
 clouded_views = defaultdict(list)
-rev_clouds = DB.FilteredElementCollector(revit.doc)\
-               .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
-               .WhereElementIsNotElementType()\
-               .ToElements()
+rev_clouds = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 notification = """
 Note that legends with revision clouds will not trigger
@@ -26,34 +28,35 @@ for rev_cloud in rev_clouds:
 
 
 output.print_md("####LEGENDS WITH REVISION CLOUDS:")
-output.print_md('By: [{}]({})'.format('Frederic Beaupere',
-                                      'https://github.com/frederic-beaupere'))
+output.print_md(
+    "By: [{}]({})".format("Frederic Beaupere", "https://github.com/frederic-beaupere")
+)
 
 
 for view_id in clouded_views:
     view = revit.doc.GetElement(view_id)
-    output.print_md("{1} **Legend: {0}**".format(view.Name,
-                                                 output.linkify(view_id)))
+    output.print_md("{1} **Legend: {0}**".format(view.Name, output.linkify(view_id)))
 
     for rev_cloud in clouded_views[view_id]:
         rev_cloud_id = rev_cloud.Id
         rev_date = revit.doc.GetElement(rev_cloud.RevisionId).RevisionDate
-        rev_creator = \
-            DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
-                                                          rev_cloud.Id).Creator
-        commet_param = \
-            rev_cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+        rev_creator = DB.WorksharingUtils.GetWorksharingTooltipInfo(
+            revit.doc, rev_cloud.Id
+        ).Creator
+        commet_param = rev_cloud.Parameter[
+            DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS
+        ]
         if commet_param.HasValue:
             rev_comments = commet_param.AsString()
         else:
             rev_comments = ""
 
-        print('{0} Revision (On {1} By {2}. Comments: {3}'
-              .format(output.linkify(rev_cloud_id),
-                      rev_date,
-                      rev_creator,
-                      rev_comments))
+        print(
+            "{0} Revision (On {1} By {2}. Comments: {3}".format(
+                output.linkify(rev_cloud_id), rev_date, rev_creator, rev_comments
+            )
+        )
 
-    output.print_md('----')
+    output.print_md("----")
 
 print(notification)

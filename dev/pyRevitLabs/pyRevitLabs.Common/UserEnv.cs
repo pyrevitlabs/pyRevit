@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -110,7 +110,7 @@ namespace pyRevitLabs.Common {
 
         public static string UserHome => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-        public static string UserTemp => Environment.ExpandEnvironmentVariables("%TEMP%");
+        public static string UserTemp => CommonUtils.GetUserTempDirectory();
 
         private static string[] _knownFolderGuids = new string[]
     {

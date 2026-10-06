@@ -147,4 +147,9 @@ public static partial class VersionHelper
     {
         return $"https://github.com/pyrevitlabs/pyRevit/releases/tag/v{buildVersionUrlSafe}/";
     }
+
+    public static string GetCloneBinAssetName(string buildVersion)
+    {
+        return $"bin-v{buildVersion}.zip";
+    }
 }

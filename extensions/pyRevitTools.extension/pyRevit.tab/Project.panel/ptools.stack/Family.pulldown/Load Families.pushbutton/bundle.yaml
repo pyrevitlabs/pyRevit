@@ -12,28 +12,45 @@ tooltip:
     This tool gives you the option to load multiple Families from a folder and its subfolders.
 
     You can choose to load the Family with all its Types, or select Types for each Family.
-  ko: 폴더와 하위 폴더에서 여러 패밀리를 로드하는 옵션을 제공합니다.
+
+    If some of the selected Families are already in the project, you are asked whether to skip or overwrite them.
+  ko: >-
+    폴더와 하위 폴더에서 여러 패밀리를 로드하는 옵션을 제공합니다.
+
+    패밀리를 모든 타입과 함께 로드할지, 패밀리별로 로드할 타입을 선택할지 고를 수 있습니다.
+
+    선택한 패밀리가 프로젝트에 이미 있으면 건너뛸지 덮어쓸지 묻습니다.
   fr_fr: >-
     Cet outil vous donne la possibilité de charger plusieurs familles à partir d'un dossier et de ses sous-dossiers. 
 
     Vous pouvez choisir de charger la famille avec tous ses types, ou sélectionner des types pour chaque famille.
+
+    Si certaines des familles sélectionnées sont déjà présentes dans le projet, il vous est demandé de les ignorer ou de les écraser.
   ru: >-
     Данный инструмент дает Вам возможность загружать несколько семейств из папки и ее подпапок.
 
     Вы можете загрузить семейство со всеми его типами или выбрать типы для каждого семейства.
+
+    Если некоторые из выбранных семейств уже есть в проекте, будет предложено пропустить или перезаписать их.
   chinese_s: "此工具为您提供从文件夹及其子文件夹加载多个族的选项。
 
-    您可以选择加载族及其所有类型，或为每个族单独选择要加载的类型。"
+    您可以选择加载族及其所有类型，或为每个族单独选择要加载的类型。如果所选的某些族已存在于项目中，系统会询问是跳过还是覆盖它们。"
   es_es: >-
     Esta herramienta le da la opción de cargar múltiples Familias desde una carpeta y sus subcarpetas.
 
     Puede elegir cargar la Familia con todos sus Tipos, o seleccionar Tipos para cada Familia.
+
+    Si algunas de las Familias seleccionadas ya están en el proyecto, se le pregunta si desea omitirlas o sobrescribirlas.
   de_de: >-
     Mit diesem Werkzeug können Sie mehrere Familien aus einem Ordner und seinen Unterordnern laden.
 
     Sie können wählen, ob Sie die Familie mit allen Typen laden möchten oder die Typen für jede Familie auswählen möchten.
+
+    Wenn einige der ausgewählten Familien bereits im Projekt vorhanden sind, werden Sie gefragt, ob sie übersprungen oder überschrieben werden sollen.
   pt_br: >-
     Esta ferramenta oferece a opção de carregar várias Famílias de uma pasta e suas subpastas.
     
     Você pode escolher carregar a Família com todos os seus Tipos ou selecionar Tipos para cada Família.
+
+    Se algumas das Famílias selecionadas já estiverem no projeto, você será perguntado se deseja ignorá-las ou substituí-las.
 author: Hikmet Deniz Kibar

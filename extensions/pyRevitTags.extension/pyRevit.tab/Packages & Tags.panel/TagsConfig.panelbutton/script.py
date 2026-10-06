@@ -1,5 +1,6 @@
 """Tags configuration options."""
-#pylint: disable=C0111,E0401,C0103,W0613,W0703
+
+# pylint: disable=C0111,E0401,C0103,W0613,W0703
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -14,4 +15,4 @@ class TagsConfigsWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
 
-TagsConfigsWindow('TagsConfigsWindow.xaml').ShowDialog()
+TagsConfigsWindow("TagsConfigsWindow.xaml").ShowDialog()

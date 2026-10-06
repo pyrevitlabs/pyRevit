@@ -1,4 +1,5 @@
 """Compare instance and type properties between two elements."""
+
 # pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB
 from pyrevit import forms
@@ -9,10 +10,12 @@ logger = script.get_logger()
 output = script.get_output()
 
 
-EXCLUDE_PARAMS = set([
-    'Family and Type',
-    'Type Id',
-])
+EXCLUDE_PARAMS = set(
+    [
+        "Family and Type",
+        "Type Id",
+    ]
+)
 
 
 class PropPair(object):
@@ -21,11 +24,9 @@ class PropPair(object):
         self.rightp = rightp
 
     def __repr__(self):
-        return '<{} {} % {}>'.format(
-            self.__class__.__name__,
-            self.leftp_name,
-            self.rightp_name
-            )
+        return "<{} {} % {}>".format(
+            self.__class__.__name__, self.leftp_name, self.rightp_name
+        )
 
     @property
     def leftp_name(self):
@@ -39,16 +40,19 @@ class PropPair(object):
         leftv = revit.query.get_param_value(self.leftp)
         rightv = revit.query.get_param_value(self.rightp)
         if leftv == rightv:
-            print(":white_heavy_check_mark: {} == {}"
-                  .format(self.leftp_name, self.rightp_name))
+            print(
+                ":white_heavy_check_mark: {} == {}".format(
+                    self.leftp_name, self.rightp_name
+                )
+            )
         else:
-            print(":cross_mark: {} != {}"
-                  .format(self.leftp_name, self.rightp_name))
+            print(":cross_mark: {} != {}".format(self.leftp_name, self.rightp_name))
 
 
 def grab_props(src_element):
-    return [x for x in src_element.Parameters
-            if x.Definition.Name not in EXCLUDE_PARAMS]
+    return [
+        x for x in src_element.Parameters if x.Definition.Name not in EXCLUDE_PARAMS
+    ]
 
 
 def compare_view_filters(view1, view2):
@@ -91,7 +95,6 @@ def compare_view_filters(view1, view2):
             "CutLineColor",
             "CutForegroundPatternColor",
             "CutBackgroundPatternColor",
-
             # Pattern IDs
             "SurfaceForegroundPatternId",
             "SurfaceBackgroundPatternId",
@@ -99,17 +102,14 @@ def compare_view_filters(view1, view2):
             "CutBackgroundPatternId",
             "ProjectionLinePatternId",
             "CutLinePatternId",
-
             # Line weights
             "ProjectionLineWeight",
             "CutLineWeight",
-
             # Visibility flags
             "IsSurfaceForegroundPatternVisible",
             "IsSurfaceBackgroundPatternVisible",
             "IsCutForegroundPatternVisible",
             "IsCutBackgroundPatternVisible",
-
             # Other
             "Transparency",
             "Halftone",
@@ -121,7 +121,11 @@ def compare_view_filters(view1, view2):
 
             if isinstance(val1, DB.Color):
                 if val1.IsValid and val2.IsValid:
-                    if val1.Red != val2.Red or val1.Green != val2.Green or val1.Blue != val2.Blue:
+                    if (
+                        val1.Red != val2.Red
+                        or val1.Green != val2.Green
+                        or val1.Blue != val2.Blue
+                    ):
                         differences.append(attr)
                 elif val1.IsValid != val2.IsValid:
                     differences.append(attr)
@@ -138,11 +142,14 @@ def compare_view_filters(view1, view2):
 
         if differences:
             output.print_md(
-                ":warning: **Filter '{}' has different overrides:** {}"
-                .format(fname, ", ".join(differences)))
+                ":warning: **Filter '{}' has different overrides:** {}".format(
+                    fname, ", ".join(differences)
+                )
+            )
         else:
             output.print_md(
-                ":white_heavy_check_mark: Filter '{}' overrides match.".format(fname))
+                ":white_heavy_check_mark: Filter '{}' overrides match.".format(fname)
+            )
 
 
 def compare_props(src_element, tgt_element):
@@ -157,22 +164,21 @@ def compare_props(src_element, tgt_element):
     shared_props = src_props.intersection(tgt_props)
     for sprop in sorted(shared_props):
         proppair = PropPair(
-            src_element.LookupParameter(sprop),
-            tgt_element.LookupParameter(sprop)
-            )
+            src_element.LookupParameter(sprop), tgt_element.LookupParameter(sprop)
+        )
         proppair.compare()
 
     # list unique properties
     src_unique = src_props.difference(tgt_props)
     tgt_unique = tgt_props.difference(src_props)
-    unique_props = [[x, ''] for x in src_unique]
-    unique_props.extend([['', x] for x in tgt_unique])
+    unique_props = [[x, ""] for x in src_unique]
+    unique_props.extend([["", x] for x in tgt_unique])
     if unique_props:
         output.print_table(
             unique_props,
-            columns=['Source Element', 'Target Element'],
-            title='Unique Properties'
-            )
+            columns=["Source Element", "Target Element"],
+            title="Unique Properties",
+        )
 
     # list type properties
     if src_type and tgt_type:
@@ -183,22 +189,21 @@ def compare_props(src_element, tgt_element):
         shared_tprops = src_tprops.intersection(tgt_tprops)
         for stprop in sorted(shared_tprops):
             tproppair = PropPair(
-                src_type.LookupParameter(stprop),
-                tgt_type.LookupParameter(stprop)
-                )
+                src_type.LookupParameter(stprop), tgt_type.LookupParameter(stprop)
+            )
             tproppair.compare()
 
         # list unique properties
         src_tunique = src_tprops.difference(tgt_tprops)
         tgt_tunique = tgt_tprops.difference(src_tprops)
-        unique_tprops = [[x, ''] for x in src_tunique]
-        unique_tprops.extend([['', x] for x in tgt_tunique])
+        unique_tprops = [[x, ""] for x in src_tunique]
+        unique_tprops.extend([["", x] for x in tgt_tunique])
         if unique_tprops:
             output.print_table(
                 unique_tprops,
-                columns=['Source Element Type', 'Target Element Type'],
-                title='Unique Type Properties'
-                )
+                columns=["Source Element Type", "Target Element Type"],
+                title="Unique Type Properties",
+            )
 
     # If both are views, compare filters
     if isinstance(src_element, DB.View) and isinstance(tgt_element, DB.View):
@@ -215,27 +220,25 @@ if len(selected_elements) == 1 and forms.alert(
     no=True,
 ):
     source_element = selected_elements[0]
-    target_type = "Views" if isinstance(source_element, DB.View)\
-        else "Elements"
+    target_type = "Views" if isinstance(source_element, DB.View) else "Elements"
 else:
     source_element = None
     # ask for type of elements to match
     # some are not selectable in graphical views
-    target_type = \
-        forms.CommandSwitchWindow.show(
-            ["Elements", "Views", "View Templates"],
-            message="Pick type of targets:")
+    target_type = forms.CommandSwitchWindow.show(
+        ["Elements", "Views", "View Templates"], message="Pick type of targets:"
+    )
 
     # determine source element
     if target_type == "Elements":
         with forms.WarningBar(title="Pick source element:"):
             source_element = revit.pick_element(message="Pick source element:")
     elif target_type == "Views":
-        source_element = \
-            forms.select_views(title="Select Source View", multiple=False)
+        source_element = forms.select_views(title="Select Source View", multiple=False)
     elif target_type == "View Templates":
-        source_element = \
-            forms.select_viewtemplates(title="Select Source View Template", multiple=False)
+        source_element = forms.select_viewtemplates(
+            title="Select Source View Template", multiple=False
+        )
 
 # grab parameters from source element
 if source_element:
@@ -248,10 +251,14 @@ if source_element:
         with forms.WarningBar(title="Pick target object:"):
             target_element = revit.pick_element(message="Pick target element:")
     elif target_type == "Views":
-        target_element = \
-            forms.select_views(title="Select Target View", multiple=False, filterfunc=exclude_source)
+        target_element = forms.select_views(
+            title="Select Target View", multiple=False, filterfunc=exclude_source
+        )
     elif target_type == "View Templates":
-        target_element = \
-            forms.select_viewtemplates(title="Select Target View Template", multiple=False, filterfunc=exclude_source)
+        target_element = forms.select_viewtemplates(
+            title="Select Target View Template",
+            multiple=False,
+            filterfunc=exclude_source,
+        )
     if target_element:
         compare_props(source_element, target_element)

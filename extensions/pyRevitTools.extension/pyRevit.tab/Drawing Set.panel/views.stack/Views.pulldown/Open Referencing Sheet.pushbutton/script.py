@@ -3,10 +3,12 @@
 from pyrevit import revit, DB
 
 
-shts = DB.FilteredElementCollector(revit.doc)\
-         .OfCategory(DB.BuiltInCategory.OST_Sheets)\
-         .WhereElementIsNotElementType()\
-         .ToElements()
+shts = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_Sheets)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 sheets = sorted(shts, key=lambda x: x.SheetNumber)
 
@@ -26,5 +28,4 @@ for s in sheets:
                 avs = revit.uidoc.GetOpenUIViews()
                 for uiv in avs:
                     if uiv.ViewId == s.Id:
-                        uiv.ZoomAndCenterRectangle(ol.MinimumPoint,
-                                                   ol.MaximumPoint)
+                        uiv.ZoomAndCenterRectangle(ol.MinimumPoint, ol.MaximumPoint)

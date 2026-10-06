@@ -7,7 +7,8 @@
         <Style TargetType="Button">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="30"/>
-            <Setter Property="Background" Value="#FFDDDDDD"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -20,12 +21,12 @@
                         <ControlTemplate.Triggers>
                             <!-- Hover -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFBEE6FD"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
                             </Trigger>
 
                             <!-- Pressed -->
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFB0D8F9"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlPressedBrush}"/>
                             </Trigger>
 
                             <!-- Disabled -->
@@ -38,7 +39,8 @@
             </Setter>
         </Style>
         <Style TargetType="GroupBox">
-            <Setter Property="BorderBrush" Value="#F0F0F0"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
         
@@ -50,7 +52,8 @@
         
         <!-- Style for level menu items -->
         <Style x:Key="LevelMenuItemStyle" TargetType="Button">
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="25"/>
             <Setter Property="Padding" Value="10,2"/>
@@ -65,10 +68,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFBEE6FD"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFB0D8F9"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlPressedBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -97,7 +100,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <!-- Level Navigation Controls -->
-            <GroupBox Grid.Row="0" Margin="0,0,0,10">
+            <GroupBox x:Name="levelNavigationGroup" Grid.Row="0" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>🏢</TextBlock>
@@ -136,9 +139,9 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                <Border Background="{DynamicResource pyRevitControlBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1">
                                     <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="menuTopUp" Background="White"/>
+                                        <StackPanel x:Name="menuTopUp" Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -162,9 +165,9 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                <Border Background="{DynamicResource pyRevitControlBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1">
                                     <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="menuTopDown" Background="White"/>
+                                        <StackPanel x:Name="menuTopDown" Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -189,9 +192,9 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                <Border Background="{DynamicResource pyRevitControlBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1">
                                     <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="menuBottomUp" Background="White"/>
+                                        <StackPanel x:Name="menuBottomUp" Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -215,9 +218,9 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                <Border Background="{DynamicResource pyRevitControlBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1">
                                     <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="menuBottomDown" Background="White"/>
+                                        <StackPanel x:Name="menuBottomDown" Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -242,9 +245,9 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                <Border Background="{DynamicResource pyRevitControlBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1">
                                     <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="menuBoxUp" Background="White"/>
+                                        <StackPanel x:Name="menuBoxUp" Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -268,9 +271,9 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                <Border Background="{DynamicResource pyRevitControlBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1">
                                     <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="menuBoxDown" Background="White"/>
+                                        <StackPanel x:Name="menuBoxDown" Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
                                     </ScrollViewer>
                                 </Border>
                             </Popup>
@@ -324,7 +327,7 @@
             </Grid.RowDefinitions>
             
             <!-- Grid Navigation -->
-            <GroupBox Grid.Row="0" Margin="0,0,0,10">
+            <GroupBox x:Name="gridNavigationGroup" Grid.Row="0" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>▦</TextBlock>
@@ -408,7 +411,7 @@
             </GroupBox>
             
             <!-- Expansion Controls -->
-            <GroupBox Grid.Row="1" Margin="0,0,0,10">
+            <GroupBox x:Name="expansionGroup" Grid.Row="1" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>⬍</TextBlock>
@@ -472,7 +475,7 @@
         <!-- Row 2: Status Sections -->
         
         <!-- Column 0: Vertical Position Status -->
-        <GroupBox Grid.Row="2" Grid.Column="0" Margin="0,0,5,10" VerticalAlignment="Stretch" Background="#F5F5F5">
+        <GroupBox Grid.Row="2" Grid.Column="0" Margin="0,0,5,10" VerticalAlignment="Stretch" Background="{DynamicResource pyRevitControlBackgroundBrush}">
             <GroupBox.Header>
                 <TextBlock FontWeight="Bold" Text="{DynamicResource VerticalPositionStatus}"/>
             </GroupBox.Header>
@@ -482,12 +485,12 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Row="0">
-                    <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="Red" FontWeight="Bold" Margin="0,5,0,2"/>
+                    <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="{DynamicResource pyRevitDangerForegroundBrush}" FontWeight="Bold" Margin="0,5,0,2"/>
                     <TextBlock x:Name="txtTopLevelAbove" Margin="0,2" FontSize="10">
                         <Run Text="{DynamicResource Top}"/>
                         <Run Text=" Loading..."/>
                     </TextBlock>
-                    <TextBlock x:Name="txtTopPosition" Margin="0,2" Foreground="DarkBlue">
+                    <TextBlock x:Name="txtTopPosition" Margin="0,2" Foreground="{DynamicResource pyRevitAccentBrush}">
                         <Run Text="{DynamicResource Position}"/>
                         <Run Text=" ..."/>
                     </TextBlock>
@@ -500,7 +503,7 @@
                         <Run Text="{DynamicResource Bottom}"/>
                         <Run Text=" Loading..."/>
                     </TextBlock>
-                    <TextBlock x:Name="txtBottomPosition" Margin="0,2" Foreground="DarkBlue">
+                    <TextBlock x:Name="txtBottomPosition" Margin="0,2" Foreground="{DynamicResource pyRevitAccentBrush}">
                         <Run Text="{DynamicResource Position}"/>
                         <Run Text=" ..."/>
                     </TextBlock>
@@ -509,7 +512,7 @@
                         <Run Text=" Loading..."/>
                     </TextBlock>
                     <Separator Margin="0,2" />
-                    <TextBlock x:Name="txtVerticalStatus" Text="" Margin="0,5,0,0" TextWrapping="Wrap" Foreground="Black"/>
+                    <TextBlock x:Name="txtVerticalStatus" Text="" Margin="0,5,0,0" TextWrapping="Wrap" Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                 </StackPanel>
             </Grid>
         </GroupBox>
@@ -523,7 +526,7 @@
             </Grid.RowDefinitions>
             
             <!-- Grid Navigation Status (top half) -->
-            <GroupBox Grid.Row="0" VerticalAlignment="Stretch" Background="#F5F5F5">
+            <GroupBox Grid.Row="0" VerticalAlignment="Stretch" Background="{DynamicResource pyRevitControlBackgroundBrush}">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>▦</TextBlock>
@@ -535,12 +538,12 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock x:Name="txtGridStatus" Grid.Row="0" Text="-" Margin="0,2" TextWrapping="Wrap" Foreground="Black"/>
+                    <TextBlock x:Name="txtGridStatus" Grid.Row="0" Text="-" Margin="0,2" TextWrapping="Wrap" Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                 </Grid>
             </GroupBox>
 
             <!-- Expand/Shrink + Actions Status (bottom half) -->
-            <GroupBox Grid.Row="2" VerticalAlignment="Stretch" Background="#F5F5F5">
+            <GroupBox Grid.Row="2" VerticalAlignment="Stretch" Background="{DynamicResource pyRevitControlBackgroundBrush}">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>⬍</TextBlock>
@@ -552,7 +555,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock x:Name="txtExpandActionsStatus" Grid.Row="0" Text="-" Margin="0,2" TextWrapping="Wrap" Foreground="Black"/>
+                    <TextBlock x:Name="txtExpandActionsStatus" Grid.Row="0" Text="-" Margin="0,2" TextWrapping="Wrap" Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                 </Grid>
             </GroupBox>
         </Grid>

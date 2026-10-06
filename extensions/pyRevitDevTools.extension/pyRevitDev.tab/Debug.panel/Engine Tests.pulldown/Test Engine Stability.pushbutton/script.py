@@ -1,13 +1,20 @@
+"""Time 500 IronPython engine create/compile/execute/shutdown cycles.
+
+IronPython is not referenced by name here. The IronPython engine host has
+already loaded it - it is what runs this script - and the shipped assembly is
+``pyRevitLabs.IronPython.dll`` (``framework.ipy_dllpath``, built from
+``engine.EnginePrefix``), so ``clr.AddReference("IronPython")`` raised
+"Could not add reference to assembly IronPython" and the loop below never ran.
+Importing the namespaces is what actually proves the reference is in place.
+"""
+
 from pyrevit import MISC_LIB_DIR, MAIN_LIB_DIR
 from pyrevit import coreutils
 from pyrevit import framework
 from pyrevit import script
 
-framework.clr.AddReference('IronPython')
 import IronPython.Hosting
 import IronPython.Runtime
-
-
 
 
 output = script.get_output()
@@ -30,7 +37,7 @@ def run(engine, runtime):
 def make_engine():
     options = {"Frames": True, "FullFrames": True, "LightweightScopes": True}
     engine = IronPython.Hosting.Python.CreateEngine(options)
-    engine.SetSearchPaths(framework.List[str]([MISC_LIB_DIR, MAIN_LIB_DIR]))
+    engine.SetSearchPaths(framework.to_clr_list(str, [MISC_LIB_DIR, MAIN_LIB_DIR]))
     runtime = engine.Runtime
     return engine, runtime
 
@@ -51,7 +58,7 @@ for idx in range(1, MAX_TESTS):
     engine_times.append(eng_time)
 
     output_timer = coreutils.Timer()
-    print('Engine {}: {}'.format(idx, eng_time))
+    print("Engine {}: {}".format(idx, eng_time))
     output_times.append(output_timer.get_time())
 
 
@@ -61,12 +68,12 @@ chart = output.make_line_chart()
 
 chart.data.labels = [x for x in range(0, MAX_TESTS + 1)]
 
-engine_dataset = chart.data.new_dataset('engine_timer')
-engine_dataset.set_color(0xc3, 0x10, 0x10, 0.4)
+engine_dataset = chart.data.new_dataset("engine_timer")
+engine_dataset.set_color(0xC3, 0x10, 0x10, 0.4)
 engine_dataset.data = engine_times
 
-output_dataset = chart.data.new_dataset('output_timer')
-output_dataset.set_color(0xf0, 0xa7, 0x19, 0.4)
+output_dataset = chart.data.new_dataset("output_timer")
+output_dataset.set_color(0xF0, 0xA7, 0x19, 0.4)
 output_dataset.data = output_times
 
 chart.draw()

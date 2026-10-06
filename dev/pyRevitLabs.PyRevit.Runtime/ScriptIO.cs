@@ -11,14 +11,45 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// Writes are buffered and rendered in batches; only the minimal stream
     /// surface used by the script engines is implemented.
     /// </summary>
+    /// <remarks>
+    /// Threading contract: any thread may write. Text produced on a thread that may not touch
+    /// output WPF - the Routes HTTP workers, script-spawned threads, a session reload - is
+    /// buffered here and handed to the host UI thread, which is the only thread that resolves the
+    /// window. <see cref="GetOutput"/> never constructs one, so a producer on the wrong thread
+    /// degrades to the runtime log instead of raising <c>InvalidOperationException: The calling
+    /// thread must be STA</c> out of a worker thread, which unhandled terminates Revit (#3473).
+    /// </remarks>
     public class ScriptIO : Stream, IDisposable {
+        // A buffered output entry carries the error state captured when it was
+        // enqueued, so normal output drained after an error is not retroactively
+        // rendered as an error just because the stream later saw a traceback.
+        private struct PendingEntry {
+            public readonly string Text;
+            public readonly bool IsError;
+            public readonly ScriptEngineType Engine;
+
+            public PendingEntry(string text, bool isError, ScriptEngineType engine) {
+                Text = text;
+                IsError = isError;
+                Engine = engine;
+            }
+        }
+
         private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptConsole> _gui;
-        private readonly Queue<string> _pending = new Queue<string>();
+        private WeakReference<ScriptOutput> _outputService;
+        private int _uiHandOffQueued;
+        private int _uiHandOffUnavailableReported;
+        // A linked list (not a queue) so a failed render can re-queue its entry
+        // at the front and be retried once the renderer becomes ready.
+        private readonly LinkedList<PendingEntry> _pending = new LinkedList<PendingEntry>();
         private int _pendingChars;
         private readonly StringBuilder _partial = new StringBuilder();
         private readonly object _logLock = new object();
         private bool _inputReceived = false;
+        private static readonly byte[] EmptyBuffer = new byte[0];
+
+        private byte[] _bufferedInput = EmptyBuffer;
         private bool _errored = false;
         private ScriptEngineType _erroredEngine;
         private bool _prefixAtLineStart = true;
@@ -29,6 +60,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private const int MaxPendingChars = 1048576;
         private const int FlushMaxEntriesPerTick = 256;
         private const int FlushMaxCharsPerTick = 65536;
+        // Drain attempts per entry before it is re-queued for a later tick;
+        // covers a freshly shown window whose renderer is still initializing.
+        private const int RenderAttempts = 3;
         private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(16);
         private static readonly TimeSpan SyncFlushInterval = TimeSpan.FromMilliseconds(50);
 
@@ -57,6 +91,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _gui = new WeakReference<ScriptConsole>(gui);
         }
 
+        /// <summary>
+        /// Bind to a scripting output service rather than to a window, so the window is resolved
+        /// per write and only on a thread allowed to create it.
+        /// </summary>
+        public ScriptIO(ScriptOutput outputService) {
+            _runtime = new WeakReference<ScriptRuntime>(null);
+            _gui = new WeakReference<ScriptConsole>(null);
+            _outputService = new WeakReference<ScriptOutput>(outputService);
+        }
+
         private ScriptRuntime GetRuntime() {
             if (_runtime == null)
                 return null;
@@ -64,6 +108,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ScriptRuntime runtime;
             var re = _runtime.TryGetTarget(out runtime);
             return re ? runtime : null;
+        }
+
+        private ScriptOutput GetOutputService() {
+            if (_outputService == null)
+                return null;
+
+            ScriptOutput outputService;
+            var re = _outputService.TryGetTarget(out outputService);
+            return re ? outputService : null;
         }
 
         private string GetLogFilePath() {
@@ -118,13 +171,59 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return output.ToString();
         }
 
+        /// <summary>
+        /// The window this stream renders into right now, or null when there is none this caller
+        /// may have.
+        /// </summary>
+        /// <remarks>
+        /// Null has two causes, and they are not the same to the caller: the calling thread may
+        /// not touch output WPF, versus there is no window because output is suppressed, the
+        /// window was closed by the user, or the binding is gone. The write paths tell them apart
+        /// through <see cref="ScriptOutputUi.MayCreateOutputUi"/> and only hand off in the first
+        /// case, so a suppressed or closed output is not paid for with a dispatcher hand-off on
+        /// every write.
+        /// <para>
+        /// The returned window is safe to use: a non-null result means the caller may construct and
+        /// drive WPF, which is exactly what a window needs.
+        /// </para>
+        /// </remarks>
         public ScriptConsole GetOutput() {
+            return GetOutput(resurrectClosedWindow: true);
+        }
+
+        /// <summary>
+        /// The window this stream renders into right now, or null when there is none this caller
+        /// may have.
+        /// </summary>
+        /// <param name="resurrectClosedWindow">
+        /// False for a background hand-off, which must not reopen a window the user closed.
+        /// </param>
+        /// <remarks>
+        /// Null has two causes, and they are not the same to the caller: the calling thread may
+        /// not touch output WPF, versus there is no window because output is suppressed, the
+        /// window was closed by the user, or the binding is gone. The write paths tell them apart
+        /// through <see cref="ScriptOutputUi.MayCreateOutputUi"/> and only hand off in the first
+        /// case, so a suppressed or closed output is not paid for with a dispatcher hand-off on
+        /// every write.
+        /// <para>
+        /// The returned window is safe to use: a non-null result means the caller may construct and
+        /// drive WPF, which is exactly what a window needs.
+        /// </para>
+        /// </remarks>
+        private ScriptConsole GetOutput(bool resurrectClosedWindow) {
+            if (!ScriptOutputUi.MayCreateOutputUi)
+                return null;
+
             var runtime = GetRuntime();
             if (runtime != null) {
                 if (runtime.ScriptRuntimeConfigs != null && runtime.ScriptRuntimeConfigs.SuppressOutput)
                     return null;
-                return runtime.OutputWindow;
+                return resurrectClosedWindow ? runtime.OutputWindow : runtime.OpenOutputWindow;
             }
+
+            var outputService = GetOutputService();
+            if (outputService != null)
+                return resurrectClosedWindow ? outputService.window : outputService.open_window;
 
             if (_gui == null)
                 return null;
@@ -164,17 +263,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             AppendLog(content);
 
             var output = GetOutput();
-            if (output == null)
-                return;
-
-            if (output.ClosedByUser) {
-                _gui = new WeakReference<ScriptConsole>(null);
+            if (output != null && output.ClosedByUser) {
+                ForgetOutput();
                 ClearPending();
                 StopFlushTimer();
                 return;
             }
 
-            bool needShow = !output.IsVisible;
+            bool needShow = output != null && !output.IsVisible;
             int pendingChars;
 
             lock (this) {
@@ -182,22 +278,51 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _partial.Append(content);
                 FinalizePendingEntry(splitLargeEntries: false);
 
-                while (_pendingChars > MaxPendingChars && _pending.Count > 1)
-                    _pendingChars -= _pending.Dequeue().Length;
+                pendingChars = BufferPending();
+            }
 
-                pendingChars = _pendingChars;
+            if (output == null) {
+                HandOffToUiThread();
+                return;
             }
 
             PumpAfterWrite(output, needShow, pendingChars, forceSyncFlush: true);
         }
 
         public void WriteError(string error_msg, ScriptEngineType engineType) {
-            _errored = true;
-            _erroredEngine = engineType;
-            foreach (string message_part in error_msg.SplitIntoChunks(1024)) {
-                var buffer = OutputEncoding.GetBytes(message_part);
-                Write(buffer, 0, buffer.Length);
+            if (string.IsNullOrEmpty(error_msg))
+                return;
+
+            AppendLog(error_msg);
+
+            var output = GetOutput();
+
+            bool needShow;
+            lock (this) {
+                FinalizePendingEntry(keepIncompleteShortcode: false);
+
+                if (output != null && output.ClosedByUser) {
+                    ForgetOutput();
+                    ClearPending();
+                    StopFlushTimer();
+                    return;
+                }
+
+                _errored = true;
+                _erroredEngine = engineType;
+                var normalized = error_msg.Replace("\0", string.Empty);
+                _partial.Append(normalized.NormalizeNewLine());
+                FinalizePendingEntry(keepIncompleteShortcode: false);
+
+                needShow = output != null && !output.IsVisible;
             }
+
+            if (output == null) {
+                HandOffToUiThread();
+                return;
+            }
+
+            PumpAfterWrite(output, needShow, _pendingChars, forceSyncFlush: true);
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
@@ -209,25 +334,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
             AppendLog(outputText);
 
             var output = GetOutput();
-            if (output == null) {
-                return;
-            }
-
-            if (output.ClosedByUser) {
-                _gui = new WeakReference<ScriptConsole>(null);
+            if (output != null && output.ClosedByUser) {
+                ForgetOutput();
                 ClearPending();
                 StopFlushTimer();
                 return;
             }
 
-            bool needShow = outputText.Length > 0 && !output.IsVisible;
+            bool needShow = outputText.Length > 0 && output != null && !output.IsVisible;
             int pendingChars;
 
             lock (this) {
-                if (PrintDebugInfo) {
-                    output.AppendText(
-                        string.Format("<---- W offset: {0} count: {1} ---->", offset, count),
-                        ScriptConsoleConfigs.DefaultBlock);
+                if (PrintDebugInfo && output != null) {
+                    try {
+                        output.AppendText(
+                            string.Format("<---- W offset: {0} count: {1} ---->", offset, count),
+                            ScriptConsoleConfigs.DefaultBlock);
+                    }
+                    catch (Exception ex) {
+                        System.Diagnostics.Debug.WriteLine(
+                            string.Format("[ScriptIO] Failed to append debug diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
+                        );
+                    }
                 }
 
                 if (outputText.Length > 0)
@@ -237,13 +365,123 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (count < StreamChunkSize || _partial.Length >= MaxStreamEntryChars)
                     FinalizePendingEntry();
 
-                while (_pendingChars > MaxPendingChars && _pending.Count > 1)
-                    _pendingChars -= _pending.Dequeue().Length;
+                pendingChars = BufferPending();
+            }
 
-                pendingChars = _pendingChars;
+            if (output == null) {
+                HandOffToUiThread();
+                return;
             }
 
             PumpAfterWrite(output, needShow, pendingChars);
+        }
+
+        /// <summary>
+        /// Drop the oldest buffered entries once the buffer is over its cap, and report its size.
+        /// Caller holds <c>this</c>.
+        /// </summary>
+        private int BufferPending() {
+            while (_pendingChars > MaxPendingChars && _pending.Count > 1) {
+                _pendingChars -= _pending.First.Value.Text.Length;
+                _pending.RemoveFirst();
+            }
+
+            return _pendingChars;
+        }
+
+        private void ForgetOutput() {
+            _gui = new WeakReference<ScriptConsole>(null);
+        }
+
+        /// <summary>Whether a host UI thread still has something here it could render into.</summary>
+        private bool HasRenderTarget() {
+            if (GetRuntime() != null || GetOutputService() != null)
+                return true;
+            if (_gui == null)
+                return false;
+
+            ScriptConsole output;
+            return _gui.TryGetTarget(out output) && output != null;
+        }
+
+        /// <summary>
+        /// The caller may not touch output WPF, so hand everything buffered to the host UI thread,
+        /// which resolves the window and renders it there. Fire and forget, so a busy host UI
+        /// cannot stall the producer.
+        /// </summary>
+        /// <remarks>
+        /// One hand-off covers every write until it runs: a background producer is unbounded, and
+        /// one dispatcher operation per write would be a queue of its own. The drain clears the
+        /// flag before it starts, so a write that lands mid-drain schedules the next one, and it
+        /// leaves the flush timer running so anything still buffered keeps draining.
+        /// </remarks>
+        private void HandOffToUiThread() {
+            if (!HasRenderTarget()) {
+                lock (this) {
+                    ClearPending();
+                }
+                return;
+            }
+
+            if (System.Threading.Interlocked.CompareExchange(ref _uiHandOffQueued, 1, 0) != 0)
+                return;
+
+            if (ScriptOutputUi.TryBeginInvoke(DrainOnUiThread, DispatcherPriority.Background))
+                return;
+
+            System.Threading.Interlocked.Exchange(ref _uiHandOffQueued, 0);
+            ReportUiUnavailable();
+        }
+
+        private void ReportUiUnavailable() {
+            if (System.Threading.Interlocked.Exchange(ref _uiHandOffUnavailableReported, 1) != 0)
+                return;
+
+            int dropped;
+            lock (this) {
+                dropped = _pendingChars;
+                ClearPending();
+            }
+
+            ScriptOutputUiLog.Warn(
+                "{0} characters of output produced on {1} were discarded: no host UI thread was "
+                    + "available to show them in an output window.",
+                dropped,
+                ScriptOutputUi.DescribeCallingThread());
+        }
+
+        /// <summary>Runs on the host UI thread: bring the window up if needed, then drain.</summary>
+        private void DrainOnUiThread() {
+            System.Threading.Interlocked.Exchange(ref _uiHandOffQueued, 0);
+
+            var output = GetOutput(resurrectClosedWindow: false);
+            if (output == null) {
+                lock (this) {
+                    ClearPending();
+                }
+                StopFlushTimer();
+                return;
+            }
+
+            if (output.ClosedByUser) {
+                ForgetOutput();
+                lock (this) {
+                    ClearPending();
+                }
+                StopFlushTimer();
+                return;
+            }
+
+            try {
+                if (!output.IsVisible)
+                    output.Show();
+            }
+            catch (Exception ex) {
+                ScriptOutputUiLog.Debug("output hand-off could not show the window | {0}", ex);
+            }
+
+            EnsureFlushTimer(output);
+            FlushUpToBudget();
         }
 
         private void PumpAfterWrite(ScriptConsole output, bool needShow, int pendingChars, bool forceSyncFlush = false) {
@@ -379,7 +617,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (entry.Length == 0)
                 return;
 
-            _pending.Enqueue(entry);
+            _pending.AddLast(new PendingEntry(entry, _errored, _erroredEngine));
             _pendingChars += entry.Length;
         }
 
@@ -464,10 +702,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private int _lastEntryChars;
 
+        /// <summary>
+        /// Render the next buffered entry into a window this thread may use, and report whether
+        /// the caller should keep draining.
+        /// </summary>
+        /// <remarks>
+        /// Important: a null window means two different things here, as in <see cref="GetOutput"/>.
+        /// A thread that may not touch output WPF gets null even though a window is waiting there
+        /// for the hand-off that its own write already queued, so the buffer is left for that
+        /// hand-off to render. Only a thread that could have had a window and has none discards
+        /// the buffer, because nothing is going to show it. Without that distinction a
+        /// background <see cref="Flush"/> drops output the host UI thread is about to render.
+        /// </remarks>
         private bool FlushOneEntry() {
             ScriptConsole output;
-            string entry;
-            bool morePending;
+            PendingEntry entry;
 
             lock (this) {
                 if (_pending.Count == 0) {
@@ -476,20 +725,50 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 output = GetOutput();
-                if (output == null || output.ClosedByUser) {
+                if (output == null) {
+                    if (ScriptOutputUi.MayCreateOutputUi) {
+                        HandOffToUiThread();
+                    }
+                    return false;
+                }
+
+                if (output.ClosedByUser) {
                     _pending.Clear();
                     _pendingChars = 0;
                     StopFlushTimer();
                     return false;
                 }
 
-                entry = _pending.Dequeue();
-                _pendingChars -= entry.Length;
-                _lastEntryChars = entry.Length;
-                morePending = _pending.Count > 0;
+                entry = _pending.First.Value;
+                _pending.RemoveFirst();
+                _pendingChars -= entry.Text.Length;
+                _lastEntryChars = entry.Text.Length;
+            }
+            var drained = false;
+            for (var attempt = 0; attempt < RenderAttempts && !drained; attempt++) {
+                try {
+                    DrainOutput(output, entry);
+                    drained = true;
+                }
+                catch {
+                    output.WaitReadyBrowserLite();
+                }
             }
 
-            DrainOutput(output, entry);
+            if (!drained) {
+                lock (this) {
+                    _pending.AddFirst(entry);
+                    _pendingChars += entry.Text.Length;
+                    _lastEntryChars = entry.Text.Length;
+                }
+                StopFlushTimer();
+                return false;
+            }
+
+            bool morePending;
+            lock (this) {
+                morePending = _pending.Count > 0;
+            }
 
             if (!morePending) {
                 StopFlushTimer();
@@ -498,21 +777,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return true;
         }
 
-        private void DrainOutput(ScriptConsole output, string pending) {
-            if (string.IsNullOrEmpty(pending))
+        private void DrainOutput(ScriptConsole output, PendingEntry pending) {
+            if (string.IsNullOrEmpty(pending.Text))
                 return;
 
-            var prefixed = PrefixStartupOutput(pending);
-            if (_errored)
-                output.AppendError(prefixed, _erroredEngine);
+            var prefixed = PrefixStartupOutput(pending.Text);
+            if (pending.IsError)
+                output.AppendError(prefixed, pending.Engine);
             else
                 output.AppendHtmlFragment(prefixed, ScriptConsoleConfigs.DefaultBlock);
         }
 
         /// <summary>
-        /// Synchronously render everything buffered so far. Callers that
-        /// inspect or modify the rendered document must flush first.
+        /// Render everything buffered so far. Callers that inspect or modify the rendered
+        /// document must flush first.
         /// </summary>
+        /// <remarks>
+        /// Off the host UI thread this cannot render, because it may not touch output WPF, so it
+        /// leaves the buffer for the hand-off its writes queued. Those callers get the text when
+        /// the host UI thread drains, not before this returns.
+        /// </remarks>
         public override void Flush() {
             StopFlushTimer();
             lock (this) {
@@ -538,17 +822,132 @@ namespace PyRevitLabs.PyRevit.Runtime {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Reads the next line of script input, or <see cref="string.Empty"/> at end of input.
+        /// </summary>
+        /// <param name="size">
+        /// Maximum number of characters to return, or a negative value for the whole line.
+        /// Never splits a character: a limit that falls inside a multi-byte character returns
+        /// everything up to the last character that fits.
+        /// </param>
+        /// <remarks>
+        /// A limit narrower than the line leaves the remainder buffered, so the following call
+        /// continues it instead of consuming a new line. Mixing this with <see cref="Read(byte[], int, int)"/>
+        /// is safe: both draw from the same buffer.
+        ///
+        /// A <paramref name="size"/> of zero returns nothing and consumes no input, which is what
+        /// a zero-length read means to a caller. A negative size is the unbounded case.
+        /// </remarks>
+        public string readline(int size = -1) {
+            if (size == 0)
+                return string.Empty;
+
+            string line = TakeWholeLine();
+            return line == null ? string.Empty : TakeCharacters(line, size);
+        }
+
+        /// <summary>
+        /// Reads the next line of script input, or <see cref="string.Empty"/> at end of input.
+        /// Alias of <see cref="readline"/>.
+        /// </summary>
         public string read(int size = -1) {
             return readline(size);
         }
 
-        public string readline(int size=-1) {
-            var buffer = new byte[1024];
-            var _ = Read(buffer, 0, 1024);
-            _ = Read(buffer, 0, 1024);
-            return OutputEncoding.GetString(buffer);
+        /// <summary>
+        /// Returns the next complete line decoded in full, or <c>null</c> at end of input.
+        /// </summary>
+        /// <remarks>
+        /// Decoding happens over whole lines only, so a multi-byte character is never split
+        /// between what this call returns and what a later one resumes from. The line is
+        /// assembled in <see cref="_bufferedInput"/> first, which is what keeps a line longer
+        /// than one read chunk intact, and <see cref="AlignToCharacterBoundary"/> is what keeps
+        /// a raw read from leaving this buffer starting mid-character.
+        ///
+        /// A line is fetched through <see cref="ReadNextLine"/> rather than
+        /// <see cref="Read(byte[], int, int)"/>, so the output window is prepared here and the
+        /// pending raw-read handshake is cleared. Leaving that flag set would make the next raw
+        /// read report end of input and skip a line the user had already entered.
+        /// </remarks>
+        private string TakeWholeLine() {
+            if (!HasBufferedInput) {
+                if (PrepareOutputForRead())
+                    return null;
+
+                string line = ReadNextLine();
+                if (line == null)
+                    return null;
+
+                _inputReceived = false;
+                AppendToBuffer(OutputEncoding.GetBytes(line));
+            }
+
+            string decoded;
+            lock (this) {
+                decoded = OutputEncoding.GetString(_bufferedInput, 0, _bufferedInput.Length);
+                _bufferedInput = EmptyBuffer;
+            }
+
+            return decoded;
         }
 
+        private bool HasBufferedInput {
+            get {
+                lock (this) {
+                    return _bufferedInput.Length > 0;
+                }
+            }
+        }
+
+        private string TakeCharacters(string line, int size) {
+            if (size < 0 || line.Length <= size)
+                return line;
+
+            string head = line.Substring(0, size);
+            PrependToBuffer(OutputEncoding.GetBytes(line.Substring(size)));
+            return head;
+        }
+
+        private void PrependToBuffer(byte[] text) {
+            if (text == null || text.Length == 0)
+                return;
+
+            lock (this) {
+                byte[] merged = new byte[text.Length + _bufferedInput.Length];
+                Buffer.BlockCopy(text, 0, merged, 0, text.Length);
+                Buffer.BlockCopy(_bufferedInput, 0, merged, text.Length, _bufferedInput.Length);
+                _bufferedInput = merged;
+            }
+        }
+
+        private void AppendToBuffer(byte[] text) {
+            if (text == null || text.Length == 0)
+                return;
+
+            lock (this) {
+                byte[] merged = new byte[text.Length + _bufferedInput.Length];
+                Buffer.BlockCopy(_bufferedInput, 0, merged, 0, _bufferedInput.Length);
+                Buffer.BlockCopy(text, 0, merged, _bufferedInput.Length, text.Length);
+                _bufferedInput = merged;
+            }
+        }
+
+        /// <summary>
+        /// Copies the next available script input into <paramref name="buffer"/> and returns the
+        /// number of bytes written.
+        /// </summary>
+        /// <remarks>
+        /// The return value is what was actually copied, never the length of the line behind it:
+        /// a <see cref="StreamReader"/> consumer reads the rest of the buffer up to it. A line
+        /// longer than <paramref name="count"/> is not lost either, because the remainder is
+        /// buffered and handed to the following read.
+        ///
+        /// The copy stops on a character boundary, so mixing raw reads with
+        /// <see cref="readline"/> cannot leave a half character behind for the next decoder to
+        /// turn into a replacement character. A <paramref name="count"/> too small to hold the
+        /// first character copies nothing and returns zero, since copying it would overrun the
+        /// caller's buffer.
+        /// </remarks>
         public override int Read(byte[] buffer, int offset, int count) {
             if (buffer == null)
                 throw new ArgumentNullException("buffer", "buffer is null");
@@ -557,56 +956,143 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (offset + count > buffer.Length)
                 throw new IndexOutOfRangeException("The sum of offset and count is larger than the buffer length.");
 
-            var output = GetOutput();
-            if (output != null) {
-                if (output.ClosedByUser) {
-                    _gui = new WeakReference<ScriptConsole>(null);
-                    ClearPending();
-                    StopFlushTimer();
+            if (PrepareOutputForRead())
+                return 0;
+
+            lock (this) {
+                if (_bufferedInput.Length > 0)
+                    return DrainBufferedInput(buffer, offset, count);
+
+                if (_inputReceived) {
+                    _inputReceived = false;
                     return 0;
                 }
 
-                if (!output.IsVisible) {
-                    try {
-                        output.Show();
-                        output.Focus();
-                    }
-                    catch {
-                        return 0;
-                    }
+                string input = ReadNextLine();
+                if (input == null)
+                    return 0;
+
+                _inputReceived = true;
+
+                var inputBytes = OutputEncoding.GetBytes(input);
+                int copyCount = AlignToCharacterBoundary(inputBytes, count);
+                if (copyCount > 0)
+                    Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
+
+                if (copyCount < inputBytes.Length) {
+                    byte[] leftover = new byte[inputBytes.Length - copyCount];
+                    Buffer.BlockCopy(inputBytes, copyCount, leftover, 0, leftover.Length);
+                    PrependToBuffer(leftover);
                 }
 
-                lock (this) {
-                    string input = string.Empty;
+                ReportReadDiagnostics(buffer, offset, count, input, copyCount);
 
-                    if (_inputReceived) {
-                        _inputReceived = false;
-                        return 0;
-                    }
+                return copyCount;
+            }
+        }
 
-                    input = output.GetInput();
-                    _inputReceived = true;
+        /// <summary>
+        /// Brings the output window forward for a read and reports whether the read must be
+        /// abandoned because there is no usable window.
+        /// </summary>
+        private bool PrepareOutputForRead() {
+            var output = GetOutput();
+            if (output == null)
+                return false;
 
-                    if (PrintDebugInfo)
-                        output.AppendText(
-                            string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
-                            ScriptConsoleConfigs.DefaultBlock);
-
-                    var inputBytes = OutputEncoding.GetBytes(input);
-                    if (inputBytes.Length > 0) {
-                        int copyCount = Math.Min(inputBytes.Length, count);
-                        Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
-                        if (PrintDebugInfo)
-                            output.AppendText(
-                                string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
-                                ScriptConsoleConfigs.DefaultBlock);
-                    }
-
-                    return inputBytes.Length;
-                }
+            if (output.ClosedByUser) {
+                _gui = new WeakReference<ScriptConsole>(null);
+                ClearPending();
+                StopFlushTimer();
+                return true;
             }
 
-            return 0;
+            if (output.IsVisible)
+                return false;
+
+            try {
+                output.Show();
+                output.Focus();
+            }
+            catch {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ReportReadDiagnostics(byte[] buffer, int offset, int count, string input, int copyCount) {
+            if (!PrintDebugInfo)
+                return;
+
+            var output = GetOutput();
+            if (output == null)
+                return;
+
+            try {
+                output.AppendText(
+                    string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
+                    ScriptConsoleConfigs.DefaultBlock);
+                output.AppendText(
+                    string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
+                    ScriptConsoleConfigs.DefaultBlock);
+            }
+            catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine(
+                    string.Format("[ScriptIO] Failed to append read diagnostics text (size: {0}): {1}", copyCount, ex)
+                );
+            }
+        }
+
+        /// <summary>
+        /// Obtains the next line of input from the output window, or <c>null</c> when there is no
+        /// input source or it has gone away.
+        /// </summary>
+        /// <remarks>
+        /// The single point where script input enters the stream. Every read path funnels through
+        /// here so the handshake, the size limit and the leftover buffer cannot drift apart.
+        /// </remarks>
+        protected virtual string ReadNextLine() {
+            var output = GetOutput();
+            if (output == null || output.ClosedByUser)
+                return null;
+
+            return output.GetInput();
+        }
+
+        /// <summary>
+        /// Copies from the input carried over from an earlier read, keeping whatever does not
+        /// fit for the next caller. Callers hold <c>this</c>.
+        /// </summary>
+        private int DrainBufferedInput(byte[] buffer, int offset, int count) {
+            int copyCount = AlignToCharacterBoundary(_bufferedInput, count);
+            Buffer.BlockCopy(_bufferedInput, 0, buffer, offset, copyCount);
+            byte[] leftover = new byte[_bufferedInput.Length - copyCount];
+            Buffer.BlockCopy(_bufferedInput, copyCount, leftover, 0, leftover.Length);
+            _bufferedInput = leftover;
+            return copyCount;
+        }
+
+        /// <summary>
+        /// Returns how many bytes of <paramref name="text"/> a read of <paramref name="count"/>
+        /// bytes may copy without splitting a character.
+        /// </summary>
+        /// <remarks>
+        /// <paramref name="text"/> is the whole remaining line, so a cut that lands on a
+        /// continuation byte is pulled back until the character it belongs to is whole, and that
+        /// character stays buffered for the next read rather than being decoded on its own.
+        ///
+        /// A cut inside the first character yields zero. Copying it would overrun the caller's
+        /// buffer, so nothing is copied and the line waits for a read with room for it.
+        /// </remarks>
+        private static int AlignToCharacterBoundary(byte[] text, int count) {
+            if (count >= text.Length)
+                return text.Length;
+
+            while (count > 0 && (text[count] & 0xC0) == 0x80)
+                count--;
+
+            return count;
         }
 
         public override bool CanRead {
@@ -634,7 +1120,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             StopFlushTimer();
             _runtime = null;
             _gui = null;
+            _outputService = null;
             Dispose(true);
+        }
+
+        private static void LogNonFatal(string operation, Exception ex) {
+            System.Diagnostics.Trace.TraceWarning(
+                "[ScriptIO] {0} | {1}",
+                operation,
+                ex
+            );
+            System.Diagnostics.Debug.WriteLine(
+                string.Format("[ScriptIO] {0} | {1}", operation, ex)
+            );
         }
     }
 }

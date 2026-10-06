@@ -84,7 +84,7 @@
     <PropertyGroup>
         <DeployCopyRetryCount>10</DeployCopyRetryCount>
         <DeployCopyRetryWaitSeconds>1</DeployCopyRetryWaitSeconds>
-        <DeployCopyExcludeFiles>Xceed.Wpf.AvalonDock.dll Microsoft.CodeAnalysis.dll Microsoft.CodeAnalysis.CSharp.dll Microsoft.CodeAnalysis.CSharp.resources.dll Microsoft.CodeAnalysis.resources.dll Microsoft.CodeAnalysis.VisualBasic.dll Microsoft.CodeAnalysis.VisualBasic.resources.dll YamlDotNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll MadMilkman.Ini.dll OpenMcdf.dll pyRevitLabs.Common.dll</DeployCopyExcludeFiles>
+        <DeployCopyExcludeFiles>Xceed.Wpf.AvalonDock.dll Microsoft.CodeAnalysis.dll Microsoft.CodeAnalysis.CSharp.dll Microsoft.CodeAnalysis.CSharp.resources.dll Microsoft.CodeAnalysis.resources.dll Microsoft.CodeAnalysis.VisualBasic.dll Microsoft.CodeAnalysis.VisualBasic.resources.dll YamlDotNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll MadMilkman.Ini.dll OpenMcdf.dll pyRevitLabs.Common.dll pyRevitLabs.Configurations.dll pyRevitLabs.Configurations.Ini.dll INIFileParser.dll</DeployCopyExcludeFiles>
         <DeployCopyExcludeWildcards>Microsoft.Bcl.*.dll git2-*.dll System.*.dll</DeployCopyExcludeWildcards>
     </PropertyGroup>
 

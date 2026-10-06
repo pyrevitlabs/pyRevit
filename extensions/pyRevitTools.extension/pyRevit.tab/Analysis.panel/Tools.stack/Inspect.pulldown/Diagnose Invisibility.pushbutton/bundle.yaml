@@ -1,0 +1,60 @@
+title:
+  en_us: Diagnose Invisibility
+  de_de: Sichtbarkeit diagnostizieren
+  fr_fr: Diagnostiquer Invisibilité
+  es_es: Diagnosticar Invisibilidad
+  ru: Диагностика невидимости
+  ko: 비가시성 진단
+  chinese_s: 诊断 不可见性
+  pt_br: Diagnosticar Invisibilidade
+
+tooltip:
+  en_us: >
+    Explains why the selected (or picked) element(s) are not visible
+    in a chosen view - checks workset, phase, design option, category/
+    subcategory visibility, element hide state, view filters, crop
+    region, section box, view range, view template, and view-specific
+    ownership.
+  de_de: >
+    Erklärt, warum das/die ausgewählte(n) (oder aufgenommene(n))
+    Element(e) in einer gewählten Ansicht nicht sichtbar sind - prüft
+    Bauteilbereich (Workset), Phase, Planungsoption, Sichtbarkeit von
+    Kategorie/Unterkategorie, Ausblendstatus, Ansichtsfilter,
+    Ausschnittbereich, Schnittbox, Ansichtsbereich, Ansichtsvorlage
+    und ansichtsspezifische Zugehörigkeit.
+  fr_fr: >
+    Explique pourquoi le(s) élément(s) sélectionné(s) (ou choisi(s))
+    ne sont pas visibles dans une vue donnée - vérifie le sous-projet
+    (workset), la phase, l'option de conception, la visibilité de la
+    catégorie/sous-catégorie, l'état masqué de l'élément, les filtres
+    de vue, la zone de recadrage, la boîte de coupe 3D, l'étendue de
+    la vue, le gabarit de vue et l'appartenance à une autre vue.
+  es_es: >
+    Explica por qué el/los elemento(s) seleccionado(s) (o elegido(s))
+    no son visibles en una vista determinada - comprueba subproyecto
+    (workset), fase, opción de diseño, visibilidad de categoría/
+    subcategoría, estado oculto del elemento, filtros de vista, región
+    de recorte, caja de sección 3D, rango de vista, plantilla de vista
+    y pertenencia a otra vista.
+  ru: >
+    Объясняет, почему выбранный(е) (или указанный(е)) элемент(ы) не
+    видны на выбранном виде - проверяет рабочий набор, фазу, вариант
+    проектирования, видимость категории/подкатегории, состояние
+    скрытия элемента, фильтры вида, область обрезки, секущий объём,
+    диапазон вида, шаблон вида и принадлежность к другому виду.
+  ko: >
+    선택하거나 지정한 요소가 선택한 뷰에서 보이지 않는 이유를
+    설명합니다 - 워크셋, 단계, 디자인 옵션, 카테고리/하위 카테고리
+    표시 여부, 요소 숨김 상태, 뷰 필터, 자르기 영역, 단면 상자,
+    뷰 범위, 뷰 템플릿, 뷰 전용 소속 여부를 확인합니다.
+  chinese_s: >
+    说明所选（或拾取）的图元为何在指定视图中不可见——检查工作集、
+    阶段、设计选项、类别/子类别可见性、图元隐藏状态、视图过滤器、
+    裁剪区域、剖切框、视图范围、视图样板以及视图专属归属。
+  pt_br: >
+    Explica por que o(s) elemento(s) selecionado(s) (ou escolhido(s))
+    não estão visíveis em uma vista escolhida - verifica subprojeto
+    (workset), fase, opção de projeto, visibilidade de categoria/
+    subcategoria, estado oculto do elemento, filtros de vista, região
+    de recorte, caixa de seção 3D, alcance da vista, modelo de vista
+    e pertencimento a outra vista.

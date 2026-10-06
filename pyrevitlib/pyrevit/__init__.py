@@ -12,7 +12,16 @@ Examples:
         from pyrevit import EXEC_PARAMS
         ```
 """
-#pylint: disable=W0703,C0302,C0103,C0413,raise-missing-from
+
+# pylint: disable=W0703,C0302,C0103,C0413,raise-missing-from
+
+# Perf instrumentation must be the first import so the first mark below times
+# as close to "pyrevit module load entry" as possible. Marks record nothing
+# outside a session load and only surface when DEBUG logging is enabled.
+from pyrevit._perf import mark as _perfmark
+
+_perfmark("pyrevit.__init__:entry")
+
 import sys
 import os
 import os.path as op
@@ -20,12 +29,7 @@ from collections import namedtuple
 import traceback
 import re
 
-# Perf instrumentation must be the first pyrevit import so the first mark
-# below times as close to "pyrevit module load entry" as the import order
-# allows. Each mark is a no-op until the pyRevit logger is importable and
-# only surfaces when DEBUG logging is enabled.
-from pyrevit._perf import mark as _perfmark
-_perfmark("pyrevit.__init__:entry")
+_perfmark("pyrevit.__init__:after stdlib imports")
 
 from pyrevit.compat import PY3
 
@@ -34,20 +38,23 @@ import clr  # pylint: disable=E0401
 import System
 
 from pyrevit import compat
+
 _perfmark("pyrevit.__init__:after compat+clr+System")
 
-PYREVIT_ADDON_NAME = 'pyRevit'
-PYREVIT_CLI_NAME = 'pyrevit.exe'
+PYREVIT_ADDON_NAME = "pyRevit"
+PYREVIT_CLI_NAME = "pyrevit.exe"
 
 # extract version from version file
-VERSION_STRING = '0.0.'
+VERSION_STRING = "0.0."
 if PY3:
-    with open(op.join(op.dirname(__file__), 'version'), 'r', encoding='utf-8') as version_file:
+    with open(
+        op.join(op.dirname(__file__), "version"), "r", encoding="utf-8"
+    ) as version_file:
         VERSION_STRING = version_file.read()
 else:
-    with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
+    with open(op.join(op.dirname(__file__), "version"), "r") as version_file:
         VERSION_STRING = version_file.read()
-matches = re.findall(r'(\d+)\.(\d+)\.(\d+)\.?(.+)?', VERSION_STRING)[0]
+matches = re.findall(r"(\d+)\.(\d+)\.(\d+)\.?(.+)?", VERSION_STRING)[0]
 if len(matches) == 4:
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, BUILD_METADATA = matches
 else:
@@ -59,7 +66,7 @@ try:
     VERSION_MINOR = int(VERSION_MINOR)
     VERSION_PATCH = int(VERSION_PATCH)
 except:
-    raise Exception('Critical Error. Can not determine pyRevit version.')
+    raise Exception("Critical Error. Can not determine pyRevit version.")
 # -----------------------------------------------------------------------------
 # config environment paths
 # -----------------------------------------------------------------------------
@@ -68,47 +75,128 @@ try:
     # 3 steps back for <home>/Lib/pyrevit
     HOME_DIR = op.dirname(op.dirname(op.dirname(__file__)))
 except NameError:
-    raise Exception('Critical Error. Can not find home directory.')
+    raise Exception("Critical Error. Can not find home directory.")
 
 # try get net folder
 DOTNET_RUNTIME_ID = "netcore" if compat.NETCORE else "netfx"
 
 # BIN directory
-ROOT_BIN_DIR = op.join(HOME_DIR, 'bin')
+ROOT_BIN_DIR = op.join(HOME_DIR, "bin")
 BIN_DIR = op.join(ROOT_BIN_DIR, DOTNET_RUNTIME_ID)
 
 # main pyrevit lib folders
-MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
-MISC_LIB_DIR = op.join(HOME_DIR, 'site-packages')
+MAIN_LIB_DIR = op.join(HOME_DIR, "pyrevitlib")
+MISC_LIB_DIR = op.join(HOME_DIR, "site-packages")
 
 # path to pyrevit module
-MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
+MODULE_DIR = op.join(MAIN_LIB_DIR, "pyrevit")
 
 # loader directory
-LOADER_DIR = op.join(MODULE_DIR, 'loader')
+LOADER_DIR = op.join(MODULE_DIR, "loader")
 
 # runtime directory
-RUNTIME_DIR = op.join(MODULE_DIR, 'runtime')
+RUNTIME_DIR = op.join(MODULE_DIR, "runtime")
 
 # addin directory
-ADDIN_DIR = op.join(LOADER_DIR, 'addin')
+ADDIN_DIR = op.join(LOADER_DIR, "addin")
 
 # if loader module is available means pyRevit is being executed by Revit.
 import pyrevit.engine as eng
-if eng.EngineVersion != 000:
-    ENGINES_DIR = op.join(BIN_DIR, 'engines', eng.EngineVersion)
+
+if eng.EnginePath:
+    ENGINES_DIR = eng.EnginePath
 # otherwise it might be under test, or documentation processing.
 # so let's keep the symbols but set to None (fake the symbols)
 else:
     ENGINES_DIR = None
 
+
+try:
+    basestring  # noqa: B018 pylint: disable=used-before-assignment
+except NameError:
+    basestring = str
+
+# IronPython 2 makes str and unicode unrelated types, so a check against one
+# alone silently skips entries of the other - and a skipped entry is a repeat
+# the dedupe never sees. A bare unicode literal cannot be used here: ruff format
+# strips the u prefix, which would collapse this back to str on the default
+# engine.
+_TEXT_TYPES = (basestring,)
+
+
+def _sys_path_key(path):
+    """Normalize a path for identity comparison against other sys.path entries."""
+    return op.normcase(op.normpath(path))
+
+
+def dedupe_sys_path():
+    """Drop repeated entries from ``sys.path``, keeping the first occurrence.
+
+    ``sys.path`` is a resolution order, not a set: on a duplicated entry the
+    first match wins, so a stale copy earlier in the list shadows a corrected
+    one later and an updated module silently keeps loading from the old folder.
+    A folder is therefore only ever useful once.
+
+    Note: some appends happen behind Python's back - IronPython's
+    ``clr.AddReferenceToFileAndPath`` puts the referenced assembly's folder on
+    ``sys.path`` itself, once per call - so insertion-time dedupe alone cannot
+    guarantee the invariant and this pass is still required.
+
+    Important: the first occurrence is kept, so module resolution priority is
+    unchanged by the pass.
+    """
+    seen = set()
+    duplicates = []
+    for index, entry in enumerate(sys.path):
+        if not isinstance(entry, _TEXT_TYPES) or not entry:
+            continue
+        key = _sys_path_key(entry)
+        if key in seen:
+            duplicates.append(index)
+        else:
+            seen.add(key)
+    for index in reversed(duplicates):
+        del sys.path[index]
+
+
+def add_to_sys_path(*paths):
+    """Append folders to ``sys.path``, skipping any folder already on it.
+
+    Every pyRevit code path that contributes a folder goes through here, so a
+    folder lands on ``sys.path`` once however many times it is contributed -
+    directly, from a library extension, or as a side effect of referencing an
+    assembly. Paths that are empty or that do not resolve to a directory are
+    skipped: they can never satisfy an import, and a stale one shadows nothing
+    while making the path list lie about what is actually searchable.
+
+    Args:
+        *paths (str): folders to make importable, in priority order.
+
+    Note: existing entries are never reordered or removed, so appending a
+    folder that is already present leaves the resolution order untouched.
+    """
+    keys = set(
+        _sys_path_key(entry)
+        for entry in sys.path
+        if isinstance(entry, _TEXT_TYPES) and entry
+    )
+    for path in paths:
+        if not isinstance(path, _TEXT_TYPES) or not path:
+            continue
+        if not op.isdir(path):
+            continue
+        key = _sys_path_key(path)
+        if key in keys:
+            continue
+        keys.add(key)
+        sys.path.append(path)
+
+
 # add the framework dll path to the search paths
-sys.path.append(BIN_DIR)
-sys.path.append(ADDIN_DIR)
-sys.path.append(ENGINES_DIR)
+add_to_sys_path(BIN_DIR, ADDIN_DIR, ENGINES_DIR)
 
 
-PYREVIT_CLI_PATH = op.join(HOME_DIR, 'bin', PYREVIT_CLI_NAME)
+PYREVIT_CLI_PATH = op.join(HOME_DIR, "bin", PYREVIT_CLI_NAME)
 
 
 # now we can start importing stuff
@@ -116,15 +204,17 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
+
 _perfmark("pyrevit.__init__:after framework")
 from pyrevit import api
 from pyrevit.api import DB, UI, ApplicationServices, AdWindows
+
 _perfmark("pyrevit.__init__:after api")
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
 # -----------------------------------------------------------------------------
-TRACEBACK_TITLE = 'Traceback:'
+TRACEBACK_TITLE = "Traceback:"
 
 
 # General Exceptions
@@ -138,9 +228,9 @@ class PyRevitException(Exception):
     def msg(self):
         """Return exception message."""
         if self.args:
-            return self.args[0] #pylint: disable=E1136
+            return self.args[0]  # pylint: disable=E1136
         else:
-            return ''
+            return ""
 
     def __repr__(self):
         return str(self)
@@ -151,11 +241,9 @@ class PyRevitException(Exception):
         try:
             tb_report = traceback.format_tb(sys.exc_traceback)[0]
             if self.msg:
-                return '{}\n\n{}\n{}'.format(self.msg,
-                                             TRACEBACK_TITLE,
-                                             tb_report)
+                return "{}\n\n{}\n{}".format(self.msg, TRACEBACK_TITLE, tb_report)
             else:
-                return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
+                return "{}\n{}".format(TRACEBACK_TITLE, tb_report)
         except Exception:
             return Exception.__str__(self)
 
@@ -166,6 +254,7 @@ class PyRevitIOError(PyRevitException):
 
 class PyRevitCPythonNotSupported(PyRevitException):
     """Exception for features not supported under CPython."""
+
     def __init__(self, feature_name):
         super(PyRevitCPythonNotSupported, self).__init__()
         self.feature_name = feature_name
@@ -176,16 +265,16 @@ class PyRevitCPythonNotSupported(PyRevitException):
     @property
     def msg(self):
         """Return exception message."""
-        return '\"{}\" is not currently supported under CPython' \
-                .format(self.feature_name)
+        return '"{}" is not currently supported under CPython'.format(self.feature_name)
 
 
 # -----------------------------------------------------------------------------
 # Wrapper for __revit__ builtin parameter set in scope by C# Script Executor
 # -----------------------------------------------------------------------------
 # namedtuple for passing information about a PostableCommand
-_HostAppPostableCommand = namedtuple('_HostAppPostableCommand',
-                                     ['name', 'key', 'id', 'rvtobj'])
+_HostAppPostableCommand = namedtuple(
+    "_HostAppPostableCommand", ["name", "key", "id", "rvtobj"]
+)
 """Private namedtuple for passing information about a PostableCommand
 
 Attributes:
@@ -203,101 +292,139 @@ class _HostApplication(object):
     info on the active screen, active document and ui-document, available
     postable commands, and other functionality.
 
+    Note:
+        Every accessor resolves through the ``__revit__`` builtin, which pyRevit
+        always injects as a ``UI.UIApplication`` - in commands and in event
+        hooks alike, including DB-only ``Application_*`` hooks. It is ``None``
+        when no UI handle can be resolved, including early host startup.
+        Read accessors return ``None`` or empty collections without a host;
+        version comparisons return False. Operations that change UI state still
+        require a usable host. The type checks tolerate third-party
+        hosts that bind ``__revit__`` themselves.
+
+    Note:
+        ``uidoc``, ``doc`` and ``active_view`` are also ``None`` while a
+        DB-only event hook is running: the ``UIApplication`` is live, but Revit
+        does not guarantee an ``ActiveUIDocument`` until the event returns. Read
+        the document the event carries from ``EXEC_PARAMS.event_doc``.
+
     Examples:
             ```python
             hostapp = _HostApplication()
-            hostapp.is_newer_than(2017)
+            hostapp.is_newer_than(2022)
             ```
     """
 
     def __init__(self):
         self._postable_cmds = []
 
+    @staticmethod
+    def _get_handle():
+        """Return the ``__revit__`` builtin, or None where nothing injected it.
+
+        Note:
+            Read live on every access rather than cached at construction: with
+            a cached engine this module stays imported across runs while the
+            runtime re-injects the builtin for each execution.
+        """
+        try:
+            return __revit__  # pylint: disable=undefined-variable
+        except NameError:
+            return None
+
     @property
     def uiapp(self):
-        """Return UIApplication provided to the running command."""
-        if isinstance(__revit__, UI.UIApplication):  #pylint: disable=undefined-variable
-            return __revit__  #pylint: disable=undefined-variable
+        """Return UIApplication provided to the running command, or None."""
+        handle = self._get_handle()
+        if isinstance(handle, UI.UIApplication):
+            return handle
 
     @property
     def app(self):
-        """Return Application provided to the running command."""
+        """Return Application provided to the running command, or None."""
         if self.uiapp:
             return self.uiapp.Application
-        elif isinstance(__revit__, ApplicationServices.Application):  #pylint: disable=undefined-variable
-            return __revit__  #pylint: disable=undefined-variable
+        handle = self._get_handle()
+        if isinstance(handle, ApplicationServices.Application):
+            return handle
 
     @property
     def addin_id(self):
         """Return active addin id."""
-        return self.app.ActiveAddInId
+        return getattr(self.app, "ActiveAddInId", None)
 
     @property
     def has_api_context(self):
         """Determine if host application is in API context."""
-        return self.app.ActiveAddInId is not None
+        return self.addin_id is not None
 
     @property
     def uidoc(self):
-        """Return active UIDocument."""
-        return getattr(self.uiapp, 'ActiveUIDocument', None)
+        """Return active UIDocument, or None when there is no UI context.
+
+        Note:
+            ``getattr`` alone only swallows ``AttributeError``, but the handle
+            is real in DB-only event hooks where Revit can refuse
+            ``ActiveUIDocument`` outright. That refusal is the same condition as
+            having no active document, so it degrades to None instead of
+            propagating an API exception out of a hook.
+        """
+        try:
+            return getattr(self.uiapp, "ActiveUIDocument", None)
+        except Exception:
+            return None
 
     @property
     def doc(self):
         """Return active Document."""
-        return getattr(self.uidoc, 'Document', None)
+        return getattr(self.uidoc, "Document", None)
 
     @property
     def active_view(self):
         """Return view that is active (UIDocument.ActiveView)."""
-        return getattr(self.uidoc, 'ActiveView', None)
+        return getattr(self.uidoc, "ActiveView", None)
 
     @active_view.setter
     def active_view(self, value):
         """Set the active view in user interface."""
-        setattr(self.uidoc, 'ActiveView', value)
+        setattr(self.uidoc, "ActiveView", value)
 
     @property
     def docs(self):
         """Return :obj:`list` of open :obj:`Document` objects."""
-        return getattr(self.app, 'Documents', None)
+        return getattr(self.app, "Documents", None)
 
     @property
     def available_servers(self):
         """Return :obj:`list` of available Revit server names."""
-        return list(self.app.GetRevitServerNetworkHosts())
+        return list(self.app.GetRevitServerNetworkHosts()) if self.app else []
 
     @property
     def version(self):
         """str: Return version number (e.g. '2018')."""
-        return self.app.VersionNumber
+        return getattr(self.app, "VersionNumber", None)
 
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        if hasattr(self.app, 'SubVersionNumber'):
-            return self.app.SubVersionNumber
-        else:
-            return '{}.0'.format(self.version)
+        return getattr(self.app, "SubVersionNumber", None)
 
     @property
     def version_name(self):
         """str: Return version name (e.g. 'Autodesk Revit 2018')."""
-        return self.app.VersionName
+        return getattr(self.app, "VersionName", None)
 
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
-        if int(self.version) >= 2021:
-            # uses labs module that is imported later in this code
-            return labs.extract_build_from_exe(self.proc_path)
-        else:
-            return self.app.VersionBuild
+        # Revit 2021+ VersionBuild reports the same value as VersionNumber.
+        # uses labs module that is imported later in this code
+        return labs.extract_build_from_exe(self.proc_path) if self.app else None
 
     @property
     def serial_no(self):
         """str: Return serial number number (e.g. '569-09704828')."""
-        return api.get_product_serial_number()
+        return api.get_product_serial_number() if self.app else None
 
     @property
     def pretty_name(self):
@@ -309,28 +436,30 @@ class _HostApplication(object):
         Returns:
             (str): Pretty name of the host
         """
-        host_name = self.version_name
-        if self.is_newer_than(2017):
-            host_name = host_name.replace(self.version, self.subversion)
+        if self.app is None:
+            return None
+        host_name = self.version_name.replace(self.version, self.subversion)
         return "%s build: %s" % (host_name, self.build)
 
     @property
     def is_demo(self):
         """bool: Determine if product is using demo license."""
-        return api.is_product_demo()
+        return api.is_product_demo() if self.app else None
 
     @property
     def language(self):
         """str: Return language type (e.g. 'LanguageType.English_USA')."""
-        return self.app.Language
+        return getattr(self.app, "Language", None)
 
     @property
     def username(self):
         """str: Return the username from Revit API (Application.Username)."""
+        if self.app is None:
+            return None
         uname = self.app.Username
-        uname = uname.split('@')[0]  # if username is email
+        uname = uname.split("@")[0]  # if username is email
         # removing dots since username will be used in file naming
-        uname = uname.replace('.', '')
+        uname = uname.replace(".", "")
         return uname
 
     @property
@@ -356,15 +485,12 @@ class _HostApplication(object):
     @property
     def proc_window(self):
         """``intptr``: Return handle to current process window."""
-        if self.is_newer_than(2019, or_equal=True):
-            return self.uiapp.MainWindowHandle
-        else:
-            return AdWindows.ComponentManager.ApplicationWindow
+        return getattr(self.uiapp, "MainWindowHandle", None)
 
     @property
     def proc_screen(self):
         """``intptr``: Return handle to screen hosting current process."""
-        return Forms.Screen.FromHandle(self.proc_window)
+        return Forms.Screen.FromHandle(self.proc_window) if self.uiapp else None
 
     @property
     def proc_screen_workarea(self):
@@ -389,6 +515,8 @@ class _HostApplication(object):
             version (str or int): version to check against.
             or_equal (bool): Whether to include `version` in the comparison
         """
+        if self.version is None:
+            return False
         if or_equal:
             return int(self.version) >= int(version)
         else:
@@ -400,7 +528,7 @@ class _HostApplication(object):
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) < int(version)
+        return self.version is not None and int(self.version) < int(version)
 
     def is_exactly(self, version):
         """bool: Return True if host app is equal to provided version.
@@ -408,7 +536,7 @@ class _HostApplication(object):
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) == int(version)
+        return self.version is not None and int(self.version) == int(version)
 
     def get_postable_commands(self):
         """Return list of postable commands.
@@ -418,17 +546,21 @@ class _HostApplication(object):
         """
         # if list of postable commands is _not_ already created
         # make the list and store in instance parameter
+        if self.uiapp is None:
+            return []
         if not self._postable_cmds:
             for pc in UI.PostableCommand.GetValues(UI.PostableCommand):
                 try:
                     rcid = UI.RevitCommandId.LookupPostableCommandId(pc)
                     self._postable_cmds.append(
                         # wrap postable command info in custom namedtuple
-                        _HostAppPostableCommand(name=safe_strtype(pc),
-                                                key=rcid.Name,
-                                                id=rcid.Id,
-                                                rvtobj=rcid)
+                        _HostAppPostableCommand(
+                            name=safe_strtype(pc),
+                            key=rcid.Name,
+                            id=rcid.Id,
+                            rvtobj=rcid,
                         )
+                    )
                 except Exception:
                     # if any error occured when querying postable command
                     # or its info, pass silently
@@ -446,14 +578,7 @@ class _HostApplication(object):
         self.uiapp.PostCommand(command_id)
 
 
-
-try:
-    # Create an intance of host application wrapper
-    # making sure __revit__ is available
-    HOST_APP = _HostApplication()
-except Exception:
-    raise Exception('Critical Error: Host software is not supported. '
-                    '(__revit__ handle is not available)')
+HOST_APP = _HostApplication()
 
 
 # -----------------------------------------------------------------------------
@@ -462,7 +587,7 @@ except Exception:
 class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
 
-    @property   # read-only
+    @property  # read-only
     def exec_id(self):
         """Return execution unique id."""
         try:
@@ -470,7 +595,7 @@ class _ExecutorParams(object):
         except NameError:
             pass
 
-    @property   # read-only
+    @property  # read-only
     def exec_timestamp(self):
         """Return execution timestamp."""
         try:
@@ -478,7 +603,7 @@ class _ExecutorParams(object):
         except NameError:
             pass
 
-    @property   # read-only
+    @property  # read-only
     def engine_id(self):
         """Return engine id."""
         try:
@@ -486,7 +611,7 @@ class _ExecutorParams(object):
         except NameError:
             pass
 
-    @property   # read-only
+    @property  # read-only
     def engine_ver(self):
         """str: Return PyRevitLoader.ScriptExecutor hardcoded version."""
         if eng.ScriptExecutor:
@@ -502,12 +627,16 @@ class _ExecutorParams(object):
 
     @property  # read-only
     def first_load(self):
-        """bool: Check whether pyrevit is not running in pyrevit command."""
-        # if no output window is set by the executor, it means that pyRevit
-        # is loading at Revit startup (not reloading)
-        return True if self.window_handle is None else False
+        """bool: Check whether pyrevit is loading at Revit startup."""
+        # the session loader states this outright for its own entry scripts;
+        # anything else falls back to inferring it from the output window,
+        # which the executor only leaves unset outside a command
+        try:
+            return __sessionfirstload__
+        except NameError:
+            return True if self.window_handle is None else False
 
-    @property   # read-only
+    @property  # read-only
     def script_runtime(self):
         """``PyRevitLabs.PyRevit.Runtime.ScriptRuntime``: Return command."""
         try:
@@ -515,25 +644,25 @@ class _ExecutorParams(object):
         except NameError:
             return None
 
-    @property   # read-only
+    @property  # read-only
     def output_stream(self):
         """Return ScriptIO."""
         if self.script_runtime:
             return self.script_runtime.OutputStream
 
-    @property   # read-only
+    @property  # read-only
     def script_data(self):
         """Return ScriptRuntime.ScriptData."""
         if self.script_runtime:
             return self.script_runtime.ScriptData
 
-    @property   # read-only
+    @property  # read-only
     def script_runtime_cfgs(self):
         """Return ScriptRuntime.ScriptRuntimeConfigs."""
         if self.script_runtime:
             return self.script_runtime.ScriptRuntimeConfigs
 
-    @property   # read-only
+    @property  # read-only
     def engine_cfgs(self):
         """Return ScriptRuntime.ScriptRuntimeConfigs."""
         if self.script_runtime:
@@ -560,16 +689,16 @@ class _ExecutorParams(object):
     def event_doc(self):
         """``DB.Document``: Return document set in event args if available."""
         if self.event_args:
-            if hasattr(self.event_args, 'Document'):
-                return getattr(self.event_args, 'Document')
-            elif hasattr(self.event_args, 'ActiveDocument'):
-                return getattr(self.event_args, 'ActiveDocument')
-            elif hasattr(self.event_args, 'CurrentDocument'):
-                return getattr(self.event_args, 'CurrentDocument')
-            elif hasattr(self.event_args, 'GetDocument'):
+            if hasattr(self.event_args, "Document"):
+                return getattr(self.event_args, "Document")
+            elif hasattr(self.event_args, "ActiveDocument"):
+                return getattr(self.event_args, "ActiveDocument")
+            elif hasattr(self.event_args, "CurrentDocument"):
+                return getattr(self.event_args, "CurrentDocument")
+            elif hasattr(self.event_args, "GetDocument"):
                 return self.event_args.GetDocument()
 
-    @property   # read-only
+    @property  # read-only
     def needs_refreshed_engine(self):
         """bool: Check if command needs a newly refreshed IronPython engine."""
         if self.script_runtime_cfgs:
@@ -577,7 +706,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read-only
+    @property  # read-only
     def debug_mode(self):
         """bool: Check if command is in debug mode."""
         if self.script_runtime_cfgs:
@@ -585,7 +714,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read-only
+    @property  # read-only
     def config_mode(self):
         """bool: Check if command is in config mode."""
         if self.script_runtime_cfgs:
@@ -593,7 +722,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read-only
+    @property  # read-only
     def executed_from_ui(self):
         """bool: Check if command was executed from ui."""
         if self.script_runtime_cfgs:
@@ -601,7 +730,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read-only
+    @property  # read-only
     def needs_clean_engine(self):
         """bool: Check if command needs a clean IronPython engine."""
         if self.engine_cfgs:
@@ -609,7 +738,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read-only
+    @property  # read-only
     def needs_fullframe_engine(self):
         """bool: Check if command needs a full-frame IronPython engine."""
         if self.engine_cfgs:
@@ -617,7 +746,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read-only
+    @property  # read-only
     def needs_persistent_engine(self):
         """bool: Check if command needs a persistent IronPython engine."""
         if self.engine_cfgs:
@@ -625,7 +754,7 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # read
+    @property  # read
     def window_handle(self):
         """Output window handle."""
         if self.script_runtime:
@@ -643,75 +772,79 @@ class _ExecutorParams(object):
         if self.script_runtime_cfgs:
             return self.script_runtime_cfgs.SelectedElements
 
-    @property   # read-only
+    @property  # read-only
     def command_path(self):
         """str: Return current command path."""
-        if '__commandpath__' in __builtins__ \
-                and __builtins__['__commandpath__']:
-            return __builtins__['__commandpath__']
+        if "__commandpath__" in __builtins__ and __builtins__["__commandpath__"]:
+            return __builtins__["__commandpath__"]
         elif self.script_runtime:
             return op.dirname(self.script_runtime.ScriptData.ScriptPath)
 
-    @property   # read-only
+    @property  # read-only
     def command_config_path(self):
         """str: Return current command config script path."""
-        if '__configcommandpath__' in __builtins__ \
-                and __builtins__['__configcommandpath__']:
-            return __builtins__['__configcommandpath__']
+        if (
+            "__configcommandpath__" in __builtins__
+            and __builtins__["__configcommandpath__"]
+        ):
+            return __builtins__["__configcommandpath__"]
         elif self.script_runtime:
             return op.dirname(self.script_runtime.ScriptData.ConfigScriptPath)
 
-    @property   # read-only
+    @property  # read-only
     def command_name(self):
         """str: Return current command name."""
-        if '__commandname__' in __builtins__ \
-                and __builtins__['__commandname__']:
-            return __builtins__['__commandname__']
+        if "__commandname__" in __builtins__ and __builtins__["__commandname__"]:
+            return __builtins__["__commandname__"]
         elif self.script_runtime:
             return self.script_runtime.ScriptData.CommandName
 
-    @property   # read-only
+    @property  # read-only
     def command_bundle(self):
         """str: Return current command bundle name."""
-        if '__commandbundle__' in __builtins__ \
-                and __builtins__['__commandbundle__']:
-            return __builtins__['__commandbundle__']
+        if "__commandbundle__" in __builtins__ and __builtins__["__commandbundle__"]:
+            return __builtins__["__commandbundle__"]
         elif self.script_runtime:
             return self.script_runtime.ScriptData.CommandBundle
 
-    @property   # read-only
+    @property  # read-only
     def command_extension(self):
         """str: Return current command extension name."""
-        if '__commandextension__' in __builtins__ \
-                and __builtins__['__commandextension__']:
-            return __builtins__['__commandextension__']
+        if (
+            "__commandextension__" in __builtins__
+            and __builtins__["__commandextension__"]
+        ):
+            return __builtins__["__commandextension__"]
         elif self.script_runtime:
             return self.script_runtime.ScriptData.CommandExtension
 
-    @property   # read-only
+    @property  # read-only
     def command_uniqueid(self):
         """str: Return current command unique id."""
-        if '__commanduniqueid__' in __builtins__ \
-                and __builtins__['__commanduniqueid__']:
-            return __builtins__['__commanduniqueid__']
+        if (
+            "__commanduniqueid__" in __builtins__
+            and __builtins__["__commanduniqueid__"]
+        ):
+            return __builtins__["__commanduniqueid__"]
         elif self.script_runtime:
             return self.script_runtime.ScriptData.CommandUniqueId
 
-    @property   # read-only
+    @property  # read-only
     def command_controlid(self):
         """str: Return current command control id."""
-        if '__commandcontrolid__' in __builtins__ \
-                and __builtins__['__commandcontrolid__']:
-            return __builtins__['__commandcontrolid__']
+        if (
+            "__commandcontrolid__" in __builtins__
+            and __builtins__["__commandcontrolid__"]
+        ):
+            return __builtins__["__commandcontrolid__"]
         elif self.script_runtime:
             return self.script_runtime.ScriptData.CommandControlId
 
-    @property   # read-only
+    @property  # read-only
     def command_uibutton(self):
         """str: Return current command ui button."""
-        if '__uibutton__' in __builtins__ \
-                and __builtins__['__uibutton__']:
-            return __builtins__['__uibutton__']
+        if "__uibutton__" in __builtins__ and __builtins__["__uibutton__"]:
+            return __builtins__["__uibutton__"]
 
     @property
     def result_dict(self):
@@ -727,6 +860,7 @@ EXEC_PARAMS = _ExecutorParams()
 # -----------------------------------------------------------------------------
 # type to safely get document instance from app or event args
 # -----------------------------------------------------------------------------
+
 
 class _DocsGetter(object):
     """Instance to safely get document from HOST_APP instance or EXEC_PARAMS."""
@@ -748,19 +882,20 @@ DOCS = _DocsGetter()
 # config user environment paths
 # -----------------------------------------------------------------------------
 # user env paths
-ALLUSER_PROGRAMDATA = os.getenv('programdata')
-USER_ROAMING_DIR = os.getenv('appdata')
-USER_SYS_TEMP = os.getenv('temp')
-USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
+ALLUSER_PROGRAMDATA = os.getenv("programdata")
+USER_ROAMING_DIR = os.getenv("appdata")
+USER_SYS_TEMP = os.getenv("temp")
+USER_DESKTOP = op.expandvars("%userprofile%\\desktop")
 
 # verify directory per issue #369
 if not USER_DESKTOP or not op.exists(USER_DESKTOP):
     USER_DESKTOP = USER_SYS_TEMP
 
 # default extensions directory
-EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
-THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
-    op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME, 'Extensions')
+EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, "extensions")
+THIRDPARTY_EXTENSIONS_DEFAULT_DIR = op.join(
+    USER_ROAMING_DIR, PYREVIT_ADDON_NAME, "Extensions"
+)
 
 # create paths for pyrevit files
 # pyrevit file directory
@@ -771,69 +906,83 @@ PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
 # add runtime paths to sys.paths
 # this will allow importing any dynamically compiled DLLs that
 # would be placed under this paths.
-for pyrvt_app_dir in [PYREVIT_APP_DIR,
-                        PYREVIT_VERSION_APP_DIR,
-                        THIRDPARTY_EXTENSIONS_DEFAULT_DIR]:
+for pyrvt_app_dir in [
+    PYREVIT_APP_DIR,
+    PYREVIT_VERSION_APP_DIR,
+    THIRDPARTY_EXTENSIONS_DEFAULT_DIR,
+]:
     if not op.isdir(pyrvt_app_dir):
         try:
             os.mkdir(pyrvt_app_dir)
-            sys.path.append(pyrvt_app_dir)
+            add_to_sys_path(pyrvt_app_dir)
         except Exception as err:
-            raise PyRevitException('Can not access pyRevit '
-                                    'folder at: {} | {}'
-                                    .format(pyrvt_app_dir, err))
+            raise PyRevitException(
+                "Can not access pyRevit folder at: {} | {}".format(pyrvt_app_dir, err)
+            )
     else:
-        sys.path.append(pyrvt_app_dir)
+        add_to_sys_path(pyrvt_app_dir)
 
 
 # -----------------------------------------------------------------------------
 # standard prefixes for naming pyrevit files (config, appdata and temp files)
 # -----------------------------------------------------------------------------
 # e.g. pyRevit_
-PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_'.format(PYREVIT_ADDON_NAME)
-PYREVIT_FILE_PREFIX_UNIVERSAL_REGEX = \
-    r'^' + PYREVIT_ADDON_NAME + r'_(?P<fname>.+)'
+PYREVIT_FILE_PREFIX_UNIVERSAL = "{}_".format(PYREVIT_ADDON_NAME)
+PYREVIT_FILE_PREFIX_UNIVERSAL_REGEX = r"^" + PYREVIT_ADDON_NAME + r"_(?P<fname>.+)"
 
 # e.g. pyRevit_2018_
-PYREVIT_FILE_PREFIX = '{}_{}_'.format(PYREVIT_ADDON_NAME,
-                                        HOST_APP.version)
-PYREVIT_FILE_PREFIX_REGEX = \
-    r'^' + PYREVIT_ADDON_NAME + r'_(?P<version>\d{4})_(?P<fname>.+)'
+PYREVIT_FILE_PREFIX = "{}_{}_".format(PYREVIT_ADDON_NAME, HOST_APP.version)
+PYREVIT_FILE_PREFIX_REGEX = (
+    r"^" + PYREVIT_ADDON_NAME + r"_(?P<version>\d{4})_(?P<fname>.+)"
+)
 
 # e.g. pyRevit_2018_14422_
-PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
-                                                    HOST_APP.version,
-                                                    HOST_APP.proc_id)
-PYREVIT_FILE_PREFIX_STAMPED_REGEX = \
-    r'^' + PYREVIT_ADDON_NAME \
-    + r'_(?P<version>\d{4})_(?P<pid>\d+)_(?P<fname>.+)'
+PYREVIT_FILE_PREFIX_STAMPED = "{}_{}_{}_".format(
+    PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.proc_id
+)
+PYREVIT_FILE_PREFIX_STAMPED_REGEX = (
+    r"^" + PYREVIT_ADDON_NAME + r"_(?P<version>\d{4})_(?P<pid>\d+)_(?P<fname>.+)"
+)
 
 # e.g. pyRevit_eirannejad_
-PYREVIT_FILE_PREFIX_UNIVERSAL_USER = '{}_{}_'.format(PYREVIT_ADDON_NAME,
-                                                        HOST_APP.username)
-PYREVIT_FILE_PREFIX_UNIVERSAL_USER_REGEX = \
-    r'^' + PYREVIT_ADDON_NAME + r'_(?P<user>.+)_(?P<fname>.+)'
+PYREVIT_FILE_PREFIX_UNIVERSAL_USER = "{}_{}_".format(
+    PYREVIT_ADDON_NAME, HOST_APP.username
+)
+PYREVIT_FILE_PREFIX_UNIVERSAL_USER_REGEX = (
+    r"^" + PYREVIT_ADDON_NAME + r"_(?P<user>.+)_(?P<fname>.+)"
+)
 
 # e.g. pyRevit_2018_eirannejad_
-PYREVIT_FILE_PREFIX_USER = '{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
-                                                HOST_APP.version,
-                                                HOST_APP.username)
-PYREVIT_FILE_PREFIX_USER_REGEX = \
-    r'^' + PYREVIT_ADDON_NAME \
-    + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<fname>.+)'
+PYREVIT_FILE_PREFIX_USER = "{}_{}_{}_".format(
+    PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username
+)
+PYREVIT_FILE_PREFIX_USER_REGEX = (
+    r"^" + PYREVIT_ADDON_NAME + r"_(?P<version>\d{4})_(?P<user>.+)_(?P<fname>.+)"
+)
 
 # e.g. pyRevit_2018_eirannejad_14422_
-PYREVIT_FILE_PREFIX_STAMPED_USER = '{}_{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
-                                                            HOST_APP.version,
-                                                            HOST_APP.username,
-                                                            HOST_APP.proc_id)
-PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
-    r'^' + PYREVIT_ADDON_NAME \
-    + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<pid>\d+)_(?P<fname>.+)'
+PYREVIT_FILE_PREFIX_STAMPED_USER = "{}_{}_{}_{}_".format(
+    PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username, HOST_APP.proc_id
+)
+PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = (
+    r"^"
+    + PYREVIT_ADDON_NAME
+    + r"_(?P<version>\d{4})_(?P<user>.+)_(?P<pid>\d+)_(?P<fname>.+)"
+)
 
 # -----------------------------------------------------------------------------
 # config labs modules
 # -----------------------------------------------------------------------------
 _perfmark("pyrevit.__init__:before labs")
 from pyrevit import labs
+from pyRevitLabs import Common as PyRevitLabsCommon
+
 _perfmark("pyrevit.__init__:after labs (exit)")
+
+# Align roaming/programdata paths with the C# install-scope resolver.
+ALLUSER_PROGRAMDATA = PyRevitLabsCommon.PyRevitLabsConsts.PyRevitProgramDataPath
+USER_ROAMING_DIR = PyRevitLabsCommon.PyRevitLabsConsts.PyRevitPath
+PYREVIT_ALLUSER_APP_DIR = ALLUSER_PROGRAMDATA
+PYREVIT_APP_DIR = USER_ROAMING_DIR
+PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
+THIRDPARTY_EXTENSIONS_DEFAULT_DIR = op.join(PYREVIT_APP_DIR, "Extensions")

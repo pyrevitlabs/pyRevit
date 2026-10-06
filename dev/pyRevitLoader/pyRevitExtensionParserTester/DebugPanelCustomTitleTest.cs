@@ -12,11 +12,11 @@ namespace pyRevitExtensionParserTest
         {
             // Test the actual Debug.panel from pyRevitDevTools extension
             var testBundlePath = Path.Combine(
-                TestContext.CurrentContext.TestDirectory, 
-                "..", "..", "..", "..", "..", "..", 
+                TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "..", "..",
                 "extensions", "pyRevitDevTools.extension"
             );
-            
+
             if (!Directory.Exists(testBundlePath))
             {
                 Assert.Inconclusive($"Test bundle path not found: {testBundlePath}");
@@ -25,32 +25,32 @@ namespace pyRevitExtensionParserTest
 
             TestContext.Out.WriteLine("=== Testing Debug Panel Custom Title ===");
             TestContext.Out.WriteLine($"Test bundle path: {testBundlePath}");
-            
+
             var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-            
+
             foreach (var extension in extensions)
             {
                 TestContext.Out.WriteLine($"Extension: {extension.Name}");
-                
+
                 // Find the Debug panel
                 var debugPanel = FindComponentRecursively(extension, "Debug");
                 if (debugPanel != null)
                 {
                     TestContext.Out.WriteLine($"Found Panel: {debugPanel.DisplayName}");
                     TestContext.Out.WriteLine($"Panel has {debugPanel.Children?.Count ?? 0} children");
-                    
+
                     // Find "Misc Tests" pulldown
                     var miscTests = debugPanel.Children?.FirstOrDefault(c => c?.DisplayName == "Misc Tests");
                     if (miscTests != null)
                     {
                         TestContext.Out.WriteLine($"Found Misc Tests: {miscTests.DisplayName}");
                         TestContext.Out.WriteLine($"Title: '{miscTests.Title}'");
-                        
+
                         // Verify the custom title was applied
                         Assert.IsNotNull(miscTests.Title, "Misc Tests should have a custom title");
-                        Assert.AreEqual("Third-Party\nUnit Tests", miscTests.Title, 
+                        Assert.AreEqual("Third-Party\nUnit Tests", miscTests.Title,
                             "Custom title should be 'Third-Party\\nUnit Tests' with newline");
-                        
+
                         TestContext.Out.WriteLine("✓ Custom title correctly applied!");
                         return; // Test passed
                     }
@@ -68,7 +68,7 @@ namespace pyRevitExtensionParserTest
                     }
                 }
             }
-            
+
             Assert.Fail("Debug panel or Misc Tests component not found");
         }
 
@@ -77,21 +77,21 @@ namespace pyRevitExtensionParserTest
         {
             return FindComponentRecursively(extension.Children, name);
         }
-        
+
         private ParsedComponent? FindComponentRecursively(List<ParsedComponent>? components, string name)
         {
             if (components == null) return null;
-            
+
             foreach (var component in components)
             {
                 if (component.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                     return component;
-                    
+
                 var found = FindComponentRecursively(component.Children, name);
                 if (found != null)
                     return found;
             }
-            
+
             return null;
         }
     }

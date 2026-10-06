@@ -1,0 +1,74 @@
+title:
+  en_us: Wipe AVF
+  ko: AVF 정리
+  fr_fr: Purger l'AVF
+  ru: Очистить AVF
+  chinese_s: 清除 AVF
+  es_es: Purgar AVF
+  de_de: AVF bereinigen
+  pt_br: Limpar AVF
+tooltip:
+  en_us: >-
+    This tool helps you purge Analysis Visualization Framework (AVF)  results
+    from views in the model, such as leftover spatial field  data from
+    energy, structural, or MEP analysis displays (often  left behind by
+    plugins or old analysis runs). Run the tool and  select the view(s)
+    you'd like to clear. Then hit "Purge Selected Views" and the process
+    will clear the AVF data for each one.  This can help resolve crashes or
+    bloat caused by orphaned  analysis results.
+  ko: >-
+    이 도구는 모델의 뷰에서 AVF(Analysis Visualization Framework) 결과를 제거하는 데 도움을
+    줍니다. 예를 들어 에너지, 구조 또는 MEP 분석 표시에서 남은 공간 필드 데이터(플러그인이나 이전 분석
+    실행으로 인해 남겨진 경우가 많음) 등입니다. 도구를 실행하고 지우고 싶은 뷰를 선택합니다. 그런 다음
+    "선택한 뷰 정리"를 누르면 각 뷰의 AVF 데이터가 제거됩니다. 이는 방치된 분석 결과로 인한 충돌이나
+    용량 증가 문제를 해결하는 데 도움이 될 수 있습니다.
+  fr_fr: >-
+    Cet outil vous aide à purger les résultats de l'Analysis Visualization
+    Framework (AVF) des vues du modèle, tels que les données de  champ
+    spatial résiduelles issues d'affichages d'analyse  énergétique,
+    structurelle ou MEP (souvent laissées par des  plugins ou d'anciennes
+    analyses). Exécutez l'outil et  sélectionnez la ou les vues à nettoyer.
+    Appuyez ensuite sur  "Purger les vues sélectionnées" et le processus
+    effacera les  données AVF de chacune. Cela peut aider à résoudre des
+    plantages  ou un alourdissement du fichier causés par des résultats
+    d'analyse orphelins.
+  ru: >-
+    Этот инструмент поможет Вам очистить результаты Analysis
+    Visualization Framework (AVF) в видах модели, такие как оставшиеся
+    данные пространственных полей от отображения энергетического,
+    конструктивного или инженерного анализа (часто оставленные  плагинами
+    или старыми запусками анализа). Запустите инструмент  и выделите
+    вид(ы), которые нужно очистить. Затем нажмите  "Очистить выбранные
+    виды" и процесс удалит данные AVF для  каждого из них. Это может помочь
+    устранить сбои или разрастание  файла, вызванные забытыми результатами
+    анализа.
+  chinese_s: 此工具帮助您清除模型视图中的分析可视化框架（AVF）结果，例如能耗、结构或机电分析显示中残留的空间场数据（通常由插件或旧的分析运行遗留）。运行工具，选择您希望清除的视图，然后点击“清除所选视图”，该过程将清除每个视图的 AVF 数据。这有助于解决因遗留分析结果导致的崩溃或文件膨胀问题。
+  es_es: >-
+    Esta herramienta le ayuda a purgar los resultados del Analysis
+    Visualization Framework (AVF) de las vistas del modelo, como  datos de
+    campo espacial residuales de visualizaciones de  análisis energético,
+    estructural o MEP (a menudo dejados por  plugins o análisis anteriores).
+    Ejecute la herramienta y  seleccione la(s) vista(s) que desea limpiar.
+    Luego presione  "Purgar vistas seleccionadas" y el proceso eliminará los
+    datos  de AVF de cada una. Esto puede ayudar a resolver bloqueos o
+    hinchazón del archivo causados por resultados de análisis  huérfanos.
+  de_de: >-
+    Dieses Werkzeug hilft Ihnen dabei, Ergebnisse des Analysis
+    Visualization Framework (AVF) aus Ansichten im Modell zu  bereinigen,
+    z.B. verbliebene Spatial-Field-Daten aus Energie-,  Tragwerks- oder
+    MEP-Analyseanzeigen (häufig von Plugins oder  alten Analyseläufen
+    hinterlassen). Führen Sie das Werkzeug aus  und wählen Sie die
+    Ansicht(en), die Sie bereinigen möchten.  Klicken Sie dann auf
+    "Ausgewählte Ansichten bereinigen" und der  Prozess löscht die
+    AVF-Daten für jede davon. Dies kann helfen,  Abstürze oder
+    Dateiaufblähung durch verwaiste Analyseergebnisse  zu beheben.
+  pt_br: >-
+    Esta ferramenta ajuda a limpar os resultados do Analysis
+    Visualization Framework (AVF) das vistas no modelo, como dados
+    residuais de campo espacial de exibições de análise energética,
+    estrutural ou MEP (frequentemente deixados por plugins ou  execuções de
+    análise anteriores). Execute a ferramenta e  selecione a(s) vista(s) que
+    deseja limpar. Em seguida, clique  em "Limpar Vistas Selecionadas" e o
+    processo removerá os dados  de AVF de cada uma. Isso pode ajudar a
+    resolver travamentos ou  aumento do tamanho do arquivo causados por
+    resultados de  análise órfãos.

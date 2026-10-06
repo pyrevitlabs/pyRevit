@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.AccessControl;
@@ -40,6 +40,16 @@ namespace pyRevitLabs.PyRevit {
                     );
             }
             else {
+                var manifestClone = Clone;
+                if (manifestClone != null) {
+                    return string.Format(
+                        "{0} (unregistered) | Product: \"{1}\" | Path: \"{2}\" {3}",
+                        manifestClone.Name,
+                        Product.Name,
+                        manifestClone.ClonePath,
+                        AllUsers ? "| AllUsers" : ""
+                        );
+                }
                 return string.Format(
                     "Unknown | Product: \"{0}\" | Manifest: \"{1}\"",
                     Product.Name,
@@ -85,7 +95,7 @@ namespace pyRevitLabs.PyRevit {
         public bool IsReadOnly() {
             // determine if attachment can be modified by user
             var us = new UserSecurity();
-            return ! us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
+            return !us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
         }
     }
 }

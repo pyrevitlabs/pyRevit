@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Provide conversion services between python.locale and host languages."""
+
 # https://www.science.co.il/language/Locale-codes.php
 import os
 import xml.etree.ElementTree as ET
@@ -9,16 +10,15 @@ from pyrevit.api import ApplicationServices
 from pyrevit.userconfig import user_config
 
 
-DEFAULT_LANG_DIR = 'LTR'
+DEFAULT_LANG_DIR = "LTR"
 
 
 class AppLocale(object):
     """Type representing a language option."""
-    def __init__(self,
-                 lang_type,
-                 locale_codes,
-                 lang_name=None,
-                 lang_dir=DEFAULT_LANG_DIR):
+
+    def __init__(
+        self, lang_type, locale_codes, lang_name=None, lang_dir=DEFAULT_LANG_DIR
+    ):
         if isinstance(lang_type, ApplicationServices.LanguageType):
             self.lang_type = lang_type
         elif isinstance(lang_type, str):
@@ -31,10 +31,13 @@ class AppLocale(object):
 
     def __str__(self):
         if self.lang_name:
-            return '%s / %s (%s)' % (
-                self.lang_name, str(self.lang_type), self.locale_code)
+            return "%s / %s (%s)" % (
+                self.lang_name,
+                str(self.lang_type),
+                self.locale_code,
+            )
         else:
-            return '%s (%s)' % (str(self.lang_type), self.locale_code)
+            return "%s (%s)" % (str(self.lang_type), self.locale_code)
 
     def __repr__(self):
         return str(self)
@@ -43,7 +46,8 @@ class AppLocale(object):
 DEFAULT_LOCALE = AppLocale(
     lang_type=ApplicationServices.LanguageType.English_USA,
     lang_name="English USA",
-    locale_codes=["en_us", "english"])
+    locale_codes=["en_us", "english"],
+)
 
 APP_LOCALES = [
     DEFAULT_LOCALE,
@@ -119,42 +123,41 @@ APP_LOCALES = [
     ),
 ]
 
-# add version specific languages
-if HOST_APP.is_newer_than(2018, or_equal=True):
-    APP_LOCALES.append(
-        AppLocale(
-            lang_type=ApplicationServices.LanguageType.English_GB,
-            lang_name="English Great Britain",
-            locale_codes=["en_gb"])
-        )
+APP_LOCALES.append(
+    AppLocale(
+        lang_type=ApplicationServices.LanguageType.English_GB,
+        lang_name="English Great Britain",
+        locale_codes=["en_gb"],
+    )
+)
 
 # add custom languages provided by this module
 APP_LOCALES.append(
     AppLocale(
-        lang_type="Bulgarian",
-        lang_name="Български",
-        locale_codes=["bg", "bulgarian"])
+        lang_type="Bulgarian", lang_name="Български", locale_codes=["bg", "bulgarian"]
     )
+)
 APP_LOCALES.append(
     AppLocale(
         lang_type="Farsi",
         locale_codes=["fa", "farsi", "persian"],
         lang_name="فارسی",
-        lang_dir='RTL'
-    ))
+        lang_dir="RTL",
+    )
+)
 APP_LOCALES.append(
     AppLocale(
         lang_type="Arabic",
         locale_codes=["ar", "arabic"],
         lang_name="العربیه",
-        lang_dir='RTL'
-    ))
+        lang_dir="RTL",
+    )
+)
 APP_LOCALES.append(
     AppLocale(
-        lang_type="Ukrainian",
-        locale_codes=["uk", "ukrainian"],
-        lang_name="Українська"
-    ))
+        lang_type="Ukrainian", locale_codes=["uk", "ukrainian"], lang_name="Українська"
+    )
+)
 
 
 def get_applocale_by_local_code(locale_code):

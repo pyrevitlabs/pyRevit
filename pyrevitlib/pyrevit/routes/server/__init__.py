@@ -1,7 +1,7 @@
-
 # -*- coding: utf-8 -*-
 """Handles http api routing and serving with usage similar to flask."""
-#pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
+
+# pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.api import DB, UI
 from pyrevit.labs import TargetApps
@@ -11,21 +11,29 @@ from pyrevit.userconfig import user_config
 from pyrevit.loader import sessioninfo
 
 # types to be exported
-from pyrevit.routes.server.base import \
-    OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
+from pyrevit.routes.server.base import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
 from pyrevit.routes.server.base import Request, Response
 
 from pyrevit.routes.server import serverinfo
 from pyrevit.routes.server import router
-from pyrevit.routes.server import server
 
 
 __all__ = (
-    'OK', 'ACCEPTED', 'INTERNAL_SERVER_ERROR', 'NO_CONTENT',
-    'Request', 'Response',
-    'init', 'activate_server', 'deactivate_server', 'get_active_server',
-    'make_response', 'get_routes', 'add_route', 'remove_route',
-    )
+    "OK",
+    "ACCEPTED",
+    "INTERNAL_SERVER_ERROR",
+    "NO_CONTENT",
+    "Request",
+    "Response",
+    "init",
+    "activate_server",
+    "deactivate_server",
+    "get_active_server",
+    "make_response",
+    "get_routes",
+    "add_route",
+    "remove_route",
+)
 
 
 mlogger = get_logger(__name__)
@@ -40,34 +48,90 @@ def init():
 
 
 def activate_server():
-    """Activate routes server for this host instance."""
+    """Activate routes server for this host instance.
+
+    The server module is imported on first activation, so that sessions with
+    the routes server disabled never import the HTTP stack.
+
+    Important:
+        That module creates a Revit external event as it is imported, and the
+        host prohibits creating one off its main thread. Activation must run
+        on the main thread.
+
+        Activation is idempotent within a session: an already active server
+        serves the routes that are registered now, so handing it back is
+        correct. It is not how a server survives a reload - init() still stops
+        the old one on every session load.
+
+        Idempotency is only claimed of a server that is still accepting. A
+        server whose accept loop has exited is torn down and replaced, because
+        handing that one back is the same dead registration that #3473 was
+        reported for, reached from the other end.
+
+    Returns:
+        (RoutesServer): the active server, or None if it could not be started.
+    """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
-    if not routes_server:
-        try:
-            rsinfo = serverinfo.register()
-            routes_server = \
-                server.RoutesServer(
-                    host=rsinfo.server_host,
-                    port=rsinfo.server_port
-                    )
-            routes_server.start()
-            envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
+    if routes_server:
+        if routes_server.is_running:
+            mlogger.debug("Routes server already active | %s", routes_server)
             return routes_server
-        except Exception as rs_ex:
+        mlogger.debug("Routes server registered but not accepting | %s", routes_server)
+        deactivate_server()
+    try:
+        from pyrevit.routes.server import server
+
+        rsinfo = serverinfo.register()
+        routes_server = server.RoutesServer(
+            host=rsinfo.server_host, port=rsinfo.server_port
+        )
+        envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
+        mlogger.debug("Routes server activated | %s", routes_server)
+        return routes_server
+    except Exception as rs_ex:
+        mlogger.error("Error starting Routes server | %s", str(rs_ex), exc_info=True)
+        try:
             serverinfo.unregister()
-            mlogger.error("Error starting Routes server | %s", str(rs_ex))
+        except Exception as unreg_ex:
+            mlogger.error(
+                "Error unregistering Routes server | %s", str(unreg_ex), exc_info=True
+            )
+        return None
 
 
 def deactivate_server():
-    """Deactivate the active routes server for this host instance."""
+    """Deactivate the active routes server for this host instance.
+
+    Deregisters whether or not the stop succeeded (#3473). A server that is no
+    longer listening but is still in the env var made the next activation hand
+    that dead server back instead of binding the port, so a reload silently
+    lost routes.
+
+    Every step is contained, including the one that clears the env var: a
+    failure there must not skip the deregistration, which is the step that keeps
+    the next session from being handed this server.
+    """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
-    if routes_server:
+    if not routes_server:
+        return
+    try:
+        routes_server.stop()
+    except Exception as rs_ex:
+        mlogger.error("Error stopping Routes server | %s", str(rs_ex), exc_info=True)
+    finally:
         try:
-            routes_server.stop()
             envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
+        except Exception as env_ex:
+            mlogger.error(
+                "Error clearing Routes server env var | %s", str(env_ex), exc_info=True
+            )
+        try:
             serverinfo.unregister()
-        except Exception as rs_ex:
-            mlogger.error("Error stopping Routes server | %s", str(rs_ex))
+        except Exception as unreg_ex:
+            mlogger.error(
+                "Error unregistering Routes server | %s", str(unreg_ex), exc_info=True
+            )
+    mlogger.debug("Routes server deactivated | %s", routes_server)
 
 
 def get_active_server():

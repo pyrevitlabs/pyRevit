@@ -11,6 +11,6 @@ selection = revit.get_selection()
 get_elementid_value = get_elementid_value_func()
 selected_ids = {str(get_elementid_value(elid)) for elid in selection.element_ids}
 
-f = open(datafile, 'wb')
+f = open(datafile, "wb")
 pickle.dump(selected_ids, f)
 f.close()

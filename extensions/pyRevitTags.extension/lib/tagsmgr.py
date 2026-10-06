@@ -1,8 +1,8 @@
 """Module for managing tags metadata."""
-#pylint: disable=E0401,C0111,W0603,C0103
+
+# pylint: disable=E0401,C0111,W0603,C0103
 from collections import namedtuple
 
-from pyrevit import HOST_APP
 from pyrevit import PyRevitException
 from pyrevit.coreutils import pyutils
 from pyrevit.coreutils import logger
@@ -35,20 +35,14 @@ SCOPE_SKIP_CATEGORIES = [
     DB.BuiltInCategory.OST_DSR_CenterlineTickMarkStyleId,
     DB.BuiltInCategory.OST_DSR_CenterlinePatternCatId,
     DB.BuiltInCategory.OST_CenterLines,
-    DB.BuiltInCategory.OST_StairsSketchLandingCenterLines
-    ]
-
-if HOST_APP.is_newer_than(2016):
-    SCOPE_SKIP_CATEGORIES.extend(
-        [
-            DB.BuiltInCategory.OST_FabricationContainmentCenterLine,
-            DB.BuiltInCategory.OST_FabricationPipeworkCenterLine,
-            DB.BuiltInCategory.OST_FabricationDuctworkCenterLine,
-        ]
-    )
+    DB.BuiltInCategory.OST_StairsSketchLandingCenterLines,
+    DB.BuiltInCategory.OST_FabricationContainmentCenterLine,
+    DB.BuiltInCategory.OST_FabricationPipeworkCenterLine,
+    DB.BuiltInCategory.OST_FabricationDuctworkCenterLine,
+]
 
 
-ApplyTagsConfig = namedtuple('ApplyTagsConfig', ['append', 'circuits'])
+ApplyTagsConfig = namedtuple("ApplyTagsConfig", ["append", "circuits"])
 """namedtuple for configuring the behaviour of :func:`apply_tags`
 
 Attributes:
@@ -81,20 +75,20 @@ class TagModifier(object):
     """
 
     def __init__(self, name, abbrev, color):
-        self.name = name + ' ({})'.format(abbrev)
+        self.name = name + " ({})".format(abbrev)
         self.abbrev = abbrev
         self.color = color
 
     @property
     def tag(self):
         """Tag string (e.g. /IFF)"""
-        return '{}{}'.format(tagscfg.TAG_MODIFIER_MARKER, self.abbrev)
+        return "{}{}".format(tagscfg.TAG_MODIFIER_MARKER, self.abbrev)
 
     def __str__(self):
         return self.name
 
     def __repr__(self):
-        return '<{} name={}>'.format(self.__class__.__name__, self.name)
+        return "<{} name={}>".format(self.__class__.__name__, self.name)
 
     def __hash__(self):
         return hash(self.tag)
@@ -126,9 +120,7 @@ class TagModifiers(object):
         modifs = tagscfg.get_modifier_defs()
         return {
             TagModifier(
-                abbrev=tagmod_def.abbrev,
-                name=tagmod_def.abbrev,
-                color=tagmod_def.color
+                abbrev=tagmod_def.abbrev, name=tagmod_def.abbrev, color=tagmod_def.color
             )
             for tagmod_def in modifs
         }
@@ -172,7 +164,7 @@ class TagModifiers(object):
         """
         cleaned = tag_str
         for mod in cls.get_modifiers():
-            cleaned = cleaned.replace(mod.tag, '')
+            cleaned = cleaned.replace(mod.tag, "")
         return cleaned.strip()
 
     @classmethod
@@ -249,9 +241,8 @@ class TagModifiers(object):
             'TAG /IFC'
         """
         return tag_str.replace(
-            tagscfg.TAG_MODIFIER_DELIMITER.join(['', modifier.tag]),
-            ''
-            ).strip()
+            tagscfg.TAG_MODIFIER_DELIMITER.join(["", modifier.tag]), ""
+        ).strip()
 
 
 class Tag(object):
@@ -277,15 +268,16 @@ class Tag(object):
         return self._tag_str
 
     def __repr__(self):
-        return '<{} name={}>'.format(self.__class__.__name__, self._tag_str)
+        return "<{} name={}>".format(self.__class__.__name__, self._tag_str)
 
     def __hash__(self):
         return hash(self._tag_str)
 
     def __eq__(self, other):
         if isinstance(other, Tag):
-            return self.name == other.name \
-                    and pyutils.compare_lists(self.modifiers, other.modifiers)
+            return self.name == other.name and pyutils.compare_lists(
+                self.modifiers, other.modifiers
+            )
         elif isinstance(other, str):
             return self.name == other.name
 
@@ -306,8 +298,10 @@ class Tag(object):
 
     def is_valid(self):
         """Check whether tag name and modifiers are valid."""
-        return tagscfg.TAG_DELIMITER not in self._tag_str \
+        return (
+            tagscfg.TAG_DELIMITER not in self._tag_str
             and tagscfg.TAG_MODIFIER_MARKER not in self._tag_str
+        )
 
     def rename(self, new_name):
         """Rename tag.
@@ -368,7 +362,7 @@ def _get_tag_paramid():
     # get tags param id
     param_id = revit.query.get_project_parameter_id(tagscfg.get_tags_param())
     if not param_id:
-        raise PyRevitException('Can not find tags parameter.')
+        raise PyRevitException("Can not find tags parameter.")
     return param_id
 
 
@@ -433,8 +427,7 @@ def extract_tags_from_str(tag_str):
     """
     tags = set()
     if tag_str and not tag_str.isspace():
-        cleaned = [x.strip()
-                   for x in tag_str.split(tagscfg.TAG_DELIMITER)]
+        cleaned = [x.strip() for x in tag_str.split(tagscfg.TAG_DELIMITER)]
         tags.update([Tag(x) for x in cleaned])
     return tags
 
@@ -472,10 +465,13 @@ def get_all_tag_elements(tag):
     #           .ToElementIds()
     skip_cats = [query.get_category(x) for x in SCOPE_SKIP_CATEGORIES]
     skip_catids = [x.Id for x in skip_cats if x is not None]
-    return [x for x in query.get_all_elements()
-            if tag in extract_tags(x)
-            and x.Category is not None
-            and x.Category.Id not in skip_catids]
+    return [
+        x
+        for x in query.get_all_elements()
+        if tag in extract_tags(x)
+        and x.Category is not None
+        and x.Category.Id not in skip_catids
+    ]
 
 
 def get_available_tags(elements=None):
@@ -489,20 +485,21 @@ def get_available_tags(elements=None):
         set[Tag]: set of tags in model or on elements
     """
     global _METADATA_DICT
-    target_elements = \
-        elements \
+    target_elements = (
+        elements
         or query.get_elements_by_param_value(
             param_name=tagscfg.get_tags_param(),
             param_value="",
             inverse=True,
-            doc=revit.doc
-            ) \
+            doc=revit.doc,
+        )
         or query.get_all_elements()
+    )
     tags = set()
     for element in target_elements:
         tags.update(extract_tags(element))
     # record metadata
-    _METADATA_DICT = {'count': len(target_elements)}
+    _METADATA_DICT = {"count": len(target_elements)}
     return sorted(tags)
 
 
@@ -539,21 +536,18 @@ def apply_tags(element, tags, config=None):
     """
     if not config:
         config = ApplyTagsConfig(append=False, circuits=True)
-        mlogger.debug('Using default config %s', config)
+        mlogger.debug("Using default config %s", config)
 
     # process elements that are somehow associated with this element
     # process elements in a group
     if isinstance(element, DB.Group):
-        mlogger.debug('Applying tag to group members...')
+        mlogger.debug("Applying tag to group members...")
         for el_id in element.GetMemberIds():
             apply_tags(revit.doc.GetElement(el_id), tags, config=config)
     # process connected circuits
-    elif isinstance(element, DB.FamilyInstance) \
-            and config.circuits:
-        mlogger.debug('Applying tag to circuits...')
-        esystems = query.get_connected_circuits(element,
-                                                space=False,
-                                                spare=False)
+    elif isinstance(element, DB.FamilyInstance) and config.circuits:
+        mlogger.debug("Applying tag to circuits...")
+        esystems = query.get_connected_circuits(element, space=False, spare=False)
         if esystems:
             for esys in esystems:
                 apply_tags(esys, tags, config=config)
@@ -561,16 +555,16 @@ def apply_tags(element, tags, config=None):
     if config.append:
         el_tags = extract_tags(element)
         el_tags.update(tags)
-        mlogger.debug('Appending tags %s', el_tags)
+        mlogger.debug("Appending tags %s", el_tags)
     else:
         el_tags = set(tags)
-        mlogger.debug('Replacing tags with %s', el_tags)
+        mlogger.debug("Replacing tags with %s", el_tags)
 
     sparam = _get_tag_param(element)
     if sparam:
-        mlogger.debug('Tag param found. Existing value: %s', sparam.AsString())
+        mlogger.debug("Tag param found. Existing value: %s", sparam.AsString())
         tag_col = join_tags(el_tags)
-        mlogger.debug('New value: %s', tag_col.tagids)
+        mlogger.debug("New value: %s", tag_col.tagids)
         sparam.Set(tag_col.tagids)
 
 
@@ -647,7 +641,7 @@ def rename_tag(tag, new_tag_name, elements=None):
     newtag = Tag(new_tag_name)
     if newtag.is_valid():
         if is_tag_available(newtag):
-            raise PyRevitException('New tag name already exists.')
+            raise PyRevitException("New tag name already exists.")
 
         target_elements = elements or get_all_tag_elements(tag)
         for element in target_elements:
@@ -656,7 +650,7 @@ def rename_tag(tag, new_tag_name, elements=None):
             el_tags[extag_idx].rename(new_tag_name)
             apply_tags(element, el_tags)
     else:
-        raise PyRevitException('Invalid Tag Name')
+        raise PyRevitException("Invalid Tag Name")
 
 
 def remove_tag(tag, elements=None):
@@ -717,26 +711,26 @@ def create_tag_filter(tags, name_format=None, exclude=False):
     tags_col = join_tags(tags)
     if not name_format:
         name_format = tagscfg.TAG_FILTER_NAMING
-    filter_name = name_format.format(all_or_none='NONE' if exclude else 'ALL',
-                                     tag_names=tags_col.names)
+    filter_name = name_format.format(
+        all_or_none="NONE" if exclude else "ALL", tag_names=tags_col.names
+    )
     for exst_filter in revit.query.get_rule_filters():
         if exst_filter.Name == filter_name:
             sfilters.append(exst_filter)
             return sfilters
 
     # create tag filter
-    sfilter = \
-        revit.create.create_param_value_filter(
-            filter_name=filter_name,
-            param_id=_get_tag_paramid(),
-            param_values=[x.name for x in tags],
-            evaluator="contains",
-            match_any=True,
-            case_sensitive=False,
-            exclude=exclude,
-            category_list=None,
-            doc=revit.doc
-            )
+    sfilter = revit.create.create_param_value_filter(
+        filter_name=filter_name,
+        param_id=_get_tag_paramid(),
+        param_values=[x.name for x in tags],
+        evaluator="contains",
+        match_any=True,
+        case_sensitive=False,
+        exclude=exclude,
+        category_list=None,
+        doc=revit.doc,
+    )
     sfilters.append(sfilter)
     return sfilters
 
@@ -753,8 +747,7 @@ def create_modifier_filters(exclude=False):
     mfilters = []
     # create filter name and check availability
     for modif in TagModifiers.get_modifiers():
-        filter_name = \
-            '{} {}'.format('NONE' if exclude else 'ALL', modif.name)
+        filter_name = "{} {}".format("NONE" if exclude else "ALL", modif.name)
         filter_exists = False
         for exst_filter in revit.query.get_rule_filters():
             if exst_filter.Name == filter_name:
@@ -764,18 +757,17 @@ def create_modifier_filters(exclude=False):
             continue
 
         # create modifier filter
-        mfilter = \
-            revit.create.create_param_value_filter(
-                filter_name=filter_name,
-                param_id=_get_tag_paramid(),
-                param_values=[modif.tag],
-                evaluator="contains",
-                match_any=True,
-                case_sensitive=False,
-                exclude=exclude,
-                category_list=None,
-                doc=revit.doc
-                )
+        mfilter = revit.create.create_param_value_filter(
+            filter_name=filter_name,
+            param_id=_get_tag_paramid(),
+            param_values=[modif.tag],
+            evaluator="contains",
+            match_any=True,
+            case_sensitive=False,
+            exclude=exclude,
+            category_list=None,
+            doc=revit.doc,
+        )
         mfilters.append(mfilter)
     return mfilters
 
@@ -793,7 +785,7 @@ def create_tag_schedule(tag, category, src_schedule):
         DB.ViewSchedule: newly created schedule
     """
     doc = src_schedule.Document
-    newsched_name = '{} ({})'.format(tag.name, category.Name)
+    newsched_name = "{} ({})".format(tag.name, category.Name)
     newsched = query.get_view_by_name(newsched_name)
     if not newsched:
         newsched_id = src_schedule.Duplicate(DB.ViewDuplicateOption.Duplicate)
@@ -802,22 +794,21 @@ def create_tag_schedule(tag, category, src_schedule):
         param_id = _get_tag_paramid()
         tagfield = query.get_schedule_field(newsched, tagscfg.get_tags_param())
         if not tagfield:
-            tagfield = \
-                newsched.Definition.AddField(DB.ScheduleFieldType.Instance,
-                                             param_id)
+            tagfield = newsched.Definition.AddField(
+                DB.ScheduleFieldType.Instance, param_id
+            )
         tagfield.IsHidden = True
 
-        tagfilter_indices = \
-            query.get_schedule_filters(newsched,
-                                       tagscfg.get_tags_param(),
-                                       return_index=True)
+        tagfilter_indices = query.get_schedule_filters(
+            newsched, tagscfg.get_tags_param(), return_index=True
+        )
         if tagfilter_indices:
             for idx in tagfilter_indices:
                 newsched.Definition.RemoveFilter(idx)
 
-        tagfilter = DB.ScheduleFilter(tagfield.FieldId,
-                                      DB.ScheduleFilterType.Contains,
-                                      tag.name)
+        tagfilter = DB.ScheduleFilter(
+            tagfield.FieldId, DB.ScheduleFilterType.Contains, tag.name
+        )
         newsched.Definition.AddFilter(tagfilter)
         revit.update.set_name(newsched, newsched_name)
         return newsched
@@ -837,8 +828,7 @@ def create_tag_3dview(tags):
 
     if mfilters:
         tags_col = join_tags(tags)
-        view_name = '{} ({})'.format(tagscfg.TAGVIEW_PREFIX,
-                                     tags_col.names)
+        view_name = "{} ({})".format(tagscfg.TAGVIEW_PREFIX, tags_col.names)
         # create 3d view
         tag_view = create.create_3d_view(view_name, doc=revit.doc)
         # clean all existing filters

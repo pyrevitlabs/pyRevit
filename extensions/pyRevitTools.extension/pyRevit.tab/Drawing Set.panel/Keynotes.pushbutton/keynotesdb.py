@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
 """Module for managing keynotes using DeffrelDB."""
 
 # pylint: disable=E0401,W0613
+import os
+import os.path as op
 import re
+import time
+import uuid
 import codecs
 from collections import defaultdict
 
@@ -9,7 +14,9 @@ from pyrevit import HOST_APP, DOCS
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
+from pyrevit.framework import System
 from pyrevit import revit
+from pyrevit import forms
 
 from pyrevit.labs import DeffrelDB as dfdb
 
@@ -41,6 +48,26 @@ EDIT_MODE_EDIT_KEYNOTE = "edit-keynote"
 
 
 CSI_REGEX = r" \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}"
+
+
+def normalize_keynote_text(value):
+    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage.
+
+    Important:
+        Break coverage comes from str.splitlines(): CR, LF, vertical tab
+        (Word's Shift+Enter), form feed, NEL, U+2028 and U+2029. WPF truncates
+        a paste at any one of them, so EditRecordWindow's paste filter depends
+        on all of them collapsing here; narrowing this back to CR and LF
+        reintroduces the truncation bug.
+    """
+    if value is None:
+        return ""
+
+    text = str(value)
+    text = "\n".join(text.splitlines())
+    text = re.sub(r"\s*\n\s*", " ", text)
+    text = text.replace("\t", " ")
+    return text.strip()
 
 
 class RKeynoteFilter(object):
@@ -133,18 +160,115 @@ class RKeynoteFilters(object):
         return cleaned
 
 
-class RKeynote(object):
+class RKeynoteExpansion(object):
+    """Expansion state for the keynote tree, keyed by keynote key."""
+
+    def __init__(self):
+        self.reset(None)
+
+    def reset(self, kfile, keys=None):
+        """Point the store at a keynote file."""
+        self.kfile = kfile
+        self.saved = set(keys or [])
+        self.overlay = {}
+        self.search_active = False
+        self._term = None
+        self._missed = set()
+
+    def begin_render(self, search_term):
+        """Arm the search overlay — call once per rebuild, before render."""
+        term = search_term or None
+        if term != self._term:
+            if not (term and self._term and term.startswith(self._term)):
+                self.overlay = {}
+            self._term = term
+        self.search_active = bool(term)
+
+    def get(self, node):
+        """Read the rendered expansion state for a node."""
+        if self.search_active:
+            if node.key in self.overlay:
+                return self.overlay[node.key]
+            return bool(node.children)
+        return node.key in self.saved
+
+    def set(self, node, value):
+        """Record an expansion change made through the UI."""
+        if self.search_active:
+            self.overlay[node.key] = value
+            return
+        if value:
+            self.saved.add(node.key)
+        else:
+            self.saved.discard(node.key)
+
+    def set_all(self, keys, value):
+        """Apply Expand All / Collapse All to a whole key set."""
+        if value:
+            self.saved.update(keys)
+        else:
+            self.saved.clear()
+        if self.search_active:
+            for key in keys:
+                self.overlay[key] = value
+
+    def expand(self, key):
+        """Reveal one node because the user just acted on it."""
+        if not key:
+            return
+        self.saved.add(key)
+        if self.search_active:
+            self.overlay[key] = True
+
+    def rekey(self, from_key, to_key):
+        """Follow a node whose key changed.  Children keep their own keys."""
+        if from_key in self.saved:
+            self.saved.discard(from_key)
+            self.saved.add(to_key)
+        if from_key in self.overlay:
+            self.overlay[to_key] = self.overlay.pop(from_key)
+
+    def swap(self, key_a, key_b):
+        """Follow a Move Up / Move Down."""
+        if (key_a in self.saved) != (key_b in self.saved):
+            self.saved.symmetric_difference_update([key_a, key_b])
+        if key_a in self.overlay or key_b in self.overlay:
+            val_a = self.overlay.pop(key_a, None)
+            val_b = self.overlay.pop(key_b, None)
+            if val_b is not None:
+                self.overlay[key_a] = val_b
+            if val_a is not None:
+                self.overlay[key_b] = val_a
+
+    def prune(self, live_keys):
+        """Drop entries for keys that no longer exist."""
+        if not live_keys:
+            return
+        missing = self.saved - live_keys
+        self.saved -= (missing & self._missed)
+        self._missed = missing
+
+
+EXPANSION = RKeynoteExpansion()
+
+
+class RKeynote(forms.Reactive):
     """Object representing a keynote entry in the databaseself.
 
     This object also has properties for the status of the keynote e.g.
     locked by another user or being used in the current model.
+
+    Reactive because of `multi_selected`: the keynote tree virtualizes with
+    container RECYCLING, so a row's highlight has to live on the DATA.  A
+    container painted directly would carry that highlight onto whatever
+    unrelated keynote it is recycled for when the user scrolls.
     """
 
     def __init__(
         self, key, text, parent_key=None, locked=False, owner=None, children=None
     ):
         self.key = key
-        self.text = text
+        self.text = normalize_keynote_text(text)
         self.parent_key = parent_key or ""
         self.locked = locked
         self.owner = owner or ""
@@ -158,6 +282,7 @@ class RKeynote(object):
         self.used = False
         self.used_count = 0
         self.tooltip = "Referenced on views:"
+        self._multi_selected = False
 
     def __str__(self):
         return repr(self)
@@ -176,8 +301,35 @@ class RKeynote(object):
         return self._children
 
     @property
+    def multi_selected(self):
+        """True when this row is part of a multi-row selection.
+
+        A notifying property rather than a plain attribute: the tree is
+        rebuilt from the file only on refresh, so toggling this has to
+        update the bound row in place.
+        """
+        return self._multi_selected
+
+    @multi_selected.setter
+    def multi_selected(self, value):
+        value = bool(value)
+        if value == self._multi_selected:
+            return          # never raise a no-op change at the binding
+        self._multi_selected = value
+        self.OnPropertyChanged("multi_selected")
+
+    @property
     def is_category(self):
         return not self.parent_key
+
+    @property
+    def is_expanded(self):
+        """Whether this row renders expanded, read from the EXPANSION store."""
+        return EXPANSION.get(self)
+
+    @is_expanded.setter
+    def is_expanded(self, value):
+        EXPANSION.set(self, value)
 
     def has_children(self):
         return len(self.children)
@@ -244,9 +396,27 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keysdict, used_typesdict=None, doc=None):
-        doc = doc or DOCS.doc
+    def update_used(
+        self, used_keysdict, used_typesdict=None, view_names=None, doc=None
+    ):
+        """Refresh usage state from pre-collected model data.
+
+        Prefer passing `view_names` ({key: [view name, ...]}) collected in
+        a valid Revit API context — then this method touches no Revit API
+        at all and is safe to call from WPF event handlers.  The `doc`
+        fallback path queries the model directly and must only run inside
+        an API context.
+        """
         used_typesdict = used_typesdict or {}
+        # reset first — cached nodes get refreshed repeatedly and the
+        # tooltip/usage state must not accumulate across refreshes
+        self.used = False
+        self.used_count = 0
+        self.used_types = set()
+        self.has_element_type = False
+        self.has_material_type = False
+        self.has_user_type = False
+        self.tooltip = "Referenced on views:"
         # update count, tooltip, and usage types
         if self.key in used_keysdict:
             self.used = True
@@ -255,16 +425,24 @@ class RKeynote(object):
             self.has_element_type = "Element" in self.used_types
             self.has_material_type = "Material" in self.used_types
             self.has_user_type = "User" in self.used_types
-            for keyid in used_keysdict[self.key]:
-                kel = doc.GetElement(keyid)
-                if not kel:
-                    continue
-                owner_view = doc.GetElement(kel.OwnerViewId)
-                view_name = revit.query.get_name(owner_view)
-                self.tooltip += "\n" + view_name
+            if view_names is not None:
+                for view_name in view_names.get(self.key, []):
+                    self.tooltip += "\n" + view_name
+            else:
+                # legacy fallback — requires a valid Revit API context
+                doc = doc or DOCS.doc
+                for keyid in used_keysdict[self.key]:
+                    kel = doc.GetElement(keyid)
+                    if not kel:
+                        continue
+                    owner_view = doc.GetElement(kel.OwnerViewId)
+                    view_name = revit.query.get_name(owner_view)
+                    self.tooltip += "\n" + view_name
 
         for crkey in self._children:
-            crkey.update_used(used_keysdict, used_typesdict)
+            crkey.update_used(
+                used_keysdict, used_typesdict, view_names=view_names, doc=doc
+            )
 
     def collect_keys(self):
         keys = {self.key, self.parent_key}
@@ -274,9 +452,14 @@ class RKeynote(object):
 
 
 def _verify_keynotesdb_def(conn):
+    # NOTE: a lock TimeoutException means another user holds the file —
+    # it must NOT be misread as "schema missing" (the create call would
+    # also block, and the Convert offer downstream truncates live data).
     # verify db
     try:
         conn.ReadDB(KEYNOTES_DB)
+    except System.TimeoutException:
+        raise
     except Exception as dbex:
         mlogger.debug("Keynotes db read failed | %s", dbex)
         dbdef = dfdb.DatabaseDefinition()
@@ -286,6 +469,8 @@ def _verify_keynotesdb_def(conn):
     # verify root categories table
     try:
         conn.ReadTable(KEYNOTES_DB, CATEGORIES_TABLE)
+    except System.TimeoutException:
+        raise
     except Exception as cattex:
         mlogger.debug("Category table read failed | %s", cattex)
         cat_key = dfdb.TextField(CATEGORY_KEY_FIELD)
@@ -302,6 +487,8 @@ def _verify_keynotesdb_def(conn):
     # verify keynote table
     try:
         conn.ReadTable(KEYNOTES_DB, KEYNOTES_TABLE)
+    except System.TimeoutException:
+        raise
     except Exception as ktex:
         mlogger.debug("keynote table read failed | %s", ktex)
         keynote_key = dfdb.TextField(KEYNOTES_KEY_FIELD)
@@ -369,11 +556,14 @@ def get_categories(conn):
                 key=x[CATEGORY_KEY_FIELD],
                 text=x[CATEGORY_TITLE_FIELD] or "",
                 parent_key="",
-                locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
+                # direct dict membership: .keys() would materialize a new
+                # list per record on IronPython 2.7 (O(n^2) over the table)
+                locked=x[CATEGORY_KEY_FIELD] in locked_records,
                 owner=locked_records.get(x[CATEGORY_KEY_FIELD], ""),
                 children=[],
             )
             for x in cats_records
+            if x[CATEGORY_KEY_FIELD]  # skip malformed/blank records
         ],
         key=lambda x: x.key,
     )
@@ -391,11 +581,13 @@ def get_keynotes(conn):
                 key=x[KEYNOTES_KEY_FIELD],
                 text=x[KEYNOTES_TEXT_FIELD] or "",
                 parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-                locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
+                # direct dict membership — see note in get_categories()
+                locked=x[KEYNOTES_KEY_FIELD] in locked_records,
                 owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ""),
                 children=[],
             )
             for x in keynote_records
+            if x[KEYNOTES_KEY_FIELD]  # skip malformed/blank records
         ],
         key=lambda x: x.key,
     )
@@ -447,15 +639,158 @@ def release_key(conn, key, category=False):
     conn.END()
 
 
+LOCKS_DB = "txn_db"
+LOCKS_TABLE = "locks_table"
+DATASTORE_LOCK_STALE_SECONDS = 300
+
+
+class DataStoreLockChanged(Exception):
+    """The write sidecar is no longer the stale one the user agreed to clear."""
+
+
+def datastore_lock_path(keynotes_file):
+    """Return the sidecar file DeffrelDB holds while it writes the file.
+
+    Note:
+        DeffrelDB names the sidecar after the file WITHOUT its extension:
+        'Keynotes.txt' is guarded by 'Keynotes.lock'.
+    """
+    return op.splitext(keynotes_file)[0] + ".lock"
+
+
+def datastore_lock_stamp(keynotes_file):
+    """Return the write sidecar's modified time, or None when there is none.
+
+    The stamp identifies one particular sidecar: a save that replaces it
+    writes a new one with a new modified time.
+    """
+    try:
+        return op.getmtime(datastore_lock_path(keynotes_file))
+    except OSError:
+        return None
+
+
+def datastore_lock_age(stamp):
+    """Return how many seconds ago the sidecar with `stamp` was written."""
+    return max(0.0, time.time() - stamp)
+
+
+def is_stale_datastore_lock(stamp):
+    """Tell whether a sidecar is too old to belong to a save in progress.
+
+    Note:
+        DeffrelDB puts no upper bound on how long a save holds the
+        sidecar: its reads retry for up to 10 seconds, but the merge and
+        the write itself have no timeout, so a save to a slow network or
+        synced folder can hold it for a while.  Those saves run on Revit's
+        UI thread, so DATASTORE_LOCK_STALE_SECONDS is set far beyond what
+        any save could take without Revit visibly hanging.
+    """
+    if stamp is None:
+        return False
+    return datastore_lock_age(stamp) >= DATASTORE_LOCK_STALE_SECONDS
+
+
+def clear_datastore_lock(keynotes_file, expected_stamp):
+    """Delete the stale write sidecar the user agreed to release.
+
+    Returns True when it was deleted and False when it was already gone.
+
+    Important:
+        The user may sit in the confirmation dialog for minutes, and in
+        that time the stale sidecar can be cleared by someone else and a
+        live save can create a new one.  Deleting a live save's sidecar
+        would let another write overlap it and lose changes.
+
+        DeffrelDB's own protocol has no atomic acquire to join: a writer
+        checks that the sidecar is absent and then creates it.  So the
+        sidecar is first CLAIMED with an atomic rename, which takes exactly
+        the file present at that instant, and only the claimed file is
+        checked and deleted.  Checking the path and then deleting the path
+        could delete a sidecar a live save created in between.  A claimed
+        file that is not the stale one is put back; if a new sidecar
+        already took its place, the path is guarded either way and the
+        claimed copy is discarded.
+
+    Raises:
+        DataStoreLockChanged: the sidecar is not the one stamped
+            `expected_stamp`, or is no longer stale.
+    """
+    lock_path = datastore_lock_path(keynotes_file)
+    current = datastore_lock_stamp(keynotes_file)
+    if current is None:
+        return False
+    if current != expected_stamp:
+        raise DataStoreLockChanged(lock_path)
+
+    claimed = "{}.release-{}".format(lock_path, uuid.uuid4().hex[:8])
+    try:
+        os.rename(lock_path, claimed)
+    except OSError:
+        if op.exists(lock_path):
+            raise
+        return False
+
+    claimed_stamp = op.getmtime(claimed)
+    if claimed_stamp == expected_stamp and is_stale_datastore_lock(claimed_stamp):
+        os.remove(claimed)
+        return True
+    try:
+        os.rename(claimed, lock_path)
+    except OSError:
+        os.remove(claimed)
+    raise DataStoreLockChanged(lock_path)
+
+
+def foreign_locks(conn, own_conns):
+    """Return the locks on the file that none of `own_conns` holds.
+
+    Release Locks offers only these, so it can never release a lock the
+    current Revit session is still using.
+    """
+    own_ids = set(own.ConnectionId for own in own_conns)
+    return [lk for lk in get_locks(conn) if lk.LockConnId not in own_ids]
+
+
+def release_locks(keynotes_file, lock_ids, username=None):
+    """Drop the given lock records from the file and return how many went.
+
+    DeffrelDB has no public call for clearing another connection's locks,
+    so this drops their rows from its internal LOCKS_DB/LOCKS_TABLE.
+
+    Important:
+        Every drop runs on its own throwaway connection.  When DeffrelDB
+        fails to take a lock it leaves that connection inside a transaction
+        block, and every later write on it is silently never committed, so
+        a failed drop must not poison the window's connection or the drops
+        after it.
+    """
+    released = 0
+    for lock_id in lock_ids:
+        conn = dfdb.DataBase.Connect(
+            keynotes_file,
+            username or HOST_APP.username,
+            sourceEncoding=framework.Encoding.GetEncoding("utf-16"),
+        )
+        try:
+            conn.DropRecord(LOCKS_DB, LOCKS_TABLE, lock_id)
+            released += 1
+        finally:
+            conn.Dispose()
+    return released
+
+
 # categories ------------------------------------------------------------------
 
 
 def add_category(conn, key, text):
+    text = normalize_keynote_text(text)
     conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: text})
     return RKeynote(key=key, text=text)
 
 
 def update_category_title(conn, key, new_title):
+    new_title = normalize_keynote_text(new_title)
     conn.UpdateRecord(
         KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: new_title}
     )
@@ -477,6 +812,7 @@ def remove_category(conn, key):
 
 
 def add_keynote(conn, key, text, parent_key):
+    text = normalize_keynote_text(text)
     conn.InsertRecord(
         KEYNOTES_DB,
         KEYNOTES_TABLE,
@@ -495,6 +831,7 @@ def mark_keynote_under_edited(conn, key):
 
 
 def update_keynote_text(conn, key, text):
+    text = normalize_keynote_text(text)
     conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_TEXT_FIELD: text})
 
 
@@ -508,7 +845,221 @@ def move_keynote(conn, key, new_parent):
     )
 
 
+# compound atomic operations ---------------------------------------------------
+# DeffrelDB buffers all changes between BEGIN and END in memory and commits
+# them to the file in a single write on END.  BulkAction.__exit__ always
+# calls END, so a mid-sequence failure would otherwise commit a PARTIAL
+# state (e.g. leave "__swap_*__" temp keys in the shared keynote file).
+# These helpers revert completed steps in memory before re-raising, so the
+# commit then writes back the original state — a harmless no-op.
+
+
+def _run_with_compensation(conn, steps):
+    """Run (do, undo) steps inside one BulkAction; undo on failure."""
+    done_undos = []
+    with BulkAction(conn):
+        try:
+            for do_step, undo_step in steps:
+                do_step()
+                done_undos.append(undo_step)
+        except Exception:
+            for undo_step in reversed(done_undos):
+                try:
+                    undo_step()
+                except Exception:
+                    mlogger.warning(
+                        "Keynote operation rollback step failed — "
+                        "check the keynote file for consistency."
+                    )
+            raise
+
+
+def update_texts(conn, updates):
+    """Rewrite the text of several records as one compensated write."""
+    steps = []
+    for key, old_text, new_text, is_category in updates:
+        write = update_category_title if is_category else update_keynote_text
+        steps.append(
+            (
+                lambda k=key, t=new_text, w=write: w(conn, k, t),
+                lambda k=key, t=old_text, w=write: w(conn, k, t),
+            )
+        )
+    _run_with_compensation(conn, steps)
+
+
+def swap_keys(conn, key_a, key_b, temp_key, category=False):
+    """Atomically swap two record keys and re-parent their children."""
+    upd = update_category_key if category else update_keynote_key
+    children = get_keynotes(conn)
+
+    steps = [
+        (lambda: upd(conn, key_a, temp_key), lambda: upd(conn, temp_key, key_a)),
+        (lambda: upd(conn, key_b, key_a), lambda: upd(conn, key_a, key_b)),
+        (lambda: upd(conn, temp_key, key_b), lambda: upd(conn, key_b, temp_key)),
+    ]
+    # children follow their original parent record to its new key
+    for child in children:
+        if child.parent_key == key_a:
+            steps.append(
+                (
+                    lambda k=child.key: move_keynote(conn, k, key_b),
+                    lambda k=child.key: move_keynote(conn, k, key_a),
+                )
+            )
+        elif child.parent_key == key_b:
+            steps.append(
+                (
+                    lambda k=child.key: move_keynote(conn, k, key_a),
+                    lambda k=child.key: move_keynote(conn, k, key_b),
+                )
+            )
+    _run_with_compensation(conn, steps)
+
+
+def rekey_with_children(conn, key, new_key, category=False):
+    """Atomically re-key a record and move its children with it."""
+    upd = update_category_key if category else update_keynote_key
+    children = get_keynotes(conn)
+
+    steps = [
+        (lambda: upd(conn, key, new_key), lambda: upd(conn, new_key, key)),
+    ]
+    for child in children:
+        if child.parent_key == key:
+            steps.append(
+                (
+                    lambda k=child.key: move_keynote(conn, k, new_key),
+                    lambda k=child.key: move_keynote(conn, k, key),
+                )
+            )
+    _run_with_compensation(conn, steps)
+
+
 # import export ---------------------------------------------------------------
+
+
+def _paste_step(conn, row):
+    """Build the (do, undo) pair for one pasted row.
+
+    Every closure binds its values as default arguments: the caller builds
+    these in a loop, and a late-bound free variable would make every undo
+    step revert the LAST row instead of its own.
+    """
+    key = row["key"]
+    text = normalize_keynote_text(row.get("text") or "")
+    is_cat = bool(row.get("is_category"))
+    action = row.get("action")
+
+    if action == "add":
+        if is_cat:
+            def _do(k=key, t=text):
+                add_category(conn, k, t)
+
+            def _undo(k=key):
+                remove_category(conn, k)
+        else:
+            parent = row.get("parent") or ""
+
+            def _do(k=key, t=text, p=parent):
+                add_keynote(conn, k, t, p)
+
+            def _undo(k=key):
+                remove_keynote(conn, k)
+        return _do, _undo
+
+    if action == "overwrite":
+        # target_text comes from the classification pass, so this does not
+        # re-scan the whole table once per row
+        old_text = normalize_keynote_text(row.get("target_text") or "")
+        if is_cat:
+            def _do(k=key, t=text):
+                update_category_title(conn, k, t)
+
+            def _undo(k=key, t=old_text):
+                update_category_title(conn, k, t)
+        else:
+            def _do(k=key, t=text):
+                update_keynote_text(conn, k, t)
+
+            def _undo(k=key, t=old_text):
+                update_keynote_text(conn, k, t)
+        return _do, _undo
+
+    raise ValueError("unknown paste action: %s" % action)
+
+
+def paste_records(conn, rows):
+    """Add or overwrite `rows` in ONE compensated bulk action.
+
+    Each row is {key, text, parent, is_category, target_text, action} where
+    action is 'add' or 'overwrite'; anything else must be filtered out by
+    the caller.  Rows MUST be ordered parents-before-children so a keynote
+    never lands before the group it names as its parent.
+
+    Pasting rewrites a SHARED keynote file, so a half-applied paste is the
+    thing to avoid above all: _run_with_compensation reverts the completed
+    steps in memory before re-raising, and the single commit on END then
+    writes the original state back.
+
+    'overwrite' replaces the record's TEXT only.  The target keeps its own
+    placement in the tree: re-parenting an existing keynote because another
+    project files it elsewhere would move tags out from under that project.
+    """
+    steps = [_paste_step(conn, row) for row in rows]
+    if not steps:
+        return 0
+    _run_with_compensation(conn, steps)
+    return len(steps)
+
+
+def _delete_step(conn, row):
+    """Build the (do, undo) pair for one deleted row.
+
+    The undo RE-ADDS the record, so the row has to carry its text and
+    parent: once DropRecord has run there is nothing left to read them
+    from.  Values bind as default arguments for the reason given in
+    _paste_step.
+    """
+    key = row["key"]
+    text = normalize_keynote_text(row.get("text") or "")
+
+    if row.get("is_category"):
+        def _do(k=key):
+            remove_category(conn, k)
+
+        def _undo(k=key, t=text):
+            add_category(conn, k, t)
+    else:
+        parent = row.get("parent") or ""
+
+        def _do(k=key):
+            remove_keynote(conn, k)
+
+        def _undo(k=key, t=text, p=parent):
+            add_keynote(conn, k, t, p)
+    return _do, _undo
+
+
+def delete_records(conn, rows):
+    """Remove `rows` in ONE compensated bulk action.
+
+    Rows MUST be ordered CHILDREN BEFORE PARENTS: a group cannot be
+    dropped while anything still names it as a parent.  The compensation
+    then unwinds in reverse, which re-adds parents before their children —
+    the only order in which the restore is valid.
+
+    Deleting rewrites a SHARED keynote file and drops text that cannot be
+    recovered from the model, so a half-applied delete is the thing to
+    avoid above all: _run_with_compensation reverts the completed steps in
+    memory before re-raising, and the single commit on END then writes the
+    original state back.
+    """
+    steps = [_delete_step(conn, row) for row in rows]
+    if not steps:
+        return 0
+    _run_with_compensation(conn, steps)
+    return len(steps)
 
 
 def _import_keynotes_from_lines(conn, lines, skip_dup=False):
@@ -598,18 +1149,30 @@ def export_legacy_keynotes(conn, dest_legacy_keynotes_file, include_keys=None):
         with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
                 if cat.key in include_keys:
-                    lkfile.write("{}\t{}\n".format(cat.key, cat.text))
+                    lkfile.write(
+                        "{}\t{}\n".format(cat.key, normalize_keynote_text(cat.text))
+                    )
             for knote in keynotes:
                 if knote.key in include_keys:
                     lkfile.write(
-                        "{}\t{}\t{}\n".format(knote.key, knote.text, knote.parent_key)
+                        "{}\t{}\t{}\n".format(
+                            knote.key,
+                            normalize_keynote_text(knote.text),
+                            knote.parent_key,
+                        )
                     )
 
     else:
         with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
-                lkfile.write("{}\t{}\n".format(cat.key, cat.text))
+                lkfile.write(
+                    "{}\t{}\n".format(cat.key, normalize_keynote_text(cat.text))
+                )
             for knote in keynotes:
                 lkfile.write(
-                    "{}\t{}\t{}\n".format(knote.key, knote.text, knote.parent_key)
+                    "{}\t{}\t{}\n".format(
+                        knote.key,
+                        normalize_keynote_text(knote.text),
+                        knote.parent_key,
+                    )
                 )

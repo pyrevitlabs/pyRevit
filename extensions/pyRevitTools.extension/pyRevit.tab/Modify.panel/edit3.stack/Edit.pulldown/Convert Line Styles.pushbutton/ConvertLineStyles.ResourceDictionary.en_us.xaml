@@ -11,5 +11,5 @@
     <system:String x:Key="ConvertModelLines">Convert Model Lines</system:String>
     <system:String x:Key="ConvertFilledRegionLines">Convert Filled Region Lines (Filled Regions Need Shaking)</system:String>
     <system:String x:Key="ConvertGroupedLines">Convert Grouped Lines (No API Support)</system:String>
-    <system:String x:Key="DeleteConvertedStyles">Delete Converted Style(s) When Done</system:String>
+    <system:String x:Key="RetireConvertedStyles">Merge &amp; retire source styles when done</system:String>
 </ResourceDictionary>

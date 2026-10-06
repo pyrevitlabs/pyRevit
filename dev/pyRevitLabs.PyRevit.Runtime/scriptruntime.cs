@@ -60,6 +60,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool DebugMode;
         public bool ExecutedFromUI;
 
+        /// <summary>
+        /// When set, the engine cache key (<see cref="ScriptEngine.TypeId"/>) ignores
+        /// <see cref="ScriptData.CommandExtension"/> so every caller that opts in shares one
+        /// engine for the lifetime of the current session load, instead of each getting its own.
+        /// Used by the C# session loader for its own trusted entry/startup scripts; regular
+        /// command execution never sets this and keeps today's per-extension engine caching.
+        /// </summary>
+        public bool SharedSessionEngine;
+
         public void Dispose() {
             CommandData = null;
             SelectedElements = null;
@@ -93,6 +102,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecId = CommonUtils.NewShortUUID();
             ExecTimestamp = Telemetry.GetTelemetryTimeStamp();
 
+            ScriptOutputUi.CaptureHostUiThread();
+
             // set data
             ScriptData = scriptData;
             ScriptRuntimeConfigs = scriptRuntimeCfg;
@@ -123,6 +134,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 else if (ScriptRuntimeConfigs.EventSender.GetType() == typeof(Application))
                     App = (Application)ScriptRuntimeConfigs.EventSender;
             }
+
+            RevitAppResolver.SeedSessionUIApplication(
+                ScriptRuntimeConfigs.CommandData != null
+                    ? ScriptRuntimeConfigs.CommandData.Application
+                    : ScriptRuntimeConfigs.UIApp);
 
             // prepare results
             ExecutionResult = ScriptExecutorResultCodes.Succeeded;
@@ -319,8 +335,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // revit
         public string DocumentName {
             get {
-                if (UIApp != null && UIApp.ActiveUIDocument != null)
-                    return UIApp.ActiveUIDocument.Document.Title;
+                var uidoc = ActiveUIDocument;
+                if (uidoc != null)
+                    return uidoc.Document.Title;
                 else
                     return string.Empty;
             }
@@ -328,8 +345,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public string DocumentPath {
             get {
-                if (UIApp != null && UIApp.ActiveUIDocument != null)
-                    return UIApp.ActiveUIDocument.Document.PathName;
+                var uidoc = ActiveUIDocument;
+                if (uidoc != null)
+                    return uidoc.Document.PathName;
                 else
                     return string.Empty;
             }
@@ -355,13 +373,61 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public UIControlledApplication UIControlledApp { get; set; }
 
+        /// <summary>
+        /// The active <see cref="UIDocument"/> behind <see cref="UIApp"/>, or
+        /// <c>null</c> when there is no usable UI document.
+        /// </summary>
+        /// <remarks>
+        /// <b>Invariant:</b> never throws. Because <see cref="UIApp"/> is resolved
+        /// for DB-only event hooks too, <c>UIApp.ActiveUIDocument</c> can now raise
+        /// there where it used to be unreachable behind a null handle. Revit
+        /// refusing an active document is the same condition as there not being
+        /// one, so every consumer goes through here instead of reading
+        /// <c>UIApp.ActiveUIDocument</c> directly.
+        /// </remarks>
+        public UIDocument ActiveUIDocument {
+            get {
+                try {
+                    return UIApp != null ? UIApp.ActiveUIDocument : null;
+                }
+                catch (Exception ex) {
+                    logger.Debug("No active UIDocument available | {0}", ex.Message);
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// UI application handle for this runtime, resolved from whichever
+        /// application handle the runtime was handed. This is the value the
+        /// <c>__revit__</c> builtin carries, so it is always a
+        /// <see cref="UIApplication"/> or <c>null</c> - never a bare
+        /// <see cref="Application"/>, <see cref="ControlledApplication"/> or
+        /// <see cref="UIControlledApplication"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Warning:</b> in a DB-only <c>Application_*</c> event hook the handle
+        /// is resolved by wrapping the event's <see cref="Application"/>, which
+        /// Revit may leave without an <c>ActiveUIDocument</c> for the duration of
+        /// the event. The handle is live regardless, and
+        /// <see cref="ScriptRuntimeConfigs.EventSender"/> still holds the raw
+        /// sender.
+        ///
+        /// <para>The resolved handle is cached for the lifetime of the runtime and
+        /// is not re-resolved once the runtime is disposed. Null when no UI
+        /// application can be reached, including before a session handle has
+        /// been seeded during host startup.</para>
+        /// </remarks>
         public UIApplication UIApp {
             get {
                 if (ScriptRuntimeConfigs.CommandData != null)
                     return ScriptRuntimeConfigs.CommandData.Application;
-                else if (_uiApp != null)
-                    return _uiApp;
-                return null;
+
+                if (_uiApp == null && !IsDisposed)
+                    _uiApp = RevitAppResolver.GetUIApplication(
+                        (object)UIControlledApp ?? (object)ControlledApp ?? _app);
+
+                return _uiApp;
             }
 
             set {
@@ -370,8 +436,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         // output
+        /// <summary>
+        /// This runtime's output window, created on first use.
+        /// </summary>
+        /// <remarks>
+        /// Warning: returns null on any thread but the host's UI thread, whatever the state of the
+        /// window. A <see cref="ScriptConsole"/> is WPF, so both constructing one and calling into
+        /// one is illegal off that thread, and unhandled there it takes Revit down. Callers that
+        /// run on background threads - the Routes HTTP workers, script-spawned threads - must treat
+        /// null as "no window" and let <see cref="ScriptIO"/> buffer and hand the text over.
+        /// <para>
+        /// <see cref="ScriptOutputUiGate.CaptureHostUiThread"/> runs in this runtime's constructor
+        /// because a runtime is only ever constructed on the host's UI thread; that is what lets
+        /// the gate tell the UI thread apart from a worker.
+        /// </para>
+        /// </remarks>
         public ScriptConsole OutputWindow {
             get {
+                if (!ScriptOutputUi.MayCreateOutputUi) {
+                    ReportOutputUiUnavailable();
+                    return null;
+                }
+
                 if (ScriptOutput.IsStartupRuntime(this)) {
                     ScriptOutput.ConfigureForRuntime(this);
                     return ScriptOutput.GetDefault(UIApp, ScriptRuntimeConfigs.DebugMode).window;
@@ -381,7 +467,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 var re = _scriptOutput.TryGetTarget(out output);
                 if (re && output != null && !output.ClosedByUser)
                     return output;
-
                 var newOutput = new ScriptConsole(ScriptRuntimeConfigs.DebugMode, UIApp);
                 newOutput.OutputTitle = ScriptData.CommandName;
                 newOutput.OutputId = ScriptData.CommandUniqueId;
@@ -395,6 +480,47 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
                 return newOutput;
             }
+        }
+
+        /// <summary>
+        /// The window a background hand-off may render into, without resurrecting one the user
+        /// closed: <see cref="OutputWindow"/> builds a replacement, which would reopen it on the
+        /// next write from a thread that is not the host UI thread.
+        /// </summary>
+        /// <returns>The window to render into, or null when the user closed it.</returns>
+        public ScriptConsole OpenOutputWindow {
+            get {
+                if (!ScriptOutputUi.MayCreateOutputUi) {
+                    ReportOutputUiUnavailable();
+                    return null;
+                }
+
+                ScriptConsole output;
+                var re = _scriptOutput.TryGetTarget(out output);
+                if (!re || output == null)
+                    return OutputWindow;
+                return output.ClosedByUser ? null : output;
+            }
+        }
+
+        private int _outputUiUnavailableReported;
+
+        /// <summary>
+        /// Record, once per runtime, that output arrived from a thread that may not touch the
+        /// output window. Goes to the runtime log only: the record is about the output path
+        /// failing, so it must not try to use it.
+        /// </summary>
+        private void ReportOutputUiUnavailable() {
+            if (System.Threading.Interlocked.Exchange(ref _outputUiUnavailableReported, 1) != 0)
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "Output for runtime {0} ('{1}') was produced on {2} and is not shown in an output "
+                    + "window; it is written to the runtime log instead. The output console is WPF "
+                    + "and can only be created on the host UI thread.",
+                ExecId,
+                ScriptData?.CommandName,
+                ScriptOutputUi.DescribeCallingThread());
         }
 
         public ScriptIO OutputStream {
