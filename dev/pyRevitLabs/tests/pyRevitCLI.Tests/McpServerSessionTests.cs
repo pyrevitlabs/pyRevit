@@ -39,6 +39,26 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void EveryRevitCallNamesTheClientFromInitialize() {
+        var initialize = Request(1, "initialize", new JObject {
+            ["protocolVersion"] = "2025-06-18",
+            ["clientInfo"] = new JObject { ["name"] = "Claude Code", ["version"] = "2.0" },
+        });
+
+        Serve(initialize, ToolCall(2, "get_context"), ToolCall(3, "list_revit_instances"));
+
+        Assert.Equal("Claude Code", Assert.Single(host.RequestsFor("get_context"))["params"].Value<string>("client"));
+        Assert.Equal("Claude Code", Assert.Single(host.RequestsFor("ping"))["params"].Value<string>("client"));
+    }
+
+    [Fact]
+    public void WithoutClientInfoNoClientIsSent() {
+        Single(ToolCall(1, "get_context"));
+
+        Assert.Null(Assert.Single(host.RequestsFor("get_context"))["params"]["client"]);
+    }
+
+    [Fact]
     public void AnInstanceThatReportsNoSessionIsListedWithout() {
         var listed = Payload(Single(ToolCall(1, "list_revit_instances")));
 

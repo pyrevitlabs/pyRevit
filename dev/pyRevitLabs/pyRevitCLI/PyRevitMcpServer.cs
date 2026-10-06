@@ -39,6 +39,7 @@ namespace pyRevitCLI {
         private readonly SemaphoreSlim revitGate = new SemaphoreSlim(1, 1);
         private readonly List<McpTool> tools;
         private TextWriter output;
+        private volatile string clientName;
 
         private PyRevitMcpServer(string defaultRevit) {
             this.defaultRevit = defaultRevit;
@@ -109,7 +110,12 @@ namespace pyRevitCLI {
             Task.WaitAll(inFlight.ToArray());
         }
 
-        private static JObject Initialize(JObject parameters) {
+        /// <remarks>
+        /// Remembers the client's name from <c>clientInfo</c>, so every request to Revit can say
+        /// which client sent it and the agent panel can show it.
+        /// </remarks>
+        private JObject Initialize(JObject parameters) {
+            clientName = (parameters["clientInfo"]?["name"] as JValue)?.Value as string;
             var requested = parameters.Value<string>("protocolVersion");
             return new JObject {
                 ["protocolVersion"] = SupportedProtocolVersions.Contains(requested) ? requested : LatestProtocolVersion,
@@ -203,7 +209,7 @@ namespace pyRevitCLI {
                 var entry = instance.ToJson();
                 revitGate.Wait();
                 try {
-                    var pong = PyRevitAgentClient.Call(instance, "ping") as JObject;
+                    var pong = PyRevitAgentClient.Call(instance, "ping", WithClient(new JObject())) as JObject;
                     entry["responding"] = true;
                     if (pong?["session"] is JObject session)
                         entry["session"] = session;
@@ -224,11 +230,18 @@ namespace pyRevitCLI {
             var instance = PyRevitAgentClient.Resolve(selector);
             revitGate.Wait();
             try {
-                return PyRevitAgentClient.Call(instance, method, parameters);
+                return PyRevitAgentClient.Call(instance, method, WithClient(parameters));
             }
             finally {
                 revitGate.Release();
             }
+        }
+
+        private JObject WithClient(JObject parameters) {
+            var name = clientName;
+            if (!string.IsNullOrWhiteSpace(name))
+                parameters["client"] = name;
+            return parameters;
         }
 
         private JToken RunScript(JObject arguments, string mode) {
