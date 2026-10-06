@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-""" This module contains functions to generate HTML cards for use in pyRevit output. """
+"""This module contains functions to generate HTML cards for use in pyRevit output."""
 
 
 def card_start_style(limit, value, alt):

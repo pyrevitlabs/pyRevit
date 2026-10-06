@@ -5,6 +5,7 @@ using System.Windows.Media;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Security;
 
 namespace pyRevitLabs.PyRevit {
     public static class PyRevitConsts {
@@ -120,6 +121,21 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsLoadCoreAPIKey = "core_api";
         public const bool ConfigsConfigsLoadCoreAPIDefault = false;
 
+        public const string ConfigsAgentSection = "agent";
+        public const string ConfigsAgentEnabledKey = "enabled";
+        public const bool ConfigsAgentEnabledDefault = false;
+        public const string ConfigsAgentPolicyKey = "policy";
+        public const string ConfigsAgentPolicyReadOnly = "readonly";
+        public const string ConfigsAgentPolicyAsk = "ask";
+        public const string ConfigsAgentPolicyAuto = "auto";
+        public const string ConfigsAgentPolicyDefault = ConfigsAgentPolicyAsk;
+        public const string ConfigsAgentEngineKey = "engine";
+        public const string ConfigsAgentEngineIronPython = "ironpython";
+        public const string ConfigsAgentEngineCPython = "cpython";
+        public const string ConfigsAgentEngineDefault = ConfigsAgentEngineIronPython;
+        public const string ConfigsAgentUserSkillsEnabledKey = "user_skills";
+        public const bool ConfigsAgentUserSkillsEnabledDefault = false;
+
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
         public const bool ConfigsTelemetryUTCTimestampsDefault = true;
@@ -145,13 +161,29 @@ namespace pyRevitLabs.PyRevit {
         public const string DefaultExtensionRepoDefaultBranch = "master";
         public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionDisabledKey = "disabled";
-        // per-extension credential keys; must match what the in-Revit
-        // extension manager and updater read from the config file
+        /// <summary>
+        /// The only key a credential is stored under; its value is a DPAPI-sealed
+        /// blob, never the secret. Aliased from the protector so the key and the
+        /// format it holds cannot drift apart, and mirrored in
+        /// pyrevit.coreutils.credentials.
+        /// </summary>
+        public const string ExtensionCredentialKey = ExtensionCredentialProtector.ConfigKeyName;
         public const string ExtensionPrivateRepoKey = "private_repo";
-        public const string ExtensionUsernameKey = "username";
-        public const string ExtensionPasswordKey = "password";
-        public const string ExtensionTokenKey = "token";
+        /// <summary>
+        /// Username the in-Revit updater authenticates a GitHub token with. GitHub
+        /// ignores it and only checks the token, but libgit2 needs a username to
+        /// build a credential pair at all.
+        /// </summary>
         public const string ExtensionTokenDefaultUsername = "oauth2";
+        /// <summary>
+        /// Legacy plaintext credential keys, read only by the one-time migration in
+        /// pyrevit.versionmgr.upgrade and by RemoveLegacyCredentialKeys on a
+        /// re-persist. Aliased from the protector so a new legacy key cannot be
+        /// added here without the CLI clearing it too.
+        /// </summary>
+        public const string ExtensionUsernameKey = ExtensionCredentialProtector.LegacyUsernameKeyName;
+        public const string ExtensionPasswordKey = ExtensionCredentialProtector.LegacyPasswordKeyName;
+        public const string ExtensionTokenKey = ExtensionCredentialProtector.LegacyTokenKeyName;
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
         public const string ExtensionUIBinDirName = "bin";
@@ -187,8 +219,6 @@ namespace pyRevitLabs.PyRevit {
         public const string BundleScriptRevitFamilyPostfix = ".rfa";
 
         // loader settings
-        public const string ConfigsNewLoaderKey = "new_loader";
-        public const bool ConfigsNewLoaderDefault = true;
         public const string ConfigsReadScriptMetadataKey = "read_script_metadata";
         public const bool ConfigsReadScriptMetadataDefault = true;
 

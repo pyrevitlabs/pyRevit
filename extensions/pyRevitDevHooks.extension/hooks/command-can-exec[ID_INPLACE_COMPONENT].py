@@ -5,13 +5,14 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "cancellable?": str(args.Cancellable),
         "command_id": str(args.CommandId.Name),
         "doc_title": str(revit.doc.Title),
         "can_exec": str(args.CanExecute),
-    }
+    },
 )
 
 args.CanExecute = True

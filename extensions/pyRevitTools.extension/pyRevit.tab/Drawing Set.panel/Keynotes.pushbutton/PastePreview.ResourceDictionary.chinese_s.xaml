@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">粘贴关键注释</system:String>
+    <system:String x:Key="TakeAllFromSource">全部取自源</system:String>
+    <system:String x:Key="OnlyNew">仅新增</system:String>
+    <system:String x:Key="TakeNone">全不选</system:String>
+    <system:String x:Key="ColKey">关键字</system:String>
+    <system:String x:Key="ColSource">来自源</system:String>
+    <system:String x:Key="ColTarget">目标中的现有内容</system:String>
+    <system:String x:Key="ColResult">结果</system:String>
+    <system:String x:Key="PasteAction">粘贴</system:String>
+    <system:String x:Key="CancelAction">取消</system:String>
+    <system:String x:Key="HeaderInto">将 {0} 条记录从“{1}”粘贴到“{2}”。</system:String>
+    <system:String x:Key="HeaderNote">勾选的行将写入目标关键注释文件；其余内容保持不变。</system:String>
+    <system:String x:Key="FooterNote">采用冲突行只会替换目标的文本 — 其在树中的位置保持不变。</system:String>
+    <system:String x:Key="SummaryCounts">新增 {0} · 替换 {1} · 保持 {2}</system:String>
+    <system:String x:Key="GroupTag">（组）</system:String>
+    <system:String x:Key="ResultAdd">新增</system:String>
+    <system:String x:Key="ResultReplace">替换文本</system:String>
+    <system:String x:Key="ResultIdentical">已存在</system:String>
+    <system:String x:Key="ResultLocked">已被 {0} 锁定</system:String>
+    <system:String x:Key="ResultNoParent">无上级组</system:String>
+    <system:String x:Key="UnknownSource">另一个项目</system:String>
+    <system:String x:Key="SameFileNote">（同一关键注释文件）</system:String>
+    <system:String x:Key="UnknownUser">其他用户</system:String>
+</ResourceDictionary>

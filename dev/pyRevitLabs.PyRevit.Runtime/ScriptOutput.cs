@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Threading;
@@ -36,6 +38,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private string _appVersion;
         private bool _hasErrors;
         private bool _isSessionOutput;
+
+        private const int MaxHeldRecords = 4096;
+        private const string HeldRecordsLoggerName = "pyrevit.output";
+        private readonly HeldRecordBuffer _heldRecords = new HeldRecordBuffer(MaxHeldRecords);
         private int _tableCounter;
 
         private ScriptOutput(UIApplication uiApp = null, bool debugMode = false) {
@@ -216,7 +222,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (_window == null || _window.ClosedByUser) {
+                    _heldRecords.Close();
                     _window = new ScriptConsole(_debugMode, _uiApp);
+                    _window.Closed += hold_records_while_closed;
                     if (string.IsNullOrEmpty(_window.OutputId))
                         _window.OutputId = "pyrevit-output";
                     ApplyWindowIdentity(_window);
@@ -224,12 +232,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // protected from close_other_outputs
                     _window.IsSessionOutput = _isSessionOutput;
                     _outputStream = null;
+                    release_held_records();
                 }
                 return _window;
             }
         }
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
+
+        /// <summary>
+        /// The window output may currently be rendered into, without resurrecting one the user
+        /// closed: the <see cref="window"/> getter replaces a closed window, which would reopen it
+        /// on the next background write.
+        /// </summary>
+        /// <returns>The window to render into, or null when the user closed it.</returns>
+        internal ScriptConsole open_window {
+            get {
+                if (_window != null && _window.ClosedByUser)
+                    return null;
+                return window;
+            }
+        }
 
         public ScriptIO output_stream {
             get {
@@ -240,19 +263,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (_outputStream == null) {
-                    _outputStream = new ScriptIO(window);
+                    _outputStream = new ScriptIO(this);
                     _outputStream.PrintDebugInfo = _debugMode;
                 }
                 return _outputStream;
             }
         }
 
-        public System.Windows.Forms.WebBrowser renderer => window.renderer;
         public string output_id => window.OutputId;
         public string output_uniqueid => window.OutputUniqueId;
         public bool is_closed_by_user => window.ClosedByUser;
         public string last_line => window.GetLastLine();
         public bool has_errors => _hasErrors;
+
+        /// <summary>Renderer engine identity, e.g. "WebView2/Chromium".</summary>
+        public string renderer_engine => window.RendererEngine;
+
+        /// <summary>Full renderer runtime version string, e.g. "151.0.4129.107".</summary>
+        public string renderer_version => window.RendererFullVersion;
+
+        /// <summary>
+        /// Evaluate JavaScript in the live output document: string results are
+        /// decoded, other results (number, boolean, object) come back as raw JSON.
+        /// </summary>
+        public string evaluate_js(string java_script) => window.RunJavaScript(java_script);
 
         public bool debug_mode {
             get { return output_stream.PrintDebugInfo; }
@@ -264,9 +298,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private bool IsWindowClosed => _window != null && _window.ClosedByUser;
 
-        // True only when a window already exists and the user hasn't closed it. Lets the
-        // logger reach an open console without lazily creating one via the `window` getter.
-        internal bool IsWindowReady => _window != null && !_window.ClosedByUser;
+        /// <summary>
+        /// True only when a window already exists and has not been closed. Lets callers
+        /// reach an open console without lazily creating one via the <see cref="window"/> getter.
+        /// </summary>
+        public bool IsWindowReady => _window != null && !_window.ClosedByUser;
 
         public void mark_error() {
             _hasErrors = true;
@@ -291,34 +327,102 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal void write_log_record(string content, bool markError) {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher != null
-                    && !dispatcher.HasShutdownStarted
-                    && !dispatcher.HasShutdownFinished
-                    && !dispatcher.CheckAccess()) {
-                dispatcher.BeginInvoke(
-                    new Action(() => write_log_record(content, markError)),
-                    DispatcherPriority.Background);
+            if (markError)
+                mark_error();
+
+            if (ScriptOutputUi.MayCreateOutputUi) {
+                write_line(content);
                 return;
             }
 
-            if (markError)
-                mark_error();
-            write_line(content);
+            if (ScriptOutputUi.TryBeginInvoke(
+                    () => write_log_record(content, markError), DispatcherPriority.Background))
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "A log record was produced on {0} and discarded: no host UI thread was available "
+                    + "to show it in an output window.",
+                ScriptOutputUi.DescribeCallingThread());
+        }
+
+        /// <summary>
+        /// Writes a log record the loader forwarded, which must never be the reason a window
+        /// appears. The session output holds it until its window exists; any other output drops
+        /// it when it has no open window.
+        /// </summary>
+        /// <remarks>
+        /// The session output window is created part-way through a session load. Everything
+        /// logged before that point - on a first load, the whole preload including its [PERF]
+        /// checkpoints - would otherwise reach the runtime log file and nothing else.
+        /// <para>
+        /// Only the session output holds, because only it gets its window through the
+        /// <see cref="window"/> getter, where the backlog is released. A command's window is
+        /// created by its <see cref="ScriptRuntime"/> and written through the runtime's own stream,
+        /// so nothing here would ever see it open.
+        /// </para>
+        /// <para>
+        /// Invariant: held records are released when the window is created, whatever opened it -
+        /// a later log record, a startup script's <c>print()</c>, or a direct write - and before
+        /// anything else reaches it. Records forwarded during the release are held too and come
+        /// out after it. If no window ever opens, records age out oldest-first past
+        /// <see cref="MaxHeldRecords"/> and the release says how many were lost.
+        /// </para>
+        /// </remarks>
+        internal void write_forwarded_log_record(string content, bool markError) {
+            if (BoundRuntime == null && _heldRecords.TryHold(content, markError))
+                return;
+            if (IsWindowReady)
+                write_log_record(content, markError);
+        }
+
+        private void hold_records_while_closed(object sender, EventArgs e) {
+            if (ReferenceEquals(sender, _window))
+                _heldRecords.Close();
+        }
+
+        private void release_held_records() {
+            while (true) {
+                int dropped;
+                var released = _heldRecords.DrainOrOpen(out dropped);
+                if (released.Length == 0 && dropped == 0)
+                    return;
+
+                if (dropped > 0) {
+                    write_line(ScriptLoggerService.FormatVisibleEntry(
+                        ScriptLogLevel.Warning,
+                        HeldRecordsLoggerName,
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "{0} earlier records were dropped before the output window opened; "
+                                + "see the runtime log for the full session.",
+                            dropped)));
+                }
+
+                foreach (var record in released) {
+                    if (record.MarkError)
+                        mark_error();
+                    write_line(record.Content);
+                }
+            }
         }
 
         private void log_to_activity(Action<ScriptConsole> writeLog) {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher != null
-                    && !dispatcher.HasShutdownStarted
-                    && !dispatcher.HasShutdownFinished
-                    && !dispatcher.CheckAccess()) {
-                dispatcher.BeginInvoke(
-                    new Action(() => log_to_activity(writeLog)),
-                    DispatcherPriority.Background);
+            if (ScriptOutputUi.IsHostUiThread) {
+                write_activity_log(writeLog);
                 return;
             }
 
+            if (ScriptOutputUi.TryBeginInvoke(
+                    () => write_activity_log(writeLog), DispatcherPriority.Background))
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "An activity-bar log record was produced on {0} and discarded: no host UI thread "
+                    + "was available to show it.",
+                ScriptOutputUi.DescribeCallingThread());
+        }
+
+        private void write_activity_log(Action<ScriptConsole> writeLog) {
             show_logpanel();
             writeLog(window);
         }
@@ -357,9 +461,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 window.SelfDestructTimer(seconds);
         }
 
+        /// <summary>
+        /// Mark this output as the session-loader output so close_other_outputs spares it.
+        /// </summary>
+        /// <remarks>
+        /// Does not create a window: the flag is applied to an open window now, or to the
+        /// next window the <see cref="window"/> getter creates.
+        /// </remarks>
         public void set_session_output(bool isSessionOutput) {
             _isSessionOutput = isSessionOutput;
-            window.IsSessionOutput = isSessionOutput;
+            if (IsWindowReady)
+                _window.IsSessionOutput = isSessionOutput;
         }
 
         public void close() { window.Close(); }
@@ -383,12 +495,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void set_font(string font_family, float font_size) {
-            if (renderer != null)
-                renderer.Font = new System.Drawing.Font(
-                    font_family,
-                    font_size,
-                    System.Drawing.FontStyle.Regular,
-                    System.Drawing.GraphicsUnit.Point);
+            window.SetFont(font_family, font_size);
         }
 
         public void set_icon(string iconpath) { window.SetIcon(iconpath); }
@@ -409,7 +516,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void open_url(string dest_url) {
-            renderer?.Navigate(dest_url, false);
+            window.NavigateInWindow(dest_url);
         }
 
         public void open_page(string dest_file) {
@@ -591,9 +698,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public string get_head_html() {
-            window.WaitReadyBrowser();
-            var head = renderer?.Document?.GetElementsByTagName("head");
-            return head != null && head.Count > 0 ? head[0].InnerHtml : string.Empty;
+            return window.GetHeadHtml();
         }
 
         public void inject_to_head(string element_tag, string element_contents, object attribs = null) {
@@ -617,22 +722,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void InjectElement(string targetName, string elementTag, string contents, object attribs) {
             output_stream.Flush();
-            window.WaitReadyBrowser();
-            var document = renderer?.Document;
-            if (document == null)
-                return;
-
-            var element = document.CreateElement(elementTag);
-            if (!string.IsNullOrEmpty(contents))
-                element.InnerHtml = contents;
-
-            foreach (var attr in ToDictionary(attribs))
-                element.SetAttribute(attr.Key, attr.Value);
-
-            var targets = document.GetElementsByTagName(targetName);
-            if (targets != null && targets.Count > 0)
-                targets[0].AppendChild(element);
-            window.WaitReadyBrowser();
+            var attribsDict = ToDictionary(attribs);
+            window.InjectHtmlElement(targetName, elementTag, contents ?? string.Empty, attribsDict);
         }
 
         private static string MarkdownToHtml(string markdown) {
@@ -757,6 +848,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static string InlineMarkdown(string text) {
             var encoded = text ?? string.Empty;
+            // links are converted first so emphasis patterns never touch urls
+            encoded = Regex.Replace(
+                encoded,
+                @"\[([^\]]+)\]\(([^)\s""']+)(?:\s+""[^""]*"")?\)",
+                match => string.Format(
+                    "<a href=\"{0}\" style=\"color:#f39c12;\">{1}</a>",
+                    WebUtility.HtmlEncode(match.Groups[2].Value),
+                    match.Groups[1].Value));
             encoded = Regex.Replace(encoded, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
             encoded = Regex.Replace(encoded, @"__(.+?)__", "<strong>$1</strong>");
             encoded = Regex.Replace(encoded, @"\*(.+?)\*", "<em>$1</em>");

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-""" Module to search for files in a directory """
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+"""Module to search for files in a directory"""
+
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
 import os
-import itertools
 import fnmatch
 
 from pyrevit import script, forms
@@ -31,6 +31,7 @@ class FileFinder:
     exclude_by_pattern(str)
         Filters self.paths by the given regex pattern.
     """
+
     def __init__(self, directory):
         """
         Parameters
@@ -54,14 +55,12 @@ class FileFinder:
         for root, _, files in os.walk(self.directory):
             for filename in fnmatch.filter(files, pattern):
                 path = os.path.join(root, filename)
-                logger.debug('Found file: {}'.format(path))
+                logger.debug("Found file: {}".format(path))
                 self.paths.add(path)
 
         if len(self.paths) == 0:
-            logger.debug(
-                'No {} files in "{}" found.'.format(pattern, self.directory))
-            forms.alert(
-                'No {} files in "{}" found.'.format(pattern, self.directory))
+            logger.debug('No {} files in "{}" found.'.format(pattern, self.directory))
+            forms.alert('No {} files in "{}" found.'.format(pattern, self.directory))
             script.exit()
 
     def exclude_by_pattern(self, pattern):
@@ -73,5 +72,5 @@ class FileFinder:
         pattern : str
             Regular expression pattern
         """
-        self.paths = itertools.ifilterfalse(    #pylint: disable=no-member
-            re.compile(pattern).match, self.paths)
+        exclude = re.compile(pattern).match
+        self.paths = {path for path in self.paths if not exclude(path)}

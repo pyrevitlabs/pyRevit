@@ -302,8 +302,9 @@ def display_avf_values(
                     face = get_face_facing_direction(element, view.ViewDirection)
                     if face is None:
                         mlogger.warning(
-                            "No viewer-facing face found for element ID: "
-                            "{}".format(elem_id)
+                            "No viewer-facing face found for element ID: {}".format(
+                                elem_id
+                            )
                         )
                         results[elem_id] = (False, None)
                         continue

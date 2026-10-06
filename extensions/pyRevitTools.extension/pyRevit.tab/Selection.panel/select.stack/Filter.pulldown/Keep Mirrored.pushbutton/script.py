@@ -6,6 +6,7 @@ Shift-Click:
 Keep only not-mirrored elements. If nothing is selected, pick a region to
 filter non-mirrored elements from.
 """
+
 from pyrevit import revit, EXEC_PARAMS
 from pyrevit import UI
 
@@ -27,8 +28,7 @@ class MirroredSelectionFilter(UI.Selection.ISelectionFilter):
 selection = list(revit.get_selection())
 if selection:
     filtered = revit.select.select_mirrored(
-        selection,
-        mirrored=not EXEC_PARAMS.config_mode
+        selection, mirrored=not EXEC_PARAMS.config_mode
     )
     revit.get_selection().set_to(filtered)
 else:

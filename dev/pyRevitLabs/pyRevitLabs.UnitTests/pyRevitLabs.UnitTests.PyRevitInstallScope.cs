@@ -1,10 +1,13 @@
 using System;
 using System.IO;
+using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.PyRevit;
+using pyRevitExtensionParser;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
@@ -29,10 +32,19 @@ namespace pyRevitLabs.UnitTests {
                 Path.Combine(_tempRoot, "ProgramDataPyRevit"));
             PyRevitInstallScope.ClearCachedInstallScope();
             PyRevitInstallScope.SetRuntimeInstallRoot(null);
+            PyRevitConfigService.Reload();
+        }
+
+        private static void SetUserExtensions(string configPath, params string[] extensionPaths) {
+            string encodedPaths = string.Join(
+                ",",
+                extensionPaths.Select(path => "\"" + path.Replace("\\", "\\\\") + "\""));
+            File.WriteAllText(configPath, "[core]\r\nuserextensions = [" + encodedPaths + "]\r\n");
         }
 
         [TestCleanup]
         public void Cleanup() {
+            PyRevitConfigService.Reload();
             PyRevitInstallScope.ClearCachedInstallScope();
             PyRevitInstallScope.SetRuntimeInstallRoot(null);
             Environment.SetEnvironmentVariable(
@@ -368,6 +380,9 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void MigrateSplitAdminConfig_MergesClonesAndExtensionSections() {
+            if (!PyRevitInstallScope.IsElevatedProcess())
+                Assert.Inconclusive("Split-admin migration requires an elevated process.");
+
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
                 PyRevitInstallScope.ConfigScopeAllUsers);
@@ -388,6 +403,7 @@ namespace pyRevitLabs.UnitTests {
                     "[pyRevitTemplates.extension]\r\ndisabled = true\r\n");
 
                 PyRevitInstallScope.ClearCachedInstallScope();
+                PyRevitConfigService.Reload();
                 PyRevitConfigs.GetConfigFile();
 
                 string merged = File.ReadAllText(programDataConfig);
@@ -436,6 +452,269 @@ namespace pyRevitLabs.UnitTests {
                 PyRevitInstallScope.ClearCachedInstallScope();
                 if (File.Exists(configPath))
                     File.Delete(configPath);
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_AllUsers_WritableMachine_MergesPerUserExtensions() {
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string machineExtDir = Path.Combine(_tempRoot, "MachineExt");
+            string userExtDir = Path.Combine(_tempRoot, "UserExt");
+            Directory.CreateDirectory(machineExtDir);
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
+
+                var roots = ExtensionParser.GetExtensionRoots();
+
+                CollectionAssert.Contains(roots, machineExtDir);
+                CollectionAssert.Contains(roots, userExtDir);
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_AllUsers_LockedMachine_SkipsPerUserExtensions() {
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string machineExtDir = Path.Combine(_tempRoot, "MachineExt");
+            string userExtDir = Path.Combine(_tempRoot, "UserExt");
+            Directory.CreateDirectory(machineExtDir);
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
+                File.SetAttributes(machineConfigPath, FileAttributes.ReadOnly);
+
+                var roots = ExtensionParser.GetExtensionRoots();
+
+                CollectionAssert.Contains(roots, machineExtDir);
+                CollectionAssert.DoesNotContain(roots, userExtDir);
+            }
+            finally {
+                if (File.Exists(machineConfigPath))
+                    File.SetAttributes(machineConfigPath, FileAttributes.Normal);
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_AllUsers_UnwritableMachineFallback_MergesMachineExtensions() {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                    System.Runtime.InteropServices.OSPlatform.Windows))
+                Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string machineExtDir = Path.Combine(_tempRoot, "MachineExt");
+            string userExtDir = Path.Combine(_tempRoot, "UserExt");
+            Directory.CreateDirectory(machineExtDir);
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                File.WriteAllText(userConfigPath, "[core]\r\n");
+                File.SetAttributes(userConfigPath, FileAttributes.Normal);
+
+                using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    var roots = ExtensionParser.GetExtensionRoots();
+
+                    CollectionAssert.Contains(roots, machineExtDir);
+                }
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_AllUsers_DedupesAcrossScopes() {
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string sharedExtDir = Path.Combine(_tempRoot, "SharedExt");
+            string machineOnlyExtDir = Path.Combine(_tempRoot, "MachineOnlyExt");
+            Directory.CreateDirectory(sharedExtDir);
+            Directory.CreateDirectory(machineOnlyExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, sharedExtDir, machineOnlyExtDir);
+                SetUserExtensions(userConfigPath, sharedExtDir.ToUpperInvariant(), sharedExtDir);
+
+                var roots = ExtensionParser.GetExtensionRoots();
+
+                int sharedOccurrences = roots.Count(r =>
+                    string.Equals(r, sharedExtDir, StringComparison.OrdinalIgnoreCase));
+                Assert.AreEqual(1, sharedOccurrences,
+                    "shared path must be deduped across machine and per-user configs (case-insensitive)");
+                CollectionAssert.Contains(roots, machineOnlyExtDir);
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_PerUser_IgnoresMachineExtensions() {
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string machineExtDir = Path.Combine(_tempRoot, "MachineExt");
+            string userExtDir = Path.Combine(_tempRoot, "UserExt");
+            Directory.CreateDirectory(machineExtDir);
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+
+                var roots = ExtensionParser.GetExtensionRoots();
+
+                CollectionAssert.Contains(roots, userExtDir);
+                CollectionAssert.DoesNotContain(roots, machineExtDir);
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_AllUsers_UnwritableUserFallback_MergesMachineExtensions() {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                    System.Runtime.InteropServices.OSPlatform.Windows))
+                Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string machineExtDir = Path.Combine(_tempRoot, "MachineExt");
+            string userExtDir = Path.Combine(_tempRoot, "UserExt");
+            Directory.CreateDirectory(machineExtDir);
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
+
+                using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (File.Open(userConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    var roots = ExtensionParser.GetExtensionRoots();
+
+                    CollectionAssert.Contains(roots, userExtDir);
+                    CollectionAssert.Contains(roots, machineExtDir);
+                }
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
+        public void GetExtensionRoots_AllUsers_FallbackWithoutMachineExtensions_ReturnsUserOnly() {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                    System.Runtime.InteropServices.OSPlatform.Windows))
+                Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string userExtDir = Path.Combine(_tempRoot, "UserOnlyExt");
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                File.WriteAllText(machineConfigPath, "[core]\r\n");
+                SetUserExtensions(userConfigPath, userExtDir);
+
+                using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    var roots = ExtensionParser.GetExtensionRoots();
+
+                    CollectionAssert.Contains(roots, userExtDir);
+                }
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
             }
         }
     }

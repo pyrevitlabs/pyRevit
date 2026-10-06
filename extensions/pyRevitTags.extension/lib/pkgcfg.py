@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Manage package configurations."""
+
 from collections import OrderedDict
 
 from pkgcommits import CommitTypes
@@ -15,13 +16,13 @@ class CommitConfigs(object):
 
     def __init__(self):
         commit_types = OrderedDict()
-        commit_types[CommitTypes.Created] = '■'
-        commit_types[CommitTypes.Issued] = '◊'
-        commit_types[CommitTypes.IssuedRe] = '□'
-        commit_types[CommitTypes.Updated] = '●'
-        commit_types[CommitTypes.Revised] = '●'
-        commit_types[CommitTypes.Merged] = '∩'
-        commit_types[CommitTypes.Deleted] = 'X'
+        commit_types[CommitTypes.Created] = "■"
+        commit_types[CommitTypes.Issued] = "◊"
+        commit_types[CommitTypes.IssuedRe] = "□"
+        commit_types[CommitTypes.Updated] = "●"
+        commit_types[CommitTypes.Revised] = "●"
+        commit_types[CommitTypes.Merged] = "∩"
+        commit_types[CommitTypes.Deleted] = "X"
 
         self._value_dict = commit_types
 
@@ -31,4 +32,4 @@ class CommitConfigs(object):
                 return ctype
 
     def get_commit_value(self, commit_type):
-        return self._value_dict.get(commit_type, '')
+        return self._value_dict.get(commit_type, "")

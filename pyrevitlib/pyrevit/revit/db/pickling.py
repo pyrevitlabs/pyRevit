@@ -1,5 +1,6 @@
 # pylint: disable=missing-docstring,invalid-name,too-few-public-methods
 """Methods and Classes to convert Revit types to serializable."""
+
 from pyrevit import PyRevitException, api
 from pyrevit import DB
 from pyrevit.compat import Iterable
@@ -8,7 +9,7 @@ from pyrevit.coreutils import logger
 from pyrevit.compat import get_elementid_value_func
 
 
-__all__ = ('serialize', 'deserialize')
+__all__ = ("serialize", "deserialize")
 
 
 mlogger = logger.get_logger(__name__)
@@ -39,6 +40,7 @@ class NoneSerializer(Serializable):
 
 class ElementId(Serializable):
     api_types = DB.ElementId
+
     def __init__(self, element_id):
         get_elementid_value = get_elementid_value_func()
         self.integer_value = get_elementid_value(element_id)
@@ -78,8 +80,7 @@ class Line(Serializable):
         self.end = XYZ(line.GetEndPoint(1))
 
     def deserialize(self):
-        return DB.Line.CreateBound(self.start.deserialize(),
-                                   self.end.deserialize())
+        return DB.Line.CreateBound(self.start.deserialize(), self.end.deserialize())
 
 
 class CurveLoop(Serializable):
@@ -106,9 +107,9 @@ class ViewOrientation3D(Serializable):
         self.up = XYZ(view_orientation_3d.UpDirection)
 
     def deserialize(self):
-        return DB.ViewOrientation3D(self.eye.deserialize(),
-                                    self.up.deserialize(),
-                                    self.forward.deserialize())
+        return DB.ViewOrientation3D(
+            self.eye.deserialize(), self.up.deserialize(), self.forward.deserialize()
+        )
 
 
 class Transform(Serializable):
@@ -158,33 +159,47 @@ class Grid(Serializable):
         from rpw import doc
 
         cView = doc.ActiveView
-        curves=gridline.GetCurvesInView(DB.DatumExtentType.ViewSpecific, cView)
+        curves = gridline.GetCurvesInView(DB.DatumExtentType.ViewSpecific, cView)
         cCurve = curves[0]
         start_curve = gridline.GetLeader(DB.DatumEnds.End0, cView)
         end_curve = gridline.GetLeader(DB.DatumEnds.End1, cView)
 
         if start_curve:
-          self.start_elbow = XYZ(start_curve.Elbow.X, start_curve.Elbow.Y, start_curve.Elbow.Z)
-          self.start_leader = XYZ(start_curve.End.X, start_curve.End.Y, start_curve.End.Z)
-          self.start_anchor = XYZ(start_curve.Anchor.X, start_curve.Anchor.Y, start_curve.Anchor.Z)
+            self.start_elbow = XYZ(
+                start_curve.Elbow.X, start_curve.Elbow.Y, start_curve.Elbow.Z
+            )
+            self.start_leader = XYZ(
+                start_curve.End.X, start_curve.End.Y, start_curve.End.Z
+            )
+            self.start_anchor = XYZ(
+                start_curve.Anchor.X, start_curve.Anchor.Y, start_curve.Anchor.Z
+            )
 
         if end_curve:
-          self.end_elbow = XYZ(end_curve.Elbow.X, end_curve.Elbow.Y, end_curve.Elbow.Z)
-          self.end_leader = XYZ(end_curve.End.X, end_curve.End.Y, end_curve.End.Z)
-          self.end_anchor = XYZ(end_curve.Anchor.X, end_curve.Anchor.Y, end_curve.Anchor.Z)
+            self.end_elbow = XYZ(
+                end_curve.Elbow.X, end_curve.Elbow.Y, end_curve.Elbow.Z
+            )
+            self.end_leader = XYZ(end_curve.End.X, end_curve.End.Y, end_curve.End.Z)
+            self.end_anchor = XYZ(
+                end_curve.Anchor.X, end_curve.Anchor.Y, end_curve.Anchor.Z
+            )
 
         self.grid_name = gridline.Name
         self.start = XYZ(cCurve.GetEndPoint(0))
         self.end = XYZ(cCurve.GetEndPoint(1))
 
         if isinstance(cCurve, DB.Arc):
-          self.center = XYZ(cCurve.Center.X, cCurve.Center.Y, cCurve.Center.Z)
+            self.center = XYZ(cCurve.Center.X, cCurve.Center.Y, cCurve.Center.Z)
 
         self.starts_with_bubble = gridline.HasBubbleInView(DB.DatumEnds.End0, cView)
-        self.start_bubble_visible = gridline.IsBubbleVisibleInView(DB.DatumEnds.End0, cView)
+        self.start_bubble_visible = gridline.IsBubbleVisibleInView(
+            DB.DatumEnds.End0, cView
+        )
 
         self.ends_with_bubble = gridline.HasBubbleInView(DB.DatumEnds.End1, cView)
-        self.end_bubble_visible = gridline.IsBubbleVisibleInView(DB.DatumEnds.End1, cView)
+        self.end_bubble_visible = gridline.IsBubbleVisibleInView(
+            DB.DatumEnds.End1, cView
+        )
 
     def deserialize(self):
         name = self.grid_name
@@ -196,7 +211,16 @@ class Grid(Serializable):
         start_curve = {self.start_leader, self.start_elbow, self.start_anchor}
         end_curve = {self.end_leader, self.end_elbow, self.end_anchor}
 
-        return name, start, end, center, bubble_start, bubble_end, start_curve, end_curve
+        return (
+            name,
+            start,
+            end,
+            center,
+            bubble_start,
+            bubble_end,
+            start_curve,
+            end_curve,
+        )
 
 
 def _serialize_items(iterable_obj):
@@ -207,7 +231,7 @@ def _serialize_items(iterable_obj):
 
 
 def serialize(api_object):
-    mlogger.debug('Attemping to serialize: %s', api_object)
+    mlogger.debug("Attemping to serialize: %s", api_object)
 
     # wrap none in a none serializer for none values
     if api_object is None:
@@ -218,21 +242,19 @@ def serialize(api_object):
         raise PyRevitException("Only Revit API types are supported.")
 
     # get available serializers
-    serializers = coreutils.get_all_subclasses(
-        [Serializable, EnumSerializable]
-        )
+    serializers = coreutils.get_all_subclasses([Serializable, EnumSerializable])
 
     # pick the compatible serializer
     try:
-        compatible_serializer = \
-            next(
-                x for x in serializers
-                if x.api_types and isinstance(api_object, x.api_types)
-                )
-        mlogger.debug('Serializer found for: %s', api_object)
+        compatible_serializer = next(
+            x
+            for x in serializers
+            if x.api_types and isinstance(api_object, x.api_types)
+        )
+        mlogger.debug("Serializer found for: %s", api_object)
         return compatible_serializer(api_object)
     except StopIteration:
-        mlogger.debug('Serializer not found for: %s', api_object)
+        mlogger.debug("Serializer not found for: %s", api_object)
         # if no deserializer found,
         # see if given data is iterable
         # NOTE: commented this out since .serialize should only get api objects
@@ -242,8 +264,8 @@ def serialize(api_object):
 
         # otherwise throw an exception
         raise PyRevitException(
-            "No serializers have been implemented for \"%s\"" % repr(api_object)
-            )
+            'No serializers have been implemented for "%s"' % repr(api_object)
+        )
 
 
 def deserialize(python_object):

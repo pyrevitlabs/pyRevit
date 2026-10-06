@@ -19,4 +19,3 @@ tooltip:
     Diese Skript richtet die aktuelle Kamera Ansicht senkrecht auf die  gewählte Fläche aus. Das Tool erstellt eine Skizzenebene über der  gewählten Fläche für die 3D Ansicht
   pt_br: Reorienta a câmera da vista 3D atual, perpendicular à face selecionada. Esta ferramenta definirá um plano de trabalho sobre a face selecionada para desenho 3D
 context: active-3d-view
-min_revit_version: 2016

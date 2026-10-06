@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.2
+    hooks:
+      - id: ruff-format
+        exclude: ^(site-packages/|pyrevitlib/rpw/|dev/modules/)
+  - repo: local
+    hooks:
+      - id: dotnet-format
+        name: dotnet format (C#)
+        entry: python dev/scripts/format_staged_csharp.py
+        language: system
+        files: \.cs$
+        exclude: ^dev/modules/
+      - id: ipy2-no-kwargs-trailing-comma
+        name: Normalize IPY2-incompatible **kwargs, (IronPython 2.7)
+        description: |
+          IronPython 2.7.12 -- the default pyRevit runtime -- raises
+          SyntaxError: unexpected token ',' on `**kwargs,` in multi-line
+          signatures or calls (pre-PEP-448 grammar). ruff format emits
+          this pattern under any supported target-version. This hook removes
+          only that incompatible comma after Ruff formats each file.
+        entry: python dev/scripts/check_ipy2_compat.py --fix
+        language: system
+        files: ^pyrevitlib/.*\.py$
+      - id: check-config-api
+        name: Check the Python config API contract
+        description: |
+          Fails the commit when the config API and the contract recorded in
+          docs/config-api.md disagree: a flat alias retargeted, removed, or
+          turned into a dynamic lookup, a section accessor that no longer
+          mirrors the C# service, or a new snake_case spelling introduced for a
+          setting the schema already declares.
+        entry: python dev/scripts/check_config_api.py
+        language: system
+        files: ^(pyrevitlib/|extensions/).*\.py$
+        pass_filenames: false

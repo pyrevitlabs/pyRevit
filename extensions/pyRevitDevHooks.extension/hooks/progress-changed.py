@@ -5,7 +5,8 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "cancellable?": str(args.Cancellable),
         "caption": str(args.Caption),
@@ -14,5 +15,5 @@ hl.log_hook(__file__,
         "position": str(args.Position),
         "stage": str(args.Stage),
     },
-    log_doc_access=True
+    log_doc_access=True,
 )

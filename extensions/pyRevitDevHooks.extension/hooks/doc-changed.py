@@ -6,7 +6,8 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "cancellable?": str(args.Cancellable),
         "doc": str(revit.doc),
@@ -16,5 +17,5 @@ hl.log_hook(__file__,
         "txn_names": str(list(args.GetTransactionNames())),
         "operation": str(args.Operation),
     },
-    log_doc_access=True
+    log_doc_access=True,
 )

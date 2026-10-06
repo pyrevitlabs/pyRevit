@@ -1,4 +1,5 @@
 """Revit application wrapper."""
+
 import types
 import sys
 
@@ -8,10 +9,12 @@ from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB, UI
 from pyrevit._perf import mark as _perfmark
+
 _perfmark("pyrevit.revit:entry")
 
-#pylint: disable=W0401
+# pylint: disable=W0401
 from pyrevit.revit.db import *
+
 _perfmark("pyrevit.revit:after `from pyrevit.revit.db import *`")
 from pyrevit.revit.db import query
 from pyrevit.revit.db import select
@@ -19,45 +22,62 @@ from pyrevit.revit.db import create
 from pyrevit.revit.db import update
 from pyrevit.revit.db import ensure
 from pyrevit.revit.db import delete
+
 _perfmark("pyrevit.revit:after db.query/select/create/update/ensure/delete")
 from pyrevit.revit.db.transaction import *
+
 _perfmark("pyrevit.revit:after db.transaction *")
 from pyrevit.revit.db import failure
+
 _perfmark("pyrevit.revit:after db.failure")
 from pyrevit.revit.db.pickling import *
+
 _perfmark("pyrevit.revit:after db.pickling *")
 from pyrevit.revit.journals import *
+
 _perfmark("pyrevit.revit:after journals *")
 from pyrevit.revit.selection import *
+
 _perfmark("pyrevit.revit:after selection *")
 from pyrevit.revit import ui
+
 _perfmark("pyrevit.revit:after ui")
 from pyrevit.revit import tabs
+
 _perfmark("pyrevit.revit:after tabs")
 from pyrevit.revit import events
+
 _perfmark("pyrevit.revit:after events")
 from pyrevit.revit import report
+
 _perfmark("pyrevit.revit:after report")
 from pyrevit.revit import files
+
 _perfmark("pyrevit.revit:after files")
 from pyrevit.revit import serverutils
+
 _perfmark("pyrevit.revit:after serverutils")
 from pyrevit.revit import geom
+
 _perfmark("pyrevit.revit:after geom")
 from pyrevit.revit import units
+
 _perfmark("pyrevit.revit:after units")
 from pyrevit.revit import features
+
 _perfmark("pyrevit.revit:after features")
 from pyrevit.revit import bim360
 from pyrevit.revit import dc3dserver
+
 if HOST_APP.is_newer_than(2021):
     from pyrevit.revit import tmpgfx
 _perfmark("pyrevit.revit:after bim360/dc3dserver/tmpgfx (exit)")
 from pyrevit.revit import avf
+
 _perfmark("pyrevit.revit:after avf (exit)")
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
@@ -75,6 +95,7 @@ def get_imported_symbol(symbol_name):
 
 class RevitWrapper(types.ModuleType):
     """Revit application wrapper."""
+
     def __init__(self):
         pass
 
@@ -85,8 +106,9 @@ class RevitWrapper(types.ModuleType):
     def __getattr__(self, attr_name):
         attr = get_imported_symbol(attr_name)
         if not attr:
-            raise AttributeError('\'module\' object has no attribute \'{}\''
-                                 .format(attr_name))
+            raise AttributeError(
+                "'module' object has no attribute '{}'".format(attr_name)
+            )
         return attr
 
     @property
@@ -157,7 +179,7 @@ class RevitWrapper(types.ModuleType):
         HOST_APP.post_command(command_id)
 
 
-class ErrorSwallower():
+class ErrorSwallower:
     """Suppresses warnings during script execution.
 
     Examples:
@@ -178,14 +200,14 @@ class ErrorSwallower():
         """Failure processing event handler."""
         try:
             failure_accesssor = event_args.GetFailuresAccessor()
-            mlogger.debug('request for failure processing...')
+            mlogger.debug("request for failure processing...")
             result = event_args.GetProcessingResult()
-            mlogger.debug('current failure processing result: %s', result)
+            mlogger.debug("current failure processing result: %s", result)
             result = self._fswallower.preprocess_failures(failure_accesssor)
-            mlogger.debug('setting failure processing results to: %s', result)
+            mlogger.debug("setting failure processing results to: %s", result)
             event_args.SetProcessingResult(result)
         except Exception as fpex:
-            mlogger.error('Error occurred while processing failures. | %s', fpex)
+            mlogger.error("Error occurred while processing failures. | %s", fpex)
 
     def get_swallowed_errors(self):
         """Return swallowed errors."""
@@ -204,8 +226,9 @@ class ErrorSwallower():
         """Stop listening to failure processing events."""
         HOST_APP.app.FailuresProcessing -= self.on_failure_processing
         if exception and self._logerror:
-            mlogger.error('Error in ErrorSwallower Context. | %s:%s',
-                          exception, exception_value)
+            mlogger.error(
+                "Error in ErrorSwallower Context. | %s:%s", exception, exception_value
+            )
 
 
 sys.modules[__name__] = RevitWrapper()

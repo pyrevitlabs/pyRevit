@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">섹션 박스 확인</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">섹션 박스가 뷰 '{0}'에 정렬되었습니다</system:String>
     <system:String x:Key="CropBoxAlignedFormat">자르기 박스가 뷰 '{0}'에 정렬되었습니다</system:String>
+    <system:String x:Key="ScopeBoxApplied">뷰에 범위 상자가 적용되었습니다</system:String>
     <system:String x:Key="UnsupportedViewType">지원되지 않는 뷰 유형입니다.</system:String>
     <system:String x:Key="Activated">활성화됨</system:String>
     <system:String x:Key="Deactivated">비활성화됨</system:String>

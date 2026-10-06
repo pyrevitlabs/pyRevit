@@ -279,8 +279,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                             IconModeHelper.GetCompactIconMode(childComponent));
                         _pulldownButtonBuilder.AddChildrenToPulldown(pdBtn, childComponent, assemblyInfo);
                     }
-
-                    _logger.Debug($"Updated existing stack item '{childComponent.DisplayName}' (index {i}).");
                 }
                 catch (Exception ex)
                 {
@@ -325,8 +323,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
                         // Add children to split button
                         _splitButtonBuilder.AddChildrenToSplitButton(splitBtn, origComponent, assemblyInfo);
-                        
-                        _logger.Debug($"Successfully processed split button '{origComponent.DisplayName}' in stack (index {i}).");
                     }
                     catch (Exception ex)
                     {

@@ -26,6 +26,7 @@ Note:
 
 """
 from rpw import revit, DB
+import pyrevit_automation as automation
 from rpw.utils.dotnet import List
 from rpw.base import BaseObjectWrapper, BaseObject
 from rpw.exceptions import RpwException, RpwTypeError, RpwCoerceError
@@ -335,6 +336,10 @@ class FilterClasses():
             return collector.UnionWith(new_collector)
 
 
+@automation.type(
+    "rpw.types.collector",
+    PlainEnglish="Build a filtered Revit element collection and retrieve its results.",
+)
 class Collector(BaseObjectWrapper):
     """
     Revit FilteredElement Collector Wrapper
@@ -469,6 +474,11 @@ class Collector(BaseObjectWrapper):
         for element in self._collector:
             yield element
 
+    @automation.operation(
+        "rpw.collector.get-elements",
+        PlainEnglish="Read all elements matching an rpw collector's filters.",
+        effects=("model.read",),
+    )
     def get_elements(self, wrapped=True):
         """
         Returns list with all elements instantiated using :any:`Element`
@@ -497,6 +507,11 @@ class Collector(BaseObjectWrapper):
         from rpw.ui.selection import Selection
         Selection(self.element_ids)
 
+    @automation.operation(
+        "rpw.collector.get-first",
+        PlainEnglish="Read the first element matching an rpw collector's filters.",
+        effects=("model.read",),
+    )
     def get_first(self, wrapped=True):
         """
         Returns first element or `None`
@@ -516,6 +531,11 @@ class Collector(BaseObjectWrapper):
     #     deprecate_warning('Collector.first', 'Collector.get_first()')
     #     return self.get_first(wrapped=False)
 
+    @automation.operation(
+        "rpw.collector.get-element-ids",
+        PlainEnglish="Read identifiers for all elements matching an rpw collector's filters.",
+        effects=("model.read",),
+    )
     def get_element_ids(self):
         """
         Returns list with all elements instantiated using :any:`Element`

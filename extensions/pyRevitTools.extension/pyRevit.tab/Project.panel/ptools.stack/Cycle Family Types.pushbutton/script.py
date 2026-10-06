@@ -1,5 +1,6 @@
 """Cycle family types."""
-#pylint: disable=E0401
+
+# pylint: disable=E0401
 from pyrevit import revit, DB
 from pyrevit import forms
 
@@ -11,7 +12,7 @@ if family_mgr.CurrentType:
     if current_idx >= len(family_types):
         current_idx = 0
 
-    with revit.Transaction('Cycle Family Type'):
+    with revit.Transaction("Cycle Family Type"):
         for ftype in family_mgr.Types:
             if ftype.Name == family_types[current_idx]:
                 family_mgr.CurrentType = ftype

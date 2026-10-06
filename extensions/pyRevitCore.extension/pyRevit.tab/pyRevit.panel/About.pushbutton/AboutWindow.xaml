@@ -1,7 +1,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow"
-        Foreground="#000"
+        Foreground="{DynamicResource pyRevitWindowForegroundBrush}"
         Height="325" Width="690" Margin="0"
         SizeToContent="Width"
         ShowInTaskbar="False"
@@ -17,18 +17,16 @@
         KeyDown="handleclick"
         MouseDown="handleclick">
     <Window.Resources>
-        <SolidColorBrush x:Key="AboutWindowTextColor" Color="#2c3e50"/>
-        <SolidColorBrush x:Key="AboutWindowHightlightColor" Color="#f39c12"/>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground"
-                    Value="{StaticResource AboutWindowTextColor}"/>
+                    Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         </Style>
         <Style TargetType="{x:Type Button}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Background" Value="{StaticResource AboutWindowTextColor}"/>
-            <Setter Property="BorderBrush" Value="#cccccc"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitContrastBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitContrastBackgroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitContrastForegroundBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Padding" Value="10,0,10,0"/>
@@ -52,9 +50,9 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AboutWindowHightlightColor}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource AboutWindowHightlightColor}" />
-                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -155,7 +153,7 @@
         </Canvas>
         <Canvas x:Key="commitIcon">
             <Path Data="M17,12C17,14.42 15.28,16.44 13,16.9V21H11V16.9C8.72,16.44 7,14.42 7,12C7,9.58 8.72,7.56 11,7.1V3H13V7.1C15.28,7.56 17,9.58 17,12M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"
-                  Fill="{StaticResource AboutWindowTextColor}">
+                  Fill="{DynamicResource pyRevitIconBrush}">
                 <Path.LayoutTransform>
                     <RotateTransform Angle="90" />
                 </Path.LayoutTransform>
@@ -164,31 +162,29 @@
         <Canvas x:Key="shellIcon">
             <Path Canvas.Top="-1" Canvas.Left="0"
                   Data="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z"
-                  Fill="{StaticResource AboutWindowTextColor}" />
+                  Fill="{DynamicResource pyRevitIconBrush}" />
         </Canvas>
         <Canvas x:Key="branchIcon">
             <Path Data="M13,14C9.64,14 8.54,15.35 8.18,16.24C9.25,16.7 10,17.76 10,19A3,3 0 0,1 7,22A3,3 0 0,1 4,19C4,17.69 4.83,16.58 6,16.17V7.83C4.83,7.42 4,6.31 4,5A3,3 0 0,1 7,2A3,3 0 0,1 10,5C10,6.31 9.17,7.42 8,7.83V13.12C8.88,12.47 10.16,12 12,12C14.67,12 15.56,10.66 15.85,9.77C14.77,9.32 14,8.25 14,7A3,3 0 0,1 17,4A3,3 0 0,1 20,7C20,8.34 19.12,9.5 17.91,9.86C17.65,11.29 16.68,14 13,14M7,18A1,1 0 0,0 6,19A1,1 0 0,0 7,20A1,1 0 0,0 8,19A1,1 0 0,0 7,18M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M17,6A1,1 0 0,0 16,7A1,1 0 0,0 17,8A1,1 0 0,0 18,7A1,1 0 0,0 17,6Z"
-                  Fill="{StaticResource AboutWindowTextColor}" />
+                  Fill="{DynamicResource pyRevitIconBrush}" />
         </Canvas>
         <Canvas x:Key="deployIcon">
             <Path Data="M2,10.96C1.5,10.68 1.35,10.07 1.63,9.59L3.13,7C3.24,6.8 3.41,6.66 3.6,6.58L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.66,6.72 20.82,6.88 20.91,7.08L22.36,9.6C22.64,10.08 22.47,10.69 22,10.96L21,11.54V16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V10.96C2.7,11.13 2.32,11.14 2,10.96M12,4.15V4.15L12,10.85V10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V12.69L14,15.59C13.67,15.77 13.3,15.76 13,15.6V19.29L19,15.91M13.85,13.36L20.13,9.73L19.55,8.72L13.27,12.35L13.85,13.36Z"
-                  Fill="{StaticResource AboutWindowTextColor}" />
+                  Fill="{DynamicResource pyRevitIconBrush}" />
         </Canvas>
         <Canvas x:Key="rocketIcon">
             <Path Data="M2.81,14.12L5.64,11.29L8.17,10.79C11.39,6.41 17.55,4.22 19.78,4.22C19.78,6.45 17.59,12.61 13.21,15.83L12.71,18.36L9.88,21.19L9.17,17.66C7.76,17.66 7.76,17.66 7.05,16.95C6.34,16.24 6.34,16.24 6.34,14.83L2.81,14.12M5.64,16.95L7.05,18.36L4.39,21.03H2.97V19.61L5.64,16.95M4.22,15.54L5.46,15.71L3,18.16V16.74L4.22,15.54M8.29,18.54L8.46,19.78L7.26,21H5.84L8.29,18.54M13,9.5A1.5,1.5 0 0,0 11.5,11A1.5,1.5 0 0,0 13,12.5A1.5,1.5 0 0,0 14.5,11A1.5,1.5 0 0,0 13,9.5Z"
-                  Fill="{StaticResource AboutWindowTextColor}" />
+                  Fill="{DynamicResource pyRevitIconBrush}" />
         </Canvas>
         <Canvas x:Key="heartIcon">
             <Path Data="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"
-                  Fill="{StaticResource AboutWindowTextColor}" />
+                  Fill="{DynamicResource pyRevitIconBrush}" />
         </Canvas>
     </Window.Resources>
     <Border BorderThickness="1"
             CornerRadius="15"
-            Margin="20,20,20,20">
-        <Border.Background>
-            <SolidColorBrush Color="#fff"/>
-        </Border.Background>
+            Margin="20,20,20,20"
+            Background="{DynamicResource pyRevitControlBackgroundBrush}">
         <Border.Effect>
             <DropShadowEffect Color="{DynamicResource pyRevitDarkColor}" BlurRadius="15" Opacity="0.25"/>
         </Border.Effect>

@@ -7,7 +7,9 @@ from pyrevit import DB
 from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
 
-_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+_XAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml"
+)
 
 
 def _t(key):
@@ -149,9 +151,7 @@ def checkModel(doc, output):
     data = []
 
     all_elements = (
-        DB.FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .ToElements()
+        DB.FilteredElementCollector(doc).WhereElementIsNotElementType().ToElements()
     )
     worksetTable = doc.GetWorksetTable()
     for element in all_elements:
@@ -161,7 +161,11 @@ def checkModel(doc, output):
             element_data = []
             worksetName = worksetTable.GetWorkset(worksetId).Name
             try:
-                if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
+                if element.Name not in (
+                    "DefaultLocation",
+                    "",
+                    None,
+                ) or element.Category.Name not in ("", None):
                     # Remove the location objects from the list as well as empty elements or proxies
                     element_data.append(worksetName)
                     element_data.append(element.Category.Name)
@@ -182,12 +186,15 @@ def checkModel(doc, output):
 
     # sort by workset name
     data = sorted(data, key=lambda x: x[0])
-    output.print_table(data, columns=[
-        _t("WorksetName"),
-        _t("ElementCategory"),
-        _t("ElementName"),
-        _t("ElementId"),
-    ])
+    output.print_table(
+        data,
+        columns=[
+            _t("WorksetName"),
+            _t("ElementCategory"),
+            _t("ElementName"),
+            _t("ElementId"),
+        ],
+    )
 
     # sorting results in chart legend
     worksets_names.sort()

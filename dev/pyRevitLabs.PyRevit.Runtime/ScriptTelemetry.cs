@@ -16,7 +16,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string message { get; set; }
     }
 
-    public class ScriptTelemetryRecord: TelemetryRecord {
+    public class ScriptTelemetryRecord : TelemetryRecord {
         // by who?
         public string username { get; set; }
         // on what?
@@ -47,7 +47,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // any errors?
         public ScriptTelemetryRecordTraceInfo trace { get; set; }
 
-        public ScriptTelemetryRecord(): base() {}
+        public ScriptTelemetryRecord() : base() { }
     }
 
     public static class ScriptTelemetry {

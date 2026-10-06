@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -20,7 +20,7 @@ namespace pyRevitLabs.PyRevit {
         }
 
         private static Assembly FindLoadedAssembly(string assmName) {
-            foreach(Assembly assm in AppDomain.CurrentDomain.GetAssemblies()) {
+            foreach (Assembly assm in AppDomain.CurrentDomain.GetAssemblies()) {
                 if (assm.FullName.ToLower().Contains(assmName.ToLower()))
                     return assm;
             }

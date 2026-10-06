@@ -249,7 +249,7 @@ def copy_view(activedoc, source_view, dest_doc):
 
     if source_view.ViewType == DB.ViewType.DrawingSheet:
         try:
-            logger.debug("Source view is a sheet. " "Creating destination sheet.")
+            logger.debug("Source view is a sheet. Creating destination sheet.")
 
             with revit.Transaction("Create Sheet", doc=dest_doc):
                 if not source_view.IsPlaceholder or (
@@ -269,7 +269,7 @@ def copy_view(activedoc, source_view, dest_doc):
     elif source_view.ViewType == DB.ViewType.DraftingView:
         try:
             logger.debug(
-                "Source view is a drafting. " "Creating destination drafting view."
+                "Source view is a drafting. Creating destination drafting view."
             )
 
             with revit.Transaction("Create Drafting View", doc=dest_doc):
@@ -283,9 +283,7 @@ def copy_view(activedoc, source_view, dest_doc):
             logger.error("Error creating drafting view. | {}".format(sheet_err))
     elif source_view.ViewType == DB.ViewType.Legend:
         try:
-            logger.debug(
-                "Source view is a legend. " "Creating destination legend view."
-            )
+            logger.debug("Source view is a legend. Creating destination legend view.")
 
             first_legend = query.find_first_legend(dest_doc)
             if first_legend:
@@ -512,9 +510,7 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
 
             if new_view.Id not in existing_views:
                 print("\t\t\tPlacing copied view on sheet.")
-                src_data = get_source_vport_data(
-                    activedoc, vport, source_sheet
-                )
+                src_data = get_source_vport_data(activedoc, vport, source_sheet)
 
                 with revit.Transaction("Place View on Sheet", doc=dest_doc):
                     nvport = DB.Viewport.Create(
@@ -526,15 +522,9 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
                     apply_detail_number(vport, nvport)
 
                 if nvport:
-                    apply_viewport_type(
-                        activedoc, vport_id, dest_doc, nvport.Id
-                    )
-                    apply_vport_label_props(
-                        dest_doc, nvport.Id, src_data
-                    )
-                    correct_vport_by_bbox(
-                        dest_doc, nvport.Id, src_data, dest_sheet
-                    )
+                    apply_viewport_type(activedoc, vport_id, dest_doc, nvport.Id)
+                    apply_vport_label_props(dest_doc, nvport.Id, src_data)
+                    correct_vport_by_bbox(dest_doc, nvport.Id, src_data, dest_sheet)
             else:
                 print("\t\t\tView already exists on the sheet.")
 

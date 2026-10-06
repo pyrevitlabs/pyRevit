@@ -39,7 +39,9 @@ def collect_options(service_key, service):
     try:
         active_ids = list(service.GetActiveServerIds())
     except Exception as ex:
-        logger.exception("Failed reading active server ids for " + service_key + " : " + str(ex))
+        logger.exception(
+            "Failed reading active server ids for " + service_key + " : " + str(ex)
+        )
         return options
 
     for sid in active_ids:
@@ -57,7 +59,9 @@ def collect_options(service_key, service):
             else:
                 name = "Unknown Server"
                 desc = "No Desc"
-            label = "[" + service_key + "]  " + name + "  |  " + desc + "  |  " + str(sid)
+            label = (
+                "[" + service_key + "]  " + name + "  |  " + desc + "  |  " + str(sid)
+            )
             options.append(ServerOption(label, service_key, service, sid))
         except Exception as ex:
             logger.exception("Failed reading server info " + str(sid) + " : " + str(ex))

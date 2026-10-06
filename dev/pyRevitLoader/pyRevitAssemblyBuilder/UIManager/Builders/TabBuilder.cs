@@ -42,7 +42,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             try
             {
                 _uiApp.CreateRibbonTab(tabText);
-                _logger.Debug($"Created ribbon tab '{tabText}'.");
             }
             catch (Exception ex)
             {
@@ -88,10 +87,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                         renamedTitle = existingTab.Title;
                         _logger.Debug($"Tab '{tabText}' found with renamed Title '{renamedTitle}'.");
                     }
-                    else
-                    {
-                        _logger.Debug($"Found and enabled tab '{tabText}'.");
-                    }
                 }
             }
             catch (Exception ex)
@@ -132,7 +127,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 if (tab != null)
                 {
                     tab.Tag = UIManagerConstants.PyRevitTabIdentifier;
-                    _logger.Debug($"Tagged tab '{tabName}' as pyRevit tab for runtime icon toggling");
                 }
             }
             catch (Exception ex)

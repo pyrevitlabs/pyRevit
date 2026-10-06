@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">Schnittbox bestätigen</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">Schnittbox mit Ansicht '{0}' ausgerichtet</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Zuschnittbox mit Ansicht '{0}' ausgerichtet</system:String>
+    <system:String x:Key="ScopeBoxApplied">Bereichsbox auf Ansicht angewendet</system:String>
     <system:String x:Key="UnsupportedViewType">Nicht unterstützter Ansichtstyp.</system:String>
     <system:String x:Key="Activated">aktiviert</system:String>
     <system:String x:Key="Deactivated">deaktiviert</system:String>

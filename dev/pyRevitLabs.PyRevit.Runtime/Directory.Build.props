@@ -8,6 +8,11 @@
 
     <ItemGroup>
         <Compile Include="..\*.cs" />
+        <Compile Include="..\Agent\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="pyRevitExtensionParserTest" />
     </ItemGroup>
     
     <Import Project="../Directory.Build.props" />

@@ -5,8 +5,10 @@
     <system:String x:Key="Window.Title">Propriedades do Elemento – Configurar Parâmetros Adicionais</system:String>
     <system:String x:Key="ChkEnableStartup">Carregar painel na inicialização</system:String>
     <system:String x:Key="TbRestartHint">É necessário reiniciar o Revit para que as alterações de inicialização entrem em vigor.</system:String>
-    <system:String x:Key="TbParamsHint">Digite um nome de parâmetro por linha. O painel atualiza na próxima mudança de seleção — não é necessário reiniciar.</system:String>
-    <system:String x:Key="TbExamples">Exemplos: Comentários, Marca, Fabricante, Comentários de tipo</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">Mostrar informações de worksharing (Criado por / Última modificação por / Proprietário)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">Ativa ou desativa as linhas Criado por, Última modificação por e Proprietário no painel. Não é necessário reiniciar.</system:String>
+    <system:String x:Key="TbParamsHint">Digite um nome de parâmetro por linha. Inicie uma linha com # para inserir um cabeçalho de seção (ex.: "# Geral") — deixe apenas "#" para uma linha separadora simples. O painel atualiza na próxima mudança de seleção — não é necessário reiniciar.</system:String>
+    <system:String x:Key="TbExamples">Exemplos: Comentários, Marca, # Geral, Fabricante, Comentários de tipo</system:String>
     <system:String x:Key="BtnCancel">Cancelar</system:String>
     <system:String x:Key="BtnSave">Salvar</system:String>
 

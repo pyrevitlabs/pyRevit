@@ -9,7 +9,7 @@ namespace Build.Modules;
 
 /// <summary>
 /// Seeds IPY2712PR engine folders with IronPython/DLR assemblies required before loader compile.
-/// Mirrors <c>pipenv run pyrevit build deps</c> IronPython2 steps from dev/_labs.py.
+/// Builds and stages the IronPython 2 dependencies required by the runtime.
 /// </summary>
 [DependsOn<CheckDeployLocksModule>]
 public sealed class BuildIronPythonDepsModule(IOptions<BuildOptions> buildOptions) : Module

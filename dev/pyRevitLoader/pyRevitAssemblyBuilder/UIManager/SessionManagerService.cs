@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
+using pyRevitLabs.Common;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -17,6 +19,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class SessionManagerService : ISessionManagerService
     {
+        /// <summary>
+        /// Child spans cheaper than this are counted into a rollup line instead of each getting
+        /// a [PERF] line of their own. Matches the threshold <c>pyrevit/_perf.py</c> applies to
+        /// the Python checkpoints that interleave with these lines.
+        /// </summary>
+        private const double RollupThresholdMilliseconds = 10.0;
+
         private readonly IAssemblyBuilderService _assemblyBuilder;
         private readonly IExtensionManagerService _extensionManager;
         private readonly IHookManager _hookManager;
@@ -24,7 +33,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private readonly IUIRibbonScanner _ribbonScanner;
         private readonly UIApplication _uiApp;
         private readonly ILogger _logger;
-        
+
         // These fields are initialized in InitializeScriptExecutor(), not the constructor
         private Assembly? _runtimeAssembly;
         private string? _pyRevitRoot;
@@ -38,10 +47,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private Dictionary<string, bool> _directoryExistsCache = new Dictionary<string, bool>();
 
         /// <summary>
-        /// Pre-materialized library extension lib paths to avoid repeated Directory.Exists checks
-        /// per extension. Populated once in LoadSession() after libraryExtensions are retrieved.
+        /// Pre-materialized library-extension search paths (root plus nested lib/
+        /// when present) so startup scripts can import packages that live at the
+        /// .lib root. Populated once in LoadSession().
         /// </summary>
-        private List<string> _precomputedLibraryLibPaths = new List<string>();
+        private List<string> _precomputedLibrarySearchPaths = new List<string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionManagerService"/> class.
@@ -67,9 +77,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
             _ribbonScanner = ribbonScanner ?? throw new ArgumentNullException(nameof(ribbonScanner));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            
+
             // Get UIApplication from UIManagerService via public property
-            _uiApp = uiManager.UIApplication 
+            _uiApp = uiManager.UIApplication
                 ?? throw new ArgumentNullException(nameof(uiManager), "UIManagerService must have a valid UIApplication.");
         }
 
@@ -85,82 +95,98 @@ namespace pyRevitAssemblyBuilder.SessionManager
         ///    - Loads the assembly
         ///    - Executes startup scripts if present
         ///    - Creates the UI
+        ///
+        /// Each step is recorded on <see cref="LoadTimeline.Active"/>. When no load is active,
+        /// this call begins and ends its own timeline.
         /// </remarks>
-        public void LoadSession()
+        /// <param name="firstLoad">True during initial Revit startup; false during reload.
+        /// Controls work that should only run once per Revit process, such as stale appdata cleanup.</param>
+        public void LoadSession(bool firstLoad)
         {
-            var totalStopwatch = Stopwatch.StartNew();
-            var stepStopwatch = new Stopwatch();
+            var activeTimeline = LoadTimeline.Active;
+            var ownedTimeline = activeTimeline == null
+                ? LoadTimeline.Begin("pyRevit load", Stopwatch.GetTimestamp())
+                : null;
+            try
+            {
+                LoadSessionSteps(firstLoad, activeTimeline ?? ownedTimeline!);
+            }
+            finally
+            {
+                ownedTimeline?.End();
+            }
+        }
 
-            RibbonIconRegistry.Clear();
-            
+        private void LoadSessionSteps(bool firstLoad, LoadTimeline timeline)
+        {
+            var stepsBeforeSession = timeline.Root.Children.Count;
+
+            RibbonThemeRegistry.Clear();
+
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
-            stepStopwatch.Restart();
+            var step = timeline.StartSpan("ResetPanelBackgrounds");
             _ribbonScanner.ResetPanelBackgrounds();
-            _logger.Debug($"[PERF] ResetPanelBackgrounds: {stepStopwatch.ElapsedMilliseconds}ms");
-            
+            LogStep(step);
+
             // STEP 2: Reset dirty flags on all existing pyRevit UI elements
             // This marks all existing elements as potentially orphaned
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("ResetDirtyFlags");
             _ribbonScanner.ResetDirtyFlags();
-            _logger.Debug($"[PERF] ResetDirtyFlags: {stepStopwatch.ElapsedMilliseconds}ms");
-            
+            LogStep(step);
+
             // Clear all caches to ensure newly installed/enabled extensions are discovered
             // This is critical for reload scenarios where extensions may have been added or toggled
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("ClearParserCaches");
             _extensionManager?.ClearParserCaches();
-            _logger.Debug($"[PERF] ClearParserCaches: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // Revit can change its UI theme without restarting the host process.
             RevitThemeDetector.ClearCache();
-            
+
             // Initialize the ScriptExecutor before executing any scripts
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("InitializeScriptExecutor");
             InitializeScriptExecutor();
-            _logger.Debug($"[PERF] InitializeScriptExecutor: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
+
+            // Give this service's logger somewhere to write. The first record written
+            // after this point is swallowed by the runtime logging service; nothing is
+            // logged here that would be worth losing.
+            ConfigureRuntimeLogging();
+            var stepsBeforeLogging = timeline.Root.Children.Count;
 
             // Seed the AppDomain environment dictionary.  Must run after InitializeScriptExecutor()
             // (which loads _runtimeAssembly) and before any extension startup script (which may call
             // pyrevit.sessioninfo, pyrevit.telemetry, etc.).
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("SeedEnvironmentDictionary");
             SeedEnvironmentDictionary();
-            _logger.Debug($"[PERF] SeedEnvironmentDictionary: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
+
+            // Drive the residual Python session services (env/session, telemetry,
+            // routes, output window, hooks framework) that are not yet ported to C#.
+            step = timeline.StartSpan("Preload");
+            ExecuteEntryScript(Constants.PRELOAD_SCRIPT, "pyRevit Preload", firstLoad);
+            LogStep(step, DescribeEngineSpans(step));
 
             // Get all library extensions first - they need to be available to all UI extensions.
             // First call also populates the shared ParseInstalledExtensions cache used by the
-            // later GetInstalledUIExtensions() call, so this Stopwatch is really measuring the
+            // later GetInstalledUIExtensions() call, so this step is really measuring the
             // full filesystem walk + bundle.yaml parse, not the lib-only filter. Hence the
-            // [PERF] label below is "ParseAllExtensions" rather than "GetLibraryExtensions".
-            stepStopwatch.Restart();
+            // step is named "ParseAllExtensions" rather than "GetLibraryExtensions".
+            step = timeline.StartSpan("ParseAllExtensions");
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
-            var parseElapsed = stepStopwatch.ElapsedMilliseconds;
-            var parseStats = ExtensionParser.ResetAndGetParseStats();
-            var uiParseCount = parseStats.Count(p => p.Kind == "ui");
-            var libParseCount = parseStats.Count(p => p.Kind == "lib");
-            _logger.Debug($"[PERF] ParseAllExtensions: {parseElapsed}ms ({uiParseCount} ui, {libParseCount} lib)");
-            foreach (var (name, _, elapsedMs) in parseStats.OrderByDescending(p => p.ElapsedMs))
-            {
-                _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
-            }
+            var libParseCount = step.Children.Count(p => p.Name.EndsWith(".lib", StringComparison.OrdinalIgnoreCase));
+            LogStep(step, $"{step.Children.Count - libParseCount} ui, {libParseCount} lib");
+            LogChildSpans(step.Children.OrderByDescending(p => p.ElapsedMilliseconds), parse => $"parse '{parse.Name}'");
 
-            // Pre-compute library extension lib paths once to avoid N*lib_count Directory.Exists checks
-            // in BuildSearchPaths() for each UI extension. Optimization for #3268.
-            _precomputedLibraryLibPaths.Clear();
-            foreach (var libExt in libraryExtensions)
-            {
-                var libLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
-                if (System.IO.Directory.Exists(libLibPath))
-                {
-                    _precomputedLibraryLibPaths.Add(libLibPath);
-                }
-            }
-            _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
-            
+            _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
+            _logger.Debug($"Pre-computed {_precomputedLibrarySearchPaths.Count} library search paths");
+
             // Get UI extensions
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("GetUIExtensions");
             var uiExtensions = _extensionManager?.GetInstalledUIExtensions()?.ToList();
-            _logger.Debug($"[PERF] GetUIExtensions: {stepStopwatch.ElapsedMilliseconds}ms ({uiExtensions?.Count ?? 0} extensions)");
-            
+            LogStep(step, $"{uiExtensions?.Count ?? 0} extensions");
+
             if (uiExtensions == null || uiExtensions.Count == 0)
             {
                 _logger.Warning("No UI extensions found or extension manager is null.");
@@ -168,39 +194,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             // ── PASS 1: Build and load ALL assemblies ──────────────────────────
-            // Fix for #3108: Legacy _new_session() uses separate loops to guarantee
-            // all assemblies exist in the AppDomain before any startup script runs.
-            // Cross-extension imports in startup scripts fail without this.
-            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
-
-            foreach (var ext in uiExtensions)
-            {
-                if (ext == null) { _logger.Warning("Skipping null extension."); continue; }
-                try
-                {
-                    stepStopwatch.Restart();
-                    var rocketMode = _uiManager?.RocketMode ?? false;
-                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
-                    var buildTime = stepStopwatch.ElapsedMilliseconds;
-
-                    if (assmInfo == null)
-                    {
-                        _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
-                        continue;
-                    }
-
-                    _logger.Info($"Extension assembly created: {ext.Name}");
-                    stepStopwatch.Restart();
-                    _assemblyBuilder?.LoadAssembly(assmInfo);
-                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {stepStopwatch.ElapsedMilliseconds}ms");
-
-                    assembledExtensions.Add((ext, assmInfo));
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
-                }
-            }
+            // All extension assemblies must be loaded into the AppDomain before any
+            // startup script runs (fix for #3108) - cross-extension imports in
+            // startup scripts fail otherwise.
+            step = timeline.StartSpan("BuildAndLoadAllAssemblies");
+            var assembledExtensions = BuildAndLoadAllAssemblies(uiExtensions, libraryExtensions);
+            LogStep(step);
 
             // ── PASS 2: Run ALL startup scripts ────────────────────────────────
             // All assemblies are now loaded, so cross-extension imports work.
@@ -208,26 +207,26 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 if (!string.IsNullOrEmpty(ext.StartupScript))
                 {
+                    _logger.Info($"Running startup tasks for {ext.Name}");
+                    var startupStep = timeline.StartSpan($"{ext.Name} - StartupScript");
                     try
                     {
-                        _logger.Info($"Running startup tasks for {ext.Name}");
-                        stepStopwatch.Restart();
                         ExecuteExtensionStartupScript(ext, libraryExtensions);
-                        _logger.Debug($"[PERF] {ext.Name} - StartupScript: {stepStopwatch.ElapsedMilliseconds}ms");
+                        LogStep(startupStep, DescribeEngineSpans(startupStep));
                     }
                     catch (Exception ex)
                     {
+                        startupStep.End();
                         _logger.Error($"Startup script error for '{ext.Name}': {ex}");
                     }
                 }
             }
 
             // ── PASS 2.5: Register ALL hooks ──────────────────────────────────
-            // Replaces the Python-side extensionmgr.get_installed_ui_extensions() +
-            // hooks.register_hooks() loop in _new_session_csharp(), which triggered
-            // a redundant full extension re-parse costing ~2-5s.
+            // Hooks are registered here directly against the already-parsed extensions,
+            // avoiding a redundant full extension re-parse (previously ~2-5s).
             // See: pyrevitlib/pyrevit/loader/hooks.py register_hooks()
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("RegisterHooks (all extensions)");
             foreach (var (ext, _) in assembledExtensions)
             {
                 try
@@ -239,21 +238,23 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     _logger.Error($"Hook registration error for '{ext.Name}': {ex}");
                 }
             }
-            _logger.Debug($"[PERF] RegisterHooks (all extensions): {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // ── PASS 3: Build ALL UI ───────────────────────────────────────────
             foreach (var (ext, assmInfo) in assembledExtensions)
             {
+                var buildStep = timeline.StartSpan($"{ext?.Name ?? "unknown"} - BuildUI");
                 try
                 {
-                    stepStopwatch.Restart();
                     _uiManager?.BuildUI(ext, assmInfo);
-                    _logger.Debug($"[PERF] {ext.Name} - BuildUI: {stepStopwatch.ElapsedMilliseconds}ms");
+                    LogStep(buildStep, DescribeBuildUISpans(buildStep));
                     _uiManager?.EmitBuildUIPerfLines(ext.Name);
+                    LogChildSpans(buildStep.Children, smartButton => $"{ext.Name}/{smartButton.Name}");
                     _logger.Info($"UI created for extension: {ext.Name}");
                 }
                 catch (Exception ex)
                 {
+                    buildStep.End();
                     _logger.Error($"UI build error for '{ext?.Name ?? "unknown"}': {ex}");
                 }
             }
@@ -261,7 +262,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // STEP 3: Apply external layout directives (panel reordering)
             // This applies directives that reference external targets (native Revit panels or panels from other extensions)
             // Must be called after ALL UI is built so all panels exist
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("SortUI");
             var allExternalDirectives = uiExtensions
                 .Where(ext => ext?.ExternalLayoutDirectives != null)
                 .SelectMany(ext => ext.ExternalLayoutDirectives)
@@ -272,17 +273,343 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Debug($"Applying {allExternalDirectives.Count} external layout directives...");
                 _ribbonScanner.SortUI(allExternalDirectives);
             }
-            _logger.Debug($"[PERF] SortUI: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // STEP 4: Cleanup orphaned UI elements (those with dirty=false)
             // This deactivates tabs/panels that were deleted or disabled since last load
             // Matching Python's cleanup_pyrevit_ui() behavior
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("CleanupOrphanedElements");
             _ribbonScanner.CleanupOrphanedElements();
-            _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
-            totalStopwatch.Stop();
-            _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
+            QueueBackgroundCleanup(firstLoad);
+
+            step = timeline.StartSpan("ConfigureAgentHost");
+            ConfigureAgentHost();
+            LogStep(step);
+
+            // Finalize via the residual Python post-load services (hook activation,
+            // doc colorizer, routes server, output teardown).
+            step = timeline.StartSpan("Postload");
+            ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload", firstLoad);
+            LogStep(step, DescribeEngineSpans(step));
+
+            if (ReadAndClearSessionReplacedFlag())
+            {
+                _logger.Debug("Postload triggered a nested reload; skipping this load's timing summary.");
+                return;
+            }
+
+            LogTimelineSummary(timeline, firstLoad ? stepsBeforeLogging : stepsBeforeSession);
+            _logger.Info($"Session loaded in {timeline.ElapsedMilliseconds:0}ms");
+        }
+
+        /// <summary>
+        /// Logs one indented [PERF] line per child span that cost at least
+        /// <see cref="RollupThresholdMilliseconds"/>, then a single line counting the cheaper
+        /// ones and their total, so a step with many trivial children stays readable without
+        /// losing what they cost together.
+        /// </summary>
+        /// <param name="nameSelector">Renders the name a child span is logged under.</param>
+        private void LogChildSpans(IEnumerable<LoadSpan> children, Func<LoadSpan, string> nameSelector)
+        {
+            var rolledUpCount = 0;
+            var rolledUpMs = 0.0;
+            foreach (var child in children)
+            {
+                if (child.ElapsedMilliseconds < RollupThresholdMilliseconds)
+                {
+                    rolledUpCount++;
+                    rolledUpMs += child.ElapsedMilliseconds;
+                    continue;
+                }
+                _logger.Debug($"[PERF]   {nameSelector(child)}: {child.ElapsedMilliseconds:0}ms");
+            }
+            if (rolledUpCount > 0)
+                _logger.Debug($"[PERF]   {rolledUpCount} under {RollupThresholdMilliseconds:0}ms: {rolledUpMs:0}ms");
+        }
+
+        private void LogStep(LoadSpan step, string? detail = null)
+        {
+            var elapsedMs = step.End();
+            _logger.Debug(detail == null
+                ? $"[PERF] {step.Name}: {elapsedMs:0}ms"
+                : $"[PERF] {step.Name}: {elapsedMs:0}ms ({detail})");
+        }
+
+        /// <summary>
+        /// Summarizes the engine start and execute spans the script runtime recorded under
+        /// <paramref name="step"/>, so engine creation reads separately from script time.
+        /// </summary>
+        private static string? DescribeEngineSpans(LoadSpan step)
+        {
+            if (step.Children.Count == 0)
+                return null;
+            return string.Join(", ", step.Children.Select(child => $"{child.Name} {child.ElapsedMilliseconds:0}ms"));
+        }
+
+        /// <summary>
+        /// Splits a BuildUI step into ribbon layout and the SmartButton __selfinit__ spans that
+        /// <see cref="SmartButtonScriptInitializer"/> recorded under it.
+        /// </summary>
+        private static string? DescribeBuildUISpans(LoadSpan buildStep)
+        {
+            if (buildStep.Children.Count == 0)
+                return null;
+            var smartButtonMs = buildStep.Children.Sum(child => child.ElapsedMilliseconds);
+            return $"ribbon layout {buildStep.ElapsedMilliseconds - smartButtonMs:0}ms, " +
+                $"smartbuttons {smartButtonMs:0}ms (x{buildStep.Children.Count})";
+        }
+
+        /// <summary>
+        /// Logs what the per-step [PERF] lines leave out: time Revit ran before pyRevit started,
+        /// the first <paramref name="unloggedStepCount"/> top-level steps, and load time no step
+        /// covers.
+        /// </summary>
+        /// <param name="unloggedStepCount">
+        /// Leading top-level steps whose own [PERF] lines never reached the log: steps recorded
+        /// before this service took over the load and, on the first load of a process, steps that
+        /// ran before runtime logging was configured.
+        /// </param>
+        private void LogTimelineSummary(LoadTimeline timeline, int unloggedStepCount)
+        {
+            if (timeline.ProcessUptimeAtStartMilliseconds.HasValue)
+                _logger.Debug($"[PERF] Revit running before pyRevit startup: {timeline.ProcessUptimeAtStartMilliseconds.Value:0}ms (not in total)");
+            foreach (var step in timeline.Root.Children.Take(unloggedStepCount))
+                _logger.Debug($"[PERF] {step.Name}: {step.ElapsedMilliseconds:0}ms");
+            _logger.Debug($"[PERF] Unaccounted: {timeline.UnaccountedMilliseconds:0}ms");
+        }
+
+        /// <summary>
+        /// Reads and removes <see cref="Constants.SESSION_REPLACED_KEY"/> from the AppDomain env
+        /// dictionary, returning whether it was set. Same reflection-free access pattern as
+        /// <c>EnvDictionarySeeder.ReadSeededAppVersion()</c> — the dictionary is an IronPython
+        /// <c>PythonDictionary</c>, which this project (no compile-time IronPython reference)
+        /// reads via the <see cref="System.Collections.IDictionary"/> interface it implements.
+        /// Removing the key (rather than just reading it) keeps it from leaking into a later,
+        /// unrelated LoadSession() call.
+        /// </summary>
+        private bool ReadAndClearSessionReplacedFlag()
+        {
+            try
+            {
+                if (AppDomain.CurrentDomain.GetData(Constants.ENV_DICT_KEY) is System.Collections.IDictionary dict
+                        && dict.Contains(Constants.SESSION_REPLACED_KEY))
+                {
+                    dict.Remove(Constants.SESSION_REPLACED_KEY);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Failed to read session-replaced flag: {ex}");
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Builds and loads every extension's assembly in parallel, then returns the ones that
+        /// built successfully in <paramref name="uiExtensions"/>'s original order, so downstream
+        /// passes (startup scripts, hooks, UI build) see the same ribbon tab/panel layout order
+        /// they always have.
+        /// </summary>
+        /// <remarks>
+        /// Parallelized because on a cache hit (the common case) each build is just a
+        /// <c>File.Exists</c> check, but on a cache miss (fresh install, upgrade, or an edited
+        /// extension) each miss pays full Roslyn compilation, which is CPU-bound and independent
+        /// per extension. Results are collected into an index-aligned array rather than a shared
+        /// list so no locking is needed across the parallel workers.
+        /// <para>
+        /// Log records are collected the same way: each worker's are captured and replayed here in
+        /// extension order rather than written from the worker, so they reach the output window
+        /// during the load instead of after it and land in the runtime log in an order that does
+        /// not depend on scheduling. See <see cref="ParallelLogCapture"/>.
+        /// </para>
+        /// </remarks>
+        private List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)> BuildAndLoadAllAssemblies(
+            List<ParsedExtension> uiExtensions, List<ParsedExtension> libraryExtensions)
+        {
+            var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
+            var pendingLogs = new List<(CapturedLogLevel Level, string Message)>?[uiExtensions.Count];
+            System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
+            {
+                var captured = new List<(CapturedLogLevel Level, string Message)>();
+                pendingLogs[i] = captured;
+                using var capture = ParallelLogCapture.Begin(captured);
+
+                var ext = uiExtensions[i];
+                if (ext == null) { _logger.Warning("Skipping null extension."); return; }
+                try
+                {
+                    var buildSw = Stopwatch.StartNew();
+                    var rocketMode = _uiManager?.RocketMode ?? false;
+                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
+                    var buildTime = buildSw.ElapsedMilliseconds;
+
+                    if (assmInfo == null)
+                    {
+                        _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
+                        return;
+                    }
+
+                    _logger.Info($"Extension assembly created: {ext.Name}");
+                    var loadSw = Stopwatch.StartNew();
+                    _assemblyBuilder?.LoadAssembly(assmInfo);
+                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {loadSw.ElapsedMilliseconds}ms");
+
+                    buildResults[i] = (ext, assmInfo);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
+                }
+            });
+
+            foreach (var records in pendingLogs)
+                ParallelLogCapture.Replay(_logger, records);
+
+            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
+            foreach (var result in buildResults)
+            {
+                if (result.HasValue)
+                    assembledExtensions.Add(result.Value);
+            }
+            return assembledExtensions;
+        }
+
+        /// <summary>
+        /// Queues the stale-assembly and (on first load) appdata cleanup passes onto a background
+        /// task. Neither is on anyone's critical path - they only delete orphaned files nothing
+        /// downstream reads - so this keeps them off the path to the ribbon appearing.
+        /// </summary>
+        /// <remarks>
+        /// The Revit version is read up front, before queuing either task, because
+        /// <c>ExternalApplication</c> objects such as <c>_uiApp</c> are not safe to touch off the
+        /// calling (main) thread.
+        /// </remarks>
+        private void QueueBackgroundCleanup(bool firstLoad)
+        {
+            var revitVersionForCleanup = _uiApp.Application.VersionNumber;
+            System.Threading.Tasks.Task.Run(() => CleanupStaleAssemblyFiles(revitVersionForCleanup));
+
+            if (firstLoad)
+            {
+                System.Threading.Tasks.Task.Run(() => CleanupAppDataFolder(revitVersionForCleanup));
+            }
+        }
+
+        /// <summary>
+        /// Removes stale pyRevit extension assemblies (and their .log siblings) left in the
+        /// appdata version folder by previous sessions. Skipped when other Revit instances are
+        /// open, since they may have those assemblies loaded, and never removes an assembly that
+        /// is currently loaded in this AppDomain.
+        /// </summary>
+        private void CleanupStaleAssemblyFiles(string version)
+        {
+            try
+            {
+                var processName = Process.GetCurrentProcess().ProcessName;
+                if (Process.GetProcessesByName(processName).Length != 1)
+                    return;
+
+                var appDataDir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "pyRevit",
+                    version);
+
+                if (!System.IO.Directory.Exists(appDataDir))
+                    return;
+
+                var loadedLocations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (asm.IsDynamic)
+                        continue;
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(asm.Location))
+                            loadedLocations.Add(System.IO.Path.GetFullPath(asm.Location));
+                    }
+                    catch
+                    {
+                        // assemblies without a backing file have no location
+                    }
+                }
+
+                var prefix = $"pyRevit_{version}_";
+                foreach (var dllPath in System.IO.Directory.GetFiles(appDataDir, "*.dll"))
+                {
+                    if (!System.IO.Path.GetFileName(dllPath).StartsWith(prefix, StringComparison.Ordinal))
+                        continue;
+
+                    if (loadedLocations.Contains(System.IO.Path.GetFullPath(dllPath)))
+                        continue;
+
+                    TryDeleteFile(dllPath);
+                    TryDeleteFile(System.IO.Path.ChangeExtension(dllPath, ".log"));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Stale assembly cleanup failed: {ex.Message}");
+            }
+        }
+
+        private void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (System.IO.File.Exists(path))
+                    System.IO.File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Could not delete '{path}': {ex.Message}");
+            }
+        }
+
+        private static readonly Regex _pidStampedUserRegex =
+            new Regex(@"^pyRevit_(?<version>\d{4})_(?<user>.+)_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
+        private static readonly Regex _pidStampedRegex =
+            new Regex(@"^pyRevit_(?<version>\d{4})_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Removes pid-stamped appdata files left behind by Revit instances that are no longer
+        /// running. This is only called during initial session load to preserve active reload data.
+        /// </summary>
+        private void CleanupAppDataFolder(string version)
+        {
+            try
+            {
+                var appDataDir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "pyRevit",
+                    version);
+
+                if (!System.IO.Directory.Exists(appDataDir))
+                    return;
+
+                var runningPids = new HashSet<int>();
+                foreach (var proc in Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName))
+                    runningPids.Add(proc.Id);
+
+                foreach (var filePath in System.IO.Directory.GetFiles(appDataDir))
+                {
+                    var fileName = System.IO.Path.GetFileName(filePath);
+                    var match = _pidStampedUserRegex.Match(fileName);
+                    if (!match.Success)
+                        match = _pidStampedRegex.Match(fileName);
+                    if (!match.Success)
+                        continue;
+
+                    if (int.TryParse(match.Groups["pid"].Value, out var pid) && !runningPids.Contains(pid))
+                        TryDeleteFile(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Appdata cleanup failed: {ex.Message}");
+            }
         }
 
         private void SeedEnvironmentDictionary()
@@ -308,8 +635,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private void InitializeScriptExecutor()
         {
             // Cache runtime assembly lookup - it's used by every extension
-            _runtimeAssembly = FindRuntimeAssembly() 
-                ?? throw new InvalidOperationException("Could not find PyRevit runtime assembly");
+            _runtimeAssembly = FindRuntimeAssembly()
+                ?? throw new InvalidOperationException(
+                    $"Could not find pyRevitLabs.PyRevit.Runtime.{_uiApp.Application.VersionNumber}");
 
             var scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor")
                 ?? throw new InvalidOperationException("Could not find ScriptExecutor type");
@@ -318,60 +646,139 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ?? throw new InvalidOperationException("Could not find ScriptExecutor.Initialize method");
 
             initializeMethod.Invoke(null, null);
-            
+
             // Cache bin directory and pyRevit root for repeated use
             _binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _pyRevitRoot = FindPyRevitRoot(_binDir);
-            
+
             if (_pyRevitRoot != null)
                 _logger.Debug($"pyRevit root resolved to: {_pyRevitRoot}");
             else
                 _logger.Debug("pyRevit root could not be resolved from bin directory; will retry during BuildSearchPaths");
-            
+
             // Cache reflection types and methods for startup script execution - HUGE performance boost
             _scriptDataType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
             _scriptRuntimeConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptRuntimeConfigs");
             _scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor");
             _scriptExecutorConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutorConfigs");
-            
+
             if (_scriptDataType != null && _scriptRuntimeConfigsType != null && _scriptExecutorType != null && _scriptExecutorConfigsType != null)
             {
                 _executeScriptMethod = _scriptExecutorType.GetMethod("ExecuteScript",
                     new Type[] { _scriptDataType, _scriptRuntimeConfigsType, _scriptExecutorConfigsType });
             }
-            
+
             var externalCommandDataType = typeof(Autodesk.Revit.UI.ExternalCommandData);
             _externalCommandDataAppProperty = externalCommandDataType.GetProperty("Application");
         }
 
-        private Assembly? FindRuntimeAssembly()
+        /// <summary>
+        /// Points NLog at the runtime logging service so records from this service and
+        /// the extension parser reach the console and the runtime log file.
+        /// </summary>
+        private void ConfigureRuntimeLogging()
         {
-            // Use cached assembly lookup - much faster than scanning AppDomain every time
-            var assembly = AssemblyCache.GetByPrefix("pyRevitLabs.PyRevit.Runtime");
-            if (assembly != null)
-                return assembly;
-            
-            // If not found in cache, try to load from the bin directory
-            var binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (!string.IsNullOrEmpty(binDir))
+            if (_runtimeAssembly == null)
+                return;
+
+            try
             {
-                var runtimeDlls = System.IO.Directory.GetFiles(binDir, "pyRevitLabs.PyRevit.Runtime*.dll");
-                if (runtimeDlls.Length > 0)
+                var scriptOutputType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptOutput");
+                var configureMethod = scriptOutputType?.GetMethod(
+                    "ConfigureLogging", BindingFlags.Public | BindingFlags.Static);
+
+                if (configureMethod == null)
                 {
-                    var loaded = Assembly.LoadFrom(runtimeDlls[0]);
-                    AssemblyCache.Add(loaded); // Add to cache for future lookups
-                    return loaded;
+                    Trace.WriteLine(
+                        "pyRevit: ScriptOutput.ConfigureLogging not found; loader logging is discarded.");
+                    return;
                 }
+
+                configureMethod.Invoke(null, null);
             }
-            
-            return null;
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"pyRevit: failed to route loader logging into the runtime: {ex}");
+            }
         }
 
+        /// <summary>
+        /// Starts, refreshes, or stops the runtime's agent host (<c>AgentHost.Configure</c>) to
+        /// match the <c>[agent]</c> config. Runs on every load so a reload picks up config changes.
+        /// Failures are logged and never abort the load.
+        /// </summary>
+        private void ConfigureAgentHost()
+        {
+            if (_runtimeAssembly == null)
+                return;
+
+            try
+            {
+                var configure = _runtimeAssembly
+                    .GetType("PyRevitLabs.PyRevit.Runtime.Agent.AgentHost")
+                    ?.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static);
+                if (configure == null)
+                {
+                    _logger.Debug("Agent host is not available in this runtime.");
+                    return;
+                }
+
+                configure.Invoke(null, new object[] { _uiApp, BuildCoreSearchPaths() });
+            }
+            catch (TargetInvocationException tie)
+            {
+                _logger.Warning($"Agent host configuration failed: {(tie.InnerException ?? tie).Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Agent host configuration failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Resolves the runtime assembly built for the host Revit version, loading it from the
+        /// bin directory when it is not loaded yet.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: only <c>pyRevitLabs.PyRevit.Runtime.&lt;host version&gt;</c> is acceptable.
+        /// The Python session setup loads that same assembly by name, and the runtime keeps its
+        /// session output and log forwarding in static state. A second runtime copy in the process
+        /// splits the session across two output windows and writes every forwarded record twice.
+        /// </remarks>
+        private Assembly? FindRuntimeAssembly()
+        {
+            var runtimeName = $"pyRevitLabs.PyRevit.Runtime.{_uiApp.Application.VersionNumber}";
+
+            var assembly = AssemblyCache.GetByName(runtimeName);
+            if (assembly != null)
+                return assembly;
+
+            var binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (string.IsNullOrEmpty(binDir))
+                return null;
+
+            var runtimePath = System.IO.Path.Combine(binDir, runtimeName + ".dll");
+            if (!System.IO.File.Exists(runtimePath))
+                return null;
+
+            var loaded = Assembly.LoadFrom(runtimePath);
+            AssemblyCache.Add(loaded);
+            return loaded;
+        }
+
+        /// <summary>
+        /// Runs an extension's startup script. Shares the session engine (see
+        /// <see cref="CreateScriptRuntimeConfigs"/>) when the extension is Rocket Mode compatible
+        /// and Rocket Mode is on - the same author-declared, user-gated trust signal that already
+        /// lets an extension's own commands share a cached engine across repeated invocations
+        /// (see <see cref="AssemblyMaker.CommandTypeGenerator.BuildEngineConfigs"/>), extended here
+        /// to sharing across different startup scripts within one session load.
+        /// </summary>
         private void ExecuteExtensionStartupScript(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
         {
             if (string.IsNullOrEmpty(extension.StartupScript))
                 return;
-            
+
             try
             {
                 // Validate cached types
@@ -379,28 +786,28 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 {
                     throw new Exception("Reflection types not properly cached during initialization");
                 }
-                
+
                 // Build search paths for the startup script
                 var searchPaths = BuildSearchPaths(extension);
-                
+
                 // Create ScriptData
                 var scriptData = CreateScriptData(extension);
-                
-                // Create ScriptRuntimeConfigs
-                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths);
-                
+
+                var sharedSessionEngine = (_uiManager?.RocketMode ?? false) && extension.RocketModeCompatible;
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine);
+
                 // Execute the script using cached method
                 if (scriptData == null || scriptRuntimeConfigs == null || _executeScriptMethod == null)
                 {
                     throw new Exception("One or more required objects is null");
                 }
-                
+
                 try
                 {
                     _logger.Info($"Executing startup script for extension: {extension.Name}");
-                    
+
                     var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
-                    
+
                     // Check if the script execution succeeded (result code 0 = success)
                     if (result != null && (int)result != 0)
                     {
@@ -426,32 +833,140 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
+        /// Runs a pyRevit session entry script (preload/postload) through the runtime
+        /// ScriptExecutor. These scripts drive the residual Python session services that
+        /// have not yet been ported to C#. Failures are logged but never abort the load.
+        /// Always shares the session engine: Preload and Postload are pyRevit's own trusted code,
+        /// and always the same two scripts, once each per load.
+        /// </summary>
+        /// <param name="scriptFileName">Entry script file name located in the engines directory.</param>
+        /// <param name="commandName">Display name reported for the script run.</param>
+        /// <param name="firstLoad">True during initial Revit startup; false during reload.</param>
+        private void ExecuteEntryScript(string scriptFileName, string commandName, bool firstLoad)
+        {
+            if (_scriptDataType == null || _scriptRuntimeConfigsType == null || _executeScriptMethod == null)
+            {
+                _logger.Warning($"Cannot run '{scriptFileName}': runtime executor not initialized.");
+                return;
+            }
+
+            // Entry scripts live in the engines directory alongside the engine subfolders.
+            // The loader DLL may reside inside an engine version subfolder (one level below engines/)
+            // or directly in engines/ itself, so check both locations.
+            string? scriptPath = null;
+            if (!string.IsNullOrEmpty(_binDir))
+            {
+                var candidate = System.IO.Path.Combine(_binDir, scriptFileName);
+                if (System.IO.File.Exists(candidate))
+                {
+                    scriptPath = candidate;
+                }
+                else
+                {
+                    var parent = System.IO.Path.GetDirectoryName(_binDir);
+                    if (parent != null)
+                        scriptPath = System.IO.Path.Combine(parent, scriptFileName);
+                }
+            }
+
+            if (scriptPath == null || !System.IO.File.Exists(scriptPath))
+            {
+                _logger.Warning($"Session entry script not found: {scriptPath ?? scriptFileName}");
+                return;
+            }
+
+            try
+            {
+                var searchPaths = BuildCoreSearchPaths();
+                var scriptData = CreateEntryScriptData(scriptPath, commandName);
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(
+                    searchPaths, sharedSessionEngine: true, sessionFirstLoad: firstLoad);
+
+                var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
+                if (result != null && (int)result != 0)
+                    _logger.Warning($"'{scriptFileName}' returned non-zero result: {result}");
+            }
+            catch (System.Reflection.TargetInvocationException tie)
+            {
+                var ex = tie.InnerException ?? tie;
+                _logger.Error($"'{scriptFileName}' failed: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"'{scriptFileName}' failed: {ex.Message}");
+            }
+        }
+
+        private object CreateEntryScriptData(string scriptPath, string commandName)
+        {
+            if (_scriptDataType == null)
+                throw new InvalidOperationException("ScriptData type not initialized");
+
+            var scriptData = Activator.CreateInstance(_scriptDataType)
+                ?? throw new InvalidOperationException("Failed to create ScriptData instance");
+            SetMemberValue(_scriptDataType, scriptData, "ScriptPath", scriptPath);
+            SetMemberValue(_scriptDataType, scriptData, "ConfigScriptPath", null);
+            SetMemberValue(_scriptDataType, scriptData, "CommandUniqueId", string.Empty);
+            SetMemberValue(_scriptDataType, scriptData, "CommandName", commandName);
+            SetMemberValue(_scriptDataType, scriptData, "CommandBundle", string.Empty);
+            SetMemberValue(_scriptDataType, scriptData, "CommandExtension", string.Empty);
+            SetMemberValue(_scriptDataType, scriptData, "IsStartupScript", true);
+            SetMemberValue(_scriptDataType, scriptData, "HelpSource", string.Empty);
+            return scriptData;
+        }
+
+        /// <summary>
+        /// Builds the core pyRevit search paths (pyrevitlib + site-packages) used by the
+        /// session entry scripts, which do not belong to any extension.
+        /// </summary>
+        private List<string> BuildCoreSearchPaths()
+        {
+            var searchPaths = new List<string>();
+
+            if (_pyRevitRoot == null)
+                _pyRevitRoot = FindPyRevitRoot(_binDir) ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(_pyRevitRoot))
+            {
+                var pyRevitLibDir = System.IO.Path.Combine(_pyRevitRoot, Constants.PYREVIT_LIB_DIR);
+                if (DirectoryExistsCached(pyRevitLibDir))
+                    searchPaths.Add(pyRevitLibDir);
+
+                var sitePackagesDir = System.IO.Path.Combine(_pyRevitRoot, Constants.SITE_PACKAGES_DIR);
+                if (DirectoryExistsCached(sitePackagesDir))
+                    searchPaths.Add(sitePackagesDir);
+            }
+
+            return SearchPaths.DedupeKeepingFirstOccurrence(searchPaths).ToList();
+        }
+
+        /// <summary>
         /// Builds the search paths for a startup script, including extension lib folders and pyRevit core paths.
         /// </summary>
         /// <param name="extension">The extension for which to build search paths.</param>
-        /// <returns>List of search paths.</returns>
+        /// <returns>List of search paths, each folder present once.</returns>
         private List<string> BuildSearchPaths(ParsedExtension extension)
         {
             var searchPaths = new List<string> { extension.Directory };
-            
+
             // Add extension's lib folder if it exists (cached)
             var extLibPath = System.IO.Path.Combine(extension.Directory, "lib");
             if (DirectoryExistsCached(extLibPath))
             {
                 searchPaths.Insert(0, extLibPath);
             }
-            
-            // Use pre-computed library extension lib paths (avoids N*lib_count Directory.Exists calls)
+
+            // Use pre-computed library-extension search paths (avoids N*lib_count Directory.Exists calls)
             // This is an optimization for #3268 - previously this loop was inside the foreach for each UI extension
-            searchPaths.AddRange(_precomputedLibraryLibPaths);
-            
+            searchPaths.AddRange(_precomputedLibrarySearchPaths);
+
             // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
             // Cache the root lookup - it's the same for all extensions
             if (_pyRevitRoot == null)
             {
                 _pyRevitRoot = FindPyRevitRoot(extension.Directory, _binDir) ?? string.Empty;
             }
-            
+
             if (!string.IsNullOrEmpty(_pyRevitRoot))
             {
                 var pyRevitLibDir = System.IO.Path.Combine(_pyRevitRoot, Constants.PYREVIT_LIB_DIR);
@@ -466,8 +981,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     searchPaths.Add(sitePackagesDir);
                 }
             }
-            
-            return searchPaths;
+
+            return SearchPaths.DedupeKeepingFirstOccurrence(searchPaths).ToList();
         }
 
         /// <summary>
@@ -479,7 +994,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             if (_scriptDataType == null)
                 throw new InvalidOperationException("ScriptData type not initialized");
-                
+
             var scriptData = Activator.CreateInstance(_scriptDataType)
                 ?? throw new InvalidOperationException("Failed to create ScriptData instance");
             SetMemberValue(_scriptDataType, scriptData, "ScriptPath", extension.StartupScript);
@@ -497,8 +1012,27 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates a ScriptRuntimeConfigs object for executing a startup script.
         /// </summary>
         /// <param name="searchPaths">The search paths to include in the configuration.</param>
+        /// <param name="sharedSessionEngine">
+        /// When false (default), "clean" forces a brand-new engine (interpreter + stdlib load) for
+        /// this call. When true, requests a shared, engine-reused IronPython engine scoped to this
+        /// session load instead, so its already-imported <c>sys.modules</c> carries over. See
+        /// <see cref="ExecuteEntryScript"/>/<see cref="ExecuteExtensionStartupScript"/> for which
+        /// callers opt in and why.
+        /// </param>
+        /// <param name="sessionFirstLoad">
+        /// When set, published to the script as the <c>__sessionfirstload__</c> builtin so a session
+        /// entry script can tell an initial Revit startup from a reload.
+        /// </param>
         /// <returns>The created ScriptRuntimeConfigs object.</returns>
-        private object CreateScriptRuntimeConfigs(List<string> searchPaths)
+        /// <remarks>
+        /// Builtins supplied through <c>Variables</c> are not cleared between runs, so on the shared
+        /// session engine <c>__sessionfirstload__</c> stays visible to every later script in the same
+        /// session load (Rocket Mode compatible extension startup scripts and Postload). Each load
+        /// seeds a new session UUID and therefore a new shared engine, so the value never outlives
+        /// the load it describes. Scripts on a per-extension engine never see it.
+        /// </remarks>
+        private object CreateScriptRuntimeConfigs(
+            List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null)
         {
             // Create temporary ExternalCommandData
 #if NETFRAMEWORK
@@ -508,70 +1042,87 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var tmpCommandData = System.Runtime.CompilerServices.RuntimeHelpers
                 .GetUninitializedObject(typeof(Autodesk.Revit.UI.ExternalCommandData));
 #endif
-                
+
             if (_externalCommandDataAppProperty == null)
                 throw new Exception("Could not find Application property on ExternalCommandData");
-                
+
             _externalCommandDataAppProperty.SetValue(tmpCommandData, _uiApp);
-            
+
             // Create ScriptRuntimeConfigs using cached type
             if (_scriptRuntimeConfigsType == null)
                 throw new InvalidOperationException("ScriptRuntimeConfigs type not initialized");
-                
+
             var scriptRuntimeConfigs = Activator.CreateInstance(_scriptRuntimeConfigsType)
                 ?? throw new InvalidOperationException("Failed to create ScriptRuntimeConfigs instance");
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "UIApp", _uiApp);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "CommandData", tmpCommandData);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SelectedElements", null);
-            
+
             // Set search paths as List<string>
             var listType = typeof(List<string>);
             var searchPathsList = Activator.CreateInstance(listType, new object[] { searchPaths });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SearchPaths", searchPathsList);
-            
+
             // Set empty arguments
             var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
-            
-            // Set engine configs for persistent, clean, full-frame IronPython engine (JSON string)
-            var engineConfigsJson = "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
+
+            var engineConfigsJson = sharedSessionEngine
+                ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true}"
+                : "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
-            
+            TrySetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
+
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "DebugMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ExecutedFromUI", false);
-            
+
+            if (sessionFirstLoad.HasValue)
+            {
+                var variables = new Dictionary<string, object>
+                {
+                    ["__sessionfirstload__"] = sessionFirstLoad.Value,
+                };
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Variables", variables);
+            }
+
             return scriptRuntimeConfigs;
         }
 
         private static void SetMemberValue(Type targetType, object? instance, string memberName, object? value)
         {
+            if (!TrySetMemberValue(targetType, instance, memberName, value))
+                throw new MissingMemberException(targetType.FullName, memberName);
+        }
+
+        internal static bool TrySetMemberValue(Type targetType, object? instance, string memberName, object? value)
+        {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
-                
+
             var property = targetType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
             if (property != null)
             {
                 property.SetValue(instance, value);
-                return;
+                return true;
             }
 
             var field = targetType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance);
             if (field != null)
             {
                 field.SetValue(instance, value);
-                return;
+                return true;
             }
 
-            throw new Exception($"Could not find member '{memberName}' on type {targetType.FullName}");
+            return false;
         }
 
         private bool DirectoryExistsCached(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return false;
-                
+
             if (!_directoryExistsCache.TryGetValue(path, out bool exists))
             {
                 exists = System.IO.Directory.Exists(path);
@@ -579,7 +1130,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             return exists;
         }
-        
+
         internal static string? FindPyRevitRoot(params string?[] hintPaths)
         {
             foreach (var hint in hintPaths)

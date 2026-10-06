@@ -7,10 +7,12 @@ import sys
 import traceback
 import json
 import threading
+import time
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import PY3
+from pyrevit.compat import PY2
 from pyrevit.compat import urlparse
 
 if PY3:
@@ -34,6 +36,24 @@ else:
 mlogger = get_logger(__name__)
 
 
+def _utf8_decode(value):
+    """Decode raw utf-8 byte strings left by Python 2 percent-decoding."""
+    if isinstance(value, str):
+        return value.decode("utf-8")
+    return value
+
+
+def _decode_utf8_params(params):
+    """Decode utf-8 keys and values of a parsed query params dictionary."""
+    decoded = {}
+    for key, value in params.items():
+        if isinstance(value, list):
+            decoded[_utf8_decode(key)] = [_utf8_decode(v) for v in value]
+        else:
+            decoded[_utf8_decode(key)] = _utf8_decode(value)
+    return decoded
+
+
 # instance of event handler created when this module is loaded
 # on hosts main thread. Creating external events on non-main threads
 # are prohibited by the host. this event handler is reconfigured
@@ -44,6 +64,14 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
+
+    def log_message(self, message_format, *args):
+        """Log request messages through pyRevit's logger."""
+        mlogger.debug(
+            "Routes request from %s | %s",
+            self.client_address[0],
+            message_format % args,
+        )
 
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
@@ -94,6 +122,8 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             # parse_qs returns lists for values; flatten single values to strings
             parsed = parse_qs(query_string)
             query_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+            if PY2:
+                query_params = _decode_utf8_params(query_params)
 
         return base.Request(
             path=path,
@@ -246,13 +276,100 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
 
 class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
-    """Threaded HTTP server."""
+    """Threaded HTTP server.
+
+    Requests are served on threads that are never STA, while pyRevit directs
+    stdout and stderr to its script output console, a WPF window that can only
+    be created on Revit's STA UI thread. An exception escaping one of these
+    threads is printed there and terminates the Revit process, so nothing here
+    may write to stderr and no exception may leave a thread.
+
+    Request threads are daemons and are not joined on close, because a request
+    in flight when the session is reloaded must not hold the host: they are
+    abandoned with the process, and ``server_close()`` runs on whatever thread
+    collects the server, including a session reload that is waiting on it.
+    """
 
     allow_reuse_address = True
 
+    daemon_threads = True
+    block_on_close = False
+
+    def handle_error(self, request, client_address):
+        """Report a failed request without writing to stderr.
+
+        See the class docstring for why stderr is unsafe here.
+
+        Note:
+            Called outside an ``except`` block there is no exception to format,
+            and IronPython 3's ``traceback.format_exc()`` raises on that instead
+            of returning a placeholder, so the traceback is only formatted when
+            one is active.
+
+        Args:
+            request: The request being processed.
+            client_address (tuple): Client address the request came from.
+        """
+        error_type, error, error_traceback = sys.exc_info()
+        if error_type is None:
+            details = "no active exception"
+        else:
+            details = "".join(
+                traceback.format_exception(error_type, error, error_traceback)
+            )
+        mlogger.debug("Routes request error | %s | %s", client_address, details)
+
+    def process_request_thread(self, request, client_address):
+        """Serve a request, letting no exception escape the thread.
+
+        Stopping the server closes sockets while requests are still in flight,
+        so the per-request cleanup can raise. The inherited implementation
+        leaves that path unguarded, and an exception escaping here terminates
+        Revit for the reason given in the class docstring.
+
+        Args:
+            request: The request to process.
+            client_address (tuple): Client address the request came from.
+        """
+        try:
+            self.finish_request(request, client_address)
+        except Exception:
+            try:
+                self.handle_error(request, client_address)
+            except Exception:
+                mlogger.debug(
+                    "Routes handle_error failed | %s | %s",
+                    client_address,
+                    traceback.format_exc(),
+                )
+        finally:
+            try:
+                self.shutdown_request(request)
+            except Exception:
+                mlogger.debug(
+                    "Routes request cleanup error | %s | %s",
+                    client_address,
+                    traceback.format_exc(),
+                )
+
     def shutdown(self):
-        self.socket.close()
-        HTTPServer.shutdown(self)
+        """Stop the accept loop, and always release the listening socket.
+
+        The socket release is in a ``finally`` because the inherited shutdown
+        waits for the accept loop to acknowledge, which is the step that fails
+        when the socket is already gone - and a socket left bound is the port a
+        reloaded session cannot rebind.
+        """
+        try:
+            HTTPServer.shutdown(self)
+        finally:
+            try:
+                self.socket.close()
+            except Exception:
+                mlogger.debug(
+                    "Routes listening socket close failed | %s",
+                    traceback.format_exc(),
+                )
 
 
 class RoutesServer(object):
@@ -269,6 +386,7 @@ class RoutesServer(object):
         self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
         self.host = host
         self.port = port
+        self.server_thread = None
         self.start()
 
     def __str__(self):
@@ -280,14 +398,121 @@ class RoutesServer(object):
     def __repr__(self):
         return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
 
+    @property
+    def is_running(self):
+        """Check if the accept loop is still up.
+
+        Returns:
+            (bool): True if the server is accepting requests.
+        """
+        return self.server_thread is not None and self.server_thread.is_alive()
+
     def start(self):
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        """Start the accept loop, at most once, on a guarded thread.
+
+        Activation starts each server more than once, which left a second
+        accept loop running against the same socket that nothing tracked and
+        shutdown never joined. The thread is guarded because an exception
+        escaping it terminates Revit; see the ``ThreadedHttpServer`` docstring.
+        """
+        if self.is_running:
+            return
+
+        def serve_forever_guarded():
+            try:
+                self.server.serve_forever()
+            except Exception:
+                mlogger.debug("Routes server loop exited | %s", traceback.format_exc())
+
+        self.server_thread = threading.Thread(target=serve_forever_guarded)
         self.server_thread.daemon = True
         self.server_thread.start()
 
-    def waitForThread(self):
-        self.server_thread.join()
+    def waitForThread(self, timeout=5.0):
+        """Join the accept loop thread, reporting a loop that outlives the wait.
 
-    def stop(self):
-        self.server.shutdown()
-        self.waitForThread()
+        Args:
+            timeout (float): seconds to wait for the accept loop to finish.
+        """
+        if self.server_thread is None:
+            return
+        self.server_thread.join(timeout)
+        if self.server_thread.is_alive():
+            mlogger.error(
+                "Routes accept loop on port %s did not stop within %s seconds",
+                self.port,
+                timeout,
+            )
+
+    def request_shutdown(self, timeout):
+        """Ask the accept loop to stop, without waiting on it indefinitely.
+
+        ``BaseServer.shutdown`` sets the shutdown flag and then blocks until the
+        accept loop acknowledges it, with no timeout of its own. That wait is
+        the one unbounded step left in a teardown the host runs on a worker
+        thread, so it is issued on its own daemon thread and given the same
+        bound as the join that follows. A loop that never acknowledges is
+        abandoned rather than waited for: the thread is a daemon, and the socket
+        is closed on the way out either way, which is what stops a wedged loop
+        in the end.
+
+        A failure is contained inside the thread, because an exception leaving a
+        thread is printed to stderr by the runtime, which this class may not do.
+
+        Args:
+            timeout (float): seconds to wait for the loop to acknowledge.
+        """
+
+        def request_stop():
+            try:
+                self.server.shutdown()
+            except Exception:
+                mlogger.error(
+                    "Routes server shutdown failed | %s", traceback.format_exc()
+                )
+
+        requester = threading.Thread(target=request_stop)
+        requester.daemon = True
+        requester.start()
+        requester.join(timeout)
+        if requester.is_alive():
+            mlogger.error(
+                "Routes accept loop on port %s did not acknowledge shutdown within "
+                "%s seconds",
+                self.port,
+                timeout,
+            )
+
+    def stop(self, timeout=5.0):
+        """Stop serving and release the port. Never raises, never waits longer than ``timeout``.
+
+        This runs while a session is being reloaded or torn down, so a failure
+        here would be reported through the output console and, unhandled on a
+        worker thread, terminate Revit (see ``ThreadedHttpServer``). Every
+        failure is logged instead.
+
+        The two waits share one budget. The shutdown request and the join that
+        follows are given the time the first one did not use, so a wedged accept
+        loop delays the reload by at most ``timeout`` in total rather than once
+        per wait.
+
+        Args:
+            timeout (float): seconds to wait, in total, for the accept loop to finish.
+        """
+        deadline = time.time() + timeout
+        try:
+            if self.is_running:
+                self.request_shutdown(timeout)
+        except Exception:
+            mlogger.error(
+                "Routes server shutdown request failed | %s", traceback.format_exc()
+            )
+
+        try:
+            self.server.server_close()
+        except Exception:
+            mlogger.error("Routes server close failed | %s", traceback.format_exc())
+
+        self.waitForThread(max(0.0, deadline - time.time()))
+        self.server_thread = None
+        mlogger.debug("Routes server stopped | %s", self)

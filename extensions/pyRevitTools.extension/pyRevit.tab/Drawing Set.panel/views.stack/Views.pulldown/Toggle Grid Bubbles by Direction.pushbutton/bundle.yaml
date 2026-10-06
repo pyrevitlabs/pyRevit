@@ -52,6 +52,5 @@ tooltip:
     
     Funciona tanto em vistas de planta/forro quanto em vistas de corte/elevação.
 author: Mohamed Asli
-min_revit_version: 2016
 engine:
   clean: true

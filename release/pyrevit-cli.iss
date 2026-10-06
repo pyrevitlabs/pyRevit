@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit CLI"
 #define MyAppUUID "9557b432-cf79-4ece-91cf-b8f996c88b47"
-#define MyAppVersion "6.5.5.26237"
+#define MyAppVersion "7.0.0.26278"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #define MyAppExeName "pyrevit.exe"
@@ -30,7 +30,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=lowest
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_CLI_{#MyAppVersion}_signed
 SetupIconFile=..\release\bin-assets\pyrevit_cli.ico
 Compression=lzma
@@ -63,6 +63,7 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Par
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden
 
 [Code]
 function NotAdminAndPathNotExists: Boolean;
@@ -107,6 +108,8 @@ end;
 
 function InitializeSetup: Boolean;
 begin
+  // WebView2 Runtime for the output window renderer
+  Dependency_AddWebView2;
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
   Result := True;

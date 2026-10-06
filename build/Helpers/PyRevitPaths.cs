@@ -1,7 +1,7 @@
 namespace Build.Helpers;
 
 /// <summary>
-/// Repository paths and constants ported from dev/scripts/configs.py.
+/// Repository paths and constants used by the build pipeline.
 /// </summary>
 public static class PyRevitPaths
 {
@@ -22,6 +22,12 @@ public static class PyRevitPaths
     public static string Runner2712Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.2712PR", "pyRevitRunner.2712PR.csproj");
     public static string Runner342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.342", "pyRevitRunner.342.csproj");
     public static string ExtensionParserTestProject => Path.Combine(DevPath, "pyRevitLoader", "pyRevitExtensionParserTester", "pyRevitExtensionParserTest.csproj");
+    public static string ConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Tests", "pyRevitLabs.Configurations.Tests.csproj");
+    public static string IniConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Ini.Tests", "pyRevitLabs.Configurations.Ini.Tests.csproj");
+    public static string CPythonRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests.csproj");
+    public static string CliTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitCLI.Tests", "pyRevitCLI.Tests.csproj");
+    public static string AgentRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj");
+    public static string PyRevitUnitTestProject => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests.csproj");
 
     public static string IronPython2Solution => Path.Combine(DevPath, "modules", "pyRevitLabs.IronPython2.sln");
     public static string IronPython2LibProject => Path.Combine(DevPath, "modules", "pyRevitLabs.ironpython2", "Src", "IronPython", "IronPython.csproj");
@@ -33,6 +39,7 @@ public static class PyRevitPaths
     public static string Engines2712NetCorePath => Path.Combine(BinPath, "netcore", "engines", "IPY2712PR");
 
     public static string RuntimeSolution => Path.Combine(DevPath, "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime.sln");
+    public static string ShellProject => Path.Combine(DevPath, "pyRevitLabs.PyRevit.Shell", "pyRevitLabs.PyRevit.Shell.csproj");
     public static string DirectoryBuildProps => Path.Combine(DevPath, "Directory.Build.props");
 
     public static string TelemetryServerPath => Path.Combine(DevPath, "pyRevitTelemetryServer");
@@ -45,6 +52,7 @@ public static class PyRevitPaths
     public static string UsagePatterns => Path.Combine(DevPath, "pyRevitLabs", "pyRevitCLI", "Resources", "UsagePatterns.txt");
 
     public static string VersionFile => Path.Combine(Root, "pyrevitlib", "pyrevit", "version");
+    public static string AgentSkillsPath => Path.Combine(Root, "pyrevitlib", "pyrevit", "agent", "skills");
     public static string InstallVersionFile => Path.Combine(ReleasePath, "version");
     public static string ProductsTemplateFile => Path.Combine(ReleasePath, "pyrevit-products.json");
     public static string ProductsDataFile => Path.Combine(BinPath, "pyrevit-products.json");

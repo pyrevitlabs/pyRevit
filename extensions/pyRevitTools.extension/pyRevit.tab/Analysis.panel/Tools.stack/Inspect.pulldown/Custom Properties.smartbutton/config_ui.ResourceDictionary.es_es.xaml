@@ -5,8 +5,10 @@
     <system:String x:Key="Window.Title">Propiedades del elemento – Configurar parámetros adicionales</system:String>
     <system:String x:Key="ChkEnableStartup">Cargar panel al inicio</system:String>
     <system:String x:Key="TbRestartHint">Se requiere reiniciar Revit para que los cambios de inicio surtan efecto.</system:String>
-    <system:String x:Key="TbParamsHint">Introduzca un nombre de parámetro por línea. El panel recoge los cambios en el siguiente cambio de selección — no se requiere reinicio.</system:String>
-    <system:String x:Key="TbExamples">Ejemplos: Comentarios, Marca, Fabricante, Comentarios de tipo</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">Mostrar información de worksharing (Creado por / Última modificación por / Propietario)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">Activa o desactiva las filas Creado por, Última modificación por y Propietario en el panel. No se requiere reinicio.</system:String>
+    <system:String x:Key="TbParamsHint">Introduzca un nombre de parámetro por línea. Inicie una línea con # para insertar un encabezado de sección (p. ej. "# General") — deje solo "#" para una línea separadora simple. El panel recoge los cambios en el siguiente cambio de selección — no se requiere reinicio.</system:String>
+    <system:String x:Key="TbExamples">Ejemplos: Comentarios, Marca, # General, Fabricante, Comentarios de tipo</system:String>
     <system:String x:Key="BtnCancel">Cancelar</system:String>
     <system:String x:Key="BtnSave">Guardar</system:String>
 

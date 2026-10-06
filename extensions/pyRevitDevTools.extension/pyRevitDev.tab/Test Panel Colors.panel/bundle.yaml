@@ -16,3 +16,7 @@ background:
   title: '#E2A000'
   panel: '#BB005591'
   slideout: '#E25200'
+background_dark:
+  title: '#7A5600'
+  panel: '#1E3A5F'
+  slideout: '#7A2C00'

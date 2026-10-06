@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     WindowStyle="None"
     AllowsTransparency="True"
-    Background="White"
+    Background="{DynamicResource pyRevitWindowBackgroundBrush}"
     Title="{DynamicResource Title}"
     MinHeight="400"
     MinWidth="380"
@@ -12,7 +12,7 @@
     ResizeMode="NoResize"
     ShowInTaskbar="False"
     ScrollViewer.VerticalScrollBarVisibility="Disabled"
-    BorderBrush="#FFA0A0A0"
+    BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
     BorderThickness="1,1,1,1"
     MouseLeftButtonDown="move_window"
     WindowStartupLocation="CenterScreen">
@@ -27,7 +27,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Background="#FF667EEA">
+        <Grid Grid.Row="0" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Text="{DynamicResource HeaderTitle}" FontSize="18" FontWeight="Bold"
                        HorizontalAlignment="Center" Margin="0,15,0,15"
                        Foreground="White" VerticalAlignment="Center"/>
@@ -40,37 +40,37 @@
         <!-- Subtitle -->
         <TextBlock Grid.Row="1" Text="{DynamicResource Subtitle}"
                    FontSize="12" HorizontalAlignment="Center" Margin="0,10,0,10"
-                   Foreground="#FF666666"/>
+                   Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
 
         <!-- Coordinate System Selection -->
         <GroupBox Grid.Row="2" Header="{DynamicResource CoordinateSystemHeader}" Margin="15,5,15,15"
-                  FontWeight="SemiBold" Foreground="#FF444444">
+                  FontWeight="SemiBold" Foreground="{DynamicResource pyRevitWindowForegroundBrush}">
             <StackPanel Margin="15,5,15,0">
                 <RadioButton x:Name="all_grids" GroupName="CoordSystem" Content="{DynamicResource AllGrids}"
                              Margin="0,8,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="{DynamicResource AllGridsDescription}"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
+                           FontSize="10" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" Margin="20,0,0,8"/>
 
                 <RadioButton x:Name="radio_true_north" GroupName="CoordSystem" Content="{DynamicResource TrueNorth}"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="{DynamicResource TrueNorthDescription}"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
+                           FontSize="10" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" Margin="20,0,0,8"/>
 
                 <RadioButton x:Name="radio_project_north" GroupName="CoordSystem" Content="{DynamicResource ProjectNorth}"
                              Margin="0,8,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="{DynamicResource ProjectNorthDescription}"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
+                           FontSize="10" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" Margin="20,0,0,8"/>
 
                 <RadioButton x:Name="radio_view_orientation" GroupName="CoordSystem" Content="{DynamicResource ViewOrientation}"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="{DynamicResource ViewOrientationDescription}"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
+                           FontSize="10" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" Margin="20,0,0,8"/>
             </StackPanel>
         </GroupBox>
 
         <!-- Angle Tolerance -->
         <GroupBox Grid.Row="3" Header="{DynamicResource AngleToleranceHeader}" Margin="15,5,15,15"
-                  FontWeight="SemiBold" Foreground="#FF444444">
+                  FontWeight="SemiBold" Foreground="{DynamicResource pyRevitWindowForegroundBrush}">
             <StackPanel Margin="15">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -83,7 +83,7 @@
                             Margin="0,8,15,8" ValueChanged="angle_slider_changed"/>
 
                     <TextBlock x:Name="angle_display" Grid.Column="1" Text="10°"
-                               FontSize="18" FontWeight="Bold" Foreground="#FF667EEA"
+                               FontSize="18" FontWeight="Bold" Foreground="{DynamicResource pyRevitWindowForegroundBrush}"
                                VerticalAlignment="Center" MinWidth="50"/>
                 </Grid>
 
@@ -93,22 +93,22 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="{DynamicResource StrictLabel}" FontSize="10"
-                               Foreground="#FF888888" HorizontalAlignment="Left"/>
+                               Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" HorizontalAlignment="Left"/>
                     <TextBlock Grid.Column="1" Text="{DynamicResource PermissiveLabel}" FontSize="10"
-                               Foreground="#FF888888" HorizontalAlignment="Right"/>
+                               Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" HorizontalAlignment="Right"/>
                 </Grid>
 
                 <TextBlock x:Name="angle_description" Text="Moderate - good for most cases"
-                           FontSize="12" Foreground="#FF666666" HorizontalAlignment="Center"
+                           FontSize="12" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" HorizontalAlignment="Center"
                            Margin="0,5,0,10" FontStyle="Italic"/>
 
-                <Border Background="#FFE3F2FD" BorderBrush="#FFBBDEFB" BorderThickness="1"
+                <Border Background="{DynamicResource pyRevitSelectionBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}" BorderThickness="1"
                         CornerRadius="5" Margin="0,5,0,0" Padding="12">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource HowThisWorks}" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#FF1976D2" Margin="0,0,0,5"/>
+                                   Foreground="{DynamicResource pyRevitSelectionForegroundBrush}" Margin="0,0,0,5"/>
                         <TextBlock Text="{DynamicResource HowThisWorksDescription}"
-                                   FontSize="11" Foreground="#FF1565C0" TextWrapping="Wrap" LineHeight="16"/>
+                                   FontSize="11" Foreground="{DynamicResource pyRevitSelectionForegroundBrush}" TextWrapping="Wrap" LineHeight="16"/>
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -123,13 +123,13 @@
 
             <Button Grid.Column="0" Content="{DynamicResource Cancel}" Click="cancel"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="0,0,10,0" Background="#FFF8F9FA"
-                    BorderBrush="#FFDEE2E6" Foreground="#FF666666" FontSize="12"/>
+                    Height="40" Margin="0,0,10,0" Background="{DynamicResource pyRevitButtonBackgroundBrush}"
+                    BorderBrush="{DynamicResource pyRevitControlBorderBrush}" Foreground="{DynamicResource pyRevitWindowForegroundBrush}" FontSize="12"/>
 
             <Button Grid.Column="1" Content="{DynamicResource Continue}" Click="proceed"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="10,0,0,0" Background="#FF667EEA"
-                    BorderBrush="#FF667EEA" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                    Height="40" Margin="10,0,0,0" Background="{DynamicResource pyRevitAccentBrush}"
+                    BorderBrush="{DynamicResource pyRevitAccentBrush}" Foreground="{DynamicResource pyRevitDarkBrush}" FontWeight="SemiBold" FontSize="12"/>
         </Grid>
     </Grid>
 </Window>

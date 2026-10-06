@@ -6,11 +6,13 @@ using System.Reflection;
 using DocoptNet;
 using pyRevitCLI.Properties;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Exceptions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.PyRevit;
 using Console = Colorful.Console;
+using Environment = System.Environment;
 
 
 // NOTE:
@@ -23,8 +25,7 @@ using Console = Colorful.Console;
 // 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
 
 
-namespace pyRevitCLI
-{
+namespace pyRevitCLI {
 
     internal enum PyRevitCLILogLevel {
         Quiet,
@@ -60,6 +61,8 @@ namespace pyRevitCLI
         Config,
         Configs,
         Doctor,
+        Agent,
+        Mcp,
     }
 
     internal static class PyRevitCLI {
@@ -78,7 +81,7 @@ namespace pyRevitCLI
         // cli version property
         public static string CLIPath => Assembly.GetExecutingAssembly().Location;
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
-        public static string CLIInfoVersion  {
+        public static string CLIInfoVersion {
             get {
                 var infoVerAttr = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute)).FirstOrDefault();
                 if (infoVerAttr is AssemblyInformationalVersionAttribute infoVer)
@@ -88,15 +91,17 @@ namespace pyRevitCLI
         }
 
         // cli entry point:
+        /// <summary>
+        /// A <see cref="ConfigurationReadOnlyException"/> raised while processing arguments
+        /// (e.g. writing to an admin-locked config) is logged as a warning rather than treated
+        /// as a failure, matching pre-refactor CLI behavior.
+        /// </summary>
         static void Main(string[] args) {
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-            {
-                if (args.Name.StartsWith("Newtonsoft.Json,"))
-                {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
+                if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
                     logger.Debug($"Looking for Newtonsoft.Json assembly at: {assemblyPath}");
-                    if (File.Exists(assemblyPath))
-                    {
+                    if (File.Exists(assemblyPath)) {
                         var assembly = Assembly.LoadFrom(assemblyPath);
                         logger.Debug($"Successfully loaded Newtonsoft.Json assembly from: {assemblyPath}");
                         return assembly;
@@ -164,6 +169,10 @@ namespace pyRevitCLI
                     // now call methods based on inputs
                     ProcessArguments();
                 }
+                catch (ConfigurationReadOnlyException ex) {
+                    System.Console.Error.WriteLine("Error: {0}", ex.Message);
+                    Environment.ExitCode = -1;
+                }
                 catch (Exception ex) {
                     LogException(ex, logLevel);
                     Environment.ExitCode = -1;
@@ -222,7 +231,8 @@ namespace pyRevitCLI
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
                         destPath: TryGetValue("--dest"),
-                        credentials: TryGetCredentials()
+                        credentials: TryGetCredentials(),
+                        skipBin: arguments["--skip-bin"].IsTrue
                     );
             }
 
@@ -237,7 +247,7 @@ namespace pyRevitCLI
                     PyRevitCLICloneCmds.OpenClone(TryGetValue("<clone_name>"));
 
                 else if (all("add")) {
-                    if(all("this"))
+                    if (all("this"))
                         PyRevitCLICloneCmds.RegisterClone(
                             TryGetValue("<clone_name>"),
                             Path.GetDirectoryName(CLIPath),
@@ -456,13 +466,13 @@ namespace pyRevitCLI
                         PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
                 }
 
-                else if (any("enable", "disable"))
+                else if (any("enable", "disable")) {
                     PyRevitCLIExtensionCmds.ToggleExtension(
                         enable: arguments["enable"].IsTrue,
                         cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
                     );
-
+                }
                 else if (all("sources")) {
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
@@ -551,6 +561,61 @@ namespace pyRevitCLI
 
                 else
                     PyRevitCLIRevitCmds.PrintLocalRevits(running: arguments["--installed"].IsFalse);
+            }
+
+            else if (all("agent") && !all("configs")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
+
+                else if (all("status"))
+                    PyRevitCLIAgentCmds.PrintStatus(json: arguments["--json"].IsTrue);
+
+                else if (all("context"))
+                    PyRevitCLIAgentCmds.PrintContext(TryGetValue("--revit"));
+
+                else if (all("run"))
+                    PyRevitCLIAgentCmds.RunScript(
+                        scriptFile: TryGetValue("<script_file>"),
+                        mode: TryGetValue("--mode"),
+                        engine: TryGetValue("--engine"),
+                        title: TryGetValue("--title"),
+                        inputsJson: TryGetValue("--inputs"),
+                        revitSelector: TryGetValue("--revit"),
+                        timeoutSeconds: TryGetValue("--timeout"),
+                        workspace: TryGetValue("--workspace")
+                        );
+
+                else if (all("runs"))
+                    PyRevitCLIAgentCmds.PrintRuns(TryGetValue("--limit"));
+
+                else if (all("show"))
+                    PyRevitCLIAgentCmds.ShowRun(TryGetValue("<run_id>"));
+
+                else
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
+            }
+
+            else if (all("mcp")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Mcp);
+
+                else if (all("uninstall") && arguments["--all"].IsTrue)
+                    PyRevitCLIAgentCmds.UninstallMcpFromAllClients(ownedOnly: arguments["--owned"].IsTrue);
+
+                else if (any("install", "uninstall")) {
+                    var client = arguments["claude"].IsTrue ? McpClientKind.Claude
+                        : arguments["codex"].IsTrue ? McpClientKind.Codex
+                        : arguments["cursor"].IsTrue ? McpClientKind.Cursor
+                        : arguments["opencode"].IsTrue ? McpClientKind.OpenCode
+                        : McpClientKind.VSCode;
+                    if (all("install"))
+                        PyRevitCLIAgentCmds.InstallMcp(client, project: arguments["--project"].IsTrue);
+                    else
+                        PyRevitCLIAgentCmds.UninstallMcp(client, project: arguments["--project"].IsTrue);
+                }
+
+                else
+                    PyRevitMcpServer.Serve(TryGetValue("--revit"));
             }
 
             else if (all("run")) {
@@ -644,8 +709,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("rocketmode")) {
-                    if (any("enable", "disable"))
+                    if (any("enable", "disable")) {
                         PyRevitConfigs.SetRocketMode(arguments["enable"].IsTrue);
+                        Console.WriteLine(
+                            "Rocket Mode {0}.",
+                            arguments["enable"].IsTrue ? "enabled" : "disabled");
+                    }
                     else
                         Console.WriteLine(string.Format("Rocket Mode is {0}",
                                                         PyRevitConfigs.GetRocketMode() ? "Enabled" : "Disabled"));
@@ -674,11 +743,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("startuptimeout")) {
-                    if (arguments["<timeout>"] is null)
+                    var timeout = TryGetValue("<timeout>");
+                    if (timeout is null)
                         Console.WriteLine(string.Format("Startup log timeout is set to: {0}",
                                                         PyRevitConfigs.GetStartupLogTimeout()));
                     else
-                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(TryGetValue("<timeout>")));
+                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(timeout));
                 }
 
                 else if (all("loadbeta")) {
@@ -690,11 +760,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("cpyversion")) {
-                    if (arguments["<cpy_version>"] is null)
+                    var cpyVersion = TryGetValue("<cpy_version>");
+                    if (cpyVersion is null)
                         Console.WriteLine(string.Format("CPython version is set to: {0}",
                                                         PyRevitConfigs.GetCpythonEngineVersion()));
                     else
-                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(TryGetValue("<cpy_version>")));
+                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(cpyVersion));
                 }
 
                 else if (all("usercanupdate")) {
@@ -768,6 +839,31 @@ namespace pyRevitCLI
                         Console.WriteLine(string.Format("Routes Server is {0}",
                                                         PyRevitConfigs.GetRoutesServerStatus() ? "Enabled" : "Disabled"));
                     }
+                }
+
+                else if (all("agent")) {
+                    if (all("skills"))
+                        PyRevitCLIAgentCmds.ConfigureUserSkills(
+                            any("enable", "disable") ? arguments["enable"].IsTrue : null);
+
+                    else if (all("policy"))
+                        PyRevitCLIAgentCmds.ConfigurePolicy(
+                            arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
+                            : arguments["ask"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAsk
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAuto
+                            : null);
+
+                    else if (all("engine"))
+                        PyRevitCLIAgentCmds.ConfigureEngine(
+                            arguments["ironpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineIronPython
+                            : arguments["cpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineCPython
+                            : null);
+
+                    else if (any("enable", "disable"))
+                        PyRevitCLIAgentCmds.ConfigureEnabled(arguments["enable"].IsTrue);
+
+                    else
+                        PyRevitCLIAgentCmds.ConfigureEnabled(null);
                 }
 
                 else if (all("telemetry")) {
@@ -850,15 +946,29 @@ namespace pyRevitCLI
                 }
 
                 else if (all("outputcss")) {
-                    if (arguments["<css_path>"] is null)
+                    var cssPath = TryGetValue("<css_path>");
+                    if (cssPath is null)
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevitConfigs.SetOutputStyleSheet(TryGetValue("<css_path>"));
+                        PyRevitConfigs.SetOutputStyleSheet(cssPath);
                 }
 
-                else if (all("seed"))
-                    PyRevitConfigs.SeedConfig(lockSeedConfig: arguments["--lock"].IsTrue);
+                else if (all("seed")) {
+                    bool lockSeedConfig = arguments["--lock"].IsTrue;
+                    if (PyRevitConfigs.TrySeedConfig(lockSeedConfig)) {
+                        Console.WriteLine(
+                            "Configuration seeded to \"{0}\"{1}.",
+                            PyRevitConsts.AdminConfigFilePath,
+                            lockSeedConfig ? " and locked" : string.Empty);
+                    }
+                    else {
+                        System.Console.Error.WriteLine(
+                            "Error: No user configuration exists at \"{0}\"; nothing was seeded.",
+                            PyRevitConsts.ConfigFilePath);
+                        Environment.ExitCode = -1;
+                    }
+                }
 
                 else if (all("seedshippeddefaults"))
                     PyRevitConfigs.SeedShippedExtensionDefaults();
@@ -872,7 +982,8 @@ namespace pyRevitCLI
                             string configOption = orignalOptionValue.Split(':')[1];
 
                             var cfg = PyRevitConfigs.GetConfigFile();
-                            cfg.SetValue(configSection, configOption, arguments["enable"].IsTrue);
+                            cfg.SetSectionKeyValue(
+                                configSection, configOption, arguments["enable"].IsTrue);
                         }
                         else
                             PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
@@ -891,14 +1002,14 @@ namespace pyRevitCLI
 
                             // if no value provided, read the value
                             var optValue = TryGetValue("<option_value>");
-                            if (optValue != null)
-                                cfg.SetValue(configSection, configOption, optValue);
-                            else if (optValue is null) {
-                                var existingVal = cfg.GetValue(configSection, configOption);
-                                if (existingVal != null)
-                                    Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
+                            if (optValue is not null)
+                                cfg.SetSectionKeyValue(configSection, configOption, optValue);
+                            else {
+                                var existingVal = cfg.GetSectionKeyValueOrDefault<string>(configSection, configOption);
+                                if (existingVal is not null)
+                                    Console.WriteLine($"{configOption} = {existingVal}");
                                 else
-                                    Console.WriteLine(string.Format("Configuration key \"{0}\" is not set", configOption));
+                                    Console.WriteLine($"Configuration key \"{configOption}\" is not set");
                             }
                         }
                         else
@@ -949,6 +1060,18 @@ namespace pyRevitCLI
             return arguments[key] != null ? arguments[key].Value as string : defaultValue;
         }
 
+        /// <summary>
+        /// Options whose value is a credential. Kept next to the factory that reads
+        /// them so a new secret option cannot be added to one and forgotten in the other.
+        /// </summary>
+        private static readonly HashSet<string> SecretArgumentKeys = new HashSet<string> {
+            "--token",
+            "--password",
+            "--username"
+        };
+
+        private const string SecretRedactedPlaceholder = "***redacted***";
+
         internal static GitInstallerCredentials TryGetCredentials() {
             GitInstallerCredentials credentials = null;
             if (TryGetValue("--password") is string password)
@@ -965,10 +1088,26 @@ namespace pyRevitCLI
         }
 
         // private:
+        /// <summary>
+        /// Echoes the active arguments for --debug. Secret-bearing options are
+        /// replaced with a placeholder: this is the one place a --token or
+        /// --password would otherwise be printed, and --debug output is routinely
+        /// captured into a CI job's build log.
+        /// <para>
+        /// Only the named options are covered. A credential embedded in a
+        /// positional argument - a repo URL of the form
+        /// https://user:token@host/... - is still printed verbatim, because
+        /// redaction of arbitrary values would hide the argument being diagnosed.
+        /// </para>
+        /// </summary>
         private static void PrintArguments(IDictionary<string, ValueObject> arguments) {
             var activeArgs = arguments.Where(x => x.Value != null && (x.Value.IsTrue || x.Value.IsString));
-            foreach (var arg in activeArgs)
-                Console.WriteLine("{0} = {1}", arg.Key, arg.Value.ToString());
+            foreach (var arg in activeArgs) {
+                if (SecretArgumentKeys.Contains(arg.Key))
+                    Console.WriteLine("{0} = {1}", arg.Key, SecretRedactedPlaceholder);
+                else
+                    Console.WriteLine("{0} = {1}", arg.Key, arg.Value.ToString());
+            }
         }
 
         private static void LogException(Exception ex, PyRevitCLILogLevel logLevel) {

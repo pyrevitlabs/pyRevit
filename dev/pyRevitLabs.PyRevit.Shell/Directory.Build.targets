@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="../Directory.Build.targets" />
+
+    <!-- The shell must bind to the same DLR identity as the active engine fork. -->
+    <PropertyGroup>
+        <Configurations>Debug IPY2712PR;Debug IPY342</Configurations>
+        <Configurations>$(Configurations);Release IPY2712PR;Release IPY342</Configurations>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.Contains('IPY2712PR'))">
+        <IronPythonVersion>IPY2712PR</IronPythonVersion>
+        <IronPythonPrefix>pyRevitLabs.</IronPythonPrefix>
+        <DefineConstants>$(DefineConstants);IPY2712PR</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.Contains('IPY342'))">
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <IronPythonPrefix></IronPythonPrefix>
+        <DefineConstants>$(DefineConstants);IPY342</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.Modules.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Scripting.dll" />
+
+        <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
+    </ItemGroup>
+
+    <!-- Install alongside the engine assemblies the shell binds at runtime. -->
+    <Target Name="DeployShell" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <ShellDeployFiles Include="$(TargetPath)" />
+            <ShellDeployFiles Include="$(TargetDir)ICSharpCode.AvalonEdit.dll" />
+        </ItemGroup>
+        <Copy SourceFiles="@(ShellDeployFiles)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" SkipUnchangedFiles="true" />
+        <Message Importance="high" Text="$(MSBuildProjectName) ($(TargetFramework) $(IronPythonVersion)) -> $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
+    </Target>
+</Project>

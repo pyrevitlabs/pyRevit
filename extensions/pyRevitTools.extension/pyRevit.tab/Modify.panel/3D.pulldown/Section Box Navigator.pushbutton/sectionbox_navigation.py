@@ -1,5 +1,5 @@
-import clr
 from pyrevit import DB
+from pyrevit.revit import geom
 
 
 def get_all_levels(doc, include_linked=False):
@@ -16,12 +16,16 @@ def get_all_levels(doc, include_linked=False):
                     # The transform is applied to a point at (0,0,level.ProjectElevation)
                     pt = transform.OfPoint(DB.XYZ(0, 0, lvl.ProjectElevation))
                     # Store both the level element and transformed elevation
-                    lvl_host_elev = type('LinkedLevel', (object,), {
-                        'Element': lvl,
-                        'Name': lvl.Name,
-                        'ProjectElevation': pt.Z,
-                        'SourceLink': link_inst
-                    })
+                    lvl_host_elev = type(
+                        "LinkedLevel",
+                        (object,),
+                        {
+                            "Element": lvl,
+                            "Name": lvl.Name,
+                            "ProjectElevation": pt.Z,
+                            "SourceLink": link_inst,
+                        },
+                    )
                     levels.append(lvl_host_elev)
 
     # Sort by elevation (transformed if linked)
@@ -48,11 +52,15 @@ def get_all_grids(doc, include_linked=False):
                     curve = grid.Curve
                     if curve:
                         transformed_curve = curve.CreateTransformed(transform)
-                        grid_host = type('LinkedGrid', (object,), {
-                            'Element': grid,
-                            'Curve': transformed_curve,
-                            'SourceLink': link_inst
-                        })
+                        grid_host = type(
+                            "LinkedGrid",
+                            (object,),
+                            {
+                                "Element": grid,
+                                "Curve": transformed_curve,
+                                "SourceLink": link_inst,
+                            },
+                        )
                         grids.append(grid_host)
 
     return grids
@@ -72,10 +80,10 @@ def get_cardinal_direction(direction_name, view=None):
     """
     # Base vectors in internal coordinates (Revit world)
     internal_vectors = {
-        "north": DB.XYZ(0, 1, 0),   # +Y
+        "north": DB.XYZ(0, 1, 0),  # +Y
         "south": DB.XYZ(0, -1, 0),  # -Y
-        "east":  DB.XYZ(1, 0, 0),   # +X
-        "west":  DB.XYZ(-1, 0, 0),  # -X
+        "east": DB.XYZ(1, 0, 0),  # +X
+        "west": DB.XYZ(-1, 0, 0),  # -X
     }
 
     base_vec = internal_vectors.get(direction_name.lower())
@@ -102,9 +110,9 @@ def get_cardinal_direction(direction_name, view=None):
 
     # Decompose base_vec into these basis vectors
     transformed_vec = (
-        x_axis.Multiply(base_vec.X) +
-        y_axis.Multiply(base_vec.Y) +
-        z_axis.Multiply(base_vec.Z)
+        x_axis.Multiply(base_vec.X)
+        + y_axis.Multiply(base_vec.Y)
+        + z_axis.Multiply(base_vec.Z)
     )
 
     return transformed_vec
@@ -145,10 +153,10 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
     for grid in grids:
         try:
             # Handle LinkedGrid objects (has Curve attribute)
-            if hasattr(grid, 'Curve'):
+            if hasattr(grid, "Curve"):
                 curve = grid.Curve
             # Handle regular DB.Grid objects (has Element.Curve)
-            elif hasattr(grid, 'Element'):
+            elif hasattr(grid, "Element"):
                 curve = grid.Element.Curve
             else:
                 # Regular DB.Grid - access Curve directly
@@ -161,24 +169,18 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
 
         # Flatten grid line to XY
         p1, p2 = curve.GetEndPoint(0), curve.GetEndPoint(1)
-        grid_line = DB.Line.CreateBound(
-            DB.XYZ(p1.X, p1.Y, 0),
-            DB.XYZ(p2.X, p2.Y, 0)
-        )
+        grid_line = DB.Line.CreateBound(DB.XYZ(p1.X, p1.Y, 0), DB.XYZ(p2.X, p2.Y, 0))
 
         # Try intersection
-        # weird ironpython stuff - can be changed if cpython ever gets up and running:
-        # https://forums.autodesk.com/t5/revit-api-forum/find-intersection-point-between-curves-using-cpython3/td-p/12413340
-        result = clr.Reference[DB.IntersectionResultArray]()
-        intersection_result = grid_line.Intersect(ray, result)
+        intersection_result, result = geom.intersect_curves(grid_line, ray)
 
         if intersection_result != DB.SetComparisonResult.Overlap:
             continue
 
-        if result.Value.Size == 0:
+        if not result:
             continue
 
-        intersection = result.Value.Item[0].XYZPoint
+        intersection = result[0]
         to_intersection = intersection - start_point_flat
 
         distance_along_ray = to_intersection.DotProduct(direction_vector)

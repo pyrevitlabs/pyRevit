@@ -5,11 +5,12 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "cancellable?": str(args.Cancellable),
         "path": str(args.LinkedResourcePathName),
         "type": str(args.ResourceType),
     },
-    log_doc_access=True
+    log_doc_access=True,
 )

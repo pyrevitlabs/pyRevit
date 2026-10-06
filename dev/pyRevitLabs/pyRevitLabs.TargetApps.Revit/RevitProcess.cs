@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class RevitProcess {

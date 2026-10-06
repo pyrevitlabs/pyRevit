@@ -11,12 +11,14 @@ using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.UIManager;
 
-namespace PyRevitLoader {
+namespace PyRevitLoader
+{
     /// <summary>
     /// Executes SmartButton __selfinit__ scripts.
     /// Creating a new engine per button was the main performance bottleneck.
     /// </summary>
-    public class SmartButtonExecutor {
+    public class SmartButtonExecutor
+    {
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
         private ScriptEngine _engine;
@@ -24,21 +26,24 @@ namespace PyRevitLoader {
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
 
-        public SmartButtonExecutor(UIApplication uiApplication, Action<string> logger = null) {
+        public SmartButtonExecutor(UIApplication uiApplication, Action<string> logger = null)
+        {
             _revit = uiApplication;
             _logger = logger;
         }
 
         public string Message { get; private set; } = null;
 
-        private void Log(string message) {
+        private void Log(string message)
+        {
             _logger?.Invoke(message);
         }
 
         /// <summary>
         /// Ensures the IronPython engine is initialized. Called once, reused for all buttons.
         /// </summary>
-        private void EnsureEngineInitialized() {
+        private void EnsureEngineInitialized()
+        {
             if (_engine != null)
                 return;
 
@@ -60,18 +65,22 @@ namespace PyRevitLoader {
         public bool ExecuteSelfInit(
             string scriptPath,
             SmartButtonContext context,
-            IEnumerable<string> additionalSearchPaths = null) {
+            IEnumerable<string> additionalSearchPaths = null)
+        {
 
-            if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath)) {
+            if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
+            {
                 return true; // Don't deactivate
             }
 
             // Only process Python scripts for __selfinit__
-            if (!scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase)) {
+            if (!scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
             }
 
-            try {
+            try
+            {
                 // Reuse the engine instead of creating new one each time.
                 EnsureEngineInitialized();
 
@@ -94,55 +103,65 @@ namespace PyRevitLoader {
 
                 var errors = new ErrorReporter();
                 var compiled = script.Compile(compilerOptions, errors);
-                if (compiled == null) {
+                if (compiled == null)
+                {
                     Message = string.Join("\r\n", "Compilation failed:", string.Join("\r\n", errors.Errors.ToArray()));
                     Log(Message);
                     return true;
                 }
 
-                try {
+                try
+                {
                     script.Execute(scope);
                 }
-                catch (SystemExitException) {
+                catch (SystemExitException)
+                {
                     return true;
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     Message = $"Script execution error: {ex.Message}";
                     Log(Message);
                     return true;
                 }
 
                 // Check if __selfinit__ is defined
-                if (!scope.ContainsVariable("__selfinit__")) {
+                if (!scope.ContainsVariable("__selfinit__"))
+                {
                     return true;
                 }
 
                 // Get the __selfinit__ function
                 var selfInitFunc = scope.GetVariable("__selfinit__");
-                if (selfInitFunc == null) {
+                if (selfInitFunc == null)
+                {
                     return true;
                 }
 
-                try {
+                try
+                {
                     // Call __selfinit__(script_cmp, ui_button_cmp, __rvt__)
                     var ops = _engine.Operations;
                     var result = ops.Invoke(selfInitFunc, context, context, _revit);
 
                     // If __selfinit__ returns False, the button should be deactivated
-                    if (result is bool boolResult && boolResult == false) {
+                    if (result is bool boolResult && boolResult == false)
+                    {
                         Log($"__selfinit__ returned False for '{context.name}' - deactivating button");
                         return false;
                     }
 
                     return true;
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     Message = $"Error executing __selfinit__: {ex.Message}";
                     Log(Message);
                     return true;
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Message = $"SmartButton executor error: {ex.Message}";
                 Log(Message);
                 return true;
@@ -153,12 +172,14 @@ namespace PyRevitLoader {
         /// <summary>
         /// Sets up search paths for a specific component, reusing cached base paths.
         /// </summary>
-        private void SetupSearchPathsForComponent(ScriptEngine engine, string componentDirectory, IEnumerable<string> additionalSearchPaths) {
+        private void SetupSearchPathsForComponent(ScriptEngine engine, string componentDirectory, IEnumerable<string> additionalSearchPaths)
+        {
             // Start with cached base paths
             var paths = new List<string>(_baseSearchPaths);
 
             // Add component directory
-            if (!string.IsNullOrEmpty(componentDirectory) && Directory.Exists(componentDirectory)) {
+            if (!string.IsNullOrEmpty(componentDirectory) && Directory.Exists(componentDirectory))
+            {
                 if (!paths.Contains(componentDirectory))
                     paths.Add(componentDirectory);
 
@@ -169,16 +190,19 @@ namespace PyRevitLoader {
             }
 
             // Find and add pyrevitlib (cached)
-            if (_pyrevitLibPath == null) {
+            if (_pyrevitLibPath == null)
+            {
                 _pyrevitLibPath = FindPyRevitLib(componentDirectory) ?? string.Empty;
             }
-            
-            if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath)) {
+
+            if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath))
+            {
                 paths.Add(_pyrevitLibPath);
 
                 // Add site-packages
                 var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
-                if (!string.IsNullOrEmpty(pyrevitRoot)) {
+                if (!string.IsNullOrEmpty(pyrevitRoot))
+                {
                     var sitePackages = Path.Combine(pyrevitRoot, "site-packages");
                     if (Directory.Exists(sitePackages) && !paths.Contains(sitePackages))
                         paths.Add(sitePackages);
@@ -186,8 +210,10 @@ namespace PyRevitLoader {
             }
 
             // Add additional search paths
-            if (additionalSearchPaths != null) {
-                foreach (var path in additionalSearchPaths) {
+            if (additionalSearchPaths != null)
+            {
+                foreach (var path in additionalSearchPaths)
+                {
                     if (!string.IsNullOrEmpty(path) && !paths.Contains(path))
                         paths.Add(path);
                 }
@@ -196,14 +222,18 @@ namespace PyRevitLoader {
             engine.SetSearchPaths(paths);
         }
 
-        private string FindPyRevitLib(string componentDirectory) {
+        private string FindPyRevitLib(string componentDirectory)
+        {
             // Strategy 1: Navigate up from component directory
-            if (!string.IsNullOrEmpty(componentDirectory)) {
+            if (!string.IsNullOrEmpty(componentDirectory))
+            {
                 var current = new DirectoryInfo(componentDirectory);
                 int depth = 0;
-                while (current != null && depth < 20) {
+                while (current != null && depth < 20)
+                {
                     var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
-                    if (Directory.Exists(pyrevitLibPath)) {
+                    if (Directory.Exists(pyrevitLibPath))
+                    {
                         return pyrevitLibPath;
                     }
                     current = current.Parent;
@@ -212,15 +242,19 @@ namespace PyRevitLoader {
             }
 
             // Strategy 2: Find from this assembly location
-            try {
+            try
+            {
                 var assemblyPath = Assembly.GetExecutingAssembly().Location;
-                if (!string.IsNullOrEmpty(assemblyPath)) {
+                if (!string.IsNullOrEmpty(assemblyPath))
+                {
                     var assemblyDir = new DirectoryInfo(Path.GetDirectoryName(assemblyPath));
                     // Navigate up: engines -> netfx -> bin -> pyRevit root
                     var current = assemblyDir?.Parent?.Parent?.Parent?.Parent;
-                    if (current != null) {
+                    if (current != null)
+                    {
                         var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
-                        if (Directory.Exists(pyrevitLibPath)) {
+                        if (Directory.Exists(pyrevitLibPath))
+                        {
                             return pyrevitLibPath;
                         }
                     }
@@ -231,11 +265,14 @@ namespace PyRevitLoader {
             return null;
         }
 
-        private void LogSearchPaths(ScriptEngine engine) {
-            try {
+        private void LogSearchPaths(ScriptEngine engine)
+        {
+            try
+            {
                 var paths = engine.GetSearchPaths();
                 Log($"Search paths ({paths.Count} total):");
-                foreach (var p in paths) {
+                foreach (var p in paths)
+                {
                     Log($"  - {p}");
                 }
             }

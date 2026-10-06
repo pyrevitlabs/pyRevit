@@ -10,12 +10,12 @@ This module ensures most commonly used .NET classes are loaded for you.for
 import sys
 
 from rpw.utils.logger import logger
-from rpw.utils.sphinx_compat import MockImporter
 
 # Attempt to Import clr
 try:
     import clr
 except ImportError:
+    from rpw.utils.sphinx_compat import MockImporter
     # Running Sphinx. Import MockImporter
     logger.warning('Error Importing CLR. Loading Mock Importer')
     sys.meta_path.append(MockImporter())

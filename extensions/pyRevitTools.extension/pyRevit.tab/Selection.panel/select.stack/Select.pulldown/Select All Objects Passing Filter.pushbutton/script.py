@@ -47,9 +47,15 @@ collector = (
 
 if reverse_filter:
     all_elements = collector.WhereElementIsNotElementType().ToElements()
-    filtered_elements = [el for el in all_elements if not combined_filter.PassesFilter(el)]
+    filtered_elements = [
+        el for el in all_elements if not combined_filter.PassesFilter(el)
+    ]
 else:
-    filtered_elements = collector.WhereElementIsNotElementType().WherePasses(combined_filter).ToElements()
+    filtered_elements = (
+        collector.WhereElementIsNotElementType()
+        .WherePasses(combined_filter)
+        .ToElements()
+    )
 
 element_ids = []
 for el in filtered_elements:

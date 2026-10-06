@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.AccessControl;
@@ -95,7 +95,7 @@ namespace pyRevitLabs.PyRevit {
         public bool IsReadOnly() {
             // determine if attachment can be modified by user
             var us = new UserSecurity();
-            return ! us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
+            return !us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
         }
     }
 }

@@ -21,6 +21,7 @@ Agregue un filtro a una vista e inténtelo de nuevo.</system:String>
     <system:String x:Key="Settings_Section_Behavior">Comportamiento</system:String>
     <system:String x:Key="Settings_SortAlpha">Ordenar filtros alfabéticamente</system:String>
     <system:String x:Key="Settings_OpenLegend">Abrir la última leyenda creada</system:String>
+    <system:String x:Key="Settings_TrackLegend">Rastrear y actualizar leyendas existentes</system:String>
 
     <system:String x:Key="Header_FilterName">Nombre del filtro</system:String>
     <system:String x:Key="Header_Parameter">Parámetro</system:String>
@@ -28,6 +29,8 @@ Agregue un filtro a una vista e inténtelo de nuevo.</system:String>
     <system:String x:Key="Value_NA">N/D</system:String>
 
     <system:String x:Key="Msg_Done">Se crearon {0} vista(s) de leyenda.</system:String>
+    <system:String x:Key="Msg_Updated">Se actualizaron {0} vista(s) de leyenda.</system:String>
+    <system:String x:Key="Msg_DoneMixed">Se crearon {0} vista(s) de leyenda y se actualizaron {1}.</system:String>
     <system:String x:Key="Msg_Failed">No se pudo crear ninguna vista de leyenda. Consulte el registro para más detalles.</system:String>
 
 </ResourceDictionary>

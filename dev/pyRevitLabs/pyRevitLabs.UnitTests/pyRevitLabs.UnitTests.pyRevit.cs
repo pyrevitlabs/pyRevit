@@ -13,7 +13,7 @@ using pyRevitLabs.UnitTests;
 
 namespace pyRevitLabs.UnitTests.pyRevit {
     [TestClass()]
-    public class PyRevitTests: TemplateUnitTest {
+    public class PyRevitTests : TemplateUnitTest {
         public override string TempPath =>
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),

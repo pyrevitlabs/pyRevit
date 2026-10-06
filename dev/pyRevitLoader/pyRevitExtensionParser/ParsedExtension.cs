@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using static pyRevitExtensionParser.ExtensionParser;
 
-namespace pyRevitExtensionParser 
+namespace pyRevitExtensionParser
 {
     public class ParsedExtension : ParsedComponent
     {
@@ -43,20 +43,20 @@ namespace pyRevitExtensionParser
         /// When null or empty, no group restriction is applied.
         /// </summary>
         public List<string> AuthorizedGroups { get; set; }
-        
+
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();
-        
+
         // Cache lib/bin paths per command to avoid repeated hierarchy traversal
         private Dictionary<ParsedComponent, List<string>> _libPathsCache = new Dictionary<ParsedComponent, List<string>>();
         private Dictionary<ParsedComponent, List<string>> _binPathsCache = new Dictionary<ParsedComponent, List<string>>();
-        
+
         // Cached helper to check directory existence with memoization
         private bool DirExists(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return false;
-                
+
             if (!_dirExistsCache.TryGetValue(path, out bool exists))
             {
                 exists = System.IO.Directory.Exists(path);
@@ -64,13 +64,13 @@ namespace pyRevitExtensionParser
             }
             return exists;
         }
-        
+
         // Static HashSet for O(1) extension lookup - much faster than string comparisons
         private static readonly HashSet<string> _scriptExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".xaml", ".yaml", ".json"
         };
-        
+
         // Cached hash value to avoid recalculation
         private Dictionary<string, string> _cachedHashes = new Dictionary<string, string>();
 
@@ -96,7 +96,7 @@ namespace pyRevitExtensionParser
             "lib",
             "hooks"
         };
-        
+
         /// <summary>
         /// Calculates a hash based on the modification times of all relevant files in the extension directory.
         /// This matches the Python implementation in coreutils.calculate_dir_hash()
@@ -108,7 +108,7 @@ namespace pyRevitExtensionParser
             // Check cache first
             if (_cachedHashes.TryGetValue(seed, out var cachedHash))
                 return cachedHash;
-                
+
             if (string.IsNullOrEmpty(Directory) || !System.IO.Directory.Exists(Directory))
                 return Directory?.GetHashCode().ToString("X") ?? "0";
 
@@ -228,11 +228,11 @@ namespace pyRevitExtensionParser
             var ext = Path.GetExtension(dirName);
             return !string.IsNullOrEmpty(ext) && _hashDirSuffixes.Contains(ext);
         }
-        
+
         // Cached startup script path to avoid repeated file system checks
         private string _startupScript;
         private bool _startupScriptInitialized;
-        
+
         /// <summary>
         /// Gets the path to the startup script if it exists
         /// </summary>
@@ -263,7 +263,7 @@ namespace pyRevitExtensionParser
 
         // Cached command components - this is called 3+ times per extension during loading
         private List<ParsedComponent> _cachedCommandComponents;
-        
+
         /// <summary>
         /// Collects all command components from this extension (cached after first call).
         /// Builds control IDs for each component based on hierarchy.
@@ -295,14 +295,14 @@ namespace pyRevitExtensionParser
                 // IMPORTANT: Use DisplayName (original folder name with spaces) for control IDs,
                 // NOT Name (which has spaces stripped). Revit uses the actual folder names.
                 string displayName = comp.DisplayName ?? comp.Name;
-                
+
                 string currentControlId;
                 if (string.IsNullOrEmpty(parentControlId))
                 {
                     // Top-level (tab): "CustomCtrl_%CustomCtrl_%{name}"
                     currentControlId = $"CustomCtrl_%CustomCtrl_%{displayName}";
                 }
-                else if (comp.Type == CommandComponentType.PullDown || 
+                else if (comp.Type == CommandComponentType.PullDown ||
                          comp.Type == CommandComponentType.SplitButton ||
                          comp.Type == CommandComponentType.SplitPushButton ||
                          comp.Type == CommandComponentType.Stack)
@@ -317,7 +317,7 @@ namespace pyRevitExtensionParser
                     // Normal child: append to parent
                     currentControlId = $"{parentControlId}%{displayName}";
                 }
-                
+
                 // Set the control ID on the component
                 comp.ControlId = currentControlId;
 
@@ -331,7 +331,7 @@ namespace pyRevitExtensionParser
                     result.Add(comp);
             }
         }
-        
+
         /// <summary>
         /// Collects all lib/ folder paths from the component hierarchy (extension -> tab -> panel -> button)
         /// matching Python's behavior where each component can have its own lib/ folder
@@ -341,9 +341,9 @@ namespace pyRevitExtensionParser
             // Check cache first
             if (_libPathsCache.TryGetValue(command, out var cached))
                 return cached;
-                
+
             var libPaths = new List<string>();
-            
+
             // Start with extension's lib folder
             if (!string.IsNullOrEmpty(this.Directory))
             {
@@ -351,20 +351,20 @@ namespace pyRevitExtensionParser
                 if (DirExists(extLib))
                     libPaths.Add(extLib);
             }
-            
+
             // Collect lib paths from component hierarchy
             CollectLibPathsRecursive(this.Children, command, libPaths);
-            
+
             // Cache the result
             _libPathsCache[command] = libPaths;
-            
+
             return libPaths;
         }
-        
+
         private bool CollectLibPathsRecursive(IEnumerable<ParsedComponent> siblings, ParsedComponent target, List<string> libPaths)
         {
             if (siblings == null) return false;
-            
+
             foreach (var comp in siblings)
             {
                 // Check if this component has a lib folder
@@ -374,16 +374,16 @@ namespace pyRevitExtensionParser
                     if (DirExists(compLib) && !libPaths.Contains(compLib))
                         libPaths.Add(compLib);
                 }
-                
+
                 // If this is our target command, we're done
                 if (comp == target)
                     return true;
-                
+
                 // Otherwise, recurse into children
                 if (comp.Children != null && CollectLibPathsRecursive(comp.Children, target, libPaths))
                     return true;
             }
-            
+
             return false;
         }
 
@@ -395,7 +395,7 @@ namespace pyRevitExtensionParser
             // Check cache first
             if (_binPathsCache.TryGetValue(command, out var cached))
                 return cached;
-                
+
             var binPaths = new List<string>();
 
             if (!string.IsNullOrEmpty(this.Directory))
@@ -419,7 +419,7 @@ namespace pyRevitExtensionParser
 
             // Cache the result
             _binPathsCache[command] = binPaths;
-            
+
             return binPaths;
         }
 

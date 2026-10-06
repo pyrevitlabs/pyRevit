@@ -10,8 +10,8 @@ using System.Diagnostics;
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonCLI;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.Language.Properties;
 
 using pyRevitLabs.NLog;
@@ -48,7 +48,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, GitInstallerCredentials credentials) {
+        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, GitInstallerCredentials credentials, bool skipBin = false) {
             // FIXME: implement image
             if (cloneName != null) {
                 // if deployment requested or image path is provided
@@ -58,7 +58,8 @@ namespace pyRevitCLI {
                         deploymentName: deployName,
                         branchName: branchName,
                         imagePath: imagePath,
-                        destPath: destPath
+                        destPath: destPath,
+                        installBinaries: !skipBin
                         );
                 // otherwise clone the full repo
                 else
@@ -68,7 +69,8 @@ namespace pyRevitCLI {
                         branchName: branchName,
                         repoUrl: repoUrl,
                         destPath: destPath,
-                        credentials: credentials
+                        credentials: credentials,
+                        installBinaries: !skipBin
                         );
             }
         }
@@ -114,7 +116,7 @@ namespace pyRevitCLI {
             else if (cloneName != null) {
                 // lets detach the clone if there is any attachments to it
                 var clone = PyRevitClones.GetRegisteredClone(cloneName);
-                foreach(var attachment in PyRevitAttachments.GetAttachments())
+                foreach (var attachment in PyRevitAttachments.GetAttachments())
                     if (attachment.Clone.Equals(clone)) {
                         logger.Debug($"Detaching existing attachment: {attachment}");
                         PyRevitAttachments.Detach(attachment.Product.ProductYear, attachment.AllUsers);
@@ -275,7 +277,7 @@ namespace pyRevitCLI {
                                            + "Use installer to update.");
 
         }
-        
+
         internal static void
         AttachClone(PyRevitClone clone, string engineId,
                     string revitYear, bool installed, bool attached,
@@ -291,11 +293,16 @@ namespace pyRevitCLI {
             // decide targets revits to attach to
             int revitYearNumber = 0;
             if (installed)
-                foreach (var revit in RevitProduct.ListInstalledProducts())
-                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
+                PyRevitAttachments.AttachToAll(clone, engineVersion, allUsers: allUsers);
             else if (attached)
                 foreach (var attachment in PyRevitAttachments.GetAttachments())
-                    PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
+                    if (PyRevitAttachments.IsAttachable(attachment.Product))
+                        PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
+                    else
+                        logger.Warn("Not reattaching to Revit {0}: this pyRevit line supports Revit {1} or newer, " +
+                                    "or its executable is missing. The existing attachment was written by a release " +
+                                    "that supported it and is left as it is.",
+                                    attachment.Product.ProductYear, RevitProductData.MinimumSupportedProductYear);
             else if (int.TryParse(revitYear, out revitYearNumber))
                 PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVersion, allUsers: allUsers);
         }
@@ -358,6 +365,13 @@ namespace pyRevitCLI {
             else {
                 // read current attachments and reattach using the same config with the new clone
                 foreach (var attachment in PyRevitAttachments.GetAttachments()) {
+                    if (!PyRevitAttachments.IsAttachable(attachment.Product)) {
+                        logger.Warn("Not switching the clone on Revit {0}: this pyRevit line supports Revit {1} or newer, " +
+                                    "or its executable is missing. Its existing attachment was written by a release " +
+                                    "that supported it and is left as it is.",
+                                    attachment.Product.ProductYear, RevitProductData.MinimumSupportedProductYear);
+                        continue;
+                    }
                     if (attachment.Engine != null) {
                         PyRevitAttachments.Attach(
                             attachment.Product.ProductYear,

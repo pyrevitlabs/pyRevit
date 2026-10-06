@@ -21,9 +21,11 @@ for el in selection:
         families_checked.append(family.Id)
         symbolIdSet = family.GetFamilySymbolIds()
         for symid in symbolIdSet:
-            cl = DB.FilteredElementCollector(revit.doc)\
-                   .WherePasses(DB.FamilyInstanceFilter(revit.doc, symid))\
-                   .ToElements()
+            cl = (
+                DB.FilteredElementCollector(revit.doc)
+                .WherePasses(DB.FamilyInstanceFilter(revit.doc, symid))
+                .ToElements()
+            )
             for el in cl:
                 matchlist.append(el.Id)
     except Exception:

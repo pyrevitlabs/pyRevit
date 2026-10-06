@@ -205,6 +205,11 @@ Made with [contrib.rocks](https://contrib.rocks)
 
 ---
 
+Supported by devloai, autodesk ADN, greptile
+[![Greptile: The War on Bugs](https://www.greptile.com/badge.svg)](https://www.greptile.com/?utm_source=oss_badge&utm_medium=readme&utm_campaign=greptile_for_open_source)
+
+---
+
 Copyright © 2014-2026 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
 
 No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher.

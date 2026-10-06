@@ -1,12 +1,12 @@
 """Revit Server API commands and dictionary keys."""
 
 # http request header
-REQ_HEADER_USERNAME = 'User-Name'
-REQ_HEADER_MACHINE = 'User-Machine-Name'
-REQ_HEADER_GUID = 'Operation-GUID'
+REQ_HEADER_USERNAME = "User-Name"
+REQ_HEADER_MACHINE = "User-Machine-Name"
+REQ_HEADER_GUID = "Operation-GUID"
 
 # folder structure
-DIVIDER = '|'
+DIVIDER = "|"
 
 # commands
 # ------------------------------------------------------------------------------
@@ -246,10 +246,14 @@ REQ_CMD_DELETE = "?newObjectName"
 # ------------------------------------------------------------------------------
 REQ_CMD_RENAME = "?newObjectName={new_name}"
 # ------------------------------------------------------------------------------
-REQ_CMD_COPY = "?destinationObjectPath={dest_path}"\
-               "&pasteAction=Copy"\
-               "&replaceExisting={replace_exist}"
+REQ_CMD_COPY = (
+    "?destinationObjectPath={dest_path}"
+    "&pasteAction=Copy"
+    "&replaceExisting={replace_exist}"
+)
 # ------------------------------------------------------------------------------
-REQ_CMD_MOVE = "?destinationObjectPath={dest_path}"\
-               "&pasteAction=Move"\
-               "&replaceExisting={replace_exist}"
+REQ_CMD_MOVE = (
+    "?destinationObjectPath={dest_path}"
+    "&pasteAction=Move"
+    "&replaceExisting={replace_exist}"
+)

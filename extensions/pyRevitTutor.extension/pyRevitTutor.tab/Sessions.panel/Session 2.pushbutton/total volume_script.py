@@ -1,14 +1,21 @@
 """Calculates total volume of all walls in the model."""
 
-
 from pyrevit import HOST_APP
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter
+from Autodesk.Revit.DB import (
+    FilteredElementCollector,
+    BuiltInCategory,
+    BuiltInParameter,
+)
 
 doc = HOST_APP.doc
 
 
 # Creating collector instance and collecting all the walls from the model
-wall_collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsNotElementType()
+wall_collector = (
+    FilteredElementCollector(doc)
+    .OfCategory(BuiltInCategory.OST_Walls)
+    .WhereElementIsNotElementType()
+)
 
 
 # Iterate over wall and collect Volume data

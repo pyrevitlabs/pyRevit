@@ -30,11 +30,11 @@ namespace pyRevitAssemblyBuilder.UIManager
                 // getRibbonItemMethod = rvtapi_obj.GetType().GetMethod(
                 //     "getRibbonItem", BindingFlags.NonPublic | BindingFlags.Instance)
                 // return getRibbonItemMethod.Invoke(rvtapi_obj, None)
-                
+
                 var getRibbonItemMethod = ribbonItem.GetType().GetMethod(
                     "getRibbonItem",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
+
                 if (getRibbonItemMethod != null)
                 {
                     return getRibbonItemMethod.Invoke(ribbonItem, null) as Autodesk.Windows.RibbonItem;
@@ -101,7 +101,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <param name="adWindowsRibbonItem">The AdWindows RibbonItem.</param>
         public static void ResolveToolTip(Autodesk.Windows.RibbonItem adWindowsRibbonItem)
         {
-            typeof(Autodesk.Windows.RibbonItem).GetMethod("ResolveToolTip", 
+            typeof(Autodesk.Windows.RibbonItem).GetMethod("ResolveToolTip",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
                 ?.Invoke(adWindowsRibbonItem, null);
         }

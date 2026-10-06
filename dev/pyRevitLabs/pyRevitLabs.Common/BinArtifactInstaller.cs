@@ -23,15 +23,6 @@ namespace pyRevitLabs.Common {
             if (string.IsNullOrWhiteSpace(clonePath))
                 throw new PyRevitException("Clone path can not be null.");
 
-            if (!BinArtifactSupport.IsSupportedCiBinBranch(branchName)) {
-                throw new pyRevitBinArtifactNotFoundException(
-                    string.Format(
-                        "CI binaries are only published for branches \"{0}\" and \"{1}\". "
-                        + "Checkout a supported branch or build locally with \"dotnet run -- ci\".",
-                        PyRevitLabsConsts.SupportedCiBinBranches[0],
-                        PyRevitLabsConsts.SupportedCiBinBranches[1]));
-            }
-
             if (mode == BinArtifactInstallMode.Update
                 && GitInstaller.IsValidRepo(clonePath)
                 && GitInstaller.IsLocalAheadOfTrackingBranch(clonePath)) {
@@ -80,8 +71,9 @@ namespace pyRevitLabs.Common {
                 if (!downloaded) {
                     throw new pyRevitBinArtifactNotFoundException(
                         string.Format(
-                            "Could not find pre-built binaries for commit \"{0}\" on branch \"{1}\". "
-                            + "Push the commit and wait for CI, or run \"dotnet run -- ci\" in the clone root.",
+                            "Could not find pre-built binaries for commit \"{0}\" on ref \"{1}\". "
+                            + "Wait for CI on develop/master, clone a published v* GitHub Release, "
+                            + "or run \"dotnet run -- ci\" in the clone root.",
                             normalizedSha,
                             branchName));
                 }
@@ -98,13 +90,19 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static void InstallForRepoClone(string clonePath, string repoUrl, BinArtifactInstallMode mode) {
+        public static void InstallForRepoClone(
+            string clonePath,
+            string repoUrl,
+            BinArtifactInstallMode mode,
+            string branchName = null) {
             var repoId = GithubRepoHelper.ParseRepoId(repoUrl ?? GitInstaller.GetRemoteUrl(
                 clonePath,
                 PyRevitLabsConsts.DefaultRemoteName));
-            var branchName = GitInstaller.GetCheckedoutBranch(clonePath) ?? PyRevitLabsConsts.TargetBranch;
+            var resolvedBranch = !string.IsNullOrWhiteSpace(branchName)
+                ? branchName
+                : (GitInstaller.GetCheckedoutBranch(clonePath) ?? PyRevitLabsConsts.TargetBranch);
             var commitSha = GitInstaller.GetHeadCommit(clonePath);
-            InstallForClone(clonePath, repoId, commitSha, branchName, mode: mode);
+            InstallForClone(clonePath, repoId, commitSha, resolvedBranch, mode: mode);
         }
 
         public static void InstallForImageClone(
@@ -138,6 +136,12 @@ namespace pyRevitLabs.Common {
                 }
             }
 
+            // Published v* releases attach a durable signed bin zip; try it when SHA assets are absent.
+            if (BinArtifactSupport.IsVersionTagRef(branchName)
+                && TryDownloadVersionTagBin(repoId, branchName, destPath)) {
+                return true;
+            }
+
             if (!allowBranchFallback || !BinArtifactSupport.IsSupportedCiBinBranch(branchName))
                 return false;
 
@@ -161,6 +165,22 @@ namespace pyRevitLabs.Common {
             foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
                 if (GithubReleaseBinAPI.TryDownloadReleaseAsset(releaseRepoId, branchAsset, destPath)) {
                     usedBranchFallback = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryDownloadVersionTagBin(string repoId, string tagName, string destPath) {
+            var tagAsset = GithubReleaseBinAPI.BuildVersionTagBinAssetName(tagName);
+            foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
+                if (GithubReleaseBinAPI.TryDownloadReleaseAsset(
+                    releaseRepoId,
+                    tagAsset,
+                    destPath,
+                    releaseTag: tagName)) {
+                    logger.Info("Installed signed binaries from GitHub Release \"{0}\".", tagName);
                     return true;
                 }
             }

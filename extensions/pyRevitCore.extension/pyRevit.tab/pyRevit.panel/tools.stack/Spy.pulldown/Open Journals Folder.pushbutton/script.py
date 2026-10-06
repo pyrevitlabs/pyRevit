@@ -1,6 +1,5 @@
 """Opens the Revit journals folder for current user."""
 
-
 from pyrevit import coreutils
 from pyrevit import revit
 

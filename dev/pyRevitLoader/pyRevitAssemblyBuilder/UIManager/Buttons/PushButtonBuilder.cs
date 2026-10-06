@@ -75,8 +75,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                             Logger.Debug($"SmartButton '{component.DisplayName}' deactivated by __selfinit__.");
                         }
                     }
-
-                    Logger.Debug($"Created push button '{component.DisplayName}'.");
                 }
             }
             catch (Exception ex)
@@ -138,12 +136,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                         Logger.Debug($"SmartButton '{component.DisplayName}' deactivated by __selfinit__ during update.");
                     }
                 }
-
-                Logger.Debug($"Updated existing push button '{component.DisplayName}'.");
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Failed to update push button '{component.DisplayName}': {ex.Message}");
+                Logger.Warning($"Failed to update push button '{component.DisplayName}': {ex.Message}");
             }
         }
     }

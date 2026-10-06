@@ -12,8 +12,9 @@ from System import Threading
 try:
     from pyrevit.framework import wpf
 except Exception:
-    clr.AddReference('IronPython.Wpf')
+    clr.AddReference("IronPython.Wpf")
     import IronPython
+
     wpf = IronPython.Modules.Wpf
 
 
@@ -24,9 +25,9 @@ class OutputWindow(Windows.Window):
         self.update_threadid()
 
     def update_threadid(self):
-        self.ThreadId_TextBlock.Text = 'Thread Id: {}:{}'.format(
+        self.ThreadId_TextBlock.Text = "Thread Id: {}:{}".format(
             System.AppDomain.GetCurrentThreadId(),
-            Threading.Thread.CurrentThread.ManagedThreadId
+            Threading.Thread.CurrentThread.ManagedThreadId,
         )
 
     def update_progress(self, value):
@@ -47,14 +48,11 @@ class RevitWindow(Windows.Window):
         self.update_threadid()
 
     def make_outputwindow(self):
-        self.output = OutputWindow('OutputWindow.xaml')
+        self.output = OutputWindow("OutputWindow.xaml")
         self.output.ShowDialog()
 
     def button_click(self, sender, args):
-        new_ui_thread = Threading.Thread(
-            Threading.ThreadStart(
-                self.make_outputwindow
-                ))
+        new_ui_thread = Threading.Thread(Threading.ThreadStart(self.make_outputwindow))
         new_ui_thread.SetApartmentState(Threading.ApartmentState.STA)
         new_ui_thread.Start()
         self.do_long_process()
@@ -70,28 +68,27 @@ class RevitWindow(Windows.Window):
             sleep(1)
             print(i)
             if self.output and not self.output.closed:
-                self.progress_state = (i+1) * 10
-                self.output.Dispatcher.Invoke(
-                    System.Action(self.update_progress)
-                    )
-                self.output.Dispatcher.Invoke(
-                    System.Action(self.append_message)
-                    )
+                self.progress_state = (i + 1) * 10
+                self.output.Dispatcher.Invoke(System.Action(self.update_progress))
+                self.output.Dispatcher.Invoke(System.Action(self.append_message))
 
     def update_threadid(self):
-        self.ThreadId_TextBlock.Text = 'Thread Id: {}:{}'.format(
+        self.ThreadId_TextBlock.Text = "Thread Id: {}:{}".format(
             System.AppDomain.GetCurrentThreadId(),
-            Threading.Thread.CurrentThread.ManagedThreadId
+            Threading.Thread.CurrentThread.ManagedThreadId,
         )
 
     def window_closing(self, sender, args):
-        print('Thread Id: {}:{}'.format(
-            System.AppDomain.GetCurrentThreadId(),
-            Threading.Thread.CurrentThread.ManagedThreadId
-        ))
+        print(
+            "Thread Id: {}:{}".format(
+                System.AppDomain.GetCurrentThreadId(),
+                Threading.Thread.CurrentThread.ManagedThreadId,
+            )
+        )
 
 
 def start_revit():
-    RevitWindow('RevitWindow.xaml').ShowDialog()
+    RevitWindow("RevitWindow.xaml").ShowDialog()
+
 
 start_revit()

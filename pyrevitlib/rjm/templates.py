@@ -1,5 +1,6 @@
 """Journal content templates"""
-#pylint: disable=line-too-long
+
+# pylint: disable=line-too-long
 # initializtion templates ------------------------------------------------------
 # timestamp format: 27-Oct-2016 19:33:31.459
 INIT = """' revit_journal_maker generated journal

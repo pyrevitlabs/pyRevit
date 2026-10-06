@@ -16,5 +16,5 @@ wall_instances = (
     .ToElements()
 )
 
-output.print_md('# Hello World')
-output.print_md('{0} walls found in the model.'.format(len(wall_instances)))
+output.print_md("# Hello World")
+output.print_md("{0} walls found in the model.".format(len(wall_instances)))

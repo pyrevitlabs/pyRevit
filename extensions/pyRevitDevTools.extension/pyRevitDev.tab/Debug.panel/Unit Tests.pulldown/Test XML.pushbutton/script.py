@@ -4,13 +4,12 @@ import xml.etree.ElementTree as ET
 from pyrevit import script
 
 
-
-utf8xml = script.get_bundle_file('utf8.xml')
-utf16xml = script.get_bundle_file('utf16.xml')
+utf8xml = script.get_bundle_file("utf8.xml")
+utf16xml = script.get_bundle_file("utf16.xml")
 
 
 for xmlfile in [utf8xml, utf16xml]:
-    print('Testing: {}'.format(xmlfile))
+    print("Testing: {}".format(xmlfile))
     c = ET.parse(xmlfile)
     print(c)
 

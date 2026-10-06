@@ -1,0 +1,52 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="BtnRefresh">⟲ Refresh Document</system:String>
+    <system:String x:Key="TooltipRefresh">Re-scan the active family document for new or removed parameters. Also useful after switching to a different open family.</system:String>
+    <system:String x:Key="TooltipShuffle">Shuffle parameter values. Randomizes every editable parameter within its current slider range. Use with caution - this cannot be undone from FamSlide itself.</system:String>
+    <system:String x:Key="TooltipDeleteUnused">Delete all unused parameters. Removes family parameters that are not driving a dimension, not involved in a formula, and are not built-in. Use with caution.</system:String>
+    <system:String x:Key="TooltipToggleEditable">Show/hide editable parameters. Toggles visibility of parameters whose slider or checkbox can be changed directly.</system:String>
+    <system:String x:Key="TooltipToggleLabels">Show/hide labels. Toggles the small tag pills shown under each parameter name.</system:String>
+    <system:String x:Key="BtnClose">Close</system:String>
+    <system:String x:Key="TooltipClose">Close FamSlide</system:String>
+    <system:String x:Key="GroupTitleValue">Value Parameters</system:String>
+    <system:String x:Key="GroupTitleBuiltin">BuiltIn Parameters</system:String>
+    <system:String x:Key="GroupTitleYesNo">Yes/No Parameters</system:String>
+    <system:String x:Key="TagInUse">in use</system:String>
+    <system:String x:Key="TagUsedInFormula">uF</system:String>
+    <system:String x:Key="TagHasFormula">dF</system:String>
+    <system:String x:Key="TagBuiltIn">built-in</system:String>
+    <system:String x:Key="TagInstance">instance</system:String>
+    <system:String x:Key="TagType">type</system:String>
+    <system:String x:Key="TagAssociated">associated</system:String>
+    <system:String x:Key="TagLocked">locked</system:String>
+    <system:String x:Key="NoFamilyLoaded">(no family loaded)</system:String>
+    <system:String x:Key="NoFamilyDocument">No family document is active</system:String>
+    <system:String x:Key="ValueYes">Yes</system:String>
+    <system:String x:Key="ValueNo">No</system:String>
+    <system:String x:Key="ConfirmShuffleMessage">Shuffle every editable parameter to a random value within its current slider range?
+
+Use Restore Preset afterward to undo</system:String>
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Delete every family parameter that is not driving a dimension, not part of a formula, not associated with other parameters, and not built-in?
+
+Detection is best-effort - parameters used in ways FamSlide cannot see (e.g. nested family constraints) may still be removed.
+
+This cannot be undone from FamSlide - use Revit's own Undo if needed.</system:String>
+    <system:String x:Key="AlertNoActiveDocument">No active Revit document.</system:String>
+    <system:String x:Key="AlertFamilyEditorOnly">FamSlide only works inside the Family Editor.
+Open a family for editing and run this tool again.</system:String>
+    <system:String x:Key="MenuRename">Rename…</system:String>
+    <system:String x:Key="MenuMakeInstance">Make Instance Parameter</system:String>
+    <system:String x:Key="MenuMakeType">Make Type Parameter</system:String>
+    <system:String x:Key="DialogRenameTitle">Rename Parameter</system:String>
+    <system:String x:Key="PromptRenameParameter">Enter a new name for this parameter:</system:String>
+    <system:String x:Key="AlertRenameFailed">Could not rename parameter '{}'. It may be built-in, or the new name may already be in use.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Could not toggle Instance/Type for parameter '{}'. It may be driven by a formula or otherwise restricted by Revit.</system:String>
+    <system:String x:Key="TooltipSavePreset">Save preset. Stores the current values of every editable parameter for this family, so you can quickly return to them later.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Restore preset. Re-applies the values last saved with Save Preset for this family. Does nothing if no preset has been saved yet.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">No preset has been saved yet for this family. Use Save Preset first.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Restore all editable parameters to the values saved with Save Preset?
+
+This cannot be undone from FamSlide - use Revit's own Undo if needed.</system:String>
+    <system:String x:Key="AlertPresetSaved">Preset saved for {} parameter(s).</system:String>
+</ResourceDictionary>

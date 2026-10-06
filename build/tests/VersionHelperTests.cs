@@ -94,4 +94,10 @@ public sealed class VersionHelperTests
             Environment.SetEnvironmentVariable("GITHUB_REF", originalRef);
         }
     }
+
+    [TestMethod]
+    public void GetCloneBinAssetName_includesVersionTag()
+    {
+        Assert.AreEqual("bin-v6.5.3.26176+2017.zip", VersionHelper.GetCloneBinAssetName("6.5.3.26176+2017"));
+    }
 }

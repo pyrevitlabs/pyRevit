@@ -82,10 +82,9 @@ namespace pyRevitExtensionParserTester
         }
 
         // -------------------------------------------------------------------------
-        // BuildHookSearchPaths — current C# behavior (per-extension lib/bin, each
-        // library extension's lib/ if present, pyrevitlib + site-packages).
-        // Python extensionmgr also adds library extension *root* to module_paths;
-        // hook tests here intentionally assert C# HookManager only.
+        // BuildHookSearchPaths — own lib/bin, each library-extension root (and
+        // nested lib/ if present), then pyrevitlib + site-packages.
+        // Matches Python extensionmgr adding lib_ext.directory to module_paths.
         // -------------------------------------------------------------------------
 
         [Test]
@@ -122,7 +121,9 @@ namespace pyRevitExtensionParserTester
             {
                 Path.GetFullPath(Path.Combine(extDir, "lib")),
                 Path.GetFullPath(Path.Combine(extDir, "bin")),
+                Path.GetFullPath(libWithLib),
                 Path.GetFullPath(libWithLibLib),
+                Path.GetFullPath(libWithoutLib),
                 Path.GetFullPath(pyrevitlib),
                 Path.GetFullPath(sitePackages)
             };

@@ -93,6 +93,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             extExecEvent = ExternalEvent.Create(extExecEventHandler);
         }
 
+        internal static bool IsOnMainThread =>
+            mainThreadId != 0 && Thread.CurrentThread.ManagedThreadId == mainThreadId;
+
         /// Run the script and print the output to a new output window.
         public static int ExecuteScript(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs = null) {
             // make sure there is base configs
@@ -106,6 +109,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             return ScriptExecutorResultCodes.ExecutorNotInitialized;
+        }
+
+        /// <summary>
+        /// Executes a script from a Revit API callback that is already authorized to run synchronously.
+        /// </summary>
+        internal static int ExecuteScriptInApiContext(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs = null) {
+            scriptExecConfigs = scriptExecConfigs ?? new ScriptExecutorConfigs();
+            return ExecuteScriptNow(scriptData, scriptRuntimeCfg, scriptExecConfigs);
         }
 
         private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
@@ -227,15 +238,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // and ask for an engine (EngineManager return either new engine or an already active one)
             T engine = ScriptEngineManager.GetEngine<T>(ref runtime);
 
-            // init the engine
-            engine.Start(ref runtime);
-            // execute
-            var result = engine.Execute(ref runtime);
-            // stop and cleanup the engine
-            engine.Stop(ref runtime);
+            ScriptEngineManager.EnterEngine(engine.TypeId);
+            try {
+                // init the engine
+                using (LoadTimeline.Active?.StartSpan(engine.RecoveredFromCache ? "cached engine" : "new engine"))
+                    engine.Start(ref runtime);
+                // execute
+                int result;
+                using (LoadTimeline.Active?.StartSpan("execute"))
+                    result = engine.Execute(ref runtime);
+                // stop and cleanup the engine
+                engine.Stop(ref runtime);
 
-            // set result
-            runtime.ExecutionResult = result;
+                // set result
+                runtime.ExecutionResult = result;
+            }
+            finally {
+                ScriptEngineManager.ExitEngine(engine.TypeId);
+            }
         }
     }
 }

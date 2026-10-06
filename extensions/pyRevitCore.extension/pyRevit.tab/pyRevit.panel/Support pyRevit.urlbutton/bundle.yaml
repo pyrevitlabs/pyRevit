@@ -1,0 +1,6 @@
+title:
+  en_us: Support pyRevit
+tooltip:
+  en_us: pyRevit is an open-source extension for Autodesk Revit that enhances its functionality and productivity. It is alive thanks to your contributions, both financial and through code. Support us and donate through this link.
+hyperlink: "https://opencollective.com/pyrevitlabs/tiers"
+context: zero-doc

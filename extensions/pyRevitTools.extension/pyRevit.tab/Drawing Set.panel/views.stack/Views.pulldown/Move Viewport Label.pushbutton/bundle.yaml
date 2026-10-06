@@ -8,29 +8,50 @@ title:
     Переместить метку окна
   chinese_s: 移动视口标签
   es_es: |-
-    Move Viewport Label
+    Mover la etiqueta de la ventana gráfica
   de_de: |-
     Verschieben des Fenstertitels
   pt_br: |-
     Mover Título da Viewport
+
 tooltip:
   en_us: |-
-    Move Viewport Label
-  ko: 뷰포트 레이블을 이동합니다.
+    Move a viewport label to a precise location on the sheet.
+    First select a point where you want the label, then select the viewport.
+    The label is moved to that point while the viewport remains in place.
+  ko: |-
+    시트에서 뷰포트 레이블을 원하는 위치로 정확하게 이동합니다.
+    먼저 레이블을 배치할 점을 선택한 다음 뷰포트를 선택하세요.
+    뷰포트는 그대로 유지되고 레이블만 선택한 위치로 이동합니다.
   fr_fr: |-
-    Déplacer le Titre de la Fenêtre
+    Déplace le titre d'une fenêtre vers un emplacement précis sur la feuille.
+    Sélectionnez d'abord le point où placer le titre, puis sélectionnez la fenêtre.
+    La fenêtre reste en place et seul son titre est déplacé.
   ru: |-
-    Переместить метку окна
-  chinese_s: "移动视口标签\nhttps://discourse.pyrevitlabs.io/t/i-developed-a-tool-need-help-to-get-it-into-the-new-release-of-pyrevit/7639/3"
+    Перемещает метку вида в точное положение на листе.
+    Сначала укажите точку, в которой должна находиться метка, затем выберите видовой экран.
+    Положение видового экрана не изменяется — перемещается только его метка.
+  chinese_s: |-
+    将视口标签移动到图纸上的指定位置。
+    首先选择标签要放置的位置，然后选择视口。
+    视口本身保持不变，只移动视口标签。
   es_es: |-
-    Move Viewport Label
+    Mueve la etiqueta de una vista a una ubicación precisa en el plano.
+    Primero selecciona el punto donde quieres colocar la etiqueta y después selecciona la ventana gráfica.
+    La ventana gráfica permanece en su sitio y solo se mueve la etiqueta.
   de_de: |-
-    Verschieben des Fenstertitels
+    Verschiebt den Fenstertitel eines Ansichtsfensters an eine genaue Position auf dem Plan.
+    Wählen Sie zuerst den Punkt für den Fenstertitel und anschließend das Ansichtsfenster aus.
+    Das Ansichtsfenster bleibt an seiner Position; nur der Fenstertitel wird verschoben.
   pt_br: |-
-    Mover título da viewport
+    Move o título da viewport para uma posição precisa na folha.
+    Primeiro selecione o ponto onde deseja posicionar o título e depois selecione a viewport.
+    A viewport permanece no lugar; somente o título é movido.
+
 authors:
   - Tim Hevel
   - Jean-Marc Couffin (C# to python and refactor)
 
 min_revit_version: 2022
 context: active-sheet
+help_url: https://discourse.pyrevitlabs.io/t/i-developed-a-tool-need-help-to-get-it-into-the-new-release-of-pyrevit/7639/
