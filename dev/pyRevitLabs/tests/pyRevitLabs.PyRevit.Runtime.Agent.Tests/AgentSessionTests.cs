@@ -222,6 +222,54 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ADeclinedRequestTellsTheAgentTheUserSaidNo() {
+            tracker.SetRequired(true);
+            tracker.Request("Renumber the doors", Now);
+
+            Assert.True(tracker.Decline(Now));
+
+            var status = tracker.Describe();
+            Assert.True(IsNull(status["pending_request"]));
+            Assert.Equal("Renumber the doors", status["declined_request"].Value<string>("reason"));
+            var refused = Assert.Throws<AgentException>(tracker.CheckOnArrival);
+            Assert.Equal("session_inactive", refused.Code);
+            Assert.Contains("declined", refused.Message);
+            Assert.False(tracker.Decline(Now));
+        }
+
+        [Fact]
+        public void ANewRequestOrSessionClearsTheDecline() {
+            tracker.Request("First", Now);
+            tracker.Decline(Now);
+            tracker.Request("Second", Now);
+            Assert.True(IsNull(tracker.Describe()["declined_request"]));
+
+            tracker.Decline(Now);
+            StartOnDocument();
+            Assert.True(IsNull(tracker.Describe()["declined_request"]));
+        }
+
+        [Fact]
+        public void ChangedIsRaisedForEveryChangeAndNotForNoOps() {
+            var raised = 0;
+            tracker.Changed += () => raised++;
+
+            tracker.SetRequired(false);
+            tracker.End(AgentSessionEndReasons.EndedInRevit, Now);
+            tracker.Decline(Now);
+            Assert.Equal(0, raised);
+
+            tracker.SetRequired(true);
+            StartOnDocument();
+            tracker.Pause();
+            tracker.Resume();
+            tracker.End(AgentSessionEndReasons.PanelClosed, Now);
+            tracker.Request(null, Now);
+            tracker.Decline(Now);
+            Assert.Equal(7, raised);
+        }
+
+        [Fact]
         public void RunsTheConfigPolicyAllowsPassThePermissionCheck() {
             AgentPermissions.CheckRun(AgentRunMode.Modify, AgentPolicy.Ask);
             AgentPermissions.CheckRun(AgentRunMode.Modify, AgentPolicy.Auto);

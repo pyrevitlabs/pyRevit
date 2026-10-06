@@ -13,6 +13,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public const string EndedInRevit = "ended_in_revit";
         public const string EndedByClient = "ended_by_client";
         public const string DocumentClosed = "document_closed";
+        public const string PanelClosed = "panel_closed";
         public const string HostStopped = "host_stopped";
     }
 
@@ -35,7 +36,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// always succeed.</item>
     /// </list>
     /// The bound document is an opaque reference; callers decide what counts as the same document.
-    /// Every member is safe to call from any thread.
+    /// Every member is safe to call from any thread. <see cref="Changed"/> is raised on the thread
+    /// that made the change, after the tracker's lock is released.
     /// </remarks>
     internal sealed class AgentSessionTracker {
         public const int MaxReasonLength = 300;
@@ -49,7 +51,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private string documentTitle;
         private DateTime startedUtc;
         private JObject pendingRequest;
+        private JObject lastDeclined;
         private JObject lastEnded;
+
+        public event Action Changed;
 
         public bool Required {
             get {
@@ -77,10 +82,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </exception>
         public void SetRequired(bool value) {
             lock (sync) {
-                if (required && !value)
+                if (required == value)
+                    return;
+                if (!value)
                     RefuseWhileRunExecutes("Agent sessions can't be made optional while an agent run executes.");
                 required = value;
             }
+            OnChanged();
         }
 
         /// <returns>The new session's id.</returns>
@@ -91,19 +99,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Start(object document, string title, DateTime nowUtc) {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
+            string id;
             lock (sync) {
                 RefuseWhileRunExecutes("An agent session can't be started while an agent run executes.");
                 if (state != AgentSessionState.Inactive)
                     throw new AgentException("session_active",
                         $"An agent session is already active on '{documentTitle}'. End it before starting another.");
                 state = AgentSessionState.Active;
-                sessionId = Guid.NewGuid().ToString("N").Substring(0, 12);
+                id = sessionId = Guid.NewGuid().ToString("N").Substring(0, 12);
                 boundDocument = document;
                 documentTitle = title;
                 startedUtc = nowUtc;
                 pendingRequest = null;
-                return sessionId;
+                lastDeclined = null;
             }
+            OnChanged();
+            return id;
         }
 
         /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
@@ -113,6 +124,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw new AgentException("session_inactive", "There is no agent session to pause.");
                 state = AgentSessionState.Paused;
             }
+            OnChanged();
         }
 
         /// <exception cref="AgentException">
@@ -127,12 +139,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 state = AgentSessionState.Active;
                 pendingRequest = null;
             }
+            OnChanged();
         }
 
         /// <returns>False when there was no session to end.</returns>
         public bool End(string reason, DateTime nowUtc) {
+            bool ended;
             lock (sync)
-                return EndLocked(reason, nowUtc);
+                ended = EndLocked(reason, nowUtc);
+            if (ended)
+                OnChanged();
+            return ended;
         }
 
         /// <summary>
@@ -140,8 +157,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// late notice about a closed document can't end a newer session.
         /// </summary>
         public bool EndIfBoundTo(object document, string reason, DateTime nowUtc) {
+            bool ended;
             lock (sync)
-                return ReferenceEquals(boundDocument, document) && EndLocked(reason, nowUtc);
+                ended = ReferenceEquals(boundDocument, document) && EndLocked(reason, nowUtc);
+            if (ended)
+                OnChanged();
+            return ended;
         }
 
         /// <summary>
@@ -160,8 +181,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["reason"] = string.IsNullOrEmpty(trimmed) ? JValue.CreateNull() : new JValue(trimmed),
                     ["requested"] = nowUtc.ToString("o"),
                 };
-                return true;
+                lastDeclined = null;
             }
+            OnChanged();
+            return true;
+        }
+
+        /// <summary>
+        /// Declines the pending request, so the agent's next refusal says the user said no.
+        /// </summary>
+        /// <returns>False when no request is pending.</returns>
+        public bool Decline(DateTime nowUtc) {
+            lock (sync) {
+                if (pendingRequest == null)
+                    return false;
+                lastDeclined = (JObject)pendingRequest.DeepClone();
+                lastDeclined["declined"] = nowUtc.ToString("o");
+                pendingRequest = null;
+            }
+            OnChanged();
+            return true;
         }
 
         /// <summary>
@@ -216,6 +255,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["document"] = isOpen ? documentTitle : null,
                     ["started"] = isOpen ? startedUtc.ToString("o") : null,
                     ["pending_request"] = pendingRequest?.DeepClone(),
+                    ["declined_request"] = lastDeclined?.DeepClone(),
                     ["last_ended"] = lastEnded?.DeepClone(),
                 };
             }
@@ -227,6 +267,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "The user paused the agent session in Revit. Tell the user you are waiting, and try again after they resume it.");
             if (state != AgentSessionState.Inactive || !required)
                 return;
+            if (lastDeclined != null)
+                throw new AgentException("session_inactive",
+                    "The user declined your request for an agent session in Revit. Ask them in the conversation "
+                    + "before you call request_session again.");
             var ended = lastEnded != null && lastEnded.Value<string>("reason") == AgentSessionEndReasons.DocumentClosed
                 ? $"The agent session ended because its document '{lastEnded.Value<string>("document")}' was closed. "
                 : string.Empty;
@@ -259,6 +303,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void EndRun() {
             lock (sync)
                 runsExecuting--;
+        }
+
+        private void OnChanged() {
+            Changed?.Invoke();
         }
 
         private static string StateName(AgentSessionState value) {

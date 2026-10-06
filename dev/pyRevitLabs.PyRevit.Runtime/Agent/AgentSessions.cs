@@ -81,12 +81,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.End(AgentSessionEndReasons.EndedInRevit, DateTime.UtcNow);
         }
 
+        /// <summary>
+        /// Declines an agent's pending request for a session. Its next refusal tells it the user
+        /// said no.
+        /// </summary>
+        public static void Decline() {
+            Tracker.Decline(DateTime.UtcNow);
+        }
+
         internal static JObject Describe() {
             return Tracker.Describe();
         }
 
         internal static void EndByClient() {
             Tracker.End(AgentSessionEndReasons.EndedByClient, DateTime.UtcNow);
+        }
+
+        internal static void EndForPanelClosed() {
+            Tracker.End(AgentSessionEndReasons.PanelClosed, DateTime.UtcNow);
         }
 
         internal static void EndForHostStop() {

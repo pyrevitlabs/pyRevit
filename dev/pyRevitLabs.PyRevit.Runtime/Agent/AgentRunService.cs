@@ -95,7 +95,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.AskUser:
                     guard.DisarmDialogCapture();
-                    if (AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures)) {
+                    bool approved;
+                    AgentHost.Activity.SetAwaitingApproval(true);
+                    try {
+                        approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
+                    }
+                    finally {
+                        AgentHost.Activity.SetAwaitingApproval(false);
+                    }
+                    if (approved) {
                         Commit(guard, uidoc.Document, request, runId);
                         return AgentRunVerdict.UserApproved;
                     }

@@ -3,6 +3,7 @@
 # pylint: skip-file
 import agent_harness
 import agent_modify_tests
+import agent_panel_tests
 import agent_pipe_tests
 import agent_query_tests
 import agent_requests_tests
@@ -18,6 +19,7 @@ agent_harness.run_suites(
         agent_modify_tests,
         agent_settings_tests,
         agent_session_tests,
+        agent_panel_tests,
         agent_pipe_tests,
     ]
 )
