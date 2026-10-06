@@ -48,6 +48,29 @@
     <system:String x:Key="AgentPanel.Kind.inspect">Inspect elements</system:String>
     <system:String x:Key="AgentPanel.Kind.show">Show elements</system:String>
     <system:String x:Key="AgentPanel.Kind.capture">Capture view</system:String>
+    <system:String x:Key="AgentPanel.Kind.lookup">Look up API</system:String>
+
+    <system:String x:Key="AgentPanel.Log.Title">Activity</system:String>
+    <system:String x:Key="AgentPanel.Log.ShowLookups">Show lookups</system:String>
+    <system:String x:Key="AgentPanel.Log.Empty">Nothing yet. What agents do in Revit appears here.</system:String>
+    <system:String x:Key="AgentPanel.Log.NoSession">Without a session</system:String>
+    <system:String x:Key="AgentPanel.Log.Session">{0} · from {1}</system:String>
+    <system:String x:Key="AgentPanel.Log.Summary">{0} · {1} · {2} · {3}</system:String>
+    <system:String x:Key="AgentPanel.Log.Duration">{0:0.0} s</system:String>
+    <system:String x:Key="AgentPanel.Log.WithApproval">{0} · {1}</system:String>
+    <system:String x:Key="AgentPanel.Log.Approval.auto">applied without asking</system:String>
+    <system:String x:Key="AgentPanel.Log.Approval.user">you decided</system:String>
+    <system:String x:Key="AgentPanel.Log.Reason">Why: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Changes">{0} added · {1} modified · {2} deleted</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed another document; those changes were rolled back.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.NoChanges">It changed nothing.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.Warning">The host warned: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Elements">Elements (click to select)</system:String>
+    <system:String x:Key="AgentPanel.Log.Script">Script</system:String>
+    <system:String x:Key="AgentPanel.Log.Output">Output</system:String>
+    <system:String x:Key="AgentPanel.Log.Error">Error</system:String>
+    <system:String x:Key="AgentPanel.Log.Engine">Engine: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.RunFolder">Run record: {0}</system:String>
 
     <system:String x:Key="AgentPanel.Footer">Agents work only in the session's document, and only while the session is active. Closing this panel ends the session.</system:String>
 </ResourceDictionary>

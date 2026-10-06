@@ -142,6 +142,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 onError("Revit is busy and could not start the session. Try again in a moment.");
         }
 
+        /// <remarks>
+        /// Uses the same presenter as <c>show_elements</c>, with the document title as a guard,
+        /// so a click can't select whatever elements happen to have those ids in another
+        /// document. Not behind the session gate: the user is acting, not the agent.
+        /// </remarks>
+        public void ShowElements(IList<long> ids, string document, Action<string> onError) {
+            void Report(string message) {
+                uiDispatcher.BeginInvoke(new Action(() => onError(message)));
+            }
+
+            var dispatcher = AgentHost.Dispatcher;
+            if (dispatcher == null) {
+                onError("The agent host is not running.");
+                return;
+            }
+            var request = new AgentPresenter.Request { Action = "select", Zoom = true, DocumentTitle = document };
+            request.Ids.AddRange(ids);
+            var posted = dispatcher.Post(app => {
+                try {
+                    using (var dialogs = new AgentDialogCapture(app))
+                        AgentPresenter.Show(app, request, dialogs);
+                }
+                catch (AgentException ex) {
+                    Report(ex.Message);
+                }
+                catch (Exception ex) {
+                    logger.Error(ex, "Could not show elements from the agent panel");
+                    Report(ex.Message);
+                }
+            });
+            if (!posted)
+                onError("Revit is busy and could not show the elements. Try again in a moment.");
+        }
+
         public void Pause() {
             AgentSessions.Pause();
         }

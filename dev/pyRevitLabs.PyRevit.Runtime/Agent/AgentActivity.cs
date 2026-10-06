@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+
+using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -6,10 +9,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// replaces it as the request moves on.
     /// </summary>
     internal sealed class AgentRequestRecord {
-        public AgentRequestRecord(long id, string kind, string title, DateTime arrivedUtc) {
+        public AgentRequestRecord(
+            long id, string kind, string title, string reason, string sessionId, string sessionDocument, DateTime arrivedUtc) {
             Id = id;
             Kind = kind;
             Title = title;
+            Reason = reason;
+            SessionId = sessionId;
+            SessionDocument = sessionDocument;
             ArrivedUtc = arrivedUtc;
         }
 
@@ -17,50 +24,76 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// What was asked: <c>query</c>, <c>dry_run</c>, <c>modify</c>, <c>context</c>,
-        /// <c>inspect</c>, <c>show</c> or <c>capture</c>.
+        /// <c>inspect</c>, <c>show</c>, <c>capture</c> or <c>lookup</c>.
         /// </summary>
         public string Kind { get; }
 
         public string Title { get; }
+        public string Reason { get; }
+
+        /// <summary>The session the request arrived in, or null when none was active.</summary>
+        public string SessionId { get; }
+
+        /// <summary>Title of that session's document, or null.</summary>
+        public string SessionDocument { get; }
+
         public DateTime ArrivedUtc { get; }
-        public bool Started { get; private set; }
+        public bool Started => StartedUtc.HasValue;
+        public DateTime? StartedUtc { get; private set; }
         public DateTime? FinishedUtc { get; private set; }
 
         /// <summary>
-        /// How it ended: <c>ok</c>, a run decision such as <c>committed</c>, or an error type.
+        /// How it ended: <c>ok</c>, <c>committed</c>, <c>rejected</c>, or an error type.
         /// </summary>
         public string Outcome { get; private set; }
 
-        public AgentRequestRecord AsStarted() {
+        /// <summary>
+        /// For a run, the summary <see cref="AgentLogDetails.FromRun"/> made of its response;
+        /// otherwise null.
+        /// </summary>
+        public JObject Details { get; private set; }
+
+        /// <summary>
+        /// Lookups read context or the API without acting on the model; the log hides them
+        /// unless the user asks for them.
+        /// </summary>
+        public bool IsLookup => Kind == "context" || Kind == "lookup";
+
+        public AgentRequestRecord AsStarted(DateTime startedUtc) {
             var copy = (AgentRequestRecord)MemberwiseClone();
-            copy.Started = true;
+            copy.StartedUtc = startedUtc;
             return copy;
         }
 
-        public AgentRequestRecord AsFinished(string outcome, DateTime finishedUtc) {
+        public AgentRequestRecord AsFinished(string outcome, DateTime finishedUtc, JObject details) {
             var copy = (AgentRequestRecord)MemberwiseClone();
-            copy.Started = true;
+            copy.StartedUtc = StartedUtc ?? finishedUtc;
             copy.Outcome = outcome;
             copy.FinishedUtc = finishedUtc;
+            copy.Details = details;
             return copy;
         }
     }
 
     /// <summary>
-    /// What agents are doing right now, for the agent panel: the request waiting for or running in
-    /// Revit, the last request that finished, the MCP client that last called, and whether the
-    /// approval prompt is open. Pure logic with no Revit dependency.
+    /// What agents have been doing in this Revit session, for the agent panel: the request
+    /// waiting for or running in Revit, the last request that finished, the history of
+    /// finished requests, the MCP client that last called, and whether the approval prompt is
+    /// open. Pure logic with no Revit dependency.
     /// </summary>
     /// <remarks>
-    /// Only model requests are recorded, the ones that pass the session gate; lookups and pings
-    /// would hide the request that matters. Every member is safe to call from any thread.
+    /// Only requests that reach Revit are recorded. The history lives in memory, holds the
+    /// latest <see cref="MaxHistory"/> requests and is lost when Revit closes; a run's full
+    /// record stays on disk in its run folder. Every member is safe to call from any thread.
     /// <see cref="Changed"/> is raised on the thread that made the change, after the lock is
     /// released.
     /// </remarks>
     internal sealed class AgentActivity {
         public const int MaxClientLength = 80;
+        public const int MaxHistory = 200;
 
         private readonly object sync = new object();
+        private readonly List<AgentRequestRecord> history = new List<AgentRequestRecord>();
         private long nextId;
         private AgentRequestRecord current;
         private AgentRequestRecord last;
@@ -79,10 +112,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// The last request that finished, lookups through the pipe excluded.
+        /// </summary>
         public AgentRequestRecord Last {
             get {
                 lock (sync)
                     return last;
+            }
+        }
+
+        /// <summary>
+        /// Finished requests, oldest first.
+        /// </summary>
+        public IReadOnlyList<AgentRequestRecord> History {
+            get {
+                lock (sync)
+                    return history.ToArray();
             }
         }
 
@@ -118,29 +164,44 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             OnChanged();
         }
 
-        public AgentRequestRecord Arrive(string kind, string title, DateTime nowUtc) {
+        public AgentRequestRecord Arrive(
+            string kind, string title, string reason, (string Id, string Document) session, DateTime nowUtc) {
             AgentRequestRecord record;
             lock (sync)
-                current = record = new AgentRequestRecord(++nextId, kind, title, nowUtc);
+                current = record = new AgentRequestRecord(++nextId, kind, title, reason, session.Id, session.Document, nowUtc);
             OnChanged();
             return record;
         }
 
-        public void Start(AgentRequestRecord record) {
+        public void Start(AgentRequestRecord record, DateTime nowUtc) {
             lock (sync) {
                 if (current == null || current.Id != record.Id)
                     return;
-                current = current.AsStarted();
+                current = current.AsStarted(nowUtc);
             }
             OnChanged();
         }
 
-        public void Finish(AgentRequestRecord record, string outcome, DateTime nowUtc) {
+        public void Finish(AgentRequestRecord record, string outcome, DateTime nowUtc, JObject details = null) {
             lock (sync) {
-                last = record.AsFinished(outcome, nowUtc);
+                var started = current != null && current.Id == record.Id ? current : record;
+                last = started.AsFinished(outcome, nowUtc, details);
+                AddToHistory(last);
                 if (current != null && current.Id == record.Id)
                     current = null;
                 awaitingApproval = false;
+            }
+            OnChanged();
+        }
+
+        /// <summary>
+        /// Records a lookup the pipe thread answered at once. It goes into the history only, so
+        /// the panel's last request stays the last one that touched the model.
+        /// </summary>
+        public void RecordLookup(string kind, string title, (string Id, string Document) session, string outcome, DateTime nowUtc) {
+            lock (sync) {
+                var record = new AgentRequestRecord(++nextId, kind, title, null, session.Id, session.Document, nowUtc);
+                AddToHistory(record.AsFinished(outcome, nowUtc, null));
             }
             OnChanged();
         }
@@ -152,6 +213,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 awaitingApproval = value;
             }
             OnChanged();
+        }
+
+        private void AddToHistory(AgentRequestRecord record) {
+            history.Add(record);
+            if (history.Count > MaxHistory)
+                history.RemoveRange(0, history.Count - MaxHistory);
         }
 
         private void OnChanged() {

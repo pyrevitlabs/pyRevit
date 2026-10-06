@@ -84,22 +84,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
                     return InvokeOnMainThread(
-                        app => AgentRunService.Execute(app, runRequest), parameters, runRequest.ModeName, runRequest.Title, runRequest.Mode);
+                        app => AgentRunService.Execute(app, runRequest), parameters,
+                        runRequest.ModeName, runRequest.Title, runRequest.Reason, runRequest.Mode,
+                        result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), runRequest.Script));
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
                     return InvokeCapturingDialogs(
-                        (app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters, "inspect", null);
+                        (app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters,
+                        "inspect", AgentRequestText.Title(parameters));
                 case "show":
                     var showRequest = AgentPresenter.Parse(parameters);
                     return InvokeCapturingDialogs(
-                        (app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters, "show", showRequest.Action);
+                        (app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters,
+                        "show", AgentRequestText.Title(parameters) ?? showRequest.Action);
                 case "capture":
                     var captureRequest = AgentCapture.Parse(parameters);
-                    return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters, "capture", null);
+                    return InvokeCapturingDialogs(
+                        (app, _) => AgentCapture.Capture(app, captureRequest), parameters,
+                        "capture", AgentRequestText.Title(parameters));
                 case "lookup_api":
                     var query = parameters.Value<string>("name");
-                    return AgentApiLookup.Lookup(query);
+                    var lookup = AgentApiLookup.Lookup(query);
+                    AgentHost.Activity.RecordLookup(
+                        "lookup", query, AgentSessions.Tracker.CurrentSession,
+                        (lookup as JObject)?.Value<bool?>("found") == false ? "not_found" : "ok", DateTime.UtcNow);
+                    return lookup;
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
             }
@@ -141,7 +151,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
                 }
-            }, parameters, kind, title);
+            }, parameters, kind, title, AgentRequestText.Reason(parameters));
         }
 
         /// <summary>
@@ -153,19 +163,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The mode of a <c>run</c> request, whose permission is checked again when Revit picks it
         /// up, because the policy may have changed while it was queued.
         /// </param>
+        /// <param name="describe">Builds the log's summary of a successful result, for runs.</param>
         private static JToken InvokeOnMainThread(
-            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, string kind, string title,
-            AgentRunMode? runMode = null) {
+            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, string kind, string title, string reason,
+            AgentRunMode? runMode = null, Func<JToken, JObject> describe = null) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
-            var record = AgentHost.Activity.Arrive(kind, title, DateTime.UtcNow);
+            var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
             try {
                 AgentSessions.CheckOnArrival();
                 JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
-                    AgentHost.Activity.Start(record);
+                    AgentHost.Activity.Start(record, DateTime.UtcNow);
                     AgentSessions.CheckOnDequeue(app);
                     if (runMode.HasValue) {
                         AgentHost.RefreshConfigIfChanged();
@@ -185,7 +196,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         : DefaultStartTimeout;
                     result = dispatcher.Invoke(GatedWork, startTimeout);
                 }
-                AgentHost.Activity.Finish(record, OutcomeOf(result), DateTime.UtcNow);
+                AgentHost.Activity.Finish(record, OutcomeOf(result), DateTime.UtcNow, Describe(describe, result));
                 return result;
             }
             catch (AgentException ex) {
@@ -195,6 +206,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception) {
                 AgentHost.Activity.Finish(record, "internal_error", DateTime.UtcNow);
                 throw;
+            }
+        }
+
+        /// <remarks>
+        /// The log's summary is a convenience; failing to build it must never fail the request.
+        /// </remarks>
+        private static JObject Describe(Func<JToken, JObject> describe, JToken result) {
+            if (describe == null)
+                return null;
+            try {
+                return describe(result);
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not summarize an agent request for the panel: {0}", ex.Message);
+                return null;
             }
         }
 

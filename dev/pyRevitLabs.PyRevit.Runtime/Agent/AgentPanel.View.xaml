@@ -58,6 +58,46 @@
             </Setter>
         </Style>
 
+        <Style x:Key="RowHeader" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource AgentPanel.Foreground}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Chip" TargetType="Button" BasedOn="{StaticResource Action}">
+            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+
+        <Style x:Key="Code" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="MaxHeight" Value="220" />
+            <Setter Property="Margin" Value="0,2,0,8" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="Foreground" Value="{DynamicResource AgentPanel.Foreground}" />
+            <Setter Property="Background" Value="{DynamicResource AgentPanel.Background}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AgentPanel.Border}" />
+        </Style>
+
+        <Style x:Key="Heading" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource AgentPanel.Card}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AgentPanel.Border}" />
@@ -193,6 +233,131 @@
             </Grid>
 
             <TextBlock Text="{DynamicResource AgentPanel.Footer}" Style="{StaticResource Muted}" Margin="4,14,4,0" />
+
+            <DockPanel Margin="4,22,4,8">
+                <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" IsChecked="{Binding Log.ShowLookups}">
+                    <TextBlock Text="{DynamicResource AgentPanel.Log.ShowLookups}" Style="{StaticResource Muted}" />
+                </CheckBox>
+                <TextBlock Text="{DynamicResource AgentPanel.Log.Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <TextBlock Text="{DynamicResource AgentPanel.Log.Empty}"
+                       Style="{StaticResource Muted}"
+                       Margin="4,0,4,0"
+                       Visibility="{Binding Log.IsEmpty, Converter={StaticResource Shown}}" />
+
+            <ItemsControl ItemsSource="{Binding Log.Groups}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,8" Visibility="{Binding IsVisible, Converter={StaticResource Shown}}">
+                            <TextBlock Text="{Binding Header}" Style="{StaticResource Heading}" Margin="4,0,4,6" />
+                            <ItemsControl ItemsSource="{Binding Entries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource Card}"
+                                                Padding="10,8"
+                                                Margin="0,0,0,6"
+                                                Visibility="{Binding IsVisible, Converter={StaticResource Shown}}">
+                                            <StackPanel>
+                                                <Button Style="{StaticResource RowHeader}" Command="{Binding ToggleCommand}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Ellipse Grid.Column="0" Width="8" Height="8" Margin="0,5,8,0" VerticalAlignment="Top">
+                                                            <Ellipse.Style>
+                                                                <Style TargetType="Ellipse">
+                                                                    <Setter Property="Fill" Value="{DynamicResource AgentPanel.Idle}" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding StatusKind}" Value="committed">
+                                                                            <Setter Property="Fill" Value="{DynamicResource AgentPanel.Active}" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding StatusKind}" Value="rejected">
+                                                                            <Setter Property="Fill" Value="{DynamicResource AgentPanel.Paused}" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding StatusKind}" Value="error">
+                                                                            <Setter Property="Fill" Value="{DynamicResource AgentPanel.Error}" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Ellipse.Style>
+                                                        </Ellipse>
+                                                        <StackPanel Grid.Column="1">
+                                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                            <TextBlock Text="{Binding Summary}" Style="{StaticResource Muted}" />
+                                                            <ItemsControl ItemsSource="{Binding Flags}" Visibility="{Binding HasFlags, Converter={StaticResource Shown}}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock Text="{Binding}" Foreground="{DynamicResource AgentPanel.Paused}" TextWrapping="Wrap" />
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Button>
+
+                                                <StackPanel Margin="16,8,0,0" Visibility="{Binding IsExpanded, Converter={StaticResource Shown}}">
+                                                    <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                                               Visibility="{Binding HasReason, Converter={StaticResource Shown}}" />
+                                                    <TextBlock Text="{Binding Changes}" Margin="0,0,0,2"
+                                                               Visibility="{Binding HasChanges, Converter={StaticResource Shown}}" />
+                                                    <TextBlock Text="{Binding Categories}" Style="{StaticResource Muted}" Margin="0,0,0,6"
+                                                               Visibility="{Binding HasCategories, Converter={StaticResource Shown}}" />
+
+                                                    <StackPanel Visibility="{Binding HasElements, Converter={StaticResource Shown}}">
+                                                        <TextBlock Text="{DynamicResource AgentPanel.Log.Elements}" Style="{StaticResource Heading}" />
+                                                        <ItemsControl ItemsSource="{Binding Elements}" Margin="0,4,0,4">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <WrapPanel />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Button Style="{StaticResource Chip}" Command="{Binding SelectCommand}">
+                                                                        <TextBlock Text="{Binding Label}" />
+                                                                    </Button>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+
+                                                    <StackPanel Visibility="{Binding HasError, Converter={StaticResource Shown}}">
+                                                        <TextBlock Text="{DynamicResource AgentPanel.Log.Error}" Style="{StaticResource Heading}" />
+                                                        <TextBox Style="{StaticResource Code}" Text="{Binding Error, Mode=OneWay}" Foreground="{DynamicResource AgentPanel.Error}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Visibility="{Binding HasScript, Converter={StaticResource Shown}}">
+                                                        <TextBlock Text="{DynamicResource AgentPanel.Log.Script}" Style="{StaticResource Heading}" />
+                                                        <TextBox Style="{StaticResource Code}" Text="{Binding Script, Mode=OneWay}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Visibility="{Binding HasOutput, Converter={StaticResource Shown}}">
+                                                        <TextBlock Text="{DynamicResource AgentPanel.Log.Output}" Style="{StaticResource Heading}" />
+                                                        <TextBox Style="{StaticResource Code}" Text="{Binding Output, Mode=OneWay}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="{Binding Engine}" Style="{StaticResource Muted}"
+                                                               Visibility="{Binding HasEngine, Converter={StaticResource Shown}}" />
+                                                    <TextBox Text="{Binding RunFolder, Mode=OneWay}"
+                                                             IsReadOnly="True"
+                                                             BorderThickness="0"
+                                                             Background="Transparent"
+                                                             Foreground="{DynamicResource AgentPanel.Muted}"
+                                                             TextWrapping="Wrap"
+                                                             Margin="0,2,0,4"
+                                                             Visibility="{Binding HasRunFolder, Converter={StaticResource Shown}}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
     </ScrollViewer>
 </Grid>

@@ -33,6 +33,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         void Start(Action<string> onError);
 
+        /// <summary>
+        /// Selects and zooms to elements of <paramref name="document"/>, refusing when another
+        /// document is active. A failure is reported through <paramref name="onError"/> on the UI
+        /// thread.
+        /// </summary>
+        void ShowElements(IList<long> ids, string document, Action<string> onError);
+
         void Pause();
         void Resume();
         void End();
@@ -61,8 +68,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// The agent panel's state and actions: the session, what an agent is waiting for, and the
-    /// last request it made.
+    /// The agent panel's state and actions: the session, what an agent is waiting for, the
+    /// last request it made, and the log of everything agents did in this Revit session.
     /// </summary>
     /// <remarks>
     /// Must be used on the UI thread. <see cref="Refresh"/> rereads everything from the backend,
@@ -90,6 +97,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     Start();
             });
             DeclineCommand = new AgentPanelCommand(() => Act(backend.Decline));
+            Log = new AgentLogViewModel(text, ShowElement);
             Refresh();
         }
 
@@ -129,6 +137,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public ICommand AcceptCommand { get; }
         public ICommand DeclineCommand { get; }
 
+        public AgentLogViewModel Log { get; }
+
         public void Refresh() {
             var session = backend.Session ?? new JObject();
             var running = backend.HostRunning;
@@ -155,8 +165,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             ClientText = activity?.Client ?? Text("AgentPanel.Client.Unknown");
             DescribeLast(activity?.Last);
             DescribeWaiting(activity);
+            Log.Update(activity?.History ?? new AgentRequestRecord[0]);
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        }
+
+        private void ShowElement(AgentLogElement element) {
+            errorText = null;
+            backend.ShowElements(new[] { element.Id }, element.Document, message => {
+                errorText = message;
+                Refresh();
+            });
+            Refresh();
         }
 
         private void Start() {

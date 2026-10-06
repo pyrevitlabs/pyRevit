@@ -37,6 +37,8 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSession.cs" Link="Sources\AgentSession.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentActivity.cs" Link="Sources\AgentActivity.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPanelViewModel.cs" Link="Sources\AgentPanelViewModel.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogDetails.cs" Link="Sources\AgentLogDetails.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogViewModel.cs" Link="Sources\AgentLogViewModel.cs"/>
     </ItemGroup>
 
 </Project>

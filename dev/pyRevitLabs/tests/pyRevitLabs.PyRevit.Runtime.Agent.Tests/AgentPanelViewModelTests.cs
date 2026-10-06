@@ -185,7 +185,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
         [Fact]
         public void TheLastRequestShowsWhatWhenAndHowItEnded() {
-            var record = backend.Activity.Arrive("modify", "Add walls", Started);
+            var record = backend.Activity.Arrive("modify", "Add walls", null, (null, null), Started);
             backend.Activity.Finish(record, "committed", Started);
 
             var panel = Panel();
@@ -196,13 +196,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
         [Fact]
         public void AWaitingRequestSaysWhatHoldsItUp() {
-            var record = backend.Activity.Arrive("query", null, Started);
+            var record = backend.Activity.Arrive("query", null, null, (null, null), Started);
             Assert.Equal("Query waiting", Panel().WaitingText);
 
             backend.Dialogs.Add("'Save reminder' (#32770)");
             Assert.Equal("Query blocked by 'Save reminder' (#32770)", Panel().WaitingText);
 
-            backend.Activity.Start(record);
+            backend.Activity.Start(record, Started);
             Assert.Equal("Query running", Panel().WaitingText);
 
             backend.Activity.SetAwaitingApproval(true);
@@ -239,6 +239,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(string.Empty, changed);
         }
 
+        [Fact]
+        public void ClickingALoggedElementShowsItOrTheRefusal() {
+            var record = backend.Activity.Arrive("modify", "Add walls", null, ("s1", "Tower.rvt"), Started);
+            backend.Activity.Finish(record, "committed", Started, new JObject {
+                ["document"] = "Tower.rvt",
+                ["elements"] = new JArray(new JObject { ["id"] = 5, ["name"] = "Wall" }),
+            });
+            var panel = Panel();
+
+            panel.Log.Groups[0].Entries[0].Elements[0].SelectCommand.Execute(null);
+            backend.ShowFailure("The link belongs to a different or closed document.");
+
+            var shown = Assert.Single(backend.Shown);
+            Assert.Equal(new long[] { 5 }, shown.Ids);
+            Assert.Equal("Tower.rvt", shown.Document);
+            Assert.Equal("The link belongs to a different or closed document.", panel.ErrorText);
+        }
+
         private sealed class FakeBackend : IAgentPanelBackend {
             private Action<string> startFailure;
 
@@ -263,6 +281,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             public void ReportStartFailure(string message) {
                 startFailure(message);
+            }
+
+            public List<(IList<long> Ids, string Document)> Shown { get; } = new List<(IList<long>, string)>();
+
+            public Action<string> ShowFailure { get; private set; }
+
+            public void ShowElements(IList<long> ids, string document, Action<string> onError) {
+                Shown.Add((ids, document));
+                ShowFailure = onError;
             }
 
             public void Pause() {

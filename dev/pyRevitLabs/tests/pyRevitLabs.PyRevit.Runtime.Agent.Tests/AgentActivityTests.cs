@@ -1,33 +1,47 @@
 using System;
+using System.Linq;
 using PyRevitLabs.PyRevit.Runtime.Agent;
+using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     public sealed class AgentActivityTests {
         private static readonly DateTime Now = new DateTime(2026, 10, 5, 12, 0, 0, DateTimeKind.Utc);
+        private static readonly (string, string) NoSession = (null, null);
         private readonly AgentActivity activity = new AgentActivity();
+
+        private AgentRequestRecord Arrive(string kind, string title = null) {
+            return activity.Arrive(kind, title, null, NoSession, Now);
+        }
 
         [Fact]
         public void ARequestWaitsRunsAndBecomesTheLastOne() {
-            var record = activity.Arrive("modify", "Renumber doors", Now);
+            var record = activity.Arrive("modify", "Renumber doors", "Marks skip", ("s1", "Tower.rvt"), Now);
             Assert.False(activity.Current.Started);
 
-            activity.Start(record);
+            activity.Start(record, Now.AddSeconds(1));
             Assert.True(activity.Current.Started);
 
-            activity.Finish(record, "committed", Now.AddSeconds(3));
+            var details = new JObject { ["run_id"] = "abc" };
+            activity.Finish(record, "committed", Now.AddSeconds(3), details);
+            var last = activity.Last;
             Assert.Null(activity.Current);
-            Assert.Equal("modify", activity.Last.Kind);
-            Assert.Equal("Renumber doors", activity.Last.Title);
-            Assert.Equal("committed", activity.Last.Outcome);
-            Assert.Equal(Now.AddSeconds(3), activity.Last.FinishedUtc);
+            Assert.Equal("modify", last.Kind);
+            Assert.Equal("Renumber doors", last.Title);
+            Assert.Equal("Marks skip", last.Reason);
+            Assert.Equal("s1", last.SessionId);
+            Assert.Equal("Tower.rvt", last.SessionDocument);
+            Assert.Equal("committed", last.Outcome);
+            Assert.Equal(Now.AddSeconds(1), last.StartedUtc);
+            Assert.Equal(Now.AddSeconds(3), last.FinishedUtc);
+            Assert.Same(details, last.Details);
         }
 
         [Fact]
         public void FinishingAnOlderRequestKeepsTheNewerOneCurrent() {
-            var older = activity.Arrive("query", null, Now);
-            var newer = activity.Arrive("context", null, Now);
+            var older = Arrive("query");
+            var newer = Arrive("context");
 
-            activity.Start(older);
+            activity.Start(older, Now);
             activity.Finish(older, "ok", Now);
 
             Assert.Equal(newer.Id, activity.Current.Id);
@@ -35,13 +49,65 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ARefusedRequestThatNeverStartedFinishesAtOnce() {
+            var record = Arrive("query");
+
+            activity.Finish(record, "session_inactive", Now.AddSeconds(2));
+
+            Assert.Equal(Now.AddSeconds(2), activity.Last.StartedUtc);
+            Assert.Equal("session_inactive", activity.Last.Outcome);
+        }
+
+        [Fact]
         public void FinishingClosesTheApprovalPrompt() {
-            var record = activity.Arrive("modify", "Add walls", Now);
+            var record = Arrive("modify", "Add walls");
             activity.SetAwaitingApproval(true);
 
             activity.Finish(record, "rejected", Now);
 
             Assert.False(activity.AwaitingApproval);
+        }
+
+        [Fact]
+        public void TheHistoryKeepsFinishedRequestsOldestFirst() {
+            var first = Arrive("query", "First");
+            activity.Finish(first, "ok", Now);
+            var second = Arrive("modify", "Second");
+            activity.Finish(second, "committed", Now);
+
+            Assert.Equal(new[] { "First", "Second" }, activity.History.Select(record => record.Title));
+        }
+
+        [Fact]
+        public void TheHistoryDropsTheOldestRequestsPastItsLimit() {
+            for (var index = 0; index < AgentActivity.MaxHistory + 5; index++)
+                activity.Finish(Arrive("query", "Run " + index), "ok", Now);
+
+            var history = activity.History;
+            Assert.Equal(AgentActivity.MaxHistory, history.Count);
+            Assert.Equal("Run 5", history.First().Title);
+        }
+
+        [Fact]
+        public void ALookupGoesIntoTheHistoryButIsNeverTheLastRequest() {
+            activity.Finish(Arrive("modify", "Add walls"), "committed", Now);
+
+            activity.RecordLookup("lookup", "Wall.Create", ("s1", "Tower.rvt"), "ok", Now);
+
+            var lookup = activity.History.Last();
+            Assert.True(lookup.IsLookup);
+            Assert.Equal("Wall.Create", lookup.Title);
+            Assert.Equal("s1", lookup.SessionId);
+            Assert.Equal("Add walls", activity.Last.Title);
+            Assert.Null(activity.Current);
+        }
+
+        [Fact]
+        public void ContextAndLookupRequestsAreLookups() {
+            Assert.True(Arrive("context").IsLookup);
+            Assert.True(Arrive("lookup").IsLookup);
+            Assert.False(Arrive("query").IsLookup);
+            Assert.False(Arrive("show").IsLookup);
         }
 
         [Fact]
@@ -63,11 +129,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             activity.NoteClient("Codex");
             activity.NoteClient("Codex");
             activity.SetAwaitingApproval(false);
-            var record = activity.Arrive("query", null, Now);
-            activity.Start(record);
+            var record = Arrive("query");
+            activity.Start(record, Now);
             activity.Finish(record, "ok", Now);
+            activity.RecordLookup("lookup", "Wall", NoSession, "ok", Now);
 
-            Assert.Equal(4, raised);
+            Assert.Equal(5, raised);
         }
     }
 }
