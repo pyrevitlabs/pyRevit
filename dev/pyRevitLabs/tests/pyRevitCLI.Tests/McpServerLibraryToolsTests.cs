@@ -86,6 +86,7 @@ public partial class McpServerTests {
         host.Handler = request => FakeAgentHost.Result(request, new JObject { ["count"] = 2 });
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Tower", ["path"] = "c:\\models\\TOWER.rvt" },
@@ -108,6 +109,7 @@ public partial class McpServerTests {
         host.Handler = request => FakeAgentHost.Result(request, new JObject());
 
         Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Model" },
@@ -131,6 +133,7 @@ public partial class McpServerTests {
         );
 
         var byPath = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Tower", ["path"] = "C:\\Models\\Annex.rvt" },
@@ -138,6 +141,7 @@ public partial class McpServerTests {
             },
         }));
         var byTitle = Single(ToolCall(2, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Annex" },
@@ -159,6 +163,7 @@ public partial class McpServerTests {
         );
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Tower-renamed", ["path"] = "C:\\Models\\Tower.rvt" },
@@ -179,6 +184,7 @@ public partial class McpServerTests {
         );
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Model" },

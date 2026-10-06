@@ -38,8 +38,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// save and save-as operations while the run is active.</item>
     /// </list>
     /// The host attempts to write <c>script.py</c>, <c>request.json</c> and <c>response.json</c>
-    /// under <c>%APPDATA%\pyRevit\agent\runs\</c>. A failure to persist an outcome never
-    /// changes an already-final model decision.
+    /// under <c>%APPDATA%\pyRevit\agent\runs\</c>; both JSON records carry the session id and the
+    /// active document's title. A failure to persist an outcome never changes an already-final
+    /// model decision.
     /// </remarks>
     internal static class AgentRunService {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -141,8 +142,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
             var runDir = AgentPaths.CreateRunDir(runId);
+            var sessionId = AgentSessions.Tracker.SessionId;
+            var requestRecord = request.ToJson();
+            requestRecord["session_id"] = sessionId;
+            requestRecord["document"] = doc?.Title;
             File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
-            File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
+            File.WriteAllText(Path.Combine(runDir, "request.json"), requestRecord.ToString(Formatting.Indented), Utf8);
 
             var warnings = new JArray();
             var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
@@ -159,6 +164,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["run_dir"] = runDir,
                 ["mode"] = request.ModeName,
                 ["title"] = request.Title,
+                ["reason"] = request.Reason,
+                ["session_id"] = sessionId,
+                ["document"] = doc?.Title,
             };
 
             var openAtStart = AgentDocuments.Snapshot(app.Application);

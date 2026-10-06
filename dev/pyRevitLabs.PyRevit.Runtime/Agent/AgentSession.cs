@@ -77,6 +77,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>The id of the active or paused session, or null when there is none.</summary>
+        public string SessionId {
+            get {
+                lock (sync)
+                    return state == AgentSessionState.Inactive ? null : sessionId;
+            }
+        }
+
+        /// <summary>
+        /// The active or paused session's id and document title, read together; both null when
+        /// there is no session.
+        /// </summary>
+        public (string Id, string Document) CurrentSession {
+            get {
+                lock (sync)
+                    return state == AgentSessionState.Inactive ? (null, null) : (sessionId, documentTitle);
+            }
+        }
+
         /// <exception cref="AgentException">
         /// <c>session_locked</c> when making sessions optional while an agent run executes.
         /// </exception>
