@@ -74,7 +74,7 @@ Confirmed on a Windows 11 host with Revit 2021-2027 installed, using a self-sign
 
 `ci.yml` runs when changes touch build-related paths:
 
-- `.github/workflows/`, `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`
+- `.github/workflows/`, `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`, `tests/`
 
 It is triggered by:
 
@@ -87,6 +87,10 @@ Doc-only or other out-of-scope changes skip CI entirely.
 !!! note "New commits to an open PR do re-run CI"
 
     The pull-request trigger includes `synchronize`, so every push to an open PR's head branch starts a fresh run — no need to close and reopen to get one after fixes. Concurrency is keyed by `pyrevit-ci-<pr number>` with `cancel-in-progress`, so a push supersedes the PR's previous run instead of queueing behind it.
+
+!!! warning "Anything the `build` job runs must be inside the filter"
+
+    The filter decides whether a change is verified at all. `tests/` was outside it, so a commit deleting the only two suites under `tests/` triggered no run, and the next build-touching push failed on `ImportError: Start directory is not importable: tests` — which on a `v*` tag also blocks `release.yml`, since it polls for that CI run. When adding a step to the `build` job, add its inputs to both `paths:` lists in the same change.
 
 ### Official repository vs forks
 
@@ -265,7 +269,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 |---------|----------------|
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
-| `python -m unittest discover -s tests` | Standalone CPython suites under `tests/` (also run in CI). They need no Revit host, so they run in the `build` job instead of waiting for the Revit integration workflow. `tests/` is not in the `ci.yml` path filter, so deleting or adding files there does not trigger CI by itself. |
+| `python -m unittest discover -s tests` | Standalone CPython suites under `tests/` (also run in CI). They need no Revit host, so they run in the `build` job instead of waiting for the Revit integration workflow. |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |
 | `dotnet run -- notify` | Post WIP/release URL to linked issues |
