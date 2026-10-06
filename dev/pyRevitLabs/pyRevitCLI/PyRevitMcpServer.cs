@@ -288,10 +288,12 @@ namespace pyRevitCLI {
         private JToken RunAutomation(JObject arguments) {
             var operation = PyRevitAutomationOperations.Resolve(
                 arguments.Value<string>("id"), arguments["inputs"]);
+            JToken sinceLastCall = null;
             if (operation.Value<bool>("requires_document")) {
                 var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
                 if (context?["document"] == null || context["document"].Type == JTokenType.Null)
                     throw new AgentClientException("no_active_document", $"'{operation.Value<string>("id")}' requires an active document.");
+                sinceLastCall = context["since_last_call"];
             }
             var parameters = new JObject {
                 ["script"] = operation.Value<string>("source"),
@@ -306,7 +308,10 @@ namespace pyRevitCLI {
                 parameters["engine"] = arguments["engine"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
-            return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
+            var result = PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
+            if (sinceLastCall != null && result["since_last_call"] == null)
+                result["since_last_call"] = sinceLastCall;
+            return result;
         }
 
         /// <summary>

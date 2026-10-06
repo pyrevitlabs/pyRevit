@@ -334,7 +334,7 @@ class ScratchSession(object):
             DB.FilteredElementCollector(self.project).OfClass(DB.Level).FirstElementId()
         )
         self.wall_ids = [
-            _id_value(wall.Id)
+            id_value(wall.Id)
             for wall in DB.FilteredElementCollector(self.project).OfClass(DB.Wall)
         ]
 
@@ -409,7 +409,7 @@ class ScratchSession(object):
             return False
 
 
-def _id_value(element_id):
+def id_value(element_id):
     """The numeric id as a Python int; ``ElementId.Value`` is an Int64 that ``json`` rejects."""
     value = getattr(element_id, "Value", None)
     return int(value if value is not None else element_id.IntegerValue)

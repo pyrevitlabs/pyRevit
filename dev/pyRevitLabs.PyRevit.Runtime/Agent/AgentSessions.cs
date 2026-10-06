@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
@@ -61,7 +63,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var doc = app.ActiveUIDocument?.Document
                 ?? throw new AgentException("no_active_document", "Open the document the agent should work on, then start the session.");
             WatchDocumentClosing(app.Application);
-            return Tracker.Start(doc, doc.Title, DateTime.UtcNow);
+            AgentAwarenessWatch.Attach(app);
+            var id = Tracker.Start(doc, doc.Title, DateTime.UtcNow);
+            AgentAwarenessWatch.Restart(app);
+            return id;
         }
 
         /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
@@ -101,6 +106,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.End(AgentSessionEndReasons.PanelClosed, DateTime.UtcNow);
         }
 
+        /// <summary>
+        /// Pauses the session after a run changed another open document, so the agent can't carry
+        /// on until the user has seen what happened and resumed it.
+        /// </summary>
+        internal static void PauseForOtherDocument(IEnumerable<string> documents) {
+            var names = string.Join(", ", documents.Where(name => !string.IsNullOrEmpty(name)).Distinct().Select(name => "'" + name + "'"));
+            Tracker.PauseByHost(
+                $"the last run changed another open document ({names}), and agents may change only the session's document.");
+        }
+
         internal static void EndForHostStop() {
             Tracker.End(AgentSessionEndReasons.HostStopped, DateTime.UtcNow);
         }
@@ -114,14 +129,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.SetRequired(required);
         }
 
-        /// <exception cref="AgentException"><c>paused_by_user</c> or <c>session_inactive</c>.</exception>
+        /// <exception cref="AgentException"><c>paused_by_user</c>, <c>paused_by_host</c> or <c>session_inactive</c>.</exception>
         internal static void CheckOnArrival() {
             Tracker.CheckOnArrival();
         }
 
         /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>session_inactive</c> or <c>wrong_document</c>.
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_inactive</c> or <c>wrong_document</c>.
         /// </exception>
         internal static void CheckOnDequeue(UIApplication app) {
             if (Tracker.BoundDocument is Document bound && !bound.IsValidObject)

@@ -29,8 +29,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
-    /// <item>A run that changes any document other than the active one fails and rolls back,
-    /// whatever its mode and the policy.</item>
+    /// <item>A run that changes any document other than the active one fails, rolls back and
+    /// pauses the session, whatever its mode and the policy.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
     /// document remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
@@ -73,9 +73,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case AgentRunVerdict.OtherDocumentChanged:
                     context.SetError("other_document_modified",
                         "The script changed another open document. Agent runs may change only the active "
-                        + "document. See 'changes.other_documents' for rollback and discard outcomes.",
+                        + "document. See 'changes.other_documents' for rollback and discard outcomes. "
+                        + "The agent session is now paused until the user resumes it.",
                         null);
-                    guard.RollBack();
+                    try {
+                        guard.RollBack();
+                    }
+                    finally {
+                        AgentSessions.PauseForOtherDocument(
+                            guard.DescribeOtherDocuments().Select(other => other.Value<string>("document")));
+                    }
                     return verdict;
                 case AgentRunVerdict.NoDocument:
                     return verdict;

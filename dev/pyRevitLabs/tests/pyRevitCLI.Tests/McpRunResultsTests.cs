@@ -59,8 +59,17 @@ public class McpRunResultsTests {
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 
-            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval" })
+            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval", "since_last_call" })
                 Assert.Null(compact[key]);
+        }
+
+        [Fact]
+        public void WhatTheUserChangedSinceTheLastCallIsKept() {
+            var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
+                ["since_last_call"] = new JObject { ["edits"] = new JObject { ["modified"] = 2 } },
+            }));
+
+            Assert.Equal(2, compact["since_last_call"]["edits"].Value<int>("modified"));
         }
 
         [Fact]

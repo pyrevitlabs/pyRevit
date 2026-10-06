@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Log.Reason"] = "Why: {0}",
             ["AgentPanel.Log.Changes"] = "+{0} ~{1} -{2}",
             ["AgentPanel.Log.Flag.OtherDocument"] = "other document",
+            ["AgentPanel.Log.Flag.CloseWithoutSaving"] = "close {0} unsaved",
             ["AgentPanel.Log.Flag.NoChanges"] = "no changes",
             ["AgentPanel.Log.Flag.Warning"] = "warned: {0}",
             ["AgentPanel.Log.Engine"] = "engine {0}",
@@ -176,6 +177,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             log.Update(activity.History);
 
             Assert.Equal(new[] { "other document", "no changes", "warned: A commit was lost" }, log.Groups[0].Entries[0].Flags);
+        }
+
+        [Fact]
+        public void DocumentsARunLeftChangedAreNamedSoTheUserClosesThemUnsaved() {
+            Finish("modify", "Reach across", "s1", "OtherDocumentChanged", Run(new JObject {
+                ["other_documents"] = 2,
+                ["unreverted_documents"] = new JArray("Annex", "Site"),
+            }));
+            log.Update(activity.History);
+
+            Assert.Equal(new[] { "close Annex, Site unsaved" }, log.Groups[0].Entries[0].Flags);
         }
 
         [Fact]

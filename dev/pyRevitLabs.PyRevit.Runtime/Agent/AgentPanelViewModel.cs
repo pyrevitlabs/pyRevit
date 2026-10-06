@@ -108,6 +108,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public string StateLabel { get; private set; }
         public string DocumentLine { get; private set; }
+        public bool HasPausedReason { get; private set; }
+        public string PausedReason { get; private set; }
         public string StartLabel { get; private set; }
         public bool CanStart { get; private set; }
         public bool CanPause { get; private set; }
@@ -152,6 +154,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             CanEnd = CanPause || CanResume;
             StartLabel = activeTitle == null ? string.Empty : Format("AgentPanel.Start", activeTitle);
             DocumentLine = DescribeDocument(session, activeTitle);
+            var pausedReason = StateKind == "paused" ? session.Value<string>("paused_reason") : null;
+            HasPausedReason = !string.IsNullOrEmpty(pausedReason);
+            PausedReason = HasPausedReason ? Format("AgentPanel.Paused.ByHost", pausedReason) : string.Empty;
 
             var request = running ? session["pending_request"] as JObject : null;
             HasRequest = request != null;

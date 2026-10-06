@@ -20,6 +20,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Document.Bound"] = "{0} since {1}",
             ["AgentPanel.Start"] = "Start on {0}",
             ["AgentPanel.Resume"] = "Resume",
+            ["AgentPanel.Paused.ByHost"] = "paused: {0}",
             ["AgentPanel.Request.NoReason"] = "no reason",
             ["AgentPanel.Request.Time"] = "asked {0}",
             ["AgentPanel.Policy.Ask"] = "ask",
@@ -116,7 +117,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.Equal("PAUSED", panel.StateLabel);
             Assert.True(panel.CanResume && panel.CanEnd);
-            Assert.False(panel.CanStart || panel.CanPause);
+            Assert.False(panel.CanStart || panel.CanPause || panel.HasPausedReason);
+        }
+
+        [Fact]
+        public void APauseByPyRevitSaysWhy() {
+            backend.Session = Session("paused");
+            backend.Session["paused_reason"] = "it changed Annex.rvt.";
+
+            var panel = Panel();
+
+            Assert.True(panel.HasPausedReason);
+            Assert.Equal("paused: it changed Annex.rvt.", panel.PausedReason);
+            Assert.True(panel.CanResume);
+
+            backend.Session = Session("active");
+            backend.Session["paused_reason"] = "stale";
+            panel.Refresh();
+
+            Assert.False(panel.HasPausedReason);
+            Assert.Equal(string.Empty, panel.PausedReason);
         }
 
         [Fact]

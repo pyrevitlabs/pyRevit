@@ -190,6 +190,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             AgentSessions.Configure(uiApp.Application, ReadRequireSession());
+            AgentAwarenessWatch.Attach(uiApp);
 
             var started = false;
             lock (sync) {

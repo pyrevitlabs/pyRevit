@@ -12,6 +12,7 @@
     <system:String x:Key="AgentPanel.Document.Ready">Agents can't read or change the model until you start a session.</system:String>
     <system:String x:Key="AgentPanel.Document.Optional">Sessions are optional in pyRevit Settings, so agents can work without one. Start a session to keep them to one document.</system:String>
     <system:String x:Key="AgentPanel.Document.Bound">{0} · since {1}</system:String>
+    <system:String x:Key="AgentPanel.Paused.ByHost">pyRevit paused the session because {0} Resume when you've checked the model.</system:String>
 
     <system:String x:Key="AgentPanel.Start">Start on {0}</system:String>
     <system:String x:Key="AgentPanel.Pause">Pause</system:String>
@@ -63,6 +64,7 @@
     <system:String x:Key="AgentPanel.Log.Reason">Why: {0}</system:String>
     <system:String x:Key="AgentPanel.Log.Changes">{0} added · {1} modified · {2} deleted</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed another document; those changes were rolled back.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.NoChanges">It changed nothing.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.Warning">The host warned: {0}</system:String>
     <system:String x:Key="AgentPanel.Log.Elements">Elements (click to select)</system:String>

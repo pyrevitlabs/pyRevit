@@ -312,7 +312,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var flags = new List<string>();
             if (details == null)
                 return flags;
-            if ((details.Value<int?>("other_documents") ?? 0) > 0)
+            var unreverted = (details["unreverted_documents"] as JArray)?.Values<string>().ToList() ?? new List<string>();
+            if (unreverted.Count > 0)
+                flags.Add(Format("AgentPanel.Log.Flag.CloseWithoutSaving", string.Join(", ", unreverted)));
+            else if ((details.Value<int?>("other_documents") ?? 0) > 0)
                 flags.Add(Text("AgentPanel.Log.Flag.OtherDocument"));
             if (details.Value<string>("mode") == "modify" && details.Value<string>("decision") == "no_changes")
                 flags.Add(Text("AgentPanel.Log.Flag.NoChanges"));

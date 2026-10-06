@@ -56,6 +56,9 @@ namespace pyRevitCLI {
                 compact["error"] = shaped;
             }
 
+            if (run["since_last_call"] is JObject sinceLastCall)
+                compact["since_last_call"] = sinceLastCall;
+
             if (run.Value<string>("mode") != "query")
                 compact["decision"] = run["decision"];
             if (run["approval"] != null)

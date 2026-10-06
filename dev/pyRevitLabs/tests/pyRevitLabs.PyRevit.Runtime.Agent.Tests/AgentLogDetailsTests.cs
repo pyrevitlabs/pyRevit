@@ -59,6 +59,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void OnlyDocumentsThatStillHoldTheRunsChangesAreUnreverted() {
+            var response = new JObject {
+                ["changes"] = new JObject {
+                    ["other_documents"] = new JArray(
+                        new JObject { ["document"] = "Rolled back", ["opened_during_run"] = false, ["rolled_back"] = true },
+                        new JObject { ["document"] = "Created by the run", ["opened_during_run"] = true, ["rolled_back"] = false },
+                        new JObject { ["document"] = "Closed unsaved", ["opened_during_run"] = false, ["rolled_back"] = false, ["discarded_on_close"] = true },
+                        new JObject { ["document"] = "Annex", ["opened_during_run"] = false, ["rolled_back"] = false }),
+                },
+            };
+
+            var details = AgentLogDetails.FromRun(response, null);
+
+            Assert.Equal(4, details.Value<int>("other_documents"));
+            Assert.Equal(new[] { "Annex" }, details["unreverted_documents"].Values<string>());
+        }
+
+        [Fact]
         public void LongTextIsCutAndOnlyTheFirstElementsAreKept() {
             var response = new JObject {
                 ["output"] = new string('o', AgentLogDetails.MaxOutputChars + 10),

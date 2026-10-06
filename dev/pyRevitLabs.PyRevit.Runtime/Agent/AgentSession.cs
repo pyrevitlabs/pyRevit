@@ -52,6 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private DateTime startedUtc;
         private JObject pendingRequest;
         private JObject lastDeclined;
+        private string pausedReason;
         private JObject lastEnded;
 
         public event Action Changed;
@@ -142,8 +143,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (state == AgentSessionState.Inactive)
                     throw new AgentException("session_inactive", "There is no agent session to pause.");
                 state = AgentSessionState.Paused;
+                pausedReason = null;
             }
             OnChanged();
+        }
+
+        /// <summary>
+        /// Pauses the session on the host's own account, for example after a run changed another
+        /// document, so the agent's next refusal is <c>paused_by_host</c> and says why.
+        /// </summary>
+        /// <param name="reason">Why, as a sentence fragment that follows "because".</param>
+        /// <returns>False when there is no session to pause.</returns>
+        public bool PauseByHost(string reason) {
+            lock (sync) {
+                if (state == AgentSessionState.Inactive)
+                    return false;
+                state = AgentSessionState.Paused;
+                pausedReason = reason;
+            }
+            OnChanged();
+            return true;
         }
 
         /// <exception cref="AgentException">
@@ -157,6 +176,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw new AgentException("session_inactive", "There is no agent session to resume.");
                 state = AgentSessionState.Active;
                 pendingRequest = null;
+                pausedReason = null;
             }
             OnChanged();
         }
@@ -234,7 +254,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <summary>
         /// The gate when a request arrives, before it waits for Revit.
         /// </summary>
-        /// <exception cref="AgentException"><c>paused_by_user</c> or <c>session_inactive</c>.</exception>
+        /// <exception cref="AgentException">
+        /// <c>paused_by_user</c>, <c>paused_by_host</c> or <c>session_inactive</c>.
+        /// </exception>
         public void CheckOnArrival() {
             lock (sync)
                 CheckStateLocked();
@@ -250,7 +272,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </param>
         /// <param name="activeTitle">Title of the active document, or null when none is active.</param>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>session_inactive</c> or <c>wrong_document</c>.
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_inactive</c> or <c>wrong_document</c>.
         /// </exception>
         public void CheckOnDequeue(Func<object, bool> isBoundDocumentActive, string activeTitle) {
             lock (sync) {
@@ -273,6 +295,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["id"] = isOpen ? sessionId : null,
                     ["document"] = isOpen ? documentTitle : null,
                     ["started"] = isOpen ? startedUtc.ToString("o") : null,
+                    ["paused_reason"] = state == AgentSessionState.Paused ? pausedReason : null,
                     ["pending_request"] = pendingRequest?.DeepClone(),
                     ["declined_request"] = lastDeclined?.DeepClone(),
                     ["last_ended"] = lastEnded?.DeepClone(),
@@ -281,6 +304,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void CheckStateLocked() {
+            if (state == AgentSessionState.Paused && pausedReason != null)
+                throw new AgentException("paused_by_host",
+                    $"The agent session is paused because {pausedReason} Tell the user; only they can resume the session in Revit.");
             if (state == AgentSessionState.Paused)
                 throw new AgentException("paused_by_user",
                     "The user paused the agent session in Revit. Tell the user you are waiting, and try again after they resume it.");
@@ -311,6 +337,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             sessionId = null;
             boundDocument = null;
             documentTitle = null;
+            pausedReason = null;
             return true;
         }
 

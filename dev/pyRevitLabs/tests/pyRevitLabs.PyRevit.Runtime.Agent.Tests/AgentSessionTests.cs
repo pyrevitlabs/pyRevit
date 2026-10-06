@@ -270,6 +270,39 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AHostPauseRefusesWithItsOwnCodeAndReasonUntilTheUserResumes() {
+            StartOnDocument();
+
+            Assert.True(tracker.PauseByHost("the last run changed another open document ('Annex.rvt')."));
+
+            var refused = Assert.Throws<AgentException>(tracker.CheckOnArrival);
+            Assert.Equal("paused_by_host", refused.Code);
+            Assert.Contains("'Annex.rvt'", refused.Message);
+            Assert.Contains("only they can resume", refused.Message);
+            Assert.Contains("Annex.rvt", tracker.Describe().Value<string>("paused_reason"));
+
+            tracker.Resume();
+            tracker.CheckOnArrival();
+            Assert.Null(tracker.Describe().Value<string>("paused_reason"));
+        }
+
+        [Fact]
+        public void AUserPauseReplacesTheHostReason() {
+            StartOnDocument();
+            tracker.PauseByHost("of something.");
+
+            tracker.Pause();
+
+            Assert.Equal("paused_by_user", CodeOf(tracker.CheckOnArrival));
+        }
+
+        [Fact]
+        public void AHostPauseWithoutASessionDoesNothing() {
+            Assert.False(tracker.PauseByHost("of something."));
+            Assert.Equal(AgentSessionState.Inactive, tracker.State);
+        }
+
+        [Fact]
         public void RunsTheConfigPolicyAllowsPassThePermissionCheck() {
             AgentPermissions.CheckRun(AgentRunMode.Modify, AgentPolicy.Ask);
             AgentPermissions.CheckRun(AgentRunMode.Modify, AgentPolicy.Auto);

@@ -21,6 +21,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
     /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
     /// The pipe can request, pause and end a session but never start or resume one.
+    /// A model request's result carries <c>since_last_call</c> when the user changed the
+    /// session's document, view or selection since the previous one; changes the request makes
+    /// itself are never reported back to it.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -182,7 +185,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         AgentHost.RefreshConfigIfChanged();
                         AgentPermissions.CheckRun(runMode.Value, AgentRunService.ReadPolicy());
                     }
-                    return work(app);
+                    var sinceLastCall = AgentAwarenessWatch.SinceLastCall(app);
+                    JToken done;
+                    using (AgentAwarenessWatch.Awareness.Suppress())
+                        done = work(app);
+                    AgentAwarenessWatch.Reset(app);
+                    if (sinceLastCall != null && done is JObject response)
+                        response["since_last_call"] = sinceLastCall;
+                    return done;
                 }
                 JToken result;
                 var inline = AgentHost.InlineApplication;
