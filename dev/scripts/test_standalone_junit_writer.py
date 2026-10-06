@@ -2,6 +2,12 @@
 
 The reporter is loaded by path rather than imported, because it must stay importable
 without a Revit host and `pyrevit.unittests` is a package that pulls in `pyrevit`.
+
+That host-free requirement is why these suites sit here instead of beside the code
+they cover: every test in `pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs
+Revit to run, so a suite that has to gate CI cannot live there. CI discovers them with
+`-p 'test_standalone_*.py'`; the other `test_*.py` files in this folder cover
+`dev/scripts` tooling and are run through the `pipenv run test-*` scripts.
 """
 
 import importlib.util
@@ -10,8 +16,10 @@ import tempfile
 import unittest
 from xml.etree import ElementTree
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
 JUNIT_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
+    REPO_ROOT,
     "pyrevitlib",
     "pyrevit",
     "unittests",

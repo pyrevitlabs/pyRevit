@@ -88,6 +88,10 @@ Doc-only or other out-of-scope changes skip CI entirely.
 
     The pull-request trigger includes `synchronize`, so every push to an open PR's head branch starts a fresh run — no need to close and reopen to get one after fixes. Concurrency is keyed by `pyrevit-ci-<pr number>` with `cancel-in-progress`, so a push supersedes the PR's previous run instead of queueing behind it.
 
+!!! warning "Anything the `build` job runs must be inside the filter"
+
+    The filter decides whether a change is verified at all. The host-free suites used to sit in a root `tests/`, outside the filter, so deleting the only two files under it triggered no run and the next build-touching push failed on `ImportError: Start directory is not importable: tests` — which on a `v*` tag also blocks `release.yml`, since it polls for that CI run. They now live under `dev/scripts`, which the filter already covers. When adding a step to the `build` job, add its inputs to both `paths:` lists in the same change.
+
 ### Official repository vs forks
 
 The version, year, and product-data stamping modules only run when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is the main repo (`pyrevitlabs/pyRevit`). The downstream `wip` job and the whole `release.yml` workflow are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an **unsigned** product build via `ci.yml` (useful for PR validation). Unsigned builds (`Channel=none`) still seed `bin/pyrevit-products.json` from `release/` before the labs build so fork PR validation succeeds.
@@ -265,7 +269,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 |---------|----------------|
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
-| `python -m unittest discover -s tests` | Standalone CPython suites under `tests/` (also run in CI). They need no Revit host, so they run in the `build` job instead of waiting for the Revit integration workflow. `tests/` is not in the `ci.yml` path filter, so deleting or adding files there does not trigger CI by itself. |
+| `python -m unittest discover -s dev/scripts -p 'test_standalone_*.py'` | Host-free CPython suites for `pyrevitlib` modules (also run in CI, and as `pipenv run test-standalone`). They live in `dev/scripts` because every test in `pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs a Revit host, so a suite that gates CI cannot live beside the code it covers. Same reason for the load-by-path at the top of each file. |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |
 | `dotnet run -- notify` | Post WIP/release URL to linked issues |
