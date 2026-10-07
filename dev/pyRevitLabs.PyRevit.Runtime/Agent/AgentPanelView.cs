@@ -264,20 +264,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// The panel's light and dark palettes, applied as named brushes on the page so the view's
     /// <c>DynamicResource</c> references follow Revit's theme.
     /// </summary>
+    /// <remarks>
+    /// Invariant: the role colors are pyRevit's forms palette (<c>_PALETTE_LIGHT</c> and
+    /// <c>_PALETTE_DARK</c> in <c>pyrevitlib/pyrevit/forms/_ipy.py</c>) under the same names, so
+    /// the panel matches pyRevit's own windows and panes; change them together. That palette has
+    /// no success text color, so <see cref="SuccessForeground"/> is the panel's own.
+    /// </remarks>
     internal static class AgentPanelTheme {
+        private static readonly (int Light, int Dark) WindowBackground = (0xF3F4F6, 0x2E3440);
+        private static readonly (int Light, int Dark) WindowForeground = (0x000000, 0xECF0F1);
+        private static readonly (int Light, int Dark) ControlBackground = (0xFFFFFF, 0x222933);
+        private static readonly (int Light, int Dark) ButtonBackground = (0xF0F0F0, 0x222933);
+        private static readonly (int Light, int Dark) ControlBorder = (0xCCCCCC, 0x454F61);
+        private static readonly (int Light, int Dark) ControlHover = (0xE5E5E5, 0x454F61);
+        private static readonly (int Light, int Dark) SubtleForeground = (0x696969, 0x95A5A6);
+        private static readonly (int Light, int Dark) DangerForeground = (0xB42318, 0xFF6B61);
+        private static readonly (int Light, int Dark) WarningForeground = (0x9A6300, 0xF0AD4E);
+        private static readonly (int Light, int Dark) WarningBackground = (0xFDF0D5, 0x5C482E);
+        private static readonly (int Light, int Dark) SuccessForeground = (0x3D9142, 0x6CC26C);
+
         private static readonly Dictionary<string, (int Light, int Dark)> Palette = new Dictionary<string, (int, int)> {
-            ["AgentPanel.Background"] = (0xFFFFFF, 0x1F2D3D),
-            ["AgentPanel.Foreground"] = (0x1E1E1E, 0xD4D4D4),
-            ["AgentPanel.Muted"] = (0x666666, 0x9AA7B4),
-            ["AgentPanel.Card"] = (0xF3F3F3, 0x2A3847),
-            ["AgentPanel.Border"] = (0xD6D6D6, 0x39495C),
-            ["AgentPanel.Notice"] = (0xFFF4CE, 0x4A3F1F),
-            ["AgentPanel.Button"] = (0xE8E8E8, 0x39495C),
-            ["AgentPanel.ButtonHover"] = (0xD9D9D9, 0x46586B),
-            ["AgentPanel.Active"] = (0x3D9142, 0x6CC26C),
-            ["AgentPanel.Paused"] = (0xB97A00, 0xE0A93B),
-            ["AgentPanel.Idle"] = (0x8A8A8A, 0x8A99A8),
-            ["AgentPanel.Error"] = (0xC42B1C, 0xF1707A),
+            ["AgentPanel.Background"] = WindowBackground,
+            ["AgentPanel.Foreground"] = WindowForeground,
+            ["AgentPanel.Muted"] = SubtleForeground,
+            ["AgentPanel.Card"] = ControlBackground,
+            ["AgentPanel.Border"] = ControlBorder,
+            ["AgentPanel.Notice"] = WarningBackground,
+            ["AgentPanel.Button"] = ButtonBackground,
+            ["AgentPanel.ButtonHover"] = ControlHover,
+            ["AgentPanel.Active"] = SuccessForeground,
+            ["AgentPanel.Paused"] = WarningForeground,
+            ["AgentPanel.Idle"] = SubtleForeground,
+            ["AgentPanel.Error"] = DangerForeground,
         };
 
         public static void Apply(FrameworkElement root, bool dark) {
