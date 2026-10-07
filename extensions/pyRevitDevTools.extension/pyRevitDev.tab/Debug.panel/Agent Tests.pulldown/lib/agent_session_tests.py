@@ -109,6 +109,59 @@ class SessionTests(TestCase):
         self.assertEqual("paused", status["state"])
         self.assertTrue(status["required"])
 
+    def test_a_moved_session_waits_for_the_agent_to_read_the_context(self):
+        """After a move, only get_context passes, and it reports the move."""
+        scratch = harness.session()
+        session_id = harness.session_status()["id"]
+        scratch.activate(scratch.other_path)
+        harness.move_session()
+        status = harness.session_status()
+        self.assertEqual(session_id, status["id"])
+        self.assertEqual(
+            [scratch.project.Title, scratch.other.Title], status["documents"]
+        )
+        self.assertTrue(status["awaiting_context"])
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.run("result = 1")
+        self.assertEqual("session_moved", raised.exception.code)
+        context = harness.request("get_context")
+        moved = context["since_last_call"]["session_moved"]
+        self.assertEqual(scratch.project.Title, moved["from"])
+        self.assertEqual(scratch.other.Title, moved["to"])
+        self.assertFalse(context["agent"]["session"]["awaiting_context"])
+        self.assertEqual(
+            scratch.other.Title, harness.run("result = doc.Title")["result"]
+        )
+
+    def test_moving_to_the_document_the_session_is_on_is_refused(self):
+        """The panel decides by title, so the host refuses a move to the same document."""
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.move_session()
+        self.assertEqual("already_bound", raised.exception.code)
+
+    def test_a_moved_session_ends_with_its_new_document_only(self):
+        """Closing the document the session left keeps it; closing its new one ends it."""
+        scratch = harness.session()
+        left_path = scratch.create_extra("agent-test-move-from.rvt")
+        moved_path = scratch.create_extra("agent-test-move-to.rvt")
+        try:
+            scratch.activate(left_path)
+            left = scratch.uiapp.ActiveUIDocument.Document
+            harness.end_session()
+            harness.start_session()
+            scratch.activate(moved_path)
+            moved = scratch.uiapp.ActiveUIDocument.Document
+            harness.move_session()
+        finally:
+            scratch.activate(scratch.project_path)
+        left.Close(False)
+        state_after_leaving = harness.session_status()["state"]
+        moved.Close(False)
+        status = harness.session_status()
+        self.assertEqual("active", state_after_leaving)
+        self.assertEqual("inactive", status["state"])
+        self.assertEqual("document_closed", status["last_ended"]["reason"])
+
     def test_closing_the_bound_document_ends_the_session(self):
         """A session ends with its document, and the host says why."""
         scratch = harness.session()

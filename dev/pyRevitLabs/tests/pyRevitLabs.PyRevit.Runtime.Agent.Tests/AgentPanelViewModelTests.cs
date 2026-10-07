@@ -19,6 +19,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Document.Optional"] = "optional",
             ["AgentPanel.Document.Bound"] = "{0} since {1}",
             ["AgentPanel.Start"] = "Start on {0}",
+            ["AgentPanel.Move"] = "Move to {0}",
+            ["AgentPanel.Document.OnHold"] = "on hold: {0} not {1}",
+            ["AgentPanel.Document.OnHoldNoDocument"] = "on hold: {0} not open",
+            ["AgentPanel.Document.MovedFrom"] = "from {0}",
+            ["AgentPanel.Document.MovedAwaitingContext"] = "from {0}, re-reading",
             ["AgentPanel.Resume"] = "Resume",
             ["AgentPanel.Paused.ByHost"] = "paused: {0}",
             ["AgentPanel.Paused.PanelHidden"] = "panel hidden",
@@ -179,6 +184,86 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AnOpenSessionCanMoveToAnotherActiveDocument() {
+            backend.Session = Session("active");
+            backend.ActiveDocumentTitle = "Annex.rvt";
+
+            var panel = Panel();
+
+            Assert.True(panel.CanMove);
+            Assert.Equal("Move to Annex.rvt", panel.MoveLabel);
+            Assert.False(panel.CanStart);
+            panel.MoveCommand.Execute(null);
+            Assert.Equal(1, backend.Moves);
+
+            backend.MoveFailure("The agent session is already on 'Annex.rvt'.");
+            Assert.Equal("The agent session is already on 'Annex.rvt'.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void ASessionWhoseDocumentIsNotActiveIsOnHoldButNotPaused() {
+            backend.Session = Session("active");
+            backend.ActiveDocumentTitle = "Annex.rvt";
+
+            var panel = Panel();
+
+            Assert.True(panel.IsOnHold);
+            Assert.Equal("on hold: Tower.rvt not Annex.rvt", panel.OnHoldText);
+            Assert.Equal("ACTIVE", panel.StateLabel);
+            Assert.True(panel.CanPause);
+
+            backend.ActiveDocumentTitle = null;
+            panel.Refresh();
+            Assert.Equal("on hold: Tower.rvt not open", panel.OnHoldText);
+            Assert.False(panel.CanMove);
+
+            backend.ActiveDocumentTitle = "Tower.rvt";
+            panel.Refresh();
+            Assert.False(panel.IsOnHold);
+            Assert.Equal(string.Empty, panel.OnHoldText);
+        }
+
+        [Fact]
+        public void APausedSessionOnAnotherDocumentIsOnHoldTooAndAnInactiveOneNever() {
+            backend.Session = Session("paused");
+            backend.ActiveDocumentTitle = "Annex.rvt";
+            Assert.True(Panel().IsOnHold);
+
+            backend.Session = Session("inactive");
+            Assert.False(Panel().IsOnHold);
+        }
+
+        [Fact]
+        public void NothingToMoveToWithoutASessionOrAnotherDocument() {
+            backend.Session = Session("active");
+            Assert.False(Panel().CanMove);
+
+            backend.ActiveDocumentTitle = null;
+            Assert.False(Panel().CanMove);
+
+            backend.Session = Session("inactive");
+            backend.ActiveDocumentTitle = "Annex.rvt";
+            Assert.False(Panel().CanMove);
+        }
+
+        [Fact]
+        public void AMovedSessionSaysWhereItCameFromAndWhileTheAgentCatchesUp() {
+            backend.Session = Session("paused");
+            backend.Session["document"] = "Annex.rvt";
+            backend.Session["documents"] = new JArray("Tower.rvt", "Annex.rvt");
+            backend.Session["awaiting_context"] = true;
+
+            var panel = Panel();
+
+            Assert.True(panel.HasMoved);
+            Assert.Equal("from Tower.rvt, re-reading", panel.MovedText);
+
+            backend.Session["awaiting_context"] = false;
+            panel.Refresh();
+            Assert.Equal("from Tower.rvt", panel.MovedText);
+        }
+
+        [Fact]
         public void EachCommandCallsTheBackend() {
             var panel = Panel();
 
@@ -310,6 +395,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             public void Start(Action<string> onError) {
                 Starts++;
                 startFailure = onError;
+            }
+
+            public int Moves { get; private set; }
+            public Action<string> MoveFailure { get; private set; }
+
+            public void Move(Action<string> onError) {
+                Moves++;
+                MoveFailure = onError;
             }
 
             public void ReportStartFailure(string message) {

@@ -126,6 +126,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AMoveGoesIntoTheHistoryAsAMarkerButIsNeverTheLastRequest() {
+            var record = Arrive("query", "Before");
+            activity.Finish(record, "ok", Now);
+
+            activity.RecordMove("Tower.rvt", ("s1", "Annex.rvt"), Now.AddSeconds(1));
+
+            var move = activity.History.Last();
+            Assert.Equal("move", move.Kind);
+            Assert.Equal("Tower.rvt", move.Title);
+            Assert.Equal("Annex.rvt", move.SessionDocument);
+            Assert.Equal("moved", move.Outcome);
+            Assert.False(move.IsLookup);
+            Assert.Equal("Before", activity.Last.Title);
+        }
+
+        [Fact]
         public void ContextAndLookupRequestsAreLookups() {
             Assert.True(Arrive("context").IsLookup);
             Assert.True(Arrive("lookup").IsLookup);

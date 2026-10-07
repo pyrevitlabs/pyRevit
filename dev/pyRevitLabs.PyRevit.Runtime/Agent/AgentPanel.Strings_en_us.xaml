@@ -12,10 +12,15 @@
     <system:String x:Key="AgentPanel.Document.Ready">Agents can't read or change the model until you start a session.</system:String>
     <system:String x:Key="AgentPanel.Document.Optional">Sessions are optional in pyRevit Settings, so agents can work without one. Start a session to keep them to one document.</system:String>
     <system:String x:Key="AgentPanel.Document.Bound">{0} · since {1}</system:String>
+    <system:String x:Key="AgentPanel.Document.MovedFrom">Moved from {0}.</system:String>
+    <system:String x:Key="AgentPanel.Document.OnHold">On hold: {0} is the session's document, but {1} is active. Agents wait until you switch back or move the session.</system:String>
+    <system:String x:Key="AgentPanel.Document.OnHoldNoDocument">On hold: no document is active. Agents wait until you switch back to {0}.</system:String>
+    <system:String x:Key="AgentPanel.Document.MovedAwaitingContext">Moved from {0}. The agent must read this model before it can do anything here.</system:String>
     <system:String x:Key="AgentPanel.Paused.ByHost">pyRevit paused the session because {0} Resume when you've checked the model.</system:String>
     <system:String x:Key="AgentPanel.Paused.PanelHidden">The session paused when this panel was closed or hidden. Resume when you want the agent to carry on.</system:String>
 
     <system:String x:Key="AgentPanel.Start">Start on {0}</system:String>
+    <system:String x:Key="AgentPanel.Move">Move session to {0}</system:String>
     <system:String x:Key="AgentPanel.Pause">Pause</system:String>
     <system:String x:Key="AgentPanel.Resume">Resume</system:String>
     <system:String x:Key="AgentPanel.End">End</system:String>
@@ -63,6 +68,7 @@
     <system:String x:Key="AgentPanel.Log.Approval.auto">applied without asking</system:String>
     <system:String x:Key="AgentPanel.Log.Approval.user">you decided</system:String>
     <system:String x:Key="AgentPanel.Log.Reason">Why: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Moved">You moved the session from {0} to {1}.</system:String>
     <system:String x:Key="AgentPanel.Log.Changes">{0} added · {1} modified · {2} deleted</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed another open document; pyRevit undid those changes.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>

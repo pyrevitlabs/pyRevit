@@ -25,10 +25,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// What was asked: <c>query</c>, <c>dry_run</c>, <c>modify</c>, <c>context</c>,
-        /// <c>inspect</c>, <c>show</c>, <c>capture</c> or <c>lookup</c>.
+        /// <c>inspect</c>, <c>show</c>, <c>capture</c> or <c>lookup</c>; or <c>move</c> for the
+        /// user moving the session.
         /// </summary>
         public string Kind { get; }
 
+        /// <summary>The agent's title; for a move, the document the session left.</summary>
         public string Title { get; }
         public string Reason { get; }
 
@@ -216,6 +218,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             lock (sync) {
                 var record = new AgentRequestRecord(++nextId, kind, title, null, session.Id, session.Document, nowUtc);
                 AddToHistory(record.AsFinished(outcome, nowUtc, null));
+            }
+            OnChanged();
+        }
+
+        /// <summary>
+        /// Records that the user moved the session, as a marker in the history between the
+        /// requests made in each document. Like a lookup, it never becomes the last request.
+        /// </summary>
+        /// <param name="from">The document the session left.</param>
+        /// <param name="session">The session after the move.</param>
+        public void RecordMove(string from, (string Id, string Document) session, DateTime nowUtc) {
+            lock (sync) {
+                var record = new AgentRequestRecord(++nextId, "move", from, null, session.Id, session.Document, nowUtc);
+                AddToHistory(record.AsFinished("moved", nowUtc, null));
             }
             OnChanged();
         }

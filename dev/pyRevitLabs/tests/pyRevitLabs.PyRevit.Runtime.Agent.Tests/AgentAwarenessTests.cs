@@ -91,6 +91,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AMoveIsReportedUntilCleared() {
+            awareness.RecordMove("Tower.rvt", "Annex.rvt");
+
+            var moved = Peek()["session_moved"];
+
+            Assert.Equal("Tower.rvt", moved.Value<string>("from"));
+            Assert.Equal("Annex.rvt", moved.Value<string>("to"));
+            awareness.Clear();
+            Assert.Null(Peek());
+        }
+
+        [Fact]
         public void PeekingKeepsTheSummaryUntilItIsCleared() {
             awareness.RecordSelectionChange();
 

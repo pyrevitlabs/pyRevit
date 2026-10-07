@@ -7,7 +7,8 @@ using pyRevitLabs.Json.Linq;
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// What the user changed between an agent's calls: edits to the session's document, a view
-    /// switch and a selection change. Pure logic with no Revit dependency;
+    /// switch, a selection change and a move of the session to another document. Pure logic with
+    /// no Revit dependency;
     /// <see cref="AgentAwarenessWatch"/> feeds it from Revit's events.
     /// </summary>
     /// <remarks>
@@ -31,6 +32,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private int redone;
         private bool viewChanged;
         private bool selectionChanged;
+        private string movedFrom;
+        private string movedTo;
         private int suppressed;
 
         public bool IsSuppressed {
@@ -59,6 +62,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 redone = 0;
                 viewChanged = false;
                 selectionChanged = false;
+                movedFrom = null;
+                movedTo = null;
             }
         }
 
@@ -105,6 +110,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// Records that the user moved the session. Callers clear the earlier changes first, since
+        /// they belong to the old document.
+        /// </summary>
+        /// <param name="from">The document the agent last read the context in.</param>
+        public void RecordMove(string from, string to) {
+            lock (sync) {
+                movedFrom = from;
+                movedTo = to;
+            }
+        }
+
+        /// <summary>
         /// Describes what changed since the last call, or returns null when nothing did. Doesn't
         /// forget it: callers <see cref="Clear"/> once the request that carries it succeeded, so a
         /// refused request doesn't lose it.
@@ -115,14 +132,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             bool view;
             bool selection;
             JObject edits;
+            JObject moved;
             lock (sync) {
                 view = viewChanged;
                 selection = selectionChanged;
                 edits = DescribeEditsLocked();
+                moved = movedTo == null ? null : new JObject { ["from"] = movedFrom, ["to"] = movedTo };
             }
-            if (!view && !selection && edits == null)
+            if (!view && !selection && edits == null && moved == null)
                 return null;
             var summary = new JObject();
+            if (moved != null)
+                summary["session_moved"] = moved;
             if (edits != null)
                 summary["edits"] = edits;
             if (view)

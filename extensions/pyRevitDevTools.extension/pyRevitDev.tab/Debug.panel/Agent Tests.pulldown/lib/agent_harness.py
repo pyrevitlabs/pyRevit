@@ -136,6 +136,11 @@ def end_session():
     _sessions("End")
 
 
+def move_session():
+    """Move the agent session to the active document, as the user does in the panel."""
+    _sessions("Move", HOST_APP.uiapp)
+
+
 def resume_session():
     """Resume a paused agent session."""
     _sessions("Resume")

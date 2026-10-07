@@ -34,6 +34,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         void Start(Action<string> onError);
 
         /// <summary>
+        /// Moves the open session to the active document. Revit does the work later, so a failure
+        /// is reported through <paramref name="onError"/> on the UI thread.
+        /// </summary>
+        void Move(Action<string> onError);
+
+        /// <summary>
         /// Selects and zooms to elements of <paramref name="document"/>, refusing when another
         /// document is active. A failure is reported through <paramref name="onError"/> on the UI
         /// thread.
@@ -88,7 +94,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public AgentPanelViewModel(IAgentPanelBackend backend, Func<string, string> text) {
             this.backend = backend;
             strings = new AgentLogText(text);
-            StartCommand = new AgentPanelCommand(Start);
+            StartCommand = new AgentPanelCommand(() => Post(backend.Start));
+            MoveCommand = new AgentPanelCommand(() => Post(backend.Move));
             PauseCommand = new AgentPanelCommand(() => Act(backend.Pause));
             ResumeCommand = new AgentPanelCommand(() => Act(backend.Resume));
             EndCommand = new AgentPanelCommand(() => Act(backend.End));
@@ -96,7 +103,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (StateKind == "paused")
                     Act(backend.Resume);
                 else
-                    Start();
+                    Post(backend.Start);
             });
             DeclineCommand = new AgentPanelCommand(() => Act(backend.Decline));
             Log = new AgentLogViewModel(text, ShowElement);
@@ -114,6 +121,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string PausedReason { get; private set; }
         public string StartLabel { get; private set; }
         public bool CanStart { get; private set; }
+
+        /// <summary>
+        /// Whether the session can move to the active document. Decided by title; the move itself
+        /// compares the documents and refuses when they are the same one.
+        /// </summary>
+        public bool CanMove { get; private set; }
+
+        public string MoveLabel { get; private set; }
+
+        /// <summary>
+        /// Whether the session waits because another document, or none, is active. Agents get
+        /// <c>wrong_document</c> meanwhile; this isn't a pause, since nothing needs resuming.
+        /// </summary>
+        public bool IsOnHold { get; private set; }
+
+        public string OnHoldText { get; private set; }
+        public bool HasMoved { get; private set; }
+        public string MovedText { get; private set; }
         public bool CanPause { get; private set; }
         public bool CanResume { get; private set; }
         public bool CanEnd { get; private set; }
@@ -135,6 +160,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string ErrorText => errorText;
 
         public ICommand StartCommand { get; }
+        public ICommand MoveCommand { get; }
         public ICommand PauseCommand { get; }
         public ICommand ResumeCommand { get; }
         public ICommand EndCommand { get; }
@@ -155,7 +181,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             CanResume = StateKind == "paused";
             CanEnd = CanPause || CanResume;
             StartLabel = activeTitle == null ? string.Empty : strings.Format("AgentPanel.Start", activeTitle);
+            var boundTitle = session.Value<string>("document");
+            IsOnHold = CanEnd && activeTitle != boundTitle;
+            CanMove = IsOnHold && activeTitle != null;
+            MoveLabel = CanMove ? strings.Format("AgentPanel.Move", activeTitle) : string.Empty;
+            if (!IsOnHold)
+                OnHoldText = string.Empty;
+            else if (activeTitle == null)
+                OnHoldText = strings.Format("AgentPanel.Document.OnHoldNoDocument", boundTitle);
+            else
+                OnHoldText = strings.Format("AgentPanel.Document.OnHold", boundTitle, activeTitle);
             DocumentLine = DescribeDocument(session, activeTitle);
+            DescribeMove(session);
             DescribePause(session);
 
             var request = running ? session["pending_request"] as JObject : null;
@@ -176,17 +213,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void ShowElement(AgentLogElement element) {
-            errorText = null;
-            backend.ShowElements(new[] { element.Id }, element.Document, message => {
-                errorText = message;
-                Refresh();
-            });
-            Refresh();
+            Post(onError => backend.ShowElements(new[] { element.Id }, element.Document, onError));
         }
 
-        private void Start() {
+        /// <summary>
+        /// Runs an action Revit carries out later, showing its failure when it is reported.
+        /// </summary>
+        private void Post(Action<Action<string>> action) {
             errorText = null;
-            backend.Start(message => {
+            action(message => {
                 errorText = message;
                 Refresh();
             });
@@ -227,6 +262,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 PausedReason = strings.Text("AgentPanel.Paused.PanelHidden");
             else
                 PausedReason = strings.Format("AgentPanel.Paused.ByHost", pausedReason);
+        }
+
+        private void DescribeMove(JObject session) {
+            var documents = CanEnd ? session["documents"] as JArray : null;
+            HasMoved = documents != null && documents.Count > 1;
+            if (!HasMoved) {
+                MovedText = string.Empty;
+                return;
+            }
+            var previous = documents[documents.Count - 2].Value<string>();
+            MovedText = session.Value<bool?>("awaiting_context") == true
+                ? strings.Format("AgentPanel.Document.MovedAwaitingContext", previous)
+                : strings.Format("AgentPanel.Document.MovedFrom", previous);
         }
 
         private void DescribeLast(AgentRequestRecord last) {

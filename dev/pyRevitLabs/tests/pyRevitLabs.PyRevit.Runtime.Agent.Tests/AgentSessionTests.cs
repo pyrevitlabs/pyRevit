@@ -12,6 +12,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return tracker.Start(document, "Tower.rvt", Now);
         }
 
+        private void Arrive() {
+            tracker.CheckOnArrival(readsContext: false);
+        }
+
+        private void Dequeue(Func<object, bool> isBoundDocumentActive, string activeTitle, bool readsContext = false) {
+            tracker.CheckOnDequeue(isBoundDocumentActive, activeTitle, readsContext);
+        }
+
         private static string CodeOf(Action action) {
             return Assert.Throws<AgentException>(action).Code;
         }
@@ -142,13 +150,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
         [Fact]
         public void WithoutASessionModelRequestsPassOnlyWhileSessionsAreOptional() {
-            tracker.CheckOnArrival();
-            tracker.CheckOnDequeue(_ => throw new InvalidOperationException("No session, so no document to compare."), "Tower.rvt");
+            Arrive();
+            Dequeue(_ => throw new InvalidOperationException("No session, so no document to compare."), "Tower.rvt");
 
             tracker.SetRequired(true);
 
-            Assert.Equal("session_inactive", CodeOf(tracker.CheckOnArrival));
-            Assert.Equal("session_inactive", CodeOf(() => tracker.CheckOnDequeue(_ => true, "Tower.rvt")));
+            Assert.Equal("session_inactive", CodeOf(Arrive));
+            Assert.Equal("session_inactive", CodeOf(() => Dequeue(_ => true, "Tower.rvt")));
         }
 
         [Fact]
@@ -156,8 +164,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             StartOnDocument();
             tracker.Pause();
 
-            Assert.Equal("paused_by_user", CodeOf(tracker.CheckOnArrival));
-            Assert.Equal("paused_by_user", CodeOf(() => tracker.CheckOnDequeue(_ => true, "Tower.rvt")));
+            Assert.Equal("paused_by_user", CodeOf(Arrive));
+            Assert.Equal("paused_by_user", CodeOf(() => Dequeue(_ => true, "Tower.rvt")));
         }
 
         [Fact]
@@ -165,9 +173,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             StartOnDocument();
             object compared = null;
 
-            tracker.CheckOnDequeue(bound => { compared = bound; return true; }, "Tower.rvt");
-            var otherActive = Assert.Throws<AgentException>(() => tracker.CheckOnDequeue(_ => false, "Annex.rvt"));
-            var noneActive = Assert.Throws<AgentException>(() => tracker.CheckOnDequeue(_ => false, null));
+            Dequeue(bound => { compared = bound; return true; }, "Tower.rvt");
+            var otherActive = Assert.Throws<AgentException>(() => Dequeue(_ => false, "Annex.rvt"));
+            var noneActive = Assert.Throws<AgentException>(() => Dequeue(_ => false, null));
 
             Assert.Same(document, compared);
             Assert.Equal("wrong_document", otherActive.Code);
@@ -182,7 +190,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             StartOnDocument();
             tracker.EndIfBoundTo(document, AgentSessionEndReasons.DocumentClosed, Now);
 
-            var refused = Assert.Throws<AgentException>(tracker.CheckOnArrival);
+            var refused = Assert.Throws<AgentException>(Arrive);
 
             Assert.Equal("session_inactive", refused.Code);
             Assert.Contains("'Tower.rvt' was closed", refused.Message);
@@ -231,7 +239,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var status = tracker.Describe();
             Assert.True(IsNull(status["pending_request"]));
             Assert.Equal("Renumber the doors", status["declined_request"].Value<string>("reason"));
-            var refused = Assert.Throws<AgentException>(tracker.CheckOnArrival);
+            var refused = Assert.Throws<AgentException>(Arrive);
             Assert.Equal("session_inactive", refused.Code);
             Assert.Contains("declined", refused.Message);
             Assert.False(tracker.Decline(Now));
@@ -270,12 +278,112 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void MovingKeepsTheSessionAndRecordsItsDocuments() {
+            var id = StartOnDocument();
+            var annex = new object();
+
+            var from = tracker.Move(annex, "Annex.rvt", Now);
+
+            var status = tracker.Describe();
+            Assert.Equal("Tower.rvt", from);
+            Assert.Equal(id, tracker.SessionId);
+            Assert.Same(annex, tracker.BoundDocument);
+            Assert.Equal(AgentSessionState.Active, tracker.State);
+            Assert.Equal("Annex.rvt", status.Value<string>("document"));
+            Assert.Equal(new[] { "Tower.rvt", "Annex.rvt" }, status["documents"].Values<string>());
+            Assert.True(status.Value<bool>("awaiting_context"));
+            Assert.Equal(Now.ToString("o"), status.Value<string>("started"));
+        }
+
+        [Fact]
+        public void AfterAMoveOnlyAContextReadPassesUntilOneSucceeds() {
+            StartOnDocument();
+            tracker.Move(new object(), "Annex.rvt", Now);
+
+            var refused = Assert.Throws<AgentException>(Arrive);
+            Assert.Equal("session_moved", refused.Code);
+            Assert.Contains("'Tower.rvt'", refused.Message);
+            Assert.Contains("'Annex.rvt'", refused.Message);
+            Assert.Contains("get_context", refused.Message);
+            Assert.Equal("session_moved", CodeOf(() => Dequeue(_ => true, "Annex.rvt")));
+            tracker.CheckOnArrival(readsContext: true);
+            Dequeue(_ => true, "Annex.rvt", readsContext: true);
+
+            tracker.ContextRead();
+
+            Arrive();
+            Dequeue(_ => true, "Annex.rvt");
+            Assert.False(tracker.Describe().Value<bool>("awaiting_context"));
+        }
+
+        [Fact]
+        public void AMovedPausedSessionStaysPausedAndRefusesWithItsPauseFirst() {
+            StartOnDocument();
+            tracker.Pause();
+
+            tracker.Move(new object(), "Annex.rvt", Now);
+
+            Assert.Equal(AgentSessionState.Paused, tracker.State);
+            Assert.Equal("paused_by_user", CodeOf(Arrive));
+            tracker.Resume();
+            Assert.Equal("session_moved", CodeOf(Arrive));
+        }
+
+        [Fact]
+        public void MovesTheAgentHasNotCaughtUpWithNameTheDocumentItLastRead() {
+            StartOnDocument();
+            tracker.Move(new object(), "Annex.rvt", Now);
+
+            var from = tracker.Move(new object(), "Site.rvt", Now);
+
+            Assert.Equal("Tower.rvt", from);
+            Assert.Contains("from 'Tower.rvt' to 'Site.rvt'", Assert.Throws<AgentException>(Arrive).Message);
+            Assert.Equal(new[] { "Tower.rvt", "Annex.rvt", "Site.rvt" }, tracker.Describe()["documents"].Values<string>());
+        }
+
+        [Fact]
+        public void MovingIsRefusedWithoutASessionOrWhileARunExecutes() {
+            Assert.Equal("session_inactive", CodeOf(() => tracker.Move(new object(), "Annex.rvt", Now)));
+            StartOnDocument();
+
+            using (tracker.BeginRun())
+                Assert.Equal("session_locked", CodeOf(() => tracker.Move(new object(), "Annex.rvt", Now)));
+
+            Assert.Same(document, tracker.BoundDocument);
+        }
+
+        [Fact]
+        public void ANewSessionForgetsTheLastOnesMoves() {
+            StartOnDocument();
+            tracker.Move(new object(), "Annex.rvt", Now);
+            tracker.End(AgentSessionEndReasons.EndedInRevit, Now);
+
+            StartOnDocument();
+
+            Arrive();
+            Assert.Equal(new[] { "Tower.rvt" }, tracker.Describe()["documents"].Values<string>());
+        }
+
+        [Fact]
+        public void AMoveAndTheContextReadThatEndsItsHandshakeRaiseChanged() {
+            StartOnDocument();
+            var raised = 0;
+            tracker.Changed += () => raised++;
+
+            tracker.Move(new object(), "Annex.rvt", Now);
+            tracker.ContextRead();
+            tracker.ContextRead();
+
+            Assert.Equal(2, raised);
+        }
+
+        [Fact]
         public void AHostPauseRefusesWithItsOwnCodeAndReasonUntilTheUserResumes() {
             StartOnDocument();
 
             Assert.True(tracker.PauseByHost(AgentSessionPauseCauses.OtherDocument, "the last run changed another open document ('Annex.rvt')."));
 
-            var refused = Assert.Throws<AgentException>(tracker.CheckOnArrival);
+            var refused = Assert.Throws<AgentException>(Arrive);
             Assert.Equal("paused_by_host", refused.Code);
             Assert.Contains("'Annex.rvt'", refused.Message);
             Assert.Contains("only they can resume", refused.Message);
@@ -283,7 +391,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("other_document", tracker.Describe().Value<string>("paused_cause"));
 
             tracker.Resume();
-            tracker.CheckOnArrival();
+            Arrive();
             Assert.Null(tracker.Describe().Value<string>("paused_reason"));
             Assert.Null(tracker.Describe().Value<string>("paused_cause"));
         }
@@ -297,7 +405,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             tracker.Pause();
 
-            Assert.Equal("paused_by_host", CodeOf(tracker.CheckOnArrival));
+            Assert.Equal("paused_by_host", CodeOf(Arrive));
             Assert.Equal(0, raised);
         }
 
@@ -309,7 +417,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.True(tracker.PauseByHost(AgentSessionPauseCauses.OtherDocument, "the run changed 'Annex.rvt'."));
             Assert.False(tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "the panel was hidden."));
 
-            Assert.Equal("paused_by_host", CodeOf(tracker.CheckOnArrival));
+            Assert.Equal("paused_by_host", CodeOf(Arrive));
             Assert.Equal("other_document", tracker.Describe().Value<string>("paused_cause"));
         }
 

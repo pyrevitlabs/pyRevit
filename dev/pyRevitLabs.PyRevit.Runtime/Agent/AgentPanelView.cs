@@ -129,6 +129,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             });
         }
 
+        public void Move(Action<string> onError) {
+            PostToRevit("move the session", onError, app => {
+                AgentSessions.Move(app);
+                return null;
+            });
+        }
+
         /// <remarks>
         /// Uses the same presenter as <c>show_elements</c>, with the document title as a guard,
         /// so a click can't select whatever elements happen to have those ids in another

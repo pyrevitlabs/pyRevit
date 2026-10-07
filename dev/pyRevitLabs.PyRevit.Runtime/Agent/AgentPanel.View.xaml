@@ -132,11 +132,21 @@
                     </StackPanel>
 
                     <TextBlock Text="{Binding DocumentLine}" Margin="18,4,0,12" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding MovedText}"
+                               Style="{StaticResource Muted}"
+                               TextWrapping="Wrap"
+                               Margin="18,-6,0,12"
+                               Visibility="{Binding HasMoved, Converter={StaticResource Shown}}" />
                     <TextBlock Text="{Binding PausedReason}"
                                Foreground="{DynamicResource AgentPanel.Paused}"
                                TextWrapping="Wrap"
                                Margin="18,-6,0,12"
                                Visibility="{Binding HasPausedReason, Converter={StaticResource Shown}}" />
+                    <TextBlock Text="{Binding OnHoldText}"
+                               Foreground="{DynamicResource AgentPanel.Paused}"
+                               TextWrapping="Wrap"
+                               Margin="18,-6,0,12"
+                               Visibility="{Binding IsOnHold, Converter={StaticResource Shown}}" />
 
                     <WrapPanel>
                         <Button Style="{StaticResource Action}"
@@ -145,6 +155,14 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Glyph}" Text="&#xE768;" />
                                 <TextBlock Text="{Binding StartLabel}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Action}"
+                                Command="{Binding MoveCommand}"
+                                Visibility="{Binding CanMove, Converter={StaticResource Shown}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE8AB;" />
+                                <TextBlock Text="{Binding MoveLabel}" />
                             </StackPanel>
                         </Button>
                         <Button Style="{StaticResource Action}"

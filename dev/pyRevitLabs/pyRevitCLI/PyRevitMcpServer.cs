@@ -292,6 +292,9 @@ namespace pyRevitCLI {
         /// The <c>get_context</c> call that checks for a document is the host's previous request
         /// when the run arrives, so its <c>since_last_call</c> is passed on with the run's result
         /// or refusal; otherwise the agent would never see it.
+        /// Invariant: that call also ends the handshake after the user moved the session, which
+        /// is the agent's to do. When it reports a move, the automation is refused with
+        /// <c>session_moved</c> instead of running in a document the agent hasn't looked at.
         /// </remarks>
         private JToken RunAutomation(JObject arguments) {
             var operation = PyRevitAutomationOperations.Resolve(
@@ -303,6 +306,11 @@ namespace pyRevitCLI {
                 if (context?["document"] == null || context["document"].Type == JTokenType.Null)
                     throw new AgentClientException("no_active_document", $"'{operation.Value<string>("id")}' requires an active document.");
                 sinceLastCall = context["since_last_call"];
+                if (sinceLastCall?["session_moved"] != null)
+                    throw new AgentClientException("session_moved",
+                        "The user moved the agent session to another document. Read 'since_last_call', call get_context, "
+                        + "and check the automation's inputs against the new document before running it again.",
+                        new JObject { ["since_last_call"] = sinceLastCall });
             }
             var parameters = new JObject {
                 ["script"] = operation.Value<string>("source"),

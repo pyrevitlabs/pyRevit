@@ -21,7 +21,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// against well-behaved agents acting unseen, not against a hostile script: any code inside
     /// Revit can call these methods too, except while an agent run executes.
     /// The bound document is held by reference and compared with <see cref="AgentDocuments.IsSame"/>,
-    /// never by title or path. Closing it ends the session.
+    /// never by title or path. Closing it ends the session; after a move, closing the document the
+    /// session left doesn't.
     /// </remarks>
     public static class AgentSessions {
         internal static readonly AgentSessionTracker Tracker = new AgentSessionTracker();
@@ -69,6 +70,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var id = Tracker.Start(doc, doc.Title, DateTime.UtcNow);
             AgentAwarenessWatch.Restart(app);
             return id;
+        }
+
+        /// <summary>
+        /// Moves the open session to the active document. The agent must read the context before
+        /// anything else there, and its next summary of changes reports the move.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Called off the Revit main thread.</exception>
+        /// <exception cref="AgentException">
+        /// <c>no_active_document</c>; <c>already_bound</c> when the session is on the active
+        /// document; <c>session_inactive</c> when there is no session; <c>session_locked</c> while
+        /// an agent run executes.
+        /// </exception>
+        public static void Move(UIApplication app) {
+            if (app == null)
+                throw new ArgumentNullException(nameof(app));
+            if (!ScriptExecutor.IsOnMainThread)
+                throw new InvalidOperationException("Agent sessions must be moved on the Revit main thread.");
+            var doc = app.ActiveUIDocument?.Document
+                ?? throw new AgentException("no_active_document", "Open the document the agent should move to, then move the session.");
+            if (Tracker.BoundDocument is Document bound && AgentDocuments.IsSame(bound, doc))
+                throw new AgentException("already_bound", $"The agent session is already on '{doc.Title}'.");
+            var left = Tracker.CurrentSession.Document;
+            var lastRead = Tracker.Move(doc, doc.Title, DateTime.UtcNow);
+            AgentAwarenessWatch.Restart(app);
+            AgentAwarenessWatch.Awareness.RecordMove(lastRead, doc.Title);
+            AgentHost.Activity.RecordMove(left, Tracker.CurrentSession, DateTime.UtcNow);
         }
 
         /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
@@ -146,20 +173,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        /// <exception cref="AgentException"><c>paused_by_user</c>, <c>paused_by_host</c> or <c>session_inactive</c>.</exception>
-        internal static void CheckOnArrival() {
-            Tracker.CheckOnArrival();
+        /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
+        /// <exception cref="AgentException">
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c> or <c>session_inactive</c>.
+        /// </exception>
+        internal static void CheckOnArrival(bool readsContext) {
+            Tracker.CheckOnArrival(readsContext);
         }
 
         /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
+        /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_inactive</c> or <c>wrong_document</c>.
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c>, <c>session_inactive</c> or
+        /// <c>wrong_document</c>.
         /// </exception>
-        internal static void CheckOnDequeue(UIApplication app) {
+        internal static void CheckOnDequeue(UIApplication app, bool readsContext) {
             if (Tracker.BoundDocument is Document bound && !bound.IsValidObject)
                 Tracker.EndIfBoundTo(bound, AgentSessionEndReasons.DocumentClosed, DateTime.UtcNow);
             var active = app.ActiveUIDocument?.Document;
-            Tracker.CheckOnDequeue(candidate => AgentDocuments.IsSame(candidate as Document, active), active?.Title);
+            Tracker.CheckOnDequeue(candidate => AgentDocuments.IsSame(candidate as Document, active), active?.Title, readsContext);
         }
 
         private static void WatchDocumentClosing(Application app) {

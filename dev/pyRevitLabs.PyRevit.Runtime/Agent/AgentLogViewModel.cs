@@ -30,7 +30,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// One request in the agent log: a one-line summary, and details shown when expanded.
+    /// One request in the agent log: a one-line summary, and details shown when expanded. A move
+    /// of the session shows as a one-line marker.
     /// </summary>
     internal sealed class AgentLogEntryViewModel : INotifyPropertyChanged {
         private bool isExpanded;
@@ -43,9 +44,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             Id = record.Id;
             IsLookup = record.IsLookup;
-            Title = string.IsNullOrEmpty(record.Title) ? kind : record.Title;
-            StatusKind = StatusOf(record.Outcome);
-            Summary = log.Summary(record, kind);
+            if (record.Kind == "move") {
+                Title = log.Format("AgentPanel.Log.Moved", record.Title, record.SessionDocument);
+                StatusKind = "moved";
+                Summary = AgentLogText.LocalTime(record.ArrivedUtc, "HH:mm:ss");
+            }
+            else {
+                Title = string.IsNullOrEmpty(record.Title) ? kind : record.Title;
+                StatusKind = StatusOf(record.Outcome);
+                Summary = log.Summary(record, kind);
+            }
             Reason = string.IsNullOrEmpty(record.Reason) ? null : log.Format("AgentPanel.Log.Reason", record.Reason);
             Flags = log.Flags(details);
             Changes = log.Changes(details);
@@ -65,7 +73,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool IsLookup { get; }
         public string Title { get; }
 
-        /// <summary><c>ok</c>, <c>committed</c>, <c>rejected</c> or <c>error</c>.</summary>
+        /// <summary><c>ok</c>, <c>committed</c>, <c>rejected</c>, <c>error</c>, or <c>moved</c> for a move.</summary>
         public string StatusKind { get; }
 
         public string Summary { get; }
@@ -158,10 +166,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     internal sealed class AgentLogGroupViewModel : INotifyPropertyChanged {
         private bool isVisible = true;
+        private string header;
 
-        public AgentLogGroupViewModel(string key, string header) {
+        public AgentLogGroupViewModel(string key, DateTime startedUtc) {
             Key = key;
-            Header = header;
+            StartedUtc = startedUtc;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -169,8 +178,34 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <summary>The session id, or an empty string for requests made without a session.</summary>
         public string Key { get; }
 
-        public string Header { get; }
+        /// <summary>When the group's first logged request arrived.</summary>
+        public DateTime StartedUtc { get; }
+
+        /// <summary>
+        /// The session's document as of its latest logged request; earlier ones show in the move
+        /// markers.
+        /// </summary>
+        public string Document { get; private set; }
+
+        public string Header {
+            get => header;
+            set {
+                if (header == value)
+                    return;
+                header = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Header)));
+            }
+        }
+
         public ObservableCollection<AgentLogEntryViewModel> Entries { get; } = new ObservableCollection<AgentLogEntryViewModel>();
+
+        /// <returns>True when the session is on another document than before.</returns>
+        public bool NoteDocument(string document) {
+            if (string.IsNullOrEmpty(document) || document == Document)
+                return false;
+            Document = document;
+            return true;
+        }
 
         public bool IsVisible {
             get => isVisible;
@@ -245,20 +280,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private AgentLogGroupViewModel GroupFor(AgentRequestRecord record) {
             var key = record.SessionId ?? string.Empty;
             var group = Groups.FirstOrDefault(candidate => candidate.Key == key);
-            if (group == null) {
-                group = new AgentLogGroupViewModel(key, Header(record));
+            var created = group == null;
+            if (created) {
+                group = new AgentLogGroupViewModel(key, record.ArrivedUtc);
                 Groups.Insert(0, group);
             }
             else if (Groups.IndexOf(group) != 0)
                 Groups.Move(Groups.IndexOf(group), 0);
+            if (group.NoteDocument(record.SessionDocument) || created)
+                group.Header = Header(group);
             return group;
         }
 
-        private string Header(AgentRequestRecord record) {
+        private string Header(AgentLogGroupViewModel group) {
             var log = new AgentLogText(text);
-            if (record.SessionId == null)
+            if (group.Key.Length == 0)
                 return log.Text("AgentPanel.Log.NoSession");
-            return log.Format("AgentPanel.Log.Session", record.SessionDocument ?? record.SessionId, AgentLogText.LocalTime(record.ArrivedUtc, "HH:mm"));
+            return log.Format("AgentPanel.Log.Session", group.Document ?? group.Key, AgentLogText.LocalTime(group.StartedUtc, "HH:mm"));
         }
 
         private void ApplyFilter() {
