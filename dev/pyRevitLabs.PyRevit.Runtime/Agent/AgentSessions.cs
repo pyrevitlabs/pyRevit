@@ -8,6 +8,7 @@ using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Json.Linq;
+using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -25,6 +26,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     public static class AgentSessions {
         internal static readonly AgentSessionTracker Tracker = new AgentSessionTracker();
 
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly object sync = new object();
         private static bool eventsAttached;
         private static object closingDocument;
@@ -102,17 +104,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.End(AgentSessionEndReasons.EndedByClient, DateTime.UtcNow);
         }
 
-        internal static void EndForPanelClosed() {
-            Tracker.End(AgentSessionEndReasons.PanelClosed, DateTime.UtcNow);
+        /// <summary>
+        /// Pauses the session when the agent panel is hidden, whether the user closed it or Revit
+        /// hid it, for example on its Home screen. The user resumes it in the panel.
+        /// </summary>
+        internal static void PauseForPanelHidden() {
+            Tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "the agent panel in Revit was closed or hidden.");
         }
 
         /// <summary>
         /// Pauses the session after a run changed another open document, so the agent can't carry
         /// on until the user has seen what happened and resumed it.
         /// </summary>
+        /// <param name="documents">Titles of the documents that were open before the run and that it changed.</param>
         internal static void PauseForOtherDocument(IEnumerable<string> documents) {
             var names = string.Join(", ", documents.Where(name => !string.IsNullOrEmpty(name)).Distinct().Select(name => "'" + name + "'"));
             Tracker.PauseByHost(
+                AgentSessionPauseCauses.OtherDocument,
                 $"the last run changed another open document ({names}), and agents may change only the session's document.");
         }
 
@@ -124,9 +132,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Applies <c>[agent] require_session</c>. Called on every pyRevit load while the host is
         /// enabled.
         /// </summary>
+        /// <remarks>
+        /// A reload from inside an agent run can't make sessions optional. The refusal is logged
+        /// and never thrown, so the rest of the host's configuration still runs.
+        /// </remarks>
         internal static void Configure(Application app, bool required) {
             WatchDocumentClosing(app);
-            Tracker.SetRequired(required);
+            try {
+                Tracker.SetRequired(required);
+            }
+            catch (AgentException ex) when (ex.Code == "session_locked") {
+                logger.Warn("Agent sessions stay required until pyRevit reloads outside an agent run: {0}", ex.Message);
+            }
         }
 
         /// <exception cref="AgentException"><c>paused_by_user</c>, <c>paused_by_host</c> or <c>session_inactive</c>.</exception>

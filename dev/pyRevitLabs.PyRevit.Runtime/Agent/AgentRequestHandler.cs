@@ -83,13 +83,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters, "context", null);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
-                    AgentPermissions.CheckRun(runRequest.Mode, AgentRunService.ReadPolicy());
-                    AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
-                    RefuseNestedCPython(runRequest);
                     return InvokeOnMainThread(
                         app => AgentRunService.Execute(app, runRequest), parameters,
                         runRequest.ModeName, runRequest.Title, runRequest.Reason, runRequest.Mode,
-                        result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), runRequest.Script));
+                        result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), runRequest.Script),
+                        () => {
+                            AgentPermissions.CheckRun(runRequest.Mode, AgentRunService.ReadPolicy());
+                            AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
+                            RefuseNestedCPython(runRequest);
+                        });
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
@@ -167,9 +169,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// up, because the policy may have changed while it was queued.
         /// </param>
         /// <param name="describe">Builds the log's summary of a successful result, for runs.</param>
+        /// <param name="refuseEarly">
+        /// Checks that refuse the request before it waits for Revit, such as the policy; their
+        /// refusals are logged like the session gate's.
+        /// </param>
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, string kind, string title, string reason,
-            AgentRunMode? runMode = null, Func<JToken, JObject> describe = null) {
+            AgentRunMode? runMode = null, Func<JToken, JObject> describe = null, Action refuseEarly = null) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
@@ -177,6 +183,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
             var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
             try {
+                refuseEarly?.Invoke();
                 AgentSessions.CheckOnArrival();
                 JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
                     AgentHost.Activity.Start(record, DateTime.UtcNow);

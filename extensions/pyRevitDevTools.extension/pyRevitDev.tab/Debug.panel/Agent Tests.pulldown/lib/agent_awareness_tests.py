@@ -128,6 +128,14 @@ class AwarenessTests(TestCase):
             uidoc.ActiveView = original
             _catch_up()
 
+    def test_a_round_trip_to_another_document_is_not_a_view_change(self):
+        """Coming back to the session's document and view reports nothing."""
+        scratch = harness.session()
+        _catch_up()
+        scratch.activate(scratch.other_path)
+        scratch.activate(scratch.project_path)
+        self.assertNotIn("since_last_call", request("get_context"))
+
     def test_a_selection_change_is_reported(self):
         """A changed selection is described with its count and ids."""
         uidoc = _uidoc()

@@ -147,7 +147,10 @@ namespace pyRevitCLI {
                         : ToolResult(payload.Type == JTokenType.String ? payload.ToString() : payload.ToString(Formatting.None), isError);
                 }
                 catch (AgentClientException ex) {
-                    result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
+                    var error = new JObject { ["error"] = ex.Code, ["message"] = ex.Message };
+                    if (ex.Details != null)
+                        error.Merge(ex.Details);
+                    result = ToolResult(error.ToString(Formatting.None), true);
                 }
                 catch (Exception ex) {
                     result = ToolResult(new JObject { ["error"] = "server_error", ["message"] = ex.Message }.ToString(Formatting.None), true);
@@ -285,9 +288,15 @@ namespace pyRevitCLI {
             return parameters;
         }
 
+        /// <remarks>
+        /// The <c>get_context</c> call that checks for a document is the host's previous request
+        /// when the run arrives, so its <c>since_last_call</c> is passed on with the run's result
+        /// or refusal; otherwise the agent would never see it.
+        /// </remarks>
         private JToken RunAutomation(JObject arguments) {
             var operation = PyRevitAutomationOperations.Resolve(
                 arguments.Value<string>("id"), arguments["inputs"]);
+            var reason = Reason(arguments);
             JToken sinceLastCall = null;
             if (operation.Value<bool>("requires_document")) {
                 var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
@@ -301,14 +310,20 @@ namespace pyRevitCLI {
                 ["title"] = operation.Value<string>("title"),
                 ["inputs"] = operation["inputs"],
             };
-            var reason = Reason(arguments);
             if (reason != null)
                 parameters["reason"] = reason;
             if (arguments["engine"] != null)
                 parameters["engine"] = arguments["engine"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
-            var result = PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
+            JObject run;
+            try {
+                run = (JObject)CallRevit(arguments, "run", parameters);
+            }
+            catch (AgentClientException ex) when (sinceLastCall != null) {
+                throw new AgentClientException(ex.Code, ex.Message, new JObject { ["since_last_call"] = sinceLastCall });
+            }
+            var result = PyRevitMcpRunResults.Compact(run);
             if (sinceLastCall != null && result["since_last_call"] == null)
                 result["since_last_call"] = sinceLastCall;
             return result;
@@ -452,11 +467,11 @@ namespace pyRevitCLI {
             };
         }
 
-        private static JObject ReasonProperty() {
+        private static JObject ReasonProperty(string description = null) {
             return new JObject {
                 ["type"] = "string",
                 ["maxLength"] = MaxReasonLength,
-                ["description"] = "Why you are doing this, when the title doesn't make it obvious. The user sees it in Revit's agent panel.",
+                ["description"] = description ?? "Why you are doing this, when the title doesn't make it obvious. The user sees it in Revit's agent panel.",
             };
         }
 
@@ -539,13 +554,10 @@ namespace pyRevitCLI {
                     () => ("Ask the user to start an agent session in Revit. Model tools answer session_inactive until the user starts one; "
                         + "only the user can, in Revit. Tell the user what you asked for and that you are waiting.",
                         new JObject {
-                            ["reason"] = new JObject {
-                                ["type"] = "string",
-                                ["description"] = "What you want to do in the model, shown to the user in Revit (at most 300 characters).",
-                            },
+                            ["reason"] = ReasonProperty("What you want to do in the model, shown to the user in Revit."),
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => CallRevit(arguments, "request_session", new JObject { ["reason"] = arguments["reason"] })),
+                    arguments => CallRevit(arguments, "request_session", new JObject { ["reason"] = Reason(arguments) })),
 
                 new McpTool("get_context", readOnly: true, new string[0],
                     () => ("Snapshot of the target Revit: versions, engines, agent policy and session, open document, active view, selection and levels. Call this first.",

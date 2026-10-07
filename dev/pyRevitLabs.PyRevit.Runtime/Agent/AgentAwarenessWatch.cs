@@ -4,7 +4,6 @@ using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Events;
 
 using pyRevitLabs.Json.Linq;
 
@@ -14,10 +13,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// calls, and builds the <c>since_last_call</c> summary from <see cref="Awareness"/>.
     /// </summary>
     /// <remarks>
-    /// Edits come from <c>DocumentChanged</c> and view switches from <c>ViewActivated</c>. The
-    /// selection is compared, when the next request arrives, with the one the last request left
-    /// behind, on every Revit version: <c>SelectionChanged</c> exists only from Revit 2023, and
-    /// when it is raised for the host's own selection changes is not something to rely on.
+    /// Edits come from <c>DocumentChanged</c>. The active view and the selection are compared,
+    /// when the next request arrives, with the ones the last request left behind in the session's
+    /// document, on every Revit version. Events would report a round trip to another document as
+    /// a view change, <c>SelectionChanged</c> exists only from Revit 2023, and when Revit raises
+    /// either for the host's own changes is not something to rely on.
     /// Invariant: only the session's document is watched, and nothing is recorded while the
     /// host handles a request; see <see cref="AgentAwareness"/>.
     /// </remarks>
@@ -28,6 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly object sync = new object();
         private static bool attached;
         private static HashSet<long> selectionBaseline = new HashSet<long>();
+        private static long? viewBaseline;
 
         /// <summary>
         /// Subscribes to Revit's events once per process. Must run in a Revit API context.
@@ -39,7 +40,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 attached = true;
             }
             uiApp.Application.DocumentChanged += OnDocumentChanged;
-            uiApp.ViewActivated += OnViewActivated;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public static void Restart(UIApplication app) {
             Awareness.Clear();
-            RememberSelection(app);
+            RememberViewAndSelection(app.ActiveUIDocument);
         }
 
         /// <summary>
@@ -58,20 +58,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (AgentSessions.Tracker.BoundDocument == null)
                 return null;
             var uidoc = app.ActiveUIDocument;
-            CompareSelection(uidoc);
+            CompareViewAndSelection(uidoc);
             return Awareness.Peek(() => DescribeView(uidoc), () => DescribeSelection(uidoc));
         }
 
         /// <summary>
-        /// Starts over after a request succeeded, from the selection the request leaves behind.
+        /// Starts over after a request succeeded, from the view and selection the request leaves
+        /// behind.
         /// </summary>
         public static void Reset(UIApplication app) {
             Awareness.Clear();
-            RememberSelection(app);
+            RememberViewAndSelection(app.ActiveUIDocument);
         }
 
-        private static void RememberSelection(UIApplication app) {
-            selectionBaseline = SelectionIds(app.ActiveUIDocument);
+        /// <remarks>
+        /// Only from the session's document, so a request made while another document is active
+        /// keeps the earlier baseline.
+        /// </remarks>
+        private static void RememberViewAndSelection(UIDocument uidoc) {
+            if (uidoc == null || !IsBound(uidoc.Document))
+                return;
+            viewBaseline = ActiveViewId(uidoc);
+            selectionBaseline = SelectionIds(uidoc);
         }
 
         private static bool IsBound(Document document) {
@@ -90,21 +98,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 OperationName(e.Operation));
         }
 
-        private static void OnViewActivated(object sender, ViewActivatedEventArgs e) {
-            if (!Awareness.IsSuppressed && AgentSessions.Tracker.BoundDocument != null)
-                Awareness.RecordViewChange();
-        }
-
-        private static void CompareSelection(UIDocument uidoc) {
+        private static void CompareViewAndSelection(UIDocument uidoc) {
             if (uidoc == null || !IsBound(uidoc.Document))
                 return;
+            if (ActiveViewId(uidoc) != viewBaseline)
+                Awareness.RecordViewChange();
             if (!SelectionIds(uidoc).SetEquals(selectionBaseline))
                 Awareness.RecordSelectionChange();
         }
 
+        private static long? ActiveViewId(UIDocument uidoc) {
+            var view = uidoc.ActiveView;
+            return view == null ? (long?)null : AgentIds.ToValue(view.Id);
+        }
+
         private static HashSet<long> SelectionIds(UIDocument uidoc) {
-            if (uidoc == null)
-                return new HashSet<long>();
             return new HashSet<long>(uidoc.Selection.GetElementIds().Select(AgentIds.ToValue));
         }
 

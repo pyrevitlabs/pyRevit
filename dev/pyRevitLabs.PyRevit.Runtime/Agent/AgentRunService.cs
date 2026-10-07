@@ -80,8 +80,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         guard.RollBack();
                     }
                     finally {
-                        AgentSessions.PauseForOtherDocument(
-                            guard.DescribeOtherDocuments().Select(other => other.Value<string>("document")));
+                        AgentSessions.PauseForOtherDocument(guard.ChangedOtherOpenDocumentTitles);
                     }
                     return verdict;
                 case AgentRunVerdict.NoDocument:

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 using pyRevitLabs.Json.Linq;
@@ -33,8 +34,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["modified"] = changes.Value<int?>("modified_count") ?? 0,
                 ["deleted"] = changes.Value<int?>("deleted_count") ?? 0,
                 ["by_category"] = changes["by_category"] as JObject ?? new JObject(),
-                ["elements"] = Elements(changes),
-                ["other_documents"] = (changes["other_documents"] as JArray)?.Count ?? 0,
+                ["elements"] = Elements(changes, response.Value<string>("decision") == "committed"),
+                ["other_documents"] = OtherDocumentsOpenBeforeRun(changes).Count(),
                 ["unreverted_documents"] = UnrevertedDocuments(changes),
                 ["warnings"] = response["warnings"] as JArray ?? new JArray(),
                 ["output"] = Text(Cut(response.Value<string>("output"), MaxOutputChars)),
@@ -48,8 +49,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
-        private static JArray Elements(JObject changes) {
-            var described = (changes["added"] as JArray ?? new JArray())
+        /// <remarks>
+        /// Elements a run added exist only if it committed, and Revit can give the ids of rolled
+        /// back ones to new elements, so a run that didn't commit offers only the elements it
+        /// modified, which exist either way.
+        /// </remarks>
+        private static JArray Elements(JObject changes, bool committed) {
+            var added = committed ? changes["added"] as JArray ?? new JArray() : new JArray();
+            var described = added
                 .Concat(changes["modified"] as JArray ?? new JArray())
                 .OfType<JObject>()
                 .Where(element => element["id"] != null)
@@ -63,14 +70,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// saving.
         /// </summary>
         private static JArray UnrevertedDocuments(JObject changes) {
-            var names = (changes["other_documents"] as JArray ?? new JArray())
-                .OfType<JObject>()
-                .Where(other => other.Value<bool?>("opened_during_run") != true
-                    && other.Value<bool?>("rolled_back") != true
+            var names = OtherDocumentsOpenBeforeRun(changes)
+                .Where(other => other.Value<bool?>("rolled_back") != true
                     && other.Value<bool?>("discarded_on_close") != true)
                 .Select(other => other.Value<string>("document"))
                 .Where(name => !string.IsNullOrEmpty(name));
             return new JArray(names);
+        }
+
+        /// <summary>
+        /// The other documents the run changed, except those it created: a run may change a
+        /// document it created and still commit.
+        /// </summary>
+        private static IEnumerable<JObject> OtherDocumentsOpenBeforeRun(JObject changes) {
+            return (changes["other_documents"] as JArray ?? new JArray())
+                .OfType<JObject>()
+                .Where(other => other.Value<bool?>("opened_during_run") != true);
         }
 
         private static JToken Text(string text) {

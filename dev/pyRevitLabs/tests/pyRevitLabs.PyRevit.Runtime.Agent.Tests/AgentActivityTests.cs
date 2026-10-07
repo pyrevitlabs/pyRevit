@@ -61,11 +61,34 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [Fact]
         public void FinishingClosesTheApprovalPrompt() {
             var record = Arrive("modify", "Add walls");
+            activity.Start(record, Now);
             activity.SetAwaitingApproval(true);
 
             activity.Finish(record, "rejected", Now);
 
             Assert.False(activity.AwaitingApproval);
+        }
+
+        [Fact]
+        public void ARequestInsideAnotherLeavesTheOuterRecordAndPromptAlone() {
+            var outer = Arrive("modify", "Outer");
+            activity.Start(outer, Now.AddSeconds(1));
+            activity.SetAwaitingApproval(true);
+
+            var refused = Arrive("query", "Refused");
+            activity.Finish(refused, "revit_busy", Now.AddSeconds(2));
+            Assert.True(activity.AwaitingApproval);
+
+            var inner = Arrive("query", "Inner");
+            activity.Start(inner, Now.AddSeconds(3));
+            Assert.Equal(inner.Id, activity.Current.Id);
+            activity.Finish(inner, "ok", Now.AddSeconds(4));
+
+            Assert.Equal(outer.Id, activity.Current.Id);
+            Assert.True(activity.Current.Started);
+            activity.Finish(outer, "committed", Now.AddSeconds(9));
+            Assert.Null(activity.Current);
+            Assert.Equal(Now.AddSeconds(1), activity.Last.StartedUtc);
         }
 
         [Fact]

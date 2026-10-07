@@ -20,6 +20,15 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void ARequestForASessionWithAnOverlongReasonNeverReachesRevit() {
+        var response = Single(ToolCall(1, "request_session", new JObject { ["reason"] = new string('r', 301) }));
+
+        Assert.True(IsError(response));
+        Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
     public void ASessionRefusalReachesTheAgentWithItsType() {
         host.Handler = request => FakeAgentHost.Failure(request, "session_inactive", "No agent session is active in this Revit.");
 

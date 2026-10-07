@@ -77,6 +77,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public bool ChangedOtherOpenDocument => others.Any(other => !other.OpenedDuringRun && !other.Changes.IsEmpty);
 
+        /// <summary>
+        /// Titles of the documents that make <see cref="ChangedOtherOpenDocument"/> true; never
+        /// documents the run created.
+        /// </summary>
+        public IList<string> ChangedOtherOpenDocumentTitles => others
+            .Where(other => !other.OpenedDuringRun && !other.Changes.IsEmpty)
+            .Select(other => other.Title)
+            .ToList();
+
         public bool LeftTransactionOpenInOtherDocument => others.Any(other => other.HasOpenTransaction);
 
         /// <summary>

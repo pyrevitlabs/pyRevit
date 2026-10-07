@@ -13,8 +13,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public const string EndedInRevit = "ended_in_revit";
         public const string EndedByClient = "ended_by_client";
         public const string DocumentClosed = "document_closed";
-        public const string PanelClosed = "panel_closed";
         public const string HostStopped = "host_stopped";
+    }
+
+    internal static class AgentSessionPauseCauses {
+        public const string OtherDocument = "other_document";
+        public const string PanelHidden = "panel_hidden";
     }
 
     /// <summary>
@@ -52,6 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private DateTime startedUtc;
         private JObject pendingRequest;
         private JObject lastDeclined;
+        private string pausedCause;
         private string pausedReason;
         private JObject lastEnded;
 
@@ -137,28 +142,36 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return id;
         }
 
+        /// <summary>
+        /// Pauses an active session. Pausing a paused one changes nothing, so a pause by the host
+        /// keeps its reason even when an agent or run code pauses again.
+        /// </summary>
         /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
         public void Pause() {
             lock (sync) {
                 if (state == AgentSessionState.Inactive)
                     throw new AgentException("session_inactive", "There is no agent session to pause.");
+                if (state == AgentSessionState.Paused)
+                    return;
                 state = AgentSessionState.Paused;
-                pausedReason = null;
             }
             OnChanged();
         }
 
         /// <summary>
         /// Pauses the session on the host's own account, for example after a run changed another
-        /// document, so the agent's next refusal is <c>paused_by_host</c> and says why.
+        /// document, so the agent's next refusal is <c>paused_by_host</c> and says why. A pause by
+        /// the user becomes a pause by the host; an earlier pause by the host keeps its reason.
         /// </summary>
-        /// <param name="reason">Why, as a sentence fragment that follows "because".</param>
-        /// <returns>False when there is no session to pause.</returns>
-        public bool PauseByHost(string reason) {
+        /// <param name="cause">One of <see cref="AgentSessionPauseCauses"/>, for the panel.</param>
+        /// <param name="reason">Why, for the agent, as a sentence fragment that follows "because".</param>
+        /// <returns>False when there is no session, or the host has already paused it.</returns>
+        public bool PauseByHost(string cause, string reason) {
             lock (sync) {
-                if (state == AgentSessionState.Inactive)
+                if (state == AgentSessionState.Inactive || pausedReason != null)
                     return false;
                 state = AgentSessionState.Paused;
+                pausedCause = cause;
                 pausedReason = reason;
             }
             OnChanged();
@@ -176,6 +189,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw new AgentException("session_inactive", "There is no agent session to resume.");
                 state = AgentSessionState.Active;
                 pendingRequest = null;
+                pausedCause = null;
                 pausedReason = null;
             }
             OnChanged();
@@ -295,6 +309,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["id"] = isOpen ? sessionId : null,
                     ["document"] = isOpen ? documentTitle : null,
                     ["started"] = isOpen ? startedUtc.ToString("o") : null,
+                    ["paused_cause"] = state == AgentSessionState.Paused ? pausedCause : null,
                     ["paused_reason"] = state == AgentSessionState.Paused ? pausedReason : null,
                     ["pending_request"] = pendingRequest?.DeepClone(),
                     ["declined_request"] = lastDeclined?.DeepClone(),
@@ -337,6 +352,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             sessionId = null;
             boundDocument = null;
             documentTitle = null;
+            pausedCause = null;
             pausedReason = null;
             return true;
         }

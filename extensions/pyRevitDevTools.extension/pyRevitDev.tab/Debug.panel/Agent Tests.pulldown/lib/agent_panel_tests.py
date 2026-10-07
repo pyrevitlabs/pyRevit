@@ -1,8 +1,8 @@
 """The agent panel as Revit hosts it.
 
 The pane is registered when Revit starts, shown by the ribbon button, and
-closing it ends the session; its log lists every run once, matching the run
-records. The panel's view models are covered by unit tests; these tests check
+hiding it pauses the session; its log lists every run once, matching the run
+records, and the runs the host refused. The panel's view models are covered by unit tests; these tests check
 what only Revit can show.
 """
 
@@ -17,7 +17,7 @@ from pyrevit.coreutils import assmutils
 from pyrevit.runtime import RUNTIME_ASSM
 
 import agent_harness as harness
-from agent_harness import TestCase
+from agent_harness import AgentRequestError, TestCase
 
 PANEL = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentPanel"
@@ -31,11 +31,16 @@ def _member(instance, name):
     return instance.GetType().GetProperty(name).GetValue(instance)
 
 
-def _logged_runs():
-    """Run entries of the agent log, by run id, read through reflection."""
+def _history():
+    """The agent log's finished requests, oldest first, read through reflection."""
     activity = HOST.GetField("Activity", BindingFlags.NonPublic | BindingFlags.Static)
+    return list(_member(activity.GetValue(None), "History"))
+
+
+def _logged_runs():
+    """Run entries of the agent log, by run id."""
     runs = {}
-    for entry in _member(activity.GetValue(None), "History"):
+    for entry in _history():
         details = _member(entry, "Details")
         if details is None:
             continue
@@ -106,11 +111,37 @@ class PanelTests(TestCase):
             "ZeroDivisionError", runs[responses[1]["run_id"]][0][1]["error"]["type"]
         )
 
-    def test_closing_the_pane_ends_the_session(self):
-        """Hiding the pane ends the session, and the host says why."""
+    def test_a_run_the_policy_refuses_is_logged(self):
+        """A refusal before the run reaches Revit still shows in the log."""
+        history = _history()
+        newest = _member(history[-1], "Id") if history else 0
+        with harness.policy("readonly"):
+            with self.assertRaises(AgentRequestError) as raised:
+                harness.run(
+                    harness.set_comment_script(),
+                    mode="modify",
+                    title="Log check: refused",
+                    inputs={"id": harness.session().wall_ids[0], "text": "refused"},
+                )
+        self.assertEqual("policy_readonly", raised.exception.code)
+        outcomes = [
+            _member(entry, "Outcome")
+            for entry in _history()
+            if _member(entry, "Id") > newest
+            and _member(entry, "Title") == "Log check: refused"
+        ]
+        self.assertEqual(["policy_readonly"], outcomes)
+
+    def test_hiding_the_pane_pauses_the_session(self):
+        """Hiding the pane pauses the session until the user resumes it."""
         self.assertTrue(UI.DockablePane.PaneIsRegistered(_pane_id()))
         _show()
         _pane().Hide()
         status = harness.session_status()
-        self.assertEqual("inactive", status["state"])
-        self.assertEqual("panel_closed", status["last_ended"]["reason"])
+        self.assertEqual("paused", status["state"])
+        self.assertEqual("panel_hidden", status["paused_cause"])
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.request("get_context")
+        self.assertEqual("paused_by_host", raised.exception.code)
+        _show()
+        self.assertEqual("paused", harness.session_status()["state"])

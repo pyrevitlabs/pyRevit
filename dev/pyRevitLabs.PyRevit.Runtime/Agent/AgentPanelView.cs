@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
+
+using Autodesk.Revit.UI;
 
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
@@ -21,13 +24,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// The view is XAML embedded in this assembly and loaded at runtime, with no code-behind:
     /// it only binds to <see cref="AgentPanelViewModel"/>. Session, activity and host changes
     /// arrive on any thread and are marshalled to this page's dispatcher before the view model
-    /// is refreshed.
+    /// is refreshed; changes that arrive before that refresh runs share it. While a request is in
+    /// flight the page also refreshes once a second, because a Revit dialog that blocks it raises
+    /// no event.
     /// </remarks>
     internal sealed class AgentPanelPage : Page {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly TimeSpan WaitingRefreshInterval = TimeSpan.FromSeconds(1);
 
         private AgentPanelViewModel viewModel;
+        private DispatcherTimer waitingTimer;
+        private int refreshQueued;
 
         public AgentPanelPage(bool dark) {
             AgentPanelTheme.Apply(this, dark);
@@ -49,7 +56,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentHost.Activity.Changed += QueueRefresh;
                 AgentHost.StateChanged += QueueRefresh;
                 AgentPanel.ActiveDocumentChanged += QueueRefresh;
-                new DispatcherTimer(WaitingRefreshInterval, DispatcherPriority.Background, RefreshWhileWaiting, Dispatcher).Start();
+                waitingTimer = new DispatcherTimer(WaitingRefreshInterval, DispatcherPriority.Background, (_, __) => Refresh(), Dispatcher);
+                Refresh();
             }
             catch (Exception ex) {
                 logger.Error(ex, "Could not build the agent panel");
@@ -63,12 +71,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void QueueRefresh() {
-            Dispatcher.BeginInvoke(new Action(() => viewModel?.Refresh()));
+            if (Interlocked.Exchange(ref refreshQueued, 1) == 1)
+                return;
+            Dispatcher.BeginInvoke(new Action(() => {
+                Interlocked.Exchange(ref refreshQueued, 0);
+                Refresh();
+            }));
         }
 
-        private void RefreshWhileWaiting(object sender, EventArgs e) {
-            if (AgentHost.Activity.Current != null)
-                viewModel?.Refresh();
+        private void Refresh() {
+            viewModel?.Refresh();
+            if (waitingTimer != null)
+                waitingTimer.IsEnabled = AgentHost.Activity.Current != null;
         }
     }
 
@@ -105,41 +119,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public AgentActivity Activity => AgentHost.Activity;
 
         public IList<string> OpenDialogs() {
-            var ownTitle = "'" + AgentPanel.Title + "'";
-            return AgentWindows.OpenDialogs()
-                .Where(window => !window.StartsWith(ownTitle, StringComparison.Ordinal))
-                .ToList();
+            return AgentWindows.OpenDialogs();
         }
 
-        /// <remarks>
-        /// Posted to the agent dispatcher instead of run here: the button click is on Revit's
-        /// main thread but outside a Revit API context, where starting a session must not read the
-        /// active document.
-        /// </remarks>
         public void Start(Action<string> onError) {
-            void Report(string message) {
-                uiDispatcher.BeginInvoke(new Action(() => onError(message)));
-            }
-
-            var dispatcher = AgentHost.Dispatcher;
-            if (dispatcher == null) {
-                onError("The agent host is not running.");
-                return;
-            }
-            var posted = dispatcher.Post(app => {
-                try {
-                    AgentSessions.Start(app);
-                }
-                catch (AgentException ex) {
-                    Report(ex.Message);
-                }
-                catch (Exception ex) {
-                    logger.Error(ex, "Could not start an agent session from the panel");
-                    Report(ex.Message);
-                }
+            PostToRevit("start the session", onError, app => {
+                AgentSessions.Start(app);
+                return null;
             });
-            if (!posted)
-                onError("Revit is busy and could not start the session. Try again in a moment.");
         }
 
         /// <remarks>
@@ -148,32 +135,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// document. Not behind the session gate: the user is acting, not the agent.
         /// </remarks>
         public void ShowElements(IList<long> ids, string document, Action<string> onError) {
-            void Report(string message) {
-                uiDispatcher.BeginInvoke(new Action(() => onError(message)));
-            }
-
-            var dispatcher = AgentHost.Dispatcher;
-            if (dispatcher == null) {
-                onError("The agent host is not running.");
-                return;
-            }
             var request = new AgentPresenter.Request { Action = "select", Zoom = true, DocumentTitle = document };
             request.Ids.AddRange(ids);
-            var posted = dispatcher.Post(app => {
-                try {
-                    using (var dialogs = new AgentDialogCapture(app))
-                        AgentPresenter.Show(app, request, dialogs);
-                }
-                catch (AgentException ex) {
-                    Report(ex.Message);
-                }
-                catch (Exception ex) {
-                    logger.Error(ex, "Could not show elements from the agent panel");
-                    Report(ex.Message);
+            PostToRevit("show the elements", onError, app => {
+                using (var dialogs = new AgentDialogCapture(app)) {
+                    var missing = (AgentPresenter.Show(app, request, dialogs) as JObject)?["missing_ids"] as JArray;
+                    return missing == null || missing.Count == 0
+                        ? null
+                        : $"Element {string.Join(", ", missing.Values<long>())} no longer exists in '{document}'.";
                 }
             });
-            if (!posted)
-                onError("Revit is busy and could not show the elements. Try again in a moment.");
         }
 
         public void Pause() {
@@ -190,6 +161,45 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public void Decline() {
             AgentSessions.Decline();
+        }
+
+        /// <summary>
+        /// Runs a panel action on Revit's main thread through the agent dispatcher, and shows
+        /// what went wrong through <paramref name="onError"/> on the UI thread.
+        /// </summary>
+        /// <remarks>
+        /// A button click is on Revit's main thread but outside a Revit API context, where the
+        /// action must not touch the model or read the active document, so it is posted instead
+        /// of run here.
+        /// </remarks>
+        /// <param name="action">What the user asked for, to finish "Could not ...".</param>
+        /// <param name="work">The action; returns a problem to show, or null.</param>
+        private void PostToRevit(string action, Action<string> onError, Func<UIApplication, string> work) {
+            void Report(string message) {
+                uiDispatcher.BeginInvoke(new Action(() => onError(message)));
+            }
+
+            var dispatcher = AgentHost.Dispatcher;
+            if (dispatcher == null) {
+                onError("The agent host is not running.");
+                return;
+            }
+            var posted = dispatcher.Post(app => {
+                try {
+                    var problem = work(app);
+                    if (problem != null)
+                        Report(problem);
+                }
+                catch (AgentException ex) {
+                    Report(ex.Message);
+                }
+                catch (Exception ex) {
+                    logger.Error(ex, "Could not {0} from the agent panel", action);
+                    Report(ex.Message);
+                }
+            });
+            if (!posted)
+                onError($"Revit is busy and could not {action}. Try again in a moment.");
         }
     }
 

@@ -21,6 +21,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Start"] = "Start on {0}",
             ["AgentPanel.Resume"] = "Resume",
             ["AgentPanel.Paused.ByHost"] = "paused: {0}",
+            ["AgentPanel.Paused.PanelHidden"] = "panel hidden",
             ["AgentPanel.Request.NoReason"] = "no reason",
             ["AgentPanel.Request.Time"] = "asked {0}",
             ["AgentPanel.Policy.Ask"] = "ask",
@@ -137,6 +138,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.False(panel.HasPausedReason);
             Assert.Equal(string.Empty, panel.PausedReason);
+        }
+
+        [Fact]
+        public void APauseWhenThePanelWasHiddenSaysSoInThePanelsOwnWords() {
+            backend.Session = Session("paused");
+            backend.Session["paused_cause"] = "panel_hidden";
+            backend.Session["paused_reason"] = "the agent panel in Revit was closed or hidden.";
+
+            var panel = Panel();
+
+            Assert.True(panel.HasPausedReason);
+            Assert.Equal("panel hidden", panel.PausedReason);
         }
 
         [Fact]

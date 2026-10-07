@@ -18,7 +18,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariant: the panel never calls the Revit API from its own UI events. Starting a session
     /// goes through the agent dispatcher's ExternalEvent; Revit tells the panel which document is
     /// active through its events. Everything else the panel does only changes host state.
-    /// Closing the pane ends the session.
+    /// Hiding the pane pauses the session, whether the user closed it or Revit hid it, for
+    /// example on its Home screen; only the user resumes it.
     /// </remarks>
     public static class AgentPanel {
         public const string Title = "pyRevit Agent";
@@ -128,7 +129,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static void OnVisibilityChanged(object sender, DockableFrameVisibilityChangedEventArgs e) {
             if (e.PaneId.Guid != PaneGuid || e.DockableFrameShown)
                 return;
-            AgentSessions.EndForPanelClosed();
+            AgentSessions.PauseForPanelHidden();
         }
 
         private static void OnViewActivated(object sender, ViewActivatedEventArgs e) {

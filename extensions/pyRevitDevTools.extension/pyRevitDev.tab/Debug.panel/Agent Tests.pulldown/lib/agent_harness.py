@@ -263,12 +263,21 @@ def policy(name):
 def run_suites(modules):
     """Run test modules against fresh scratch documents and fail the button on any failure.
 
+    Important: the tests start and end their own session, so they refuse to run while
+    the user has one open rather than end it.
+
     Raises:
-        AssertionError: when any module has failures or errors; the details are
-            already in the output window.
+        AssertionError: when an agent session is already open, or when any module has
+            failures or errors; the details are already in the output window.
     """
     global _session
     print("Host engine: {}".format(sys.version.split()[0]))
+    open_session = session_status()
+    if open_session["state"] != "inactive":
+        raise AssertionError(
+            "End the agent session on '{}' in the agent panel first: the tests start "
+            "their own session on scratch documents.".format(open_session["document"])
+        )
     with open(PROGRESS_LOG, "w") as handle:
         handle.write("progress log of the last agent test run\n")
     _session = ScratchSession()

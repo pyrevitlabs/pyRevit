@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using pyRevitLabs.Json.Linq;
 
@@ -87,6 +88,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// record stays on disk in its run folder. Every member is safe to call from any thread.
     /// <see cref="Changed"/> is raised on the thread that made the change, after the lock is
     /// released.
+    /// Invariant: requests in flight are tracked by id, because an in-process request can
+    /// arrive while a pipe request waits or runs, for example from a script inside an agent
+    /// run. Finishing one never changes another's record or clears its approval prompt.
     /// </remarks>
     internal sealed class AgentActivity {
         public const int MaxClientLength = 80;
@@ -94,8 +98,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private readonly object sync = new object();
         private readonly List<AgentRequestRecord> history = new List<AgentRequestRecord>();
+        private readonly List<AgentRequestRecord> inFlight = new List<AgentRequestRecord>();
         private long nextId;
-        private AgentRequestRecord current;
         private AgentRequestRecord last;
         private string client;
         private bool awaitingApproval;
@@ -103,12 +107,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public event Action Changed;
 
         /// <summary>
-        /// The request that has arrived and not finished, or null.
+        /// The request Revit is working on, or else the first one waiting for it; null when none
+        /// is in flight. Of requests nested inside one another, the innermost is the one running.
         /// </summary>
         public AgentRequestRecord Current {
             get {
                 lock (sync)
-                    return current;
+                    return inFlight.LastOrDefault(record => record.Started) ?? inFlight.FirstOrDefault();
             }
         }
 
@@ -167,29 +172,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public AgentRequestRecord Arrive(
             string kind, string title, string reason, (string Id, string Document) session, DateTime nowUtc) {
             AgentRequestRecord record;
-            lock (sync)
-                current = record = new AgentRequestRecord(++nextId, kind, title, reason, session.Id, session.Document, nowUtc);
+            lock (sync) {
+                record = new AgentRequestRecord(++nextId, kind, title, reason, session.Id, session.Document, nowUtc);
+                inFlight.Add(record);
+            }
             OnChanged();
             return record;
         }
 
         public void Start(AgentRequestRecord record, DateTime nowUtc) {
             lock (sync) {
-                if (current == null || current.Id != record.Id)
+                var index = inFlight.FindIndex(candidate => candidate.Id == record.Id);
+                if (index < 0)
                     return;
-                current = current.AsStarted(nowUtc);
+                inFlight[index] = inFlight[index].AsStarted(nowUtc);
             }
             OnChanged();
         }
 
+        /// <remarks>
+        /// Only a request that started can have opened the approval prompt, so only finishing
+        /// one closes it here; a refusal on arrival leaves it as it is.
+        /// </remarks>
         public void Finish(AgentRequestRecord record, string outcome, DateTime nowUtc, JObject details = null) {
             lock (sync) {
-                var started = current != null && current.Id == record.Id ? current : record;
-                last = started.AsFinished(outcome, nowUtc, details);
+                var index = inFlight.FindIndex(candidate => candidate.Id == record.Id);
+                var tracked = index < 0 ? record : inFlight[index];
+                if (index >= 0)
+                    inFlight.RemoveAt(index);
+                last = tracked.AsFinished(outcome, nowUtc, details);
                 AddToHistory(last);
-                if (current != null && current.Id == record.Id)
-                    current = null;
-                awaitingApproval = false;
+                if (tracked.Started)
+                    awaitingApproval = false;
             }
             OnChanged();
         }

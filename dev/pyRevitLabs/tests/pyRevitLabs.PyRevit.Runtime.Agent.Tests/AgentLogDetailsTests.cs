@@ -72,13 +72,45 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             var details = AgentLogDetails.FromRun(response, null);
 
-            Assert.Equal(4, details.Value<int>("other_documents"));
+            Assert.Equal(3, details.Value<int>("other_documents"));
             Assert.Equal(new[] { "Annex" }, details["unreverted_documents"].Values<string>());
+        }
+
+        [Fact]
+        public void ADocumentTheRunCreatedIsNotAnotherDocument() {
+            var response = new JObject {
+                ["decision"] = "committed",
+                ["changes"] = new JObject {
+                    ["other_documents"] = new JArray(
+                        new JObject { ["document"] = "Family1", ["opened_during_run"] = true, ["rolled_back"] = false }),
+                },
+            };
+
+            var details = AgentLogDetails.FromRun(response, null);
+
+            Assert.Equal(0, details.Value<int>("other_documents"));
+            Assert.Empty((JArray)details["unreverted_documents"]);
+        }
+
+        [Fact]
+        public void ARunThatDidNotCommitOffersOnlyTheElementsItModified() {
+            var response = new JObject {
+                ["decision"] = "rolled_back",
+                ["changes"] = new JObject {
+                    ["added"] = Elements(2, "Walls"),
+                    ["modified"] = Elements(1, "Doors"),
+                },
+            };
+
+            var details = AgentLogDetails.FromRun(response, null);
+
+            Assert.Equal(new[] { "Doors 1" }, details["elements"].Select(element => element.Value<string>("name")));
         }
 
         [Fact]
         public void LongTextIsCutAndOnlyTheFirstElementsAreKept() {
             var response = new JObject {
+                ["decision"] = "committed",
                 ["output"] = new string('o', AgentLogDetails.MaxOutputChars + 10),
                 ["error"] = new JObject {
                     ["type"] = "ValueError",

@@ -42,6 +42,23 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void AnAutomationPassesOnWhatTheUserChangedEvenWhenItsRunIsRefused() {
+        var changed = new JObject { ["edits"] = new JObject { ["modified"] = 1 } };
+        host.Handler = request => request.Value<string>("method") == "get_context"
+            ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Model" }, ["since_last_call"] = changed })
+            : FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle.");
+
+        var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+        }));
+
+        Assert.True(IsError(response));
+        Assert.Equal("revit_busy", Payload(response).Value<string>("error"));
+        Assert.Equal(1, Payload(response)["since_last_call"]["edits"].Value<int>("modified"));
+    }
+
+    [Fact]
     public void AnAutomationThatNeedsADocumentStopsBeforeRunningWhenNoneIsOpen() {
         host.Handler = request => NoDocumentContext(request);
 

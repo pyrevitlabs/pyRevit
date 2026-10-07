@@ -263,7 +263,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             StartOnDocument();
             tracker.Pause();
             tracker.Resume();
-            tracker.End(AgentSessionEndReasons.PanelClosed, Now);
+            tracker.End(AgentSessionEndReasons.HostStopped, Now);
             tracker.Request(null, Now);
             tracker.Decline(Now);
             Assert.Equal(7, raised);
@@ -273,32 +273,49 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void AHostPauseRefusesWithItsOwnCodeAndReasonUntilTheUserResumes() {
             StartOnDocument();
 
-            Assert.True(tracker.PauseByHost("the last run changed another open document ('Annex.rvt')."));
+            Assert.True(tracker.PauseByHost(AgentSessionPauseCauses.OtherDocument, "the last run changed another open document ('Annex.rvt')."));
 
             var refused = Assert.Throws<AgentException>(tracker.CheckOnArrival);
             Assert.Equal("paused_by_host", refused.Code);
             Assert.Contains("'Annex.rvt'", refused.Message);
             Assert.Contains("only they can resume", refused.Message);
             Assert.Contains("Annex.rvt", tracker.Describe().Value<string>("paused_reason"));
+            Assert.Equal("other_document", tracker.Describe().Value<string>("paused_cause"));
 
             tracker.Resume();
             tracker.CheckOnArrival();
             Assert.Null(tracker.Describe().Value<string>("paused_reason"));
+            Assert.Null(tracker.Describe().Value<string>("paused_cause"));
         }
 
         [Fact]
-        public void AUserPauseReplacesTheHostReason() {
+        public void PausingAgainKeepsTheHostsReason() {
             StartOnDocument();
-            tracker.PauseByHost("of something.");
+            tracker.PauseByHost(AgentSessionPauseCauses.OtherDocument, "of something.");
+            var raised = 0;
+            tracker.Changed += () => raised++;
 
             tracker.Pause();
 
-            Assert.Equal("paused_by_user", CodeOf(tracker.CheckOnArrival));
+            Assert.Equal("paused_by_host", CodeOf(tracker.CheckOnArrival));
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void TheFirstHostPauseKeepsItsReasonAndReplacesAUserPause() {
+            StartOnDocument();
+            tracker.Pause();
+
+            Assert.True(tracker.PauseByHost(AgentSessionPauseCauses.OtherDocument, "the run changed 'Annex.rvt'."));
+            Assert.False(tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "the panel was hidden."));
+
+            Assert.Equal("paused_by_host", CodeOf(tracker.CheckOnArrival));
+            Assert.Equal("other_document", tracker.Describe().Value<string>("paused_cause"));
         }
 
         [Fact]
         public void AHostPauseWithoutASessionDoesNothing() {
-            Assert.False(tracker.PauseByHost("of something."));
+            Assert.False(tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "of something."));
             Assert.Equal(AgentSessionState.Inactive, tracker.State);
         }
 

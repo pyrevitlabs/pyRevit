@@ -79,13 +79,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Buttons are shown only when their action applies, so the commands are always executable.
     /// </remarks>
     internal sealed class AgentPanelViewModel : INotifyPropertyChanged {
+        private const string TimeFormat = "HH:mm";
+
         private readonly IAgentPanelBackend backend;
-        private readonly Func<string, string> text;
+        private readonly AgentLogText strings;
         private string errorText;
 
         public AgentPanelViewModel(IAgentPanelBackend backend, Func<string, string> text) {
             this.backend = backend;
-            this.text = text;
+            strings = new AgentLogText(text);
             StartCommand = new AgentPanelCommand(Start);
             PauseCommand = new AgentPanelCommand(() => Act(backend.Pause));
             ResumeCommand = new AgentPanelCommand(() => Act(backend.Resume));
@@ -147,27 +149,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var activeTitle = backend.ActiveDocumentTitle;
             StateKind = running ? session.Value<string>("state") ?? "inactive" : "off";
 
-            StateLabel = Text("AgentPanel.State." + Capitalize(StateKind));
+            StateLabel = strings.Text("AgentPanel.State." + Capitalize(StateKind));
             CanStart = StateKind == "inactive" && activeTitle != null;
             CanPause = StateKind == "active";
             CanResume = StateKind == "paused";
             CanEnd = CanPause || CanResume;
-            StartLabel = activeTitle == null ? string.Empty : Format("AgentPanel.Start", activeTitle);
+            StartLabel = activeTitle == null ? string.Empty : strings.Format("AgentPanel.Start", activeTitle);
             DocumentLine = DescribeDocument(session, activeTitle);
-            var pausedReason = StateKind == "paused" ? session.Value<string>("paused_reason") : null;
-            HasPausedReason = !string.IsNullOrEmpty(pausedReason);
-            PausedReason = HasPausedReason ? Format("AgentPanel.Paused.ByHost", pausedReason) : string.Empty;
+            DescribePause(session);
 
             var request = running ? session["pending_request"] as JObject : null;
             HasRequest = request != null;
-            RequestReason = request?.Value<string>("reason") ?? Text("AgentPanel.Request.NoReason");
-            RequestTime = request == null ? string.Empty : Format("AgentPanel.Request.Time", LocalTime(request.Value<string>("requested")));
+            RequestReason = request?.Value<string>("reason") ?? strings.Text("AgentPanel.Request.NoReason");
+            RequestTime = request == null ? string.Empty : strings.Format("AgentPanel.Request.Time", LocalTime(request.Value<string>("requested")));
             CanAccept = StateKind == "paused" || CanStart;
-            AcceptLabel = StateKind == "paused" ? Text("AgentPanel.Resume") : StartLabel;
+            AcceptLabel = StateKind == "paused" ? strings.Text("AgentPanel.Resume") : StartLabel;
 
-            PolicyText = Text("AgentPanel.Policy." + Capitalize(backend.Policy ?? "ask"));
+            PolicyText = strings.Text("AgentPanel.Policy." + Capitalize(backend.Policy ?? "ask"));
             var activity = backend.Activity;
-            ClientText = activity?.Client ?? Text("AgentPanel.Client.Unknown");
+            ClientText = activity?.Client ?? strings.Text("AgentPanel.Client.Unknown");
             DescribeLast(activity?.Last);
             DescribeWaiting(activity);
             Log.Update(activity?.History ?? new AgentRequestRecord[0]);
@@ -207,21 +207,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private string DescribeDocument(JObject session, string activeTitle) {
             switch (StateKind) {
                 case "off":
-                    return Text("AgentPanel.Document.HostOff");
+                    return strings.Text("AgentPanel.Document.HostOff");
                 case "active":
                 case "paused":
-                    return Format("AgentPanel.Document.Bound", session.Value<string>("document"), LocalTime(session.Value<string>("started")));
+                    return strings.Format("AgentPanel.Document.Bound", session.Value<string>("document"), LocalTime(session.Value<string>("started")));
                 default:
                     if (activeTitle == null)
-                        return Text("AgentPanel.Document.NoDocument");
-                    return Text(session.Value<bool?>("required") == false ? "AgentPanel.Document.Optional" : "AgentPanel.Document.Ready");
+                        return strings.Text("AgentPanel.Document.NoDocument");
+                    return strings.Text(session.Value<bool?>("required") == false ? "AgentPanel.Document.Optional" : "AgentPanel.Document.Ready");
             }
+        }
+
+        private void DescribePause(JObject session) {
+            var pausedReason = StateKind == "paused" ? session.Value<string>("paused_reason") : null;
+            HasPausedReason = !string.IsNullOrEmpty(pausedReason);
+            if (!HasPausedReason)
+                PausedReason = string.Empty;
+            else if (session.Value<string>("paused_cause") == AgentSessionPauseCauses.PanelHidden)
+                PausedReason = strings.Text("AgentPanel.Paused.PanelHidden");
+            else
+                PausedReason = strings.Format("AgentPanel.Paused.ByHost", pausedReason);
         }
 
         private void DescribeLast(AgentRequestRecord last) {
             HasLast = last != null && last.FinishedUtc.HasValue;
             LastText = HasLast
-                ? Format("AgentPanel.Last", Name(last), LocalTime(last.FinishedUtc.Value), last.Outcome)
+                ? strings.Format("AgentPanel.Last", Name(last), AgentLogText.LocalTime(last.FinishedUtc.Value, TimeFormat), last.Outcome)
                 : string.Empty;
         }
 
@@ -233,40 +244,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
             if (activity.AwaitingApproval) {
-                WaitingText = Format("AgentPanel.Waiting.Approval", Name(current));
+                WaitingText = strings.Format("AgentPanel.Waiting.Approval", Name(current));
                 return;
             }
             if (current.Started) {
-                WaitingText = Format("AgentPanel.Waiting.Running", Name(current));
+                WaitingText = strings.Format("AgentPanel.Waiting.Running", Name(current));
                 return;
             }
             var dialogs = backend.OpenDialogs();
             WaitingText = dialogs != null && dialogs.Count > 0
-                ? Format("AgentPanel.Waiting.Dialog", Name(current), string.Join(", ", dialogs))
-                : Format("AgentPanel.Waiting.Revit", Name(current));
+                ? strings.Format("AgentPanel.Waiting.Dialog", Name(current), string.Join(", ", dialogs))
+                : strings.Format("AgentPanel.Waiting.Revit", Name(current));
         }
 
         private string Name(AgentRequestRecord record) {
-            var kind = Text("AgentPanel.Kind." + record.Kind);
+            var kind = strings.Text("AgentPanel.Kind." + record.Kind);
             return string.IsNullOrEmpty(record.Title) ? kind : kind + ": " + record.Title;
-        }
-
-        private string Text(string key) {
-            return text(key) ?? key;
-        }
-
-        private string Format(string key, params object[] values) {
-            return string.Format(CultureInfo.CurrentCulture, Text(key), values);
         }
 
         private static string LocalTime(string utc) {
             return DateTime.TryParse(utc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed)
-                ? LocalTime(parsed)
+                ? AgentLogText.LocalTime(parsed, TimeFormat)
                 : string.Empty;
-        }
-
-        private static string LocalTime(DateTime utc) {
-            return utc.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture);
         }
 
         private static string Capitalize(string value) {
