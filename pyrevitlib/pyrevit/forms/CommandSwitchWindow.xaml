@@ -9,6 +9,8 @@
 		SizeToContent="Height" MaxHeight="500"
 		MouseUp="handle_click">
     <Window.Resources>
+        <system:String xmlns:system="clr-namespace:System;assembly=mscorlib"
+                       x:Key="pyRevit.DefaultWindowTitle">User Input</system:String>
         <Style TargetType="{x:Type Button}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Background" Value="#ffffff"/>
