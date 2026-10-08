@@ -780,7 +780,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     var tableEnd = i;
                     while (tableEnd + 1 < lines.Length) {
                         var next = lines[tableEnd + 1].TrimEnd();
-                        if (next.StartsWith("|") && next.EndsWith("|"))
+                        if (!string.IsNullOrWhiteSpace(next) && next.StartsWith("|"))
                             tableEnd++;
                         else
                             break;
