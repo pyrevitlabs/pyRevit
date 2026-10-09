@@ -5,7 +5,8 @@
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
     <Window.Resources>
         <Style TargetType="Button">
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Background" Value="{DynamicResource pyRevitButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -14,6 +15,8 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
                                 Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="5"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
