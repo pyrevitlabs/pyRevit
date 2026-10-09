@@ -217,8 +217,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get {
                 var runtime = BoundRuntime;
                 if (runtime != null) {
-                    TrackRuntimeWindow(runtime.OutputWindow);
-                    return _window;
+                    var runtimeWindow = runtime.OutputWindow;
+                    TrackRuntimeWindow(runtimeWindow);
+                    return runtimeWindow;
                 }
 
                 if (_window == null || _window.ClosedByUser) {
