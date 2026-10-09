@@ -151,6 +151,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool IsDisposed { get; private set; }
         public ScriptLoggerService LoggerService =>
             ScriptLoggerService.GetForRuntime(this);
+        internal ScriptOutput ExistingOutputService => _outputService;
         public ScriptOutput OutputService {
             get {
                 if (_outputService == null)

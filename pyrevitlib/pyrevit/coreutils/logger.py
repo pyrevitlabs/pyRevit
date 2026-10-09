@@ -82,11 +82,17 @@ def _append_exception(message, exception_text):
 class LoggerWrapper(object):
     """Small Python facade over the active runtime logging service."""
 
-    def __init__(self, name):
+    def __init__(self, name, bound_service=None):
         self.name = name
+        self._bound_service = bound_service
+
+    def _get_service(self):
+        if self._bound_service is not None:
+            return self._bound_service
+        return _resolve_service()
 
     def _emit(self, level, message, args=(), exception_text=""):
-        service = _resolve_service()
+        service = self._get_service()
         if service is None:
             return
         rendered = _append_exception(_format_message(message, args), exception_text)
@@ -123,7 +129,7 @@ class LoggerWrapper(object):
         self._emit(DEPRECATE_LOG_LEVEL, message, args)
 
     def isEnabledFor(self, level):
-        service = _resolve_service()
+        service = self._get_service()
         if service is None:
             return False
         try:
@@ -132,7 +138,7 @@ class LoggerWrapper(object):
             return False
 
     def is_enabled_for(self, level):
-        service = _resolve_service()
+        service = self._get_service()
         if service is None:
             return False
         try:
@@ -141,7 +147,7 @@ class LoggerWrapper(object):
             return False
 
     def has_errors(self):
-        service = _resolve_service()
+        service = self._get_service()
         if service is None:
             return False
         try:
@@ -150,7 +156,7 @@ class LoggerWrapper(object):
             return False
 
     def set_level(self, level):
-        service = _resolve_service()
+        service = self._get_service()
         if service is not None:
             service.SetMinimumLevel(int(level))
 
@@ -167,7 +173,7 @@ class LoggerWrapper(object):
         self.set_level(DEFAULT_LOGGING_LEVEL)
 
     def get_level(self):
-        service = _resolve_service()
+        service = self._get_service()
         if service is None:
             return DEFAULT_LOGGING_LEVEL
         try:
@@ -268,6 +274,11 @@ def get_logger(logger_name):
         logger = LoggerWrapper(logger_name)
         loggers[logger_name] = logger
     return logger
+
+
+def get_bound_logger(logger_name):
+    """Return a logger bound to the current command's service."""
+    return LoggerWrapper(logger_name, _resolve_service())
 
 
 def set_file_logging(status):

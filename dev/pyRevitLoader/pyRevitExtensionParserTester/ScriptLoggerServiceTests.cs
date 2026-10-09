@@ -122,21 +122,25 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
-        public void DisposedRuntimeIgnoresFurtherRecords()
+        public void DisposedRuntimeKeepsDeferredLoggingBoundToItsCommand()
         {
             var path = Path.Combine(_tempDirectory, "disposed.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
             var service = ScriptLoggerService.GetForRuntime(runtime);
+            runtime.ScriptRuntimeConfigs.LogFilePath = null;
+            runtime.ScriptRuntimeConfigs.SuppressOutput = false;
             SetProperty(runtime, "IsDisposed", true);
 
+            Assert.That(runtime.LoggerService, Is.SameAs(service));
             service.Log("tests", (int)ScriptLogLevel.Error, "late record");
 
-            Assert.That(File.Exists(path), Is.False);
-            Assert.That(service.HasErrors, Is.False);
+            Assert.That(File.ReadAllText(path), Does.Contain(
+                "ERROR [<Test Command> tests] late record"));
+            Assert.That(service.HasErrors, Is.True);
         }
 
         [Test]
-        public void DisposedRuntimeResolutionUsesSessionService()
+        public void DisposedRuntimeWithoutAServiceUsesSessionService()
         {
             var runtime = CreateRuntime(suppressOutput: true);
             SetProperty(runtime, "IsDisposed", true);
