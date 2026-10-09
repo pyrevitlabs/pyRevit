@@ -220,7 +220,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (runtime != null && !runtime.IsDisposed) {
                 if (runtime.ScriptRuntimeConfigs != null && runtime.ScriptRuntimeConfigs.SuppressOutput)
                     return null;
-                return resurrectClosedWindow ? runtime.OutputWindow : runtime.OpenOutputWindow;
+                var runtimeOutput = resurrectClosedWindow
+                    ? runtime.OutputWindow
+                    : runtime.OpenOutputWindow;
+                return runtimeOutput;
             }
 
             if (_suppressOutput)

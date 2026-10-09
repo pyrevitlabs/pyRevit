@@ -97,7 +97,12 @@ class LoggerWrapper(object):
             return
         rendered = _append_exception(_format_message(message, args), exception_text)
         try:
-            service.Log(self.name, int(level), rendered, False)
+            service.Log(
+                self.name,
+                int(level),
+                rendered,
+                self._bound_service is not None,
+            )
         except Exception:
             pass
 
@@ -278,7 +283,9 @@ def get_logger(logger_name):
 
 def get_bound_logger(logger_name):
     """Return a logger bound to the current command's service."""
-    return LoggerWrapper(logger_name, _resolve_service())
+    if EXEC_PARAMS.script_runtime is not None:
+        return LoggerWrapper(logger_name, _resolve_service())
+    return LoggerWrapper(logger_name)
 
 
 def set_file_logging(status):

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
@@ -150,6 +151,35 @@ namespace pyRevitExtensionParserTester
                 Is.SameAs(ScriptLoggerService.GetDefault()));
         }
 
+        [Test]
+        public void DeferredForwardedRecordsAreNotHeldByDisposedCommandOutput()
+        {
+            var runtime = CreateRuntime(suppressOutput: true);
+            SetProperty(runtime, "IsDisposed", true);
+            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
+                typeof(ScriptOutput));
+            var heldRecords = new HeldRecordBuffer(10);
+            SetField(output, "_runtime", new WeakReference<ScriptRuntime>(runtime));
+            SetField(output, "_heldRecords", heldRecords);
+
+            output.write_forwarded_log_record("deferred error", markError: true);
+
+            Assert.That(heldRecords.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void RuntimeOutputWindowIsTrackedForDeferredWrites()
+        {
+            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
+                typeof(ScriptOutput));
+            var window = (ScriptConsole)FormatterServices.GetUninitializedObject(
+                typeof(ScriptConsole));
+
+            output.TrackRuntimeWindow(window);
+
+            Assert.That(output.IsWindowReady, Is.True);
+        }
+
         [TestCase(ScriptLogLevel.Debug, "DEBUG [sample] value <tag>")]
         [TestCase(ScriptLogLevel.Info, "INFO [sample] value <tag>")]
         [TestCase(ScriptLogLevel.Warning, "&clt;div class=\"logdefault logwarning\"&cgt;&clt;strong&cgt;WARNING&clt;/strong&cgt; [sample] value <tag>&clt;/div&cgt;")]
@@ -204,6 +234,14 @@ namespace pyRevitExtensionParserTester
             target.GetType().GetProperty(
                 propertyName,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .SetValue(target, value);
+        }
+
+        private static void SetField(object target, string fieldName, object value)
+        {
+            target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(target, value);
         }
 

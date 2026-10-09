@@ -92,6 +92,7 @@ class ExampleUI(forms.WPFWindow):
 
         forms.WPFWindow.__init__(self, xaml_layout, literal_string=True)
         self.output = script.get_output()
+        self.output_stream = self.output.output_stream
         self.logger = script.get_logger()
         self.selected_element = None
 
@@ -163,7 +164,9 @@ class ExampleUI(forms.WPFWindow):
         self.output.print_md("This is output from the modeless dialog!")
         self.output.log_info("This is a log message from the modeless dialog.")
         self.output.log_warning("This is a warning from the modeless dialog.")
-        print("This is print output from the modeless dialog.")
+        self.output_stream.write(
+            "This is print output from the modeless dialog.\n"
+        )
 
         try:
             raise Exception("Test exception from modeless dialog")
