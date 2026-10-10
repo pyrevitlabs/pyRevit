@@ -8,7 +8,7 @@ titles:
   de_de: "Filter-\nlegende"
   pt_br: "Legenda de\nfiltros"
 
-tooltips:
+tooltip:
   en_us: |-
     Create a legend view for each selected view or view template, listing its graphic filters and parameter rules.
 
