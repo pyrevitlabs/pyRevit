@@ -54,5 +54,3 @@ tooltip:
 
     Se algumas das Famílias selecionadas já estiverem no projeto, você será perguntado se deseja ignorá-las ou substituí-las.
 author: Hikmet Deniz Kibar
-context:
-  - doc-project

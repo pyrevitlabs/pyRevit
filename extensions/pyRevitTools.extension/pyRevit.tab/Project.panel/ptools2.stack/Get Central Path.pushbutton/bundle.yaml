@@ -53,5 +53,3 @@ tooltip:
     Clique mantendo a tecla Shift pressionada:
 
     Abre o arquivo do modelo no Explorador, ou abre a página do projeto BIM360/ACC/Forma Docs para modelos na nuvem.
-context:
-  - doc-project

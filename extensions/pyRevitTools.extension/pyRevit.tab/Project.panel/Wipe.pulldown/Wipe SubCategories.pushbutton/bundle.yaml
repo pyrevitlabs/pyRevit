@@ -17,5 +17,3 @@ tooltip:
   de_de: >-
     Diese Skript löscht die ausgewählten Unterkategorien aus dem Modell. Damit können also auch Linienstile und Unterkategorien von geladen Familien gelöscht werden! Nach der Bestätigung der Warnmeldung erscheint ein Auswahldialog, in dem man  die Unterkategorien auswählen kann, die gelöscht werden sollen.
   pt_br: Redefinir todas as categorias e subcategorias do modelo para o padrão
-context:
-  - doc-project

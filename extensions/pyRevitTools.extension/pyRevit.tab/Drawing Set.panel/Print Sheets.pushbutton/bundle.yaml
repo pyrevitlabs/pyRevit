@@ -23,6 +23,8 @@ tooltip:
   en_us: |-
     Print sheets in drawing-index order using the configured print settings.
 
+    In Revit 2022 and earlier, combining prints into one file adds hidden characters to sheet numbers to preserve print order. Account for these characters when filtering sheet numbers. Add a Project Information parameter named 'Naming Format' to define the default print naming format for this project. Right-click the Naming Format dropdown to copy its name to the clipboard.
+
     Shift-click:
     Remove leftover non-printable characters from sheet numbers.
   ko: |-
