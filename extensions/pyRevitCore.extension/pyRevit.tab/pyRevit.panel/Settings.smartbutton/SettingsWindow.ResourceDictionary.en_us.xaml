@@ -58,7 +58,7 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</system:String>
 
     <system:String x:Key="CoreSettings.Loader">Loader</system:String>
-    <system:String x:Key="CoreSettings.Loader.Description">Configure pyRevit's assembly loading mechanism. The new loader is a C# implementation that uses Roslyn build strategy</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configure pyRevit's assembly loading mechanism</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Read script metadata (Reload Required)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         When enabled, pyRevit reads script metadata (__title__, __author__, __doc__, etc.) from Python script files.
