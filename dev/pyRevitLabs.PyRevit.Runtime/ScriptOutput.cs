@@ -736,8 +736,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
             var inList = false;
 
-            foreach (var rawLine in lines) {
-                var line = rawLine.TrimEnd();
+            for (var i = 0; i < lines.Length; i++) {
+                var line = lines[i].TrimEnd();
                 if (string.IsNullOrWhiteSpace(line)) {
                     if (inList) {
                         html.Append("</ul>");
@@ -782,8 +782,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         html.Append("</ul>");
                         inList = false;
                     }
-                    html.Append(MarkdownTableToHtml(lines));
-                    break;
+                    var tableEnd = i;
+                    while (tableEnd + 1 < lines.Length) {
+                        var next = lines[tableEnd + 1].Trim();
+                        if (!string.IsNullOrWhiteSpace(next) && next.StartsWith("|"))
+                            tableEnd++;
+                        else
+                            break;
+                    }
+                    html.Append(MarkdownTableToHtml(lines, i, tableEnd));
+                    i = tableEnd;
+                    continue;
                 }
 
                 if (inList) {
@@ -799,11 +808,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return html.ToString();
         }
 
-        private static string MarkdownTableToHtml(IEnumerable<string> lines) {
+        private static string MarkdownTableToHtml(string[] lines, int startIndex, int endIndex) {
             var rows = new List<string[]>();
             var aligns = new List<string>();
-            foreach (var line in lines) {
-                var trimmed = line.Trim();
+            for (var i = startIndex; i <= endIndex; i++) {
+                var trimmed = lines[i].Trim();
                 if (!(trimmed.StartsWith("|") && trimmed.EndsWith("|")))
                     continue;
                 if (Regex.IsMatch(trimmed, @"^\|[:\-\s\|]+\|$")) {
