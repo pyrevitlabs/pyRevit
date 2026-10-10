@@ -48,3 +48,5 @@ tooltip:
 
     Clique mantendo a tecla Shift pressionada:
     Configurar se todos os elementos serão incluídos, se worksets serão atribuídos aos tipos de elemento e se prefixos personalizados serão usados.
+context:
+  - doc-project

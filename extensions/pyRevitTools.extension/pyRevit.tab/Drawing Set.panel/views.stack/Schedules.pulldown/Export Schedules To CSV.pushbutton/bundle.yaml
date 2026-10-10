@@ -60,3 +60,5 @@ tooltip:
     Clique mantendo a tecla Shift pressionada:
     
     Escolher locais de saída padrão
+context:
+  - doc-project

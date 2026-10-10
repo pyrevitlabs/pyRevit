@@ -20,3 +20,5 @@ tooltip:
     nach vorne oder nach hinten verschoben werden soll. Achtung: Anpassungen von Ansichtsfenster
     Beschriftungen werden dadurch eventuell zurückgesetzt.
   pt_br: Reordena a viewport selecionada na folha atual
+context:
+  - doc-project

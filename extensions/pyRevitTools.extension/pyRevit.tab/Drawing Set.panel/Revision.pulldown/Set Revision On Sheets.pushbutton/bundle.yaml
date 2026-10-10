@@ -48,3 +48,5 @@ tooltip:
 
     Clique mantendo a tecla Shift pressionada:
     Definir a revisão mesmo que esteja marcada como emitida.
+context:
+  - doc-project

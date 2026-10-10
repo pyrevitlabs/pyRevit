@@ -71,3 +71,5 @@ tooltip:
     Configurar se o workset será definido, elementos serão emprestados, o plano de trabalho será definido ou exibido e a fase será definida.
 author: 'Jean-Marc Couffin, Wurschdhaud (extra functionality)'
 contact: 'https://github.com/jmcouffin, https://github.com/Wurschdhaud'
+context:
+  - doc-project

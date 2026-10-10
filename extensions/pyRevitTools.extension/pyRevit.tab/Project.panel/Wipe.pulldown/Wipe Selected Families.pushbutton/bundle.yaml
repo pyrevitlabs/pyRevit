@@ -16,3 +16,5 @@ tooltip:
   es_es: Limpiar familias de instancias seleccionadas
   de_de: Es werden alle Familien von den ausgewählten Exemplaren aus dem Modell gelöscht
   pt_br: Remover famílias das instâncias selecionadas
+context:
+  - doc-project

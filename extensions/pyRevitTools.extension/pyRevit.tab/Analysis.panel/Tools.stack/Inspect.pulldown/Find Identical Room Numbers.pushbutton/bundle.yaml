@@ -16,3 +16,5 @@ tooltip:
   es_es: Encuentra y lista las habitaciones con números idénticos
   de_de: Es werden alle alle Räume mit identischen Nummern aufgelistet
   pt_br: Encontra e lista ambientes com números idênticos
+context:
+  - doc-project

@@ -53,3 +53,5 @@ tooltip:
     Clique mantendo a tecla Shift pressionada:
     
     Remover identificadores nas vistas selecionadas
+context:
+  - doc-project

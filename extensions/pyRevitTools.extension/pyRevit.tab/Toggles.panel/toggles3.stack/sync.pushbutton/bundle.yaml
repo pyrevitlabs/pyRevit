@@ -49,3 +49,5 @@ tooltip:
     Clique mantendo a tecla Shift pressionada:
     Escolher se as vistas abertas permanecem abertas, são fechadas e reabertas ou fechadas com mudança para a vista inicial.
 author: Aniket Dikshit, Jean-Marc Couffin
+context:
+  - doc-workshared

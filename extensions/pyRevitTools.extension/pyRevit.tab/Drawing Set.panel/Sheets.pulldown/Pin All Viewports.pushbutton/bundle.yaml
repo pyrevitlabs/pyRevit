@@ -51,3 +51,5 @@ tooltip:
     
     Clique mantendo a tecla Shift pressionada:
     Fixar todas as viewports na folha ativa
+context:
+  - doc-project

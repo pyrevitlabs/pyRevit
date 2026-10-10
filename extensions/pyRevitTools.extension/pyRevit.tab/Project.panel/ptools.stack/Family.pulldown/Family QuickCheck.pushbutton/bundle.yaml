@@ -51,3 +51,5 @@ tooltip:
 author:
 - Frederic Beaupere
 - '{{author}}'
+context:
+  - doc-project

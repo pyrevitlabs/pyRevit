@@ -27,3 +27,5 @@ tooltip:
   pt_br: >-
     Insira nomes e números de folhas na caixa de texto e esta ferramenta criará 
     todos de uma vez
+context:
+  - doc-project

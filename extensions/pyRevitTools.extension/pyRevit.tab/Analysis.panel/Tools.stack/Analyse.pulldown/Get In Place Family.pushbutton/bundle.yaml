@@ -18,3 +18,5 @@ tooltip:
   pt_br: Obtém uma contagem total e tipos de Família no Local no documento atual e cria uma nova vista 3D chamada 'InPlace Families' isolando-as
 author: 'Jean-Marc Couffin'
 contact: 'https://github.com/jmcouffin'
+context:
+  - doc-project

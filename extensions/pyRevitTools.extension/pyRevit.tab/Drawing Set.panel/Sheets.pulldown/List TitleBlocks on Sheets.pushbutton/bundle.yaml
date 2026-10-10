@@ -48,3 +48,5 @@ tooltip:
 
     Clique mantendo a tecla Shift pressionada:
     Ignorar a seleção de folhas e selecionar as margens e os carimbos das folhas já selecionadas.
+context:
+  - doc-project

@@ -18,3 +18,5 @@ tooltip:
     Es öffnet sich ein Auswahldialog, in dem die Ansichten für
     den neuen Drucksatz ausgewählt werden müssen. Im nächsten  Dialog kann der Name des Drucksatzes eingegeben werden.  Im Drucken Dialog von Revit kann dieser neu erstellte  Drucksatz ausgewählt werden.
   pt_br: Cria conjunto de impressão a partir de vistas selecionadas
+context:
+  - doc-project

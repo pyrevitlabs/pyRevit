@@ -48,3 +48,5 @@ tooltip:
 
     Clique mantendo a tecla Shift pressionada:
     Escolher se o botão controla a visibilidade da caixa, seu estado ativo ou uma caixa temporária ao redor dos elementos selecionados.
+context:
+  - active-3d-view

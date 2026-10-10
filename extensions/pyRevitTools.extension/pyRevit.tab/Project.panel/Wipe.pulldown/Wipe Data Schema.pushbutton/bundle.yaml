@@ -17,3 +17,5 @@ tooltip:
   de_de: >-
     Es erscheint ein Auswahldialog mit allen verfügbaren Daten  Schemen im Projekt. Wählen Sie die Daten Schemen aus, die  Sie löschen wollen und bestätigen Sie die Auswahl mit dem  Button Select. Achtung: Die Daten Schemen werden von Add-Ins verwendet, um Daten zu speichern!
   pt_br: Apagar esquema de dados selecionado e suas entidades
+context:
+  - doc-project
