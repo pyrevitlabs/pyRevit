@@ -1,12 +1,12 @@
 title:
-  en_us: Export Parameters to Excel
-  ko: 매개변수를 Excel로 내보내기
-  fr_fr: Exporter les paramètres vers Excel
-  ru: Экспорт параметров в Excel
-  chinese_s: 将参数导出到 Excel
-  es_es: Exportar parámetros a Excel
-  de_de: Parameter nach Excel exportieren
-  pt_br: Exportar Parâmetros para Excel
+  en_us: Export Parameters to Excel ●
+  ko: 매개변수를 Excel로 내보내기 ●
+  fr_fr: Exporter les paramètres vers Excel ●
+  ru: Экспорт параметров в Excel ●
+  chinese_s: 将参数导出到 Excel ●
+  es_es: Exportar parámetros a Excel ●
+  de_de: Parameter nach Excel exportieren ●
+  pt_br: Exportar Parâmetros para Excel ●
 tooltip:
   en_us: |-
     Export element parameters from schedules to Excel, choosing which parameters to include.
