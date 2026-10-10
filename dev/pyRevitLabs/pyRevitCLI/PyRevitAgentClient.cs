@@ -41,11 +41,17 @@ namespace pyRevitCLI {
     /// host's stable error type (for example <c>revit_busy</c> or <c>no_active_document</c>).
     /// </summary>
     internal sealed class AgentClientException : Exception {
-        public AgentClientException(string code, string message) : base(message) {
+        public AgentClientException(string code, string message, JObject details = null) : base(message) {
             Code = code;
+            Details = details;
         }
 
         public string Code { get; }
+
+        /// <summary>
+        /// Fields the MCP server adds to the error it returns, such as <c>since_last_call</c>.
+        /// </summary>
+        public JObject Details { get; }
     }
 
     /// <summary>

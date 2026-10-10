@@ -42,6 +42,41 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void AnAutomationPassesOnWhatTheUserChangedEvenWhenItsRunIsRefused() {
+        var changed = new JObject { ["edits"] = new JObject { ["modified"] = 1 } };
+        host.Handler = request => request.Value<string>("method") == "get_context"
+            ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Model" }, ["since_last_call"] = changed })
+            : FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle.");
+
+        var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+        }));
+
+        Assert.True(IsError(response));
+        Assert.Equal("revit_busy", Payload(response).Value<string>("error"));
+        Assert.Equal(1, Payload(response)["since_last_call"]["edits"].Value<int>("modified"));
+    }
+
+    [Fact]
+    public void AnAutomationNeverRunsInADocumentTheSessionJustMovedTo() {
+        var moved = new JObject { ["session_moved"] = new JObject { ["from"] = "Tower", ["to"] = "Annex" } };
+        host.Handler = request => request.Value<string>("method") == "get_context"
+            ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Annex" }, ["since_last_call"] = moved })
+            : RunResponse(request);
+
+        var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+        }));
+
+        Assert.True(IsError(response));
+        Assert.Equal("session_moved", Payload(response).Value<string>("error"));
+        Assert.Equal("Annex", Payload(response)["since_last_call"]["session_moved"].Value<string>("to"));
+        Assert.Empty(host.RequestsFor("run"));
+    }
+
+    [Fact]
     public void AnAutomationThatNeedsADocumentStopsBeforeRunningWhenNoneIsOpen() {
         host.Handler = request => NoDocumentContext(request);
 
@@ -86,6 +121,7 @@ public partial class McpServerTests {
         host.Handler = request => FakeAgentHost.Result(request, new JObject { ["count"] = 2 });
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Tower", ["path"] = "c:\\models\\TOWER.rvt" },
@@ -108,6 +144,7 @@ public partial class McpServerTests {
         host.Handler = request => FakeAgentHost.Result(request, new JObject());
 
         Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Model" },
@@ -131,6 +168,7 @@ public partial class McpServerTests {
         );
 
         var byPath = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Tower", ["path"] = "C:\\Models\\Annex.rvt" },
@@ -138,6 +176,7 @@ public partial class McpServerTests {
             },
         }));
         var byTitle = Single(ToolCall(2, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Annex" },
@@ -159,6 +198,7 @@ public partial class McpServerTests {
         );
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Tower-renamed", ["path"] = "C:\\Models\\Tower.rvt" },
@@ -179,6 +219,7 @@ public partial class McpServerTests {
         );
 
         var response = Single(ToolCall(1, "navigate_revit_link", new JObject {
+            ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
                 ["document"] = new JObject { ["title"] = "Model" },

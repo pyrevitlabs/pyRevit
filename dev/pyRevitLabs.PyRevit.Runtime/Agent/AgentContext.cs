@@ -51,6 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["pyrevit"] = DescribePyRevit(env, app.Application.VersionNumber),
                 ["agent"] = new JObject {
                     ["policy"] = PyRevitConfigs.GetAgentPolicy(),
+                    ["session"] = AgentSessions.Describe(),
                 },
                 ["scripting"] = AgentScripting.Describe(env, app.Application.VersionNumber),
                 ["open_documents"] = AgentDocuments.Describe(app),

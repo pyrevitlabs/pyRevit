@@ -18,6 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentRunRequest {
         public string Script { get; private set; }
         public string Title { get; private set; }
+        public string Reason { get; private set; }
         public AgentRunMode Mode { get; private set; }
         public AgentEngine Engine { get; private set; }
         public string InputsJson { get; private set; }
@@ -56,7 +57,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
-                Title = parameters.Value<string>("title") ?? "Agent run",
+                Title = AgentRequestText.Title(parameters) ?? "Agent run",
+                Reason = AgentRequestText.Reason(parameters),
                 Mode = ParseMode(parameters.Value<string>("mode")),
                 Engine = ParseEngine(parameters.Value<string>("engine")),
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
@@ -70,6 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JObject ToJson() {
             return new JObject {
                 ["title"] = Title,
+                ["reason"] = Reason,
                 ["mode"] = ModeName,
                 ["engine"] = Engine == AgentEngine.CPython ? "cpython" : "ironpython",
                 ["inputs"] = JToken.Parse(InputsJson),
@@ -95,6 +98,34 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 default:
                     throw new AgentException("invalid_params", "'engine' must be ironpython or cpython.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Reads the agent's own words about a request, its <c>title</c> and <c>reason</c>, for the
+    /// agent log and the run record.
+    /// </summary>
+    /// <remarks>
+    /// The MCP server refuses a missing or overlong title. The host only trims and cuts,
+    /// because the CLI and in-Revit callers send what they have.
+    /// </remarks>
+    internal static class AgentRequestText {
+        public const int MaxTitleLength = 120;
+        public const int MaxReasonLength = 300;
+
+        public static string Title(JObject parameters) {
+            return Read(parameters, "title", MaxTitleLength);
+        }
+
+        public static string Reason(JObject parameters) {
+            return Read(parameters, "reason", MaxReasonLength);
+        }
+
+        private static string Read(JObject parameters, string name, int maxLength) {
+            var text = ((parameters[name] as JValue)?.Value as string)?.Trim();
+            if (string.IsNullOrEmpty(text))
+                return null;
+            return text.Length <= maxLength ? text : text.Substring(0, maxLength);
         }
     }
 }

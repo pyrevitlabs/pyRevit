@@ -1,0 +1,85 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="AgentPanel.State.Off">AGENT HOST OFF</system:String>
+    <system:String x:Key="AgentPanel.State.Inactive">NO SESSION</system:String>
+    <system:String x:Key="AgentPanel.State.Active">ACTIVE</system:String>
+    <system:String x:Key="AgentPanel.State.Paused">PAUSED</system:String>
+
+    <system:String x:Key="AgentPanel.Document.HostOff">The agent host is off. Turn it on in pyRevit Settings, then reload pyRevit.</system:String>
+    <system:String x:Key="AgentPanel.Document.NoDocument">Open the document agents should work on, then start a session.</system:String>
+    <system:String x:Key="AgentPanel.Document.Ready">Agents can't read or change the model until you start a session.</system:String>
+    <system:String x:Key="AgentPanel.Document.Optional">Sessions are optional in pyRevit Settings, so agents can work without one. Start a session to keep them to one document.</system:String>
+    <system:String x:Key="AgentPanel.Document.Bound">{0} · since {1}</system:String>
+    <system:String x:Key="AgentPanel.Document.MovedFrom">Moved from {0}.</system:String>
+    <system:String x:Key="AgentPanel.Document.OnHold">On hold: {0} is the session's document, but {1} is active. Agents wait until you switch back or move the session.</system:String>
+    <system:String x:Key="AgentPanel.Document.OnHoldNoDocument">On hold: no document is active. Agents wait until you switch back to {0}.</system:String>
+    <system:String x:Key="AgentPanel.Document.MovedAwaitingContext">Moved from {0}. The agent must read this model before it can do anything here.</system:String>
+    <system:String x:Key="AgentPanel.Paused.ByHost">pyRevit paused the session because {0} Resume when you've checked the model.</system:String>
+    <system:String x:Key="AgentPanel.Paused.PanelHidden">The session paused when this panel was closed or hidden. Resume when you want the agent to carry on.</system:String>
+
+    <system:String x:Key="AgentPanel.Start">Start on {0}</system:String>
+    <system:String x:Key="AgentPanel.Move">Move session to {0}</system:String>
+    <system:String x:Key="AgentPanel.Pause">Pause</system:String>
+    <system:String x:Key="AgentPanel.Resume">Resume</system:String>
+    <system:String x:Key="AgentPanel.End">End</system:String>
+
+    <system:String x:Key="AgentPanel.Request.Title">An agent asks to work in Revit</system:String>
+    <system:String x:Key="AgentPanel.Request.NoReason">The agent gave no reason.</system:String>
+    <system:String x:Key="AgentPanel.Request.Time">Asked at {0}</system:String>
+    <system:String x:Key="AgentPanel.Decline">Decline</system:String>
+
+    <system:String x:Key="AgentPanel.Label.Policy">Changes</system:String>
+    <system:String x:Key="AgentPanel.Label.Client">Client</system:String>
+    <system:String x:Key="AgentPanel.Label.Waiting">Waiting</system:String>
+    <system:String x:Key="AgentPanel.Label.Last">Last request</system:String>
+
+    <system:String x:Key="AgentPanel.Policy.Ask">Ask before every change</system:String>
+    <system:String x:Key="AgentPanel.Policy.Auto">Apply changes without asking</system:String>
+    <system:String x:Key="AgentPanel.Policy.Readonly">Read-only: queries and dry runs only</system:String>
+
+    <system:String x:Key="AgentPanel.Client.Unknown">Not reported yet</system:String>
+
+    <system:String x:Key="AgentPanel.Last">{0} · {1} · {2}</system:String>
+
+    <system:String x:Key="AgentPanel.Waiting.Approval">{0} is waiting for your approval in Revit.</system:String>
+    <system:String x:Key="AgentPanel.Waiting.Running">{0} is running.</system:String>
+    <system:String x:Key="AgentPanel.Waiting.Dialog">{0} is waiting until you close {1}.</system:String>
+    <system:String x:Key="AgentPanel.Waiting.Revit">{0} is waiting for Revit.</system:String>
+
+    <system:String x:Key="AgentPanel.Kind.query">Query</system:String>
+    <system:String x:Key="AgentPanel.Kind.dry_run">Dry run</system:String>
+    <system:String x:Key="AgentPanel.Kind.modify">Change</system:String>
+    <system:String x:Key="AgentPanel.Kind.context">Read context</system:String>
+    <system:String x:Key="AgentPanel.Kind.inspect">Inspect elements</system:String>
+    <system:String x:Key="AgentPanel.Kind.show">Show elements</system:String>
+    <system:String x:Key="AgentPanel.Kind.capture">Capture view</system:String>
+    <system:String x:Key="AgentPanel.Kind.lookup">Look up API</system:String>
+
+    <system:String x:Key="AgentPanel.Log.Title">Activity</system:String>
+    <system:String x:Key="AgentPanel.Log.ShowLookups">Show lookups</system:String>
+    <system:String x:Key="AgentPanel.Log.Empty">Nothing yet. What agents do in Revit appears here.</system:String>
+    <system:String x:Key="AgentPanel.Log.NoSession">Without a session</system:String>
+    <system:String x:Key="AgentPanel.Log.Session">{0} · from {1}</system:String>
+    <system:String x:Key="AgentPanel.Log.Summary">{0} · {1} · {2} · {3}</system:String>
+    <system:String x:Key="AgentPanel.Log.Duration">{0:0.0} s</system:String>
+    <system:String x:Key="AgentPanel.Log.WithApproval">{0} · {1}</system:String>
+    <system:String x:Key="AgentPanel.Log.Approval.auto">applied without asking</system:String>
+    <system:String x:Key="AgentPanel.Log.Approval.user">you decided</system:String>
+    <system:String x:Key="AgentPanel.Log.Reason">Why: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Moved">You moved the session from {0} to {1}.</system:String>
+    <system:String x:Key="AgentPanel.Log.Changes">{0} added · {1} modified · {2} deleted</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed another open document; pyRevit undid those changes.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.NoChanges">It changed nothing.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.Warning">The host warned: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Elements">Elements (click to select)</system:String>
+    <system:String x:Key="AgentPanel.Log.Script">Script</system:String>
+    <system:String x:Key="AgentPanel.Log.Output">Output</system:String>
+    <system:String x:Key="AgentPanel.Log.Error">Error</system:String>
+    <system:String x:Key="AgentPanel.Log.Engine">Engine: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.RunFolder">Run record: {0}</system:String>
+
+    <system:String x:Key="AgentPanel.Footer">Agents work only in the session's document, and only while the session is active. Closing this panel pauses the session.</system:String>
+</ResourceDictionary>

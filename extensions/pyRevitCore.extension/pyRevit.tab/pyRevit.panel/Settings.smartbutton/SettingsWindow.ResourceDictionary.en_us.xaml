@@ -402,6 +402,7 @@
     <system:String x:Key="Agent.Description">Lets MCP coding agents such as Claude Code, Codex, Cursor, VS Code and OpenCode read and change the open model by running Python inside Revit. Agents connect through a local named pipe that only your Windows user can open; unlike the Routes server, nothing is reachable over the network. By default, every agent run that changes the model needs your approval in Revit. This guards against an agent's mistakes, not against a hostile script, so only connect agents you trust.</system:String>
     <system:String x:Key="Agent.Privacy">Whatever the agent reads (element names, parameter values, results) is sent to the agent's model provider.</system:String>
     <system:String x:Key="Agent.Check">Agent Host (Beta)</system:String>
+    <system:String x:Key="Agent.RequireSession">Require a session: agents can read or change the model only after you start one in the Agent panel (recommended)</system:String>
     <system:String x:Key="Agent.Policy">Model Changes</system:String>
     <system:String x:Key="Agent.Policy.Ask">Ask for my approval in Revit before every change</system:String>
     <system:String x:Key="Agent.Policy.Auto">Auto: apply changes without asking (each change is still one undo entry)</system:String>

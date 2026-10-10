@@ -77,6 +77,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public bool ChangedOtherOpenDocument => others.Any(other => !other.OpenedDuringRun && !other.Changes.IsEmpty);
 
+        /// <summary>
+        /// Titles of the documents that make <see cref="ChangedOtherOpenDocument"/> true; never
+        /// documents the run created.
+        /// </summary>
+        public IList<string> ChangedOtherOpenDocumentTitles => others
+            .Where(other => !other.OpenedDuringRun && !other.Changes.IsEmpty)
+            .Select(other => other.Title)
+            .ToList();
+
         public bool LeftTransactionOpenInOtherDocument => others.Any(other => other.HasOpenTransaction);
 
         /// <summary>
@@ -213,7 +222,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private AgentOtherDocument TrackOther(Document other) {
-            var tracked = others.FirstOrDefault(candidate => IsSameDocument(candidate.Document, other));
+            var tracked = others.FirstOrDefault(candidate => AgentDocuments.IsSame(candidate.Document, other));
             if (tracked == null) {
                 tracked = new AgentOtherDocument(other, openedDuringRun: true);
                 others.Add(tracked);
@@ -273,7 +282,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             documentsOpenedFromDisk.Add(opened);
             if (IsWatchedDocument(opened))
                 return;
-            var tracked = others.FirstOrDefault(candidate => IsSameDocument(candidate.Document, opened));
+            var tracked = others.FirstOrDefault(candidate => AgentDocuments.IsSame(candidate.Document, opened));
             if (tracked != null)
                 tracked.MarkOpenedFromDisk();
             else
@@ -300,8 +309,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private bool IsProtectedFromSave(Document target) {
             return WasOpenAtStart(target)
-                || documentsCreatedDuringRun.Any(created => IsSameDocument(created, target))
-                || documentsOpenedFromDisk.Any(opened => IsSameDocument(opened, target));
+                || documentsCreatedDuringRun.Any(created => AgentDocuments.IsSame(created, target))
+                || documentsOpenedFromDisk.Any(opened => AgentDocuments.IsSame(opened, target));
         }
 
         private void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
@@ -309,19 +318,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Block(e, e.Document, "close");
         }
 
-        private static bool IsSameDocument(Document first, Document second) {
-            if (first != null && ReferenceEquals(first, second))
-                return true;
-            try {
-                return first != null && second != null && first.IsValidObject && second.IsValidObject && first.Equals(second);
-            }
-            catch (Exception) {
-                return false;
-            }
-        }
-
         private bool WasOpenAtStart(Document target) {
-            return openAtStart.Any(open => IsSameDocument(open, target));
+            return openAtStart.Any(open => AgentDocuments.IsSame(open, target));
         }
 
         private void OnDocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
@@ -339,7 +337,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private bool IsWatchedDocument(Document other) {
-            return IsSameDocument(other, doc);
+            return AgentDocuments.IsSame(other, doc);
         }
     }
 

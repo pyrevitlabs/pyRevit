@@ -102,6 +102,18 @@ class PipeTests(TestCase):
         self.assertTrue(result["found"])
         self.assertEqual("Autodesk.Revit.DB.Wall", result["full_name"])
 
+    def test_session_status_is_answered_by_the_pipe_thread(self):
+        """Session status needs no main thread, so a client can read it while a command runs."""
+        result = _call("session_status")["result"]
+        self.assertEqual("active", result["state"])
+        self.assertEqual(harness.session().project.Title, result["document"])
+
+    def test_the_pipe_can_not_start_or_resume_a_session(self):
+        """Only Revit grants a session: no pipe request starts or resumes one."""
+        for method in ("start_session", "resume_session"):
+            answer = _call(method)
+            self.assertEqual("method_not_found", answer["error"]["data"]["type"])
+
     def test_an_unknown_method_is_a_method_not_found_error(self):
         """An unknown method keeps the request id and names its error type."""
         answer = _call("no_such_method", request_id=41)
