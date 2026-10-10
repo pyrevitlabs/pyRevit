@@ -72,3 +72,5 @@ tooltip:
     processo removerá os dados  de AVF de cada uma. Isso pode ajudar a
     resolver travamentos ou  aumento do tamanho do arquivo causados por
     resultados de  análise órfãos.
+context:
+  - doc-project

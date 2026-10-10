@@ -16,3 +16,5 @@ tooltip:
   es_es: Lista todas las pendientes de techo en el modelo. Esta herramienta analiza las pendientes definidas en techos creados a partir de un perfil. Los techos hechos por extrusión y los techos creados a partir de caras de volumen no están incluidos en el análisis
   de_de: Listet alle Dachneigungen im Modell auf. Diese Werkzeug analysiert die Dachneigungen im Modell, von Dächern, die mit "Dach über Grundfläche" (mit einer Skizze) erstellt wurden. Dächer die mit "Dach über Extrusion" oder "Dach über Fläche" erstellt wurden, werden nicht aufgelistet.
   pt_br: Lista todas as inclinações de telhado no modelo. Esta ferramenta analisa as inclinações definidas em telhados criados a partir de um perfil. Telhados por extrusão e telhados criados a partir de faces de massa não estão incluídos na análise
+context:
+  - doc-project

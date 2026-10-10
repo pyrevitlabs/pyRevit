@@ -16,3 +16,5 @@ tooltip:
   es_es: Elimina todos los estilos de línea adicionales creados por el complemento defectuoso Site Designer
   de_de: Es werden alle Linienstile gelöscht die durch das Revit Add-In Site Designer erstellt wurden
   pt_br: Exclui todos os estilos de linhas extras criados pelo complemento Site Designer defeituoso
+context:
+  - doc-project

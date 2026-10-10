@@ -19,3 +19,5 @@ tooltip:
     angezeigt. Mit einem Klick auf die ID wird die Legende bzw Plan geöffnet.
   pt_br: Listar legendas em folhas
 author: Jean-Marc Couffin
+context:
+  - doc-project

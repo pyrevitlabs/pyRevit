@@ -1,29 +1,30 @@
 title:
-  en_us: Rename PDF Sheets
-  ko: PDF 시트 이름 변경
-  fr_fr: Renommer les feuilles PDF
-  ru: Переименовать PDF листы
-  chinese_s: 重命名 PDF 图纸
-  es_es: Renombrar hojas PDF
-  de_de: PDF Pläne umbenennen
-  pt_br: Renomear Folhas PDF
+  en_us: Rename PDF Sheets ●
+  ko: PDF 시트 이름 변경 ●
+  fr_fr: Renommer les feuilles PDF ●
+  ru: Переименовать PDF листы ●
+  chinese_s: 重命名 PDF 图纸 ●
+  es_es: Renombrar hojas PDF ●
+  de_de: PDF Pläne umbenennen ●
+  pt_br: Renomear Folhas PDF ●
 tooltip:
-  en_us: >-
-    Renames PDF sheets printed from Revit and removes the Central model name
-    from the PDF names. The tool will ask for a folder containing the file.
+  en_us: |-
+    Rename printed PDF files using their sheet numbers and names, removing the central model name. Choose the folder containing the PDFs.
 
+    Shift-click:
+    Rename matching PDF files on the Desktop.
+  ko: |-
+    PDF 파일이 있는 폴더를 선택하고, 인쇄된 PDF 파일 이름에서 중앙 모델 이름을 제거한 뒤 시트 번호와 이름으로 변경합니다.
 
-    Shift-Click:
-
-    Rename files on Desktop
-  ko: Revit에서 인쇄된 PDF 시트 이름을 변경하고 중앙 모델 이름을 제거합니다
+    Shift 키를 누르고 클릭:
+    바탕 화면의 일치하는 PDF 파일 이름을 변경합니다.
   fr_fr: >-
     Renommer les feuilles PDF imprimées à partir de Revit et supprimer le nom du
     modèle Central des noms PDF. L'outil demandera un dossier contenant le
     fichier.
 
 
-    Shift-Click:
+    Maj+clic :
 
     Renommer les fichiers sur le Bureau
   ru: >-
@@ -31,16 +32,20 @@ tooltip:
     из PDF имен. Данный инструмент запрашивает папку содержащую файл.
 
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Переименовать файлы на рабочем столе.
-  chinese_s: "重命名从 Revit 打印的 PDF 图纸，并从 PDF 名称中移除中心模型名称。该工具将要求指定包含文件的文件夹\n\nShift-单击：重命名桌面上的文件"
+  chinese_s: |-
+    重命名从 Revit 打印的 PDF 图纸，并从 PDF 名称中移除中心模型名称。该工具会提示选择包含 PDF 文件的文件夹。
+
+    按住 Shift 键单击：
+    重命名桌面上匹配的 PDF 文件。
   es_es: >-
     Renombra las hojas PDF impresas desde Revit y elimina el nombre del modelo central
     de los nombres PDF. La herramienta pedirá una carpeta que contenga el archivo.
 
 
-    Shift-Clic:
+    Mayús-clic:
 
     Renombrar archivos en el Escritorio
   de_de: >-
@@ -48,13 +53,13 @@ tooltip:
     Die PDF Pläne werden umbenannt und der name der Zentraldatei wird von den PDF Datei  Bezeichnungen entfernt. 
 
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
 
     PDF Dateien auf dem Desktop werden umbenannt
   pt_br: >-
     Renomeia folhas PDF impressas do Revit e remove o nome do modelo Central dos nomes PDF. 
     A ferramenta solicitará uma pasta contendo o arquivo.
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     Renomear arquivos na área de trabalho
 context: zero-doc

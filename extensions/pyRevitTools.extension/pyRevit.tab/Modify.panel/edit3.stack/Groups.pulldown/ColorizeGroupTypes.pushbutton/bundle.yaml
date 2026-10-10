@@ -59,3 +59,5 @@ tooltip:
     
     Nota:
     Grupos com apenas 1 instância nas vistas serão coloridos em cinza
+context:
+  - doc-project

@@ -74,3 +74,5 @@ tooltip:
     e o processo cancelará o registro deles.  Isso pode ajudar a resolver
     problemas de corrupção ou desempenho  causados por registros de serviços
     externos órfãos ou com mau  funcionamento.
+context:
+  - doc-project

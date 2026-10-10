@@ -8,17 +8,43 @@ title:
   de_de: Alle Objekte auswählen, die dem Filter entsprechen
   pt_br: Selecionar Todos os Objetos Que Passam No Filtro
 tooltip:
-  en_us: >-
-    Selects all elements that pass one or more selected filters and are visible in the active view. Useful for quickly filtering elements based on predefined conditions. Can be configured for elements in project instead of view, excluding nested, reverse the filter.
-  ko: 활성 뷰에서 하나 이상의 선택한 필터를 통과하고 표시되는 모든 요소를 선택합니다. 사전 정의된 조건으로 요소를 빠르게 필터링하는 데 유용합니다. 뷰 대신 프로젝트의 요소, 중첩 제외, 필터 반전으로 구성할 수 있습니다.
-  fr_fr: >-
-    Sélectionne tous les éléments correspondant à un ou plusieurs filtres choisis, visibles dans la vue active. Utile pour filtrer rapidement selon des critères définis. Peut être configuré pour les éléments du projet entier, exclure les éléments imbriqués, ou inverser le filtre.
-  ru: >-
-    Выделяет все элементы, проходящие через один или несколько выбранных фильтров и отображающиеся в активном виде. Полезно для быстрой фильтрации объектов по заданным условиям. Можно настроить для выбора элементов во всём проекте, исключения вложенных элементов или инверсии фильтра.
-  chinese_s: 选择活动视图中可见且满足一个或多个选定过滤器条件的所有图元。此功能便于基于预定义条件快速筛选图元。可配置为选择项目中的图元（而非仅限于视图），并可排除嵌套图元或反转过滤条件
-  es_es: >-
-    Selecciona todos los elementos que pasan uno o más filtros seleccionados y son visibles en la vista activa. Útil para filtrar rápidamente elementos basados en condiciones predefinidas. Se puede configurar para elementos en el proyecto en lugar de la vista, excluyendo anidados, invertir el filtro.
-  de_de: >-
-    Wählt alle Elemente aus, die einem oder mehreren ausgewählten Filtern entsprechen und in der aktuellen Ansicht sichtbar sind. Praktisch für eine schnelle Filterung basierend auf vordefinierten Kriterien. Kann so konfiguriert werden, dass Elemente im gesamten Projekt ausgewählt werden, verschachtelte ausgeschlossen oder der Filter umgekehrt wird.
-  pt_br: >-
-    Seleciona todos os elementos que passam em um ou mais filtros selecionados e são visíveis na vista ativa. Útil para filtrar rapidamente elementos com base em condições predefinidas. Pode ser configurado para elementos no projeto em vez da vista, excluindo aninhados, inverter o filtro.
+  en_us: |-
+    Select elements visible in the active view that pass the chosen view filters.
+
+    Shift-click:
+    Configure whether to search the whole project, exclude nested elements, or reverse the filter selection.
+  ko: |-
+    활성 뷰에서 선택한 필터를 통과해 표시되는 요소를 모두 선택합니다. 미리 정의된 조건으로 요소를 빠르게 필터링할 수 있습니다.
+
+    Shift 키를 누르고 클릭:
+    전체 프로젝트 검색, 중첩 요소 제외 또는 필터 결과 반전을 설정합니다.
+  fr_fr: |-
+    Sélectionne les éléments visibles dans la vue active qui correspondent aux filtres de vue choisis.
+
+    Maj+clic :
+    Configurer la recherche dans tout le projet, l'exclusion des éléments imbriqués ou l'inversion de la sélection par filtre.
+  ru: |-
+    Выделяет элементы, видимые в текущем виде и соответствующие выбранным фильтрам вида.
+
+    Щелчок с удержанием клавиши Shift:
+    Настроить поиск по всему проекту, исключение вложенных элементов или инверсию результатов фильтра.
+  chinese_s: |-
+    选择活动视图中可见且符合所选视图过滤器的图元。
+
+    按住 Shift 键单击：
+    配置是否搜索整个项目、排除嵌套图元或反转过滤结果。
+  es_es: |-
+    Selecciona los elementos visibles en la vista activa que cumplen los filtros de vista elegidos.
+
+    Mayús-clic:
+    Configurar si se busca en todo el proyecto, se excluyen elementos anidados o se invierte la selección del filtro.
+  de_de: |-
+    Wählt Elemente aus, die in der aktiven Ansicht sichtbar sind und den ausgewählten Ansichtsfiltern entsprechen.
+
+    Bei gedrückter Umschalttaste klicken:
+    Festlegen, ob das gesamte Projekt durchsucht, verschachtelte Elemente ausgeschlossen oder die Filterauswahl umgekehrt wird.
+  pt_br: |-
+    Seleciona os elementos visíveis na vista ativa que correspondem aos filtros de vista escolhidos.
+
+    Clique mantendo a tecla Shift pressionada:
+    Configurar se a busca abrange todo o projeto, exclui elementos aninhados ou inverte a seleção do filtro.

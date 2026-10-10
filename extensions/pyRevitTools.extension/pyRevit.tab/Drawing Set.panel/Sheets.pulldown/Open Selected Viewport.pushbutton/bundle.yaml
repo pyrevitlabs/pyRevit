@@ -31,3 +31,5 @@ tooltip:
     Abre a vista associada à viewport selecionada. Você pode atribuir um 
     atalho a esta ferramenta e esta é uma maneira rápida de abrir as 
     vistas ao trabalhar em folhas
+context:
+  - doc-project

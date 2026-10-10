@@ -1,34 +1,42 @@
 title:
-  en_us: Pin All Viewports
-  ko: 모든 뷰포트 고정
-  fr_fr: Epingler toutes les Vues
-  ru: Прикрепить все видовые экраны
-  chinese_s: 锁定所有视口
-  es_es: Fijar todas las ventanas gráficas
-  de_de: Ansichtsfenster auf Plänen pinnen
-  pt_br: Fixar Todas as Viewports
+  en_us: Pin All Viewports ●
+  ko: 모든 뷰포트 고정 ●
+  fr_fr: Epingler toutes les Vues ●
+  ru: Прикрепить все видовые экраны ●
+  chinese_s: 锁定所有视口 ●
+  es_es: Fijar todas las ventanas gráficas ●
+  de_de: Ansichtsfenster auf Plänen pinnen ●
+  pt_br: Fixar Todas as Viewports ●
 tooltip:
   en_us: |-
-    Pins all viewports on selected sheets.
+    Pin all viewports on the selected sheets.
 
-    Shift-Click:
-    Pin all viewports on active sheet
-  ko: "선택한 시트의 모든 뷰포트를 고정합니다. Shift+클릭: 활성 시트의 모든 뷰포트를 고정합니다."
+    Shift-click:
+    Pin all viewports on the active sheet.
+  ko: |-
+    선택한 시트의 모든 뷰포트를 고정합니다.
+
+    Shift 키를 누르고 클릭:
+    활성 시트의 모든 뷰포트를 고정합니다.
   fr_fr: |-
     Épingler toutes les vues sur les feuilles sélectionnées.
 
-    Shift-Click:
+    Maj+clic :
     Épingler toutes les fenêtres sur la feuille active
   ru: |-
     Прикрепляет все видовые экраны на выделенных листах.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
     Прикрепляет все видовые экраны на активном листе.
-  chinese_s: "锁定选定图纸上的所有视口\n\nShift-单击：锁定活动图纸上的所有视口"
+  chinese_s: |-
+    锁定选定图纸上的所有视口。
+
+    按住 Shift 键单击：
+    锁定活动图纸上的所有视口。
   es_es: |-
     Fija todas las ventanas gráficas en las hojas seleccionadas.
 
-    Shift-Clic:
+    Mayús-clic:
     Fijar todas las ventanas gráficas en la hoja activa
   de_de: |-
     Es erscheint ein Dialog auf dem Pläne ausgewählt werden können. 
@@ -36,10 +44,12 @@ tooltip:
     (Pin-Werkzeug). Dadurch werden die Ansichtsfenster auf den Plänen 
     vor einem unbeabsichtigtem Verschieben geschützt. 
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
     Sperre (Pin-Werkzeug) alle Ansichtsfenster auf dem aktiven Plan
   pt_br: >-
     Fixa todas as viewports nas folhas selecionadas.
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     Fixar todas as viewports na folha ativa
+context:
+  - doc-project

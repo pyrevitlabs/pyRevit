@@ -16,3 +16,5 @@ tooltip:
   es_es: Elimina todas las plantillas de vista no utilizadas (Cualquier plantilla de vista que no haya sido asignada a una vista)
   de_de: Es erscheint ein Auswahldialog, in dem nicht verwendete Ansichtsvorlagen ausgewählt werden können. Alle im Dialog ausgewählten Ansichtsvorlagen werden gelöscht.
   pt_br: Exclui todos os modelos de vista não utilizados (Qualquer modelo de vista que não tenha sido atribuído a uma vista)
+context:
+  - doc-project

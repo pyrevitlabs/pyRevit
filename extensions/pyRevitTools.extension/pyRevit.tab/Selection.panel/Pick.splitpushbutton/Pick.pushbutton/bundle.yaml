@@ -8,41 +8,48 @@ title:
   de_de: El.n.Kat.ausw.
   pt_br: Selecionar
 tooltip:
-  en_us: >-
-    Activates selection tool that picks a specific type of element
+  en_us: |-
+    Activate the selection tool to pick elements from a specific category.
 
-    Shift-Click:
+    Shift-click:
+    Choose favorite categories from all available categories.
+  ko: |-
+    특정 카테고리의 요소를 선택하는 도구를 활성화합니다.
 
-    Pick favorites from all available categories
-  ko: 특정 유형의 요소를 선택하는 선택 도구를 활성화합니다
+    Shift 키를 누르고 클릭:
+    사용 가능한 카테고리 중 즐겨찾기 카테고리를 선택합니다.
   fr_fr: >-
     Active l'outil de sélection qui sélectionne un type d'élément spécifique
 
-     Shift-Clic :
+     Maj+clic :
 
      Choisissez vos favoris dans toutes les catégories disponibles
   ru: >-
     Активирует инструмент выделения, который выбирает определенный тип элемента.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Выбрать избранное из всех доступных категорий.
-  chinese_s: "激活可选择特定类型图元的选择工具\nShift+单击：\n从所有可用类别中选取收藏的图元"
+  chinese_s: |-
+    启用选择工具，以便从特定类别中拾取图元。
+
+    按住 Shift 键单击：
+    从所有可用类别中选择要收藏的类别。
   es_es: >-
     Activa la herramienta de selección que elige un tipo específico de elemento
 
-    Shift-Clic:
+    Mayús-clic:
 
     Elegir favoritos de todas las categorías disponibles
   de_de: >-
     Aktiviert ein besonderes Auswahlwerkzeug,  das nur einen bestimmten Typ von Elementen auswählt. 
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
 
     In einem Auswahldialog kann man gezielt Kategorien auswählen,  die dann mit dem Auswahlwerkzeug auswählbar sind.
   pt_br: >-
     Ativa a ferramenta de seleção que escolhe um tipo específico de elemento
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     
     Escolher favoritos de todas as categorias disponíveis

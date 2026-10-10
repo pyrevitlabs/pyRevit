@@ -1,69 +1,55 @@
 title:
-  en_us: Family QuickCheck
-  ko: 패밀리 빠른 검사
-  fr_fr: Vérification rapide des familles
-  ru: Быстро проверить семейство
-  chinese_s: 族快速检查
-  es_es: Verificación rápida de familia
-  de_de: Familien Schnell-Check
-  pt_br: Verificação Rápida de Família
+  en_us: Family QuickCheck ●
+  ko: 패밀리 빠른 검사 ●
+  fr_fr: Vérification rapide des familles ●
+  ru: Быстро проверить семейство ●
+  chinese_s: 族快速检查 ●
+  es_es: Verificación rápida de familia ●
+  de_de: Familien Schnell-Check ●
+  pt_br: Verificação Rápida de Família ●
 tooltip:
-  en_us: >-
-    Non-exhaustive check to detect corrupt Revit families.
+  en_us: |-
+    Check editable families for errors or warnings that may indicate corruption.
 
-    Copyright (c) 2017 Frederic Beaupere
+    Shift-click:
+    Choose specific families to check instead of checking every editable family.
+  ko: |-
+    손상된 Revit 패밀리를 탐지하기 위해 편집 가능한 패밀리에서 오류와 경고를 확인합니다.
 
-    github.com/frederic-beaupere
+    Shift 키를 누르고 클릭:
+    편집 가능한 모든 패밀리 대신 확인할 패밀리를 직접 선택합니다.
+  fr_fr: |-
+    Vérifie les familles modifiables afin de détecter les erreurs ou avertissements pouvant indiquer une corruption.
 
-    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
-  ko: 손상된 Revit 패밀리를 탐지하는 비완전 검사.
-  fr_fr: >-
-    Vérification non exhaustive pour détecter les familles Revit corrompues.
+    Maj+clic :
+    Choisir les familles à vérifier au lieu de vérifier toutes les familles modifiables.
+  ru: |-
+    Проверяет редактируемые семейства на наличие ошибок и предупреждений, которые могут указывать на повреждение.
 
-    Copyright (c) 2017 Frédéric Beaupere
+    Щелчок с удержанием клавиши Shift:
+    Выбрать конкретные семейства для проверки вместо проверки всех редактируемых семейств.
+  chinese_s: |-
+    检查可编辑族中的错误或警告，以发现可能存在的损坏。
 
-    github.com/frederic-beaupere
+    按住 Shift 键单击：
+    选择要检查的特定族，而不是检查所有可编辑族。
+  es_es: |-
+    Comprueba las familias editables en busca de errores o advertencias que puedan indicar daños.
 
-        PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
-  ru: >-
-    Неполная проверка для обнаружения поврежденных семейств Revit.
+    Mayús-clic:
+    Elegir familias concretas para comprobar en lugar de revisar todas las familias editables.
+  de_de: |-
+    Prüft bearbeitbare Familien auf Fehler oder Warnungen, die auf eine Beschädigung hindeuten können.
 
-    Copyright (c) 2017 Frederic Beaupere
+    Bei gedrückter Umschalttaste klicken:
+    Bestimmte Familien zur Prüfung auswählen, statt alle bearbeitbaren Familien zu prüfen.
+  pt_br: |-
+    Verifica famílias editáveis em busca de erros ou avisos que possam indicar corrupção.
 
-    github.com/frederic-beaupere
-
-    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
-  chinese_s: "非详尽检查，用于检测损坏的 Revit 族。
-
-    版权所有 (c) 2017 Frederic Beaupere
-
-    github.com/frederic-beaupere
-
-    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731"
-  es_es: >-
-    Verificación no exhaustiva para detectar familias Revit corruptas.
-
-    Copyright (c) 2017 Frederic Beaupere
-
-    github.com/frederic-beaupere
-
-    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
-  de_de: >-
-    Grober Check, um fehlerhafte Revit Familien aufzuspüren.
-
-    Copyright (c) 2017 Frederic Beaupere
-
-    github.com/frederic-beaupere
-
-    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
-  pt_br: >-
-    Verificação não exaustiva para detectar famílias Revit corrompidas.
-    
-    Copyright (c) 2017 Frederic Beaupere
-    
-    github.com/frederic-beaupere
-    
-    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
+    Clique mantendo a tecla Shift pressionada:
+    Escolher famílias específicas para verificar em vez de verificar todas as famílias editáveis.
 author:
 - Frederic Beaupere
 - '{{author}}'
+context:
+  - doc-project

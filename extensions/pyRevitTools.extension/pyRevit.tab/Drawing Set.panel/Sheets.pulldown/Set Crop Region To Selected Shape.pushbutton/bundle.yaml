@@ -39,3 +39,5 @@ tooltip:
     Desenhe o limite de recorte desejado como um polígono fechado em sua folha (usando 
     linhas de detalhe). Em seguida, selecione o limite e a viewport de destino e execute 
     o script. Este script aplicará o limite desenhado à vista da viewport selecionada
+context:
+  - doc-project

@@ -35,3 +35,5 @@ tooltip:
     
     Especialmente útil para encontrar legendas
 author: '{{author}}'
+context:
+  - doc-project

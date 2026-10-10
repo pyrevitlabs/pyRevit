@@ -17,3 +17,5 @@ tooltip:
   es_es: Obtener un recuento total y los tipos de elementos de estacionamiento en la vista actual
   de_de: Es wird die Gesamtanzahl und die Typen von Parkelementen in der aktiven Ansicht ausgegeben
   pt_br: Obtém uma contagem total e tipos de elementos de vaga de estacionamento na vista atual
+context:
+  - doc-project

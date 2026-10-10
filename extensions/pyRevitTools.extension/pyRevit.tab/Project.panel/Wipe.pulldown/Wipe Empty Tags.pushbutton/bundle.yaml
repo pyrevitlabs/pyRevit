@@ -1,48 +1,57 @@
 title:
-  en_us: Remove Empty Tags
-  ko: 빈 태그 제거
-  fr_fr: Enlever les étiquettes vides
-  ru: Удалить пустые марки
-  chinese_s: 移除空标记
-  es_es: Eliminar etiquetas vacías
-  de_de: Lösche alle leeren Beschriftungen
-  pt_br: Remover Identificadores Vazios
+  en_us: Remove Empty Tags ●
+  ko: 빈 태그 제거 ●
+  fr_fr: Enlever les étiquettes vides ●
+  ru: Удалить пустые марки ●
+  chinese_s: 移除空标记 ●
+  es_es: Eliminar etiquetas vacías ●
+  de_de: Lösche alle leeren Beschriftungen ●
+  pt_br: Remover Identificadores Vazios ●
 tooltip:
-  en_us: >-
-    Removes empty tags in current view
+  en_us: |-
+    Remove empty tags from the current view.
 
-    Shift+Click:
+    Shift-click:
+    Remove empty tags from selected views.
+  ko: |-
+    현재 뷰에서 빈 태그를 제거합니다.
 
-    Remove tags in selected views
-  ko: 현재 뷰에서 빈 태그를 제거합니다
+    Shift 키를 누르고 클릭:
+    선택한 뷰에서 빈 태그를 제거합니다.
   fr_fr: >-
     Supprime les étiquettes vides dans la vue actuelle
 
-    Maj+Clic:
+    Maj+clic :
 
     Supprimer les étiquettes dans les vues sélectionnées
   ru: >-
     Удаляет пустые парки на текущем виде.
 
-    Shift+Click:
+    Щелчок с удержанием клавиши Shift:
 
     Удалить марки на выделенных видах.
-  chinese_s: "移除当前视图中的空标记\nShift+单击：\n移除选定视图中的标记"
+  chinese_s: |-
+    移除当前视图中的空标记。
+
+    按住 Shift 键单击：
+    移除选定视图中的空标记。
   es_es: >-
     Elimina etiquetas vacías en la vista actual
 
-    Shift+Clic:
+    Mayús-clic:
 
     Eliminar etiquetas en vistas seleccionadas
   de_de: >-
     Es werden alle leeren Beschriftungen in der aktuellen Ansicht gelöscht
 
-    Shift+Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Es erscheint ein Auswahldialog mit verfügbaren Ansichten im Projekt.  Auf den ausgewählten Ansichten werden alle leeren Beschriftungen gelöscht
   pt_br: >-
     Remove identificadores vazios na vista atual
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     
     Remover identificadores nas vistas selecionadas
+context:
+  - doc-project

@@ -1,49 +1,50 @@
 title:
-  en_us: Prev
-  ko: 이전
-  fr_fr: Précédent
-  ru: Предыдущий
-  chinese_s: 上一个
-  es_es: Anterior
-  de_de: Vorheriges Element im Speicher wählen
-  pt_br: Anterior
+  en_us: Prev ●
+  ko: 이전 ●
+  fr_fr: Précédent ●
+  ru: Предыдущий ●
+  chinese_s: 上一个 ●
+  es_es: Anterior ●
+  de_de: Vorheriges Element im Speicher wählen ●
+  pt_br: Anterior ●
 tooltip:
-  en_us: >-
-    Select previous element in selection memory.
+  en_us: |-
+    Select the previous element in selection memory. A normal click moves back one element.
 
-    Click +1
+    Shift-click:
+    Move back ten elements in selection memory.
+  ko: |-
+    선택 메모리에서 이전 요소를 선택합니다. 일반 클릭은 한 요소씩 뒤로 이동합니다.
 
-    Shift+Click +10
-  ko: 선택 메모리에서 이전 요소를 선택합니다.
-  fr_fr: >-
-    Sélectionnez l'élément précédent dans la mémoire de sélection.
+    Shift 키를 누르고 클릭:
+    선택 메모리에서 열 요소씩 뒤로 이동합니다.
+  fr_fr: |-
+    Sélectionne l'élément précédent dans la mémoire de sélection. Un clic recule d'un élément.
 
-    Cliquez sur +1
+    Maj+clic :
+    Reculer de dix éléments dans la mémoire de sélection.
+  ru: |-
+    Выбирает предыдущий элемент в памяти выбора. Обычный щелчок перемещает на один элемент назад.
 
-    Shift+Clic +10
-  ru: >-
-    Выбрать предыдущий элемент в памяти выбора.
+    Щелчок с удержанием клавиши Shift:
+    Перейти на десять элементов назад в памяти выбора.
+  chinese_s: |-
+    选择选择记忆中的上一个图元。普通单击向后移动一个图元。
 
-    Click +1
+    按住 Shift 键单击：
+    在选择记忆中向后移动十个图元。
+  es_es: |-
+    Selecciona el elemento anterior de la memoria de selección. Un clic retrocede un elemento.
 
-    Shift+Click +10
-  chinese_s: "在选择内存中选择上一个图元。\n单击：+1\nShift+单击：+10"
-  es_es: >-
-    Seleccionar elemento anterior en la memoria de selección.
+    Mayús-clic:
+    Retroceder diez elementos en la memoria de selección.
+  de_de: |-
+    Wählt das vorherige Element im Auswahlverlauf aus. Ein normaler Klick geht ein Element zurück.
 
-    Clic +1
+    Bei gedrückter Umschalttaste klicken:
+    Im Auswahlverlauf zehn Elemente zurückgehen.
+  pt_br: |-
+    Seleciona o elemento anterior na memória de seleção. Um clique normal volta um elemento.
 
-    Shift+Clic +10
-  de_de: >-
-    Wählt das vorherige Element im Speicher aus
-
-    Click +1
-
-    Shift+Click +10
-    Wählt das 10. Element im Speicher aus
-  pt_br: >-
-    Selecionar elemento anterior na memória de seleção.
-    
-    Clique +1
-    
-    Shift-Clique +10
+    Clique mantendo a tecla Shift pressionada:
+    Voltar dez elementos na memória de seleção.

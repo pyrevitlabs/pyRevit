@@ -23,3 +23,5 @@ tooltip:
     Durchsucht das Projekt nach Öffnungen. Eine Liste mit anklickbaren Links wird angezeigt. Öffnen Sie eine 3D-Ansicht, um auf die ausgewählten Öffnungen zuzugreifen und diese zu sehen. Es wird ein Auswahlfilter erstellt oder aktualisiert, um alle Öffnungen mit einem Klick auszuwählen.
   pt_br: Analisa o projeto em busca de aberturas. Uma lista com links clicáveis será apresentada. Abra uma vista 3D para acessar e visualizar as aberturas selecionadas. Um filtro de seleção será criado ou atualizado para selecionar todas as aberturas com um clique.
 authors: Jakob Steiner, inspired by the initial work of Andreas Draxl, Mohamed Bedair, special thanks to Erik Frits
+context:
+  - doc-project

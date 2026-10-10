@@ -16,3 +16,5 @@ tooltip:
   es_es: Lista todos los grupos de detalle que incluyen un elemento de texto dentro de ellos. Esto es útil para la verificación ortográfica.
   de_de: Listet alle Detailgruppen auf, die ein Textelement enthalten. Dies ist hilfreich für die Rechtschreibprüfung.
   pt_br: Lista todos os grupos de detalhes que incluem um elemento de texto dentro deles. Isso é útil para verificação ortográfica.
+context:
+  - doc-project
