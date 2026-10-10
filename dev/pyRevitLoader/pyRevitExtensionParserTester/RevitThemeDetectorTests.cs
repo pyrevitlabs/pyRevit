@@ -50,7 +50,7 @@ namespace pyRevitExtensionParserTest
         [TestCase(2024)]
         [TestCase(2025)]
         [TestCase(2026)]
-        public void Revit2024AndLaterHonoursDarkTheme(int revitYear)
+        public void Revit2024AndLaterReportsDarkThemeWhenApiReturnsDark(int revitYear)
         {
             var detector = new RevitThemeDetector(new MockLogger(), () => "Dark", revitYear);
 

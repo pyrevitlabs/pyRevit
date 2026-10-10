@@ -66,7 +66,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             if (_revitYear > 0 && _revitYear < FirstDarkRibbonYear)
             {
-                _logger.Debug($"Revit {_revitYear}: ribbon does not support dark theme; using light icons.");
+                if (!_themeDetected)
+                {
+                    _logger.Debug($"Revit {_revitYear}: ribbon does not support dark theme; using light icons.");
+                    Cache(false);
+                }
                 return false;
             }
 
