@@ -1,12 +1,12 @@
 title:
-  en_us: Remove Empty Tags
-  ko: 빈 태그 제거
-  fr_fr: Enlever les étiquettes vides
-  ru: Удалить пустые марки
-  chinese_s: 移除空标记
-  es_es: Eliminar etiquetas vacías
-  de_de: Lösche alle leeren Beschriftungen
-  pt_br: Remover Identificadores Vazios
+  en_us: Remove Empty Tags ●
+  ko: 빈 태그 제거 ●
+  fr_fr: Enlever les étiquettes vides ●
+  ru: Удалить пустые марки ●
+  chinese_s: 移除空标记 ●
+  es_es: Eliminar etiquetas vacías ●
+  de_de: Lösche alle leeren Beschriftungen ●
+  pt_br: Remover Identificadores Vazios ●
 tooltip:
   en_us: >-
     Removes empty tags in current view

@@ -1,12 +1,12 @@
 title:
-  en_us: Family QuickCheck
-  ko: 패밀리 빠른 검사
-  fr_fr: Vérification rapide des familles
-  ru: Быстро проверить семейство
-  chinese_s: 族快速检查
-  es_es: Verificación rápida de familia
-  de_de: Familien Schnell-Check
-  pt_br: Verificação Rápida de Família
+  en_us: Family QuickCheck ●
+  ko: 패밀리 빠른 검사 ●
+  fr_fr: Vérification rapide des familles ●
+  ru: Быстро проверить семейство ●
+  chinese_s: 族快速检查 ●
+  es_es: Verificación rápida de familia ●
+  de_de: Familien Schnell-Check ●
+  pt_br: Verificação Rápida de Família ●
 tooltip:
   en_us: >-
     Non-exhaustive check to detect corrupt Revit families.

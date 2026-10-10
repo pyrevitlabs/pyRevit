@@ -1,12 +1,12 @@
 title:
-  en_us: Prev
-  ko: 이전
-  fr_fr: Précédent
-  ru: Предыдущий
-  chinese_s: 上一个
-  es_es: Anterior
-  de_de: Vorheriges Element im Speicher wählen
-  pt_br: Anterior
+  en_us: Prev ●
+  ko: 이전 ●
+  fr_fr: Précédent ●
+  ru: Предыдущий ●
+  chinese_s: 上一个 ●
+  es_es: Anterior ●
+  de_de: Vorheriges Element im Speicher wählen ●
+  pt_br: Anterior ●
 tooltip:
   en_us: >-
     Select previous element in selection memory.

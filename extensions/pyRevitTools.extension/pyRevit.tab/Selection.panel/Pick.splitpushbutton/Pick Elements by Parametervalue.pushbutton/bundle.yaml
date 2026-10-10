@@ -1,12 +1,12 @@
 title:
-  en_us: Pick Elements by Parameter Value
-  ko: 매개변수 값으로 요소 선택
-  fr_fr: Sélectionner des éléments par valeur de paramètre
-  ru: Выбрать элементы по значению параметра
-  chinese_s: 按参数值选择图元
-  es_es: Seleccionar elementos por valor de parámetro
-  de_de: Elemente nach Parameterwert auswählen
-  pt_br: Selecionar Elementos por Valor de Parâmetro
+  en_us: Pick Elements by Parameter Value ●
+  ko: 매개변수 값으로 요소 선택 ●
+  fr_fr: Sélectionner des éléments par valeur de paramètre ●
+  ru: Выбрать элементы по значению параметра ●
+  chinese_s: 按参数值选择图元 ●
+  es_es: Seleccionar elementos por valor de parámetro ●
+  de_de: Elemente nach Parameterwert auswählen ●
+  pt_br: Selecionar Elementos por Valor de Parâmetro ●
 
 tooltip:
   en_us: Select elements that match the chosen parameter value(s). By default, any parameter match is accepted. Hold Shift while clicking to require all parameter values to match.

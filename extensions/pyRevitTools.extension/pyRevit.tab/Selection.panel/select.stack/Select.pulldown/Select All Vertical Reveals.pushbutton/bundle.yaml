@@ -1,12 +1,12 @@
 title:
-  en_us: Select Vertical/Horizontal Reveals
-  ko: 수직/수평 리빌 선택
-  fr_fr: Sélectionner les profils verticaux/horizontaux
-  ru: Выделить вертикальные/горизонтальные профили
-  chinese_s: 选择垂直/水平凹槽
-  es_es: Seleccionar ranuras verticales/horizontales
-  de_de: Alle horizontale / vertikalen Wandfugen auswählen
-  pt_br: Selecionar Frisos Verticais/Horizontais
+  en_us: Select Vertical/Horizontal Reveals ●
+  ko: 수직/수평 리빌 선택 ●
+  fr_fr: Sélectionner les profils verticaux/horizontaux ●
+  ru: Выделить вертикальные/горизонтальные профили ●
+  chinese_s: 选择垂直/水平凹槽 ●
+  es_es: Seleccionar ranuras verticales/horizontales ●
+  de_de: Alle horizontale / vertikalen Wandfugen auswählen ●
+  pt_br: Selecionar Frisos Verticais/Horizontais ●
 tooltip:
   en_us: >-
     Selects all vertical(default) or horizontal reveals in the project

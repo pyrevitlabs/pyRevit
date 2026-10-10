@@ -1,12 +1,12 @@
 title:
-  en_us: Next
-  ko: 다음
-  fr_fr: Suivant
-  ru: Следующий
-  chinese_s: 下一个
-  es_es: Siguiente
-  de_de: Nächstes Element im Speicher wählen
-  pt_br: Próximo
+  en_us: Next ●
+  ko: 다음 ●
+  fr_fr: Suivant ●
+  ru: Следующий ●
+  chinese_s: 下一个 ●
+  es_es: Siguiente ●
+  de_de: Nächstes Element im Speicher wählen ●
+  pt_br: Próximo ●
 tooltip:
   en_us: >-
     Select next element in selection memory.

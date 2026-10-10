@@ -1,17 +1,17 @@
 title:
   en_us: |-
-    Export Schedules To CSV
-  ko: 일람표를 CSV로 내보내기
+    Export Schedules To CSV ●
+  ko: 일람표를 CSV로 내보내기 ●
   fr_fr: |-
-    Exporter les nomenclatures en CSV
+    Exporter les nomenclatures en CSV ●
   ru: |-
-    Экспортировать спецификацию в CSV
-  chinese_s: 将明细表导出为 CSV
+    Экспортировать спецификацию в CSV ●
+  chinese_s: 将明细表导出为 CSV ●
   es_es: |-
-    Exportar tablas a CSV
+    Exportar tablas a CSV ●
   de_de: |-
-    Exportiere Bauteilliste in eine CSV
-  pt_br: Exportar Tabelas para CSV
+    Exportiere Bauteilliste in eine CSV ●
+  pt_br: Exportar Tabelas para CSV ●
 tooltip:
   en_us: |-
     Exports selected schedules to CSV files

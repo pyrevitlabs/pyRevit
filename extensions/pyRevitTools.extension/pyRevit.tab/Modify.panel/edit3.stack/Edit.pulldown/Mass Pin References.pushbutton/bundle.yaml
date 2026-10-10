@@ -1,12 +1,12 @@
 title:
-  en_us: Mass Pin/Unpin References
-  ko: 참조 일괄 고정/고정 해제
-  fr_fr: Épinglage/Désépinglage massif des références
-  ru: Массовое закрепление/открепление ссылок
-  chinese_s: 批量锁定/解锁参照
-  es_es: Fijar/Desfijar referencias en masa
-  de_de: Referenzen massenhaft (ent-)sperren
-  pt_br: Fixar/Desafixar Referências em Massa
+  en_us: Mass Pin/Unpin References ●
+  ko: 참조 일괄 고정/고정 해제 ●
+  fr_fr: Épinglage/Désépinglage massif des références ●
+  ru: Массовое закрепление/открепление ссылок ●
+  chinese_s: 批量锁定/解锁参照 ●
+  es_es: Fijar/Desfijar referencias en masa ●
+  de_de: Referenzen massenhaft (ent-)sperren ●
+  pt_br: Fixar/Desafixar Referências em Massa ●
 tooltip:
   en_us: |
     Allows you to select one or more categories (e.g., Grids, Levels, Links) and pin all unpinned instances in the model.

@@ -1,24 +1,24 @@
 title:
   en_us: |-
     Print
-    Sheets
-  ko: 시트 인쇄
+    Sheets ●
+  ko: 시트 인쇄 ●
   fr_fr: |-
     Imprimer
-    Feuilles
+    Feuilles ●
   ru: |-
     Печатать
-    листы
-  chinese_s: 打印图纸
+    листы ●
+  chinese_s: 打印图纸 ●
   es_es: |-
     Imprimir
-    Hojas
+    Hojas ●
   de_de: |-
     Pläne
-    drucken
+    drucken ●
   pt_br: |-
     Imprimir
-    Folhas
+    Folhas ●
 tooltip:
   en_us: |-
     Print sheets in order from a sheet index.

@@ -1,12 +1,12 @@
 title:
-  en_us: Lines Per View Counter
-  ko: 뷰별 선 개수 카운터
-  fr_fr: Compteur de lignes par vue
-  ru: Посчитать линии детализации по видам
-  chinese_s: 视图线数统计器
-  es_es: Contador de líneas por vista
-  de_de: Anzahl der Linien je Ansicht
-  pt_br: Contador de Linhas por Vista
+  en_us: Lines Per View Counter ●
+  ko: 뷰별 선 개수 카운터 ●
+  fr_fr: Compteur de lignes par vue ●
+  ru: Посчитать линии детализации по видам ●
+  chinese_s: 视图线数统计器 ●
+  es_es: Contador de líneas por vista ●
+  de_de: Anzahl der Linien je Ansicht ●
+  pt_br: Contador de Linhas por Vista ●
 tooltip:
   en_us: List sorted Detail Line Counts for all views with Detail Lines. Press SHIFT+Click to get the count for Revit Links
   ko: 상세 선이 있는 모든 뷰의 정렬된 상세 선 수를 나열합니다. SHIFT+클릭으로 Revit 링크의 수를 가져옵니다

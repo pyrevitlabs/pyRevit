@@ -1,12 +1,12 @@
 title:
-  en_us: Set Revision On Sheets
-  ko: 시트에 수정 사항 설정
-  fr_fr: Active la Révision sur les Feuilles
-  ru: Установить изменение на листах
-  chinese_s: 在图纸上设置修订
-  es_es: Establecer revisión en hojas
-  de_de: Aktiviere eine Änderung auf Plänen
-  pt_br: Definir Revisão nas Folhas
+  en_us: Set Revision On Sheets ●
+  ko: 시트에 수정 사항 설정 ●
+  fr_fr: Active la Révision sur les Feuilles ●
+  ru: Установить изменение на листах ●
+  chinese_s: 在图纸上设置修订 ●
+  es_es: Establecer revisión en hojas ●
+  de_de: Aktiviere eine Änderung auf Plänen ●
+  pt_br: Definir Revisão nas Folhas ●
 tooltip:
   en_us: >-
     Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision.   Shift+Click bypasses the issued check.

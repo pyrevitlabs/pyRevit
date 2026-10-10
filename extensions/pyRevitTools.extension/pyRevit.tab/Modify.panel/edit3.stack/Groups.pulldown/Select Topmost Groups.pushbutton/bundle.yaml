@@ -1,12 +1,12 @@
 title:
-  en_us: Select topmost groups
-  ko: 최상위 그룹 선택
-  fr_fr: Sélectionner les groupes supérieurs
-  ru: Выбрать самую верхнюю группу
-  chinese_s: 选择最高层级的组
-  es_es: Seleccionar grupos superiores
-  de_de: Oberste übergeordnete Gruppe auswählen
-  pt_br: Selecionar Grupos de Nível Superior
+  en_us: Select topmost groups ●
+  ko: 최상위 그룹 선택 ●
+  fr_fr: Sélectionner les groupes supérieurs ●
+  ru: Выбрать самую верхнюю группу ●
+  chinese_s: 选择最高层级的组 ●
+  es_es: Seleccionar grupos superiores ●
+  de_de: Oberste übergeordnete Gruppe auswählen ●
+  pt_br: Selecionar Grupos de Nível Superior ●
 tooltip:
   en_us: >-
     Selects group instances, which contain selected elements
@@ -50,4 +50,4 @@ tooltip:
     Shift-Clique:
     
     Incluir elementos não agrupados
-context: Selection
+context: selection

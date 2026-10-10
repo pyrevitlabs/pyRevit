@@ -1,12 +1,12 @@
 title:
-  en_us: Invert Selection
-  ko: 선택 반전
-  fr_fr: Inverser la sélection
-  ru: Инвертировать выделение
-  chinese_s: 反选
-  es_es: Invertir selección
-  de_de: Aktuelle Auswahl invertieren
-  pt_br: Inverter Seleção
+  en_us: Invert Selection ●
+  ko: 선택 반전 ●
+  fr_fr: Inverser la sélection ●
+  ru: Инвертировать выделение ●
+  chinese_s: 反选 ●
+  es_es: Invertir selección ●
+  de_de: Aktuelle Auswahl invertieren ●
+  pt_br: Inverter Seleção ●
 tooltip:
   en_us: >-
     Inverts selection in active view

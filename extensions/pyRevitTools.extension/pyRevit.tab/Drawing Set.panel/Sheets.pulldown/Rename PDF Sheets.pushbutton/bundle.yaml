@@ -1,12 +1,12 @@
 title:
-  en_us: Rename PDF Sheets
-  ko: PDF 시트 이름 변경
-  fr_fr: Renommer les feuilles PDF
-  ru: Переименовать PDF листы
-  chinese_s: 重命名 PDF 图纸
-  es_es: Renombrar hojas PDF
-  de_de: PDF Pläne umbenennen
-  pt_br: Renomear Folhas PDF
+  en_us: Rename PDF Sheets ●
+  ko: PDF 시트 이름 변경 ●
+  fr_fr: Renommer les feuilles PDF ●
+  ru: Переименовать PDF листы ●
+  chinese_s: 重命名 PDF 图纸 ●
+  es_es: Renombrar hojas PDF ●
+  de_de: PDF Pläne umbenennen ●
+  pt_br: Renomear Folhas PDF ●
 tooltip:
   en_us: >-
     Renames PDF sheets printed from Revit and removes the Central model name
