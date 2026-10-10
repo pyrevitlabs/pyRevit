@@ -57,7 +57,7 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">加载 Beta 工具（__beta__ = True 的脚本，需要重新加载）</system:String>
 
     <system:String x:Key="CoreSettings.Loader">加载器</system:String>
-    <system:String x:Key="CoreSettings.Loader.Description">配置 pyRevit 的程序集加载机制。新的加载器是使用 Roslyn 构建策略的 C# 实现</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">配置 pyRevit 的程序集加载机制</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">读取脚本元数据（需要重新加载）</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         启用后，pyRevit 将从 Python 脚本文件中读取脚本元数据（__title__、__author__、__doc__ 等）。
