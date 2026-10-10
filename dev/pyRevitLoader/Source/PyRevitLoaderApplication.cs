@@ -199,13 +199,29 @@ namespace PyRevitLoader
             if (_uiApplication == null)
                 return;
 
-            _pendingDarkTheme = string.Equals(themeName, "Dark", StringComparison.OrdinalIgnoreCase);
+            var isDarkTheme = string.Equals(themeName, "Dark", StringComparison.OrdinalIgnoreCase);
+            _pendingDarkTheme = RevitThemeDetector.SupportsDarkRibbon(GetCurrentRevitYear()) && isDarkTheme;
+
             if (_themeRefreshPending)
                 return;
 
             _themeRefreshPending = true;
             _uiApplication.Idling -= RefreshThemeOnIdling;
             _uiApplication.Idling += RefreshThemeOnIdling;
+        }
+
+        private static int GetCurrentRevitYear()
+        {
+            try
+            {
+                return int.TryParse(_uiControlledApplication?.ControlledApplication.VersionNumber, out var year)
+                    ? year
+                    : 0;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         private static void RefreshThemeOnIdling(object sender, IdlingEventArgs eventArgs)

@@ -28,6 +28,37 @@ namespace pyRevitExtensionParserTest
         }
 
         /// <summary>
+        /// Confirms that Revit 2021-2023 always uses light icons regardless of the API-reported theme.
+        /// </summary>
+        [Test]
+        [TestCase(2021)]
+        [TestCase(2022)]
+        [TestCase(2023)]
+        public void Pre2024RevitYearsAlwaysReportLightTheme(int revitYear)
+        {
+            var detector = new RevitThemeDetector(new MockLogger(), () => "Dark", revitYear);
+
+            Assert.That(detector.IsDarkTheme(), Is.False,
+                $"Revit {revitYear} ribbon stays light; dark icons must not be used.");
+            Assert.That(detector.GetThemeName(), Is.EqualTo("Light"));
+        }
+
+        /// <summary>
+        /// Confirms that Revit 2024+ honours the API-reported dark theme.
+        /// </summary>
+        [Test]
+        [TestCase(2024)]
+        [TestCase(2025)]
+        [TestCase(2026)]
+        public void Revit2024AndLaterReportsDarkThemeWhenApiReturnsDark(int revitYear)
+        {
+            var detector = new RevitThemeDetector(new MockLogger(), () => "Dark", revitYear);
+
+            Assert.That(detector.IsDarkTheme(), Is.True,
+                $"Revit {revitYear} ribbon supports dark theme; dark icons should be used.");
+        }
+
+        /// <summary>
         /// Confirms that unavailable theme support uses the light-theme fallback.
         /// </summary>
         [Test]

@@ -62,10 +62,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates an IconManager instance.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
+        /// <param name="revitYear">
+        /// The running Revit host year. Versions before 2024 have a partial dark theme where the
+        /// ribbon button bar stays light; dark icons are suppressed for those versions.
+        /// </param>
         /// <returns>A new IIconManager instance.</returns>
-        public static IIconManager CreateIconManager(ILogger logger)
+        public static IIconManager CreateIconManager(ILogger logger, int revitYear = 0)
         {
-            return new IconManager(logger);
+            return new IconManager(logger, revitYear);
         }
 
         /// <summary>
@@ -118,9 +122,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="logger">The logger instance.</param>
         /// <param name="styleManager">The panel style manager instance.</param>
         /// <returns>A new IPanelBuilder instance.</returns>
-        public static IPanelBuilder CreatePanelBuilder(UIApplication uiApplication, ILogger logger, IPanelStyleManager styleManager)
+        public static IPanelBuilder CreatePanelBuilder(UIApplication uiApplication, ILogger logger, IPanelStyleManager styleManager, int revitYear = 0)
         {
-            return new PanelBuilder(uiApplication, logger, styleManager);
+            return new PanelBuilder(uiApplication, logger, styleManager, new RevitThemeDetector(logger, revitYear));
         }
 
         /// <summary>
@@ -252,7 +256,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var hookManager = CreateHookManager(logger);
 
             // Create icon and tooltip managers
-            var iconManager = CreateIconManager(logger);
+            var iconManager = CreateIconManager(logger, revitYear);
             var tooltipManager = CreateTooltipManager(logger);
             var buttonPostProcessor = CreateButtonPostProcessor(logger, iconManager, tooltipManager);
 
@@ -262,8 +266,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var buildContext = new BuildContext();
             var panelStyleManager = CreatePanelStyleManager(logger);
             var tabBuilder = CreateTabBuilder(uiApplication, logger);
-            var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
+            var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager, revitYear);
+            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger, revitYear);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);

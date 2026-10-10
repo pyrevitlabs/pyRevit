@@ -318,11 +318,11 @@ namespace pyRevitAssemblyBuilder.UIManager
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
 
-        public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger)
+        public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger, int revitYear = 0)
         {
             _uiApp = uiApp;
             _logger = logger;
-            _themeDetector = new RevitThemeDetector(logger);
+            _themeDetector = new RevitThemeDetector(logger, revitYear);
 
             // Do static initialization once
             EnsureStaticInitialized();
