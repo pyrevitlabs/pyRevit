@@ -43,10 +43,15 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         /// Initializes a new instance of the <see cref="IconManager"/> class.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
-        public IconManager(ILogger logger)
+        /// <param name="revitYear">
+        /// The running Revit host year (e.g. 2023, 2024). Pass 0 when unknown. Versions before
+        /// 2024 have a partial dark theme where the ribbon button bar stays light; dark icons are
+        /// suppressed for those versions.
+        /// </param>
+        public IconManager(ILogger logger, int revitYear = 0)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _themeDetector = new RevitThemeDetector(logger);
+            _themeDetector = new RevitThemeDetector(logger, revitYear);
             _cache = _sharedCache;
         }
 

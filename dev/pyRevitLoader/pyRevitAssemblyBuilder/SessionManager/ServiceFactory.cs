@@ -62,10 +62,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates an IconManager instance.
         /// </summary>
         /// <param name="logger">The logger instance.</param>
+        /// <param name="revitYear">
+        /// The running Revit host year. Versions before 2024 have a partial dark theme where the
+        /// ribbon button bar stays light; dark icons are suppressed for those versions.
+        /// </param>
         /// <returns>A new IIconManager instance.</returns>
-        public static IIconManager CreateIconManager(ILogger logger)
+        public static IIconManager CreateIconManager(ILogger logger, int revitYear = 0)
         {
-            return new IconManager(logger);
+            return new IconManager(logger, revitYear);
         }
 
         /// <summary>
@@ -252,7 +256,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var hookManager = CreateHookManager(logger);
 
             // Create icon and tooltip managers
-            var iconManager = CreateIconManager(logger);
+            var iconManager = CreateIconManager(logger, revitYear);
             var tooltipManager = CreateTooltipManager(logger);
             var buttonPostProcessor = CreateButtonPostProcessor(logger, iconManager, tooltipManager);
 

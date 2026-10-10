@@ -17,6 +17,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// Important: the resolved theme is cached for the lifetime of the process, not per instance,
     /// so every instance observes the same value until <see cref="ClearCache"/> runs.
     /// </para>
+    /// <para>
+    /// Note: Revit 2021-2023 have a partial dark theme where only the title bar changes colour;
+    /// the ribbon button bar stays light. Dark icons must not be used for those versions. Pass the
+    /// running host year via the <c>revitYear</c> constructor parameter to enable the gate.
+    /// </para>
     /// </remarks>
     public class RevitThemeDetector
     {
@@ -25,28 +30,46 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string DarkThemeName = "Dark";
         private const string LightThemeName = "Light";
 
+        /// <summary>
+        /// First Revit year whose ribbon natively goes dark. Versions before this always use light icons.
+        /// </summary>
+        internal const int FirstDarkRibbonYear = 2024;
+
         private readonly ILogger _logger;
         private readonly Func<string> _themeNameReader;
+        private readonly int _revitYear;
         private static bool? _cachedTheme;
         private static bool _themeDetected;
 
-        public RevitThemeDetector(ILogger logger)
-            : this(logger, ReadCurrentThemeName)
+        public RevitThemeDetector(ILogger logger, int revitYear = 0)
+            : this(logger, ReadCurrentThemeName, revitYear)
         {
         }
 
-        internal RevitThemeDetector(ILogger logger, Func<string> themeNameReader)
+        internal RevitThemeDetector(ILogger logger, Func<string> themeNameReader, int revitYear = 0)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _themeNameReader = themeNameReader ?? throw new ArgumentNullException(nameof(themeNameReader));
+            _revitYear = revitYear;
         }
 
         /// <summary>
         /// Resolves the running host's UI theme, treating a host with no theme API and a failed
         /// lookup alike as light rather than propagating either.
         /// </summary>
+        /// <remarks>
+        /// Returns <c>false</c> unconditionally for Revit 2021-2023: those versions expose
+        /// <c>UIThemeManager.CurrentTheme</c> and can report "Dark", but their ribbon button bar
+        /// stays light, so switching to dark icons would make them invisible.
+        /// </remarks>
         public bool IsDarkTheme()
         {
+            if (_revitYear > 0 && _revitYear < FirstDarkRibbonYear)
+            {
+                _logger.Debug($"Revit {_revitYear}: ribbon does not support dark theme; using light icons.");
+                return false;
+            }
+
             if (_themeDetected)
                 return _cachedTheme ?? false;
 
