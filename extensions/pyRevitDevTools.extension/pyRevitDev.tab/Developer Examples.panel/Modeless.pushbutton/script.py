@@ -11,6 +11,9 @@ from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
 
+global_output = script.get_output()
+global_logger = script.get_logger()
+
 
 def update_element_comment(element, comment_text):
     """Update the Comments parameter of an element."""
@@ -89,6 +92,8 @@ class ExampleUI(forms.WPFWindow):
 
         forms.WPFWindow.__init__(self, xaml_layout, literal_string=True)
         self.output = script.get_output()
+        self.output_stream = self.output.output_stream
+        self.logger = script.get_logger()
         self.selected_element = None
 
     def pick_element_clicked(self, sender, args):
@@ -155,10 +160,21 @@ class ExampleUI(forms.WPFWindow):
         # )
 
     def output_clicked(self, sender, args):
-        """Example of using output."""
+        """Example of using output, print, and script logging."""
         self.output.print_md("This is output from the modeless dialog!")
         self.output.log_info("This is a log message from the modeless dialog.")
         self.output.log_warning("This is a warning from the modeless dialog.")
+        self.output_stream.write(
+            "This is print output from the modeless dialog.\n"
+        )
+
+        try:
+            raise Exception("Test exception from modeless dialog")
+        except Exception:
+            self.logger.exception("Logger test from modeless dialog")
+
+        global_output.print_md("This is a global output")
+        global_logger.error("This is a global error")
 
 
 if __name__ == "__main__":
