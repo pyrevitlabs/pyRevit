@@ -58,7 +58,7 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">Carregar ferramentas beta (Scripts com __beta__ = True, recarregamento necessário)</system:String>
 
     <system:String x:Key="CoreSettings.Loader">Carregador</system:String>
-    <system:String x:Key="CoreSettings.Loader.Description">Configurar o mecanismo de carregamento de montagem do pyRevit. O novo carregador é uma implementação C# que usa a estratégia de compilação Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configurar o mecanismo de carregamento de montagem do pyRevit</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Ler metadados dos scripts (Reinicialização necessária)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         Quando ativado, o pyRevit lê os metadados dos scripts (__title__, __author__, __doc__, etc.) dos arquivos de scripts Python.

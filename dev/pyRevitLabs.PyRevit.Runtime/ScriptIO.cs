@@ -18,6 +18,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// window. <see cref="GetOutput"/> never constructs one, so a producer on the wrong thread
     /// degrades to the runtime log instead of raising <c>InvalidOperationException: The calling
     /// thread must be STA</c> out of a worker thread, which unhandled terminates Revit (#3473).
+    /// Runtime-bound streams retain their output service so deferred writes remain in the
+    /// originating command's window after its runtime is disposed.
     /// </remarks>
     public class ScriptIO : Stream, IDisposable {
         // A buffered output entry carries the error state captured when it was
@@ -37,7 +39,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptConsole> _gui;
-        private WeakReference<ScriptOutput> _outputService;
+        private ScriptOutput _outputService;
+        private readonly bool _suppressOutput;
+        private readonly string _logFilePath;
         private int _uiHandOffQueued;
         private int _uiHandOffUnavailableReported;
         // A linked list (not a queue) so a failed render can re-queue its entry
@@ -84,6 +88,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public ScriptIO(ScriptRuntime runtime) {
             _runtime = new WeakReference<ScriptRuntime>(runtime);
             _gui = new WeakReference<ScriptConsole>(null);
+            _outputService = runtime?.ExistingOutputService;
+            _suppressOutput = runtime?.ScriptRuntimeConfigs?.SuppressOutput ?? false;
+            _logFilePath = runtime?.ScriptRuntimeConfigs?.LogFilePath;
         }
 
         public ScriptIO(ScriptConsole gui) {
@@ -98,7 +105,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public ScriptIO(ScriptOutput outputService) {
             _runtime = new WeakReference<ScriptRuntime>(null);
             _gui = new WeakReference<ScriptConsole>(null);
-            _outputService = new WeakReference<ScriptOutput>(outputService);
+            _outputService = outputService;
         }
 
         private ScriptRuntime GetRuntime() {
@@ -111,17 +118,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private ScriptOutput GetOutputService() {
-            if (_outputService == null)
-                return null;
-
-            ScriptOutput outputService;
-            var re = _outputService.TryGetTarget(out outputService);
-            return re ? outputService : null;
+            return _outputService;
         }
 
         private string GetLogFilePath() {
             var runtime = GetRuntime();
-            var logFilePath = runtime?.ScriptRuntimeConfigs?.LogFilePath;
+            var logFilePath = runtime?.ScriptRuntimeConfigs?.LogFilePath ?? _logFilePath;
             return string.IsNullOrWhiteSpace(logFilePath) ? null : logFilePath;
         }
 
@@ -215,11 +217,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return null;
 
             var runtime = GetRuntime();
-            if (runtime != null) {
+            if (runtime != null && !runtime.IsDisposed) {
                 if (runtime.ScriptRuntimeConfigs != null && runtime.ScriptRuntimeConfigs.SuppressOutput)
                     return null;
-                return resurrectClosedWindow ? runtime.OutputWindow : runtime.OpenOutputWindow;
+                var runtimeOutput = resurrectClosedWindow
+                    ? runtime.OutputWindow
+                    : runtime.OpenOutputWindow;
+                return runtimeOutput;
             }
+
+            if (_suppressOutput)
+                return null;
 
             var outputService = GetOutputService();
             if (outputService != null)
