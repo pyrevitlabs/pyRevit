@@ -134,5 +134,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _themeDetected = true;
             return isDarkTheme;
         }
+
+        internal static bool SupportsDarkRibbon(int revitYear)
+        {
+            return revitYear == 0 || revitYear >= FirstDarkRibbonYear;
+        }
     }
 }

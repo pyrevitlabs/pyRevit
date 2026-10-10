@@ -122,9 +122,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="logger">The logger instance.</param>
         /// <param name="styleManager">The panel style manager instance.</param>
         /// <returns>A new IPanelBuilder instance.</returns>
-        public static IPanelBuilder CreatePanelBuilder(UIApplication uiApplication, ILogger logger, IPanelStyleManager styleManager)
+        public static IPanelBuilder CreatePanelBuilder(UIApplication uiApplication, ILogger logger, IPanelStyleManager styleManager, int revitYear = 0)
         {
-            return new PanelBuilder(uiApplication, logger, styleManager);
+            return new PanelBuilder(uiApplication, logger, styleManager, new RevitThemeDetector(logger, revitYear));
         }
 
         /// <summary>
@@ -266,8 +266,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var buildContext = new BuildContext();
             var panelStyleManager = CreatePanelStyleManager(logger);
             var tabBuilder = CreateTabBuilder(uiApplication, logger);
-            var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
+            var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager, revitYear);
+            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger, revitYear);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);

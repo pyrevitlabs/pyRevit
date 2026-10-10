@@ -3,8 +3,9 @@
 Revit 2024 introduced a light/dark UI theme. pyRevit follows it: ribbon icons, panel backgrounds,
 and WPF forms all switch with the host, and a theme change applies without reloading the session.
 
-On Revit 2021–2023 there is no theme API. Everything below degrades to the light theme, and no
-bundle key or form attribute needs removing to build for those versions.
+On Revit 2021–2023 the `UIThemeManager.CurrentTheme` API may still report "Dark", but the ribbon
+button bar stays light. pyRevit treats those hosts as light for ribbon icons and panel backgrounds,
+and no bundle key or form attribute needs removing to build for those versions.
 
 ## How the theme is detected
 
