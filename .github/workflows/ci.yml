@@ -79,7 +79,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           $ErrorActionPreference = 'Stop'
-          python -m unittest discover -s tests -p 'test_*.py' -v
+          python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
 
       - name: Capture build versions
         id: versionmeta
