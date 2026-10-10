@@ -8,16 +8,43 @@ title:
   de_de: Aktiviere eine Änderung auf Plänen ●
   pt_br: Definir Revisão nas Folhas ●
 tooltip:
-  en_us: >-
-    Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision.   Shift+Click bypasses the issued check.
-  ko: 수정 목록에서 수정 사항을 선택하면 모델의 모든 시트에 해당 수정 사항을 추가 수정으로 설정합니다. Shift+클릭으로 발행 여부 확인을 건너뜁니다.
-  fr_fr: >-
-    Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire.   Maj+Clic contourne la vérification de publication.
-  ru: >-
-    Выделите изменение из списка изменений, и данный скрипт установит это изменение для всех листов в модели как дополнительное изменение. Shift+Клик пропускает проверку на выпуск.
-  chinese_s: 从修订列表中选择一个修订，此脚本将在模型中的所有图纸上将该修订设置为附加修订。Shift+单击可绕过已发布检查
-  es_es: >-
-    Seleccione una revisión de la lista de revisiones y este script establecerá esa revisión en todas las hojas del modelo como una revisión adicional. Shift+Click omite la verificación de emisión.
-  de_de: >-
-    Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript setzt diese Änderung auf allen Plänen im Modell als zusätzliche Änderung. Umschalt+Klick umgeht die Ausgabekontrolle.
-  pt_br: Selecione uma revisão da lista de revisões e este script define essa revisão em todas as folhas do modelo como uma revisão adicional.   Shift+Clique ignora a verificação de emitido.
+  en_us: |-
+    Select a revision and add it to all sheets in the model.
+
+    Shift-click:
+    Set the revision even if it is marked as issued.
+  ko: |-
+    수정 사항을 선택하여 모델의 모든 시트에 추가합니다.
+
+    Shift 키를 누르고 클릭:
+    발행된 수정 사항도 설정합니다.
+  fr_fr: |-
+    Sélectionne une révision et l'ajoute à toutes les feuilles du modèle.
+
+    Maj+clic :
+    Appliquer la révision même si elle est marquée comme publiée.
+  ru: |-
+    Выбирает изменение и добавляет его на все листы модели.
+
+    Щелчок с удержанием клавиши Shift:
+    Установить изменение, даже если оно отмечено как выпущенное.
+  chinese_s: |-
+    选择一个修订并将其添加到模型中的所有图纸。
+
+    按住 Shift 键单击：
+    即使修订已标记为已发布，也将其设置到图纸上。
+  es_es: |-
+    Selecciona una revisión y la añade a todas las hojas del modelo.
+
+    Mayús-clic:
+    Aplicar la revisión aunque esté marcada como emitida.
+  de_de: |-
+    Wählt eine Revision aus und fügt sie allen Plänen im Modell hinzu.
+
+    Bei gedrückter Umschalttaste klicken:
+    Die Revision auch dann festlegen, wenn sie als ausgegeben markiert ist.
+  pt_br: |-
+    Seleciona uma revisão e a adiciona a todas as folhas do modelo.
+
+    Clique mantendo a tecla Shift pressionada:
+    Definir a revisão mesmo que esteja marcada como emitida.

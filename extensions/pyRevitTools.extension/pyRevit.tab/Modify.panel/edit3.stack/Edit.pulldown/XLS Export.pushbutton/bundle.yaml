@@ -8,25 +8,23 @@ title:
   de_de: Parameter nach Excel exportieren
   pt_br: Exportar Parâmetros para Excel
 tooltip:
-  en_us: |
-    Exports element parameters of schedules to an Excel file.
-    You can choose which parameters to include. Parameter values are converted into project units for later reimport. 
-    Read-only and unsupported parameters are marked and locked.
+  en_us: |-
+    Export element parameters from schedules to Excel, choosing which parameters to include.
 
-    shift-click allows an advanced export scope to be selected:
-    - schedule
-    - document - all
-    - document - types
-    - document - instances
-    - current view
-    - selection
-  ko: 일람표의 요소 매개변수를 Excel 파일로 내보냅니다. 포함할 매개변수를 선택할 수 있습니다. 매개변수 값은 나중에 다시 가져오기 위해 프로젝트 단위로 변환됩니다. 읽기 전용 및 지원되지 않는 매개변수는 표시되고 잠깁니다. Shift+클릭으로 범위를 선택할 수 있습니다.
+    Shift-click:
+    Choose an advanced export scope: schedule, document types, document instances, current view, or selection.
+  ko: |-
+    일람표의 요소 매개변수를 Excel로 내보내고 포함할 매개변수를 선택합니다. 매개변수 값은 다시 가져올 수 있도록 프로젝트 단위로 변환되며, 읽기 전용 또는 지원되지 않는 매개변수는 표시되고 잠깁니다.
+
+    Shift 키를 누르고 클릭:
+    내보내기 범위(일람표, 문서 유형, 문서 인스턴스, 현재 뷰 또는 선택 항목)를 지정합니다.
   fr_fr: |
     Exporte les paramètres des éléments à partir des nomenclatures vers un fichier Excel.
     Vous pouvez choisir les paramètres à inclure. Les valeurs sont converties en unités du projet pour permettre une réimportation ultérieure.
     Les paramètres en lecture seule ou non pris en charge sont signalés et verrouillés.
 
-    Un clic avec la touche Maj permet de sélectionner une portée d’exportation avancée :
+    Maj+clic :
+    Choisir une portée d’exportation avancée :
     - nomenclature
     - document - tout
     - document - types
@@ -38,20 +36,26 @@ tooltip:
     Вы можете выбрать, какие параметры включать. Значения параметров преобразуются в проектные единицы для последующего импорта.
     Параметры только для чтения и неподдерживаемые параметры отмечаются и блокируются.
 
-    При нажатии Shift при клике можно выбрать расширенную область экспорта:
+    Щелчок с удержанием клавиши Shift:
+    Выбрать расширенную область экспорта:
     - спецификация
     - документ - все
     - документ - типы
     - документ - экземпляры
     - текущий вид
     - выбор
-  chinese_s: "将明细表中的图元参数导出到 Excel 文件。\n您可以选择要包含哪些参数。参数值将转换为项目单位，以便后续重新导入。\n只读和不支持的参数会被标记并锁定。\n\nShift+单击可选择高级导出范围：\n- 明细表\n- 文档 - 全部\n- 文档 - 类型\n- 文档 - 实例\n- 当前视图\n- 选择"
+  chinese_s: |-
+    将明细表中的图元参数导出到 Excel 文件。您可以选择要包含的参数。参数值会转换为项目单位，以便稍后重新导入；只读和不支持的参数会被标记并锁定。
+
+    按住 Shift 键单击：
+    选择高级导出范围：明细表、文档类型、文档实例、当前视图或当前选择。
   es_es: |
     Exporta parámetros de elementos de tablas a un archivo Excel.
     Puede elegir qué parámetros incluir. Los valores de los parámetros se convierten en unidades del proyecto para reimportación posterior.
     Los parámetros de solo lectura y no admitidos se marcan y bloquean.
 
-    shift-clic permite seleccionar un alcance de exportación avanzado:
+    Mayús-clic:
+    Permite seleccionar un alcance de exportación avanzado:
     - tabla
     - documento - todo
     - documento - tipos
@@ -63,7 +67,8 @@ tooltip:
     Sie können auswählen, welche Parameter einbezogen werden sollen. Die Parameterwerte werden in die Projekteinheiten konvertiert, um einen späteren Reimport zu ermöglichen.
     Schreibgeschützte und nicht unterstützte Parameter werden gekennzeichnet und gesperrt.
 
-    Mit Shift-Klick kann ein erweiterter Exportbereich ausgewählt werden:
+    Bei gedrückter Umschalttaste klicken:
+    Einen erweiterten Exportbereich auswählen:
     - Bauteilliste
     - Dokument - alle
     - Dokument - Typen
@@ -75,7 +80,8 @@ tooltip:
     Você pode escolher quais parâmetros incluir. os valores dos parâmetros são convertidos em unidades do projeto para reimportação posterior. 
     Parâmetros somente leitura e não suportados são marcados e bloqueados.
     
-    shift-clique permite selecionar um escopo de exportação avançado:
+    Clique mantendo a tecla Shift pressionada:
+    Permite selecionar um escopo de exportação avançado:
     - tabela
     - documento - todos
     - documento - tipos

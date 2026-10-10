@@ -8,45 +8,48 @@ title:
   de_de: Pfad von Zentraldatei abrufen ●
   pt_br: Obter Caminho do Central ●
 tooltip:
-  en_us: >-
-    Print the full path to the central model (workshared) or the local model path.
+  en_us: |-
+    Print the central model path for workshared models or the local model path.
 
-    Shift+Click:
+    Shift-click:
+    Open the model file in Explorer, or open the cloud model project page.
+  ko: |-
+    작업 공유 모델의 중앙 모델 경로 또는 로컬 모델 경로를 출력합니다.
 
-    Open model file in Explorer, or open BIM360/ACC/Forma Docs project page for cloud models.
-  ko: 중앙 모델(공유 작업)의 전체 경로 또는 로컬 모델 경로를 출력합니다.
+    Shift 키를 누르고 클릭:
+    모델 파일을 파일 탐색기에서 열거나 클라우드 모델의 프로젝트 페이지를 엽니다.
   fr_fr: >-
     Afficher le chemin complet du modèle central (partagé) ou du modèle local.
 
-    Shift+Clic :
+    Maj+clic :
 
     Ouvrir le fichier modèle dans l'Explorateur, ou ouvrir la page projet BIM360/ACC/Forma Docs pour les modèles cloud.
   ru: >-
     Выводит полный путь к центральной (совместный доступ) или локальной модели.
 
-    Shift+Click:
+    Щелчок с удержанием клавиши Shift:
 
     Открывает файл модели в Проводнике или страницу проекта BIM360/ACC/Forma Docs для облачных моделей.
   chinese_s: "打印中心模型（工作共享）或本地模型的完整路径。
 
-    Shift+单击：
+    按住 Shift 键单击：
 
     在资源管理器中打开模型文件，或为云模型打开 BIM360/ACC/Forma Docs 项目页面。"
   es_es: >-
     Imprimir la ruta completa al modelo central (compartido) o al modelo local.
 
-    Shift+Clic:
+    Mayús-clic:
 
     Abrir el archivo del modelo en el explorador, o abrir la página del proyecto BIM360/ACC/Forma Docs para modelos en la nube.
   de_de: >-
     Gibt den vollständigen Pfad zur Zentraldatei (Arbeitsteilung) oder lokalen Datei aus.
 
-    Shift+Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Öffnet die Modelldatei im Explorer, oder öffnet die BIM360/ACC/Forma Docs Projektseite für Cloud-Modelle.
   pt_br: >-
     Imprime o caminho completo para o modelo central (compartilhado) ou o modelo local.
 
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
 
     Abre o arquivo do modelo no Explorador, ou abre a página do projeto BIM360/ACC/Forma Docs para modelos na nuvem.

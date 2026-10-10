@@ -14,28 +14,35 @@ title:
   pt_br: Exportar Tabelas para CSV ●
 tooltip:
   en_us: |-
-    Exports selected schedules to CSV files
+    Export selected schedules to CSV files in a folder you choose.
 
-    Shift-Click:
+    Shift-click:
+    Choose a default destination folder and whether to open the CSV or include headers.
+  ko: |-
+    선택한 일람표를 CSV 파일로 내보냅니다.
 
-    Pick from default output locations
-  ko: "선택한 일람표를 CSV 파일로 내보냅니다. Shift+클릭: 기본 출력 위치에서 선택합니다."
+    Shift 키를 누르고 클릭:
+    기본 출력 폴더를 선택하고 CSV를 열지 여부와 머리글을 포함할지 여부를 설정합니다.
   fr_fr: |-
     Exporte les nomenclatures sélectionnées vers des fichiers CSV
 
-     Shift-Clic :
+     Maj+clic :
 
      Choisissez parmi les emplacements de sortie par défaut
   ru: |-
     Экспортирует выделенные спецификации в CSV файлы.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
     Выберите путь экспорта по умолчанию.
-  chinese_s: "将选定的明细表导出为 CSV 文件\n\nShift-单击：\n\n从默认输出位置中选择"
+  chinese_s: |-
+    将选定的明细表导出为 CSV 文件。
+
+    按住 Shift 键单击：
+    选择默认输出文件夹，并设置是否打开 CSV 文件或包含标题行。
   es_es: |-
     Exporta las tablas seleccionadas a archivos CSV
 
-    Shift-Clic:
+    Mayús-clic:
 
     Elegir de ubicaciones de salida predeterminadas
   de_de: >-
@@ -44,12 +51,12 @@ tooltip:
     ausgewählten Bauteillisten in CSV Dateien exportiert. CSV Dateien
     sind Textdateien, wobei die Werte mit Kommas voneinander getrennt sind.
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Es erscheint ein Dialog in dem man häufig genutzte Speichereorte auswählen kann,  z.B. Desktop, Projektspeicherort, Downloads usw. Zudem kann man angeben,  ob die CSV Datei nach dem Speichern geöffnet werden soll und ob die Kopfzeile  übertragen werden soll.
   pt_br: >-
     Exporta tabelas selecionadas para arquivos CSV
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     
     Escolher locais de saída padrão

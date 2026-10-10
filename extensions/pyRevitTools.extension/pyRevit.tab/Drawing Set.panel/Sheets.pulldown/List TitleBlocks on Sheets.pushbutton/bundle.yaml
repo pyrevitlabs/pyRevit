@@ -8,13 +8,43 @@ title:
   de_de: Liste alle Planköpfe auf Plänen auf ●
   pt_br: Listar/Selecionar Margens e Carimbos em Folhas ●
 tooltip:
-  en_us: Lists title blocks on selected sheets for review or selection
-  ko: 검토 또는 선택을 위해 선택한 시트의 표제란을 나열합니다
-  fr_fr: >-
-    Répertorie les cartouches sur les feuilles sélectionnées pour examen ou
-    sélection
-  ru: Показывает основные надписи на выделенных листах для просмотра или выделения.
-  chinese_s: 列出选定图纸上的标题栏以供检查或选择
-  es_es: Lista los bloques de título en las hojas seleccionadas para revisión o selección
-  de_de: Listet alle Planköpfe von ausgewählten Plänen auf, um sie zu überprüfen oder auszuwählen
-  pt_br: Lista margens e carimbos nas folhas selecionadas para revisão ou seleção
+  en_us: |-
+    Choose sheets and list their titleblocks with links for review or selection.
+
+    Shift-click:
+    Skip the sheet picker and select titleblocks for the currently selected sheets.
+  ko: |-
+    검토 또는 선택을 위해 선택한 시트의 표제란을 나열합니다.
+
+    Shift 키를 누르고 클릭:
+    시트 선택 대화상자를 건너뛰고 현재 선택한 시트의 표제란을 선택합니다.
+  fr_fr: |-
+    Répertorie les cartouches des feuilles sélectionnées pour examen ou sélection.
+
+    Maj+clic :
+    Ignorer la sélection des feuilles et sélectionner les cartouches des feuilles déjà sélectionnées.
+  ru: |-
+    Показывает основные надписи на выбранных листах для просмотра или выделения.
+
+    Щелчок с удержанием клавиши Shift:
+    Пропустить выбор листов и выбрать основные надписи на уже выбранных листах.
+  chinese_s: |-
+    列出选定图纸上的标题栏以供检查或选择。
+
+    按住 Shift 键单击：
+    跳过图纸选择对话框，选择当前已选图纸上的标题栏。
+  es_es: |-
+    Lista los bloques de título de las hojas seleccionadas para revisarlos o seleccionarlos.
+
+    Mayús-clic:
+    Omitir el selector de hojas y seleccionar los bloques de título de las hojas ya seleccionadas.
+  de_de: |-
+    Listet die Planköpfe der ausgewählten Pläne zur Prüfung oder Auswahl auf.
+
+    Bei gedrückter Umschalttaste klicken:
+    Die Planauswahl überspringen und Planköpfe der bereits ausgewählten Pläne auswählen.
+  pt_br: |-
+    Lista as margens e os carimbos das folhas selecionadas para revisão ou seleção.
+
+    Clique mantendo a tecla Shift pressionada:
+    Ignorar a seleção de folhas e selecionar as margens e os carimbos das folhas já selecionadas.

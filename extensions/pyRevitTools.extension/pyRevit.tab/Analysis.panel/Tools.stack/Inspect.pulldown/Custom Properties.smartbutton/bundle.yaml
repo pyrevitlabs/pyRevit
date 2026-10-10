@@ -8,20 +8,21 @@ title:
   de_de: Benutzerdefinierte Eigenschaften
   pt_br: Propriedades personalizadas
 tooltip:
-  en_us: >-
-    Toggle the Custom Properties dockable pane to inspect and edit
-    parameters of the selected Revit element.
+  en_us: |-
+    Toggle the Custom Properties pane to inspect and edit parameters of the selected Revit element.
 
-    Shift-Click:
+    Shift-click:
+    Configure tracked parameters and whether the pane opens at startup.
+  ko: |-
+    사용자 지정 속성 창을 켜거나 끄고 선택한 Revit 요소의 매개변수를 확인하거나 편집합니다.
 
-    Open configuration to add or remove tracked parameters and
-    enable or disable the pane on startup.
-  ko: 사용자 지정 속성 도킹 창을 전환하여 검사 및 편집합니다
+    Shift 키를 누르고 클릭:
+    추적할 매개변수와 시작 시 창을 열지 여부를 설정합니다.
   fr_fr: >-
     Afficher/masquer le panneau Propriétés personnalisées pour inspecter
     et modifier les paramètres de l'élément Revit sélectionné.
 
-    Shift-Click:
+    Maj+clic :
 
     Ouvrir la configuration pour ajouter ou supprimer des paramètres
     suivis et activer ou désactiver le panneau au démarrage.
@@ -29,21 +30,20 @@ tooltip:
     Переключить панель «Свойства элемента» для просмотра и
     редактирования параметров выбранного элемента Revit.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Открыть конфигурацию для добавления или удаления отслеживаемых
     параметров и включения или отключения панели при запуске.
-  chinese_s: >-
+  chinese_s: |-
     切换自定义属性停靠面板，检查和编辑选定 Revit 元素的参数。
 
-    Shift-Click:
-
+    按住 Shift 键单击：
     打开配置以添加或删除跟踪参数，并启用或禁用启动时的面板。
   es_es: >-
     Mostrar/ocultar el panel Propiedades personalizadas para inspeccionar
     y editar los parámetros del elemento Revit seleccionado.
 
-    Shift-Click:
+    Mayús-clic:
 
     Abrir la configuración para agregar o quitar parámetros rastreados
     y habilitar o deshabilitar el panel al inicio.
@@ -52,7 +52,7 @@ tooltip:
     ein-/ausblenden, um Parameter des ausgewählten Revit-Elements
     zu inspizieren und zu bearbeiten.
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Konfiguration öffnen, um nachverfolgte Parameter hinzuzufügen
     oder zu entfernen und das Fenster beim Start zu aktivieren
@@ -61,7 +61,7 @@ tooltip:
     Mostrar/ocultar o painel Propriedades Personalizadas para inspecionar
     e editar os parâmetros do elemento Revit selecionado.
 
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
 
     Abrir configuração para adicionar ou remover parâmetros rastreados
     e habilitar ou desabilitar o painel na inicialização.

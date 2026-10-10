@@ -8,12 +8,44 @@ title:
   de_de: Umummerieren ●
   pt_br: Renumerar ●
 tooltip:
-  en_us: ReNumber numbered elements in order of selection. Shift-Click to choose duplicate handling (Alert, Skip, or Sweep).
-  ko: 선택 순서대로 번호가 매겨진 요소 재번호 지정. Shift+클릭으로 중복 처리 방식 선택(알림, 건너뜀, 순차 처리).
-  fr_fr: Renuméroter les éléments dans l'ordre de sélection. Maj+Clic pour gérer les doublons (Alerte, Ignorer ou Balayer).
-  ru: Перенумеровать пронумерованные элементы в порядке выделения. Shift+Клик для выбора обработки дублей (Предупреждение, Пропуск или Сквозная нумерация).
-  chinese_s: 按照选择顺序，为已编号的图元重新编号。按住 Shift 单击可选择重复项处理方式（提示、跳过或覆盖）。
-  es_es: Renumerar elementos numerados en orden de selección. Shift+Clic para gestionar duplicados (Alerta, Omitir o Barrer).
-  de_de: Elemente werden mit der Reihenfolge der Auswahl neu nummeriert. Shift+Klick zur Behandlung von Duplikaten (Warnung, Überspringen oder Durchnummerieren).
-  pt_br: Renumerar elementos numerados na ordem de seleção. Shift+Clique para lidar com duplicatas (Alerta, Ignorar ou Varrer).
+  en_us: |-
+    Renumber numbered elements in the order you select them.
+
+    Shift-click:
+    Choose how duplicate numbers are handled: alert, skip, or sweep.
+  ko: |-
+    선택한 순서대로 번호가 지정된 요소의 번호를 다시 매깁니다.
+
+    Shift 키를 누르고 클릭:
+    중복 번호 처리 방법(알림, 건너뛰기 또는 연속 번호 매기기)을 선택합니다.
+  fr_fr: |-
+    Renumérote les éléments numérotés dans l'ordre de sélection.
+
+    Maj+clic :
+    Choisir le traitement des doublons : avertir, ignorer ou poursuivre la numérotation.
+  ru: |-
+    Перенумеровывает пронумерованные элементы в порядке выделения.
+
+    Щелчок с удержанием клавиши Shift:
+    Выбрать обработку дубликатов: предупреждать, пропускать или продолжать нумерацию.
+  chinese_s: |-
+    按选择顺序为已编号的图元重新编号。
+
+    按住 Shift 键单击：
+    选择重复编号的处理方式：警告、跳过或继续编号。
+  es_es: |-
+    Renumera los elementos numerados en el orden de selección.
+
+    Mayús-clic:
+    Elegir cómo tratar los números duplicados: avisar, omitir o continuar la numeración.
+  de_de: |-
+    Nummeriert Elemente in der Reihenfolge der Auswahl neu.
+
+    Bei gedrückter Umschalttaste klicken:
+    Festlegen, wie doppelte Nummern behandelt werden: warnen, überspringen oder fortlaufend nummerieren.
+  pt_br: |-
+    Renumera elementos numerados na ordem de seleção.
+
+    Clique mantendo a tecla Shift pressionada:
+    Escolher como lidar com números duplicados: alertar, ignorar ou continuar a numeração.
 author: '{{author}}'

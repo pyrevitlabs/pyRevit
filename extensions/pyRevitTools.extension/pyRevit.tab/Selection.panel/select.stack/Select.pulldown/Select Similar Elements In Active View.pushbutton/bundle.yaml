@@ -8,21 +8,22 @@ title:
   de_de: Ähnliche Elemente in der aktiven Ansicht auswählen ●
   pt_br: Selecionar Elementos Similares na Vista Ativa ●
 tooltip:
-  en_us: >-
-    Selects elements similar to the currently
+  en_us: |-
+    Select elements similar to the currently selected elements in the active view.
 
-    selected elements in the active view
+    Shift-click:
+    Search the whole project instead of only the active view.
+  ko: |-
+    활성 뷰에서 현재 선택한 요소와 유사한 요소를 선택합니다.
 
-    Shift-Click :
-
-    select in whole project
-  ko: 현재와 유사한 요소를 선택합니다
+    Shift 키를 누르고 클릭:
+    활성 뷰 대신 전체 프로젝트에서 검색합니다.
   fr_fr: >-
     Sélectionne des éléments similaires aux éléments
 
     actuels sélectionnés dans la vue active
 
-    Shift-Click :
+    Maj+clic :
 
     sélectionner dans l'ensemble du projet
   ru: >-
@@ -30,24 +31,24 @@ tooltip:
 
     выделенных элементов в текущем виде.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Выделяет во всем проекте.
   chinese_s: "在活动视图中，选择与当前选定图元类似的图元
 
-    Shift+单击：
+    按住 Shift 键单击：
 
     在整个项目中选择类似图元"
   es_es: >-
     Selecciona elementos similares a los elementos actualmente seleccionados en la vista activa
 
-    Shift-Clic:
+    Mayús-clic:
 
     seleccionar en todo el proyecto
   de_de: >-
     Es werden in der aktiven Ansicht die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind. 
 
-    Shift-Click :
+    Bei gedrückter Umschalttaste klicken:
 
     Es werden im gesamten Modell die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind.
   pt_br: >-
@@ -55,7 +56,7 @@ tooltip:
     
     atualmente selecionados na vista ativa
     
-    Shift-Clique :
+    Clique mantendo a tecla Shift pressionada:
     
     selecionar em todo o projeto
 context: selection

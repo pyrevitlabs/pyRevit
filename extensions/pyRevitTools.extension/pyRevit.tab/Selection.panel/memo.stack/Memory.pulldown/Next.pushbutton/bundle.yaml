@@ -8,41 +8,43 @@ title:
   de_de: Nächstes Element im Speicher wählen ●
   pt_br: Próximo ●
 tooltip:
-  en_us: >-
-    Select next element in selection memory.
+  en_us: |-
+    Select the next element in selection memory. A normal click advances one element.
 
-    Click +1
+    Shift-click:
+    Advance ten elements in selection memory.
+  ko: |-
+    선택 메모리에서 다음 요소를 선택합니다. 일반 클릭은 한 요소씩 이동합니다.
 
-    Shift+Click +10
-  ko: 선택 메모리에서 다음 요소를 선택합니다.
-  fr_fr: >-
-    Sélectionnez l'élément suivant dans la mémoire de sélection.
+    Shift 키를 누르고 클릭:
+    선택 메모리에서 열 요소씩 이동합니다.
+  fr_fr: |-
+    Sélectionne l'élément suivant dans la mémoire de sélection. Un clic avance d'un élément.
 
-    Cliquez sur +1
+    Maj+clic :
+    Avancer de dix éléments dans la mémoire de sélection.
+  ru: |-
+    Выбирает следующий элемент в памяти выбора. Обычный щелчок перемещает на один элемент.
 
-    Shift+Clic +10
-  ru: >-
-    Выбрать следующий элемент в памяти выбора.
+    Щелчок с удержанием клавиши Shift:
+    Перейти на десять элементов вперёд в памяти выбора.
+  chinese_s: |-
+    选择选择记忆中的下一个图元。普通单击向前移动一个图元。
 
-    Click +1
-    Shift+Click +10
-  chinese_s: "在选择内存中选择下一个图元。\n单击：+1\nShift+单击：+10"
-  es_es: >-
-    Seleccionar siguiente elemento en la memoria de selección.
+    按住 Shift 键单击：
+    在选择记忆中向前移动十个图元。
+  es_es: |-
+    Selecciona el siguiente elemento de la memoria de selección. Un clic avanza un elemento.
 
-    Clic +1
+    Mayús-clic:
+    Avanzar diez elementos en la memoria de selección.
+  de_de: |-
+    Wählt das nächste Element im Auswahlverlauf aus. Ein normaler Klick geht ein Element weiter.
 
-    Shift+Clic +10
-  de_de: >-
-    Wählt das nächste Element im Speicher aus
+    Bei gedrückter Umschalttaste klicken:
+    Im Auswahlverlauf zehn Elemente weitergehen.
+  pt_br: |-
+    Seleciona o próximo elemento na memória de seleção. Um clique normal avança um elemento.
 
-    Click +1
-
-    Shift+Click +10
-    Wählt das 10. Element im Speicher aus
-  pt_br: >-
-    Selecionar próximo elemento na memória de seleção.
-    
-    Clique +1
-    
-    Shift-Clique +10
+    Clique mantendo a tecla Shift pressionada:
+    Avançar dez elementos na memória de seleção.

@@ -29,43 +29,45 @@ title:
     
     Workset
 tooltip:
-  en_us: >-
-    Sets the active workset from the selection.
+  en_us: |-
+    Set the active workset based on the selection.
 
-    Shift + Click
+    Shift-click:
+    Configure whether to set the workset, check out elements, set or show the workplane, and set the phase.
+  ko: |-
+    선택 항목을 기준으로 활성 작업 세트를 설정합니다.
 
-    Can be configured to also set Workplane to the elements schedule level, Phase of current View.
-  ko: 선택 항목에서 활성 워크셋을 설정합니다.
-  fr_fr: >-
-    Rend le sous-projet de la sélection actif.
+    Shift 키를 누르고 클릭:
+    작업 세트 설정, 요소 체크아웃, 작업 기준면 설정 또는 표시, 단계 설정 방식을 구성합니다.
+  fr_fr: |-
+    Définit le sous-projet actif à partir de la sélection.
 
-    Shift + Clic
+    Maj+clic :
+    Configurer la définition du sous-projet, l'emprunt des éléments, le réglage ou l'affichage du plan de travail et la phase.
+  ru: |-
+    Устанавливает текущий рабочий набор на основе выбранных элементов.
 
-    Pour configurer le plan de travail selon le niveau de l'élément dans le tableau, et la phase de la vue active.
-  ru: >-
-    Устанавливает текущий рабочий набор из выделения.
+    Щелчок с удержанием клавиши Shift:
+    Настроить рабочий набор, заимствование элементов, установку или отображение рабочей плоскости и фазу.
+  chinese_s: |-
+    根据所选内容设置活动工作集。
 
-    Shift + Click
+    按住 Shift 键单击：
+    配置工作集设置、借用图元、设置或显示工作平面以及设置阶段。
+  es_es: |-
+    Establece el área de trabajo activa a partir de la selección.
 
-    Может также настроить рабочую плоскость по уровню спецификации элемента и фазу текущего вида.
-  chinese_s: "根据选择来设置活动工作集\nShift + 单击：\n可配置为同时将工作平面设置为图元的标高，并匹配当前视图的阶段。"
-  es_es: >-
-    Establece el área de trabajo activa desde la selección.
+    Mayús-clic:
+    Configurar si se establece el área de trabajo, se toman prestados elementos, se establece o muestra el plano de trabajo y se define la fase.
+  de_de: |-
+    Legt anhand der Auswahl den aktiven Arbeitsbereich (Workset) fest.
 
-    Shift + Clic
+    Bei gedrückter Umschalttaste klicken:
+    Festlegen, ob der Arbeitsbereich gesetzt, Elemente ausgeliehen, die Arbeitsebene gesetzt oder angezeigt und die Phase festgelegt wird.
+  pt_br: |-
+    Define o workset ativo com base na seleção.
 
-    Se puede configurar para también establecer el Plano de trabajo al nivel del programa de elementos, Fase de la vista actual.
-  de_de: >-
-    In einem Auswahldialog kann der aktive Bearbeitungsbereich (Workset) festgelegt werden.
-
-    Shift + Klick
-
-    Optional kann auch die Arbeitsebene entsprechend dem Ebenenparameter und die Phase der aktuellen Ansicht gesetzt werden.
-  pt_br: >-
-    Define o workset ativo a partir da seleção.
-    
-    Shift + Clique
-    
-    Pode ser configurado para também definir o Plano de Trabalho para o nível da tabela de elementos, Fase da Vista atual.
+    Clique mantendo a tecla Shift pressionada:
+    Configurar se o workset será definido, elementos serão emprestados, o plano de trabalho será definido ou exibido e a fase será definida.
 author: 'Jean-Marc Couffin, Wurschdhaud (extra functionality)'
 contact: 'https://github.com/jmcouffin, https://github.com/Wurschdhaud'

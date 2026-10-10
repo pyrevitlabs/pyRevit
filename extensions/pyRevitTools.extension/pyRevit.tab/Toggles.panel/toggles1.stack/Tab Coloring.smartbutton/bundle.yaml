@@ -8,16 +8,44 @@ title:
   de_de: Tabs einfärben ●
   pt_br: Colorir Abas ●
 tooltip:
-  en_us: Does its best at visually separating open documents
-  ko: 열린 문서를 시각적으로 구분하기 위해 최선을 다합니다
-  fr_fr: Améliore la distinction entre les documents ouverts
-  ru: Делает все возможное для визуального разделения открытых документов.
-  chinese_s: 尽最大努力通过视觉区分打开的文档
-  es_es: Does its best at visually separating open documents
-  de_de: >-
-    Die Einstellungen für dieses Werkzeug befinden sich in den pyRevit Einstellungen unter
-    UI/UX -> Tab coloring.  Mit diesem Befehl wird die Einfärbung aktiviert bzw deaktiviert. Die Tabs werden
-    sortiert nach Projekt und Familie eingefärbt. Das verbessert den Überblick wenn man
-    mehrere Projekte gleichzeitig geöffnet hat.
-  pt_br: Faz o melhor possivel para separar visualmente os documentos abertos
+  en_us: |-
+    Toggle document coloring to help distinguish open documents.
+
+    Shift-click:
+    List the document color assignments or reset the document-coloring theme.
+  ko: |-
+    열린 문서를 구분하기 위해 문서 탭 색상을 켜거나 끕니다.
+
+    Shift 키를 누르고 클릭:
+    문서별 색상 할당을 확인하거나 탭 색상 테마를 초기화합니다.
+  fr_fr: |-
+    Active ou désactive la coloration des onglets pour distinguer les documents ouverts.
+
+    Maj+clic :
+    Afficher les couleurs attribuées aux documents ou réinitialiser le thème de coloration.
+  ru: |-
+    Включает или отключает цветовое оформление вкладок для различения открытых документов.
+
+    Щелчок с удержанием клавиши Shift:
+    Показать назначенные документам цвета или сбросить тему окраски вкладок.
+  chinese_s: |-
+    切换文档标签着色，以便区分已打开的文档。
+
+    按住 Shift 键单击：
+    列出文档颜色分配或重置标签着色主题。
+  es_es: |-
+    Activa o desactiva el color de las pestañas para distinguir los documentos abiertos.
+
+    Mayús-clic:
+    Mostrar los colores asignados a los documentos o restablecer el tema de coloración.
+  de_de: |-
+    Schaltet die Dokumentfärbung ein oder aus, damit geöffnete Dokumente leichter zu unterscheiden sind.
+
+    Bei gedrückter Umschalttaste klicken:
+    Farbzuteilungen der Dokumente auflisten oder das Dokumentfärbungsthema zurücksetzen.
+  pt_br: |-
+    Ativa ou desativa a coloração dos documentos para ajudar a distinguir os documentos abertos.
+
+    Clique mantendo a tecla Shift pressionada:
+    Listar as cores atribuídas aos documentos ou redefinir o tema de coloração.
 context: zero-doc

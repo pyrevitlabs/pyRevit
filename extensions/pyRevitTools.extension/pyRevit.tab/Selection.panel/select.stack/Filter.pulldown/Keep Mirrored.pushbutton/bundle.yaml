@@ -8,20 +8,21 @@ title:
   de_de: Nur gespiegelte Elemente in aktueller Auswahl belassen ●
   pt_br: Manter Espelhados ●
 tooltip:
-  en_us: >-
-    Keep only mirrored elements in current selection.
-    If nothing is selected, pick a region to filter from.
+  en_us: |-
+    Keep only mirrored elements in the current selection. If nothing is selected, pick a region to filter.
 
-    Shift-Click:
+    Shift-click:
+    Keep only elements that are not mirrored.
+  ko: |-
+    현재 선택 항목에서 미러된 요소만 유지합니다. 선택 항목이 없으면 필터링할 영역을 선택합니다.
 
-    Keep only not-mirrored elements.
-    If nothing is selected, pick a region to filter from.
-  ko: 현재 선택 항목에서 미러된 요소만 유지합니다. 선택 항목이 없으면 영역을 지정합니다.
+    Shift 키를 누르고 클릭:
+    미러되지 않은 요소만 유지합니다.
   fr_fr: >-
     Conserver uniquement les éléments symétrisés dans la sélection actuelle.
     Si rien n'est sélectionné, délimitez une zone à filtrer.
 
-    Shift-Clic :
+    Maj+clic :
 
     Conserver uniquement les non-symétrisés.
     Si rien n'est sélectionné, délimitez une zone à filtrer.
@@ -29,7 +30,7 @@ tooltip:
     Удерживает только отзеркаленные элементы в текущем выделении.
     Если ничего не выбрано, выберите область для фильтрации.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Удержать только не отзеркаленные элементы.
     Если ничего не выбрано, выберите область для фильтрации.
@@ -37,7 +38,7 @@ tooltip:
     在当前选择中仅保留已镜像的图元。
     若未选择任何内容，则框选区域进行过滤。
 
-    Shift+单击：
+    按住 Shift 键单击：
 
     仅保留未镜像的图元。
     若未选择任何内容，则框选区域进行过滤。
@@ -45,7 +46,7 @@ tooltip:
     Mantener solo elementos reflejados en la selección actual.
     Si no hay nada seleccionado, delimite una región para filtrar.
 
-    Shift-Clic:
+    Mayús-clic:
 
     Mantener solo no reflejados.
     Si no hay nada seleccionado, delimite una región para filtrar.
@@ -55,7 +56,7 @@ tooltip:
     der aktuellen Auswahl entfernt.
     Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Die aktuelle Elementauswahl wird so vermindert, dass nur NICHT-gespiegelte
     Elemente in der Auswahl verbleiben.
@@ -64,7 +65,7 @@ tooltip:
     Manter apenas elementos espelhados na seleção atual.
     Se nada estiver selecionado, selecione uma região para filtrar.
 
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
 
     Manter apenas não espelhados.
     Se nada estiver selecionado, selecione uma região para filtrar.

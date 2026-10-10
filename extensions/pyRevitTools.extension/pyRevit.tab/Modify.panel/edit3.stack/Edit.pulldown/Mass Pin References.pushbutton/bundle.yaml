@@ -8,35 +8,43 @@ title:
   de_de: Referenzen massenhaft (ent-)sperren ●
   pt_br: Fixar/Desafixar Referências em Massa ●
 tooltip:
-  en_us: |
-    Allows you to select one or more categories (e.g., Grids, Levels, Links) and pin all unpinned instances in the model.
+  en_us: |-
+    Choose categories and pin all unpinned instances in those categories.
 
-    Shift-Click:
-    Unpins all pinned instances in the selected categories.
-  ko: "하나 이상의 카테고리(예: 그리드, 레벨, 링크)를 선택하여 모델의 모든 고정되지 않은 인스턴스를 고정합니다. Shift+클릭: 선택한 카테고리의 모든 고정된 인스턴스의 고정을 해제합니다."
+    Shift-click:
+    Unpin pinned instances in the selected categories.
+  ko: |-
+    하나 이상의 카테고리(예: 그리드, 레벨, 링크)를 선택하여 해당 카테고리의 고정되지 않은 인스턴스를 모두 고정합니다.
+
+    Shift 키를 누르고 클릭:
+    선택한 카테고리의 고정된 인스턴스를 모두 고정 해제합니다.
   fr_fr: |
     Permet de sélectionner une ou plusieurs catégories (ex : grilles, niveaux, liens) et d’épingler toutes les instances non épinglées dans le modèle.
 
-    Shift-Click:
+    Maj+clic :
     Désépingler toutes les instances épinglées dans les catégories sélectionnées.
   ru: |
     Позволяет выбрать одну или несколько категорий (например, оси, уровни, связи) и закрепить все незакреплённые элементы в модели.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
     Открепляет все закреплённые элементы в выбранных категориях.
-  chinese_s: "允许您选择一个或多个类别（例如，轴网、标高、链接），并锁定模型中所有未锁定的实例\nShift+单击：\n解锁所选类别中所有已锁定的实例"
+  chinese_s: |-
+    选择一个或多个类别（例如轴网、标高或链接），并锁定这些类别中所有未锁定的实例。
+
+    按住 Shift 键单击：
+    解锁所选类别中所有已锁定的实例。
   es_es: |
     Le permite seleccionar una o más categorías (por ejemplo, Cuadrículas, Niveles, Enlaces) y fijar todas las instancias no fijadas en el modelo.
 
-    Shift-Clic:
+    Mayús-clic:
     Desfija todas las instancias fijadas en las categorías seleccionadas.
   de_de: |
     Ermöglicht die Auswahl einer oder mehrerer Kategorien (z. B. Raster, Ebenen, Verknüpfungen), um alle nicht angehefteten Elemente im Modell anzuheften.
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
     Hebt die Anheftung aller angehefteten Elemente in den ausgewählten Kategorien auf.
   pt_br: >-
     Permite selecionar uma ou mais categorias (ex.: Eixos, Níveis, Vínculos) e fixar todas as instâncias não fixadas no modelo.
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     Desafixa todas as instâncias fixadas nas categorias selecionadas.
