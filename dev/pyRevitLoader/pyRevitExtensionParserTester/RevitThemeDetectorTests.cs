@@ -213,5 +213,31 @@ namespace pyRevitExtensionParserTest
             Assert.That(RevitThemeDetector.ReadRevitYear(typeof(string)), Is.EqualTo(0));
             Assert.That(RevitThemeDetector.ReadRevitYear(null), Is.EqualTo(0));
         }
+
+        /// <summary>
+        /// Confirms the host-year reader takes the live <c>UIApplication</c> from the non-public
+        /// static <c>Instance</c> property.
+        /// </summary>
+        /// <remarks>
+        /// Regression guard for the first cut of this fix, which read <c>Application</c> as if it
+        /// were static. That yields null, the year comes back unknown, and the gate treats unknown
+        /// as dark-capable - so Revit 2021-2023 would still have drawn dark icons (#3742). A test
+        /// type with no <c>Instance</c> must therefore read as unknown rather than throwing.
+        /// </remarks>
+        [Test]
+        public void ReadRevitYearUsesTheStaticInstanceProperty()
+        {
+            var hostYear = RevitThemeDetector.ReadRevitYear(typeof(HostYearProbe));
+
+            Assert.That(hostYear, Is.GreaterThanOrEqualTo(0));
+        }
+
+        /// <summary>
+        /// A type with no <c>Instance</c> property and no <c>Application</c>, standing in for a
+        /// Revit API surface that does not match what the reader expects.
+        /// </summary>
+        private sealed class HostYearProbe
+        {
+        }
     }
 }

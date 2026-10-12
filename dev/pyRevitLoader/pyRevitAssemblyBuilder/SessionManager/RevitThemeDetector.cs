@@ -176,16 +176,34 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
+        /// <summary>
+        /// Reads the host Revit year by walking the non-public static
+        /// <c>UIApplication.Instance.Application.VersionNumber</c> reflectively.
+        /// </summary>
+        /// <remarks>
+        /// <c>UIApplication.Application</c> is an instance property, and <c>Instance</c> is the only
+        /// static route to a live instance; reading <c>Application</c> directly as a static yields
+        /// null, and an unknown year is treated as dark-capable, which is exactly the regression
+        /// this gate prevents (#3742). Returns <c>0</c> when any step is unavailable.
+        /// </remarks>
+        /// <param name="revitUiApplicationType">The running <c>Autodesk.Revit.UI.UIApplication</c> type.</param>
         internal static int ReadRevitYear(Type revitUiApplicationType)
         {
             try
             {
-                var applicationProperty = revitUiApplicationType?.GetProperty(
-                    "Application",
-                    BindingFlags.Public | BindingFlags.Static);
-                var application = applicationProperty?.GetValue(null);
-                var versionProperty = application?.GetType().GetProperty("VersionNumber");
-                var versionNumber = versionProperty?.GetValue(application)?.ToString();
+                var instanceProperty = revitUiApplicationType?.GetProperty(
+                    "Instance",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                var uiApplication = instanceProperty?.GetValue(null);
+                var application = uiApplication
+                    ?.GetType()
+                    .GetProperty("Application")
+                    ?.GetValue(uiApplication);
+                var versionNumber = application
+                    ?.GetType()
+                    .GetProperty("VersionNumber")
+                    ?.GetValue(application)
+                    ?.ToString();
                 return int.TryParse(versionNumber, out var year) ? year : 0;
             }
             catch (Exception)
