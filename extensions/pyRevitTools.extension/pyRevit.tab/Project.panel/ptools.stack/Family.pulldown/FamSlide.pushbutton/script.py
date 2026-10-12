@@ -20,6 +20,8 @@ import famslide_actions
 
 logger = script.get_logger()
 
+FAMSLIDE_WINDOW_KEY = "PYREVIT_FAMSLIDE_WINDOW"
+
 # Path to the base XAML file, used to locate this bundle's
 # FamSlideWindow.ResourceDictionary.<locale>.xaml files for translation
 # lookups (see applocales.get_locale_string_from_xaml).
@@ -417,6 +419,7 @@ class FamSlideWindow(forms.WPFWindow):
         events.stop_events()
         script.save_window_position(self)
         ui = None
+        script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
 
     # --- controls that must hand off to Revit --------------------------------
     def on_rename_click(self, sender, args):
@@ -658,18 +661,6 @@ class FamSlideWindow(forms.WPFWindow):
         revit.uidoc.RefreshActiveView()
 
 
-# ---------------------------------------------------------------------
-# Reactive refresh: fires on parameter edits, undo/redo, and switching
-# between open family documents (view-activated covers window
-# switches). Runs in a valid Revit API context, so it is safe for
-# ui.refresh_from_document() to touch Revit data here.
-# ---------------------------------------------------------------------
-@events.handle("doc-changed", "view-activated", "doc-opened")
-def famslide_on_revit_event(sender, args):
-    if ui is not None:
-        ui.refresh_from_document()
-
-
 def _gate_family_editor():
     doc = revit.doc
     if doc is None:
@@ -679,12 +670,16 @@ def _gate_family_editor():
 
 
 if __name__ == "__main__":
+    ui = script.get_envvar(FAMSLIDE_WINDOW_KEY)
     if ui is not None:
-        # already open from a previous click under the persistent
-        # engine - just bring it forward instead of opening a second
-        # copy (which would double-subscribe the doc-changed hook).
         ui.Activate()
     else:
         _gate_family_editor()
         ui = FamSlideWindow("FamSlideWindow.xaml")
         ui.show(modal=False)
+        script.set_envvar(FAMSLIDE_WINDOW_KEY, ui)
+
+        @events.handle("doc-changed", "view-activated", "doc-opened")
+        def famslide_on_revit_event(sender, args):
+            if ui is not None:
+                ui.refresh_from_document()
