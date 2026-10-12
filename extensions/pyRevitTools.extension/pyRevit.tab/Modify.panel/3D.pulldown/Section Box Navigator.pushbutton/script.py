@@ -3,7 +3,7 @@
 """Section Box Navigator - Modeless window for section box navigation."""
 
 from pyrevit import revit, script, forms, EXEC_PARAMS
-from pyrevit.framework import System, Controls, Media
+from pyrevit.framework import System, Controls, Media, Windows
 from pyrevit.revit import events, units
 from pyrevit import DB
 from pyrevit.coreutils import applocales
@@ -1987,7 +1987,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 if __name__ == "__main__":
     sb_form = script.get_envvar(SBNAV_WINDOW_KEY)
     if sb_form is not None:
-        sb_form.Activate()
+        if sb_form.IsLoaded:
+            if sb_form.WindowState == Windows.WindowState.Minimized:
+                sb_form.WindowState = Windows.WindowState.Normal
+            sb_form.Activate()
     else:
         _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
 
