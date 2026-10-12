@@ -199,7 +199,7 @@ namespace PyRevitLoader
             if (_uiApplication == null)
                 return;
 
-            _pendingDarkTheme = string.Equals(themeName, "Dark", StringComparison.OrdinalIgnoreCase);
+            _pendingDarkTheme = RevitThemeDetector.IsDarkRibbonTheme(themeName);
             if (_themeRefreshPending)
                 return;
 

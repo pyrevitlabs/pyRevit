@@ -17,6 +17,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// Important: the resolved theme is cached for the lifetime of the process, not per instance,
     /// so every instance observes the same value until <see cref="ClearCache"/> runs.
     /// </para>
+    /// <para>
+    /// Note: Revit 2021-2023 expose <c>UIThemeManager.CurrentTheme</c> and report "Dark", but their
+    /// ribbon button bar stays light, so <see cref="IconManager"/> must keep the light assets there
+    /// or the icons become invisible (#3742). The host year is read once from the running host and
+    /// gates every consumer.
+    /// </para>
     /// </remarks>
     public class RevitThemeDetector
     {
@@ -25,28 +31,43 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string DarkThemeName = "Dark";
         private const string LightThemeName = "Light";
 
+        /// <summary>
+        /// First Revit year whose ribbon button bar is dark when the host theme is Dark.
+        /// </summary>
+        public const int FirstDarkRibbonYear = 2024;
+
         private readonly ILogger _logger;
         private readonly Func<string> _themeNameReader;
+        private readonly Func<int> _revitYearReader;
         private static bool? _cachedTheme;
         private static bool _themeDetected;
+        private static int? _cachedRevitYear;
 
         public RevitThemeDetector(ILogger logger)
-            : this(logger, ReadCurrentThemeName)
+            : this(logger, ReadCurrentThemeName, null)
         {
         }
 
-        internal RevitThemeDetector(ILogger logger, Func<string> themeNameReader)
+        internal RevitThemeDetector(ILogger logger, Func<string> themeNameReader, Func<int> revitYearReader = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _themeNameReader = themeNameReader ?? throw new ArgumentNullException(nameof(themeNameReader));
+            _revitYearReader = revitYearReader;
         }
 
         /// <summary>
         /// Resolves the running host's UI theme, treating a host with no theme API and a failed
         /// lookup alike as light rather than propagating either.
         /// </summary>
+        /// <remarks>
+        /// Returns <c>false</c> unconditionally on Revit 2021-2023: those hosts report "Dark" but keep
+        /// a light ribbon, so dark assets would be invisible (#3742).
+        /// </remarks>
         public bool IsDarkTheme()
         {
+            if (!SupportsDarkRibbon(_revitYearReader != null ? _revitYearReader() : HostRevitYear()))
+                return Cache(false);
+
             if (_themeDetected)
                 return _cachedTheme ?? false;
 
@@ -62,6 +83,48 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Error($"Error detecting Revit theme: {ex.Message}");
                 return Cache(false);
             }
+        }
+
+        /// <summary>
+        /// Resolves the theme Revit reported into the one pyRevit's ribbon assets should be built
+        /// for, honouring the host-version gate.
+        /// </summary>
+        /// <remarks>
+        /// Used by the loader's live theme-change refresh, which receives a theme name from Revit
+        /// rather than from a detector instance. Returns <c>false</c> on Revit 2021-2023 (#3742).
+        /// </remarks>
+        /// <param name="themeName">Theme name as reported by Revit, for example "Dark" or "Light".</param>
+        /// <returns>Whether pyRevit ribbon assets should use their dark variants.</returns>
+        public static bool IsDarkRibbonTheme(string themeName)
+        {
+            return IsDarkRibbonThemeFor(themeName, HostRevitYear());
+        }
+
+        /// <summary>
+        /// Resolves the theme Revit reported into the one pyRevit's ribbon assets should be built
+        /// for, for an explicit host year.
+        /// </summary>
+        /// <param name="themeName">Theme name as reported by Revit, for example "Dark" or "Light".</param>
+        /// <param name="revitYear">Running Revit year, or <c>0</c> when unknown.</param>
+        /// <returns>Whether pyRevit ribbon assets should use their dark variants.</returns>
+        public static bool IsDarkRibbonThemeFor(string themeName, int revitYear)
+        {
+            if (!SupportsDarkRibbon(revitYear))
+                return false;
+            return string.Equals(themeName, DarkThemeName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Whether the given Revit year renders its ribbon button bar dark under the Dark theme.
+        /// </summary>
+        /// <remarks>
+        /// An unknown year (<c>0</c>) is treated as supporting dark icons, so a host whose version
+        /// cannot be read keeps today's behaviour rather than losing dark icons.
+        /// </remarks>
+        /// <param name="revitYear">Running Revit year, or <c>0</c> when unknown.</param>
+        public static bool SupportsDarkRibbon(int revitYear)
+        {
+            return revitYear <= 0 || revitYear >= FirstDarkRibbonYear;
         }
 
         /// <summary>
@@ -85,6 +148,50 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             _cachedTheme = null;
             _themeDetected = false;
+        }
+
+        /// <summary>
+        /// The running host's Revit year, read once and cached for the process lifetime.
+        /// </summary>
+        /// <remarks>
+        /// The host cannot change version without restarting, so this is deliberately not cleared by
+        /// <see cref="ClearCache"/>. Returns <c>0</c> when the host version cannot be read.
+        /// </remarks>
+        public static int HostRevitYear()
+        {
+            if (!_cachedRevitYear.HasValue)
+                _cachedRevitYear = ReadRevitYearSafe();
+            return _cachedRevitYear.Value;
+        }
+
+        private static int ReadRevitYearSafe()
+        {
+            try
+            {
+                return ReadRevitYear(typeof(Autodesk.Revit.UI.UIApplication));
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        internal static int ReadRevitYear(Type revitUiApplicationType)
+        {
+            try
+            {
+                var applicationProperty = revitUiApplicationType?.GetProperty(
+                    "Application",
+                    BindingFlags.Public | BindingFlags.Static);
+                var application = applicationProperty?.GetValue(null);
+                var versionProperty = application?.GetType().GetProperty("VersionNumber");
+                var versionNumber = versionProperty?.GetValue(application)?.ToString();
+                return int.TryParse(versionNumber, out var year) ? year : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         internal static string ReadCurrentThemeName(Type revitUiApplicationType)
