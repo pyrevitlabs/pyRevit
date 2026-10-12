@@ -1,61 +1,42 @@
 title:
   en_us: |-
     Print
-    Sheets
-  ko: 시트 인쇄
+    Sheets ●
+  ko: 시트 인쇄 ●
   fr_fr: |-
     Imprimer
-    Feuilles
+    Feuilles ●
   ru: |-
     Печатать
-    листы
-  chinese_s: 打印图纸
+    листы ●
+  chinese_s: 打印图纸 ●
   es_es: |-
     Imprimir
-    Hojas
+    Hojas ●
   de_de: |-
     Pläne
-    drucken
+    drucken ●
   pt_br: |-
     Imprimir
-    Folhas
+    Folhas ●
 tooltip:
   en_us: |-
-    Print sheets in order from a sheet index.
+    Print sheets in drawing-index order using the configured print settings.
 
-    Note:
-    When using the `Combine into one file` option
-    in Revit 2022 and earlier,
-    the tool adds non-printable character u'\u200e'
-    (Left-To-Right Mark) at the start of the sheet names
-    to push Revit's internal printing engine to sort
-    the sheets correctly per the drawing index order. 
+    In Revit 2022 and earlier, combining prints into one file adds hidden characters to sheet numbers to preserve print order. Account for these characters when filtering sheet numbers. Add a Project Information parameter named 'Naming Format' to define the default print naming format for this project. Right-click the Naming Format dropdown to copy its name to the clipboard.
 
-    Make sure your drawings indices consider this
-    when filtering for sheet numbers.
+    Shift-click:
+    Remove leftover non-printable characters from sheet numbers.
+  ko: |-
+    시트 인덱스 순서대로 시트를 인쇄합니다. Revit 2022 이하에서 '하나의 파일로 결합'을 사용하면 인쇄 순서를 유지하기 위해 시트 번호 앞에 비인쇄 문자가 추가될 수 있습니다. 시트 번호를 필터링할 때 이를 고려하세요. 프로젝트 정보에 'Naming Format' 매개변수를 추가하면 기본 인쇄 이름 형식을 설정할 수 있습니다.
 
-    Add 'Naming Format' as a Project Information parameter
-    to define the default Print Sheets naming format for this project. The print sheets Naming Format drop down may be right-clicked to copy the name to clipboard.
+    Shift 키를 누르고 클릭:
+    시트 번호에 남아 있는 비인쇄 문자를 제거합니다.
+  fr_fr: |-
+    Imprime les feuilles dans l'ordre de l'index. Dans Revit 2022 et versions antérieures, l'option `Combiner en un seul fichier` ajoute un caractère non imprimable au début des noms de feuille afin que le moteur d'impression respecte l'ordre de l'index. Tenez-en compte lors du filtrage des numéros de feuille. Ajoutez le paramètre « Format de nommage » aux informations du projet pour définir le format de nommage par défaut.
 
-    Shift-Click:
-    Shift-Clicking the tool will remove all
-    non-printable characters from the sheet numbers,
-    in case an error in the tool causes these characters
-    to remain.
-  ko: "시트 인덱스에서 순서대로 시트를 인쇄합니다. 참고: Revit 2022 이하에서 '하나의 파일로 결합' 옵션 사용 시 내부 인쇄 엔진의 올바른 정렬을 위해 시트 번호 앞에 비인쇄 문자가 추가됩니다. 도면 인덱스에서 시트 번호 필터링 시 이 점을 고려하세요. 프로젝트 정보 매개변수로 'Naming Format'을 추가하면 기본 인쇄 명명 형식을 정의할 수 있습니다. Shift+클릭: 오류로 남은 비인쇄 문자를 시트 번호에서 제거합니다."
-  fr_fr: >-
-    Imprimez les feuilles dans l'ordre à partir d'un index de feuille.
-
-
-    Note:
-
-    Lorsque vous utilisez l'option `Combiner en un seul fichier` dans Revit 2022 et versions antérieures, l'outil ajoute un caractère non imprimable u'\u200e' ((Marque de gauche à droite) au début des noms de feuille) pour pousser le moteur d'impression interne de Revit à trier les feuilles correctement selon l'ordre d'index du dessin.
-
-    Assurez-vous que les index de vos dessins tiennent compte de ceci lors du filtrage des numéros de feuille.
-
-    Ajouter un paramètre 'Format de nommage' dans les Informations du projet pour définir le format de nommage par défaut des feuilles de dessin. Le menu déroulant Format de nommage des feuilles de dessin peut être cliqué avec le bouton droit pour copier le nom dans le presse-papiers.
-
-    Shift-Click: Shift-Clicking sur l'outil pour supprimer tous les caractères non-imprimables des numéros de feuilles, en cas d'erreur dans l'outil, cela entraînerait la conservation de ces caractères.
+    Maj+clic :
+    Supprimer les caractères non imprimables restés dans les numéros de feuille.
   ru: >-
     Печатает листы по индексу листа.
 
@@ -65,7 +46,7 @@ tooltip:
 
     Добавьте параметр «Формат именования» в сведения о проекте, чтобы задать формат именования по умолчанию для печати листов. В раскрывающемся списке «Формат именования» можно щёлкнуть правой кнопкой мыши, чтобы скопировать имя в буфер обмена.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Удаляет все непечатаемые символы из номеров листов, если скрипт отработал некорректно.
   chinese_s: "按图纸索引顺序打印图纸。
@@ -80,7 +61,7 @@ tooltip:
 
     在项目信息中添加「命名格式」参数，以定义此项目的默认打印图纸命名格式。可右键单击打印图纸的「命名格式」下拉列表以将名称复制到剪贴板。
 
-    Shift-单击：
+    按住 Shift 键单击：
 
     按住 Shift 键单击此工具，将从图纸编号中移除所有不可打印字符，以防工具出错导致这些字符残留。"
   es_es: |-
@@ -99,8 +80,8 @@ tooltip:
 
     Añada 'Formato de Nombres' como parámetro de Información del Proyecto para definir el formato de nombres por defecto de Imprimir Hojas en este proyecto. El menú desplegable Formato de Nombres se puede hacer clic con el botón derecho para copiar el nombre al portapapeles.
 
-    Shift-Clic:
-    Al hacer Shift-Clic en la herramienta se eliminarán todos
+    Mayús-clic:
+    Al hacer Mayús-Clic en la herramienta se eliminarán todos
     los caracteres no imprimibles de los números de hoja,
     en caso de que un error en la herramienta cause que estos caracteres
     permanezcan.
@@ -120,7 +101,7 @@ tooltip:
 
     Fügen Sie 'Namensformat' als Parameter in den Projektinformationen hinzu, um das Standard-Namensformat für den Druck von Plänen für dieses Projekt zu definieren. Auf die Namensformat-Dropdown-Liste kann mit der rechten Maustaste geklickt werden, um den Namen in die Zwischenablage zu kopieren.
 
-    Shift-Klick:
+    Bei gedrückter Umschalttaste klicken:
     Wenn Sie mit der Umschalttaste auf das Werkzeug klicken, werden alle
     nicht druckbaren Zeichen aus den Plannummern entfernt. Dies ist für den Fall, dass ein 
     Fehler bei der Ausführung dazu führt, dass diese Zeichen im Plan verbleiben.
@@ -141,8 +122,8 @@ tooltip:
     Adicione 'Formato de Nomenclatura' como parâmetro de Informações do Projeto
     para definir o formato de nomenclatura padrão de Imprimir Folhas neste projeto. A lista suspensa Formato de Nomenclatura pode ser clicada com o botão direito para copiar o nome para a área de transferência.
 
-    Shift-Clique:
-    Clicar com Shift na ferramenta removerá todos
+    Clique mantendo a tecla Shift pressionada:
+    Ao clicar na ferramenta mantendo a tecla Shift pressionada, serão removidos todos
     os caracteres não imprimíveis dos números das folhas,
     caso um erro na ferramenta faça com que esses caracteres
     permaneçam.

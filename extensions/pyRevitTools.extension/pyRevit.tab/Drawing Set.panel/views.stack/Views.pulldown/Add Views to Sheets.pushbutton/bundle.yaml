@@ -49,3 +49,5 @@ tooltip:
     
     Escolher vistas de origem da lista em vez da seleção ou vista ativa
 author: 'Dan Mapes'
+context:
+  - doc-project

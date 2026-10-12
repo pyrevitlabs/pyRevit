@@ -1,4 +1,6 @@
-context: selection
+context:
+  - doc-project
+  - selection
 title:
   en_us: Find sheets showing selected element
   ko: 선택한 요소가 표시된 시트 찾기

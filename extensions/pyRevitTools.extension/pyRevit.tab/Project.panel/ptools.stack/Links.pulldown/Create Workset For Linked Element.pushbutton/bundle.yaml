@@ -8,17 +8,45 @@ title:
   de_de: Erstelle Bearbeitungsbereich für verlinktes Element
   pt_br: Criar Workset para Elemento Vinculado
 tooltip:
-  en_us: >-
-    This tool will create a workset for the selected linked element based on its name.  If the model is not workshared, it will be converted into a workshared model. Configurable options: - include all elements instead of only selected ones - apply workset to the element type as well - use custom prefixes
-  ko: "선택한 링크된 요소의 이름을 기반으로 워크셋을 생성합니다. 모델이 공유 작업 모델이 아닌 경우 공유 작업 모델로 변환됩니다. 구성 가능한 옵션: 선택한 요소만 대신 모든 요소 포함, 요소 유형에도 워크셋 적용, 사용자 지정 접두사 사용."
-  fr_fr: >-
-    Cet outil créera un sous-projet (workset) pour l'élément lié sélectionné en fonction de son nom.  Si le modèle n'est pas encore partagé, il sera converti en modèle partagé. Paramètres disponibles : - appliquer à tous les éléments au lieu des seuls sélectionnés - affecter aussi le type d'élément - utiliser des préfixes personnalisés
-  ru: >-
-    Этот инструмент создаст рабочий набор для выбранного связанного элемента на основе его имени.  Если модель не является совместной, она будет преобразована в совместную модель. Настройки позволяют: - обрабатывать все элементы, а не только выбранные - устанавливать рабочий набор также для типа элемента - использовать собственные префиксы
-  chinese_s: 此工具将根据所选链接图元的名称为其创建一个工作集。如果模型不是工作共享模型，它将被转换为工作共享模型。可配置选项包括：- 包含所有图元而非仅所选图元 - 同时将工作集应用于图元类型 - 使用自定义前缀
-  es_es: >-
-    Esta herramienta creará un área de trabajo para el elemento vinculado seleccionado basándose en su nombre. Si el modelo no es compartido, se convertirá en un modelo compartido. Opciones configurables: - incluir todos los elementos en lugar de solo los seleccionados - aplicar el área de trabajo al tipo de elemento también - usar prefijos personalizados
-  de_de: >-
-    Dieses Werkzeug erstellt ein Bearbeitungsbereich für das  ausgewählte verknüpfte Element auf der Grundlage seines Namens.  Wenn das Modell keine Arbeitsteilung verwendet,  wird es in ein Modell mit Arbeitsteilung umgewandelt. Konfiguration für: - alle Elemente anstatt nur gewählte - auch der Typ des Elements wird gesetzt - spezifische Prefixes
-  pt_br: >-
-    Esta ferramenta criará um workset para o elemento vinculado selecionado com base em seu nome. Se o modelo não tiver compartilhamento de trabalho, ele será convertido em um modelo com compartilhamento de trabalho. Opções configuráveis: - incluir todos os elementos em vez de apenas os selecionados - aplicar workset ao tipo de elemento também - usar prefixos personalizados
+  en_us: |-
+    Create a workset for the selected linked element based on its name. The model is made workshared if necessary.
+
+    Shift-click:
+    Configure whether to include all elements, assign worksets to element types, and use custom prefixes.
+  ko: |-
+    선택한 링크 요소의 이름을 기반으로 작업 세트를 만듭니다. 필요한 경우 모델을 작업 공유 모델로 변환합니다.
+
+    Shift 키를 누르고 클릭:
+    모든 요소 포함, 요소 유형에 작업 세트 지정, 사용자 지정 접두사 사용 여부를 설정합니다.
+  fr_fr: |-
+    Crée un sous-projet pour l'élément lié sélectionné à partir de son nom. Le modèle est converti en modèle partagé si nécessaire.
+
+    Maj+clic :
+    Configurer l'inclusion de tous les éléments, l'affectation de sous-projets aux types d'éléments et l'utilisation de préfixes personnalisés.
+  ru: |-
+    Создаёт рабочий набор для выбранного связанного элемента на основе его имени. При необходимости модель становится совместной.
+
+    Щелчок с удержанием клавиши Shift:
+    Настроить обработку всех элементов, назначение рабочих наборов типам элементов и использование собственных префиксов.
+  chinese_s: |-
+    根据所选链接图元的名称创建工作集。必要时将模型转换为工作共享模型。
+
+    按住 Shift 键单击：
+    配置是否包含所有图元、为图元类型指定工作集以及使用自定义前缀。
+  es_es: |-
+    Crea un área de trabajo para el elemento vinculado seleccionado basándose en su nombre. Si es necesario, convierte el modelo en un modelo compartido.
+
+    Mayús-clic:
+    Configurar si se incluyen todos los elementos, se asignan áreas de trabajo a los tipos de elemento y se usan prefijos personalizados.
+  de_de: |-
+    Erstellt anhand des Namens einen Arbeitsbereich für das ausgewählte verknüpfte Element. Bei Bedarf wird das Modell in ein workshared-Modell umgewandelt.
+
+    Bei gedrückter Umschalttaste klicken:
+    Festlegen, ob alle Elemente einbezogen, Arbeitsbereiche Elementtypen zugewiesen und benutzerdefinierte Präfixe verwendet werden.
+  pt_br: |-
+    Cria um workset para o elemento vinculado selecionado com base no nome. Se necessário, converte o modelo em um modelo com compartilhamento de trabalho.
+
+    Clique mantendo a tecla Shift pressionada:
+    Configurar se todos os elementos serão incluídos, se worksets serão atribuídos aos tipos de elemento e se prefixos personalizados serão usados.
+context:
+  - doc-project

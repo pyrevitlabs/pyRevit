@@ -1,45 +1,55 @@
 title:
-  en_us: Invert Selection
-  ko: 선택 반전
-  fr_fr: Inverser la sélection
-  ru: Инвертировать выделение
-  chinese_s: 反选
-  es_es: Invertir selección
-  de_de: Aktuelle Auswahl invertieren
-  pt_br: Inverter Seleção
+  en_us: Invert Selection ●
+  ko: 선택 반전 ●
+  fr_fr: Inverser la sélection ●
+  ru: Инвертировать выделение ●
+  chinese_s: 反选 ●
+  es_es: Invertir selección ●
+  de_de: Aktuelle Auswahl invertieren ●
+  pt_br: Inverter Seleção ●
 tooltip:
-  en_us: >-
-    Inverts selection in active view
+  en_us: |-
+    Invert the selection in the active view.
 
-    Shift-Click:
+    Shift-click:
+    Select group members instead of their parent group elements.
+  ko: |-
+    활성 뷰에서 선택 항목을 반전합니다.
 
-    Select group members instead of parent group elements
-  ko: 활성 뷰에서 선택을 반전합니다
+    Shift 키를 누르고 클릭:
+    상위 그룹 요소 대신 그룹 구성원을 선택합니다.
   fr_fr: >-
     Inverse la sélection dans la vue active
 
-    Shift-Clic :
+    Maj+clic :
 
     Sélectionnez les membres du groupe au lieu des éléments du groupe parent
   ru: >-
     Инвертирует выделение в текущем виде.
 
-    Shift-Click:
+    Щелчок с удержанием клавиши Shift:
 
     Выделить члены группы вместо элементов родительской группы.
-  chinese_s: "反转活动视图中的选择\nShift+单击：\n选择组成员而非父组图元"
+  chinese_s: |-
+    反转活动视图中的选择。
+
+    按住 Shift 键单击：
+    选择组成员而不是其父组图元。
   es_es: >-
     Invierte la selección en la vista activa
 
-    Shift-Clic:
+    Mayús-clic:
 
     Seleccionar miembros del grupo en lugar de elementos del grupo padre
-  de_de: >-
-    Die aktuelle Auswahl in der aktiven Ansicht wird invertiert
+  de_de: |-
+    Kehrt die Auswahl in der aktiven Ansicht um.
+
+    Bei gedrückter Umschalttaste klicken:
+    Wählt Gruppenmitglieder statt der übergeordneten Gruppenelemente aus.
   pt_br: >-
     Inverte a seleção na vista ativa
 
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
 
     Selecionar membros do grupo em vez de elementos do grupo pai
 context: selection

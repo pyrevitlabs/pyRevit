@@ -8,34 +8,40 @@ title:
   de_de: Kopiere Eigenschaften ●
   pt_br: Igualar Propriedades ●
 tooltip:
-  en_us: >-
-    Match instance or type properties between elements and their types
+  en_us: |-
+    Match instance or type properties between elements and their types.
 
+    Shift-click:
+    Reapply the previously matched properties.
+  ko: |-
+    요소와 해당 유형 간의 인스턴스 또는 유형 속성을 일치시킵니다.
 
-    Shift+Click:
-
-    Reapply the previous matched properties
-  ko: 요소와 해당 유형 간의 인스턴스 또는 유형 속성을 일치시킵니다.
+    Shift 키를 누르고 클릭:
+    이전에 일치시킨 속성을 다시 적용합니다.
   fr_fr: >-
     Fait correspondre les paramètres d'instance et de type entre les éléments et leurs types
 
 
-    Shift+Click:
+    Maj+clic :
 
     Applique les propriétés précédemment appliquées
   ru: >-
     Сверяет параметры экземпляра или типа между элементами и их типами.
 
 
-    Shift+Click:
+    Щелчок с удержанием клавиши Shift:
 
     Повторно применить предыдущую сверку параметров.
-  chinese_s: "在图元及其类型之间匹配实例属性或类型属性\n\nShift+单击：\n重新应用之前匹配的属性"
+  chinese_s: |-
+    在图元及其类型之间匹配实例属性或类型属性。
+
+    按住 Shift 键单击：
+    重新应用之前匹配的属性。
   es_es: >-
     Coincidir propiedades de instancia o tipo entre elementos y sus tipos
 
 
-    Shift+Clic:
+    Mayús-clic:
 
     Reaplicar las propiedades coincidentes anteriores
   de_de: >-
@@ -43,13 +49,13 @@ tooltip:
     aufgelistet. Alle hier selektierten Eigenschaften werden auf die Zielelemente  übertragen. Nachdem man auf den Button "Select" geklickt hat, erscheint in der  Titelleiste von Revit ein orangener Balken, mit dem Hinweis, dass man nun Elemente
     auswählen soll auf die die Eigenschaften übertragen werden sollen. Es können  mehrere Elemente nacheinander angeklickt werden, auf die die gewählten  Eigenschaften übertragen werden. Mit ESC kann man den Befehl abschliessen. 
 
-    Shift+Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Übertrage die zuvor übertragenen Eigenschaften nochmals auf ein weiteres Element
   pt_br: >-
     Igualar propriedades de instância ou tipo entre elementos e seus tipos
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     
     Reaplicar as propriedades igualadas anteriores
 author: '{{author}}'
