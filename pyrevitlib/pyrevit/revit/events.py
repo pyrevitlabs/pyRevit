@@ -213,7 +213,8 @@ def delayed_unregister_exec_handlers(handler_group_id):
         mlogger.error(
             "Could not create ExternalEvent; event handlers remain registered"
         )
-        _unregister_handler_groups(handler_group_ids)
+        if HOST_APP.has_api_context:
+            _unregister_handler_groups(handler_group_ids)
         return
     try:
         response = ext_event.Raise()
@@ -225,10 +226,12 @@ def delayed_unregister_exec_handlers(handler_group_id):
                 "Could not unregister event handlers; "
                 "ExternalEvent request was {}".format(response)
             )
-            _unregister_handler_groups(handler_group_ids)
+            if HOST_APP.has_api_context:
+                _unregister_handler_groups(handler_group_ids)
     except Exception as ex:
         mlogger.error("Could not unregister event handlers: {}".format(ex))
-        _unregister_handler_groups(handler_group_ids)
+        if HOST_APP.has_api_context:
+            _unregister_handler_groups(handler_group_ids)
 
 
 def _get_unregisterer_extevent():
