@@ -23,6 +23,7 @@ from match import filter_utils
 get_elementid_value = get_elementid_value_func()
 
 CONFIG_SECTION = "PYREVITTOOLS_CUSTOMPROPS_CONFIG"
+WS_POSTFIX = "_WS_INFO"
 
 _SEL_CB_TAG = "sel_checkbox"
 _RAW_INT_TAG = "_raw_int"
@@ -46,7 +47,7 @@ def get_pane_config():
     line renders as a plain separator if nothing follows it.
     """
     raw = script.get_envvar(CONFIG_SECTION)
-    show_worksharing = bool(script.get_envvar(CONFIG_SECTION + "_ws_info"))
+    show_worksharing = bool(script.get_envvar(CONFIG_SECTION + WS_POSTFIX))
     if not raw:
         try:
             user_config.reload()
@@ -56,7 +57,7 @@ def get_pane_config():
             raw = section.get_option("additional_parameters", "")
             show_worksharing = bool(section.get_option("show_worksharing_info", True))
             script.set_envvar(CONFIG_SECTION, raw)
-            script.set_envvar(CONFIG_SECTION + "_ws_info", show_worksharing)
+            script.set_envvar(CONFIG_SECTION + WS_POSTFIX, show_worksharing)
         except Exception:
             return [], True
 
