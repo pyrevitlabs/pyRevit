@@ -79,6 +79,7 @@ namespace PyRevitLoader
             {
                 var uiApplication = GetUIApplication(application);
                 _uiApplication = uiApplication;
+                RevitThemeDetector.SetHostRevitYear(uiApplication);
                 _themeChangeMonitor = new RevitThemeChangeMonitor(
                     uiApplication,
                     ServiceFactory.CreateLogger(),

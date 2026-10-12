@@ -1,6 +1,8 @@
 using System;
 using System.Reflection;
 
+using Autodesk.Revit.UI;
+
 namespace pyRevitAssemblyBuilder.SessionManager
 {
     /// <summary>
@@ -151,60 +153,67 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// The running host's Revit year, read once and cached for the process lifetime.
+        /// Records the running host's Revit year, which gates the whole theme resolution.
         /// </summary>
         /// <remarks>
-        /// The host cannot change version without restarting, so this is deliberately not cleared by
-        /// <see cref="ClearCache"/>. Returns <c>0</c> when the host version cannot be read.
+        /// Invariant: must be called with a live <c>UIApplication</c> before any theme decision.
+        /// The loader and <c>SessionManagerService</c> both hold one, so the year is read directly
+        /// from <c>uiApp.Application.VersionNumber</c> rather than reflected. There is no
+        /// dependable static route to a live <c>UIApplication</c>: the non-public static
+        /// <c>UIApplication.Instance</c> exists on Revit 2027 but not on 2021-2026, and reading
+        /// <c>Application</c> as a static yields null because it is an instance property. Either
+        /// mistake leaves the year unknown, and an unknown year is treated as dark-capable - which
+        /// would silently re-open #3742 on exactly the versions the gate exists for.
         /// </remarks>
-        public static int HostRevitYear()
+        /// <param name="uiApplication">The running Revit <c>UIApplication</c>.</param>
+        public static void SetHostRevitYear(UIApplication uiApplication)
         {
-            if (!_cachedRevitYear.HasValue)
-                _cachedRevitYear = ReadRevitYearSafe();
-            return _cachedRevitYear.Value;
-        }
-
-        private static int ReadRevitYearSafe()
-        {
-            try
-            {
-                return ReadRevitYear(typeof(Autodesk.Revit.UI.UIApplication));
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
+            _cachedRevitYear = ParseRevitYear(uiApplication?.Application?.VersionNumber);
         }
 
         /// <summary>
-        /// Reads the host Revit year by walking the non-public static
-        /// <c>UIApplication.Instance.Application.VersionNumber</c> reflectively.
+        /// Records the running host's Revit year from its version string.
+        /// </summary>
+        /// <param name="versionNumber">
+        /// Revit's <c>VersionNumber</c>, for example "2024". Anything unparsable records an unknown
+        /// year, which the gate treats as dark-capable.
+        /// </param>
+        internal static void SetHostRevitYearFromVersion(string versionNumber)
+        {
+            _cachedRevitYear = ParseRevitYear(versionNumber);
+        }
+
+        /// <summary>
+        /// Parses a Revit <c>VersionNumber</c> into a year, returning <c>0</c> when it cannot be
+        /// read.
+        /// </summary>
+        internal static int ParseRevitYear(string versionNumber)
+        {
+            return int.TryParse(versionNumber, out var year) ? year : 0;
+        }
+
+        /// <summary>
+        /// The running host's Revit year, recorded at session start. Returns <c>0</c> before it has
+        /// been recorded, which is treated as dark-capable.
         /// </summary>
         /// <remarks>
-        /// <c>UIApplication.Application</c> is an instance property, and <c>Instance</c> is the only
-        /// static route to a live instance; reading <c>Application</c> directly as a static yields
-        /// null, and an unknown year is treated as dark-capable, which is exactly the regression
-        /// this gate prevents (#3742). Returns <c>0</c> when any step is unavailable.
+        /// The host cannot change version without restarting, so this is deliberately not cleared
+        /// by <see cref="ClearCache"/>.
         /// </remarks>
-        /// <param name="revitUiApplicationType">The running <c>Autodesk.Revit.UI.UIApplication</c> type.</param>
-        internal static int ReadRevitYear(Type revitUiApplicationType)
+        public static int HostRevitYear()
+        {
+            return _cachedRevitYear ?? 0;
+        }
+
+        /// <summary>
+        /// Reads the host Revit year from a live <c>UIApplication</c>. Returns <c>0</c> when the
+        /// host is unavailable or its version cannot be parsed.
+        /// </summary>
+        internal static int ReadRevitYear(UIApplication uiApplication)
         {
             try
             {
-                var instanceProperty = revitUiApplicationType?.GetProperty(
-                    "Instance",
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                var uiApplication = instanceProperty?.GetValue(null);
-                var application = uiApplication
-                    ?.GetType()
-                    .GetProperty("Application")
-                    ?.GetValue(uiApplication);
-                var versionNumber = application
-                    ?.GetType()
-                    .GetProperty("VersionNumber")
-                    ?.GetValue(application)
-                    ?.ToString();
-                return int.TryParse(versionNumber, out var year) ? year : 0;
+                return ParseRevitYear(uiApplication?.Application?.VersionNumber);
             }
             catch (Exception)
             {

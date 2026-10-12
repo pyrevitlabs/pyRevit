@@ -15,12 +15,13 @@ reference, so the same detector logic supports every supported Revit version. Th
 the `net48` assembly for Revit 2021–2024 and the `net8.0` assembly for Revit 2025 and later.
 When the API is missing the detector reports light.
 
-The detector also reads the running host's Revit year once, and reports light for anything before
-2024 so the reported theme is reconciled against what the ribbon actually paints. Every consumer
-goes through that gate: `IconManager`, `PanelBuilder` and `SmartButtonScriptInitializer` share one
-detector, and the loader's live refresh calls `RevitThemeDetector.IsDarkRibbonTheme`. The Python
-Shell keeps its own copy of the rule in `PyRevitLabs.PyRevit.Shell.RevitThemeDetector`, and
-`pyrevit.forms.is_dark_theme()` has applied the same bound since the first release.
+The detector also takes the running host's Revit year, read from the `UIApplication` the loader
+already holds, and reports light for anything before 2024 so the reported theme is reconciled
+against what the ribbon actually paints. Every consumer goes through that gate: `IconManager`,
+`PanelBuilder` and `SmartButtonScriptInitializer` share one detector, and the loader's live refresh
+calls `RevitThemeDetector.IsDarkRibbonTheme`. The Python Shell keeps its own copy of the rule in
+`PyRevitLabs.PyRevit.Shell.RevitThemeDetector`, and `pyrevit.forms.is_dark_theme()` has applied the
+same bound since the first release.
 
 Two consumers sit on top of it:
 

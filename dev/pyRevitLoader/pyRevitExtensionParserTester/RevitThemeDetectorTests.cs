@@ -10,10 +10,18 @@ namespace pyRevitExtensionParserTest
     public class RevitThemeDetectorTests
     {
         [SetUp]
-        public void ClearThemeCacheBeforeTest() => RevitThemeDetector.ClearCache();
+        public void ClearThemeCacheBeforeTest()
+        {
+            RevitThemeDetector.ClearCache();
+            RevitThemeDetector.SetHostRevitYearFromVersion(null);
+        }
 
         [TearDown]
-        public void ClearThemeCacheAfterTest() => RevitThemeDetector.ClearCache();
+        public void ClearThemeCacheAfterTest()
+        {
+            RevitThemeDetector.ClearCache();
+            RevitThemeDetector.SetHostRevitYearFromVersion(null);
+        }
 
         private static RevitThemeDetector Detector(ILogger logger, string themeName, int revitYear)
         {
@@ -136,6 +144,73 @@ namespace pyRevitExtensionParserTest
         }
 
         /// <summary>
+        /// Confirms the host year is read from the version string the caller supplies, and that a
+        /// missing or unparsable one reads as unknown.
+        /// </summary>
+        /// <remarks>
+        /// Regression guard for two earlier attempts at this lookup. Reading
+        /// <c>UIApplication.Application</c> as a static yields null, and reaching for the non-public
+        /// static <c>UIApplication.Instance</c> works on Revit 2027 but not on 2021-2026 - verified
+        /// against the installed RevitAPIUI.dll for every supported year. Either mistake leaves the
+        /// year unknown, and unknown is treated as dark-capable, so the gate would silently do
+        /// nothing on exactly the versions it exists for (#3742).
+        /// </remarks>
+        [TestCase("2021", 2021)]
+        [TestCase("2022", 2022)]
+        [TestCase("2023", 2023)]
+        [TestCase("2024", 2024)]
+        [TestCase("2027", 2027)]
+        public void ReadRevitYearParsesTheHostVersion(string versionNumber, int expected)
+        {
+            Assert.That(RevitThemeDetector.ParseRevitYear(versionNumber), Is.EqualTo(expected));
+        }
+
+        [TestCase("")]
+        [TestCase("not-a-year")]
+        [TestCase("2023.1")]
+        public void ReadRevitYearTreatsAnUnparsableVersionAsUnknown(string versionNumber)
+        {
+            Assert.That(RevitThemeDetector.ParseRevitYear(versionNumber), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ReadRevitYearTreatsAMissingVersionAsUnknown()
+        {
+            Assert.That(RevitThemeDetector.ParseRevitYear(null), Is.EqualTo(0));
+        }
+
+        /// <summary>
+        /// Confirms the recorded host year gates the detector, which is the whole point of the
+        /// change: a 2023 host that reports "Dark" must resolve to light icons.
+        /// </summary>
+        [TestCase("2021", false)]
+        [TestCase("2022", false)]
+        [TestCase("2023", false)]
+        [TestCase("2024", true)]
+        [TestCase("2027", true)]
+        public void TheRecordedHostYearGatesTheDetector(string versionNumber, bool expectDark)
+        {
+            RevitThemeDetector.SetHostRevitYearFromVersion(versionNumber);
+
+            var detector = new RevitThemeDetector(new MockLogger(), () => "Dark");
+
+            Assert.That(detector.IsDarkTheme(), Is.EqualTo(expectDark));
+        }
+
+        [Test]
+        public void AnUnrecordedHostYearIsTreatedAsDarkCapable()
+        {
+            RevitThemeDetector.SetHostRevitYearFromVersion(null);
+
+            Assert.That(RevitThemeDetector.HostRevitYear(), Is.EqualTo(0));
+
+            var detector = new RevitThemeDetector(new MockLogger(), () => "Dark");
+
+            Assert.That(detector.IsDarkTheme(), Is.True,
+                "An unknown host keeps today's behaviour rather than losing dark icons.");
+        }
+
+        /// <summary>
         /// Confirms a host that reports "Dark" on Revit 2021-2023 still resolves to the light theme,
         /// which is the regression reported in #3742: dark icons drawn on a light ribbon are
         /// invisible.
@@ -201,43 +276,6 @@ namespace pyRevitExtensionParserTest
         {
             Assert.That(RevitThemeDetector.IsDarkRibbonThemeFor("Dark", revitYear), Is.True);
             Assert.That(RevitThemeDetector.IsDarkRibbonThemeFor("Light", revitYear), Is.False);
-        }
-
-        /// <summary>
-        /// Confirms the host-year reader degrades to unknown rather than throwing when the Revit API
-        /// surface is not what it expects.
-        /// </summary>
-        [Test]
-        public void ReadRevitYearReturnsUnknownWhenTheHostApiIsUnavailable()
-        {
-            Assert.That(RevitThemeDetector.ReadRevitYear(typeof(string)), Is.EqualTo(0));
-            Assert.That(RevitThemeDetector.ReadRevitYear(null), Is.EqualTo(0));
-        }
-
-        /// <summary>
-        /// Confirms the host-year reader takes the live <c>UIApplication</c> from the non-public
-        /// static <c>Instance</c> property.
-        /// </summary>
-        /// <remarks>
-        /// Regression guard for the first cut of this fix, which read <c>Application</c> as if it
-        /// were static. That yields null, the year comes back unknown, and the gate treats unknown
-        /// as dark-capable - so Revit 2021-2023 would still have drawn dark icons (#3742). A test
-        /// type with no <c>Instance</c> must therefore read as unknown rather than throwing.
-        /// </remarks>
-        [Test]
-        public void ReadRevitYearUsesTheStaticInstanceProperty()
-        {
-            var hostYear = RevitThemeDetector.ReadRevitYear(typeof(HostYearProbe));
-
-            Assert.That(hostYear, Is.GreaterThanOrEqualTo(0));
-        }
-
-        /// <summary>
-        /// A type with no <c>Instance</c> property and no <c>Application</c>, standing in for a
-        /// Revit API surface that does not match what the reader expects.
-        /// </summary>
-        private sealed class HostYearProbe
-        {
         }
     }
 }
