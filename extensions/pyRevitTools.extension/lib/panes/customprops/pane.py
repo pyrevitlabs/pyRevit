@@ -22,7 +22,7 @@ from match import filter_utils
 
 get_elementid_value = get_elementid_value_func()
 
-CONFIG_SECTION = "custom_properties_pane"
+CONFIG_SECTION = "PYREVITTOOLS_CUSTOMPROPS_CONFIG"
 
 _SEL_CB_TAG = "sel_checkbox"
 _RAW_INT_TAG = "_raw_int"

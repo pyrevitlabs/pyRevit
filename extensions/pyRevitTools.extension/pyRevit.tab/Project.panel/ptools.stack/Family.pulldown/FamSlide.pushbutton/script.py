@@ -20,7 +20,7 @@ import famslide_actions
 
 logger = script.get_logger()
 
-FAMSLIDE_WINDOW_KEY = "PYREVIT_FAMSLIDE_WINDOW"
+FAMSLIDE_WINDOW_KEY = "PYREVITTOOLS_FAMSLIDE_WINDOW"
 
 # Path to the base XAML file, used to locate this bundle's
 # FamSlideWindow.ResourceDictionary.<locale>.xaml files for translation
