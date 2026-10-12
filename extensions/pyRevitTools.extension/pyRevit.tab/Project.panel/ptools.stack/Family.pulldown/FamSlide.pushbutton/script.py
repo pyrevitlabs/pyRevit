@@ -7,7 +7,7 @@ parameter changes (shape changes, constraint errors, etc.) without
 round-tripping through the Family Types dialog every time.
 """
 
-from pyrevit import forms, revit, script
+from pyrevit import forms, revit, script, EXEC_PARAMS
 from pyrevit import DB
 from pyrevit.revit import events
 from pyrevit.framework import Media, SolidColorBrush
@@ -94,6 +94,7 @@ class FamSlideWindow(forms.WPFWindow):
     def __init__(self, xaml_file):
         forms.WPFWindow.__init__(self, xaml_file)
 
+        self.exec_id = EXEC_PARAMS.exec_id
         self._rows = []
         self._show_editable_only = False
         self._show_labels = True
@@ -416,7 +417,7 @@ class FamSlideWindow(forms.WPFWindow):
 
     def on_closed(self, sender, args):
         global ui
-        events.stop_events()
+        events.delayed_unregister_exec_handlers(self.exec_id)
         script.save_window_position(self)
         ui = None
         script.set_envvar(FAMSLIDE_WINDOW_KEY, None)

@@ -2,7 +2,7 @@
 # type: ignore
 """Section Box Navigator - Modeless window for section box navigation."""
 
-from pyrevit import revit, script, forms
+from pyrevit import revit, script, forms, EXEC_PARAMS
 from pyrevit.framework import System, Controls, Media
 from pyrevit.revit import events, units
 from pyrevit import DB
@@ -172,6 +172,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
+
+        self.exec_id = EXEC_PARAMS.exec_id
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
@@ -1929,11 +1931,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
-            # Save window position
             script.save_window_position(self)
 
-            # Unregister event handlers
-            events.stop_events()
+            events.delayed_unregister_exec_handlers(self.exec_id)
 
             # Cleanup form - shouldn't be necessary?
             global sb_form
@@ -1972,10 +1972,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
             my_config.set_option("chkAutoupdate_state", self.chkAutoupdate.IsChecked)
             script.save_config()
-            script.set_envvar(SBNAV_WINDOW_KEY, None)
 
         except Exception:
             logger.exception("Error during cleanup.")
+
+        finally:
+            script.set_envvar(SBNAV_WINDOW_KEY, None)
 
 
 # ---------
@@ -2014,50 +2016,51 @@ if __name__ == "__main__":
 
             sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
             script.set_envvar(SBNAV_WINDOW_KEY, sb_form)
+
+            @events.handle("view-activated", "doc-changed")
+            def on_view_or_doc_changed(sender, args):
+                try:
+                    try:
+                        doc_changed = revit.doc != doc
+                    except Exception:
+                        # old doc was invalidated (all docs closed then a new one opened)
+                        doc_changed = True
+                    if doc_changed:
+                        try:
+                            initialize_globals()
+                        except Exception:
+                            if sb_form:
+                                sb_form.Dispatcher.Invoke(
+                                    System.Action(sb_form._on_no_document)
+                                )
+                            return
+                        if sb_form:
+                            sb_form.Dispatcher.Invoke(
+                                System.Action(sb_form._on_document_available)
+                            )
+                            sb_form.Dispatcher.Invoke(
+                                System.Action(sb_form.update_grids_and_levels)
+                            )
+                    if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+                        return
+                    sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
+                    logger.info("Form updated due to view or document change.")
+                except Exception as ex:
+                    logger.exception("Failed to update form: {}".format(ex))
+
+            @events.handle("doc-closed")
+            def on_doc_closed(sender, args):
+                try:
+                    if any(True for _ in (revit.docs or [])):
+                        return  # at least one document still open
+                    if sb_form:
+                        sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
+                except Exception as ex:
+                    logger.exception("Failed to handle doc close: {}".format(ex))
+
         except Exception as ex:
             logger.exception("Error launching form: {}".format(ex))
             forms.alert(
                 _t("AnErrorOccurredFormat").format(str(ex)),
                 title=_t("ErrorTitle"),
             )
-
-        @events.handle("view-activated", "doc-changed")
-        def on_view_or_doc_changed(sender, args):
-            try:
-                try:
-                    doc_changed = revit.doc != doc
-                except Exception:
-                    # old doc was invalidated (all docs closed then a new one opened)
-                    doc_changed = True
-                if doc_changed:
-                    try:
-                        initialize_globals()
-                    except Exception:
-                        if sb_form:
-                            sb_form.Dispatcher.Invoke(
-                                System.Action(sb_form._on_no_document)
-                            )
-                        return
-                    if sb_form:
-                        sb_form.Dispatcher.Invoke(
-                            System.Action(sb_form._on_document_available)
-                        )
-                        sb_form.Dispatcher.Invoke(
-                            System.Action(sb_form.update_grids_and_levels)
-                        )
-                if not sb_form or not sb_form.chkAutoupdate.IsChecked:
-                    return
-                sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
-                logger.info("Form updated due to view or document change.")
-            except Exception as ex:
-                logger.exception("Failed to update form: {}".format(ex))
-
-        @events.handle("doc-closed")
-        def on_doc_closed(sender, args):
-            try:
-                if any(True for _ in (revit.docs or [])):
-                    return  # at least one document still open
-                if sb_form:
-                    sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
-            except Exception as ex:
-                logger.exception("Failed to handle doc close: {}".format(ex))
