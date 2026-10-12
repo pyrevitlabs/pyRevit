@@ -1,4 +1,4 @@
-"""Cover event-handler cleanup across reloads without importing Revit APIs."""
+"""Host-free tests for shared event-handler registration and cleanup."""
 
 import ast
 import io
@@ -6,12 +6,12 @@ import os
 import unittest
 
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
 def _load_functions(relative_path, names, namespace):
     with io.open(
-        os.path.join(ROOT, relative_path), encoding="utf-8-sig"
+        os.path.join(REPO_ROOT, relative_path), encoding="utf-8-sig"
     ) as source_file:
         tree = ast.parse(source_file.read())
     tree.body = [node for node in tree.body if getattr(node, "name", None) in names]
@@ -22,6 +22,11 @@ def _load_functions(relative_path, names, namespace):
 class _Namespace(object):
     def __init__(self, **values):
         self.__dict__.update(values)
+
+
+class _ArrayList(list):
+    def Add(self, value):
+        self.append(value)
 
 
 class _Hashtable(dict):
@@ -47,12 +52,15 @@ class _AppDomain(object):
         self.data[key] = value
 
 
-def _load_event_functions(app_domain, removed_handlers):
+def _load_event_functions(app_domain, added_handlers, removed_handlers):
     namespace = {
         "framework": _Namespace(AppDomain=_Namespace(CurrentDomain=app_domain)),
+        "ArrayList": _ArrayList,
         "Hashtable": _Hashtable,
         "_REGISTERED_HANDLERS_KEY": "pyRevitRegisteredEventHandlers",
-        "add_handler": lambda event_name, handler_func: event_name + "-delegate",
+        "add_handler": lambda event_name, handler_func: (
+            added_handlers.append((event_name, handler_func)) or handler_func
+        ),
         "remove_handler": lambda event_name, event_handler: removed_handlers.append(
             (event_name, event_handler)
         ),
@@ -73,32 +81,61 @@ def _load_event_functions(app_domain, removed_handlers):
 
 
 class EventHandlerCleanupTests(unittest.TestCase):
-    """Cover event unsubscription behavior during session reloads."""
+    """Cover cross-engine and duplicate event handler cleanup."""
 
     def test_reload_engine_cleans_handlers_registered_in_another_engine(self):
-        """Share registrations across engines so reload removes every callback."""
+        """Reload from another engine removes all registered delegates."""
         app_domain = _AppDomain()
+        added_handlers = []
         removed_handlers = []
-        script_engine = _load_event_functions(app_domain, removed_handlers)
-        reload_engine = _load_event_functions(app_domain, removed_handlers)
+        script_engine = _load_event_functions(
+            app_domain, added_handlers, removed_handlers
+        )
+        reload_engine = _load_event_functions(
+            app_domain, added_handlers, removed_handlers
+        )
         self.assertIs(
             script_engine["REGISTERED_HANDLERS"],
             reload_engine["REGISTERED_HANDLERS"],
         )
-        for event_name in ("doc-changed", "view-activated"):
-            script_engine["register_handler"](event_name, object(), "script-exec")
+
+        first_handler = object()
+        second_handler = object()
+        script_engine["register_handler"](
+            "view-activated", first_handler, "script-exec"
+        )
+        script_engine["register_handler"](
+            "view-activated", second_handler, "script-exec"
+        )
         reload_engine["register_handler"]("doc-opened", object(), "reload-exec")
 
         reload_engine["unregister_all_exec_handlers"]()
 
         self.assertEqual(dict(script_engine["REGISTERED_HANDLERS"]), {})
         self.assertEqual(
-            set(removed_handlers),
+            {(event_name, id(handler)) for event_name, handler in removed_handlers},
             {
-                ("doc-changed", "doc-changed-delegate"),
-                ("view-activated", "view-activated-delegate"),
-                ("doc-opened", "doc-opened-delegate"),
+                ("view-activated", id(first_handler)),
+                ("view-activated", id(second_handler)),
+                ("doc-opened", id(added_handlers[-1][1])),
             },
+        )
+
+    def test_unregister_exec_handlers_removes_every_same_event_subscription(self):
+        """Track every delegate registered for one event in an execution."""
+        app_domain = _AppDomain()
+        added_handlers = []
+        removed_handlers = []
+        events = _load_event_functions(app_domain, added_handlers, removed_handlers)
+        callbacks = [object(), object()]
+
+        for callback in callbacks:
+            events["register_handler"]("view-activated", callback, "exec")
+        events["unregister_exec_handlers"]("exec")
+
+        self.assertEqual(
+            {(event_name, id(handler)) for event_name, handler in removed_handlers},
+            {("view-activated", id(callback)) for callback in callbacks},
         )
 
     def test_reload_cleans_handlers_before_loading_session(self):

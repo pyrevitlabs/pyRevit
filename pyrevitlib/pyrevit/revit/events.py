@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument
 from collections import deque
-from System.Collections import Hashtable
+from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
@@ -109,15 +109,21 @@ def register_handler(event_name, handler_func, handler_group_id):
         REGISTERED_HANDLERS[handler_group_id] = Hashtable()
     event_handler = add_handler(event_name, handler_func)
     if event_handler:
-        REGISTERED_HANDLERS[handler_group_id][event_name] = event_handler
+        if not REGISTERED_HANDLERS[handler_group_id].ContainsKey(event_name):
+            REGISTERED_HANDLERS[handler_group_id][event_name] = ArrayList()
+        REGISTERED_HANDLERS[handler_group_id][event_name].Add(event_handler)
 
 
 def unregister_handler(event_name, handler_func, handler_group_id):
     if REGISTERED_HANDLERS.ContainsKey(handler_group_id) and REGISTERED_HANDLERS[
         handler_group_id
     ].ContainsKey(event_name):
-        event_handler = REGISTERED_HANDLERS[handler_group_id][event_name]
-        remove_handler(event_name, event_handler)
+        event_handlers = REGISTERED_HANDLERS[handler_group_id][event_name]
+        if isinstance(event_handlers, ArrayList):
+            for event_handler in list(event_handlers):
+                remove_handler(event_name, event_handler)
+        else:
+            remove_handler(event_name, event_handlers)
         REGISTERED_HANDLERS[handler_group_id].Remove(event_name)
 
 
