@@ -2,6 +2,7 @@
 
 # pylint: disable=unused-argument
 from collections import deque
+from System.Collections import Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
@@ -10,6 +11,21 @@ from pyrevit.coreutils.logger import get_logger
 
 
 mlogger = get_logger(__name__)
+
+
+_REGISTERED_HANDLERS_KEY = "pyRevitRegisteredEventHandlers"
+
+
+def _get_registered_handlers():
+    registered_handlers = framework.AppDomain.CurrentDomain.GetData(
+        _REGISTERED_HANDLERS_KEY
+    )
+    if registered_handlers is None:
+        registered_handlers = Hashtable()
+        framework.AppDomain.CurrentDomain.SetData(
+            _REGISTERED_HANDLERS_KEY, registered_handlers
+        )
+    return registered_handlers
 
 
 class FuncAsEventHandler(UI.IExternalEventHandler):
@@ -89,26 +105,34 @@ def remove_handler(event_name, event_handler):
 
 
 def register_handler(event_name, handler_func, handler_group_id):
-    if handler_group_id not in REGISTERED_HANDLERS:
-        REGISTERED_HANDLERS[handler_group_id] = {}
+    if not REGISTERED_HANDLERS.ContainsKey(handler_group_id):
+        REGISTERED_HANDLERS[handler_group_id] = Hashtable()
     event_handler = add_handler(event_name, handler_func)
     if event_handler:
         REGISTERED_HANDLERS[handler_group_id][event_name] = event_handler
 
 
 def unregister_handler(event_name, handler_func, handler_group_id):
-    if (
-        handler_group_id in REGISTERED_HANDLERS
-        and event_name in REGISTERED_HANDLERS[handler_group_id]
-    ):
-        event_handler = REGISTERED_HANDLERS[handler_group_id].pop(event_name)
+    if REGISTERED_HANDLERS.ContainsKey(handler_group_id) and REGISTERED_HANDLERS[
+        handler_group_id
+    ].ContainsKey(event_name):
+        event_handler = REGISTERED_HANDLERS[handler_group_id][event_name]
         remove_handler(event_name, event_handler)
+        REGISTERED_HANDLERS[handler_group_id].Remove(event_name)
 
 
 def unregister_exec_handlers(handler_group_id):
-    if handler_group_id in REGISTERED_HANDLERS:
-        for event_name, handler_func in REGISTERED_HANDLERS[handler_group_id].items():
+    if REGISTERED_HANDLERS.ContainsKey(handler_group_id):
+        for event_name in list(REGISTERED_HANDLERS[handler_group_id].Keys):
+            handler_func = REGISTERED_HANDLERS[handler_group_id][event_name]
             unregister_handler(event_name, handler_func, handler_group_id)
+        REGISTERED_HANDLERS.Remove(handler_group_id)
+
+
+def unregister_all_exec_handlers():
+    """Unregister every handler group registered by a Python execution."""
+    for handler_group_id in list(REGISTERED_HANDLERS.Keys):
+        unregister_exec_handlers(handler_group_id)
 
 
 def delayed_unregister_exec_handlers(handler_group_id):
@@ -146,7 +170,7 @@ def _get_unregisterer_extevent():
     return HANDLER_UNREGISTERER_EXTEVENT
 
 
-REGISTERED_HANDLERS = {}
+REGISTERED_HANDLERS = _get_registered_handlers()
 HANDLER_UNREGISTERER = FuncAsEventHandler(unregister_exec_handlers, purge=False)
 # Import can occur outside API context, so event creation may be deferred.
 try:
@@ -168,7 +192,7 @@ def handle(*args):  # pylint: disable=no-method-argument
 
 
 def stop_events():
-    if EXEC_PARAMS.exec_id in REGISTERED_HANDLERS:
+    if REGISTERED_HANDLERS.ContainsKey(EXEC_PARAMS.exec_id):
         if HOST_APP.has_api_context:
             unregister_exec_handlers(EXEC_PARAMS.exec_id)
         else:
