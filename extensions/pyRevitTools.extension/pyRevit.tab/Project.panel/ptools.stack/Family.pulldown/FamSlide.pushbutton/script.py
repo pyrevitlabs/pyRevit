@@ -417,10 +417,12 @@ class FamSlideWindow(forms.WPFWindow):
 
     def on_closed(self, sender, args):
         global ui
-        events.delayed_unregister_exec_handlers(self.exec_id)
-        script.save_window_position(self)
-        ui = None
-        script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
+        try:
+            events.delayed_unregister_exec_handlers(self.exec_id)
+            script.save_window_position(self)
+        finally:
+            ui = None
+            script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
 
     # --- controls that must hand off to Revit --------------------------------
     def on_rename_click(self, sender, args):
@@ -677,6 +679,8 @@ if __name__ == "__main__":
             if ui.WindowState == Windows.WindowState.Minimized:
                 ui.WindowState = Windows.WindowState.Normal
             ui.Activate()
+        else:
+            script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
     else:
         _gate_family_editor()
         ui = FamSlideWindow("FamSlideWindow.xaml")

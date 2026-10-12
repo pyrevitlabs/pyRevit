@@ -1931,9 +1931,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
-            script.save_window_position(self)
-
             events.delayed_unregister_exec_handlers(self.exec_id)
+
+            script.save_window_position(self)
 
             # Cleanup form - shouldn't be necessary?
             global sb_form
@@ -1991,6 +1991,8 @@ if __name__ == "__main__":
             if sb_form.WindowState == Windows.WindowState.Minimized:
                 sb_form.WindowState = Windows.WindowState.Normal
             sb_form.Activate()
+        else:
+            script.set_envvar(SBNAV_WINDOW_KEY, None)
     else:
         _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
 
