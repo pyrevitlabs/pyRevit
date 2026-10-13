@@ -18,3 +18,5 @@ tooltip:
   pt_br: Lista todas as legendas com nuvens de revisão nelas. Legendas com nuvens de revisão não acionarão o índice de folhas da folha em que estão colocadas e é por isso que esta ferramenta é útil
 author: 'Frederic Beaupere'
 contact: 'https://github.com/frederic-beaupere'
+context:
+  - doc-project

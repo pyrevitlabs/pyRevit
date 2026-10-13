@@ -16,3 +16,5 @@ tooltip:
   es_es: Lista todas las nubes de revisión en este modelo que han sido colocadas en una vista y no en una hoja
   de_de: Es wird eine Liste erstellt mit allen Änderungswolken im Modell, die auf Ansichten anstatt auf Plänen platziert wurden
   pt_br: Lista todas as nuvens de revisão neste modelo que foram colocadas em uma vista e não em uma folha
+context:
+  - doc-project

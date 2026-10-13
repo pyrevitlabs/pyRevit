@@ -16,3 +16,5 @@ tooltip:
   es_es: Seleccione una nube de revisión y esta herramienta listará todas las hojas revisadas bajo la misma revisión
   de_de: Wählen Sie eine Änderungswolke aus und dieses Tool listet alle Pläne auf, die unter der gleichen Änderung überarbeitet wurden.
   pt_br: Selecione uma nuvem de revisão e esta ferramenta listará todas as folhas revisadas sob a mesma revisão
+context:
+  - doc-project

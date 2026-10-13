@@ -143,6 +143,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             // Revit can change its UI theme without restarting the host process.
             RevitThemeDetector.ClearCache();
+            RevitThemeDetector.SetHostRevitYear(_uiApp);
 
             // Initialize the ScriptExecutor before executing any scripts
             step = timeline.StartSpan("InitializeScriptExecutor");

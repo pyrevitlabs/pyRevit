@@ -28,3 +28,5 @@ tooltip:
   pt_br: >-
     Diminui o número da folha das folhas selecionadas em um. A alteração do nome da folha 
     será impressa se o log estiver definido como Verbose nas configurações do pyRevit
+context:
+  - doc-project

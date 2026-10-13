@@ -22,3 +22,22 @@ tooltip:
     Dieses Skript entfernt alle Exemplare des ausgewählten   Familie und versucht, die Familie in eine flächebasierte  Familie umzuwandeln. Nur Familien der Kategorien  Kommunikationsgeräte, Datengeräte, Luftkanalformteile,  EletrischeAusstattung, Elektroinstallationen, Brandmelder,  Lichtschalter, Leuchten, HLS-Bauteile, Notrufgeräte,  Sanitärinstallationen, Sicherheitsgeräte, Sprinkler  und Telefongeräte können umgewandelt werden.
   pt_br: >-
     Este script remove todas as instâncias da Família de elementos selecionada e tenta converter a família em baseada em hospedeiro de face.  Apenas famílias de Dispositivos de Comunicação, Dispositivos de Dados,  Terminais de Duto, Equipamentos Elétricos, Luminárias,  Dispositivos de Alarme de Incêndio, Dispositivos de Iluminação, Luminárias,  Equipamentos Mecânicos, Dispositivos de Chamada de Enfermeira, Peças Hidrossanitárias,  Dispositivos de Segurança, Sprinklers, Dispositivos de Telefone podem ser  convertidos
+context:
+  all:
+    - doc-project
+    - selection
+  any:
+    - OST_CommunicationDevices
+    - OST_DataDevices
+    - OST_DuctTerminal
+    - OST_ElectricalEquipment
+    - OST_ElectricalFixtures
+    - OST_FireAlarmDevices
+    - OST_LightingDevices
+    - OST_LightingFixtures
+    - OST_MechanicalEquipment
+    - OST_NurseCallDevices
+    - OST_PlumbingFixtures
+    - OST_SecurityDevices
+    - OST_Sprinklers
+    - OST_TelephoneDevices
