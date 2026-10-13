@@ -48,14 +48,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; bin\
 Source: "..\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion
 
-[Registry]
-; Uninstaller does not undo this change
-; Multiple installs keep adding the path
-; https://stackoverflow.com/a/3431379/2350244
-; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
-
 [Run]
+Filename: "{app}\bin\pyrevit.exe"; Description: "Registering the install path..."; Parameters: "env path ensure ""{app}\bin"" --scope=machine"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 

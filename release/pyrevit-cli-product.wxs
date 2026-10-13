@@ -63,8 +63,10 @@
 	<Fragment>
 		<Directory Id="TARGETDIR" Name="SourceDir">
 			<Directory Id="ProgramFiles64Folder">
-				<!-- pyrevit-bin.wxs lists all components in this directory -->
-				<Directory Id="INSTALLDIR" Name="$(var.ProductName)" />
+				<!-- pyrevit-bin.wxs lists all components in the bin directory -->
+				<Directory Id="INSTALLDIR" Name="$(var.ProductName)">
+					<Directory Id="BINDIR" Name="bin" />
+				</Directory>
 			</Directory>
 		</Directory>
 	</Fragment>
@@ -75,7 +77,7 @@
 			<ComponentGroupRef Id="PYREVIT_BIN"></ComponentGroupRef>
 
 			<Component Id="addPyRevitToPath" Guid="{763ee014-3d28-4612-babe-df8c5bef347e}" KeyPath="yes">
-				<Environment Id="PATH" Name="PATH" Value="[INSTALLDIR]" Permanent="no" Part="first" Action="set" System="yes" />
+				<Environment Id="PATH" Name="PATH" Value="[INSTALLDIR]bin" Permanent="no" Part="first" Action="set" System="yes" />
 			</Component>
 		</ComponentGroup>
 	</Fragment>

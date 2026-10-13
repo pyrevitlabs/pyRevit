@@ -70,15 +70,8 @@ Source: "..\site-packages\*"; DestDir: "{app}\site-packages"; Flags: ignoreversi
 Source: "..\release\.pyrevitargs"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 
-[Registry]
-; Uninstaller does not undo this change
-; Multiple installs keep adding the path
-; When run as admin, HKCU would be the elevated user's; PATH is set in CurStepChanged via ExecAsOriginalUser instead.
-; https://stackoverflow.com/a/3431379/2350244
-; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NotAdminAndPathNotExists
-
 [Run]
+Filename: "{app}\bin\pyrevit.exe"; Description: "Registering the install path..."; Parameters: "env path ensure ""{app}\bin"" --scope=user"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden; Check: not IsAdmin
@@ -91,20 +84,6 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden
 
 [Code]
-function NotAdminAndPathNotExists: Boolean;
-var
-  OrigPath: String;
-  AppPath: String;
-begin
-  Result := not IsAdmin;
-  if Result then
-  begin
-    AppPath := ExpandConstant('{app}\bin');
-    if RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
-      Result := Pos(';' + Uppercase(AppPath) + ';', ';' + Uppercase(OrigPath) + ';') = 0;
-  end;
-end;
-
 function RunPyRevitCommand(const Params: String): Boolean;
 var
   ResultCode: Integer;
@@ -129,6 +108,12 @@ end;
 
 procedure RunElevatedUserPostInstallCommands;
 begin
+  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user') then
+    MsgBox(
+      'pyRevit was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
+      'You may need to manually add the following folder to your user PATH:' + #13#10 +
+      '  ' + ExpandConstant('{app}\bin'),
+      mbError, MB_OK);
   RunPyRevitCommand('caches clear --all');
   RunPyRevitCommand('detach --all');
   if not RunPyRevitCommand('clones add this master --force') then
@@ -140,30 +125,9 @@ begin
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
-var
-  Params: String;
-  InstallPathEscaped: String;
-  ResultCode: Integer;
 begin
   if (CurStep = ssPostInstall) and IsAdmin then
-  begin
     RunElevatedUserPostInstallCommands;
-    InstallPathEscaped := ExpandConstant('{app}\bin');
-    StringChangeEx(InstallPathEscaped, '''', '''''', True);
-    Params := '-NoProfile -ExecutionPolicy Bypass -Command "' +
-      '$appPath = ''' + InstallPathEscaped + ''';' +
-      '$userPath = [Environment]::GetEnvironmentVariable(''Path'', ''User'');' +
-      'if ($userPath -notlike "' + '"*$appPath*"' + '") {' +
-      '  [Environment]::SetEnvironmentVariable(''Path'', $userPath + '';'' + $appPath, ''User'')' +
-      '}"';
-    if ExecAsOriginalUser(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
-      Log('Added install path to original user PATH')
-    else
-    begin
-      Log('ExecAsOriginalUser failed or non-zero exit when adding PATH');
-      MsgBox('pyRevit was installed, but the installer could not update the original user PATH environment variable.' + #13#10 + #13#10 + 'You may need to manually add the following folder to your user PATH, or re-run the installer without administrative privileges:' + #13#10 + '  ' + ExpandConstant('{app}\bin'), mbError, MB_OK);
-    end;
-  end;
 end;
 
 function InitializeSetup: Boolean;
