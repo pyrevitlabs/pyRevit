@@ -223,43 +223,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
             var builtins = new PyDict(module.Variables()["__builtins__"]);
 
-            // Add timestamp and executuin uuid
-            SetVariable(builtins, "__execid__", runtime.ExecId);
-            SetVariable(builtins, "__timestamp__", runtime.ExecTimestamp);
-
-            // set builtins
-            SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
-            SetVariable(builtins, "__cachedengineid__", TypeId);
-            SetVariable(builtins, "__scriptruntime__", runtime);
-
-            SetVariable(builtins, "__revit__", runtime.UIApp);
-
-            // Adding data provided by IExternalCommand.Execute
-            SetVariable(builtins, "__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
-            SetVariable(builtins, "__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
-
-            // Add ui button handle
-            SetVariable(builtins, "__uibutton__", runtime.UIControl);
-
-            // Adding information on the command being executed
-            SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
-            SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
-            SetVariable(builtins, "__commandname__", runtime.ScriptData.CommandName);
-            SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
-            SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
-            SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
-            SetVariable(builtins, "__commandcontrolid__", runtime.ScriptData.CommandControlId);
-            SetVariable(builtins, "__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
-            SetVariable(builtins, "__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
-
-            // Add reference to the results dictionary
-            // so the command can add custom values for logging
-            SetVariable(builtins, "__result__", runtime.GetResultsDictionary());
-
-            // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
-            // set event arguments for engine
-            SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
-            SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
+            foreach (var variable in ScriptBuiltins.CreateRuntimeVariables(
+                runtime, RecoveredFromCache, TypeId)) {
+                SetVariable(builtins, variable.Key, variable.Value);
+                module.Set(variable.Key, variable.Value);
+            }
 
             foreach (var variable in ScriptBuiltins.FilterUserVariables(runtime.ScriptRuntimeConfigs?.Variables))
                 SetVariable(builtins, variable.Key, variable.Value);
