@@ -276,15 +276,24 @@ class EventHandlerCleanupTests(unittest.TestCase):
         self.assertIsNone(self.app_domain.GetData(events._REGISTERED_HANDLERS_KEY))
 
     def test_denied_external_event_does_not_block_cleanup_caller(self):
-        """Log a denied request and release tracked delegates without raising."""
+        """Keep handlers tracked and subscribed when an external event is denied."""
         events = self._load("reload-execution", response="Denied")
         events.register_handler("view-activated", lambda *_: None, "script-exec")
+        registered_handler = self.host._uiapp.ViewActivated.handlers[0]
         self.host._api_context = False
 
         events.unregister_all_exec_handlers()
 
         self.assertTrue(self.logger.errors)
-        self.assertIsNone(self.app_domain.GetData(events._REGISTERED_HANDLERS_KEY))
+        self.assertIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
+        registered_handlers = self.app_domain.GetData(
+            events._REGISTERED_HANDLERS_KEY
+        )
+        self.assertIn("script-exec", registered_handlers)
+        self.assertIn(
+            registered_handler,
+            registered_handlers["script-exec"]["view-activated"],
+        )
 
 
 if __name__ == "__main__":
