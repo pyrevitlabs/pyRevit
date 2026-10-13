@@ -98,6 +98,47 @@ def initialize_globals():
 # --------------------
 
 
+def on_view_or_doc_changed(sender, args):
+    try:
+        try:
+            doc_changed = revit.doc != doc
+        except Exception:
+            # old doc was invalidated (all docs closed then a new one opened)
+            doc_changed = True
+        if doc_changed:
+            try:
+                initialize_globals()
+            except Exception:
+                if sb_form:
+                    sb_form.Dispatcher.Invoke(
+                        System.Action(sb_form._on_no_document)
+                    )
+                return
+            if sb_form:
+                sb_form.Dispatcher.Invoke(
+                    System.Action(sb_form._on_document_available)
+                )
+                sb_form.Dispatcher.Invoke(
+                    System.Action(sb_form.update_grids_and_levels)
+                )
+        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+            return
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
+        logger.info("Form updated due to view or document change.")
+    except Exception as ex:
+        logger.exception("Failed to update form: {}".format(ex))
+
+
+def on_doc_closed(sender, args):
+    try:
+        if any(True for _ in (revit.docs or [])):
+            return  # at least one document still open
+        if sb_form:
+            sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
+    except Exception as ex:
+        logger.exception("Failed to handle doc close: {}".format(ex))
+
+
 def create_preview_mesh(section_box, color):
     """Create a mesh for DC3D preview."""
     try:
@@ -1993,7 +2034,8 @@ if __name__ == "__main__":
             sb_form.Activate()
         else:
             script.set_envvar(SBNAV_WINDOW_KEY, None)
-    else:
+            sb_form = None
+    if sb_form is None:
         _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
 
         def _t(key):
@@ -2022,46 +2064,8 @@ if __name__ == "__main__":
             sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
             script.set_envvar(SBNAV_WINDOW_KEY, sb_form)
 
-            @events.handle("view-activated", "doc-changed")
-            def on_view_or_doc_changed(sender, args):
-                try:
-                    try:
-                        doc_changed = revit.doc != doc
-                    except Exception:
-                        # old doc was invalidated (all docs closed then a new one opened)
-                        doc_changed = True
-                    if doc_changed:
-                        try:
-                            initialize_globals()
-                        except Exception:
-                            if sb_form:
-                                sb_form.Dispatcher.Invoke(
-                                    System.Action(sb_form._on_no_document)
-                                )
-                            return
-                        if sb_form:
-                            sb_form.Dispatcher.Invoke(
-                                System.Action(sb_form._on_document_available)
-                            )
-                            sb_form.Dispatcher.Invoke(
-                                System.Action(sb_form.update_grids_and_levels)
-                            )
-                    if not sb_form or not sb_form.chkAutoupdate.IsChecked:
-                        return
-                    sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
-                    logger.info("Form updated due to view or document change.")
-                except Exception as ex:
-                    logger.exception("Failed to update form: {}".format(ex))
-
-            @events.handle("doc-closed")
-            def on_doc_closed(sender, args):
-                try:
-                    if any(True for _ in (revit.docs or [])):
-                        return  # at least one document still open
-                    if sb_form:
-                        sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
-                except Exception as ex:
-                    logger.exception("Failed to handle doc close: {}".format(ex))
+            events.handle("view-activated", "doc-changed")(on_view_or_doc_changed)
+            events.handle("doc-closed")(on_doc_closed)
 
         except Exception as ex:
             logger.exception("Error launching form: {}".format(ex))

@@ -681,7 +681,8 @@ if __name__ == "__main__":
             ui.Activate()
         else:
             script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
-    else:
+            ui = None
+    if ui is None:
         _gate_family_editor()
         ui = FamSlideWindow("FamSlideWindow.xaml")
         ui.show(modal=False)
