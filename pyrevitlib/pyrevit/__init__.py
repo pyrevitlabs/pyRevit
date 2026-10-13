@@ -615,7 +615,7 @@ def _get_execution_scope_value(name):
         return context[name]
     try:
         frame = sys._getframe(1)
-    except AttributeError:
+    except (AttributeError, ValueError):
         return _EXEC_PARAMS_NOT_SET
     while frame:
         scope = frame.f_globals
@@ -628,7 +628,7 @@ def _get_execution_scope_value(name):
 def _capture_execution_scope():
     try:
         frame = sys._getframe(1)
-    except AttributeError:
+    except (AttributeError, ValueError):
         frame = None
     while frame:
         scope = frame.f_globals
