@@ -147,6 +147,37 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void DeniedKeyRaisesUnauthorizedAccessInsteadOfReturningEmpty() {
+            var denied = Assert.ThrowsException<UnauthorizedAccessException>(
+                () => SystemPath.RequireEnvironmentKey(
+                    null, EnvironmentVariableTarget.Machine, writable: true));
+            StringAssert.Contains(denied.Message, "elevation may be required");
+        }
+
+        [TestMethod]
+        public void DeniedReadKeyIsNamedWithoutTheElevationHint() {
+            var denied = Assert.ThrowsException<UnauthorizedAccessException>(
+                () => SystemPath.RequireEnvironmentKey(
+                    null, EnvironmentVariableTarget.User, writable: false));
+            StringAssert.Contains(denied.Message, "User");
+            Assert.IsFalse(denied.Message.Contains("elevation"));
+        }
+
+        [TestMethod]
+        public void OpenKeyIsReturnedWhenItExists() {
+            var subKey = @"Software\pyRevitLabs\UnitTests\SystemPathGuard";
+            try {
+                using (var key = Registry.CurrentUser.CreateSubKey(subKey)) {
+                    Assert.AreSame(key,
+                        SystemPath.RequireEnvironmentKey(key, EnvironmentVariableTarget.User, true));
+                }
+            }
+            finally {
+                Registry.CurrentUser.DeleteSubKeyTree(subKey, throwOnMissingSubKey: false);
+            }
+        }
+
+        [TestMethod]
         public void RawValueWriteKeepsExpandStringKindAndUnexpandedText() {
             var subKey = @"Software\pyRevitLabs\UnitTests\SystemPath";
             try {

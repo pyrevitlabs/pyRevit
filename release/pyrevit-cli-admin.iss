@@ -49,7 +49,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "..\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering the install path..."; Parameters: "env path ensure ""{app}\bin"" --scope=machine"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 
@@ -59,6 +58,34 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden runascurrentuser
 
 [Code]
+function RunPyRevitCommand(const Params: String): Boolean;
+var
+  ResultCode: Integer;
+  PyRevitExe: String;
+begin
+  Result := False;
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not FileExists(PyRevitExe) then
+  begin
+    Log('pyrevit.exe not found: ' + PyRevitExe);
+    Exit;
+  end;
+  Result := Exec(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not Result then
+    Log('Failed to execute pyrevit ' + Params)
+  else if ResultCode <> 0 then
+  begin
+    Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
+    Result := False;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine');
+end;
+
 function InitializeSetup: Boolean;
 begin
   // WebView2 Runtime for the output window renderer

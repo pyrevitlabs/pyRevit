@@ -71,7 +71,6 @@ Source: "..\release\.pyrevitargs"; DestDir: "{app}"; Flags: ignoreversion; Compo
 Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering the install path..."; Parameters: "env path ensure ""{app}\bin"" --scope=user"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden; Check: not IsAdmin
@@ -108,12 +107,6 @@ end;
 
 procedure RunElevatedUserPostInstallCommands;
 begin
-  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user') then
-    MsgBox(
-      'pyRevit was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
-      'You may need to manually add the following folder to your user PATH:' + #13#10 +
-      '  ' + ExpandConstant('{app}\bin'),
-      mbError, MB_OK);
   RunPyRevitCommand('caches clear --all');
   RunPyRevitCommand('detach --all');
   if not RunPyRevitCommand('clones add this master --force') then
@@ -126,8 +119,17 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  if (CurStep = ssPostInstall) and IsAdmin then
-    RunElevatedUserPostInstallCommands;
+  if CurStep = ssPostInstall then
+  begin
+    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user') then
+      MsgBox(
+        'pyRevit was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
+        'You may need to manually add the following folder to your user PATH:' + #13#10 +
+        '  ' + ExpandConstant('{app}\bin'),
+        mbError, MB_OK);
+    if IsAdmin then
+      RunElevatedUserPostInstallCommands;
+  end;
 end;
 
 function InitializeSetup: Boolean;

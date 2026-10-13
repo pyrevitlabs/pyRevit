@@ -237,17 +237,36 @@ namespace pyRevitLabs.Common {
         }
 
         private static RegistryKey OpenEnvironmentKey(EnvironmentVariableTarget scope, bool writable) {
+            RegistryKey key;
             switch (scope) {
                 case EnvironmentVariableTarget.User:
-                    return Registry.CurrentUser.OpenSubKey(UserEnvironmentSubKey, writable);
+                    key = Registry.CurrentUser.OpenSubKey(UserEnvironmentSubKey, writable);
+                    break;
                 case EnvironmentVariableTarget.Machine:
-                    return RegistryKey
+                    key = RegistryKey
                         .OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                         .OpenSubKey(MachineEnvironmentSubKey, writable);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scope), scope,
                         "PATH can only be read from or written to the User and Machine scopes.");
             }
+            return RequireEnvironmentKey(key, scope, writable);
+        }
+
+        /// <summary>
+        /// Guards against the null that <c>OpenSubKey</c> returns instead of throwing when
+        /// access is denied, so a denied read never passes for an empty PATH and a denied write
+        /// never reaches <see cref="RegistryKey.SetValue"/>.
+        /// </summary>
+        internal static RegistryKey RequireEnvironmentKey(RegistryKey key,
+                                                           EnvironmentVariableTarget scope,
+                                                           bool writable) {
+            if (key is null)
+                throw new UnauthorizedAccessException(string.Format(
+                    "Could not open the {0} PATH registry key{1}.", scope,
+                    writable ? " (elevation may be required)" : string.Empty));
+            return key;
         }
 
         internal static string ReadRawPathValue(RegistryKey key) {

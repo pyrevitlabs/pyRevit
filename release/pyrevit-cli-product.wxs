@@ -26,15 +26,15 @@
 		<WixVariable Id="WixUIBannerBmp" Value="pyrevit-banner-wix.bmp" />
 
 		<!-- Install actions -->
-		<CustomAction Id="clearExistingCachesCommandI" Property="clearExistingCachesI" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; caches clear --all" />
+		<CustomAction Id="clearExistingCachesCommandI" Property="clearExistingCachesI" Value="&quot;[BINDIR]pyrevit.exe&quot; caches clear --all" />
 		<CustomAction Id="clearExistingCachesI" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
-		<CustomAction Id="detachExistingClonesCommandI" Property="detachExistingClonesI" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; detach --all" />
+		<CustomAction Id="detachExistingClonesCommandI" Property="detachExistingClonesI" Value="&quot;[BINDIR]pyrevit.exe&quot; detach --all" />
 		<CustomAction Id="detachExistingClonesI" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
 
 		<!-- Uninstall actions -->
-		<CustomAction Id="clearExistingCachesCommandU" Property="clearExistingCachesU" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; caches clear --all" />
+		<CustomAction Id="clearExistingCachesCommandU" Property="clearExistingCachesU" Value="&quot;[BINDIR]pyrevit.exe&quot; caches clear --all" />
 		<CustomAction Id="clearExistingCachesU" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
-		<CustomAction Id="detachExistingClonesCommandU" Property="detachExistingClonesU" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; detach --all" />
+		<CustomAction Id="detachExistingClonesCommandU" Property="detachExistingClonesU" Value="&quot;[BINDIR]pyrevit.exe&quot; detach --all" />
 		<CustomAction Id="detachExistingClonesU" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
 
 		<!-- Install sequence -->
