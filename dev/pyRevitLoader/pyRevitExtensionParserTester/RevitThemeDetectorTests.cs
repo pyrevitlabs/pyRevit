@@ -180,6 +180,29 @@ namespace pyRevitExtensionParserTest
         }
 
         /// <summary>
+        /// Confirms an unreadable host version lands on an unknown year rather than propagating.
+        /// </summary>
+        /// <remarks>
+        /// <c>SetHostRevitYear</c> runs on the startup path, where an exception would abort the
+        /// session load, so it swallows failures and records an unknown year - which the gate
+        /// treats as dark-capable rather than as a broken build.
+        /// <para>
+        /// The <c>UIApplication</c> overload cannot be exercised here: referencing the type at all
+        /// makes the JIT load RevitAPIUI, which is absent outside a Revit host. The
+        /// <c>UIApplication</c> path is covered by the live run on Revit 2023 and 2027 instead.
+        /// </para>
+        /// </remarks>
+        [Test]
+        public void AnUnreadableHostVersionRecordsAnUnknownYear()
+        {
+            Assert.DoesNotThrow(() => RevitThemeDetector.SetHostRevitYearFromVersion(null));
+            Assert.That(RevitThemeDetector.HostRevitYear(), Is.EqualTo(0));
+
+            Assert.DoesNotThrow(() => RevitThemeDetector.SetHostRevitYearFromVersion("2023"));
+            Assert.That(RevitThemeDetector.HostRevitYear(), Is.EqualTo(2023));
+        }
+
+        /// <summary>
         /// Confirms the recorded host year gates the detector, which is the whole point of the
         /// change: a 2023 host that reports "Dark" must resolve to light icons.
         /// </summary>

@@ -164,11 +164,23 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <c>Application</c> as a static yields null because it is an instance property. Either
         /// mistake leaves the year unknown, and an unknown year is treated as dark-capable - which
         /// would silently re-open #3742 on exactly the versions the gate exists for.
+        /// <para>
+        /// Never throws: reading <c>Application</c> can fail while the host is shutting down, and
+        /// this runs on the startup path where an exception would abort the session load. A failed
+        /// read records an unknown year, which the gate treats as dark-capable.
+        /// </para>
         /// </remarks>
         /// <param name="uiApplication">The running Revit <c>UIApplication</c>.</param>
         public static void SetHostRevitYear(UIApplication uiApplication)
         {
-            _cachedRevitYear = ParseRevitYear(uiApplication?.Application?.VersionNumber);
+            try
+            {
+                _cachedRevitYear = ParseRevitYear(uiApplication?.Application?.VersionNumber);
+            }
+            catch (Exception)
+            {
+                _cachedRevitYear = 0;
+            }
         }
 
         /// <summary>
