@@ -16,3 +16,6 @@ tooltip:
   es_es: Carga otros tipos desde la instancia de familia seleccionada
   de_de: Es werden weitere Typen des ausgewählten Familienexemplars geladen
   pt_br: Carrega outros tipos da instância de família selecionada
+context:
+  - doc-project
+  - selection

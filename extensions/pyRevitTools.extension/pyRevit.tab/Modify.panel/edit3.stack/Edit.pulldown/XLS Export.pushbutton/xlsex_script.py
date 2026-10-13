@@ -3,7 +3,8 @@ import os
 import re
 from collections import namedtuple
 
-from pyrevit import script, forms, coreutils, revit, DB
+from pyrevit import script, forms, coreutils, revit, EXEC_PARAMS
+from pyrevit import DB
 from pyrevit.revit import get_parameter_data_type, is_yesno_parameter
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.userconfig import user_config
@@ -700,9 +701,9 @@ def export_xls(src_elements, selected_params, field_mapping=None):
     logger.info("Exported {} elements to {}".format(len(src_elements), file_path))
 
 
-def main(advanced=False):
+def main():
     try:
-        if not advanced:
+        if not EXEC_PARAMS.config_mode:
             schedule = forms.select_schedules(
                 title="Select Schedule to Export",
                 multiple=False,

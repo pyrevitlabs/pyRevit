@@ -17,3 +17,5 @@ tooltip:
   de_de: Konvertiert importierte CAD Objekte in FreeForm oder DirectShape Elemente
   pt_br: Converter Símbolo CAD Importado para Elementos FreeForm ou DirectShape
 is_beta: 
+context:
+  - doc-family

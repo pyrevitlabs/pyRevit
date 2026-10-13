@@ -44,3 +44,5 @@ tooltip:
     
     Esta ferramenta procura parâmetros de projeto (em Folhas) que são de 
     Instância, do tipo 'Numero inteiro', e têm "Order" em seus nomes
+context:
+  - doc-project

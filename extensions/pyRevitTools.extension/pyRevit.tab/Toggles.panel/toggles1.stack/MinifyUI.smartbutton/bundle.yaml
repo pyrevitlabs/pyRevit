@@ -8,42 +8,49 @@ title:
   de_de: Revit UI minimieren
   pt_br: Mini Revit UI
 tooltip:
-  en_us: >-
-    Reduce the list of open Revit tabs
+  en_us: |-
+    Toggle the minimized Revit tab layout.
 
-    Shift+Click:
+    Shift-click:
+    Choose which tabs are hidden when the interface is minimized.
+  ko: |-
+    Revit 탭 레이아웃을 최소화하거나 복원합니다.
 
-    Customize which tabs should be hidden in minified mode
-  ko: 열린 Revit 탭 목록을 줄입니다
+    Shift 키를 누르고 클릭:
+    인터페이스를 최소화할 때 숨길 탭을 선택합니다.
   fr_fr: >-
     Réduire la liste des onglets Revit ouverts
 
-    Shift+Clic :
+    Maj+clic :
 
     Personnalisez les onglets à masquer en mode minimisé
   ru: >-
     Минимизирует список открытых вкладок Revit.
 
-    Shift+Click:
+    Щелчок с удержанием клавиши Shift:
 
     Настроить, какие вкладки должны быть скрыты в мини-режиме.
-  chinese_s: "减少打开的 Revit 选项卡列表\nShift+单击：\n自定义在简化模式下应隐藏哪些选项卡"
+  chinese_s: |-
+    切换 Revit 选项卡的最小化布局。
+
+    按住 Shift 键单击：
+    选择界面最小化时隐藏的选项卡。
   es_es: >-
     Reduce the list of open Revit tabs
 
-    Shift+Click:
+    Mayús-clic:
 
     Customize which tabs should be hidden in minified mode
   de_de: >-
-    Die Aktivierung reduziert die Anzahl der Registerkarten der Revit Multifunktionsleiste.  Welche Registerkarten bei der Aktivierung ausgeblendet werden,  wird in den Einstellungen festgelegt. Die Einstellungen öffnet man,  indem man mit gedrückter Shift-Taste auf das Werkzeug klickt.
+    Die Aktivierung reduziert die Anzahl der Registerkarten der Revit Multifunktionsleiste. Welche Registerkarten dabei ausgeblendet werden, wird in den Einstellungen festgelegt. Diese öffnet man, indem man bei gedrückter Umschalttaste auf das Werkzeug klickt.
 
-    Shift+Click:
+    Bei gedrückter Umschalttaste klicken:
 
     Es öffnet sich ein Auswahldialog mit allen verfügbaren Registerkarten.  Alle Register die hier ausgewählt werden, werden ausgeblendet,  wenn man den Befehl "Revit UI minimieren" aktiviert.
   pt_br: >-
     Reduz a lista de abas abertas do Revit
     
-    Shift-Clique:
+    Clique mantendo a tecla Shift pressionada:
     
     Personalizar quais abas devem ser ocultadas no modo minimizado
 context: zero-doc

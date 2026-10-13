@@ -16,3 +16,5 @@ tooltip:
   es_es: Lista las notas clave que no se han utilizado en este modelo
   de_de: Listet alle Bauelementschlüssel auf, die in diesem Modell nicht verwendet werden
   pt_br: Lista notas-chave que não foram usadas neste modelo
+context:
+  - doc-project
