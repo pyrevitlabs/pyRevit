@@ -205,22 +205,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return _cachedRevitYear ?? 0;
         }
 
-        /// <summary>
-        /// Reads the host Revit year from a live <c>UIApplication</c>. Returns <c>0</c> when the
-        /// host is unavailable or its version cannot be parsed.
-        /// </summary>
-        internal static int ReadRevitYear(UIApplication uiApplication)
-        {
-            try
-            {
-                return ParseRevitYear(uiApplication?.Application?.VersionNumber);
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-        }
-
         internal static string ReadCurrentThemeName(Type revitUiApplicationType)
         {
             var themeManagerType = revitUiApplicationType?.Assembly.GetType(ThemeManagerTypeName);
