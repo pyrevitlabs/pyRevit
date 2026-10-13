@@ -122,11 +122,11 @@ begin
   if CurStep = ssPostInstall then
   begin
     if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user') then
-      MsgBox(
+      SuppressibleMsgBox(
         'pyRevit was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
         'You may need to manually add the following folder to your user PATH:' + #13#10 +
         '  ' + ExpandConstant('{app}\bin'),
-        mbError, MB_OK);
+        mbError, MB_OK, MB_OK);
     if IsAdmin then
       RunElevatedUserPostInstallCommands;
   end;

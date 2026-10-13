@@ -103,7 +103,12 @@ end;
 
 procedure RunAdminPostInstallCommands;
 begin
-  RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine', False);
+  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine', False) then
+    SuppressibleMsgBox(
+      'pyRevit was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
+      'You may need to manually add the following folder to the machine PATH:' + #13#10 +
+      '  ' + ExpandConstant('{app}\bin'),
+      mbError, MB_OK, MB_OK);
   RunPyRevitCommand('caches clear --all', True);
   RunPyRevitCommand('detach --all', True);
   if not RunPyRevitCommand('clones add this master --force', False) then

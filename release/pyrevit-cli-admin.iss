@@ -49,7 +49,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "..\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 
 [UninstallRun]
@@ -83,7 +83,12 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
-    RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine');
+    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine') then
+      SuppressibleMsgBox(
+        'pyRevit CLI was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
+        'You may need to manually add the following folder to the machine PATH:' + #13#10 +
+        '  ' + ExpandConstant('{app}\bin'),
+        mbError, MB_OK, MB_OK);
 end;
 
 function InitializeSetup: Boolean;

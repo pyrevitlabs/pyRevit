@@ -49,7 +49,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "..\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden; Check: not IsAdmin
 
 [UninstallRun]
@@ -91,11 +91,11 @@ begin
   if CurStep = ssPostInstall then
   begin
     if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user') then
-      MsgBox(
+      SuppressibleMsgBox(
         'pyRevit CLI was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
         'You may need to manually add the following folder to your user PATH:' + #13#10 +
         '  ' + ExpandConstant('{app}\bin'),
-        mbError, MB_OK);
+        mbError, MB_OK, MB_OK);
     if IsAdmin then
       RunElevatedUserPostInstallCommands;
   end;
