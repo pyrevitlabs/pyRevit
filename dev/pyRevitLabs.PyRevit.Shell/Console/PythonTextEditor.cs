@@ -20,7 +20,7 @@ namespace PythonConsoleControl
     /// <summary>
     /// Adapts AvalonEdit for console input, output, and completion.
     /// </summary>
-    public class PythonTextEditor
+    public class PythonTextEditor : IDisposable
     {
         internal TextEditor textEditor;
         internal TextArea textArea;
@@ -36,12 +36,14 @@ namespace PythonConsoleControl
         PythonConsoleCompletionDataProvider completionProvider = null;
         Action<Action> completionDispatcher = new Action<Action>((command) => command());
         readonly PythonExecution completionExecution = new PythonExecution();
+        readonly ManualResetEvent disposedEvent = new ManualResetEvent(false);
+        volatile bool disposed;
 
         public PythonTextEditor(TextEditor textEditor)
         {
             this.textEditor = textEditor;
             this.textArea = textEditor.TextArea;
-            completionWaitHandles = new WaitHandle[] { completionRequestedEvent, descriptionRequestedEvent };
+            completionWaitHandles = new WaitHandle[] { completionRequestedEvent, descriptionRequestedEvent, disposedEvent };
             completionThread = new Thread(new ThreadStart(Completion));
             completionThread.Priority = ThreadPriority.Lowest;
             completionThread.IsBackground = true;
@@ -87,6 +89,7 @@ namespace PythonConsoleControl
             return HasForegroundInput() && (GetAsyncKeyState(0x0D) & 0x8000) != 0;
         }
 
+        public void Dispose()
         {
             if (disposed) return;
             disposed = true;
@@ -95,6 +98,7 @@ namespace PythonConsoleControl
             completionWindow?.Close();
         }
 
+        internal void WaitForExit()
         {
             completionThread.Join();
             completionRequestedEvent.Dispose();
@@ -122,10 +126,9 @@ namespace PythonConsoleControl
             Write(text, false, true);
         }
 
-        Stopwatch sw;
-
         public void Write(string text, bool allowSynchronous, bool moveToEnd)
         {
+            if (disposed) return;
             text = text.Replace("\r\r\n", "\r\n");
             text = text.Replace("\r\n", "\n");
             text = text.Replace("\0", "");
@@ -147,32 +150,30 @@ namespace PythonConsoleControl
             {
                 writeInProgress = true;
                 ThreadPool.QueueUserWorkItem(new WaitCallback(CheckAndOutputWriteBuffer), moveToEnd);
-                sw = Stopwatch.StartNew();
             }
         }
 
         private void CheckAndOutputWriteBuffer(Object stateInfo)
         {
             bool moveToEnd = (bool)stateInfo;
-
-            AutoResetEvent writeCompletedEvent = new AutoResetEvent(false);
+            using var writeCompletedEvent = new AutoResetEvent(false);
             Action action = new Action(delegate()
             {
-                string toWrite;
-                lock (writeBuffer)
+                try
                 {
-                    toWrite = writeBuffer.ToString();
-                    writeBuffer.Remove(0, writeBuffer.Length);
+                    if (disposed) return;
+                    string toWrite;
+                    lock (writeBuffer)
+                    {
+                        toWrite = writeBuffer.ToString();
+                        writeBuffer.Remove(0, writeBuffer.Length);
+                    }
+                    if (moveToEnd) MoveToEnd();
+                    PerformTextInput(toWrite);
                 }
-                if (moveToEnd)
-                {
-                    MoveToEnd();
-                }
-                PerformTextInput(toWrite);
-                writeCompletedEvent.Set();
+                finally { writeCompletedEvent.Set(); }
             });
-
-            while (true)
+            while (!disposed)
             {
                 textArea.Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
                 writeCompletedEvent.WaitOne();
@@ -360,6 +361,7 @@ namespace PythonConsoleControl
             while (true)
             {
                 int action = WaitHandle.WaitAny(completionWaitHandles);
+                if (action == 2) return;
                 try
                 {
                 if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
@@ -378,9 +380,11 @@ namespace PythonConsoleControl
             string itemForCompletion = "";
             textArea.Dispatcher.Invoke(new Action(delegate()
             {
+                if (disposed) return;
                 DocumentLine line = textArea.Document.Lines[textArea.Caret.Line - 1];
                 itemForCompletion = textArea.Document.GetText(line.Offset, textArea.Caret.Column - 1);
             }));
+            if (disposed) return;
 
 
             completionDispatcher.Invoke(new Action(delegate()
@@ -389,7 +393,7 @@ namespace PythonConsoleControl
                 {
                     var completionInfo = completionProvider.GenerateCompletionData(itemForCompletion);
 
-                    if (completionInfo != null)
+                    if (completionInfo != null && !disposed)
                     {
                         ICompletionData[] completions = completionInfo.Item1;
                         string objectName = completionInfo.Item2;
@@ -397,6 +401,7 @@ namespace PythonConsoleControl
 
                         if (completions.Length > 0) textArea.Dispatcher.BeginInvoke(new Action(delegate()
                         {
+                            if (disposed) return;
                             completionWindow = new PythonConsoleCompletionWindow(textArea, this);
                             completionWindow.ApplyTheme(UseDarkCompletionTheme);
                             IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;

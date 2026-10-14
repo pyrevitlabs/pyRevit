@@ -22,6 +22,7 @@ namespace PythonConsoleControl
         Thread thread;
         PythonTextEditor textEditor;
         PythonConsole pythonConsole;
+        int disposed;
 
         public event ConsoleCreatedEventHandler ConsoleCreated;
 
@@ -57,15 +58,16 @@ namespace PythonConsoleControl
 
         public void Dispose()
         {
-            if (pythonConsole != null)
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            pythonConsole?.Dispose();
+            textEditor.Dispose();
+            ThreadPool.QueueUserWorkItem(_ =>
             {
-                pythonConsole.Dispose();
-            }
-
-            if (thread != null)
-            {
-                thread.Join();
-            }
+                thread?.Join();
+                pythonConsole?.WaitForExit();
+                textEditor.WaitForExit();
+                Runtime?.Shutdown();
+            });
         }
 
 
@@ -86,15 +88,20 @@ namespace PythonConsoleControl
         {
             SetOutput(new PythonOutputStream(textEditor));
             pythonConsole = new PythonConsole(textEditor, commandLine);
+            if (Volatile.Read(ref disposed) != 0) pythonConsole.Dispose();
             if (ConsoleCreated != null) ConsoleCreated(this, EventArgs.Empty);
             return pythonConsole;
         }
 
         public void WhenConsoleCreated(Action<PythonConsoleHost> action)
         {
+            if (Volatile.Read(ref disposed) != 0) return;
             if (pythonConsole != null)
             {
-                pythonConsole.WhenConsoleInitialized(() => action(this));
+                pythonConsole.WhenConsoleInitialized(() =>
+                {
+                    if (Volatile.Read(ref disposed) == 0) action(this);
+                });
             }
             else
             {

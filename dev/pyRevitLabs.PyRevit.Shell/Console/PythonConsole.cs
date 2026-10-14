@@ -83,10 +83,12 @@ namespace PythonConsoleControl
 
         bool executing => execution.IsRunning;
         readonly PythonExecution execution = new PythonExecution();
+        int disposed;
 
         // The dedicated dispatcher allows commands to be interrupted without blocking the REPL or control.
         Thread dispatcherThread;
         public Dispatcher dispatcher;
+        Dispatcher ownedDispatcher;
 
         string scriptText = String.Empty;
         bool consoleInitialized = false;
@@ -101,6 +103,7 @@ namespace PythonConsoleControl
 
         public PythonConsole(PythonTextEditor textEditor, CommandLine commandLine)
         {
+            using var dispatcherReady = new ManualResetEventSlim();
             waitHandles = new WaitHandle[] { lineReceivedEvent, disposedEvent };
 
             this.commandLine = commandLine;
@@ -108,10 +111,16 @@ namespace PythonConsoleControl
             textEditor.CompletionProvider = new PythonConsoleCompletionDataProvider(commandLine) { ExcludeCallables = disableAutocompletionForCallables };
             textEditor.PreviewKeyDown += textEditor_PreviewKeyDown;
             textEditor.TextEntering += textEditor_TextEntering;
-            dispatcherThread = new Thread(new ThreadStart(DispatcherThreadStartingPoint));
+            dispatcherThread = new Thread(() =>
+            {
+                dispatcher = Dispatcher.CurrentDispatcher;
+                dispatcherReady.Set();
+                DispatcherThreadStartingPoint();
+            });
             dispatcherThread.SetApartmentState(ApartmentState.STA);
             dispatcherThread.IsBackground = true;
             dispatcherThread.Start();
+            dispatcherReady.Wait();
 
             prompt = ">>> ";
 
@@ -204,10 +213,13 @@ namespace PythonConsoleControl
 
         private void DispatcherThreadStartingPoint()
         {
-            dispatcher = Dispatcher.CurrentDispatcher;
-            Dispatcher.Run();
+            ownedDispatcher = Dispatcher.CurrentDispatcher;
+            if (Volatile.Read(ref disposed) != 0)
             {
+                ownedDispatcher.InvokeShutdown();
+                return;
             }
+            Dispatcher.Run();
         }
 
         public void SetDispatcher(Dispatcher dispatcher)
@@ -217,9 +229,24 @@ namespace PythonConsoleControl
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            execution.Dispose();
             disposedEvent.Set();
-            textEditor.PreviewKeyDown -= textEditor_PreviewKeyDown;
-            textEditor.TextEntering -= textEditor_TextEntering;
+            Action detachEditor = () =>
+            {
+                textEditor.PreviewKeyDown -= textEditor_PreviewKeyDown;
+                textEditor.TextEntering -= textEditor_TextEntering;
+            };
+            if (textEditor.textArea.Dispatcher.CheckAccess()) detachEditor();
+            else textEditor.textArea.Dispatcher.BeginInvoke(detachEditor);
+            ownedDispatcher?.BeginInvoke(new Action(() => ownedDispatcher.InvokeShutdown()), DispatcherPriority.Send);
+        }
+
+        internal void WaitForExit()
+        {
+            dispatcherThread.Join();
+            lineReceivedEvent.Dispose();
+            disposedEvent.Dispose();
         }
 
         public TextWriter Output
@@ -524,7 +551,9 @@ namespace PythonConsoleControl
 
         string ReadLineFromTextEditor()
         {
+            if (Volatile.Read(ref disposed) != 0) return null;
             int result = WaitHandle.WaitAny(waitHandles);
+            if (Volatile.Read(ref disposed) != 0) return null;
             if (result == lineReceivedEventIndex)
             {
                 lock (previousLines)

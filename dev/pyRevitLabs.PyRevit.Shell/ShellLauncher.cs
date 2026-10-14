@@ -57,6 +57,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             var mainDispatcher = GetCurrentDispatcher();
             var handler = new ShellExternalEventDispatcher();
             var externalEvent = ExternalEvent.Create(handler);
+            gui.Closed += (sender, args) => handler.Dispose(externalEvent);
             AttachAndDispatch(
                 gui,
                 uiapp,
@@ -264,6 +265,13 @@ namespace PyRevitLabs.PyRevit.Shell {
             }
         }
 
+        public void Dispose(ExternalEvent externalEvent) {
+            lock (_requestsLock) {
+                if (_disposed) return;
+                Dispose();
+                externalEvent.Dispose();
+            }
+        }
 
         public void Execute(UIApplication app) {
             ExecutePendingRequests();

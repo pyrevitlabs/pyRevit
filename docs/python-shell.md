@@ -55,7 +55,7 @@ Statements in modeless and docked shells are marshalled through a Revit `Externa
 modeless or docked shell is open, and the statement runs in a valid API context, so model
 modifications behave the same as they would from a button.
 
-## Interrupting the shell
+## Interrupting and closing the shell
 
 <kbd>Ctrl</kbd>+<kbd>C</kbd> with no selection interrupts the current Python statement and prints `KeyboardInterrupt`.
 With a selection, the shortcut copies the selected text.
@@ -75,6 +75,10 @@ The cancelled statement does not run when Revit later processes the external eve
 Pressing <kbd>Enter</kbd> during completion cancels that completion request without aborting a thread.
 Running editor code while another statement is pending prints a busy message; the editor retains the code for another run.
 
+Closing a floating shell or editor cancels queued work and releases its console, completion worker, dispatcher, Python runtime, and external event.
+Cleanup waits in the background for an executing .NET call to return; closing the window does not block Revit's UI thread.
+Opening another floating shell creates a new runtime.
+Hiding a docked pane retains its console for the Revit session.
 
 ## Regression tests
 
