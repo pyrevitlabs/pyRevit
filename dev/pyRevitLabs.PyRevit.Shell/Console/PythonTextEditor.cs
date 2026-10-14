@@ -361,7 +361,7 @@ namespace PythonConsoleControl
             while (true)
             {
                 int action = WaitHandle.WaitAny(completionWaitHandles);
-                if (action == 2) return;
+                if (completionWaitHandles[action] == disposedEvent) return;
                 try
                 {
                 if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
