@@ -24,6 +24,10 @@ def update_element_comment(element, comment_text):
             return False
 
 
+def on_selection_changed(sender, args):
+    print("Hello World from {}".format(EXEC_PARAMS.command_name))
+
+
 class ExampleUI(forms.WPFWindow):
     """Example modeless window showing execute_in_revit_context usage."""
 
@@ -98,6 +102,7 @@ class ExampleUI(forms.WPFWindow):
         self.output = script.get_output()
         self.output_stream = self.output.output_stream
         self.logger = script.get_logger()
+        script.restore_window_position(self)
         self.selected_element = None
         self.selection_event_enabled = False
         self.enable_selection_event()
@@ -106,6 +111,7 @@ class ExampleUI(forms.WPFWindow):
         """Clean up handlers and release the stored window reference."""
         stop_events()
         self.selection_event_enabled = False
+        script.save_window_position(self)
         stored_ui = script.get_envvar(WINDOW_ENV_KEY)
         if stored_ui is self:
             script.set_envvar(WINDOW_ENV_KEY, None)
@@ -196,7 +202,7 @@ class ExampleUI(forms.WPFWindow):
         if self.selection_event_enabled:
             return
 
-        handle("selection-changed")(lambda sender, args: print("Hello World"))
+        handle("selection-changed")(on_selection_changed)
 
         self.selection_event_enabled = True
         self.event_toggle_button.Content = "Disable Selection Event"
