@@ -55,6 +55,37 @@ Statements in modeless and docked shells are marshalled through a Revit `Externa
 modeless or docked shell is open, and the statement runs in a valid API context, so model
 modifications behave the same as they would from a button.
 
+## Interrupting the shell
+
+<kbd>Ctrl</kbd>+<kbd>C</kbd> with no selection interrupts the current Python statement and prints `KeyboardInterrupt`.
+With a selection, the shortcut copies the selected text.
+The console handles <kbd>Ctrl</kbd>+<kbd>C</kbd> locally during execution and when idle; the shortcut does not invoke Revit's Copy command.
+The shell must have keyboard focus and its containing window must be in the foreground.
+Interrupts are checked at Python trace events, without processing nested Revit UI messages.
+A long-running .NET or native call, such as `time.sleep(60)`, cannot be preempted; cancellation takes effect at the next Python trace event.
+An interrupt belongs to its current statement; a delayed key event or a shortcut still held after that statement ends does not cancel the next statement.
+Code that replaces or disables `sys.settrace` disables these trace checks.
+Each statement installs the shell's trace callback and resets `sys.settrace` to `None` when it finishes; user trace callbacks do not persist between statements.
+IronPython disables tracing when a trace callback raises an exception.
+A bare `except:` or `except BaseException:` can swallow `KeyboardInterrupt`; subsequent interrupts cannot stop that statement after its tracing has been disabled.
+Interruptible loops must allow `KeyboardInterrupt` to propagate.
+
+An interrupt also cancels a queued statement waiting for Revit API context.
+The cancelled statement does not run when Revit later processes the external event.
+Pressing <kbd>Enter</kbd> during completion cancels that completion request without aborting a thread.
+Running editor code while another statement is pending prints a busy message; the editor retains the code for another run.
+
+
+## Regression tests
+
+`dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests` tests execution cancellation, external-event queue lifetime, and a real IronPython REPL's shutdown without Revit.
+The test project builds the pinned vendored engines from initialized submodules; it does not require a prebuilt product `bin` directory.
+Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests/pyRevitLabs.PyRevit.Shell.Tests.csproj -p:IronPythonVersion=IPY2712PR` and repeat with `IPY342`.
+`ShellEnginesDirectory` selects an existing engine deployment for testing instead of building engine sources.
+The build pipeline runs both engine variants against its built assemblies after the runners build. The project is not part of the Labs solution build, which precedes engine staging.
+On Windows, the same project also runs the WPF dispatcher error-path test; that test cannot execute on macOS.
+
+
 ## Startup cost
 
 Registering the dockable pane does not load the shell:

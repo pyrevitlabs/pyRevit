@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
@@ -24,7 +23,7 @@ namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
     /// Creates shell windows with a valid Revit execution context.
     /// </summary>
-    internal static class ShellLauncher {
+    internal static partial class ShellLauncher {
         public static InteractiveShellWindow ShowModal(UIApplication uiapp, IList<string> searchPaths)
             => ShowModalWindow<InteractiveShellWindow>(uiapp, searchPaths);
 
@@ -56,7 +55,7 @@ namespace PyRevitLabs.PyRevit.Shell {
 
             // A modeless shell needs an ExternalEvent to enter a valid API context.
             var mainDispatcher = GetCurrentDispatcher();
-            var handler = new ShellExternalEventDispatcher(gui.ConsoleControl);
+            var handler = new ShellExternalEventDispatcher();
             var externalEvent = ExternalEvent.Create(handler);
             AttachAndDispatch(
                 gui,
@@ -93,7 +92,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         static void ConfigureControl(IronPythonConsoleControl consoleControl, UIApplication uiapp, IList<string> searchPaths, object window, Dispatcher mainDispatcher) {
-            var handler = new ShellExternalEventDispatcher(consoleControl);
+            var handler = new ShellExternalEventDispatcher();
             var externalEvent = ExternalEvent.Create(handler);
 
             consoleControl.WithConsoleHost(host => {
@@ -126,11 +125,11 @@ namespace PyRevitLabs.PyRevit.Shell {
             var request = handler.Enqueue(command);
             ExternalEventRequest response;
             try {
-                response = externalEvent.Raise();
+                response = handler.Raise(externalEvent);
             }
             catch {
                 if (!handler.Cancel(request))
-                    request.Wait();
+                    request.Wait(PythonExecution.CurrentCancellationToken, () => handler.Cancel(request));
                 throw;
             }
 
@@ -141,7 +140,7 @@ namespace PyRevitLabs.PyRevit.Shell {
                         "Revit rejected the pyRevit shell ExternalEvent request: " + response);
             }
 
-            request.Wait();
+            request.Wait(PythonExecution.CurrentCancellationToken, () => handler.Cancel(request));
         }
 
         // Environment setup reads Revit-owned UI state and must run on its dispatcher.
@@ -254,93 +253,20 @@ namespace PyRevitLabs.PyRevit.Shell {
             configure.Invoke(null, new object[] { engine, uiapp, searchPaths });
         }
 
-        // Poll the dispatcher operation so a Ctrl+C keyboard interrupt can break a long run.
-        static void RunOnDispatcher(Dispatcher dispatcher, Action command) {
-            if (command == null)
-                return;
-            if (dispatcher == null)
-                throw new ArgumentNullException(nameof(dispatcher));
-            var operation = dispatcher.BeginInvoke(DispatcherPriority.Normal, command);
-            while (operation.Status != DispatcherOperationStatus.Completed)
-                operation.Wait(TimeSpan.FromSeconds(1));
-        }
     }
 
-    /// <summary>
-    /// Tracks a shell command until Revit has executed it.
-    /// </summary>
-    internal sealed class ShellExternalEventRequest {
-        readonly TaskCompletionSource<bool> _completed =
-            new TaskCompletionSource<bool>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
+    internal sealed partial class ShellExternalEventDispatcher : IExternalEventHandler {
 
-        public ShellExternalEventRequest(Action command) {
-            Command = command ?? throw new ArgumentNullException(nameof(command));
-        }
-
-        public Action Command { get; }
-
-        public void Complete() {
-            _completed.TrySetResult(true);
-        }
-
-        public void Wait() {
-            _completed.Task.GetAwaiter().GetResult();
-        }
-    }
-
-    internal sealed class ShellExternalEventDispatcher : IExternalEventHandler {
-        readonly IronPythonConsoleControl _consoleControl;
-        readonly object _requestsLock = new object();
-        readonly List<ShellExternalEventRequest> _requests =
-            new List<ShellExternalEventRequest>();
-
-        public ShellExternalEventDispatcher(IronPythonConsoleControl consoleControl) {
-            _consoleControl = consoleControl;
-        }
-
-        public ShellExternalEventRequest Enqueue(Action command) {
-            var request = new ShellExternalEventRequest(command);
+        public ExternalEventRequest Raise(ExternalEvent externalEvent) {
             lock (_requestsLock) {
-                _requests.Add(request);
-            }
-            return request;
-        }
-
-        public bool Cancel(ShellExternalEventRequest request) {
-            lock (_requestsLock) {
-                return _requests.Remove(request);
+                if (_disposed) throw new Microsoft.Scripting.KeyboardInterruptException("");
+                return externalEvent.Raise();
             }
         }
 
-        bool TryDequeue(out ShellExternalEventRequest request) {
-            lock (_requestsLock) {
-                if (_requests.Count == 0) {
-                    request = null;
-                    return false;
-                }
-                request = _requests[0];
-                _requests.RemoveAt(0);
-                return true;
-            }
-        }
 
         public void Execute(UIApplication app) {
-            ShellExternalEventRequest request;
-            while (TryDequeue(out request)) {
-                try {
-                    request.Command();
-                }
-                catch (Exception ex) {
-                    _consoleControl.WithConsoleHost(host => {
-                        var formatter = host.Engine.GetService<ExceptionOperations>();
-                        host.Console.WriteLine(formatter.FormatException(ex), Style.Error);
-                    });
-                }
-                finally {
-                    request.Complete();
-                }
-            }
+            ExecutePendingRequests();
         }
 
         public string GetName() {

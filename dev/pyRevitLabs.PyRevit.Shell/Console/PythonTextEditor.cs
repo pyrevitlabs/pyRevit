@@ -12,6 +12,8 @@ using System.Windows.Threading;
 using System.Windows.Input;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace PythonConsoleControl
 {
@@ -33,6 +35,7 @@ namespace PythonConsoleControl
         Thread completionThread;
         PythonConsoleCompletionDataProvider completionProvider = null;
         Action<Action> completionDispatcher = new Action<Action>((command) => command());
+        readonly PythonExecution completionExecution = new PythonExecution();
 
         public PythonTextEditor(TextEditor textEditor)
         {
@@ -51,9 +54,53 @@ namespace PythonConsoleControl
         /// </summary>
         public void SetCompletionDispatcher(Action<Action> newDispatcher)
         {
-            completionDispatcher = newDispatcher;
+            completionDispatcher = command => completionExecution.Run(
+                completionProvider.Engine, command, newDispatcher, IsCompletionStopKeyPressed);
         }
 
+
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int virtualKey);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetAncestor(IntPtr window, uint flags);
+
+        bool HasForegroundInput()
+        {
+            if (!textArea.Dispatcher.CheckAccess() || !textArea.IsKeyboardFocusWithin) return false;
+            var source = PresentationSource.FromVisual(textArea) as HwndSource;
+            return source != null && GetAncestor(source.Handle, 2) == GetAncestor(GetForegroundWindow(), 2);
+        }
+
+        internal bool IsInterruptKeyPressed()
+        {
+            return HasForegroundInput() && SelectionLength == 0
+                && (GetAsyncKeyState(0x11) & 0x8000) != 0
+                && (GetAsyncKeyState(0x43) & 0x8000) != 0;
+        }
+
+        bool IsCompletionStopKeyPressed()
+        {
+            return HasForegroundInput() && (GetAsyncKeyState(0x0D) & 0x8000) != 0;
+        }
+
+        {
+            if (disposed) return;
+            disposed = true;
+            completionExecution.Dispose();
+            disposedEvent.Set();
+            completionWindow?.Close();
+        }
+
+        {
+            completionThread.Join();
+            completionRequestedEvent.Dispose();
+            descriptionRequestedEvent.Dispose();
+            disposedEvent.Dispose();
+        }
         /// <summary>
         /// Whether completion popups should render with the dark theme. Set by the host control
         /// when its theme is applied; read each time a completion window is created.
@@ -282,9 +329,9 @@ namespace PythonConsoleControl
 
         public bool StopCompletion()
         {
-            if (completionProvider.AutocompletionInProgress)
+            if (completionExecution.IsRunning)
             {
-                completionThread.Abort(new Microsoft.Scripting.KeyboardInterruptException(""));
+                completionExecution.Interrupt();
                 return true;
             }
             return false;
@@ -313,8 +360,13 @@ namespace PythonConsoleControl
             while (true)
             {
                 int action = WaitHandle.WaitAny(completionWaitHandles);
+                try
+                {
                 if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
                 if (action == descriptionEventIndex && completionProvider != null && completionWindow != null) BackgroundUpdateCompletionDescription();
+                }
+                catch (Microsoft.Scripting.KeyboardInterruptException) { }
+                catch (OperationCanceledException) { }
             }
         }
 
@@ -363,6 +415,7 @@ namespace PythonConsoleControl
                         }));
                     }
                 }
+                catch (Microsoft.Scripting.KeyboardInterruptException) { throw; }
                 catch (Exception exception)
                 {
                     MessageBox.Show(exception.ToString(), "Error");
@@ -379,6 +432,7 @@ namespace PythonConsoleControl
                 {
                     completionWindow.UpdateCurrentItemDescription();
                 }
+                catch (Microsoft.Scripting.KeyboardInterruptException) { throw; }
                 catch (Exception exception)
                 {
                     MessageBox.Show(exception.ToString(), "Error");

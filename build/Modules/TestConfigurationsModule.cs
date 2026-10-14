@@ -55,6 +55,17 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        foreach (var engine in new[] { "IPY2712PR", "IPY342" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.ShellTestProject,
+                configuration,
+                [
+                    $"-p:ShellEnginesDirectory={Path.Combine(PyRevitPaths.BinPath, "netcore", "engines")}",
+                    $"-p:IronPythonVersion={engine}",
+                ],
+                cancellationToken);
+
         foreach (string framework in new[] { "net48", "net8.0-windows" })
             await RunTestsAsync(
                 context,
