@@ -2,7 +2,7 @@
 # type: ignore
 """Section Box Navigator - Modeless window for section box navigation."""
 
-from pyrevit import revit, script, forms, EXEC_PARAMS
+from pyrevit import revit, script, forms
 from pyrevit.framework import System, Controls, Media, Windows
 from pyrevit.revit import events, units
 from pyrevit import DB
@@ -213,8 +213,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
-
-        self.exec_id = EXEC_PARAMS.exec_id
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
@@ -1972,7 +1970,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
-            events.delayed_unregister_exec_handlers(self.exec_id)
+            events.stop_events()
 
             script.save_window_position(self)
 
