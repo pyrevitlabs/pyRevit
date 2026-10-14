@@ -12,7 +12,7 @@ using PythonConsoleControl;
 namespace pyRevitLabs.PyRevit.Shell.Tests {
     public class InteractiveCommandLineLifecycleTests {
         [Fact]
-        public void DisposeEndsRealInteractiveLoopAndShutsDownRuntime() {
+        public void ClosingInputEndsInteractiveLoopAndInvokesRuntimeShutdownHook() {
             using var execution = new PythonExecution();
             using var input = new ClosingConsole();
             using var languageShutdown = new ManualResetEventSlim();

@@ -21,11 +21,13 @@ namespace PyRevitLabs.PyRevit.Shell {
             finally { Complete(); }
         }
 
+        /// <summary>
+        /// Waits for queued cancellation or for an executing API callback to return.
+        /// </summary>
         public void Wait(CancellationToken cancellationToken, Func<bool> cancelPending) {
             try { completed.Task.Wait(cancellationToken); }
             catch (AggregateException) { }
             catch (OperationCanceledException) {
-                // An executing request retains its scope until the API callback returns.
                 if (cancelPending()) throw new KeyboardInterruptException("");
             }
             completed.Task.GetAwaiter().GetResult();

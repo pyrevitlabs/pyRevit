@@ -113,17 +113,55 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
         public void HeldInterruptKeyDoesNotInterruptFollowingStatement() {
             var engine = Python.CreateEngine();
             using var execution = new PythonExecution();
+            var keyChecks = 0;
+            Func<bool> newPress = () => Interlocked.Increment(ref keyChecks) > 1;
             try {
                 Assert.Throws<KeyboardInterruptException>(() =>
-                    execution.Run(engine, () => engine.Execute("41"), command => command(), () => true));
+                    execution.Run(engine, () => engine.Execute("41"), command => command(), newPress));
                 object result = null;
                 execution.Run(engine, () => result = engine.Execute("42"), command => command(), () => true);
                 Assert.Equal(42, result);
                 execution.Run(engine, () => engine.Execute("0"), command => command(), () => false);
+                keyChecks = 0;
                 Assert.Throws<KeyboardInterruptException>(() =>
-                    execution.Run(engine, () => engine.Execute("43"), command => command(), () => true));
+                    execution.Run(engine, () => engine.Execute("43"), command => command(), newPress));
             }
             finally { engine.Runtime.Shutdown(); }
+        }
+
+        [Fact]
+        public async Task KeyHeldAcrossManagedCallCannotCancelNextStatementAsync() {
+            var engine = Python.CreateEngine();
+            using var execution = new PythonExecution();
+            using var enteredCall = new ManualResetEventSlim();
+            using var releaseCall = new ManualResetEventSlim();
+            var keyPressed = false;
+            Action managedCall = () => {
+                enteredCall.Set();
+                releaseCall.Wait();
+            };
+            Func<bool> keyState = () => Volatile.Read(ref keyPressed);
+            var first = Task.Run(() => Record.Exception(() =>
+                execution.Run(engine, managedCall, command => command(), keyState)));
+            try {
+                Assert.True(enteredCall.Wait(TimeSpan.FromSeconds(10)));
+                Volatile.Write(ref keyPressed, true);
+                releaseCall.Set();
+                Assert.Null(await first.WaitAsync(TimeSpan.FromSeconds(10)));
+                object result = null;
+                execution.Run(engine, () => result = engine.Execute("42"), command => command(), keyState);
+                Assert.Equal(42, result);
+                Volatile.Write(ref keyPressed, false);
+                Assert.Throws<KeyboardInterruptException>(() => execution.Run(engine, () => {
+                    Volatile.Write(ref keyPressed, true);
+                    engine.Execute("43");
+                }, command => command(), keyState));
+            }
+            finally {
+                releaseCall.Set();
+                await first.WaitAsync(TimeSpan.FromSeconds(10));
+                engine.Runtime.Shutdown();
+            }
         }
 
         [Fact]

@@ -6,7 +6,9 @@ using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     internal static partial class ShellLauncher {
-        // The modal command retains its API context until the dispatched action returns.
+        /// <summary>
+        /// Retains the modal API context until the dispatched action returns.
+        /// </summary>
         internal static void RunOnDispatcher(Dispatcher dispatcher, Action command) {
             if (command == null) return;
             if (dispatcher == null) throw new ArgumentNullException(nameof(dispatcher));

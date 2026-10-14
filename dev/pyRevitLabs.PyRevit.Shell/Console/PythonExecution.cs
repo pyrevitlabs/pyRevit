@@ -13,7 +13,6 @@ namespace PythonConsoleControl {
         readonly object executionLock = new object();
         CancellationTokenSource cancellation;
         bool disposed;
-        // WPF input timestamps use the Windows GetTickCount clock.
         int executionStarted;
         bool interruptKeyPressed;
         bool hasInterruptedExecution;
@@ -21,6 +20,9 @@ namespace PythonConsoleControl {
         int interruptedEnded;
 
         internal static CancellationToken CurrentCancellationToken => currentCancellationToken;
+        /// <summary>
+        /// Gets the Windows message tick clock used by WPF input timestamps.
+        /// </summary>
         internal static int InputTimestamp => isWindows ? GetTickCount() : Environment.TickCount;
 
         [DllImport("kernel32.dll")]
@@ -75,6 +77,10 @@ namespace PythonConsoleControl {
             currentCancellationToken = source.Token;
             try {
                 dispatch(() => {
+                    if (interruptRequested != null) {
+                        var keyPressedAtStart = interruptRequested();
+                        lock (executionLock) interruptKeyPressed = keyPressedAtStart;
+                    }
                     TracebackDelegate trace = null;
                     var nextKeyboardCheck = InputTimestamp;
                     trace = (frame, traceEvent, payload) => {

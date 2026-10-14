@@ -10,6 +10,7 @@ using ModularPipelines.Options;
 namespace Build.Modules;
 
 [DependsOn<BuildRunnersModule>]
+[DependsOn<BuildShellModule>]
 /// <summary>
 /// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, and
 /// compatibility tests after their build outputs are available.

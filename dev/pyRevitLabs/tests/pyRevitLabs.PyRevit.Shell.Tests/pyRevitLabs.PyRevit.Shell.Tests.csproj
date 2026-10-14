@@ -27,6 +27,16 @@
         <ProjectReference Include="$(EngineSourceDirectory)/Src/IronPython.Modules/IronPython.Modules.csproj"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT' and '$(ShellEnginesDirectory)' == ''">
+        <ProjectReference Include="../../../pyRevitLabs.PyRevit.Shell/pyRevitLabs.PyRevit.Shell.csproj"
+                          AdditionalProperties="Configuration=Release $(IronPythonVersion);TargetFrameworks=net8.0-windows;PlatformTarget=AnyCPU;RevitVersion=2025"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT' and '$(ShellEnginesDirectory)' != ''">
+        <Reference Include="pyRevitLabs.PyRevit.Shell" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/pyRevitLabs.PyRevit.Shell.dll"/>
+        <Reference Include="ICSharpCode.AvalonEdit" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/ICSharpCode.AvalonEdit.dll"/>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(ShellEnginesDirectory)' != ''">
         <Reference Include="IronPython" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)IronPython.dll"/>
         <Reference Include="IronPython.Modules" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)IronPython.Modules.dll"/>
@@ -46,6 +56,7 @@
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
         <Compile Remove="ShellDispatcherTests.cs"/>
+        <Compile Remove="PythonConsoleHostLifecycleTests.cs"/>
     </ItemGroup>
 
 </Project>

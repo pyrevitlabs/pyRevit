@@ -86,8 +86,8 @@ Hiding a docked pane retains its console for the Revit session.
 The test project builds the pinned vendored engines from initialized submodules; it does not require a prebuilt product `bin` directory.
 Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests/pyRevitLabs.PyRevit.Shell.Tests.csproj -p:IronPythonVersion=IPY2712PR` and repeat with `IPY342`.
 `ShellEnginesDirectory` selects an existing engine deployment for testing instead of building engine sources.
-The build pipeline runs both engine variants against its built assemblies after the runners build. The project is not part of the Labs solution build, which precedes engine staging.
-On Windows, the same project also runs the WPF dispatcher error-path test; that test cannot execute on macOS.
+The build pipeline runs both engine variants against its built assemblies after the runners and shell builds. The project is not part of the Labs solution build, which precedes engine staging.
+On Windows, the same project tests WPF dispatcher failures and disposal of the production console host, including worker termination and the runtime shutdown hook; these tests cannot execute on macOS.
 
 
 ## Startup cost
