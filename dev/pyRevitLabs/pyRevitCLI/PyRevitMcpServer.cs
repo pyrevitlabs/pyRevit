@@ -25,6 +25,8 @@ namespace pyRevitCLI {
     /// session and every write goes through one lock.
     /// Implements the tools subset of MCP (initialize, ping, tools/list, tools/call) with
     /// newline-delimited JSON-RPC 2.0; no SDK dependency.
+    /// Malformed request fields receive JSON-RPC errors; notifications receive no response.
+    /// Unexpected dispatch failures receive an internal error without ending the session.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -84,34 +86,43 @@ namespace pyRevitCLI {
                 var id = message["id"];
                 if (id == null)
                     continue;
+                if (id.Type != JTokenType.Integer && id.Type != JTokenType.Float
+                    && id.Type != JTokenType.String && id.Type != JTokenType.Null) {
+                    Write(Error(null, -32600, "Invalid Request"));
+                    continue;
+                }
                 if (method == null) {
                     Write(Error(id, -32600, "Invalid Request"));
                     continue;
                 }
 
                 var parameters = message["params"] as JObject ?? new JObject();
-                switch (method) {
-                    case "initialize":
-                        if (parameters["protocolVersion"] != null
-                            && (parameters["protocolVersion"] as JValue)?.Value is not string) {
-                            Write(Error(id, -32602, "Invalid params: 'protocolVersion' must be a string."));
+                try {
+                    switch (method) {
+                        case "initialize":
+                            if ((parameters["protocolVersion"] as JValue)?.Value is not string) {
+                                Write(Error(id, -32602, "Invalid params: missing or invalid 'protocolVersion'; expected a string."));
+                                break;
+                            }
+                            Write(Result(id, Initialize(parameters)));
                             break;
-                        }
-                        Write(Result(id, Initialize(parameters)));
-                        break;
-                    case "ping":
-                        Write(Result(id, new JObject()));
-                        break;
-                    case "tools/list":
-                        Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
-                        break;
-                    case "tools/call":
-                        inFlight.RemoveAll(task => task.IsCompleted);
-                        inFlight.Add(Task.Run(() => CallTool(id, parameters)));
-                        break;
-                    default:
-                        Write(Error(id, -32601, "Method not found: " + method));
-                        break;
+                        case "ping":
+                            Write(Result(id, new JObject()));
+                            break;
+                        case "tools/list":
+                            Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
+                            break;
+                        case "tools/call":
+                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.Add(Task.Run(() => CallTool(id, parameters)));
+                            break;
+                        default:
+                            Write(Error(id, -32601, "Method not found"));
+                            break;
+                    }
+                }
+                catch (Exception) {
+                    Write(Error(id, -32603, "Internal error"));
                 }
             }
 
@@ -138,8 +149,8 @@ namespace pyRevitCLI {
                 JObject result;
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
-                    if (name == null) {
-                        Write(Error(id, -32602, "Invalid params: 'name' must be a string."));
+                    if (string.IsNullOrWhiteSpace(name)) {
+                        Write(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
@@ -157,6 +168,12 @@ namespace pyRevitCLI {
                 }
                 catch (AgentClientException ex) {
                     result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
+                }
+                catch (InvalidCastException) {
+                    result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument type." }.ToString(Formatting.None), true);
+                }
+                catch (FormatException) {
+                    result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument format." }.ToString(Formatting.None), true);
                 }
                 catch (Exception ex) {
                     result = ToolResult(new JObject { ["error"] = "server_error", ["message"] = ex.Message }.ToString(Formatting.None), true);

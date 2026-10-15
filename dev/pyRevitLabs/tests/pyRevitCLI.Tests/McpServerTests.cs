@@ -92,7 +92,7 @@ public partial class McpServerTests : IDisposable {
 
         Assert.Equal(3, responses.Count);
         Assert.Equal(-32601, responses[0]["error"].Value<int>("code"));
-        Assert.Contains("no/such/method", responses[0]["error"].Value<string>("message"));
+        Assert.Equal("Method not found", responses[0]["error"].Value<string>("message"));
         Assert.Equal(-32700, responses[1]["error"].Value<int>("code"));
         Assert.Equal(JTokenType.Null, responses[1]["id"].Type);
         Assert.Equal(2, responses[2].Value<int>("id"));
@@ -156,6 +156,144 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(-32602, responses[0]["error"].Value<int>("code"));
         Assert.Equal(2, responses[1].Value<int>("id"));
         Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AnEmptyToolNameIsInvalidParamsAndDoesNotReachTheHost(string name) {
+        var request = ToolCall(1, "get_context");
+        request["params"]["name"] = name;
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.Equal(-32602, error["error"].Value<int>("code"));
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("true")]
+    public void InvalidIdsAreNotReflectedAndDoNotPreventTheNextPing(string id) {
+        var request = Request(1, "ping");
+        request["id"] = JToken.Parse(id);
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(JTokenType.Null, responses[0]["id"].Type);
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    [Theory]
+    [InlineData("1")]
+    [InlineData("1.5")]
+    [InlineData("\"request-1\"")]
+    [InlineData("null")]
+    public void ValidIdsArePreserved(string id) {
+        var request = Request(1, "ping");
+        request["id"] = JToken.Parse(id);
+
+        var response = Single(request);
+
+        Assert.True(JToken.DeepEquals(request["id"], response["id"]));
+        Assert.Empty((JObject)response["result"]);
+    }
+
+    [Theory]
+    [InlineData("name", "tools/call")]
+    [InlineData("protocolVersion", "initialize")]
+    public void MissingRequiredFieldsAnswerInvalidParams(string field, string method) {
+        var request = method == "tools/call" ? ToolCall(1, "get_context") : Request(1, method, new JObject());
+        ((JObject)request["params"]).Remove(field);
+
+        var response = Single(request);
+
+        Assert.Equal(-32602, response["error"].Value<int>("code"));
+        Assert.Contains("missing or invalid '" + field + "'", response["error"].Value<string>("message"));
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void MissingMethodsAreInvalidRequestsButMalformedNotificationsHaveNoResponse() {
+        var request = Request(1, "ping");
+        request.Remove("method");
+
+        var responses = Serve(request, new JObject { ["method"] = new JObject() }, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+    }
+
+    [Fact]
+    public void OmittedToolArgumentsDefaultToAnEmptyObject() {
+        var request = ToolCall(1, "list_automation");
+        ((JObject)request["params"]).Remove("arguments");
+
+        var response = Single(request);
+
+        Assert.False(IsError(response));
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("run_query", "{\"script\":{}}")]
+    [InlineData("run_query", "{\"script\":[]}")]
+    [InlineData("run_query", "{\"script\":\"result = 1\",\"title\":{}}")]
+    [InlineData("navigate_revit_link", "{\"link\":{\"destination\":{},\"ids\":[1]}}")]
+    [InlineData("navigate_revit_link", "{\"link\":{\"destination\":\"element\",\"ids\":[1],\"document\":{}},\"action\":{}}")]
+    [InlineData("run_automation", "{\"id\":{}}")]
+    [InlineData("get_run", "{\"run_id\":{}}")]
+    [InlineData("get_skill", "{\"name\":{}}")]
+    [InlineData("get_skill", "{\"name\":\"revit-scripting\",\"file\":{}}")]
+    [InlineData("lookup_pyrevit_api", "{\"query\":{}}")]
+    public void WrongTypedStringArgumentsReturnInvalidParamsWithoutClrDetails(string tool, string arguments) {
+        var responses = Serve(ToolCall(1, tool, JObject.Parse(arguments)), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.True(IsError(error));
+        Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
+        Assert.Equal("Invalid tool argument type.", Payload(error).Value<string>("message"));
+        Assert.Empty(host.Requests);
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+    }
+
+    [Fact]
+    public void DispatchFailuresAnswerInternalErrorAndDoNotPreventTheNextPing() {
+        var input = new StringReader(Request(1, "ping").ToString(Formatting.None) + "\n" + Request(2, "ping").ToString(Formatting.None));
+        var output = new FailingOnceWriter();
+
+        PyRevitMcpServer.Serve(null, input, output);
+
+        var responses = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(JObject.Parse).ToList();
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.Equal(-32603, responses[0]["error"].Value<int>("code"));
+        Assert.Equal("Internal error", responses[0]["error"].Value<string>("message"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    private sealed class FailingOnceWriter : StringWriter {
+        private bool failed;
+
+        public override void WriteLine(string value) {
+            if (!failed) {
+                failed = true;
+                throw new IOException("Sensitive internal failure details");
+            }
+            base.WriteLine(value);
+        }
     }
 
     [Fact]
