@@ -98,6 +98,66 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(2, responses[2].Value<int>("id"));
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("42")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public void InvalidMethodTypesAnswerAnErrorAndDoNotPreventTheNextPing(string method) {
+        var request = Request(1, "ping");
+        request["method"] = JToken.Parse(method);
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    [Theory]
+    [InlineData("name", "{}")]
+    [InlineData("name", "[]")]
+    [InlineData("name", "42")]
+    [InlineData("name", "true")]
+    [InlineData("name", "null")]
+    [InlineData("arguments", "[]")]
+    [InlineData("arguments", "\"invalid\"")]
+    [InlineData("arguments", "null")]
+    public void InvalidToolCallFieldTypesAnswerAnErrorAndDoNotPreventTheNextPing(string field, string value) {
+        var request = ToolCall(1, "get_context");
+        request["params"][field] = JToken.Parse(value);
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.Equal(-32602, error["error"].Value<int>("code"));
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("{}")]
+    [InlineData("42")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public void InvalidProtocolVersionTypesAnswerAnErrorAndDoNotPreventTheNextPing(string protocolVersion) {
+        var request = Request(1, "initialize", new JObject { ["protocolVersion"] = JToken.Parse(protocolVersion) });
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.Equal(-32602, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
     [Fact]
     public void TheToolListHasTheExpectedToolsWithConsistentSchemasAndHints() {
         var tools = ((JArray)Single(Request(1, "tools/list"))["result"]["tools"]).Cast<JObject>().ToList();

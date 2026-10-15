@@ -80,14 +80,23 @@ namespace pyRevitCLI {
                     continue;
                 }
 
-                var method = message.Value<string>("method");
+                var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
-                if (method == null || id == null)
+                if (id == null)
                     continue;
+                if (method == null) {
+                    Write(Error(id, -32600, "Invalid Request"));
+                    continue;
+                }
 
                 var parameters = message["params"] as JObject ?? new JObject();
                 switch (method) {
                     case "initialize":
+                        if (parameters["protocolVersion"] != null
+                            && (parameters["protocolVersion"] as JValue)?.Value is not string) {
+                            Write(Error(id, -32602, "Invalid params: 'protocolVersion' must be a string."));
+                            break;
+                        }
                         Write(Result(id, Initialize(parameters)));
                         break;
                     case "ping":
@@ -110,7 +119,7 @@ namespace pyRevitCLI {
         }
 
         private static JObject Initialize(JObject parameters) {
-            var requested = parameters.Value<string>("protocolVersion");
+            var requested = (parameters["protocolVersion"] as JValue)?.Value as string;
             return new JObject {
                 ["protocolVersion"] = SupportedProtocolVersions.Contains(requested) ? requested : LatestProtocolVersion,
                 ["capabilities"] = new JObject { ["tools"] = new JObject { ["listChanged"] = false } },
@@ -124,14 +133,22 @@ namespace pyRevitCLI {
         }
 
         private void CallTool(JToken id, JObject parameters) {
-            var name = parameters.Value<string>("name");
-            var arguments = parameters["arguments"] as JObject ?? new JObject();
-            var progressToken = parameters["_meta"]?["progressToken"];
-
-            var progress = StartProgress(progressToken);
+            Timer progress = null;
             try {
                 JObject result;
                 try {
+                    var name = (parameters["name"] as JValue)?.Value as string;
+                    if (name == null) {
+                        Write(Error(id, -32602, "Invalid params: 'name' must be a string."));
+                        return;
+                    }
+                    if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
+                        Write(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        return;
+                    }
+                    var arguments = parameters["arguments"] as JObject ?? new JObject();
+                    var progressToken = (parameters["_meta"] as JObject)?["progressToken"];
+                    progress = StartProgress(progressToken);
                     var payload = Dispatch(name, arguments);
                     var isError = payload is JObject run && run.Value<string>("status") == "error";
                     result = payload is JObject captured && captured["image_base64"] != null
