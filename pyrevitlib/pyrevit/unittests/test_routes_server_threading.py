@@ -421,7 +421,9 @@ class ApiRequestQueueTests(unittest.TestCase):
                 with lock:
                     failures.append(error)
 
-        threads = [threading.Thread(target=send, args=(index,)) for index in range(count)]
+        threads = [
+            threading.Thread(target=send, args=(index,)) for index in range(count)
+        ]
         for thread in threads:
             thread.daemon = True
             thread.start()
@@ -468,7 +470,9 @@ class ApiRequestQueueTests(unittest.TestCase):
             response = request_handler._call_host_event_sync(
                 base.Request(), lambda request, uiapp: calls.append(request)
             )
-            self.assertEqual(504, handler.RequestHandler.parse_response(response).status)
+            self.assertEqual(
+                504, handler.RequestHandler.parse_response(response).status
+            )
             http_server.external_event.release.set()
             http_server.external_event.thread.join(5)
             self.assertFalse(http_server.external_event.thread.is_alive())
@@ -498,10 +502,13 @@ class ApiRequestQueueTests(unittest.TestCase):
         http_server.external_event.dispatcher = dispatcher
         request_handler = _FakeRequestHandler()
         request_handler.server = http_server
-        first = request_handler._call_host_event(
-            base.Request(path="/callback", data={"callbackUrl": "http://callback/"}), route
+        first = handler.RequestWorkItem(
+            base.Request(path="/callback", data={"callbackUrl": "http://callback/"}),
+            route,
         )
-        second = request_handler._call_host_event(base.Request(path="/sync"), route)
+        second = handler.RequestWorkItem(base.Request(path="/sync"), route)
+        self.assertIsNone(request_handler._call_host_event(first))
+        self.assertIsNone(request_handler._call_host_event(second))
         try:
             self.assertTrue(http_server.external_event.raised.wait(5))
             http_server.external_event.release.set()
@@ -515,34 +522,122 @@ class ApiRequestQueueTests(unittest.TestCase):
             dispatcher.stop()
             http_server.external_event.release.set()
 
-    def test_running_timeout_keeps_later_responses_separate(self):
-        """Finishing a cancelled active item cannot overwrite its timeout."""
-        dispatcher = handler.RequestHandler()
+    def test_running_request_waits_for_its_actual_result(self):
+        """The queue timeout must not reject work already executing in Revit."""
+        http_server = _ApiHttpServer(1)
+        dispatcher = http_server.request_handler
         entered = threading.Event()
         release = threading.Event()
+        cancel_attempted = threading.Event()
+        responses = []
+        original_timeout = server.API_REQUEST_TIMEOUT
+        original_cancel = dispatcher.cancel
+        server.API_REQUEST_TIMEOUT = 0.01
+        original_raise = http_server.external_event.Raise
+
+        def raise_and_wait():
+            result = original_raise()
+            entered.wait(5)
+            return result
+
+        http_server.external_event.Raise = raise_and_wait
 
         def slow_route(request, uiapp):
             entered.set()
             release.wait(5)
-            return "late response"
+            return "actual response"
 
-        first = dispatcher.enqueue(base.Request(), slow_route)
-        thread = threading.Thread(target=dispatcher.Execute, args=(None,))
+        def cancel(item, response):
+            cancelled = original_cancel(item, response)
+            cancel_attempted.set()
+            return cancelled
+
+        def send():
+            request_handler = _FakeRequestHandler()
+            request_handler.server = http_server
+            responses.append(
+                request_handler._call_host_event_sync(base.Request(), slow_route)
+            )
+
+        dispatcher.cancel = cancel
+        http_server.external_event.release.set()
+        thread = threading.Thread(target=send)
         thread.daemon = True
         thread.start()
         try:
             self.assertTrue(entered.wait(5))
-            dispatcher.cancel(first, base.Response(status=504))
-            second = dispatcher.enqueue(
+            self.assertTrue(cancel_attempted.wait(5))
+            self.assertTrue(thread.is_alive())
+            self.assertEqual([], responses)
+            second = handler.RequestWorkItem(
                 base.Request(), lambda request, uiapp: "second response"
             )
+            self.assertIsNone(dispatcher.enqueue(second))
             release.set()
             self.assertTrue(second.event.wait(5))
             thread.join(5)
             self.assertFalse(thread.is_alive())
-            self.assertEqual(504, first.response.status)
+            self.assertEqual(["actual response"], responses)
             self.assertEqual("second response", second.response)
         finally:
+            server.API_REQUEST_TIMEOUT = original_timeout
             dispatcher.stop()
             release.set()
             thread.join(5)
+            if http_server.external_event.thread is not None:
+                http_server.external_event.thread.join(5)
+
+    def test_fast_callback_error_still_acknowledges_with_no_content(self):
+        """A completed callback route never returns its handler response twice."""
+        http_server = _ApiHttpServer(1)
+        dispatcher = http_server.request_handler
+        callbacks = []
+        responses = []
+        request = base.Request(data={"callbackUrl": "http://callback/"})
+
+        def route(request, uiapp):
+            return base.Response(status=409, data="route response")
+
+        def callback(url, response):
+            callbacks.append((url, response.status))
+
+        def raise_immediately():
+            dispatcher.Execute(None)
+            return server.UI.ExternalEventRequest.Accepted
+
+        dispatcher.make_callback = callback
+        http_server.external_event.Raise = raise_immediately
+        request_handler = _FakeRequestHandler()
+        request_handler.server = http_server
+        request_handler._parse_request_info = lambda: ("api", "/", "")
+        request_handler._find_route_handler = lambda *args: (None, route)
+        request_handler._prepare_request = lambda *args: request
+        request_handler._write_response = responses.append
+        try:
+            request_handler._handle_route("GET")
+            self.assertEqual([204], [response.status for response in responses])
+            self.assertEqual([("http://callback/", 409)], callbacks)
+        finally:
+            dispatcher.stop()
+
+    def test_host_rejections_use_standard_exception_response(self):
+        """Denied and timed-out events preserve routes' JSON exception contract."""
+        for result, status in (
+            (server.UI.ExternalEventRequest.Denied, 503),
+            (server.UI.ExternalEventRequest.TimedOut, 504),
+        ):
+            http_server = _ApiHttpServer(1)
+            http_server.external_event.Raise = lambda: result
+            request_handler = _FakeRequestHandler()
+            request_handler.server = http_server
+            item = handler.RequestWorkItem(
+                base.Request(path="/rejected"), lambda request, uiapp: None
+            )
+            rejection = request_handler._call_host_event(item)
+            self.assertIsNotNone(rejection)
+            self.assertTrue(item.event.wait(0.1))
+            parsed = handler.RequestHandler.parse_response(rejection)
+            self.assertEqual(status, parsed.status)
+            self.assertIn('"exception"', parsed.data)
+            self.assertIn("/rejected", parsed.data)
+            http_server.request_handler.stop()

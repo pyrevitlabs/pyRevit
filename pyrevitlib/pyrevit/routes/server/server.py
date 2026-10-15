@@ -128,38 +128,41 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             query_params=query_params,
         )
 
-    def _call_host_event(self, request, route_handler):
-        """Enqueue before raising so coalesced events cannot lose requests."""
+    def _call_host_event(self, item):
+        """Enqueue and raise, returning only a server rejection or None."""
         dispatcher = self.server.request_handler
-        item = dispatcher.enqueue(request, route_handler)
-        if item.event.is_set():
-            return item
+        rejection = dispatcher.enqueue(item)
+        if rejection is not None:
+            return rejection
+        rejection = None
         try:
             result = self.server.external_event.Raise()
             if result == UI.ExternalEventRequest.Denied:
-                dispatcher.cancel(
-                    item, base.Response(status=503, data={"error": "Host denied request"})
-                )
+                rejection = excp.RouteHandlerDeniedException(item.request)
             elif result == UI.ExternalEventRequest.TimedOut:
-                dispatcher.cancel(
-                    item, base.Response(status=504, data={"error": "Host event timed out"})
-                )
+                rejection = excp.RouteHandlerTimedOutException(item.request)
         except Exception as event_error:
-            dispatcher.cancel(
-                item, base.Response(status=503, data={"error": str(event_error)})
+            rejection = excp.RouteHandlerDeniedException(
+                item.request, message=str(event_error)
             )
-        return item
+        if rejection is not None and dispatcher.cancel(item, rejection):
+            return rejection
+        return None
 
     def _call_host_event_sync(self, request, route_handler):
-        """Wait on this request only, with a bounded host execution timeout."""
-        item = self._call_host_event(request, route_handler)
+        """Time out only queued work that Revit never started.
+
+        Once Execute takes the item, wait for its actual result: returning a
+        timeout cannot cancel a running handler or its changes to the model.
+        """
+        item = handler.RequestWorkItem(request, route_handler)
+        self._call_host_event(item)
         if not item.event.wait(API_REQUEST_TIMEOUT):
-            self.server.request_handler.cancel(
-                item,
-                base.Response(
-                    status=504, data={"error": "Timed out waiting for Revit API request"}
-                ),
+            cancelled = self.server.request_handler.cancel(
+                item, excp.RouteHandlerTimedOutException(request)
             )
+            if not cancelled:
+                item.event.wait()
         return item.response
 
     def _write_response(self, response):
@@ -194,9 +197,10 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # if handler has uiapp in arguments, run in host api context
         if handler.RequestHandler.wants_api_context(route_handler):
             if request.callback_url:
-                item = self._call_host_event(request, route_handler)
-                if item.event.is_set() and getattr(item.response, "status", 200) >= 400:
-                    self._write_response(item.response)
+                item = handler.RequestWorkItem(request, route_handler)
+                rejection = self._call_host_event(item)
+                if rejection is not None:
+                    self._write_response(rejection)
                 else:
                     self._write_response(base.Response(status=base.NO_CONTENT))
             else:
@@ -377,7 +381,9 @@ class RoutesServer(object):
     def __init__(self, host, port):
         self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
         self.server.request_handler = handler.RequestHandler()
-        self.server.external_event = UI.ExternalEvent.Create(self.server.request_handler)
+        self.server.external_event = UI.ExternalEvent.Create(
+            self.server.request_handler
+        )
         self.host = host
         self.port = port
         self.server_thread = None
@@ -497,7 +503,9 @@ class RoutesServer(object):
         try:
             self.server.request_handler.stop()
         except Exception:
-            mlogger.error("Routes request queue stop failed | %s", traceback.format_exc())
+            mlogger.error(
+                "Routes request queue stop failed | %s", traceback.format_exc()
+            )
         try:
             if self.is_running:
                 self.request_shutdown(timeout)

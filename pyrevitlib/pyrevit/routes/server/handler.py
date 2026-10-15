@@ -101,7 +101,7 @@ class RequestWorkItem(object):
         self._lock = threading.Lock()
 
     def complete(self, response):
-        """Publish the first result, preserving shutdown and timeout errors."""
+        """Publish the first result, preserving queued-request rejections."""
         with self._lock:
             if not self.event.is_set():
                 self.response = response
@@ -119,42 +119,41 @@ class RequestHandler(UI.IExternalEventHandler):
         self._queue = deque()
         self._lock = threading.Lock()
         self._stopped = False
-        self._active = None
 
-    def enqueue(self, request, handler):
-        """Register a request without replacing another request's state."""
-        item = RequestWorkItem(request, handler)
+    def enqueue(self, item):
+        """Register work, returning a server rejection only when stopped."""
         with self._lock:
             if self._stopped:
-                item.complete(self.stopped_response())
-            else:
-                self._queue.append(item)
-        return item
+                response = self.stopped_response(item.request)
+                item.complete(response)
+                return response
+            self._queue.append(item)
+        return None
 
     @staticmethod
-    def stopped_response():
-        """Explain why a request cannot run during stop or session reload."""
-        return base.Response(
-            status=503, data={"error": "Routes server stopped or reloaded"}
+    def stopped_response(request):
+        """Explain why queued work cannot run during stop or session reload."""
+        return excp.RouteHandlerDeniedException(
+            request, message="Routes server stopped or reloaded: %s" % request.path
         )
 
     def cancel(self, item, response):
-        """Cancel queued work, or release a waiter whose handler is running."""
+        """Reject only work that has not been taken by Execute."""
         with self._lock:
             try:
                 self._queue.remove(item)
             except ValueError:
-                pass
+                return False
             item.complete(response)
+            return True
 
     def stop(self):
-        """Fail queued and running waiters without waiting on the Revit thread."""
+        """Reject queued work, allowing the executing handler to finish normally."""
         with self._lock:
             self._stopped = True
             while self._queue:
-                self._queue.popleft().complete(self.stopped_response())
-            if self._active is not None:
-                self._active.complete(self.stopped_response())
+                item = self._queue.popleft()
+                item.complete(self.stopped_response(item.request))
 
     @staticmethod
     def run_handler(handler, kwargs):
@@ -255,7 +254,7 @@ class RequestHandler(UI.IExternalEventHandler):
         # now process reponse based on obj type
         # it is an exception is has .message
         # write the exeption to output and return
-        if hasattr(response, "message"):
+        if isinstance(response, Exception) or hasattr(response, "message"):
             status = (
                 response.status
                 if hasattr(response, "status")
@@ -309,14 +308,12 @@ class RequestHandler(UI.IExternalEventHandler):
                 if self._stopped or not self._queue:
                     return
                 item = self._queue.popleft()
-                self._active = item
             response = None
             try:
-                if not item.event.is_set():
-                    kwargs = self.prepare_handler_kwargs(
-                        item.request, item.handler, uiapp=uiapp
-                    )
-                    response = self.run_handler(item.handler, kwargs)
+                kwargs = self.prepare_handler_kwargs(
+                    item.request, item.handler, uiapp=uiapp
+                )
+                response = self.run_handler(item.handler, kwargs)
             except Exception as exec_ex:
                 response = excp.RouteHandlerExecException(message=str(exec_ex))
             finally:
@@ -326,9 +323,6 @@ class RequestHandler(UI.IExternalEventHandler):
                         self.make_callback(item.request.callback_url, item.response)
                 except Exception:
                     mlogger.debug("Routes callback failed | %s", traceback.format_exc())
-                finally:
-                    with self._lock:
-                        self._active = None
 
     def GetName(self):
         """String identification of the event handler."""

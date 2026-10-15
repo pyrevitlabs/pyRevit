@@ -180,18 +180,53 @@ class RoutesServerStopTests(unittest.TestCase):
             called.append(request.path)
 
         items = [
-            dispatcher.enqueue(base.Request(path="/%s" % index), route)
+            handler.RequestWorkItem(base.Request(path="/%s" % index), route)
             for index in range(10)
         ]
+        for item in items:
+            self.assertIsNone(dispatcher.enqueue(item))
         instance.stop()
         dispatcher.Execute(None)
-        items.append(dispatcher.enqueue(base.Request(), route))
+        rejected = handler.RequestWorkItem(base.Request(), route)
+        self.assertIsNotNone(dispatcher.enqueue(rejected))
+        items.append(rejected)
 
         for item in items:
             self.assertTrue(item.event.wait(0.1))
             self.assertEqual(503, item.response.status)
-            self.assertIn("stopped or reloaded", item.response.data["error"])
+            parsed = handler.RequestHandler.parse_response(item.response)
+            self.assertIn("stopped or reloaded", parsed.data)
+            self.assertIn('"exception"', parsed.data)
         self.assertEqual([], called)
+
+    def test_handler_that_stops_server_keeps_its_response(self):
+        """Reload initiated by an active route preserves sync and callback results."""
+        for callback_url in (None, "http://callback/"):
+            instance = self._make_routes_server()
+            dispatcher = instance.server.request_handler
+            callbacks = []
+
+            def route(request, uiapp):
+                instance.stop()
+                return {"session_id": "reloaded-session"}
+
+            def callback(url, response):
+                callbacks.append((url, response))
+
+            dispatcher.make_callback = callback
+            request = base.Request(data={"callbackUrl": callback_url})
+            item = handler.RequestWorkItem(request, route)
+            queued = handler.RequestWorkItem(base.Request(), route)
+            self.assertIsNone(dispatcher.enqueue(item))
+            self.assertIsNone(dispatcher.enqueue(queued))
+            dispatcher.Execute(None)
+
+            self.assertTrue(item.event.wait(0.1))
+            self.assertEqual({"session_id": "reloaded-session"}, item.response)
+            self.assertTrue(queued.event.wait(0.1))
+            self.assertEqual(503, queued.response.status)
+            expected = [(callback_url, item.response)] if callback_url else []
+            self.assertEqual(expected, callbacks)
 
     def test_stop_joins_the_accept_loop_and_closes_the_socket(self):
         """A stop shuts the accept loop down, releases the socket and forgets the thread."""
