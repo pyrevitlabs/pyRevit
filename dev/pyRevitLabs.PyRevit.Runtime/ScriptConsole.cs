@@ -192,6 +192,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private volatile bool _documentStarted;
         private volatile bool _outputLossReported;
         private string _frozenBodyHtml;
+        private System.Windows.Controls.TextBox _plainTextOutput;
+        private readonly RowDefinition _rendererRow = new RowDefinition();
         private int _inlineWaitIndex = -1;
         private string _initialStyleSheetPath;
         private string _outputHtmlPath;
@@ -335,9 +337,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             Grid.SetRow(activityBar, 0);
 
             // Add the WebView2 renderer to the Grid
-            var rendererRow = new RowDefinition();
-            baseGrid.RowDefinitions.Add(rendererRow);
-            Grid.SetRow(_webView.Control, 1);
+            baseGrid.RowDefinitions.Add(_rendererRow);
+            Grid.SetRow(_webView.Control, baseGrid.RowDefinitions.IndexOf(_rendererRow));
 
             // standard input bar
             var stdinRow = new RowDefinition();
@@ -569,6 +570,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
             _webView.EnsureReady(ProvideInitialPageUri);
+            if (_webView.RuntimeMissing && _plainTextOutput == null) {
+                var grid = Content as Grid;
+                if (grid == null)
+                    return;
+                _plainTextOutput = new System.Windows.Controls.TextBox {
+                    IsReadOnly = true,
+                    AcceptsReturn = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Margin = new Thickness(12),
+                    Text = "WebView2 Runtime not found.\n"
+                        + "Script output is displayed as plain text. Install the Microsoft Edge "
+                        + "WebView2 Evergreen Runtime, then reopen this window:\n"
+                        + ScriptWebView.RuntimeDownloadUrl + "\n\n"
+                };
+                Grid.SetRow(_plainTextOutput, grid.RowDefinitions.IndexOf(_rendererRow));
+                _webView.Control.Visibility = Visibility.Collapsed;
+                grid.Children.Add(_plainTextOutput);
+            }
         }
 
         private string ProvideInitialPageUri() {
@@ -615,15 +635,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
         }
 
+        /// <summary>Buffers subsequent output until <see cref="Unfreeze"/> in either renderer.</summary>
         public void Freeze() {
             if (_frozen)
                 return;
             EnsureDocumentReadyBlocking();
-            _frozenBodyHtml = DecodeJsonString(_webView.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
+            _frozenBodyHtml = _webView.RuntimeMissing
+                ? string.Empty
+                : DecodeJsonString(_webView.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
             _frozen = true;
             UpdateInlineWaitAnimation();
         }
 
+        /// <summary>Releases buffered output to the browser or the plain-text fallback.</summary>
         public void Unfreeze() {
             if (!_frozen)
                 return;
@@ -636,10 +660,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 snapshot = _frozenBodyHtml ?? string.Empty;
             }
-            _webView.EvalScript("document.body.innerHTML = " + ToJsString(snapshot) + ";");
+            if (_webView.RuntimeMissing) {
+                lock (_pendingLock) {
+                    _pendingHtml.Append(snapshot);
+                }
+            }
+            else {
+                _webView.EvalScript("document.body.innerHTML = " + ToJsString(snapshot) + ";");
+            }
             _frozenBodyHtml = null;
             _frozen = false;
             UpdateInlineWaitAnimation(false);
+            if (_webView.RuntimeMissing)
+                QueueFlush();
         }
 
         public void ScrollToBottom() {
@@ -669,8 +702,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>Focuses the visible browser or plain-text output control.</summary>
         public void FocusOutput() {
-            _webView.Control.Focus();
+            if (_plainTextOutput != null)
+                _plainTextOutput.Focus();
+            else
+                _webView.Control.Focus();
         }
 
         /// <summary>
@@ -755,8 +792,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         ///
         /// Content arriving before the document is ready stays buffered until
         /// <see cref="ScriptWebView.DocumentReady"/>; re-queueing instead would
-        /// spin the dispatcher for as long as the core takes to come up. Content
-        /// is discarded only once the renderer can never render it.
+        /// spin the dispatcher for as long as the core takes to come up.
+        /// A missing runtime displays buffered entries as plain text.
         /// </summary>
         private void FlushPendingEntries() {
             _flushQueued = false;
@@ -770,12 +807,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (payload.Length == 0 || ClosedByUser)
                 return;
 
-            if (_webView.RuntimeMissing || _webView.InitializationFailed) {
-                ReportOutputLossOnce();
+            EnsureDocumentReady();
+
+            if (_webView.RuntimeMissing) {
+                var plainText = ToPlainText(payload);
+                if (plainText.Length == 0)
+                    return;
+                if (!ScriptOutputUi.TryBeginInvoke(() => {
+                    if (_plainTextOutput == null) {
+                        ReportOutputLossOnce();
+                        return;
+                    }
+                    _plainTextOutput.AppendText(plainText);
+                    _plainTextOutput.ScrollToEnd();
+                }))
+                    ReportOutputLossOnce();
                 return;
             }
 
-            EnsureDocumentReady();
+            if (_webView.InitializationFailed) {
+                ReportOutputLossOnce();
+                return;
+            }
 
             if (!_webView.IsDocumentReady) {
                 lock (_pendingLock) {
@@ -785,6 +838,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             _webView.PostScript(BuildInsertEntriesJs(ToJsString(payload)));
+        }
+
+        internal static string ToPlainText(string html) {
+            var text = Regex.Replace(html, @"</(?:td|th)>", "\t", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\t*</tr>", "\n", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\n?</table>", string.Empty, RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"<br\s*/?>|</(?:div|p|pre|h[1-6]|li)>", "\n", RegexOptions.IgnoreCase);
+            return System.Net.WebUtility.HtmlDecode(Regex.Replace(text, "<[^>]*>", string.Empty));
         }
 
         /// <summary>
@@ -1220,7 +1281,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         internal void CopyRendererSelection() {
             try {
                 Dispatcher.Invoke(new Action(() => {
-                    var selection = DecodeJsonString(
+                    var selection = _plainTextOutput?.SelectedText ?? DecodeJsonString(
                         _webView.EvalScript("window.getSelection().toString()"));
                     if (!string.IsNullOrEmpty(selection))
                         Clipboard.SetText(selection);
@@ -1233,7 +1294,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal bool RendererHasFocus {
-            get { return _webView.Control != null && _webView.Control.IsKeyboardFocusWithin; }
+            get { return _plainTextOutput?.IsKeyboardFocusWithin ?? _webView.Control.IsKeyboardFocusWithin; }
         }
 
         internal static string ToJsString(string value) {
@@ -1374,7 +1435,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void CopyButton_Click(object sender, RoutedEventArgs e) {
             SyncFlushBlocking();
-            var text = DecodeJsonString(_webView.EvalScript("document.body.innerText"));
+            var text = _plainTextOutput?.Text ?? DecodeJsonString(_webView.EvalScript("document.body.innerText"));
             Clipboard.SetText(text ?? string.Empty);
             var notif = new ToolTip() { Content = "Copied to Clipboard" };
             notif.StaysOpen = false;
@@ -1433,6 +1494,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         try {
                             if (vkCode == VK_C)
                                 _console.CopyRendererSelection();
+                            else if (_console._plainTextOutput != null)
+                                _console.Dispatcher.Invoke(new Action(_console._plainTextOutput.SelectAll));
                             else
                                 _console.PostRendererScript("document.execCommand('SelectAll');");
                         }
