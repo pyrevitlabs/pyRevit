@@ -3,7 +3,7 @@
 """Section Box Navigator - Modeless window for section box navigation."""
 
 from pyrevit import revit, script, forms
-from pyrevit.framework import System, Controls, Media
+from pyrevit.framework import System, Controls, Media, Windows
 from pyrevit.revit import events, units
 from pyrevit import DB
 from pyrevit.coreutils import applocales
@@ -59,6 +59,7 @@ TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
 TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
+SBNAV_WINDOW_KEY = "PYREVITTOOLS_SBNAV_WINDOW"
 IS_DARK = forms.is_dark_theme()
 BRUSH_COLORS = {
     "error": Media.Brushes.Red if not IS_DARK else Media.Brushes.LightCoral,
@@ -95,6 +96,47 @@ def initialize_globals():
 # --------------------
 # Helper Functions
 # --------------------
+
+
+def on_view_or_doc_changed(sender, args):
+    try:
+        try:
+            doc_changed = revit.doc != doc
+        except Exception:
+            # old doc was invalidated (all docs closed then a new one opened)
+            doc_changed = True
+        if doc_changed:
+            try:
+                initialize_globals()
+            except Exception:
+                if sb_form:
+                    sb_form.Dispatcher.Invoke(
+                        System.Action(sb_form._on_no_document)
+                    )
+                return
+            if sb_form:
+                sb_form.Dispatcher.Invoke(
+                    System.Action(sb_form._on_document_available)
+                )
+                sb_form.Dispatcher.Invoke(
+                    System.Action(sb_form.update_grids_and_levels)
+                )
+        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+            return
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
+        logger.info("Form updated due to view or document change.")
+    except Exception as ex:
+        logger.exception("Failed to update form: {}".format(ex))
+
+
+def on_doc_closed(sender, args):
+    try:
+        if any(True for _ in (revit.docs or [])):
+            return  # at least one document still open
+        if sb_form:
+            sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
+    except Exception as ex:
+        logger.exception("Failed to handle doc close: {}".format(ex))
 
 
 def create_preview_mesh(section_box, color):
@@ -157,51 +199,6 @@ def create_adjusted_box(
     new_box.Transform = transform
 
     return new_box
-
-
-# --------------------
-# Event Monitor
-# --------------------
-
-
-@events.handle("doc-changed")
-@events.handle("view-activated")
-def on_view_or_doc_changed(sender, args):
-    try:
-        try:
-            doc_changed = revit.doc != doc
-        except Exception:
-            # old doc was invalidated (all docs closed then a new one opened)
-            doc_changed = True
-        if doc_changed:
-            try:
-                initialize_globals()
-            except Exception:
-                if sb_form:
-                    sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
-                return
-            if sb_form:
-                sb_form.Dispatcher.Invoke(System.Action(sb_form._on_document_available))
-                sb_form.Dispatcher.Invoke(
-                    System.Action(sb_form.update_grids_and_levels)
-                )
-        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
-            return
-        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
-        logger.info("Form updated due to view or document change.")
-    except Exception as ex:
-        logger.exception("Failed to update form: {}".format(ex))
-
-
-@events.handle("doc-closed")
-def on_doc_closed(sender, args):
-    try:
-        if any(True for _ in (revit.docs or [])):
-            return  # at least one document still open
-        if sb_form:
-            sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
-    except Exception as ex:
-        logger.exception("Failed to handle doc close: {}".format(ex))
 
 
 # --------------------
@@ -1973,11 +1970,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
-            # Save window position
-            script.save_window_position(self)
-
-            # Unregister event handlers
             events.stop_events()
+
+            script.save_window_position(self)
 
             # Cleanup form - shouldn't be necessary?
             global sb_form
@@ -2020,42 +2015,59 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception:
             logger.exception("Error during cleanup.")
 
+        finally:
+            script.set_envvar(SBNAV_WINDOW_KEY, None)
+
 
 # ---------
 # Run main
 # ---------
 
 if __name__ == "__main__":
-    _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
+    sb_form = script.get_envvar(SBNAV_WINDOW_KEY)
+    if sb_form is not None:
+        if sb_form.IsLoaded:
+            if sb_form.WindowState == Windows.WindowState.Minimized:
+                sb_form.WindowState = Windows.WindowState.Normal
+            sb_form.Activate()
+        else:
+            script.set_envvar(SBNAV_WINDOW_KEY, None)
+            sb_form = None
+    if sb_form is None:
+        _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
 
-    def _t(key):
-        return applocales.get_locale_string_from_xaml(_xaml_path, key)
+        def _t(key):
+            return applocales.get_locale_string_from_xaml(_xaml_path, key)
 
-    try:
-        initialize_globals()
-        if not active_view.IsSectionBoxActive:
-            info = get_section_box_info(active_view, DATAFILENAME)
-            restored_bbox = info.get("box") if info else None
-            if restored_bbox:
-                if forms.alert(
-                    _t("StoredSectionBoxFound"),
-                    cancel=True,
-                    title=_t("RestoreSectionBox"),
-                ):
-                    with revit.Transaction("Restore SectionBox"):
-                        active_view.SetSectionBox(restored_bbox)
-            else:
-                forms.alert(
-                    _t("NoSectionBoxMessage"),
-                    title=_t("NoSectionBoxTitle"),
-                    exitscript=True,
-                )
+        try:
+            initialize_globals()
+            if not active_view.IsSectionBoxActive:
+                info = get_section_box_info(active_view, DATAFILENAME)
+                restored_bbox = info.get("box") if info else None
+                if restored_bbox:
+                    if forms.alert(
+                        _t("StoredSectionBoxFound"),
+                        cancel=True,
+                        title=_t("RestoreSectionBox"),
+                    ):
+                        with revit.Transaction("Restore SectionBox"):
+                            active_view.SetSectionBox(restored_bbox)
+                else:
+                    forms.alert(
+                        _t("NoSectionBoxMessage"),
+                        title=_t("NoSectionBoxTitle"),
+                        exitscript=True,
+                    )
 
-        sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
+            sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
+            script.set_envvar(SBNAV_WINDOW_KEY, sb_form)
 
-    except Exception as ex:
-        logger.exception("Error launching form: {}".format(ex))
-        forms.alert(
-            _t("AnErrorOccurredFormat").format(str(ex)),
-            title=_t("ErrorTitle"),
-        )
+            events.handle("view-activated", "doc-changed")(on_view_or_doc_changed)
+            events.handle("doc-closed")(on_doc_closed)
+
+        except Exception as ex:
+            logger.exception("Error launching form: {}".format(ex))
+            forms.alert(
+                _t("AnErrorOccurredFormat").format(str(ex)),
+                title=_t("ErrorTitle"),
+            )
