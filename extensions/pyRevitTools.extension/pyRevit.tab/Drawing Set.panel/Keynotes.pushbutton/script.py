@@ -252,6 +252,9 @@ class KeynoteSetupError(Exception):
 
 
 LOCK_ALERT_TITLE = "Keynote Manager - Locked"
+READ_ALERT_TITLE = "Keynote Manager - Read Error"
+WRITE_LOCK_TIMEOUT_MARKER = "Wait for unlock timeout"
+READ_TIMEOUT_MARKER = "Read timeout"
 RELEASE_LOCKS_HINT = (
     "If nobody is working on it - for example their Revit closed or "
     "crashed - click the padlock button next to Update Model to release "
@@ -323,14 +326,14 @@ def describe_lock_error(ex):
             "An earlier change in this window did not finish.",
             "Close Keynote Manager, open it again, and retry.",
         )
-    if "Wait for unlock timeout" in text:
+    if WRITE_LOCK_TIMEOUT_MARKER in text:
         return (
             "The keynote file is busy.",
             "Someone else is saving changes to it right now. Wait a few "
             "seconds and try again.\n\nIf this keeps happening, a Revit "
             "session may have closed or crashed while saving. " + RELEASE_LOCKS_HINT,
         )
-    if "Read timeout" in text:
+    if READ_TIMEOUT_MARKER in text:
         details = (
             "Another program, such as Desktop Connector or OneDrive, may be "
             "syncing it. Wait a moment and try again."
@@ -345,12 +348,21 @@ def describe_lock_error(ex):
 def alert_db_error(ex, fallback=None):
     """Tell the user a keynote-file operation failed, in plain words.
 
-    Lock failures get the friendly explanation; anything else shows
-    `fallback`, or the raw message when there is none.
+    Lock and read failures get their respective explanation and title;
+    anything else shows `fallback`, or the raw message when there is none.
     """
     friendly = describe_lock_error(ex)
     if friendly:
-        forms.alert(friendly[0], sub_msg=friendly[1], title=LOCK_ALERT_TITLE)
+        text = getattr(ex, "Message", None) or str(ex)
+        read_failure = (
+            isinstance(ex, System.UnauthorizedAccessException)
+            or READ_TIMEOUT_MARKER in text
+        )
+        forms.alert(
+            friendly[0],
+            sub_msg=friendly[1],
+            title=READ_ALERT_TITLE if read_failure else LOCK_ALERT_TITLE,
+        )
     else:
         forms.alert(fallback or getattr(ex, "Message", None) or str(ex))
 
@@ -2806,7 +2818,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             )
         except System.UnauthorizedAccessException as readex:
             friendly = describe_lock_error(readex)
-            raise KeynoteSetupError("\n\n".join(friendly))
+            raise KeynoteSetupError(
+                "\n\n".join(friendly) if friendly else readex.Message
+            )
         except Exception as ex:
             raise KeynoteSetupError(
                 "Cannot connect to this project's keynote file.\n%s\n\n"
@@ -2919,7 +2933,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 self._conn = kdb.connect(self._kfile)
             except System.TimeoutException as toutex:
-                if ("Wait for unlock timeout" in toutex.Message
+                if (WRITE_LOCK_TIMEOUT_MARKER in toutex.Message
                         and self._offer_write_lock_release(self._kfile)):
                     continue
                 logger.debug("keynote file connect timed out | %s", toutex.Message)
@@ -2929,7 +2943,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 )
             except System.UnauthorizedAccessException as readex:
                 friendly = describe_lock_error(readex)
-                raise KeynoteSetupError("\n\n".join(friendly))
+                raise KeynoteSetupError(
+                    "\n\n".join(friendly) if friendly else readex.Message
+                )
             except Exception as ex:
                 logger.debug("Connection failed | %s" % ex)
                 res = forms.alert(

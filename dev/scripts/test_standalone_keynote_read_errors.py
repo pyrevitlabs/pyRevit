@@ -22,6 +22,13 @@ def _load_error_handlers():
     names = {
         "KeynoteSetupError",
         "describe_lock_error",
+        "alert_db_error",
+        "lock_owner_label",
+        "lock_target_label",
+        "LOCK_ALERT_TITLE",
+        "READ_ALERT_TITLE",
+        "WRITE_LOCK_TIMEOUT_MARKER",
+        "READ_TIMEOUT_MARKER",
         "RELEASE_LOCKS_HINT",
         "_RESTRICTING_LOCK_RE",
         "MAX_KFILE_ATTEMPTS",
@@ -79,6 +86,8 @@ class KeynoteReadErrorTests(unittest.TestCase):
             logger=Mock(),
             op=SimpleNamespace(exists=lambda path: True),
             kdb=Mock(),
+            HOST_APP=SimpleNamespace(username="current-user"),
+            forms=Mock(),
         )
         self.window = self.namespace["KeynoteManagerWindow"]()
         self.window._kfile = "Keynotes.txt"
@@ -176,6 +185,101 @@ class KeynoteReadErrorTests(unittest.TestCase):
         self.namespace["forms"].alert.assert_not_called()
         self.window._offer_write_lock_release.assert_not_called()
         self.assertEqual(2, self.namespace["kdb"].connect.call_count)
+
+    def test_access_denied_without_friendly_description_keeps_message(self):
+        """Error handlers tolerate a formatter without an explanation."""
+        self.namespace["describe_lock_error"] = Mock(return_value=None)
+        self.namespace["kdb"].connect.side_effect = _AccessDeniedError("Access denied.")
+        for method_name in ("_open_kfile", "_connect_kfile"):
+            with self.subTest(method=method_name):
+                method = getattr(self.window, method_name)
+                args = (self.window._kfile,) if method_name == "_open_kfile" else ()
+                with self.assertRaises(self.namespace["KeynoteSetupError"]) as raised:
+                    method(*args)
+                self.assertEqual("Access denied.", str(raised.exception))
+        self.namespace["forms"].alert.assert_not_called()
+        self.window._offer_write_lock_release.assert_not_called()
+
+    def test_read_errors_have_read_alert_title(self):
+        """Read and permission failures are not shown as locked files."""
+        for error in (
+            _TimeoutError("Read timeout."),
+            _AccessDeniedError("Access denied."),
+        ):
+            with self.subTest(error=error):
+                self.namespace["alert_db_error"](error)
+                self.assertEqual(
+                    "Keynote Manager - Read Error",
+                    self.namespace["forms"].alert.call_args.kwargs["title"],
+                )
+
+    def test_write_errors_keep_locked_alert_title(self):
+        """Write-lock recovery retains its existing dialog title."""
+        self.namespace["alert_db_error"](_TimeoutError("Wait for unlock timeout."))
+        self.assertEqual(
+            "Keynote Manager - Locked",
+            self.namespace["forms"].alert.call_args.kwargs["title"],
+        )
+
+    def test_connection_lock_names_owner_and_target(self):
+        """The production lock-description helpers are available in the harness."""
+        self.namespace["kdb"].CATEGORIES_TABLE = "categories"
+        headline, details = self.namespace["describe_lock_error"](
+            _TimeoutError(
+                'restricted by <ConnectionLock id:"lock-id" '
+                'sig:"workstation:other-user:connection-id" locking:"db:categories:A">'
+            )
+        )
+        self.assertEqual(
+            "other-user (on computer WORKSTATION) is editing group A.", headline
+        )
+        self.assertIn("padlock", details)
+
+
+class KeynoteSchemaReadErrorTests(unittest.TestCase):
+    """Schema verification propagates I/O errors without attempting writes."""
+
+    def test_connect_does_not_create_schema_after_read_failure(self):
+        """Every schema read preserves both timeout and permission failures."""
+        path = SCRIPT_PATH.with_name("keynotesdb.py")
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        tree.body = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name in ("_verify_keynotesdb_def", "connect")
+        ]
+        for error_type in (_TimeoutError, _AccessDeniedError):
+            for stage in ("database", "categories", "keynotes"):
+                with self.subTest(error=error_type.__name__, stage=stage):
+                    error = error_type("Cannot read keynote file.")
+                    conn = Mock()
+                    if stage == "database":
+                        conn.ReadDB.side_effect = error
+                    elif stage == "categories":
+                        conn.ReadTable.side_effect = error
+                    else:
+                        conn.ReadTable.side_effect = [None, error]
+                    namespace = {
+                        "System": SimpleNamespace(
+                            TimeoutException=_TimeoutError,
+                            UnauthorizedAccessException=_AccessDeniedError,
+                        ),
+                        "KEYNOTES_DB": "keynotes",
+                        "CATEGORIES_TABLE": "categories",
+                        "KEYNOTES_TABLE": "keynotes",
+                        "HOST_APP": SimpleNamespace(username="current-user"),
+                        "framework": Mock(),
+                        "dfdb": Mock(),
+                        "mlogger": Mock(),
+                    }
+                    namespace["dfdb"].DataBase.Connect.return_value = conn
+                    exec(compile(tree, str(path), "exec"), namespace)
+                    with self.assertRaises(error_type) as raised:
+                        namespace["connect"]("Keynotes.txt")
+                    self.assertIs(error, raised.exception)
+                    conn.CreateDB.assert_not_called()
+                    conn.CreateTable.assert_not_called()
 
 
 if __name__ == "__main__":

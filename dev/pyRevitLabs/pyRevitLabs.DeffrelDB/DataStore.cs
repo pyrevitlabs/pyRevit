@@ -244,7 +244,14 @@ namespace pyRevitLabs.DeffrelDB {
             else
                 logger.Debug("    OPEN");
 
-            DataLines = Load();
+            try {
+                DataLines = Load();
+            }
+            catch {
+                if (ExclusiveAccess)
+                    ReleaseLock();
+                throw;
+            }
         }
 
         private void Close() {
@@ -430,6 +437,7 @@ namespace pyRevitLabs.DeffrelDB {
                 }
                 catch (IOException exception) {
                     readError = exception;
+                    Thread.Sleep(50);
                 }
             }
 
@@ -439,8 +447,10 @@ namespace pyRevitLabs.DeffrelDB {
                     dlines.Add(new DataLine(line, DataLineCommitType.Read));
                 return dlines;
             }
-            else
+            else {
+                logger.Debug("    READ FAILED | {0}", readError);
                 throw new TimeoutException("Read timeout.", readError);
+            }
         }
 
 #if TRACE

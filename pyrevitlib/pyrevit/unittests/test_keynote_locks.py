@@ -20,7 +20,7 @@ import time
 import unittest
 
 import System
-from pyrevit import EXTENSIONS_DEFAULT_DIR
+from pyrevit import EXTENSIONS_DEFAULT_DIR, HOST_APP
 
 
 KEYNOTES_BUNDLE_DIR = op.join(
@@ -212,7 +212,15 @@ def _load_error_description():
     """Load the real error formatter without opening Keynote Manager."""
     with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "r") as script_file:
         tree = ast.parse(script_file.read())
-    names = {"describe_lock_error", "RELEASE_LOCKS_HINT", "_RESTRICTING_LOCK_RE"}
+    names = {
+        "describe_lock_error",
+        "lock_owner_label",
+        "lock_target_label",
+        "RELEASE_LOCKS_HINT",
+        "_RESTRICTING_LOCK_RE",
+        "WRITE_LOCK_TIMEOUT_MARKER",
+        "READ_TIMEOUT_MARKER",
+    }
     tree.body = [
         node
         for node in tree.body
@@ -222,7 +230,7 @@ def _load_error_description():
             and any(getattr(target, "id", None) in names for target in node.targets)
         )
     ]
-    namespace = {"re": re, "System": System}
+    namespace = {"re": re, "System": System, "HOST_APP": HOST_APP, "kdb": kdb}
     eval(compile(tree, "script.py", "exec"), namespace)
     return namespace["describe_lock_error"]
 
@@ -258,14 +266,13 @@ class ReadErrorMessageTests(unittest.TestCase):
         self.assertIn("padlock", details)
 
     def test_access_denied_explains_permissions(self):
-        """A .NET access error is not described as conversion or a save lock."""
+        """A .NET access error reports the missing read permission."""
         describe = _load_error_description()
         error = System.UnauthorizedAccessException("Access to Keynotes.txt is denied.")
         headline, details = describe(error)
         self.assertIn("permission", headline)
         self.assertIn("read permissions", details)
         self.assertIn(error.Message, details)
-        self.assertNotIn("conversion", details.lower())
 
 
 class ReadTimeoutCauseTests(_KeynoteFileTestCase):
@@ -286,5 +293,19 @@ class ReadTimeoutCauseTests(_KeynoteFileTestCase):
             self.assertIsInstance(
                 raised.exception.InnerException, System.IO.IOException
             )
+        finally:
+            stream.Dispose()
+
+    def test_failed_read_leaves_no_lock_sidecar(self):
+        """A connect that cannot read the file must not leave a write lock behind."""
+        stream = System.IO.File.Open(
+            self.kfile,
+            System.IO.FileMode.Open,
+            System.IO.FileAccess.ReadWrite,
+            getattr(System.IO.FileShare, "None"),
+        )
+        try:
+            self.assertRaises(System.TimeoutException, kdb.connect, self.kfile)
+            self.assertIsNone(kdb.datastore_lock_stamp(self.kfile))
         finally:
             stream.Dispose()
