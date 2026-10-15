@@ -91,6 +91,37 @@ namespace pyRevitCLI {
                 Environment.ExitCode = 1;
         }
 
+        /// <summary>
+        /// <c>pyrevit agent session</c>: shows, requests, pauses or ends the agent session of a
+        /// running Revit, and prints the session state the host returns.
+        /// </summary>
+        /// <remarks>
+        /// There is deliberately no start or resume: only a click in Revit gives agents access, so
+        /// an agent that runs this command can ask for a session but can't grant itself one.
+        /// </remarks>
+        public static void ControlSession(string action, string reason, string revitSelector) {
+            var instance = PyRevitAgentClient.Resolve(revitSelector);
+            JToken result;
+            switch (action) {
+                case "request":
+                    var parameters = new JObject();
+                    if (reason != null)
+                        parameters["reason"] = reason;
+                    result = PyRevitAgentClient.Call(instance, "request_session", parameters);
+                    break;
+                case "pause":
+                    result = PyRevitAgentClient.Call(instance, "pause_session");
+                    break;
+                case "end":
+                    result = PyRevitAgentClient.Call(instance, "end_session");
+                    break;
+                default:
+                    result = PyRevitAgentClient.Call(instance, "session_status");
+                    break;
+            }
+            Console.WriteLine(result.ToString(Formatting.Indented));
+        }
+
         public static void PrintRuns(string limit) {
             var count = int.TryParse(limit, out var parsed) && parsed > 0 ? parsed : 20;
             var runDirs = PyRevitAgentClient.GetRecentRunDirs(count);
@@ -158,6 +189,16 @@ namespace pyRevitCLI {
             }
             else
                 Console.WriteLine("Agent user skills are {0}", PyRevitConfigs.GetAgentUserSkillsEnabled() ? "Enabled" : "Disabled");
+        }
+
+        public static void ConfigureRequireSession(bool? required) {
+            if (required.HasValue) {
+                PyRevitConfigs.SetAgentRequireSession(required.Value);
+                Console.WriteLine("Agent sessions {0}. Reload pyRevit or restart Revit to apply.",
+                    required.Value ? "required" : "not required");
+            }
+            else
+                Console.WriteLine("Agent sessions are {0}", PyRevitConfigs.GetAgentRequireSession() ? "required" : "not required");
         }
 
         /// <summary>

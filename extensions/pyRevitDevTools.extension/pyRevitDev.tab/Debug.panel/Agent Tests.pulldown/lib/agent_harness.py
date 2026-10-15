@@ -5,7 +5,9 @@ pipe carries, executed synchronously on the Revit main thread, so a command can
 exercise the runtime end to end without an external client.
 
 Tests run against scratch documents this module creates in the temp folder and
-closes again, never against the user's model.
+closes again, never against the user's model. Every suite runs with agent
+sessions required and a session started on the scratch project, the way a user
+would start one in Revit.
 """
 
 import json
@@ -50,6 +52,9 @@ PROGRESS_LOG = op.join(tempfile.gettempdir(), "pyrevit-agent-tests.log")
 
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"
+)
+_SESSIONS_TYPE = assmutils.find_type_by_name(
+    RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentSessions"
 )
 _session = None
 
@@ -102,6 +107,76 @@ def run(script, mode="query", engine=None, inputs=None, timeout=None, **extra):
 def host_running():
     """Whether the agent host started its pipe in this Revit session."""
     return bool(_HOST_TYPE.GetProperty("IsRunning").GetValue(None))
+
+
+def _sessions(name, *args):
+    """Call a static method of ``AgentSessions``, the in-process session controls.
+
+    Raises:
+        AgentRequestError: when the host refuses with an ``AgentException``.
+    """
+    method = _SESSIONS_TYPE.GetMethod(name)
+    try:
+        return method.Invoke(None, System.Array[System.Object](list(args)))
+    except System.Exception as error:
+        refusal = getattr(error, "InnerException", None) or error
+        code = getattr(refusal, "Code", None)
+        if code is None:
+            raise
+        raise AgentRequestError(str(code), str(refusal.Message))
+
+
+def start_session():
+    """Start an agent session on the active document, as the user does in Revit."""
+    return str(_sessions("Start", HOST_APP.uiapp))
+
+
+def end_session():
+    """End the agent session, if there is one."""
+    _sessions("End")
+
+
+def move_session():
+    """Move the agent session to the active document, as the user does in the panel."""
+    _sessions("Move", HOST_APP.uiapp)
+
+
+def resume_session():
+    """Resume a paused agent session."""
+    _sessions("Resume")
+
+
+def sessions_required():
+    """Whether model requests need an active agent session."""
+    return bool(_SESSIONS_TYPE.GetProperty("Required").GetValue(None))
+
+
+def require_sessions(state):
+    """Require an agent session for model requests, or stop requiring one."""
+    _sessions("SetRequired", bool(state))
+
+
+def session_status():
+    """The host's description of the agent session."""
+    return request("session_status")
+
+
+def restore_session():
+    """Leave sessions required and a session active on the scratch project.
+
+    Tests that change the session call this afterwards, so the next test starts
+    from the state ``run_suites`` set up.
+    """
+    require_sessions(True)
+    scratch = session()
+    if session_status()["document"] not in (None, scratch.project.Title):
+        end_session()
+    scratch.activate(scratch.project_path)
+    state = session_status()["state"]
+    if state == "paused":
+        resume_session()
+    elif state == "inactive":
+        start_session()
 
 
 def pipe_name():
@@ -193,18 +268,30 @@ def policy(name):
 def run_suites(modules):
     """Run test modules against fresh scratch documents and fail the button on any failure.
 
+    Important: the tests start and end their own session, so they refuse to run while
+    the user has one open rather than end it.
+
     Raises:
-        AssertionError: when any module has failures or errors; the details are
-            already in the output window.
+        AssertionError: when an agent session is already open, or when any module has
+            failures or errors; the details are already in the output window.
     """
     global _session
     print("Host engine: {}".format(sys.version.split()[0]))
+    open_session = session_status()
+    if open_session["state"] != "inactive":
+        raise AssertionError(
+            "End the agent session on '{}' in the agent panel first: the tests start "
+            "their own session on scratch documents.".format(open_session["document"])
+        )
     with open(PROGRESS_LOG, "w") as handle:
         handle.write("progress log of the last agent test run\n")
     _session = ScratchSession()
     problems = []
+    required = sessions_required()
     try:
         _session.open()
+        require_sessions(True)
+        start_session()
         with policy("auto"):
             for module in modules:
                 result = run_module_tests(module)
@@ -215,6 +302,8 @@ def run_suites(modules):
                         )
                     )
     finally:
+        end_session()
+        require_sessions(required)
         _session.close()
         _session = None
         log_progress("finished")
@@ -259,9 +348,20 @@ class ScratchSession(object):
             DB.FilteredElementCollector(self.project).OfClass(DB.Level).FirstElementId()
         )
         self.wall_ids = [
-            _id_value(wall.Id)
+            id_value(wall.Id)
             for wall in DB.FilteredElementCollector(self.project).OfClass(DB.Wall)
         ]
+
+    def activate(self, path):
+        """Make the open project at ``path`` the active document."""
+        if not self._is_active_path(path):
+            self.uiapp.OpenAndActivateDocument(path)
+
+    def create_extra(self, file_name):
+        """Create and save one more empty project in the scratch folder; return its path."""
+        path = op.join(self.folder, file_name)
+        self._create(path, with_walls=False)
+        return path
 
     def close(self):
         """Close both projects without saving, reactivating the original document first."""
@@ -307,6 +407,12 @@ class ScratchSession(object):
         uidoc = self.uiapp.ActiveUIDocument
         return uidoc is not None and uidoc.Document.Equals(document)
 
+    def _is_active_path(self, path):
+        uidoc = self.uiapp.ActiveUIDocument
+        return uidoc is not None and op.normcase(
+            str(uidoc.Document.PathName)
+        ) == op.normcase(path)
+
     def _reactivate_original(self):
         if not self.original_path or not op.exists(self.original_path):
             return False
@@ -317,7 +423,7 @@ class ScratchSession(object):
             return False
 
 
-def _id_value(element_id):
+def id_value(element_id):
     """The numeric id as a Python int; ``ElementId.Value`` is an Int64 that ``json`` rejects."""
     value = getattr(element_id, "Value", None)
     return int(value if value is not None else element_id.IntegerValue)

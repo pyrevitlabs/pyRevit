@@ -33,6 +33,13 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunGuard.cs" Link="Sources\AgentRunGuard.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocuments.cs" Link="Sources\AgentDocuments.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunDecision.cs" Link="Sources\AgentRunDecision.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentException.cs" Link="Sources\AgentException.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSession.cs" Link="Sources\AgentSession.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentActivity.cs" Link="Sources\AgentActivity.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPanelViewModel.cs" Link="Sources\AgentPanelViewModel.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogDetails.cs" Link="Sources\AgentLogDetails.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogViewModel.cs" Link="Sources\AgentLogViewModel.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentAwareness.cs" Link="Sources\AgentAwareness.cs"/>
     </ItemGroup>
 
 </Project>

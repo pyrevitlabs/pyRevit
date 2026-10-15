@@ -5,7 +5,6 @@ using System.Linq;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -17,6 +16,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
     /// <c>data.type</c> carries the <see cref="AgentException.Code"/>.
+    /// Invariant: every request that needs the Revit main thread reads or changes the model, so
+    /// <see cref="InvokeOnMainThread"/> is the session gate. It checks the session when the
+    /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
+    /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
+    /// The pipe can request, pause and end a session but never start or resume one.
+    /// A model request's result carries <c>since_last_call</c> when the user changed the
+    /// session's document, view or selection since the previous one; changes the request makes
+    /// itself are never reported back to it.
+    /// After the user moves the session, only <c>get_context</c> passes the gate until one
+    /// succeeds; see <see cref="AgentSessionTracker.Move"/>.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -46,6 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JToken Dispatch(string method, JObject parameters) {
             AgentHost.RefreshConfigIfChanged();
+            AgentHost.Activity.NoteClient((parameters["client"] as JValue)?.Value as string);
             switch (method) {
                 case "ping":
                     return new JObject {
@@ -53,31 +63,79 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["pid"] = Process.GetCurrentProcess().Id,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
+                        ["session"] = AgentSessions.Describe(),
                     };
+                case "session_status":
+                    return AgentSessions.Describe();
+                case "request_session":
+                    var requested = AgentSessions.Tracker.Request(parameters.Value<string>("reason"), DateTime.UtcNow);
+                    if (requested && AgentHost.InlineApplication == null)
+                        AgentPanel.RevealForRequest();
+                    return new JObject {
+                        ["requested"] = requested,
+                        ["session"] = AgentSessions.Describe(),
+                    };
+                case "pause_session":
+                    AgentSessions.Pause();
+                    return AgentSessions.Describe();
+                case "end_session":
+                    AgentSessions.EndByClient();
+                    return AgentSessions.Describe();
                 case "get_context":
-                    return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
+                    return InvokeCapturingDialogs((app, _) => ReadContext(app), parameters, "context", null);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
-                    EnforcePolicy(runRequest);
-                    AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
-                    RefuseNestedCPython(runRequest);
-                    return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters);
+                    return InvokeOnMainThread(
+                        app => AgentRunService.Execute(app, runRequest), parameters,
+                        runRequest.ModeName, runRequest.Title, runRequest.Reason, runRequest.Mode,
+                        result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), runRequest.Script),
+                        () => {
+                            AgentPermissions.CheckRun(runRequest.Mode, AgentRunService.ReadPolicy());
+                            AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
+                            RefuseNestedCPython(runRequest);
+                        });
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
-                    return InvokeCapturingDialogs((app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters);
+                    return InvokeCapturingDialogs(
+                        (app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters,
+                        "inspect", AgentRequestText.Title(parameters));
                 case "show":
                     var showRequest = AgentPresenter.Parse(parameters);
-                    return InvokeCapturingDialogs((app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters);
+                    return InvokeCapturingDialogs(
+                        (app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters,
+                        "show", AgentRequestText.Title(parameters) ?? showRequest.Action);
                 case "capture":
                     var captureRequest = AgentCapture.Parse(parameters);
-                    return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters);
+                    return InvokeCapturingDialogs(
+                        (app, _) => AgentCapture.Capture(app, captureRequest), parameters,
+                        "capture", AgentRequestText.Title(parameters));
                 case "lookup_api":
                     var query = parameters.Value<string>("name");
-                    return AgentApiLookup.Lookup(query);
+                    var lookup = AgentApiLookup.Lookup(query);
+                    AgentHost.Activity.RecordLookup(
+                        "lookup", query, AgentSessions.Tracker.CurrentSession,
+                        (lookup as JObject)?.Value<bool?>("found") == false ? "not_found" : "ok", DateTime.UtcNow);
+                    return lookup;
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
             }
+        }
+
+        /// <summary>
+        /// Describes the context and ends a move's handshake, since the agent now has the new
+        /// document's context.
+        /// </summary>
+        /// <remarks>
+        /// The session in the response is described again after the handshake ends, so the
+        /// response doesn't report the handshake it ends.
+        /// </remarks>
+        private static JToken ReadContext(Autodesk.Revit.UI.UIApplication app) {
+            var context = AgentContext.Describe(app);
+            AgentSessions.Tracker.ContextRead();
+            if (context["agent"] is JObject agent)
+                agent["session"] = AgentSessions.Describe();
+            return context;
         }
 
         /// <summary>
@@ -99,14 +157,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "A CPython agent run can't start from inside a CPython script. Use engine 'ironpython', or call from an IronPython command.");
         }
 
-        private static void EnforcePolicy(AgentRunRequest request) {
-            if (request.Mode == AgentRunMode.Modify
-                && PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyReadOnly)
-                throw new AgentException(
-                    "policy_readonly",
-                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
-        }
-
         /// <summary>
         /// Runs a fixed, non-script request on the main thread with Revit dialogs closed and
         /// reported, so a dialog Revit opens mid-request can't hang the call.
@@ -116,7 +166,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// use this: its guard captures dialogs itself and must disarm for the approval prompt.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
-            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters) {
+            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters, string kind, string title) {
             return InvokeOnMainThread(app => {
                 using (var dialogs = new AgentDialogCapture(app)) {
                     var result = work(app, dialogs);
@@ -124,25 +174,107 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
                 }
-            }, parameters);
+            }, parameters, kind, title, AgentRequestText.Reason(parameters));
         }
 
+        /// <summary>
+        /// Runs model work on the main thread behind the session gate, and records it in
+        /// <see cref="AgentHost.Activity"/> for the agent panel, refusals included.
+        /// </summary>
+        /// <param name="kind">What the panel calls the request; see <see cref="AgentRequestRecord.Kind"/>.</param>
+        /// <param name="runMode">
+        /// The mode of a <c>run</c> request, whose permission is checked again when Revit picks it
+        /// up, because the policy may have changed while it was queued.
+        /// </param>
+        /// <param name="describe">Builds the log's summary of a successful result, for runs.</param>
+        /// <param name="refuseEarly">
+        /// Checks that refuse the request before it waits for Revit, such as the policy; their
+        /// refusals are logged like the session gate's.
+        /// </param>
         private static JToken InvokeOnMainThread(
-            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
+            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, string kind, string title, string reason,
+            AgentRunMode? runMode = null, Func<JToken, JObject> describe = null, Action refuseEarly = null) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
-            var inline = AgentHost.InlineApplication;
-            if (inline != null)
-                return work(inline);
-            var dispatcher = AgentHost.Dispatcher
-                ?? throw new AgentException("host_not_ready", "The agent host is not started.");
-            var startTimeout = startTimeoutSeconds.HasValue
-                ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
-                : DefaultStartTimeout;
-            return dispatcher.Invoke(work, startTimeout);
+            var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
+            var readsContext = kind == "context";
+            try {
+                refuseEarly?.Invoke();
+                AgentSessions.CheckOnArrival(readsContext);
+                JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
+                    AgentHost.Activity.Start(record, DateTime.UtcNow);
+                    AgentSessions.CheckOnDequeue(app, readsContext);
+                    if (runMode.HasValue) {
+                        AgentHost.RefreshConfigIfChanged();
+                        AgentPermissions.CheckRun(runMode.Value, AgentRunService.ReadPolicy());
+                    }
+                    var sinceLastCall = AgentAwarenessWatch.SinceLastCall(app);
+                    JToken done;
+                    using (AgentAwarenessWatch.Awareness.Suppress())
+                        done = work(app);
+                    AgentAwarenessWatch.Reset(app);
+                    if (sinceLastCall != null && done is JObject response)
+                        response["since_last_call"] = sinceLastCall;
+                    return done;
+                }
+                JToken result;
+                var inline = AgentHost.InlineApplication;
+                if (inline != null)
+                    result = GatedWork(inline);
+                else {
+                    var dispatcher = AgentHost.Dispatcher
+                        ?? throw new AgentException("host_not_ready", "The agent host is not started.");
+                    var startTimeout = startTimeoutSeconds.HasValue
+                        ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
+                        : DefaultStartTimeout;
+                    result = dispatcher.Invoke(GatedWork, startTimeout);
+                }
+                AgentHost.Activity.Finish(record, OutcomeOf(result), DateTime.UtcNow, Describe(describe, result));
+                return result;
+            }
+            catch (AgentException ex) {
+                AgentHost.Activity.Finish(record, ex.Code, DateTime.UtcNow);
+                throw;
+            }
+            catch (Exception) {
+                AgentHost.Activity.Finish(record, "internal_error", DateTime.UtcNow);
+                throw;
+            }
+        }
+
+        /// <remarks>
+        /// The log's summary is a convenience; failing to build it must never fail the request.
+        /// </remarks>
+        private static JObject Describe(Func<JToken, JObject> describe, JToken result) {
+            if (describe == null)
+                return null;
+            try {
+                return describe(result);
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not summarize an agent request for the panel: {0}", ex.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// How a request ended, as the agent panel shows it: <c>ok</c>, <c>committed</c>,
+        /// <c>rejected</c>, or the error type of a run that failed.
+        /// </summary>
+        private static string OutcomeOf(JToken result) {
+            if (!(result is JObject response) || response["decision"] == null)
+                return "ok";
+            switch (response.Value<string>("status")) {
+                case "error":
+                    return (response["error"] as JObject)?.Value<string>("type") ?? "error";
+                case "rejected":
+                    return "rejected";
+                default:
+                    return response.Value<string>("decision") == "committed" ? "committed" : "ok";
+            }
         }
 
         private static string Success(JToken id, JToken result) {

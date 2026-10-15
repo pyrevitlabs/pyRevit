@@ -492,6 +492,38 @@ func main() {
 						Sub:   complete.Commands{},
 						Flags: complete.Flags{},
 					},
+					"session": complete.Command{
+						Sub: complete.Commands{
+							"status": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--revit": complete.PredictNothing,
+								},
+							},
+							"pause": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--revit": complete.PredictNothing,
+								},
+							},
+							"end": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--revit": complete.PredictNothing,
+								},
+							},
+							"request": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--reason": complete.PredictNothing,
+									"--revit":  complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--revit": complete.PredictNothing,
+						},
+					},
 				},
 				Flags: complete.Flags{
 					"--help": complete.PredictNothing,
@@ -980,6 +1012,25 @@ func main() {
 										},
 									},
 									"disable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"requiresession": complete.Command{
+								Sub: complete.Commands{
+									"yes": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"no": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,

@@ -26,6 +26,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return app.Documents.Cast<Document>().ToList();
         }
 
+        /// <summary>
+        /// Whether two references are the same open document. Documents are compared by Revit's
+        /// identity, never by title or path, and a closed document matches nothing.
+        /// </summary>
+        public static bool IsSame(Document first, Document second) {
+            if (first != null && ReferenceEquals(first, second))
+                return true;
+            try {
+                return first != null && second != null && first.IsValidObject && second.IsValidObject && first.Equals(second);
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
         public static bool IsBackground(Document doc) {
             if (doc.IsLinked)
                 return false;

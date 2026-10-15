@@ -197,6 +197,10 @@ class RollbackTests(TestCase):
 class BlockTests(TestCase):
     """Operations the run guard blocks or reports."""
 
+    def tearDown(self):
+        """Resume the session a run that changed another document paused."""
+        harness.restore_session()
+
     def test_save_as_of_the_active_document_writes_no_file(self):
         """Save As of the active document writes no file."""
         target = op.join(harness.session().folder, "save-as.rvt")
@@ -233,6 +237,7 @@ class BlockTests(TestCase):
         )
         self.assertIn("save", [entry["operation"] for entry in response["blocked"]])
         self.assertEqual(stamp, os.path.getmtime(copy))
+        harness.restore_session()
         titles = [
             document["title"]
             for document in harness.request("get_context")["open_documents"]
@@ -251,8 +256,8 @@ class BlockTests(TestCase):
         self.assertIn("save_as", [entry["operation"] for entry in response["blocked"]])
         self.assertFalse(op.exists(target))
 
-    def test_change_to_another_open_document_fails_and_is_rolled_back(self):
-        """Changing another open document fails the run and rolls that document back."""
+    def test_change_to_another_open_document_fails_rolls_back_and_pauses(self):
+        """Changing another open document fails the run, rolls that document back and pauses the session."""
         title = harness.session().other_title
         levels = "result = DB.FilteredElementCollector([d for d in app.Documents if d.Title == inputs['title']][0]).OfClass(DB.Level).GetElementCount()"
         before = harness.run(levels, inputs={"title": title})["result"]
@@ -265,6 +270,12 @@ class BlockTests(TestCase):
         outcome = response["changes"]["other_documents"][0]
         self.assertEqual(title, outcome["document"])
         self.assertTrue(outcome["rolled_back"])
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.request("get_context")
+        self.assertEqual("paused_by_host", raised.exception.code)
+        self.assertIn(title, raised.exception.message)
+        self.assertIn(title, harness.session_status()["paused_reason"])
+        harness.resume_session()
         self.assertEqual(before, harness.run(levels, inputs={"title": title})["result"])
 
     def test_warnings_are_reported(self):
