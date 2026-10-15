@@ -27,6 +27,7 @@ def _load_error_handlers():
         "lock_target_label",
         "LOCK_ALERT_TITLE",
         "READ_ALERT_TITLE",
+        "PERMISSION_ALERT_TITLE",
         "WRITE_LOCK_TIMEOUT_MARKER",
         "READ_TIMEOUT_MARKER",
         "RELEASE_LOCKS_HINT",
@@ -179,6 +180,7 @@ class KeynoteReadErrorTests(unittest.TestCase):
                     method(*args)
                 message = str(raised.exception)
                 self.assertIn("permission", message)
+                self.assertIn("read permissions", message)
                 self.assertIn("Access to Keynotes.txt is denied.", message)
                 self.assertNotIn("conversion", message.lower())
                 self.assertNotIn("saving", message)
@@ -207,11 +209,27 @@ class KeynoteReadErrorTests(unittest.TestCase):
             _AccessDeniedError("Access denied."),
         ):
             with self.subTest(error=error):
-                self.namespace["alert_db_error"](error)
+                self.namespace["alert_db_error"](error, operation="read")
                 self.assertEqual(
                     "Keynote Manager - Read Error",
                     self.namespace["forms"].alert.call_args.kwargs["title"],
                 )
+
+    def test_unknown_and_save_access_errors_have_neutral_guidance(self):
+        """Save and unknown operations never claim a read-permission failure."""
+        for operation in (None, "save"):
+            with self.subTest(operation=operation):
+                self.namespace["alert_db_error"](
+                    _AccessDeniedError("Access denied."), operation=operation
+                )
+                alert = self.namespace["forms"].alert.call_args
+                self.assertEqual(
+                    "Keynote Manager - Permission Error", alert.kwargs["title"]
+                )
+                self.assertIn("file permissions", alert.kwargs["sub_msg"])
+                self.assertIn("Access denied.", alert.kwargs["sub_msg"])
+                self.assertNotIn("read permissions", alert.kwargs["sub_msg"])
+                self.assertNotIn("saving", alert.kwargs["sub_msg"])
 
     def test_write_errors_keep_locked_alert_title(self):
         """Write-lock recovery retains its existing dialog title."""

@@ -269,7 +269,7 @@ class ReadErrorMessageTests(unittest.TestCase):
         """A .NET access error reports the missing read permission."""
         describe = _load_error_description()
         error = System.UnauthorizedAccessException("Access to Keynotes.txt is denied.")
-        headline, details = describe(error)
+        headline, details = describe(error, operation="read")
         self.assertIn("permission", headline)
         self.assertIn("read permissions", details)
         self.assertIn(error.Message, details)
@@ -309,3 +309,56 @@ class ReadTimeoutCauseTests(_KeynoteFileTestCase):
             self.assertIsNone(kdb.datastore_lock_stamp(self.kfile))
         finally:
             stream.Dispose()
+
+    def test_failed_load_preserves_error_when_sidecar_cleanup_times_out(self):
+        """An undeletable sidecar cannot hide or indefinitely delay a read error."""
+        import clr
+
+        flags = (
+            System.Reflection.BindingFlags.Instance
+            | System.Reflection.BindingFlags.NonPublic
+        )
+        store_type = clr.GetClrType(kdb.dfdb.DataBase).Assembly.GetType(
+            "pyRevitLabs.DeffrelDB.DataStore"
+        )
+        store = System.Activator.CreateInstance(
+            store_type,
+            flags | System.Reflection.BindingFlags.Public,
+            None,
+            System.Array[System.Object](
+                [kdb.dfdb.DataStoreType(self.kfile, None, None), False, 100]
+            ),
+            None,
+        )
+        store_type.GetProperty("ExclusiveAccess").SetValue(store, True, None)
+        store_type.GetMethod("AcquireLock", flags).Invoke(store, None)
+        lock_file = op.splitext(self.kfile)[0] + ".lock"
+        data_stream = None
+        lock_stream = None
+        try:
+            data_stream = System.IO.File.Open(
+                self.kfile,
+                System.IO.FileMode.Open,
+                System.IO.FileAccess.ReadWrite,
+                getattr(System.IO.FileShare, "None"),
+            )
+            lock_stream = System.IO.File.Open(
+                lock_file,
+                System.IO.FileMode.Open,
+                System.IO.FileAccess.ReadWrite,
+                getattr(System.IO.FileShare, "None"),
+            )
+            timer = System.Diagnostics.Stopwatch.StartNew()
+            with self.assertRaises(System.Reflection.TargetInvocationException) as raised:
+                store_type.GetMethod("Open", flags).Invoke(store, None)
+            self.assertLess(timer.ElapsedMilliseconds, 2000)
+            error = raised.exception.InnerException
+            self.assertIsInstance(error, System.TimeoutException)
+            self.assertEqual("Read timeout.", error.Message)
+            self.assertIsInstance(error.InnerException, System.IO.IOException)
+        finally:
+            if lock_stream:
+                lock_stream.Dispose()
+            if data_stream:
+                data_stream.Dispose()
+            store_type.GetMethod("Dispose").Invoke(store, None)

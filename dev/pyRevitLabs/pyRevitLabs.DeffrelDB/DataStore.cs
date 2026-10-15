@@ -158,16 +158,20 @@ namespace pyRevitLabs.DeffrelDB {
         }
 
         private void DeleteLock() {
-            // TODO: needs timeout
-            bool isDeleted = false;
-            while (!isDeleted) {
+            var time = Stopwatch.StartNew();
+            IOException deleteError = null;
+            while (time.ElapsedMilliseconds < IOTimeOut) {
                 try {
                     File.Delete(LockFilePath);
                     logger.Debug("    -lock");
-                    isDeleted = true;
+                    return;
                 }
-                catch { }
+                catch (IOException exception) {
+                    deleteError = exception;
+                    Thread.Sleep(50);
+                }
             }
+            throw new TimeoutException("Lock deletion timeout.", deleteError);
         }
 
         private void WaitForLockRelease() {
@@ -248,8 +252,14 @@ namespace pyRevitLabs.DeffrelDB {
                 DataLines = Load();
             }
             catch {
-                if (ExclusiveAccess)
-                    ReleaseLock();
+                if (ExclusiveAccess) {
+                    try {
+                        ReleaseLock();
+                    }
+                    catch (Exception cleanupError) {
+                        logger.Error("    FAILED LOAD LOCK CLEANUP | {0}", cleanupError);
+                    }
+                }
                 throw;
             }
         }

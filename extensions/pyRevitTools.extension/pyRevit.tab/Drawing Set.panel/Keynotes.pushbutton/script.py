@@ -253,6 +253,7 @@ class KeynoteSetupError(Exception):
 
 LOCK_ALERT_TITLE = "Keynote Manager - Locked"
 READ_ALERT_TITLE = "Keynote Manager - Read Error"
+PERMISSION_ALERT_TITLE = "Keynote Manager - Permission Error"
 WRITE_LOCK_TIMEOUT_MARKER = "Wait for unlock timeout"
 READ_TIMEOUT_MARKER = "Read timeout"
 RELEASE_LOCKS_HINT = (
@@ -289,7 +290,7 @@ def lock_target_label(db_name, table_name, record_key):
     return "the whole keynote file"
 
 
-def describe_lock_error(ex):
+def describe_lock_error(ex, operation=None):
     """Return (headline, details) for a lock or read failure, or None.
 
     DeffrelDB reports locks as raw signatures such as
@@ -299,15 +300,16 @@ def describe_lock_error(ex):
 
     Read failures name a possible sync conflict and include the underlying
     file error when DeffrelDB provides one.
-    Access-denied failures report the missing permission without suggesting
-    file conversion.
+    Access-denied failures name read permissions only for a known read operation;
+    other operations use neutral permission guidance without suggesting conversion.
     """
     text = getattr(ex, "Message", None) or str(ex)
     if isinstance(ex, System.UnauthorizedAccessException):
+        permission = "read permissions" if operation == "read" else "file permissions"
         return (
             "You do not have permission to access the keynote file.",
-            "Ask the file owner or your IT team to check your read permissions."
-            "\n\n" + text,
+            "Ask the file owner or your IT team to check your {}.".format(permission)
+            + "\n\n" + text,
         )
     holder = _RESTRICTING_LOCK_RE.search(text)
     if holder:
@@ -345,23 +347,25 @@ def describe_lock_error(ex):
     return None
 
 
-def alert_db_error(ex, fallback=None):
+def alert_db_error(ex, fallback=None, operation=None):
     """Tell the user a keynote-file operation failed, in plain words.
 
-    Lock and read failures get their respective explanation and title;
-    anything else shows `fallback`, or the raw message when there is none.
+    Lock and read failures get their respective explanation and title.
+    Access errors use neutral permission guidance unless operation is "read".
+    Anything else shows `fallback`, or the raw message when there is none.
     """
-    friendly = describe_lock_error(ex)
+    friendly = describe_lock_error(ex, operation=operation)
     if friendly:
         text = getattr(ex, "Message", None) or str(ex)
-        read_failure = (
-            isinstance(ex, System.UnauthorizedAccessException)
-            or READ_TIMEOUT_MARKER in text
-        )
+        access_denied = isinstance(ex, System.UnauthorizedAccessException)
+        if access_denied:
+            title = READ_ALERT_TITLE if operation == "read" else PERMISSION_ALERT_TITLE
+        else:
+            title = READ_ALERT_TITLE if READ_TIMEOUT_MARKER in text else LOCK_ALERT_TITLE
         forms.alert(
             friendly[0],
             sub_msg=friendly[1],
-            title=READ_ALERT_TITLE if read_failure else LOCK_ALERT_TITLE,
+            title=title,
         )
     else:
         forms.alert(fallback or getattr(ex, "Message", None) or str(ex))
@@ -2817,7 +2821,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "\n\n".join(friendly) if friendly else toutex.Message
             )
         except System.UnauthorizedAccessException as readex:
-            friendly = describe_lock_error(readex)
+            friendly = describe_lock_error(readex, operation="read")
             raise KeynoteSetupError(
                 "\n\n".join(friendly) if friendly else readex.Message
             )
@@ -2942,7 +2946,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "\n\n".join(friendly) if friendly else toutex.Message
                 )
             except System.UnauthorizedAccessException as readex:
-                friendly = describe_lock_error(readex)
+                friendly = describe_lock_error(readex, operation="read")
                 raise KeynoteSetupError(
                     "\n\n".join(friendly) if friendly else readex.Message
                 )
