@@ -46,6 +46,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string Hooks = string.Format("{0}_HOOKS", keyPrefix);
         public static string HooksHandler = string.Format("{0}_HOOKSHANDLER", keyPrefix);
 
+        public static string RoutesServer = string.Format("{0}_ROUTESSERVER", keyPrefix);
+        public static string CheckUpdatesTimestamp = string.Format("{0}_CHECKUPDATESTIMESTAMP", keyPrefix);
+        public static string CheckUpdatesResult = string.Format("{0}_CHECKUPDATESRESULT", keyPrefix);
+
         public static string AutoUpdating = string.Format("{0}_AUTOUPDATE", keyPrefix);
         public static string OutputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
         public static string RibbonUpdator = string.Format("{0}_RIBBONUPDATOR", keyPrefix);
@@ -74,6 +78,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             EnvDictionaryKeys.AppTelemetryEventFlags,
             EnvDictionaryKeys.Hooks,
             EnvDictionaryKeys.HooksHandler,
+            EnvDictionaryKeys.RoutesServer,
+            EnvDictionaryKeys.CheckUpdatesTimestamp,
+            EnvDictionaryKeys.CheckUpdatesResult,
             EnvDictionaryKeys.AutoUpdating,
             EnvDictionaryKeys.OutputStyleSheet,
             EnvDictionaryKeys.RibbonUpdator,
