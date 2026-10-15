@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
@@ -92,14 +93,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// <summary>
         ///     Creates a manifest after staging its contents in the destination directory.
         /// </summary>
-        /// <param name="revitYear">The target Revit product year.</param>
         /// <param name="addinFileName">The manifest filename, without the extension unless <paramref name="addinPath"/> is specified.</param>
-        /// <param name="addinName">The add-in display name.</param>
-        /// <param name="assemblyPath">The loader assembly path.</param>
-        /// <param name="addinId">The add-in identifier.</param>
-        /// <param name="addinClassName">The application entry point class name.</param>
-        /// <param name="vendorId">The vendor identifier.</param>
-        /// <param name="allusers">The flag selecting the all-users manifest directory.</param>
         /// <param name="addinPath">The explicit destination directory, or <see langword="null"/> for the standard directory.</param>
         /// <param name="beforeReplace">An optional action removing existing attachments after staging and before installation.</param>
         /// <remarks>
@@ -119,7 +113,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 addinFile = Path.Combine(addinPath, addinFileName);
             logger.Debug("Creating manifest file \"{0}\"", addinFile);
             Directory.CreateDirectory(Path.GetDirectoryName(addinFile));
-            var temporaryFile = Path.Combine(Path.GetDirectoryName(addinFile), Guid.NewGuid() + ".tmp");
+            var temporaryFile = Path.Combine(Path.GetDirectoryName(addinFile), "pyRevit-manifest-" + Guid.NewGuid() + ".tmp");
             try {
                 File.WriteAllText(temporaryFile, manifest);
                 beforeReplace?.Invoke();
@@ -129,8 +123,13 @@ namespace pyRevitLabs.TargetApps.Revit {
                     File.Move(temporaryFile, addinFile);
             }
             finally {
-                if (File.Exists(temporaryFile))
-                    File.Delete(temporaryFile);
+                try {
+                    if (File.Exists(temporaryFile))
+                        File.Delete(temporaryFile);
+                }
+                catch (Exception exception) {
+                    logger.Error("Error cleaning up staged manifest \"{0}\" | {1}", temporaryFile, exception.Message);
+                }
             }
         }
 
@@ -144,20 +143,29 @@ namespace pyRevitLabs.TargetApps.Revit {
             return GetManifest(revitYear, addinName, allUsers: allUsers);
         }
 
+        /// <summary>
+        ///     Removes matching manifests from each requested scope, attempting every scope even when a deletion fails.
+        /// </summary>
+        /// <exception cref="PyRevitException">One or more manifests could not be removed; the message identifies each failed path.</exception>
         public static void RemoveManifestFile(int revitYear, string addinName, bool currentAndAllUsers = true) {
-            RevitAddonManifest revitManifest = GetManifest(revitYear, addinName, allUsers: false);
-
-            if (revitManifest != null) {
-                logger.Debug("Removing manifest file \"{0}\"", revitManifest.FilePath);
-                File.Delete(revitManifest.FilePath);
-            }
-            if (currentAndAllUsers) {
-                revitManifest = GetManifest(revitYear, addinName, allUsers: true);
-                if (revitManifest != null) {
-                    logger.Debug("Removing all users manifest file \"{0}\"", revitManifest.FilePath);
-                    File.Delete(revitManifest.FilePath);
+            var failures = new List<string>();
+            foreach (var allUsers in currentAndAllUsers ? new[] { false, true } : new[] { false }) {
+                var manifestPath = GetRevitAddonsFolder(revitYear, allUsers);
+                try {
+                    var revitManifest = GetManifest(revitYear, addinName, allUsers);
+                    if (revitManifest is null)
+                        continue;
+                    manifestPath = revitManifest.FilePath;
+                    logger.Debug("Removing manifest file \"{0}\"", manifestPath);
+                    File.Delete(manifestPath);
+                }
+                catch (Exception exception) {
+                    failures.Add(string.Format("\"{0}\": {1}", manifestPath, exception.Message));
                 }
             }
+            if (failures.Count > 0)
+                throw new PyRevitException("Could not remove all manifests:" +
+                                          Environment.NewLine + string.Join(Environment.NewLine, failures));
         }
 
         public static RevitAddonManifest GetManifest(int revitYear, string addinName, bool allUsers) {

@@ -72,22 +72,25 @@ namespace pyRevitLabs.PyRevit {
             if (engine.Runtime) {
                 logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}", clone.Name, clone.ClonePath, revitYear));
 
-                RevitAddons.CreateManifestFile(
-                    revitYear,
-                    PyRevitConsts.AddinFileName,
-                    PyRevitConsts.AddinName,
-                    engine.AssemblyPath,
-                    PyRevitConsts.AddinId,
-                    PyRevitConsts.AddinClassName,
-                    PyRevitConsts.VendorId,
-                    allusers: allUsers,
-                    beforeReplace: () => Detach(revitYear, currentAndAllUsers: true)
-                    );
+                try {
+                    RevitAddons.CreateManifestFile(
+                        revitYear,
+                        PyRevitConsts.AddinFileName,
+                        PyRevitConsts.AddinName,
+                        engine.AssemblyPath,
+                        PyRevitConsts.AddinId,
+                        PyRevitConsts.AddinClassName,
+                        PyRevitConsts.VendorId,
+                        allusers: allUsers,
+                        beforeReplace: () => Detach(revitYear, currentAndAllUsers: true)
+                        );
+                }
+                finally {
+                    ClearAttachmentCache();
+                }
             }
             else
                 throw new PyRevitException($"Engine {engineVer} can not be used as runtime.");
-
-            ClearAttachmentCache();
         }
 
         /// <summary>
@@ -193,7 +196,11 @@ namespace pyRevitLabs.PyRevit {
                         year => Attach(year, clone, engineVer: engineVer, allUsers: allUsers));
         }
 
-        private static void AttachToAll(IEnumerable<int> revitYears, Action<int> attach) {
+        /// <summary>
+        ///     Attempts each distinct year and reports all attachment failures after the remaining years have been attempted.
+        /// </summary>
+        /// <exception cref="PyRevitException">One or more attachment attempts failed; the message identifies every failed year.</exception>
+        public static void AttachToAll(IEnumerable<int> revitYears, Action<int> attach) {
             var failures = new List<string>();
             foreach (var revitYear in revitYears.Distinct()) {
                 try {
@@ -214,8 +221,12 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static void Detach(int revitYear, bool currentAndAllUsers = false) {
             logger.Debug("Detaching from Revit {0}", revitYear);
-            RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName, currentAndAllUsers: currentAndAllUsers);
-            ClearAttachmentCache();
+            try {
+                RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName, currentAndAllUsers: currentAndAllUsers);
+            }
+            finally {
+                ClearAttachmentCache();
+            }
         }
 
         // detach pyrevit attachment

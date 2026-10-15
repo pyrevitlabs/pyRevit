@@ -1,4 +1,3 @@
-using System.Reflection;
 using pyRevitLabs.Common;
 using pyRevitLabs.PyRevit;
 using pyRevitLabs.TargetApps.Revit;
@@ -9,7 +8,7 @@ namespace pyRevitCLI.Tests;
 ///     Verifies attachment replacement ordering, temporary-file cleanup, and bulk failure reporting.
 /// </summary>
 public class AttachmentManifestTests : IDisposable {
-    private readonly string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+    private readonly string directory = Path.Combine(Path.GetTempPath(), "pyRevit-attach-tests-" + Guid.NewGuid());
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="AttachmentManifestTests"/> class with an isolated temporary directory.
@@ -24,7 +23,7 @@ public class AttachmentManifestTests : IDisposable {
     }
 
     private void CreateManifest(string targetDirectory, Action beforeReplace = null) {
-        RevitAddons.CreateManifestFile(2026, "pyRevit.addin", "pyRevit", "missing-loader.dll",
+        RevitAddons.CreateManifestFile(2026, "pyRevit.addin", PyRevitConsts.AddinName, "missing-loader.dll",
                                       "test-id", "Loader.Application", "TEST",
                                       addinPath: targetDirectory, beforeReplace: beforeReplace);
     }
@@ -66,14 +65,14 @@ public class AttachmentManifestTests : IDisposable {
             var stagedManifest = Assert.Single(Directory.GetFiles(directory, "*.tmp"));
             using (var stream = File.Open(stagedManifest, FileMode.Open, FileAccess.Read, FileShare.None))
                 Assert.True(stream.Length > 0);
-            Assert.Equal("pyRevit", new RevitAddonManifest(stagedManifest).Name);
+            Assert.Equal(PyRevitConsts.AddinName, new RevitAddonManifest(stagedManifest).Name);
             File.Delete(previousManifest);
             detached = true;
         });
 
         Assert.True(detached);
         Assert.False(File.Exists(previousManifest));
-        Assert.Equal("pyRevit", new RevitAddonManifest(target).Name);
+        Assert.Equal(PyRevitConsts.AddinName, new RevitAddonManifest(target).Name);
         Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
     }
 
@@ -87,7 +86,7 @@ public class AttachmentManifestTests : IDisposable {
 
         CreateManifest(directory);
 
-        Assert.Equal("pyRevit", new RevitAddonManifest(target).Name);
+        Assert.Equal(PyRevitConsts.AddinName, new RevitAddonManifest(target).Name);
         Assert.Single(Directory.GetFiles(directory));
     }
 
@@ -124,9 +123,6 @@ public class AttachmentManifestTests : IDisposable {
     [Fact]
     public void AttachToAllContinuesAfterFailuresAndReportsEveryFailedYear() {
         var attemptedYears = new List<int>();
-        var attachToAll = typeof(PyRevitAttachments).GetMethod("AttachToAll",
-            BindingFlags.NonPublic | BindingFlags.Static, null,
-            new[] { typeof(IEnumerable<int>), typeof(Action<int>) }, null);
         Action<int> attach = year => {
             attemptedYears.Add(year);
             if (year != 2026)
@@ -134,12 +130,11 @@ public class AttachmentManifestTests : IDisposable {
             CreateManifest(directory);
         };
 
-        var invocation = Assert.Throws<TargetInvocationException>(() => attachToAll.Invoke(null,
-            new object[] { new[] { 2025, 2026, 2026, 2027 }, attach }));
+        var exception = Assert.Throws<PyRevitException>(() =>
+            PyRevitAttachments.AttachToAll(new[] { 2025, 2026, 2026, 2027 }, attach));
 
-        Assert.IsType<PyRevitException>(invocation.InnerException);
-        Assert.Contains("Revit 2025: blocked 2025", invocation.InnerException.Message);
-        Assert.Contains("Revit 2027: blocked 2027", invocation.InnerException.Message);
+        Assert.Contains("Revit 2025: blocked 2025", exception.Message);
+        Assert.Contains("Revit 2027: blocked 2027", exception.Message);
         Assert.Equal(new[] { 2025, 2026, 2027 }, attemptedYears);
         Assert.True(File.Exists(Path.Combine(directory, "pyRevit.addin")));
     }
@@ -150,12 +145,101 @@ public class AttachmentManifestTests : IDisposable {
     [Fact]
     public void AttachToAllReturnsNormallyWhenEveryYearSucceeds() {
         var attemptedYears = new List<int>();
-        var attachToAll = typeof(PyRevitAttachments).GetMethod("AttachToAll",
-            BindingFlags.NonPublic | BindingFlags.Static, null,
-            new[] { typeof(IEnumerable<int>), typeof(Action<int>) }, null);
-
-        attachToAll.Invoke(null, new object[] { new[] { 2025, 2026 }, (Action<int>)attemptedYears.Add });
+        PyRevitAttachments.AttachToAll(new[] { 2025, 2026 }, attemptedYears.Add);
 
         Assert.Equal(new[] { 2025, 2026 }, attemptedYears);
+    }
+
+    /// <summary>
+    ///     Verifies that every scope is attempted and every failed deletion is reported.
+    /// </summary>
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void RemoveManifestAttemptsBothScopesWhenDeletionsFail(bool lockCurrentUser, bool lockAllUsers) {
+        var addinName = "pyRevit-attach-tests-" + Guid.NewGuid();
+        var currentUser = RevitAddons.GetRevitAddonsFilePath(2026, addinName);
+        var allUsers = RevitAddons.GetRevitAddonsFilePath(2026, addinName, allusers: true);
+        try {
+            RevitAddons.CreateManifestFile(2026, addinName, addinName, "missing-loader.dll",
+                "test-id", "Loader.Application", "TEST");
+            RevitAddons.CreateManifestFile(2026, addinName, addinName, "missing-loader.dll",
+                "test-id", "Loader.Application", "TEST", allusers: true);
+            using (lockCurrentUser ? File.Open(currentUser, FileMode.Open, FileAccess.Read, FileShare.Read) : null)
+            using (lockAllUsers ? File.Open(allUsers, FileMode.Open, FileAccess.Read, FileShare.Read) : null) {
+                var exception = Assert.Throws<PyRevitException>(() =>
+                    RevitAddons.RemoveManifestFile(2026, addinName, currentAndAllUsers: true));
+                if (lockCurrentUser)
+                    Assert.Contains(currentUser, exception.Message);
+                else
+                    Assert.False(File.Exists(currentUser));
+                if (lockAllUsers)
+                    Assert.Contains(allUsers, exception.Message);
+                else
+                    Assert.False(File.Exists(allUsers));
+            }
+        }
+        finally {
+            if (File.Exists(currentUser))
+                File.Delete(currentUser);
+            if (File.Exists(allUsers))
+                File.Delete(allUsers);
+        }
+    }
+
+    /// <summary>
+    ///     Verifies that attach removes expired manifests with a nonstandard filename before installing its replacement.
+    /// </summary>
+    [Fact]
+    public void AttachRemovesExistingManifestBeforeInstallingReplacement() {
+        const int revitYear = 2099;
+        var addonDirectory = RevitAddons.GetRevitAddonsFolder(revitYear);
+        var target = RevitAddons.GetRevitAddonsFilePath(revitYear, PyRevitConsts.AddinFileName);
+        var previousManifest = Path.Combine(addonDirectory, "expired-clone.addin");
+        Assert.False(Directory.Exists(addonDirectory));
+        Directory.CreateDirectory(PyRevitClone.GetPyRevitPath(directory));
+        File.WriteAllText(Path.Combine(directory, "pyRevitfile"), """
+            [engines.DEFAULT]
+            kernel = "ironpython"
+            version = 2712
+            path = "IPY2712PR"
+            description = "Attachment test engine"
+            """);
+        var clone = new PyRevitClone(directory, "attach-test");
+        try {
+            CreateManifest(addonDirectory);
+            File.Move(target, previousManifest);
+
+            PyRevitAttachments.Attach(revitYear, clone, PyRevitEngineVersion.Default);
+
+            Assert.False(File.Exists(previousManifest));
+            Assert.Equal(PyRevitConsts.AddinName, new RevitAddonManifest(target).Name);
+            Assert.Empty(Directory.GetFiles(addonDirectory, "*.tmp"));
+        }
+        finally {
+            if (Directory.Exists(addonDirectory))
+                Directory.Delete(addonDirectory, true);
+        }
+    }
+
+    /// <summary>
+    ///     Verifies that a locked staging file cannot replace the original attachment failure with a cleanup error.
+    /// </summary>
+    [Fact]
+    public void StagingCleanupDoesNotMaskTheOriginalFailure() {
+        FileStream stagedStream = null;
+        try {
+            var exception = Assert.Throws<UnauthorizedAccessException>(() => CreateManifest(directory, () => {
+                var stagedFile = Assert.Single(Directory.GetFiles(directory, "pyRevit-manifest-*.tmp"));
+                stagedStream = File.Open(stagedFile, FileMode.Open, FileAccess.Read, FileShare.None);
+                throw new UnauthorizedAccessException("original detach failure");
+            }));
+
+            Assert.Equal("original detach failure", exception.Message);
+        }
+        finally {
+            stagedStream?.Dispose();
+        }
     }
 }
