@@ -75,19 +75,20 @@ The cancelled statement does not run when Revit later processes the external eve
 Pressing <kbd>Enter</kbd> during completion cancels that completion request without aborting a thread.
 Running editor code while another statement is pending prints a busy message; the editor retains the code for another run.
 
-Closing a floating shell or editor cancels queued work and releases its console, completion worker, dispatcher, Python runtime, and external event.
-Cleanup waits in the background for an executing .NET call to return; closing the window does not block Revit's UI thread.
+Closing a floating shell or editor cancels queued work and starts cleanup on a dedicated background thread; closing the window does not block Revit's UI thread.
+Cleanup waits up to ten seconds for each console, dispatcher, and completion worker, and logs timeouts or failures through .NET tracing.
+The runtime is shut down only after all workers exit. A statement that disables tracing, swallows cancellation, or remains in a blocking managed/native call can outlive that deadline; its runtime is not shut down while a worker is still using it.
 Opening another floating shell creates a new runtime.
 Hiding a docked pane retains its console for the Revit session.
 
 ## Regression tests
 
 `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests` tests execution cancellation, external-event queue lifetime, and a real IronPython REPL's shutdown without Revit.
-The test project builds the pinned vendored engines from initialized submodules; it does not require a prebuilt product `bin` directory.
+The test project references the production shell assembly, including its internal execution and dispatch types; it does not compile separate copies of those sources.
 Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests/pyRevitLabs.PyRevit.Shell.Tests.csproj -p:IronPythonVersion=IPY2712PR` and repeat with `IPY342`.
-`ShellEnginesDirectory` selects an existing engine deployment for testing instead of building engine sources.
+`ShellEnginesDirectory` selects an existing engine deployment for testing instead of building the shell project.
 The build pipeline runs both engine variants against its built assemblies after the runners and shell builds. The project is not part of the Labs solution build, which precedes engine staging.
-On Windows, the same project tests WPF dispatcher failures and disposal of the production console host, including worker termination and the runtime shutdown hook; these tests cannot execute on macOS.
+The suite requires the Windows Desktop runtime and cannot execute on macOS. It covers WPF dispatcher failures, disposal while a production host statement is running, completion requests after disposal, worker termination, and the runtime shutdown hook.
 
 
 ## Startup cost

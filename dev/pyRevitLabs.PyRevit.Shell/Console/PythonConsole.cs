@@ -114,6 +114,7 @@ namespace PythonConsoleControl
             dispatcherThread = new Thread(() =>
             {
                 dispatcher = Dispatcher.CurrentDispatcher;
+                ownedDispatcher = dispatcher;
                 dispatcherReady.Set();
                 DispatcherThreadStartingPoint();
             });
@@ -167,6 +168,12 @@ namespace PythonConsoleControl
             return result;
         }
 
+        /// <summary>
+        /// Registers the statement dispatcher for this console.
+        /// </summary>
+        /// <remarks>
+        /// Important: register the Revit API dispatcher after the constructor's console-initialized handler; later registrations replace earlier dispatchers.
+        /// </remarks>
         public void SetCommandDispatcher(Action<Action> newDispatcher)
         {
             commandDispatcher = newDispatcher;
@@ -174,7 +181,15 @@ namespace PythonConsoleControl
             var pythonContext = (IronPython.Runtime.PythonContext)languageContext;
             pythonContext.GetSetCommandDispatcher(command =>
             {
-                execution.Run(ScriptScope.Engine, command, newDispatcher, textEditor.IsInterruptKeyPressed);
+                try
+                {
+                    execution.Run(ScriptScope.Engine, command, newDispatcher, textEditor.IsInterruptKeyPressed);
+                }
+                catch (KeyboardInterruptException exception)
+                {
+                    textEditor.Write(ScriptScope.Engine.GetService<ExceptionOperations>().FormatException(exception) + Environment.NewLine);
+                    textEditor.Write(prompt);
+                }
             });
         }
 
@@ -213,7 +228,6 @@ namespace PythonConsoleControl
 
         private void DispatcherThreadStartingPoint()
         {
-            ownedDispatcher = Dispatcher.CurrentDispatcher;
             if (Volatile.Read(ref disposed) != 0)
             {
                 ownedDispatcher.InvokeShutdown();
@@ -242,11 +256,12 @@ namespace PythonConsoleControl
             ownedDispatcher?.BeginInvoke(new Action(() => ownedDispatcher.InvokeShutdown()), DispatcherPriority.Send);
         }
 
-        internal void WaitForExit()
+        internal bool WaitForExit(TimeSpan timeout)
         {
-            dispatcherThread.Join();
+            if (!dispatcherThread.Join(timeout)) return false;
             lineReceivedEvent.Dispose();
             disposedEvent.Dispose();
+            return true;
         }
 
         public TextWriter Output

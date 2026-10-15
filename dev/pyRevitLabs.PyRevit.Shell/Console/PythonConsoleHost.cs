@@ -1,6 +1,7 @@
 // Copyright (c) 2010 Joe Moorhouse
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using IronPython.Hosting;
@@ -61,13 +62,24 @@ namespace PythonConsoleControl
             if (Interlocked.Exchange(ref disposed, 1) != 0) return;
             pythonConsole?.Dispose();
             textEditor.Dispose();
-            ThreadPool.QueueUserWorkItem(_ =>
+            new Thread(() =>
             {
-                thread?.Join();
-                pythonConsole?.WaitForExit();
-                textEditor.WaitForExit();
-                Runtime?.Shutdown();
-            });
+                try
+                {
+                    var timeout = TimeSpan.FromSeconds(10);
+                    var consoleExited = thread == null || thread.Join(timeout);
+                    if (!consoleExited) Trace.TraceWarning("Python shell console worker did not exit within {0}.", timeout);
+                    var dispatcherExited = consoleExited && (pythonConsole == null || pythonConsole.WaitForExit(timeout));
+                    if (!dispatcherExited) Trace.TraceWarning("Python shell dispatcher cleanup did not finish; console exit: {0}, join limit: {1}.", consoleExited, timeout);
+                    var completionExited = textEditor.WaitForExit(timeout);
+                    if (!completionExited) Trace.TraceWarning("Python shell completion worker did not exit within {0}.", timeout);
+                    if (consoleExited && dispatcherExited && completionExited) Runtime?.Shutdown();
+                }
+                catch (Exception exception)
+                {
+                    Trace.TraceError("Python shell cleanup failed: {0}", exception);
+                }
+            }) { IsBackground = true, Name = "Python shell cleanup" }.Start();
         }
 
 

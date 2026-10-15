@@ -11,7 +11,6 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Input;
 using System.Threading;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
@@ -98,12 +97,13 @@ namespace PythonConsoleControl
             completionWindow?.Close();
         }
 
-        internal void WaitForExit()
+        internal bool WaitForExit(TimeSpan timeout)
         {
-            completionThread.Join();
+            if (!completionThread.Join(timeout)) return false;
             completionRequestedEvent.Dispose();
             descriptionRequestedEvent.Dispose();
             disposedEvent.Dispose();
+            return true;
         }
         /// <summary>
         /// Whether completion popups should render with the dark theme. Set by the host control
@@ -345,11 +345,13 @@ namespace PythonConsoleControl
 
         public void ShowCompletionWindow()
         {
+            if (disposed) return;
             completionRequestedEvent.Set();
         }
 
         public void UpdateCompletionDescription()
         {
+            if (disposed) return;
             descriptionRequestedEvent.Set();
         }
 
@@ -364,11 +366,10 @@ namespace PythonConsoleControl
                 if (completionWaitHandles[action] == disposedEvent) return;
                 try
                 {
-                if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
-                if (action == descriptionEventIndex && completionProvider != null && completionWindow != null) BackgroundUpdateCompletionDescription();
+                    if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
+                    if (action == descriptionEventIndex && completionProvider != null && completionWindow != null) BackgroundUpdateCompletionDescription();
                 }
                 catch (Microsoft.Scripting.KeyboardInterruptException) { }
-                catch (OperationCanceledException) { }
             }
         }
 

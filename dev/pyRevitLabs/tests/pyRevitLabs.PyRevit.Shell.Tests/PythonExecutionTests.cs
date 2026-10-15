@@ -246,5 +246,61 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
             }
         }
 
+        [Fact]
+        public void ZeroInputTimestampInterruptsTheActiveStatement() {
+            var engine = Python.CreateEngine();
+            using var execution = new PythonExecution();
+            try {
+                Assert.Throws<KeyboardInterruptException>(() => execution.Run(engine, () => {
+                    Assert.True(execution.Interrupt(0));
+                    Assert.True(execution.IsInterruptedInput(0));
+                    engine.Execute("42");
+                }, command => command()));
+            }
+            finally { engine.Runtime.Shutdown(); }
+        }
+
+        [Fact]
+        public async Task SeparateExecutionsSharingAnEngineDoNotReplaceEachOthersTraceAsync() {
+            var engine = Python.CreateEngine();
+            using var replExecution = new PythonExecution();
+            using var completionExecution = new PythonExecution();
+            using var entered = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            using var completionDispatched = new ManualResetEventSlim();
+            var completionEntered = false;
+            var repl = Task.Run(() => Record.Exception(() => replExecution.Run(engine, () => {
+                entered.Set();
+                release.Wait();
+                engine.Execute("41");
+            }, command => command())));
+            Task completion = null;
+            try {
+                Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+                completion = Task.Run(() => completionExecution.Run(engine, () => {
+                    Volatile.Write(ref completionEntered, true);
+                    Assert.Equal(42, engine.Execute("42"));
+                }, command => {
+                    completionDispatched.Set();
+                    command();
+                }));
+                Assert.True(completionDispatched.Wait(TimeSpan.FromSeconds(10)));
+                Assert.False(Volatile.Read(ref completionEntered));
+                replExecution.Interrupt();
+                release.Set();
+                Assert.IsType<KeyboardInterruptException>(await repl.WaitAsync(TimeSpan.FromSeconds(10)));
+                await completion.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.True(Volatile.Read(ref completionEntered));
+            }
+            finally {
+                release.Set();
+                replExecution.Interrupt();
+                completionExecution.Interrupt();
+                await repl.WaitAsync(TimeSpan.FromSeconds(10));
+                if (completion != null) await completion.WaitAsync(TimeSpan.FromSeconds(10));
+                engine.Runtime.Shutdown();
+            }
+        }
+
     }
 }

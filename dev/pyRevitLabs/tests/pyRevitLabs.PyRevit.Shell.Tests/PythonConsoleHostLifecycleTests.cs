@@ -10,7 +10,17 @@ using PythonConsoleControl;
 namespace pyRevitLabs.PyRevit.Shell.Tests {
     public class PythonConsoleHostLifecycleTests {
         [Fact]
-        public async Task DisposeProductionHostEndsWorkersAndShutsDownRuntimeAsync() {
+        public Task DisposeProductionHostEndsWorkersAndShutsDownRuntimeAsync() {
+            return DisposeHostAsync(false);
+        }
+
+        [Fact]
+        public Task DisposeWhileStatementRunsDoesNotRaiseUnhandledAndWorkersExitAsync() {
+            return DisposeHostAsync(true);
+        }
+
+        static async Task DisposeHostAsync(bool runStatement) {
+            using var statementStarted = new ManualResetEventSlim();
             var ready = new TaskCompletionSource<PythonConsoleHost>(TaskCreationOptions.RunContinuationsAsynchronously);
             var runtimeShutdown = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             Dispatcher dispatcher = null;
@@ -46,7 +56,30 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                 Assert.True(consoleWorker.IsAlive);
                 Assert.True(dispatcherWorker.IsAlive);
                 Assert.True(completionWorker.IsAlive);
-                await dispatcher.InvokeAsync(productionHost.Dispose);
+                var executionField = typeof(PythonConsole).GetField("execution", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(executionField);
+                var execution = Assert.IsType<PythonExecution>(executionField.GetValue(productionHost.Console));
+                if (runStatement) {
+                    await dispatcher.InvokeAsync(() => {
+                        productionHost.Console.ScriptScope.SetVariable("_statement_started", new Action(statementStarted.Set));
+                        productionHost.Console.RunStatements("_statement_started()\nimport time\nwhile True:\n    time.sleep(0.05)\n");
+                    });
+                    Assert.True(await Task.Run(() => statementStarted.Wait(TimeSpan.FromSeconds(15))));
+                    Assert.True(execution.IsRunning);
+                }
+                await dispatcher.InvokeAsync(() => {
+                    var popup = new PythonConsoleCompletionWindow(productionHost.Editor.textArea, productionHost.Editor);
+                    var popupField = typeof(PythonTextEditor).GetField("completionWindow", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Assert.NotNull(popupField);
+                    popupField.SetValue(productionHost.Editor, popup);
+                    var timerField = typeof(PythonConsoleCompletionWindow).GetField("updateDescription", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Assert.NotNull(timerField);
+                    var completionTimer = Assert.IsType<DispatcherTimer>(timerField.GetValue(popup));
+                    completionTimer.Interval = TimeSpan.FromMilliseconds(300);
+                    completionTimer.Start();
+                    productionHost.Dispose();
+                    Assert.False(completionTimer.IsEnabled);
+                });
                 await Task.Run(() => {
                     Assert.True(consoleWorker.Join(TimeSpan.FromSeconds(10)));
                     Assert.True(dispatcherWorker.Join(TimeSpan.FromSeconds(10)));
@@ -56,6 +89,11 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                 Assert.False(consoleWorker.IsAlive);
                 Assert.False(dispatcherWorker.IsAlive);
                 Assert.False(completionWorker.IsAlive);
+                Assert.False(execution.IsRunning);
+                await dispatcher.InvokeAsync(() => {
+                    productionHost.Editor.ShowCompletionWindow();
+                    productionHost.Editor.UpdateCompletionDescription();
+                });
                 Assert.Null(unhandled);
             }
             finally {

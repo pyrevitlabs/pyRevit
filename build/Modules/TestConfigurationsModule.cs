@@ -62,7 +62,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 PyRevitPaths.ShellTestProject,
                 configuration,
                 [
-                    $"-p:ShellEnginesDirectory={Path.Combine(PyRevitPaths.BinPath, "netcore", "engines")}",
+                    $"-p:ShellEnginesDirectory={PyRevitPaths.EnginesNetCorePath}",
                     $"-p:IronPythonVersion={engine}",
                 ],
                 cancellationToken);

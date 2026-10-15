@@ -8,9 +8,8 @@
         <PermitDeploy>true</PermitDeploy>
         <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY2712PR</IronPythonVersion>
         <IronPythonPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</IronPythonPrefix>
-        <EngineSourceDirectory Condition="'$(IronPythonVersion)' == 'IPY2712PR'">../../../modules/pyRevitLabs.ironpython2</EngineSourceDirectory>
-        <EngineSourceDirectory Condition="'$(IronPythonVersion)' == 'IPY342'">../../../modules/pyRevitLabs.ironpython3</EngineSourceDirectory>
-        <UseWpf Condition="'$(OS)' == 'Windows_NT'">true</UseWpf>
+        <UseWpf>true</UseWpf>
+        <RevitVersion Condition="'$(RevitVersion)' == ''">2025</RevitVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,45 +17,23 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
-        <PackageReference Include="System.CodeDom" Version="10.0.5" Condition="'$(OS)' != 'Windows_NT'"/>
+        <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*"/>
+        <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*"/>
         <Using Include="Xunit"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(ShellEnginesDirectory)' == ''">
-        <ProjectReference Include="$(EngineSourceDirectory)/Src/IronPython/IronPython.csproj"/>
-        <ProjectReference Include="$(EngineSourceDirectory)/Src/IronPython.Modules/IronPython.Modules.csproj"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT' and '$(ShellEnginesDirectory)' == ''">
         <ProjectReference Include="../../../pyRevitLabs.PyRevit.Shell/pyRevitLabs.PyRevit.Shell.csproj"
                           AdditionalProperties="Configuration=Release $(IronPythonVersion);TargetFrameworks=net8.0-windows;PlatformTarget=AnyCPU;RevitVersion=2025"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT' and '$(ShellEnginesDirectory)' != ''">
+    <ItemGroup Condition="'$(ShellEnginesDirectory)' != ''">
         <Reference Include="pyRevitLabs.PyRevit.Shell" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/pyRevitLabs.PyRevit.Shell.dll"/>
         <Reference Include="ICSharpCode.AvalonEdit" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/ICSharpCode.AvalonEdit.dll"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(ShellEnginesDirectory)' != ''">
         <Reference Include="IronPython" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)IronPython.dll"/>
         <Reference Include="IronPython.Modules" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)IronPython.Modules.dll"/>
         <Reference Include="Microsoft.Dynamic" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)Microsoft.Dynamic.dll"/>
         <Reference Include="Microsoft.Scripting" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)Microsoft.Scripting.dll"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Compile Include="../../../pyRevitLabs.PyRevit.Shell/Console/PythonExecution.cs" Link="Sources/PythonExecution.cs"/>
-        <Compile Include="../../../pyRevitLabs.PyRevit.Shell/ShellExternalEventRequest.cs" Link="Sources/ShellExternalEventRequest.cs"/>
-        <Compile Include="../../../pyRevitLabs.PyRevit.Shell/ShellExternalEventDispatcher.cs" Link="Sources/ShellExternalEventDispatcher.cs"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-        <Compile Include="../../../pyRevitLabs.PyRevit.Shell/ShellLauncher.Dispatcher.cs" Link="Sources/ShellLauncher.Dispatcher.cs"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-        <Compile Remove="ShellDispatcherTests.cs"/>
-        <Compile Remove="PythonConsoleHostLifecycleTests.cs"/>
     </ItemGroup>
 
 </Project>
