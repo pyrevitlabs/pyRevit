@@ -236,11 +236,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="buildStrategy">The build strategy to use for assembly generation.</param>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
+        /// <remarks>Invalidates the shared configuration before constructing any session services.</remarks>
         public static ISessionManagerService CreateSessionManagerService(
             string revitVersion,
             AssemblyBuildStrategy buildStrategy,
             UIApplication uiApplication)
         {
+            PyRevitConfig.ClearCache();
+
             // Create logger first - it's used by all other services.
             var logger = CreateLogger();
             ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));

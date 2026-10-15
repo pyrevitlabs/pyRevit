@@ -13,6 +13,7 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// leave a reader holding values older than that write, or the next save writes
 /// the stale copy back over it.
 /// </summary>
+[Collection("PyRevitConfigStore")]
 public class SnapshotFreshnessTests : IDisposable
 {
     private readonly string _path;
@@ -34,6 +35,50 @@ public class SnapshotFreshnessTests : IDisposable
         return new ConfigurationBuilder(false)
             .AddIniConfiguration(_path)
             .Build();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StoreReload_AfterExternalEdit_RefreshesSessionSettings(bool rocketMode)
+    {
+        try
+        {
+            PyRevitConfigStore.Reset();
+            File.WriteAllText(_path,
+                $"[core]\nrocketmode = {rocketMode}\nloadbeta = false\n"
+                + "user_locale = en_us\nread_script_metadata = true\nfilelogging = false\n");
+            PyRevitConfigStore.SetFactory(() => new ConfigurationBuilder(false)
+                .AddIniConfiguration(_path)
+                .Build());
+
+            var previous = PyRevitConfigStore.GetShared();
+            Assert.Equal(rocketMode, previous.Core.RocketMode);
+            Assert.False(previous.Core.LoadBeta);
+            Assert.Equal("en_us", previous.Core.UserLocale);
+            Assert.True(previous.Core.ReadScriptMetadata);
+            Assert.False(previous.Core.FileLogging);
+
+            File.WriteAllText(_path,
+                $"[core]\nrocketmode = {!rocketMode}\nloadbeta = true\n"
+                + "user_locale = fr_fr\nread_script_metadata = false\nfilelogging = true\n");
+            Assert.Same(previous, PyRevitConfigStore.GetShared());
+            Assert.Equal(rocketMode, previous.Core.RocketMode);
+
+            PyRevitConfigStore.Reload();
+
+            var current = PyRevitConfigStore.GetShared();
+            Assert.NotSame(previous, current);
+            Assert.Equal(!rocketMode, current.Core.RocketMode);
+            Assert.True(current.Core.LoadBeta);
+            Assert.Equal("fr_fr", current.Core.UserLocale);
+            Assert.False(current.Core.ReadScriptMetadata);
+            Assert.True(current.Core.FileLogging);
+        }
+        finally
+        {
+            PyRevitConfigStore.Reset();
+        }
     }
 
     /// <summary>
