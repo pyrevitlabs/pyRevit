@@ -39,7 +39,6 @@ def create_handler(handler_func, handler_args_type):
 
 def add_handler(event_name, handler_func):
     event_handler = None
-    handler_func = EXEC_PARAMS.bind_callback(handler_func)
 
     if event_name == "doc-changed":
         event_handler = create_handler(handler_func, DB.Events.DocumentChangedEventArgs)
@@ -267,18 +266,16 @@ def execute_in_revit_context(func, *args, **kwargs):
     # This affects any module whose __init__.py uses conditional imports at
     # load time (e.g. forms, revit submodules). Only module-type objects are
     # restored to avoid contaminating mutable script state (doc, uidoc, etc.).
-    callback_globals = func.__globals__
-    func = EXEC_PARAMS.bind_callback(func)
     _module_type = type(compat)
     _saved_modules = {
-        k: v for k, v in callback_globals.items() if type(v) is _module_type
+        k: v for k, v in func.__globals__.items() if type(v) is _module_type
     }
 
     def _wrapper():
         # types.FunctionType with closures is not supported in IronPython 2,
         # so we do a bounded mutation: save, patch, call, restore.
         _MISSING = object()
-        g = callback_globals
+        g = func.__globals__
         saved = {
             k: g.get(k, _MISSING) for k in _saved_modules if k not in g or g[k] is None
         }

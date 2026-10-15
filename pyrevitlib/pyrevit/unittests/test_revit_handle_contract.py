@@ -40,41 +40,9 @@ def _load(relative_path, names, namespace):
     namespace["__builtins__"] = isolated_builtins
     namespace["sys"] = sys
     namespace["_EXEC_PARAMS_NOT_SET"] = object()
-    namespace["_EXECUTION_CONTEXT"] = __import__("threading").local()
-    namespace["_EXECUTION_SCOPE_NAMES"] = (
-        "__execid__",
-        "__timestamp__",
-        "__cachedengine__",
-        "__cachedengineid__",
-        "__scriptruntime__",
-        "__revit__",
-        "__commanddata__",
-        "__elements__",
-        "__uibutton__",
-        "__commandpath__",
-        "__configcommandpath__",
-        "__commandname__",
-        "__commandbundle__",
-        "__commandextension__",
-        "__commanduniqueid__",
-        "__commandcontrolid__",
-        "__forceddebugmode__",
-        "__shiftclick__",
-        "__result__",
-        "__eventsender__",
-        "__eventargs__",
-    )
-    namespace["threading"] = __import__("threading")
     tree = ast.parse(_source(relative_path))
     names = set(names)
-    names.update(
-        {
-            "_EXECUTION_CONTEXT",
-            "_EXECUTION_SCOPE_NAMES",
-            "_capture_execution_scope",
-            "_get_execution_scope_value",
-        }
-    )
+    names.add("_get_execution_scope_value")
     tree.body = [node for node in tree.body if getattr(node, "name", None) in names]
     exec(compile(tree, relative_path, "exec"), namespace)
     return namespace
@@ -206,45 +174,6 @@ class HostHandleTests(unittest.TestCase):
             ("first runtime", "Measure", "first/path", "first-id"),
         )
         self.assertEqual(params.command_name, "SecondCommand")
-
-    def test_executor_params_bind_imported_callback(self):
-        """A bound callback retains command values without command frames."""
-        params = self.scope["_ExecutorParams"]()
-        builtins_scope = self.scope["__builtins__"]
-        builtins_scope.update(
-            {
-                "__scriptruntime__": "first runtime",
-                "__commandname__": "Measure",
-                "__commandpath__": "first/path",
-            }
-        )
-        execution_scope = {"__builtins__": builtins_scope}
-        exec(
-            "def register(params, callback):\n"
-            "    return params.bind_callback(callback)\n",
-            execution_scope,
-        )
-        imported_scope = {"__builtins__": builtins_scope}
-        imported_scope["params"] = params
-        exec(
-            "def callback():\n"
-            "    return params.command_name, params.command_path\n",
-            imported_scope,
-        )
-        callback = imported_scope["callback"]
-        bound_callback = execution_scope["register"](params, callback)
-        builtins_scope["__commandname__"] = "SecondCommand"
-        builtins_scope["__commandpath__"] = "second/path"
-        self.scope["sys"] = SimpleNamespace()
-
-        self.assertEqual(bound_callback(), ("Measure", "first/path"))
-        self.assertEqual(params.command_name, "SecondCommand")
-
-    def test_executor_params_fall_back_when_frames_are_unavailable(self):
-        """Missing frame support does not block builtin-backed parameters."""
-        self.scope["sys"] = SimpleNamespace()
-        self.scope["__builtins__"]["__commandname__"] = "CurrentCommand"
-        self.assertEqual(self.scope["EXEC_PARAMS"].command_name, "CurrentCommand")
 
     def test_none_metadata_is_safe(self):
         """Metadata returns None and version comparisons return False without a host."""

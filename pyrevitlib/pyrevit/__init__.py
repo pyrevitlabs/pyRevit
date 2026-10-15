@@ -23,7 +23,6 @@ from pyrevit._perf import mark as _perfmark
 _perfmark("pyrevit.__init__:entry")
 
 import sys
-import threading
 import os
 import os.path as op
 from collections import namedtuple
@@ -583,40 +582,10 @@ HOST_APP = _HostApplication()
 
 
 _EXEC_PARAMS_NOT_SET = object()
-_EXECUTION_CONTEXT = threading.local()
-_EXECUTION_SCOPE_NAMES = (
-    "__execid__",
-    "__timestamp__",
-    "__cachedengine__",
-    "__cachedengineid__",
-    "__scriptruntime__",
-    "__revit__",
-    "__commanddata__",
-    "__elements__",
-    "__uibutton__",
-    "__commandpath__",
-    "__configcommandpath__",
-    "__commandname__",
-    "__commandbundle__",
-    "__commandextension__",
-    "__commanduniqueid__",
-    "__commandcontrolid__",
-    "__forceddebugmode__",
-    "__shiftclick__",
-    "__result__",
-    "__eventsender__",
-    "__eventargs__",
-)
 
 
 def _get_execution_scope_value(name):
-    context = getattr(_EXECUTION_CONTEXT, "scope", None)
-    if context and name in context:
-        return context[name]
-    try:
-        frame = sys._getframe(1)
-    except AttributeError:
-        return _EXEC_PARAMS_NOT_SET
+    frame = sys._getframe(1)
     while frame:
         scope = frame.f_globals
         if "__scriptruntime__" in scope and name in scope:
@@ -625,54 +594,11 @@ def _get_execution_scope_value(name):
     return _EXEC_PARAMS_NOT_SET
 
 
-def _capture_execution_scope():
-    try:
-        frame = sys._getframe(1)
-    except AttributeError:
-        frame = None
-    while frame:
-        scope = frame.f_globals
-        if "__scriptruntime__" in scope:
-            return {
-                name: scope[name] for name in _EXECUTION_SCOPE_NAMES if name in scope
-            }
-        frame = frame.f_back
-    builtin_scope = __builtins__
-    if not isinstance(builtin_scope, dict):
-        builtin_scope = builtin_scope.__dict__
-    if builtin_scope.get("__scriptruntime__"):
-        return {
-            name: builtin_scope[name]
-            for name in _EXECUTION_SCOPE_NAMES
-            if name in builtin_scope
-        }
-    return None
-
-
 # -----------------------------------------------------------------------------
 # Wrapper to access execution-scoped parameters with builtin fallback
 # -----------------------------------------------------------------------------
 class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
-
-    def bind_callback(self, callback):
-        """Bind a deferred callback to the command execution that registers it."""
-        scope = _capture_execution_scope()
-        if scope is None:
-            return callback
-
-        def bound_callback(*args, **kwargs):
-            previous_scope = getattr(_EXECUTION_CONTEXT, "scope", _EXEC_PARAMS_NOT_SET)
-            _EXECUTION_CONTEXT.scope = scope
-            try:
-                return callback(*args, **kwargs)
-            finally:
-                if previous_scope is _EXEC_PARAMS_NOT_SET:
-                    del _EXECUTION_CONTEXT.scope
-                else:
-                    _EXECUTION_CONTEXT.scope = previous_scope
-
-        return bound_callback
 
     @property  # read-only
     def exec_id(self):
