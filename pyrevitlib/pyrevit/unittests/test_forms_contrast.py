@@ -1,0 +1,225 @@
+"""Exercise the real contrast pass with a small WPF precedence model.
+
+These portable tests cover style composition and state changes. Actual WPF
+value sources and rendering still require the Windows probe window.
+"""
+
+import ast
+import io
+import os
+import unittest
+
+
+class _Namespace(object):
+    def __init__(self, **values):
+        self.__dict__.update(values)
+
+
+class _Setters(list):
+    def Add(self, setter):
+        self.append(setter)
+
+
+class _Setter(object):
+    def __init__(self, prop, value):
+        self.Property = prop
+        self.Value = value
+
+
+class _Style(object):
+    def __init__(self, target_type, based_on=None):
+        self.TargetType = target_type
+        self.BasedOn = based_on
+        self.Setters = _Setters()
+
+
+class _Brush(object):
+    def __init__(self, red, green, blue, alpha=255):
+        self.Color = _Namespace(A=alpha, R=red, G=green, B=blue)
+
+
+class _Resources(dict):
+    @property
+    def Keys(self):
+        return list(self.keys())
+
+
+_UNSET = object()
+
+
+class _Element(object):
+    def __init__(self, background, style=None):
+        self.local = {"Background": background}
+        self.Style = style
+        self.IsEnabled = True
+        self.disabled_brush = None
+
+    def GetType(self):
+        return type(self)
+
+    def ReadLocalValue(self, prop):
+        return self.local.get(prop, _UNSET)
+
+    def SetValue(self, prop, value):
+        self.local[prop] = value
+
+    def GetValue(self, prop):
+        if prop in self.local:
+            return self.local[prop]
+        if prop == "Foreground" and not self.IsEnabled:
+            return self.disabled_brush
+        style = self.Style
+        while style is not None:
+            for setter in reversed(style.Setters):
+                if setter.Property == prop:
+                    return setter.Value
+            style = style.BasedOn
+        return None
+
+
+def _load_contrast_pass():
+    """Compile production definitions without importing Revit or WPF."""
+    source_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "forms", "_ipy.py")
+    )
+    with io.open(source_path, encoding="utf-8") as source:
+        tree = ast.parse(source.read())
+    names = {"_argb", "_srgb_component", "_relative_luminance", "_contrast_ratio"}
+    selected = [node for node in tree.body if getattr(node, "name", None) in names]
+    mixin = next(
+        node for node in tree.body if getattr(node, "name", None) == "_WPFMixin"
+    )
+    selected.append(
+        next(
+            node
+            for node in mixin.body
+            if getattr(node, "name", None) == "apply_contrast_foregrounds"
+        )
+    )
+    tree.body = selected
+    scope = {
+        "framework": _Namespace(
+            Windows=_Namespace(
+                DependencyProperty=_Namespace(UnsetValue=_UNSET),
+                Style=_Style,
+                Setter=_Setter,
+            )
+        ),
+        "Media": _Namespace(SolidColorBrush=_Brush),
+        "_walk_logical_tree": lambda window: window.elements,
+        "_foreground_property": lambda element: "Foreground",
+        "_background_property": lambda element: "Background",
+        "_is_authored_value": lambda element, prop: prop in element.local,
+    }
+    exec(compile(tree, source_path, "exec"), scope)
+    return scope["apply_contrast_foregrounds"]
+
+
+class FormsContrastTests(unittest.TestCase):
+    """Keep contrast below triggers without losing user styles or local values."""
+
+    def setUp(self):
+        """Prepare contrasting colors and a window for the production pass."""
+        self.apply = _load_contrast_pass()
+        self.black = _Brush(0, 0, 0)
+        self.white = _Brush(255, 255, 255)
+        self.disabled = _Brush(160, 160, 160)
+        self.window = _Namespace(
+            Resources=_Resources(
+                pyRevitWindowForegroundBrush=self.black,
+                pyRevitWindowBackgroundBrush=self.white,
+                pyRevitWindowForegroundColor=self.black.Color,
+                pyRevitWindowBackgroundColor=self.white.Color,
+            ),
+            elements=[],
+        )
+
+    def element(self, style=None):
+        """Add a pale colored control with a disabled-state template trigger."""
+        element = _Element(_Brush(255, 200, 200), style)
+        element.disabled_brush = self.disabled
+        self.window.elements.append(element)
+        return element
+
+    def test_enabled_and_disabled_foregrounds(self):
+        """Contrast wins when enabled; the disabled trigger wins otherwise."""
+        enabled = self.element()
+        disabled = self.element()
+        disabled.IsEnabled = False
+        self.apply(self.window)
+        self.assertIs(enabled.GetValue("Foreground"), self.black)
+        self.assertIs(disabled.GetValue("Foreground"), self.disabled)
+        for element in (enabled, disabled):
+            self.assertIs(element.ReadLocalValue("Foreground"), _UNSET)
+
+    def test_runtime_enabled_changes(self):
+        """Both initial states can toggle repeatedly without another pass."""
+        for initially_enabled in (True, False):
+            element = self.element()
+            element.IsEnabled = initially_enabled
+            self.apply(self.window)
+            for enabled in (False, True, False, True):
+                element.IsEnabled = enabled
+                self.assertIs(
+                    element.GetValue("Foreground"),
+                    self.black if enabled else self.disabled,
+                )
+                self.assertIs(element.ReadLocalValue("Foreground"), _UNSET)
+
+    def test_existing_style_and_setters_are_preserved(self):
+        """The contrast style derives from the exact existing user style."""
+        original = _Style(_Element)
+        original.Setters.Add(_Setter("Padding", 12))
+        original.Setters.Add(_Setter("Foreground", self.white))
+        element = self.element(original)
+        self.apply(self.window)
+        self.assertIs(element.Style.BasedOn, original)
+        self.assertIs(element.Style.TargetType, _Element)
+        self.assertEqual(element.GetValue("Padding"), 12)
+        self.assertIs(element.GetValue("Foreground"), self.black)
+        self.assertEqual(len(original.Setters), 2)
+        self.assertIs(original.Setters[1].Value, self.white)
+
+    def test_refresh_replaces_only_managed_style(self):
+        """Theme refresh updates contrast without building a style chain."""
+        original = _Style(_Element)
+        element = self.element(original)
+        self.apply(self.window)
+        first_style = element.Style
+        element.local["Background"] = _Brush(20, 20, 20)
+        self.apply(self.window)
+        self.assertIsNot(element.Style, first_style)
+        self.assertIs(element.Style.BasedOn, original)
+        self.assertIs(element.GetValue("Foreground"), self.white)
+        replacement = _Style(_Element)
+        element.Style = replacement
+        self.apply(self.window)
+        self.assertIs(element.Style.BasedOn, replacement)
+
+    def test_explicit_foreground_is_untouched(self):
+        """Authored local foregrounds, including later edits, stay authoritative."""
+        element = self.element()
+        element.local["Foreground"] = self.white
+        self.apply(self.window)
+        self.assertIsNone(element.Style)
+        self.assertIs(element.GetValue("Foreground"), self.white)
+        del element.local["Foreground"]
+        self.apply(self.window)
+        contrast_style = element.Style
+        element.local["Foreground"] = self.disabled
+        self.apply(self.window)
+        self.assertIs(element.Style, contrast_style)
+        self.assertIs(element.GetValue("Foreground"), self.disabled)
+
+    def test_theme_and_translucent_backgrounds_are_untouched(self):
+        """Existing exclusions do not create unnecessary contrast styles."""
+        for background in (self.white, _Brush(255, 200, 200, alpha=128)):
+            element = self.element()
+            element.local["Background"] = background
+        self.apply(self.window)
+        for element in self.window.elements:
+            self.assertIsNone(element.Style)
+
+
+if __name__ == "__main__":
+    unittest.main()

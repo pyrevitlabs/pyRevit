@@ -496,8 +496,10 @@ class _WPFMixin(object):
         Elements that declare their own Foreground are left untouched, and so
         are theme-brush backgrounds, which already pair with the theme
         foreground. Translucent backgrounds are left untouched because their
-        effective color depends on the surface below them. Safe to call again
-        to re-evaluate after a theme change.
+        effective color depends on the surface below them. Contrast is supplied
+        by a style setter so disabled-state triggers remain authoritative,
+        including when IsEnabled changes after the window opens. Safe to call
+        again to re-evaluate after a theme change.
         """
         res = self.Resources
         try:
@@ -520,7 +522,7 @@ class _WPFMixin(object):
 
         managed = getattr(self, "_contrast_managed", None)
         if managed is None:
-            managed = set()
+            managed = {}
             self._contrast_managed = managed
 
         for element in _walk_logical_tree(self):
@@ -541,15 +543,19 @@ class _WPFMixin(object):
             if (
                 element.ReadLocalValue(fore_prop)
                 != framework.Windows.DependencyProperty.UnsetValue
-                and element not in managed
             ):
                 continue
             best = max(
                 candidates,
                 key=lambda candidate: _contrast_ratio(background, candidate.Color),
             )
-            element.SetValue(fore_prop, best)
-            managed.add(element)
+            base_style = element.Style
+            if element in managed and base_style is managed[element]:
+                base_style = base_style.BasedOn
+            contrast_style = framework.Windows.Style(element.GetType(), base_style)
+            contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
+            element.Style = contrast_style
+            managed[element] = contrast_style
 
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
