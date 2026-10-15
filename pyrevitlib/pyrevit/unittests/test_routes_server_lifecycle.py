@@ -83,6 +83,42 @@ class _LiveThread(object):
         return None
 
 
+class _StubExternalEvent(object):
+    """Record native event disposal without calling the Revit API."""
+
+    def __init__(self):
+        self.dispose_calls = 0
+
+    def Dispose(self):
+        self.dispose_calls += 1
+
+
+class _StubIdlingEvent(object):
+    """Run subscribed handlers only when the test advances Revit's idle cycle."""
+
+    def __init__(self):
+        self.handlers = []
+
+    def __iadd__(self, callback):
+        self.handlers.append(callback)
+        return self
+
+    def __isub__(self, callback):
+        self.handlers.remove(callback)
+        return self
+
+    def fire(self):
+        for callback in list(self.handlers):
+            callback(None, None)
+
+
+class _StubUiApplication(object):
+    """Expose a controllable Idling event for deferred disposal."""
+
+    def __init__(self):
+        self.Idling = _StubIdlingEvent()
+
+
 class _StubHttpServer(object):
     """ThreadedHttpServer stand-in whose shutdown/close can be made to fail."""
 
@@ -92,6 +128,8 @@ class _StubHttpServer(object):
         self.shutdown_calls = 0
         self.close_calls = 0
         self.request_handler = handler.RequestHandler()
+        self.external_event = _StubExternalEvent()
+        self.request_handler.external_event = self.external_event
 
     def shutdown(self):
         self.shutdown_calls += 1
@@ -199,19 +237,64 @@ class RoutesServerStopTests(unittest.TestCase):
             self.assertIn('"exception"', parsed.data)
         self.assertEqual([], called)
 
+    def test_stop_notifies_queued_callbacks_outside_queue_lock(self):
+        """Accepted callback requests receive their stopped-server rejection."""
+        instance = self._make_routes_server()
+        dispatcher = instance.server.request_handler
+        callbacks = []
+        notified = threading.Event()
+
+        def callback(url, response):
+            acquired = dispatcher._lock.acquire(False)
+            if acquired:
+                dispatcher._lock.release()
+            callbacks.append((url, response.status, acquired))
+            if len(callbacks) == 2:
+                notified.set()
+            else:
+                raise ValueError("first callback failed")
+
+        dispatcher.make_callback = callback
+        for url in ("http://callback/first", "http://callback/second"):
+            request = base.Request(data={"callbackUrl": url})
+            item = handler.RequestWorkItem(request, lambda request, uiapp: None)
+            self.assertIsNone(dispatcher.enqueue(item))
+
+        instance.stop()
+        self.assertTrue(notified.wait(5))
+        instance.stop()
+        self.assertEqual(
+            [
+                ("http://callback/first", 503, True),
+                ("http://callback/second", 503, True),
+            ],
+            callbacks,
+        )
+
+    def test_stop_disposes_unused_external_event_once(self):
+        """An event with no Execute in flight can be released immediately."""
+        instance = self._make_routes_server()
+        instance.stop()
+        instance.stop()
+        self.assertEqual(1, instance.server.external_event.dispose_calls)
+
     def test_handler_that_stops_server_keeps_its_response(self):
         """Reload initiated by an active route preserves sync and callback results."""
         for callback_url in (None, "http://callback/"):
             instance = self._make_routes_server()
             dispatcher = instance.server.request_handler
             callbacks = []
+            uiapp = _StubUiApplication()
+            external_event = instance.server.external_event
 
             def route(request, uiapp):
                 instance.stop()
+                self.assertEqual(0, external_event.dispose_calls)
                 return {"session_id": "reloaded-session"}
 
             def callback(url, response):
                 callbacks.append((url, response))
+                self.assertEqual(0, external_event.dispose_calls)
 
             dispatcher.make_callback = callback
             request = base.Request(data={"callbackUrl": callback_url})
@@ -219,7 +302,7 @@ class RoutesServerStopTests(unittest.TestCase):
             queued = handler.RequestWorkItem(base.Request(), route)
             self.assertIsNone(dispatcher.enqueue(item))
             self.assertIsNone(dispatcher.enqueue(queued))
-            dispatcher.Execute(None)
+            dispatcher.Execute(uiapp)
 
             self.assertTrue(item.event.wait(0.1))
             self.assertEqual({"session_id": "reloaded-session"}, item.response)
@@ -227,6 +310,30 @@ class RoutesServerStopTests(unittest.TestCase):
             self.assertEqual(503, queued.response.status)
             expected = [(callback_url, item.response)] if callback_url else []
             self.assertEqual(expected, callbacks)
+            self.assertEqual(0, external_event.dispose_calls)
+            uiapp.Idling.fire()
+            self.assertEqual(1, external_event.dispose_calls)
+            self.assertEqual([], uiapp.Idling.handlers)
+            instance.stop()
+            uiapp.Idling.fire()
+            self.assertEqual(1, external_event.dispose_calls)
+
+    def test_stop_after_execute_defers_disposal_until_next_idle(self):
+        """Disposal cannot race the tail of Execute before Revit regains control."""
+        instance = self._make_routes_server()
+        dispatcher = instance.server.request_handler
+        uiapp = _StubUiApplication()
+        item = handler.RequestWorkItem(
+            base.Request(), lambda request, uiapp: "normal response"
+        )
+        self.assertIsNone(dispatcher.enqueue(item))
+        dispatcher.Execute(uiapp)
+        self.assertEqual("normal response", item.response)
+        instance.stop()
+        self.assertEqual(0, instance.server.external_event.dispose_calls)
+        uiapp.Idling.fire()
+        self.assertEqual(1, instance.server.external_event.dispose_calls)
+        self.assertEqual([], uiapp.Idling.handlers)
 
     def test_stop_joins_the_accept_loop_and_closes_the_socket(self):
         """A stop shuts the accept loop down, releases the socket and forgets the thread."""

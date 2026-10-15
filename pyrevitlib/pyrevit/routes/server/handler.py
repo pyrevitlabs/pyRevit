@@ -119,6 +119,9 @@ class RequestHandler(UI.IExternalEventHandler):
         self._queue = deque()
         self._lock = threading.Lock()
         self._stopped = False
+        self.external_event = None
+        self._awaiting_idle = False
+        self._uiapp = None
 
     def enqueue(self, item):
         """Register work, returning a server rejection only when stopped."""
@@ -148,12 +151,64 @@ class RequestHandler(UI.IExternalEventHandler):
             return True
 
     def stop(self):
-        """Reject queued work, allowing the executing handler to finish normally."""
+        """Reject queued work and notify callbacks without holding the queue lock.
+
+        Disposal waits for the next Idling event if Execute has run since the
+        last idle cycle, so a route can reload its own server safely.
+        """
+        callbacks = []
+        external_event = None
         with self._lock:
             self._stopped = True
             while self._queue:
                 item = self._queue.popleft()
                 item.complete(self.stopped_response(item.request))
+                if item.request.callback_url:
+                    callbacks.append(item)
+            if not self._awaiting_idle:
+                external_event = self.external_event
+                self.external_event = None
+        self._dispose_external_event(external_event)
+        if callbacks:
+
+            def notify_callbacks():
+                for item in callbacks:
+                    self._notify_callback(item)
+
+            notifier = threading.Thread(target=notify_callbacks)
+            notifier.daemon = True
+            notifier.start()
+
+    @staticmethod
+    def _dispose_external_event(external_event):
+        """Release the native event without letting teardown errors escape."""
+        if external_event is not None:
+            try:
+                external_event.Dispose()
+            except Exception:
+                mlogger.debug(
+                    "Routes event disposal failed | %s", traceback.format_exc()
+                )
+
+    def _on_idle(self, sender, args):
+        """Dispose a stopped event only after Revit has returned from Execute."""
+        external_event = None
+        with self._lock:
+            self._uiapp.Idling -= self._on_idle
+            self._uiapp = None
+            self._awaiting_idle = False
+            if self._stopped:
+                external_event = self.external_event
+                self.external_event = None
+        self._dispose_external_event(external_event)
+
+    def _notify_callback(self, item):
+        """Deliver either a handler result or a queued-request rejection."""
+        try:
+            if item.request.callback_url:
+                self.make_callback(item.request.callback_url, item.response)
+        except Exception:
+            mlogger.debug("Routes callback failed | %s", traceback.format_exc())
 
     @staticmethod
     def run_handler(handler, kwargs):
@@ -303,6 +358,13 @@ class RequestHandler(UI.IExternalEventHandler):
 
     def Execute(self, uiapp):
         """Drain all queued work, isolating both handler and callback failures."""
+        with self._lock:
+            if self._stopped:
+                return
+            if self.external_event is not None and not self._awaiting_idle:
+                uiapp.Idling += self._on_idle
+                self._uiapp = uiapp
+                self._awaiting_idle = True
         while True:
             with self._lock:
                 if self._stopped or not self._queue:
@@ -318,11 +380,7 @@ class RequestHandler(UI.IExternalEventHandler):
                 response = excp.RouteHandlerExecException(message=str(exec_ex))
             finally:
                 item.complete(response)
-                try:
-                    if item.request.callback_url:
-                        self.make_callback(item.request.callback_url, item.response)
-                except Exception:
-                    mlogger.debug("Routes callback failed | %s", traceback.format_exc())
+                self._notify_callback(item)
 
     def GetName(self):
         """String identification of the event handler."""

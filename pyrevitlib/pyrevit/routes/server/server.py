@@ -384,6 +384,7 @@ class RoutesServer(object):
         self.server.external_event = UI.ExternalEvent.Create(
             self.server.request_handler
         )
+        self.server.request_handler.external_event = self.server.external_event
         self.host = host
         self.port = port
         self.server_thread = None
