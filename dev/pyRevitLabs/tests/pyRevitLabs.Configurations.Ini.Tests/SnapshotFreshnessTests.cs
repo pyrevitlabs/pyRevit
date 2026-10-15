@@ -37,6 +37,10 @@ public class SnapshotFreshnessTests : IDisposable
             .Build();
     }
 
+    /// <summary>
+    ///     Verifies that invalidating the shared store refreshes session settings after an external INI edit.
+    /// </summary>
+    /// <param name="rocketMode">The Rocket Mode value cached before the external edit.</param>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
