@@ -18,6 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
 
+    /// <summary>Defines the shared C# and Python core environment key names.</summary>
     public static class EnvDictionaryKeys {
         public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
@@ -56,7 +57,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string TabColorizer = string.Format("{0}_TABCOLORIZER", keyPrefix);
     }
 
+    /// <summary>Manages process-wide environment values across pyRevit session reloads.</summary>
     public class EnvDictionary {
+        /// <summary>Invariant: <see cref="EnvDictionaryKeys.RoutesServer"/> remains available after seeding for <c>routes.deactivate_server()</c> to stop the previous session's live socket.</summary>
+        /// <remarks>Important: session startup clears running engines before Routes teardown; the server handle survives both engine shutdown and environment seeding.</remarks>
         private static readonly HashSet<string> CoreKeys = new HashSet<string> {
             EnvDictionaryKeys.SessionUUID,
             EnvDictionaryKeys.RevitVersion,
