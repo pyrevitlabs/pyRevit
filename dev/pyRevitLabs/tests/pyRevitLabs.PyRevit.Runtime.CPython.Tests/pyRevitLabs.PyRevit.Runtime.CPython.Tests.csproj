@@ -17,6 +17,7 @@
         <PackageReference Include="coverlet.collector" Version="6.0.0"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
     </ItemGroup>
 
@@ -37,6 +38,9 @@
     <ItemGroup>
         <None Include="..\..\..\pyRevitLabs.PyRevit.Runtime\CPythonEngine.cs"
               Link="Sources\CPythonEngine.cs"
+              CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\..\pyRevitLabs.PyRevit.Runtime\ScriptConsole.cs"
+              Link="Sources\ScriptConsole.cs"
               CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
