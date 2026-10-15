@@ -25,6 +25,7 @@ from pyrevit.coreutils import envvars
 from pyrevit.routes import server as routes
 from pyrevit.routes.server import server as routes_server
 from pyrevit.routes.server import serverinfo
+from pyrevit.routes.server import base, handler
 
 
 class _RecordingLogger(object):
@@ -90,6 +91,7 @@ class _StubHttpServer(object):
         self.close_error = close_error
         self.shutdown_calls = 0
         self.close_calls = 0
+        self.request_handler = handler.RequestHandler()
 
     def shutdown(self):
         self.shutdown_calls += 1
@@ -167,6 +169,29 @@ class RoutesServerStopTests(unittest.TestCase):
         else:
             instance.server_thread = None
         return instance
+
+    def test_stop_fails_all_pending_requests_and_rejects_new_work(self):
+        """Session reload releases every API waiter with a service error."""
+        instance = self._make_routes_server()
+        dispatcher = instance.server.request_handler
+        called = []
+
+        def route(request, uiapp):
+            called.append(request.path)
+
+        items = [
+            dispatcher.enqueue(base.Request(path="/%s" % index), route)
+            for index in range(10)
+        ]
+        instance.stop()
+        dispatcher.Execute(None)
+        items.append(dispatcher.enqueue(base.Request(), route))
+
+        for item in items:
+            self.assertTrue(item.event.wait(0.1))
+            self.assertEqual(503, item.response.status)
+            self.assertIn("stopped or reloaded", item.response.data["error"])
+        self.assertEqual([], called)
 
     def test_stop_joins_the_accept_loop_and_closes_the_socket(self):
         """A stop shuts the accept loop down, releases the socket and forgets the thread."""

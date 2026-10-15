@@ -7,6 +7,7 @@ import traceback
 import threading
 import json
 import numbers
+from collections import deque
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
@@ -89,73 +90,71 @@ RESERVED_VAR_NAMES = [
 ]
 
 
-class RequestHandler(UI.IExternalEventHandler):
-    """Revit external event handler type."""
+class RequestWorkItem(object):
+    """One queued request, with an independent response and completion signal."""
 
-    # static privates
-    _request = None
-    _handler = None
-    _response = None
-    _done = False
-    _lock = threading.Lock()
+    def __init__(self, request, handler):
+        self.request = request
+        self.handler = handler
+        self.event = threading.Event()
+        self.response = None
+        self._lock = threading.Lock()
 
-    @property
-    def request(self):
-        """Get registered request."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._request
-
-    @request.setter
-    def request(self, request):
-        """Set a new request to be passed to handler when event is raised."""
+    def complete(self, response):
+        """Publish the first result, preserving shutdown and timeout errors."""
         with self._lock:
-            self._request = request
+            if not self.event.is_set():
+                self.response = response
+                self.event.set()
 
-    @property
-    def handler(self):
-        """Get registered handler."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._handler
 
-    @handler.setter
-    def handler(self, handler):
-        """Set a new handler to be executed when event is raised."""
-        if handler and callable(handler):
-            with self._lock:
-                self._handler = handler
-        else:
-            raise excp.RouteHandlerIsNotCallableException(handler.__name__)
+class RequestHandler(UI.IExternalEventHandler):
+    """Drain API requests using one external event per server lifetime.
 
-    @property
-    def response(self):
-        """Get registered response."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._response
+    Revit may coalesce Raise calls. The queue, rather than the number of event
+    invocations, therefore determines how many handlers Execute must run.
+    """
 
-    @property
-    def done(self):
-        """Check if execution of handler is completed and response is set."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._done
+    def __init__(self):
+        self._queue = deque()
+        self._lock = threading.Lock()
+        self._stopped = False
+        self._active = None
 
-    def _set_response(self, response):
-        with self._lock:  # pylint: disable=not-context-manager
-            self._response = response
-            self._done = True
+    def enqueue(self, request, handler):
+        """Register a request without replacing another request's state."""
+        item = RequestWorkItem(request, handler)
+        with self._lock:
+            if self._stopped:
+                item.complete(self.stopped_response())
+            else:
+                self._queue.append(item)
+        return item
 
-    def reset(self):
-        """Reset internals for new execution."""
-        with self._lock:  # pylint: disable=not-context-manager
-            self._response = None
-            self._done = False
+    @staticmethod
+    def stopped_response():
+        """Explain why a request cannot run during stop or session reload."""
+        return base.Response(
+            status=503, data={"error": "Routes server stopped or reloaded"}
+        )
 
-    def join(self):
-        """Allow other threads to call this method and wait for completion."""
-        # wait until handler signals completion
-        while True:
-            with self._lock:
-                if self._done:
-                    return
+    def cancel(self, item, response):
+        """Cancel queued work, or release a waiter whose handler is running."""
+        with self._lock:
+            try:
+                self._queue.remove(item)
+            except ValueError:
+                pass
+            item.complete(response)
+
+    def stop(self):
+        """Fail queued and running waiters without waiting on the Revit thread."""
+        with self._lock:
+            self._stopped = True
+            while self._queue:
+                self._queue.popleft().complete(self.stopped_response())
+            if self._active is not None:
+                self._active.complete(self.stopped_response())
 
     @staticmethod
     def run_handler(handler, kwargs):
@@ -304,29 +303,32 @@ class RequestHandler(UI.IExternalEventHandler):
         return base.Response(status=status, data=data, headers=headers)
 
     def Execute(self, uiapp):
-        """This method is called to handle the external event."""
-        # grab data. getters are thread-safe
-        handler = self.handler
-        request = self.request
-        response = None
-
-        try:
-            # process necessary arguments for the handler
-            kwargs = RequestHandler.prepare_handler_kwargs(
-                request, handler, uiapp=uiapp
-            )
-            # run handler with prepared arguments, and grab the response
-            response = self.run_handler(handler, kwargs)
-        except Exception as exec_ex:
-            # create exception response
-            response = excp.RouteHandlerExecException(message=str(exec_ex))
-        finally:
-            # send response to callback url if requested
-            if request.callback_url:
-                RequestHandler.make_callback(request.callback_url, response)
-            # or set the response to be picked up by http request handler
-            else:
-                self._set_response(response)
+        """Drain all queued work, isolating both handler and callback failures."""
+        while True:
+            with self._lock:
+                if self._stopped or not self._queue:
+                    return
+                item = self._queue.popleft()
+                self._active = item
+            response = None
+            try:
+                if not item.event.is_set():
+                    kwargs = self.prepare_handler_kwargs(
+                        item.request, item.handler, uiapp=uiapp
+                    )
+                    response = self.run_handler(item.handler, kwargs)
+            except Exception as exec_ex:
+                response = excp.RouteHandlerExecException(message=str(exec_ex))
+            finally:
+                item.complete(response)
+                try:
+                    if item.request.callback_url:
+                        self.make_callback(item.request.callback_url, item.response)
+                except Exception:
+                    mlogger.debug("Routes callback failed | %s", traceback.format_exc())
+                finally:
+                    with self._lock:
+                        self._active = None
 
     def GetName(self):
         """String identification of the event handler."""
