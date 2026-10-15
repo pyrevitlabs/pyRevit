@@ -5,13 +5,20 @@ using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitCLI.Tests;
 
+/// <summary>
+///     Verifies attachment replacement ordering, temporary-file cleanup, and bulk failure reporting.
+/// </summary>
 public class AttachmentManifestTests : IDisposable {
     private readonly string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AttachmentManifestTests"/> class with an isolated temporary directory.
+    /// </summary>
     public AttachmentManifestTests() {
         Directory.CreateDirectory(directory);
     }
 
+    /// <inheritdoc />
     public void Dispose() {
         Directory.Delete(directory, true);
     }
@@ -22,6 +29,9 @@ public class AttachmentManifestTests : IDisposable {
                                       addinPath: targetDirectory, beforeReplace: beforeReplace);
     }
 
+    /// <summary>
+    ///     Verifies that a destination rejecting staging leaves the working attachment untouched.
+    /// </summary>
     [Fact]
     public void StagingFailureDoesNotRemoveTheWorkingManifest() {
         var previousManifest = Path.Combine(directory, "working.addin");
@@ -40,6 +50,9 @@ public class AttachmentManifestTests : IDisposable {
         Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
     }
 
+    /// <summary>
+    ///     Verifies that expired-clone attachments are removed only after staging closes and before installation.
+    /// </summary>
     [Fact]
     public void DetachRunsAfterStagingClosesAndBeforeTheManifestIsInstalled() {
         var previousManifest = Path.Combine(directory, "expired-clone.addin");
@@ -64,6 +77,9 @@ public class AttachmentManifestTests : IDisposable {
         Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
     }
 
+    /// <summary>
+    ///     Verifies that replacement installs a readable manifest without temporary-file residue.
+    /// </summary>
     [Fact]
     public void ExistingManifestIsReplacedWithoutLeavingTemporaryFiles() {
         var target = Path.Combine(directory, "pyRevit.addin");
@@ -75,6 +91,9 @@ public class AttachmentManifestTests : IDisposable {
         Assert.Single(Directory.GetFiles(directory));
     }
 
+    /// <summary>
+    ///     Verifies that attachment-removal failures preserve the existing manifest and clean staging.
+    /// </summary>
     [Fact]
     public void DetachFailureCleansTheStagedFile() {
         var target = Path.Combine(directory, "pyRevit.addin");
@@ -87,6 +106,9 @@ public class AttachmentManifestTests : IDisposable {
         Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
     }
 
+    /// <summary>
+    ///     Verifies that an installation failure leaves no staged file.
+    /// </summary>
     [Fact]
     public void InstallFailureCleansTheStagedFile() {
         Directory.CreateDirectory(Path.Combine(directory, "pyRevit.addin"));
@@ -96,6 +118,9 @@ public class AttachmentManifestTests : IDisposable {
         Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
     }
 
+    /// <summary>
+    ///     Verifies that bulk attachment attempts every distinct year before reporting all failures.
+    /// </summary>
     [Fact]
     public void AttachToAllContinuesAfterFailuresAndReportsEveryFailedYear() {
         var attemptedYears = new List<int>();
@@ -119,6 +144,9 @@ public class AttachmentManifestTests : IDisposable {
         Assert.True(File.Exists(Path.Combine(directory, "pyRevit.addin")));
     }
 
+    /// <summary>
+    ///     Verifies that successful bulk attachment completes without a failure report.
+    /// </summary>
     [Fact]
     public void AttachToAllReturnsNormallyWhenEveryYearSucceeds() {
         var attemptedYears = new List<int>();
