@@ -72,7 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// from user commands.
     /// </summary>
     internal sealed class ScriptWebView : IDisposable {
-        private const string RuntimeDownloadUrl = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+        internal const string RuntimeDownloadUrl = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
         private static readonly object EnvironmentLock = new object();
         private static Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> _sharedEnvironment;
         private static int _runtimeMissingPromptShown;
@@ -112,7 +112,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>Version of the WebView2 Runtime backing this view; empty until initialized.</summary>
         public string BrowserVersion { get; private set; } = string.Empty;
 
-        /// <summary>Gets a value indicating whether the WebView2 Runtime is unavailable.</summary>
+        /// <summary>
+        /// True when runtime detection fails synchronously during initialization.
+        /// The owner can display plain text before the first buffered output is flushed.
+        /// </summary>
         public bool RuntimeMissing { get { return _runtimeMissing; } }
 
         /// <summary>True when the core could not be brought up; the view will never render.</summary>
