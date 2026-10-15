@@ -89,10 +89,27 @@ namespace pyRevitLabs.TargetApps.Revit {
             return Path.Combine(GetRevitAddonsFolder(revitYear, allUsers: allusers), addinFileName + ".addin");
         }
 
+        /// <summary>
+        ///     Creates a manifest after staging its contents in the destination directory.
+        /// </summary>
+        /// <param name="revitYear">The target Revit product year.</param>
+        /// <param name="addinFileName">The manifest filename, without the extension unless <paramref name="addinPath"/> is specified.</param>
+        /// <param name="addinName">The add-in display name.</param>
+        /// <param name="assemblyPath">The loader assembly path.</param>
+        /// <param name="addinId">The add-in identifier.</param>
+        /// <param name="addinClassName">The application entry point class name.</param>
+        /// <param name="vendorId">The vendor identifier.</param>
+        /// <param name="allusers">The flag selecting the all-users manifest directory.</param>
+        /// <param name="addinPath">The explicit destination directory, or <see langword="null"/> for the standard directory.</param>
+        /// <param name="beforeReplace">An optional action removing existing attachments after staging and before installation.</param>
+        /// <remarks>
+        ///     Staging failures leave existing attachments unchanged; removal precedes installation even for attachments referencing expired clones.
+        /// </remarks>
         public static void CreateManifestFile(int revitYear, string addinFileName,
                                               string addinName, string assemblyPath,
                                               string addinId, string addinClassName, string vendorId,
-                                              bool allusers = false, string addinPath = null) {
+                                              bool allusers = false, string addinPath = null,
+                                              Action beforeReplace = null) {
             string manifest = string.Format(ManifestTemplate, addinName, assemblyPath, addinId, addinClassName, vendorId);
             logger.Debug("Creating addin manifest...\n{0}", manifest);
             string addinFile;
@@ -101,10 +118,20 @@ namespace pyRevitLabs.TargetApps.Revit {
             else
                 addinFile = Path.Combine(addinPath, addinFileName);
             logger.Debug("Creating manifest file \"{0}\"", addinFile);
-            CommonUtils.EnsureFile(addinFile);
-            var f = File.CreateText(addinFile);
-            f.Write(manifest);
-            f.Close();
+            Directory.CreateDirectory(Path.GetDirectoryName(addinFile));
+            var temporaryFile = Path.Combine(Path.GetDirectoryName(addinFile), Guid.NewGuid() + ".tmp");
+            try {
+                File.WriteAllText(temporaryFile, manifest);
+                beforeReplace?.Invoke();
+                if (File.Exists(addinFile))
+                    File.Replace(temporaryFile, addinFile, null);
+                else
+                    File.Move(temporaryFile, addinFile);
+            }
+            finally {
+                if (File.Exists(temporaryFile))
+                    File.Delete(temporaryFile);
+            }
         }
 
         public static RevitAddonManifest GetAttachedManifest(string addinName, int revitYear, bool allUsers) {

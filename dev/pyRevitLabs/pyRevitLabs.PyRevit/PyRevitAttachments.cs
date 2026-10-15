@@ -72,11 +72,6 @@ namespace pyRevitLabs.PyRevit {
             if (engine.Runtime) {
                 logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}", clone.Name, clone.ClonePath, revitYear));
 
-                // remove existing attachments first
-                // this is critical as there might be invalid attachments to expired clones
-                Detach(revitYear, currentAndAllUsers: true);
-
-                // now recreate attachment
                 RevitAddons.CreateManifestFile(
                     revitYear,
                     PyRevitConsts.AddinFileName,
@@ -85,7 +80,8 @@ namespace pyRevitLabs.PyRevit {
                     PyRevitConsts.AddinId,
                     PyRevitConsts.AddinClassName,
                     PyRevitConsts.VendorId,
-                    allusers: allUsers
+                    allusers: allUsers,
+                    beforeReplace: () => Detach(revitYear, currentAndAllUsers: true)
                     );
             }
             else
@@ -188,13 +184,30 @@ namespace pyRevitLabs.PyRevit {
         /// Attach a clone to every installed Revit this pyRevit line can run on.
         /// </summary>
         /// <remarks>
-        /// Products this line cannot run on are skipped with the reason logged, rather
-        /// than aborting the ones it can.
+        /// Products this line cannot run on are skipped with the reason logged.
+        /// Attachment failures are reported after every eligible year has been attempted.
         /// </remarks>
         // @handled @logs
         public static void AttachToAll(PyRevitClone clone, PyRevitEngineVersion engineVer, bool allUsers = false) {
-            foreach (var revit in GetAttachableProducts())
-                Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+            AttachToAll(GetAttachableProducts().Select(product => product.ProductYear),
+                        year => Attach(year, clone, engineVer: engineVer, allUsers: allUsers));
+        }
+
+        private static void AttachToAll(IEnumerable<int> revitYears, Action<int> attach) {
+            var failures = new List<string>();
+            foreach (var revitYear in revitYears.Distinct()) {
+                try {
+                    attach(revitYear);
+                }
+                catch (Exception exception) {
+                    var failure = string.Format("Revit {0}: {1}", revitYear, exception.Message);
+                    logger.Error("Could not attach to {0}", failure);
+                    failures.Add(failure);
+                }
+            }
+            if (failures.Count > 0)
+                throw new PyRevitException("Could not attach to all Revit versions:" +
+                                          Environment.NewLine + string.Join(Environment.NewLine, failures));
         }
 
         // detach from revit version
