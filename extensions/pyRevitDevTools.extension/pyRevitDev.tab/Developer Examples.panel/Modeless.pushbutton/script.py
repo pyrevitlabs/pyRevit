@@ -224,9 +224,9 @@ class ExampleUI(forms.WPFWindow):
     def event_toggle_clicked(self, sender, args):
         """Enable or disable the selection event."""
         if self.selection_event_enabled:
-            self.disable_selection_event()
+            execute_in_revit_context(self.disable_selection_event)
         else:
-            self.enable_selection_event()
+            execute_in_revit_context(self.enable_selection_event)
 
 
 if __name__ == "__main__":
