@@ -72,7 +72,7 @@ class RouteHandlerExecException(Exception):
     def __init__(self, message):
         message = "Route exception in Execute: %s" % message
         super(RouteHandlerExecException, self).__init__(message)
-        self.status = 408  # https://httpstatuses.com/408
+        self.status = 500
         self.source = HOST_APP.pretty_name
 
 
@@ -99,5 +99,5 @@ class RouteHandlerException(Exception):
             clsx_targetsite,
         )
         super(RouteHandlerException, self).__init__(message)
-        self.status = 408  # https://httpstatuses.com/408
+        self.status = 500
         self.source = HOST_APP.pretty_name

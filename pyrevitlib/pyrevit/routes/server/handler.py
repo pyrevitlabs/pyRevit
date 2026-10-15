@@ -89,6 +89,9 @@ RESERVED_VAR_NAMES = [
     ARGS_UIAPP,
 ]
 
+MAX_PENDING_REQUESTS = 256
+CALLBACK_TIMEOUT = 10.0
+
 
 class RequestWorkItem(object):
     """One queued request, with an independent response and completion signal."""
@@ -117,17 +120,27 @@ class RequestHandler(UI.IExternalEventHandler):
 
     def __init__(self):
         self._queue = deque()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+        self.progress = threading.Event()
+        self._progress_count = 0
         self._stopped = False
         self.external_event = None
         self._awaiting_idle = False
+        self._raised = False
         self._uiapp = None
 
     def enqueue(self, item):
-        """Register work, returning a server rejection only when stopped."""
+        """Reject work when stopped or when the bounded queue is full."""
         with self._lock:
             if self._stopped:
                 response = self.stopped_response(item.request)
+                item.complete(response)
+                return response
+            if len(self._queue) >= MAX_PENDING_REQUESTS:
+                response = excp.RouteHandlerDeniedException(
+                    item.request,
+                    message="Routes request queue is full: %s" % item.request.path,
+                )
                 item.complete(response)
                 return response
             self._queue.append(item)
@@ -140,9 +153,11 @@ class RequestHandler(UI.IExternalEventHandler):
             request, message="Routes server stopped or reloaded: %s" % request.path
         )
 
-    def cancel(self, item, response):
+    def cancel(self, item, response, progress_count=None):
         """Reject only work that has not been taken by Execute."""
         with self._lock:
+            if progress_count is not None and progress_count != self._progress_count:
+                return False
             try:
                 self._queue.remove(item)
             except ValueError:
@@ -150,11 +165,30 @@ class RequestHandler(UI.IExternalEventHandler):
             item.complete(response)
             return True
 
+    def raise_event(self):
+        """Serialize raises with stop so accepted native work cannot be disposed."""
+        with self._lock:
+            if self._stopped:
+                return UI.ExternalEventRequest.Denied
+            result = self.external_event.Raise()
+            if result in (
+                UI.ExternalEventRequest.Accepted,
+                UI.ExternalEventRequest.Pending,
+            ):
+                self._raised = True
+            return result
+
+    def progress_count(self):
+        """Snapshot queue progress without losing pulses between waiter checks."""
+        with self._lock:
+            return self._progress_count
+
     def stop(self):
         """Reject queued work and notify callbacks without holding the queue lock.
 
-        Disposal waits for the next Idling event if Execute has run since the
-        last idle cycle, so a route can reload its own server safely.
+        Disposal waits for Idling after Execute or an accepted raise. If Revit
+        never dispatches an accepted raise, retain its event rather than dispose
+        a native event that may still be pending.
         """
         callbacks = []
         external_event = None
@@ -165,7 +199,7 @@ class RequestHandler(UI.IExternalEventHandler):
                 item.complete(self.stopped_response(item.request))
                 if item.request.callback_url:
                     callbacks.append(item)
-            if not self._awaiting_idle:
+            if not self._awaiting_idle and not self._raised:
                 external_event = self.external_event
                 self.external_event = None
         self._dispose_external_event(external_event)
@@ -194,9 +228,16 @@ class RequestHandler(UI.IExternalEventHandler):
         """Dispose a stopped event only after Revit has returned from Execute."""
         external_event = None
         with self._lock:
-            self._uiapp.Idling -= self._on_idle
+            try:
+                if self._uiapp is not None:
+                    self._uiapp.Idling -= self._on_idle
+            except Exception:
+                mlogger.debug(
+                    "Routes Idling unsubscribe failed | %s", traceback.format_exc()
+                )
             self._uiapp = None
             self._awaiting_idle = False
+            self._raised = False
             if self._stopped:
                 external_event = self.external_event
                 self.external_event = None
@@ -248,7 +289,9 @@ class RequestHandler(UI.IExternalEventHandler):
         # parse response object
         r = RequestHandler.parse_response(response)
         # prepare and submit request
-        make_request(url=callback_url, headers=r.headers, data=r.data)
+        make_request(
+            url=callback_url, headers=r.headers, data=r.data, timeout=CALLBACK_TIMEOUT
+        )
 
     @staticmethod
     def wants_api_context(handler):
@@ -359,17 +402,26 @@ class RequestHandler(UI.IExternalEventHandler):
     def Execute(self, uiapp):
         """Drain all queued work, isolating both handler and callback failures."""
         with self._lock:
+            if self.external_event is not None and not self._awaiting_idle:
+                try:
+                    uiapp.Idling += self._on_idle
+                    self._uiapp = uiapp
+                    self._awaiting_idle = True
+                except Exception:
+                    self._raised = True
+                    mlogger.debug(
+                        "Routes Idling subscribe failed | %s", traceback.format_exc()
+                    )
             if self._stopped:
                 return
-            if self.external_event is not None and not self._awaiting_idle:
-                uiapp.Idling += self._on_idle
-                self._uiapp = uiapp
-                self._awaiting_idle = True
         while True:
             with self._lock:
                 if self._stopped or not self._queue:
                     return
                 item = self._queue.popleft()
+                self._progress_count += 1
+                self.progress.set()
+                self.progress.clear()
             response = None
             try:
                 kwargs = self.prepare_handler_kwargs(

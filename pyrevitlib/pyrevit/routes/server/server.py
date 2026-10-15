@@ -136,7 +136,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             return rejection
         rejection = None
         try:
-            result = self.server.external_event.Raise()
+            result = dispatcher.raise_event()
             if result == UI.ExternalEventRequest.Denied:
                 rejection = excp.RouteHandlerDeniedException(item.request)
             elif result == UI.ExternalEventRequest.TimedOut:
@@ -150,19 +150,30 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         return None
 
     def _call_host_event_sync(self, request, route_handler):
-        """Time out only queued work that Revit never started.
+        """Reject queued work only after the dispatcher stops making progress.
 
         Once Execute takes the item, wait for its actual result: returning a
         timeout cannot cancel a running handler or its changes to the model.
         """
         item = handler.RequestWorkItem(request, route_handler)
         self._call_host_event(item)
-        if not item.event.wait(API_REQUEST_TIMEOUT):
-            cancelled = self.server.request_handler.cancel(
-                item, excp.RouteHandlerTimedOutException(request)
-            )
-            if not cancelled:
-                item.event.wait()
+        dispatcher = self.server.request_handler
+        while not item.event.is_set():
+            progress_count = dispatcher.progress_count()
+            if item.event.wait(API_REQUEST_TIMEOUT):
+                break
+            if dispatcher.progress_count() != progress_count:
+                continue
+            if dispatcher.progress.wait(API_REQUEST_TIMEOUT):
+                continue
+            if dispatcher.cancel(
+                item, excp.RouteHandlerTimedOutException(request), progress_count
+            ):
+                break
+            if dispatcher.progress_count() != progress_count:
+                continue
+            item.event.wait()
+            break
         return item.response
 
     def _write_response(self, response):
@@ -379,12 +390,16 @@ class RoutesServer(object):
     """
 
     def __init__(self, host, port):
-        self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
-        self.server.request_handler = handler.RequestHandler()
-        self.server.external_event = UI.ExternalEvent.Create(
-            self.server.request_handler
-        )
-        self.server.request_handler.external_event = self.server.external_event
+        request_handler = handler.RequestHandler()
+        external_event = UI.ExternalEvent.Create(request_handler)
+        request_handler.external_event = external_event
+        try:
+            self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
+        except Exception:
+            request_handler.stop()
+            raise
+        self.server.request_handler = request_handler
+        self.server.external_event = external_event
         self.host = host
         self.port = port
         self.server_thread = None
