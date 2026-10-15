@@ -30,7 +30,36 @@ func main() {
 				Flags: complete.Flags{},
 			},
 			"env": complete.Command{
-				Sub: complete.Commands{},
+				Sub: complete.Commands{
+					"path": complete.Command{
+						Sub: complete.Commands{
+							"list": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":   complete.PredictNothing,
+									"--scope": complete.PredictNothing,
+								},
+							},
+							"ensure": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":   complete.PredictNothing,
+									"--scope": complete.PredictNothing,
+								},
+							},
+							"remove": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":   complete.PredictNothing,
+									"--scope": complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--help": complete.PredictNothing,
+						},
+					},
+				},
 				Flags: complete.Flags{
 					"--help": complete.PredictNothing,
 					"--json": complete.PredictNothing,
