@@ -77,7 +77,7 @@ class _Element(object):
         return None
 
 
-def _load_contrast_pass():
+def _load_contrast_pass(test):
     """Compile production definitions without importing Revit or WPF."""
     source_path = os.path.abspath(
         os.path.join(
@@ -95,15 +95,22 @@ def _load_contrast_pass():
     names = {"_argb", "_srgb_component", "_relative_luminance", "_contrast_ratio"}
     selected = [node for node in tree.body if getattr(node, "name", None) in names]
     mixin = next(
-        node for node in tree.body if getattr(node, "name", None) == "_WPFMixin"
+        (node for node in tree.body if getattr(node, "name", None) == "_WPFMixin"),
+        None,
     )
-    selected.append(
-        next(
+    if mixin is None:
+        test.fail("Production _WPFMixin class was not found")
+    contrast_pass = next(
+        (
             node
             for node in mixin.body
             if getattr(node, "name", None) == "apply_contrast_foregrounds"
-        )
+        ),
+        None,
     )
+    if contrast_pass is None:
+        test.fail("Production apply_contrast_foregrounds method was not found")
+    selected.append(contrast_pass)
     tree.body = selected
     scope = {
         "framework": _Namespace(
@@ -118,6 +125,7 @@ def _load_contrast_pass():
         "_foreground_property": lambda element: "Foreground",
         "_background_property": lambda element: "Background",
         "_is_authored_value": lambda element, prop: prop in element.local,
+        "mlogger": _Namespace(debug=lambda *args: test.debug_messages.append(args)),
     }
     exec(compile(tree, source_path, "exec"), scope)
     return scope["apply_contrast_foregrounds"]
@@ -128,7 +136,8 @@ class FormsContrastTests(unittest.TestCase):
 
     def setUp(self):
         """Prepare contrasting colors and a window for the production pass."""
-        self.apply = _load_contrast_pass()
+        self.debug_messages = []
+        self.apply = _load_contrast_pass(self)
         self.black = _Brush(0, 0, 0)
         self.white = _Brush(255, 255, 255)
         self.disabled = _Brush(160, 160, 160)
@@ -187,6 +196,51 @@ class FormsContrastTests(unittest.TestCase):
         self.assertIs(element.GetValue("Foreground"), self.black)
         self.assertEqual(len(original.Setters), 2)
         self.assertIs(original.Setters[1].Value, self.white)
+
+    def test_implicit_style_is_preserved_as_basedon(self):
+        """An implicitly styled control keeps its theme below the contrast style."""
+        implicit = _Style(_Element)
+        implicit.Setters.Add(_Setter("Background", _Brush(255, 200, 200)))
+        element = self.element(implicit)
+        self.apply(self.window)
+        self.assertIs(element.Style.BasedOn, implicit)
+        self.assertIsNot(element.Style, implicit)
+        self.assertEqual(len(implicit.Setters), 1)
+
+    def test_unchanged_brush_reuses_managed_style(self):
+        """Repeated passes do not replace a style with the same contrast brush."""
+        element = self.element()
+        self.apply(self.window)
+        original = element.Style
+        self.apply(self.window)
+        self.assertIs(element.Style, original)
+        self.assertIs(self.window._contrast_managed[element], original)
+
+    def test_detached_elements_are_removed_from_tracking(self):
+        """A refresh retains only elements still in the logical tree."""
+        detached = self.element()
+        attached = self.element()
+        self.apply(self.window)
+        attached_style = attached.Style
+        self.window.elements.remove(detached)
+        self.apply(self.window)
+        self.assertNotIn(detached, self.window._contrast_managed)
+        self.assertIs(self.window._contrast_managed[attached], attached_style)
+
+    def test_failed_element_does_not_abort_remaining_elements(self):
+        """An inaccessible background is logged without aborting form loading."""
+        broken = self.element()
+
+        def fail_get_value(prop):
+            raise ValueError("unavailable background")
+
+        broken.GetValue = fail_get_value
+        healthy = self.element()
+        self.apply(self.window)
+        self.assertIsNone(broken.Style)
+        self.assertIs(healthy.GetValue("Foreground"), self.black)
+        self.assertEqual(len(self.debug_messages), 1)
+        self.assertIn("unavailable background", str(self.debug_messages[0][1]))
 
     def test_refresh_replaces_only_managed_style(self):
         """Theme refresh updates contrast without building a style chain."""

@@ -499,7 +499,9 @@ class _WPFMixin(object):
         effective color depends on the surface below them. Contrast is supplied
         by a style setter so disabled-state triggers remain authoritative,
         including when IsEnabled changes after the window opens. Safe to call
-        again to re-evaluate after a theme change.
+        again after a theme change; unchanged brushes reuse the managed style.
+        Detached elements are dropped from tracking on the next pass, and a
+        failed element does not prevent the remaining controls from updating.
         """
         res = self.Resources
         try:
@@ -520,42 +522,49 @@ class _WPFMixin(object):
         if not candidates:
             return
 
-        managed = getattr(self, "_contrast_managed", None)
-        if managed is None:
-            managed = {}
-            self._contrast_managed = managed
+        previous_managed = getattr(self, "_contrast_managed", {})
+        managed = {}
+        self._contrast_managed = managed
 
         for element in _walk_logical_tree(self):
-            fore_prop = _foreground_property(element)
-            back_prop = _background_property(element)
-            if fore_prop is None or back_prop is None:
+            try:
+                if element in previous_managed:
+                    managed[element] = previous_managed[element]
+                fore_prop = _foreground_property(element)
+                back_prop = _background_property(element)
+                if fore_prop is None or back_prop is None:
+                    continue
+                if not _is_authored_value(element, back_prop):
+                    continue
+                brush = element.GetValue(back_prop)
+                if not isinstance(brush, Media.SolidColorBrush):
+                    continue
+                background = brush.Color
+                if background.A != 0xFF:
+                    continue
+                if _argb(background) in theme_argbs:
+                    continue
+                if (
+                    element.ReadLocalValue(fore_prop)
+                    != framework.Windows.DependencyProperty.UnsetValue
+                ):
+                    continue
+                best = max(
+                    candidates,
+                    key=lambda candidate: _contrast_ratio(background, candidate.Color),
+                )
+                base_style = element.Style
+                if element in managed and base_style is managed[element]:
+                    if base_style.Setters[0].Value is best:
+                        continue
+                    base_style = base_style.BasedOn
+                contrast_style = framework.Windows.Style(element.GetType(), base_style)
+                contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
+                element.Style = contrast_style
+                managed[element] = contrast_style
+            except Exception as contrast_error:
+                mlogger.debug("Could not apply contrast foreground: %s", contrast_error)
                 continue
-            if not _is_authored_value(element, back_prop):
-                continue
-            brush = element.GetValue(back_prop)
-            if not isinstance(brush, Media.SolidColorBrush):
-                continue
-            background = brush.Color
-            if background.A != 0xFF:
-                continue
-            if _argb(background) in theme_argbs:
-                continue
-            if (
-                element.ReadLocalValue(fore_prop)
-                != framework.Windows.DependencyProperty.UnsetValue
-            ):
-                continue
-            best = max(
-                candidates,
-                key=lambda candidate: _contrast_ratio(background, candidate.Color),
-            )
-            base_style = element.Style
-            if element in managed and base_style is managed[element]:
-                base_style = base_style.BasedOn
-            contrast_style = framework.Windows.Style(element.GetType(), base_style)
-            contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
-            element.Style = contrast_style
-            managed[element] = contrast_style
 
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
