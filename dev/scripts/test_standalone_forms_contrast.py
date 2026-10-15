@@ -80,7 +80,15 @@ class _Element(object):
 def _load_contrast_pass():
     """Compile production definitions without importing Revit or WPF."""
     source_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "forms", "_ipy.py")
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "pyrevitlib",
+            "pyrevit",
+            "forms",
+            "_ipy.py",
+        )
     )
     with io.open(source_path, encoding="utf-8") as source:
         tree = ast.parse(source.read())
