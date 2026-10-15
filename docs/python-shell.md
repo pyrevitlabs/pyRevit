@@ -13,6 +13,13 @@ The console is built on AvalonEdit and lives in `dev/pyRevitLabs.PyRevit.Shell`.
 <kbd>Shift</kbd>+click the button to pick how it opens. The choice persists in the button's script
 config, so the next plain click uses it.
 
+Docked mode changes take effect on the next button click if the pane has not yet initialized.
+After its first opening, the pane retains its console and Python state for the Revit session.
+Switching between `Docked` and `Docked Editor` then requires restarting Revit, not reloading pyRevit.
+The button reports the mismatch instead of opening the wrong layout.
+The selected mode remains saved for the next session.
+Use `Modeless` or `Modeless Editor` to open the desired layout immediately without restarting.
+
 | Mode | Window | Editor pane | Needs an open project |
 |---|---|---|---|
 | `Modeless` (default) | Floating, non-blocking | no | no |
@@ -75,6 +82,10 @@ incomplete, so rebuild or reinstall.
 
 **"The docked Python Shell pane is not registered for this session"** — the pane is registered at
 startup by `pyRevitCore.extension/startup.py`. Reload pyRevit, or switch to a modeless mode.
+
+**"The docked Python Shell is already initialized"**: the selected docked layout differs from the pane already built in this Revit session.
+Restart Revit to apply the saved choice, or Shift+click and select a modeless mode.
+Reloading pyRevit does not replace the initialized pane.
 
 **The pane is empty** — a build failure renders its traceback inside the pane rather than leaving a
 blank surface, so read the pane first, then the log.
