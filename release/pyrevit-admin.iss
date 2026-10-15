@@ -70,13 +70,6 @@ Source: "..\site-packages\*"; DestDir: "{app}\site-packages"; Flags: ignoreversi
 Source: "..\release\.pyrevitargs"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 
-[Registry]
-; Uninstaller does not undo this change
-; Multiple installs keep adding the path
-; https://stackoverflow.com/a/3431379/2350244
-; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
-
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
@@ -110,6 +103,12 @@ end;
 
 procedure RunAdminPostInstallCommands;
 begin
+  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine', False) then
+    SuppressibleMsgBox(
+      'pyRevit was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
+      'You may need to manually add the following folder to the machine PATH:' + #13#10 +
+      '  ' + ExpandConstant('{app}\bin'),
+      mbError, MB_OK, MB_OK);
   RunPyRevitCommand('caches clear --all', True);
   RunPyRevitCommand('detach --all', True);
   if not RunPyRevitCommand('clones add this master --force', False) then
