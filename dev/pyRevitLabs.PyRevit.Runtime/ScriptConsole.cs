@@ -192,6 +192,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private volatile bool _documentStarted;
         private volatile bool _outputLossReported;
         private string _frozenBodyHtml;
+        private System.Windows.Controls.TextBox _plainTextOutput;
         private int _inlineWaitIndex = -1;
         private string _initialStyleSheetPath;
         private string _outputHtmlPath;
@@ -569,6 +570,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
             _webView.EnsureReady(ProvideInitialPageUri);
+            if (_webView.RuntimeMissing && _plainTextOutput == null) {
+                _plainTextOutput = new System.Windows.Controls.TextBox {
+                    IsReadOnly = true,
+                    AcceptsReturn = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Margin = new Thickness(12),
+                    Text = "WebView2 Runtime not found.\n"
+                        + "Script output is displayed as plain text. Install the Microsoft Edge "
+                        + "WebView2 Evergreen Runtime, then reopen this window:\n"
+                        + "https://go.microsoft.com/fwlink/p/?LinkId=2124703\n\n"
+                };
+                var grid = (Grid)Content;
+                Grid.SetRow(_plainTextOutput, 1);
+                _webView.Control.Visibility = Visibility.Collapsed;
+                grid.Children.Add(_plainTextOutput);
+            }
         }
 
         private string ProvideInitialPageUri() {
@@ -619,6 +637,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_frozen)
                 return;
             EnsureDocumentReadyBlocking();
+            if (_webView.RuntimeMissing)
+                return;
             _frozenBodyHtml = DecodeJsonString(_webView.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
             _frozen = true;
             UpdateInlineWaitAnimation();
@@ -755,8 +775,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         ///
         /// Content arriving before the document is ready stays buffered until
         /// <see cref="ScriptWebView.DocumentReady"/>; re-queueing instead would
-        /// spin the dispatcher for as long as the core takes to come up. Content
-        /// is discarded only once the renderer can never render it.
+        /// spin the dispatcher for as long as the core takes to come up.
+        /// A missing runtime displays buffered entries as plain text.
         /// </summary>
         private void FlushPendingEntries() {
             _flushQueued = false;
@@ -770,12 +790,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (payload.Length == 0 || ClosedByUser)
                 return;
 
-            if (_webView.RuntimeMissing || _webView.InitializationFailed) {
-                ReportOutputLossOnce();
+            EnsureDocumentReady();
+
+            if (_webView.RuntimeMissing) {
+                var plainText = Regex.Replace(payload, @"<br\s*/?>|</(?:div|p|pre)>", "\n", RegexOptions.IgnoreCase);
+                plainText = System.Net.WebUtility.HtmlDecode(Regex.Replace(plainText, "<[^>]*>", string.Empty));
+                _plainTextOutput.AppendText(plainText);
+                _plainTextOutput.ScrollToEnd();
                 return;
             }
 
-            EnsureDocumentReady();
+            if (_webView.InitializationFailed) {
+                ReportOutputLossOnce();
+                return;
+            }
 
             if (!_webView.IsDocumentReady) {
                 lock (_pendingLock) {
