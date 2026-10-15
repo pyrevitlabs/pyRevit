@@ -22,8 +22,10 @@ namespace PyRevitLabs.PyRevit.Shell {
                 throw new ArgumentNullException(nameof(uiapp));
 
             var paneId = new DockablePaneId(new Guid(PaneGuid));
-            if (DockablePane.PaneIsRegistered(paneId))
+            if (DockablePane.PaneIsRegistered(paneId)) {
+                _provider?.ConfigureMode(useEditor);
                 return false;
+            }
 
             // Revit persists pane visibility, but the shell must remain opt-in at startup.
             EventHandler<IdlingEventArgs> hideOnFirstIdling = null;
@@ -68,6 +70,10 @@ namespace PyRevitLabs.PyRevit.Shell {
             _pane = new ShellDockablePane(uiapp, paneId, searchPaths, useEditor);
         }
 
+        internal void ConfigureMode(bool useEditor) {
+            _pane.ConfigureMode(useEditor);
+        }
+
         public void SetupDockablePane(DockablePaneProviderData data) {
             data.FrameworkElement = _pane;
             data.VisibleByDefault = false;
@@ -78,7 +84,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         readonly UIApplication _uiapp;
         readonly DockablePaneId _paneId;
         readonly IList<string> _searchPaths;
-        readonly bool _useEditor;
+        bool _useEditor;
         readonly Grid _contentHost;
 
         internal ShellDockablePane(
@@ -101,6 +107,22 @@ namespace PyRevitLabs.PyRevit.Shell {
 
             // Console creation needs a valid Revit API context and is deferred until shown.
             _uiapp.Idling += BuildOnIdling;
+        }
+
+        internal void ConfigureMode(bool useEditor) {
+            if (_useEditor == useEditor)
+                return;
+
+            if (_contentHost.Children.Count != 0)
+                throw new InvalidOperationException(
+                    "The docked Python Shell is already initialized in "
+                    + (_useEditor ? "Docked Editor" : "Docked")
+                    + " mode for this Revit session.\n\n"
+                    + "Your new mode is saved, but switching this pane requires a Revit restart. "
+                    + "Reloading pyRevit does not rebuild the pane. "
+                    + "Restart Revit, or Shift+Click Python Shell and select Modeless or Modeless Editor.");
+
+            _useEditor = useEditor;
         }
 
         void BuildOnIdling(object sender, IdlingEventArgs args) {

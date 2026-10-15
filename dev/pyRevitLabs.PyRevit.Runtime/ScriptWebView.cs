@@ -72,9 +72,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// from user commands.
     /// </summary>
     internal sealed class ScriptWebView : IDisposable {
-        private const string RuntimeDownloadUrl = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+        internal const string RuntimeDownloadUrl = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
         private static readonly object EnvironmentLock = new object();
         private static Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> _sharedEnvironment;
+        private static int _runtimeMissingPromptShown;
 
         private readonly Microsoft.Web.WebView2.Wpf.WebView2 _control;
         private readonly Dispatcher _dispatcher;
@@ -111,7 +112,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>Version of the WebView2 Runtime backing this view; empty until initialized.</summary>
         public string BrowserVersion { get; private set; } = string.Empty;
 
-        /// <summary>True when the machine has no WebView2 Runtime; the view shows an error page instead.</summary>
+        /// <summary>
+        /// True when runtime detection fails synchronously during initialization.
+        /// The owner can display plain text before the first buffered output is flushed.
+        /// </summary>
         public bool RuntimeMissing { get { return _runtimeMissing; } }
 
         /// <summary>True when the core could not be brought up; the view will never render.</summary>
@@ -300,11 +304,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _dispatcher.BeginInvoke(
                     new Action(ShowRuntimeMissingDialog),
                     DispatcherPriority.ApplicationIdle);
-                try {
-                    _control.NavigateToString(RuntimeMissingPageHtml);
-                }
-                catch {
-                }
                 return;
             }
 
@@ -547,6 +546,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static void ShowRuntimeMissingDialog() {
+            if (Interlocked.Exchange(ref _runtimeMissingPromptShown, 1) != 0)
+                return;
             try {
                 var choice = System.Windows.MessageBox.Show(
                     "pyRevit output windows render with the Microsoft Edge WebView2 Runtime, "
@@ -566,22 +567,5 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private static string RuntimeMissingPageHtml {
-            get {
-                return "<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>"
-                    + "body{font-family:Segoe UI,sans-serif;background:#fff;color:#2c3e50;"
-                    + "display:flex;align-items:center;justify-content:center;height:95vh;margin:0}"
-                    + ".box{max-width:32rem;padding:2rem;border:1px solid #e0e0e0;border-radius:8px}"
-                    + "h1{font-size:1.1rem;margin-top:0}code{background:#f4f4f4;padding:.1rem .3rem}"
-                    + "</style></head><body><div class=\"box\">"
-                    + "<h1>WebView2 Runtime not found</h1>"
-                    + "<p>This output window renders with the Microsoft Edge WebView2 Runtime, "
-                    + "which is missing on this machine.</p>"
-                    + "<p>Install the <b>Evergreen Runtime</b> from "
-                    + "<code>https://go.microsoft.com/fwlink/p/?LinkId=2124703</code>, "
-                    + "then reopen the window.</p>"
-                    + "</div></body></html>";
-            }
-        }
     }
 }
