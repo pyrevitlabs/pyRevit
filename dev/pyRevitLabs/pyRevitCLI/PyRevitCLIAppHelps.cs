@@ -17,7 +17,7 @@ namespace pyRevitCLI {
                         footer: "Run 'pyrevit COMMAND --help' for more information on a command.",
                         optionsfirst: true,
                         mgmtCommands: new Dictionary<string, string>() {
-                            { "env",                    "Print environment information" },
+                            { "env",                    "Print environment information and manage the system PATH" },
                             { "update",                 "Update remote resources used by this utility" },
                             { "clones",                 "Manage pyRevit clones" },
                             { "extensions",             "Manage pyRevit extensions" },
@@ -61,9 +61,15 @@ namespace pyRevitCLI {
                 case PyRevitCLICommandType.Env:
                     BuildHelp(
                         new List<string>() { "env" },
-                        header: "Print environment information.",
+                        header: "Print environment information and manage the system PATH",
+                        commands: new Dictionary<string, string>() {
+                            { "path",                  "List, add or remove directories in the user or machine PATH" },
+                        },
                         options: new Dictionary<string, string>() {
                             { "--json",                 "Switch output format to json" },
+                            { "list | ensure | remove", "Report the PATH entries, add a directory when missing, or drop every copy of it" },
+                            { "<dir>",                  "Directory to add to or remove from the PATH" },
+                            { "--scope=<scope>",        "PATH to target: user (default) or machine" },
                         });
                     break;
 

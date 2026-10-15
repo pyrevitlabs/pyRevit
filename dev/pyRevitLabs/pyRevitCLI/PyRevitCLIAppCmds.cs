@@ -116,6 +116,10 @@ namespace pyRevitCLI {
                                 { "targetPacks", UserEnv.GetInstalledDotnetTargetPacks() },
                                 { "targetPacksCore", UserEnv.GetInstalledDotnetCoreTargetPacks() },
                                 { "cliVersion", PyRevitCLI.CLIInfoVersion },
+                                { "userPathEntries", SystemPath.GetPathEntries(EnvironmentVariableTarget.User) },
+                                { "userPathDuplicates", SystemPath.GetDuplicatePathEntries(EnvironmentVariableTarget.User) },
+                                { "machinePathEntries", SystemPath.GetPathEntries(EnvironmentVariableTarget.Machine) },
+                                { "machinePathDuplicates", SystemPath.GetDuplicatePathEntries(EnvironmentVariableTarget.Machine) },
                             }
                         },
                     };
@@ -147,6 +151,52 @@ namespace pyRevitCLI {
                 PyRevitCLIRevitCmds.PrintLocalRevits(running: true);
                 PrinUserEnv();
             }
+        }
+
+        internal static void
+        EnsurePathEntry(string dir, string scopeName) {
+            var scope = ParsePathScope(scopeName);
+            bool changed = SystemPath.EnsurePathEntry(scope, dir);
+            Console.WriteLine(changed
+                ? string.Format("Added \"{0}\" to the {1} PATH.", dir, ScopeName(scope))
+                : string.Format("\"{0}\" is already in the {1} PATH.", dir, ScopeName(scope)));
+        }
+
+        internal static void
+        RemovePathEntry(string dir, string scopeName) {
+            var scope = ParsePathScope(scopeName);
+            int removed = SystemPath.RemovePathEntries(scope, dir);
+            Console.WriteLine(removed == 0
+                ? string.Format("\"{0}\" is not in the {1} PATH.", dir, ScopeName(scope))
+                : string.Format("Removed {0} occurrence(s) of \"{1}\" from the {2} PATH.",
+                    removed, dir, ScopeName(scope)));
+        }
+
+        internal static void
+        ListPathEntries(string scopeName) {
+            var scope = ParsePathScope(scopeName);
+            Console.WriteLine(string.Format("{0} PATH entries:", ScopeName(scope)));
+            foreach (string entry in SystemPath.GetPathEntries(scope))
+                Console.WriteLine(string.Format("    {0}", entry));
+
+            var duplicates = SystemPath.GetDuplicatePathEntries(scope);
+            if (duplicates.Count > 0) {
+                Console.WriteLine("Duplicated entries:");
+                foreach (string duplicate in duplicates)
+                    Console.WriteLine(string.Format("    {0}", duplicate));
+            }
+        }
+
+        private static EnvironmentVariableTarget ParsePathScope(string scopeName) {
+            EnvironmentVariableTarget scope;
+            if (!SystemPath.TryParseScope(scopeName, out scope))
+                throw new ArgumentException(
+                    string.Format("Unknown PATH scope \"{0}\". Use \"user\" or \"machine\".", scopeName));
+            return scope;
+        }
+
+        private static string ScopeName(EnvironmentVariableTarget scope) {
+            return scope == EnvironmentVariableTarget.Machine ? "Machine" : "User";
         }
 
         internal static void
