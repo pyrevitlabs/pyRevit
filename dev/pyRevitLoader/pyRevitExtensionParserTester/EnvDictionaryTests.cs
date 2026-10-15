@@ -49,6 +49,10 @@ namespace pyRevitExtensionParserTester
             Assert.That(envData[EnvDictionaryKeys.RevitVersion], Is.EqualTo("2025.4"));
         }
 
+        /// <summary>
+        ///     Verifies that repeated session seeding preserves Python core values and removes custom values.
+        /// </summary>
+        /// <param name="key">The Python core environment key preserved across reloads.</param>
         [TestCase("PYREVIT_ROUTESSERVER")]
         [TestCase("PYREVIT_CHECKUPDATESTIMESTAMP")]
         [TestCase("PYREVIT_CHECKUPDATESRESULT")]
