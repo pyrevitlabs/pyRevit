@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Scripting;
 
 namespace PyRevitLabs.PyRevit.Shell {
-    internal sealed partial class ShellExternalEventDispatcher : IDisposable {
+    internal sealed class ShellExternalEventDispatcher : IDisposable {
         readonly object _requestsLock = new object();
         readonly List<ShellExternalEventRequest> _requests = new List<ShellExternalEventRequest>();
         bool _disposed;

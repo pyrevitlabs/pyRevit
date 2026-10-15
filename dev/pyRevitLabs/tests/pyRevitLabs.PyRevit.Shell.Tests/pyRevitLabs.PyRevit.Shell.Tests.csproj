@@ -9,7 +9,6 @@
         <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY2712PR</IronPythonVersion>
         <IronPythonPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</IronPythonPrefix>
         <UseWpf>true</UseWpf>
-        <RevitVersion Condition="'$(RevitVersion)' == ''">2025</RevitVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,8 +16,6 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
-        <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*"/>
-        <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*"/>
         <Using Include="Xunit"/>
     </ItemGroup>
 

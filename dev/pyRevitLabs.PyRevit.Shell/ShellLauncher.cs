@@ -55,7 +55,7 @@ namespace PyRevitLabs.PyRevit.Shell {
 
             // A modeless shell needs an ExternalEvent to enter a valid API context.
             var mainDispatcher = GetCurrentDispatcher();
-            var handler = new ShellExternalEventDispatcher();
+            var handler = new ShellExternalEventHandler();
             var externalEvent = ExternalEvent.Create(handler);
             gui.Closed += (sender, args) => handler.Dispose(externalEvent);
             AttachAndDispatch(
@@ -93,7 +93,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         static void ConfigureControl(IronPythonConsoleControl consoleControl, UIApplication uiapp, IList<string> searchPaths, object window, Dispatcher mainDispatcher) {
-            var handler = new ShellExternalEventDispatcher();
+            var handler = new ShellExternalEventHandler();
             var externalEvent = ExternalEvent.Create(handler);
 
             consoleControl.WithConsoleHost(host => {
@@ -119,29 +119,30 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         static void DispatchExternalEvent(
-            ShellExternalEventDispatcher handler,
+            ShellExternalEventHandler handler,
             ExternalEvent externalEvent,
             Action command
         ) {
-            var request = handler.Enqueue(command);
+            var dispatcher = handler.Dispatcher;
+            var request = dispatcher.Enqueue(command);
             ExternalEventRequest response;
             try {
                 response = handler.Raise(externalEvent);
             }
             catch {
-                if (!handler.Cancel(request))
-                    request.Wait(PythonExecution.CurrentCancellationToken, () => handler.Cancel(request));
+                if (!dispatcher.Cancel(request))
+                    request.Wait(PythonExecution.CurrentCancellationToken, () => dispatcher.Cancel(request));
                 throw;
             }
 
             if (response == ExternalEventRequest.Denied
                 || response == ExternalEventRequest.TimedOut) {
-                if (handler.Cancel(request))
+                if (dispatcher.Cancel(request))
                     throw new InvalidOperationException(
                         "Revit rejected the pyRevit shell ExternalEvent request: " + response);
             }
 
-            request.Wait(PythonExecution.CurrentCancellationToken, () => handler.Cancel(request));
+            request.Wait(PythonExecution.CurrentCancellationToken, () => dispatcher.Cancel(request));
         }
 
         // Environment setup reads Revit-owned UI state and must run on its dispatcher.
@@ -256,25 +257,30 @@ namespace PyRevitLabs.PyRevit.Shell {
 
     }
 
-    internal sealed partial class ShellExternalEventDispatcher : IExternalEventHandler {
+    internal sealed class ShellExternalEventHandler : IExternalEventHandler {
+        readonly object _lifecycleLock = new object();
+        bool _disposed;
+
+        internal ShellExternalEventDispatcher Dispatcher { get; } = new ShellExternalEventDispatcher();
 
         public ExternalEventRequest Raise(ExternalEvent externalEvent) {
-            lock (_requestsLock) {
+            lock (_lifecycleLock) {
                 if (_disposed) throw new Microsoft.Scripting.KeyboardInterruptException("");
                 return externalEvent.Raise();
             }
         }
 
         public void Dispose(ExternalEvent externalEvent) {
-            lock (_requestsLock) {
+            lock (_lifecycleLock) {
                 if (_disposed) return;
-                Dispose();
+                _disposed = true;
+                Dispatcher.Dispose();
                 externalEvent.Dispose();
             }
         }
 
         public void Execute(UIApplication app) {
-            ExecutePendingRequests();
+            Dispatcher.ExecutePendingRequests();
         }
 
         public string GetName() {

@@ -90,6 +90,17 @@ Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests/pyRevitLa
 The build pipeline runs both engine variants against its built assemblies after the runners and shell builds. The project is not part of the Labs solution build, which precedes engine staging.
 The suite requires the Windows Desktop runtime and cannot execute on macOS. It covers WPF dispatcher failures, disposal while a production host statement is running, completion requests after disposal, worker termination, and the runtime shutdown hook.
 
+The request queue (`ShellExternalEventDispatcher`) has no Revit API base types, fields, or method signatures.
+`ShellExternalEventHandler` owns that queue and implements the Revit `IExternalEventHandler` boundary; the standalone tests do not instantiate the handler or raise real Revit external events.
+
+| Test fixture | Production types exercised |
+|---|---|
+| `PythonExecutionTests` | `PythonExecution`, plus `ShellExternalEventDispatcher` and `ShellExternalEventRequest` for queued cancellation |
+| `ShellExternalEventDispatcherTests` | `ShellExternalEventDispatcher`, `ShellExternalEventRequest` |
+| `ShellDispatcherTests` | `ShellLauncher.RunOnDispatcher`, `ShellExternalEventRequest` |
+| `InteractiveCommandLineLifecycleTests` | `PythonExecution` with an IronPython REPL test host |
+| `PythonConsoleHostLifecycleTests` | `PythonConsoleHost`, `PythonConsole`, `PythonTextEditor`, `PythonConsoleCompletionWindow`, `PythonExecution` |
+
 
 ## Startup cost
 
