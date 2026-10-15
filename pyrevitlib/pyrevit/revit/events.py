@@ -121,7 +121,8 @@ def register_handler(event_name, handler_func, handler_group_id):
         handler_group[event_name].Add(event_handler)
 
 
-def unregister_handler(event_name, handler_group_id):
+def unregister_handler(event_name, handler_func, handler_group_id):
+    # 'handler_func' argument only for backwards compat
     registered_handlers = _get_registered_handlers()
     if registered_handlers.ContainsKey(handler_group_id):
         handler_group = registered_handlers[handler_group_id]
