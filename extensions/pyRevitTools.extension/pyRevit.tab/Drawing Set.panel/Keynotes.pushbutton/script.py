@@ -296,8 +296,16 @@ def describe_lock_error(ex):
 
     Read failures name a possible sync conflict and include the underlying
     file error when DeffrelDB provides one.
+    Access-denied failures report the missing permission without suggesting
+    file conversion.
     """
     text = getattr(ex, "Message", None) or str(ex)
+    if isinstance(ex, System.UnauthorizedAccessException):
+        return (
+            "You do not have permission to access the keynote file.",
+            "Ask the file owner or your IT team to check your read permissions."
+            "\n\n" + text,
+        )
     holder = _RESTRICTING_LOCK_RE.search(text)
     if holder:
         target = (holder.group("target").split(":", 2) + ["", ""])[:3]
@@ -2796,6 +2804,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             raise KeynoteSetupError(
                 "\n\n".join(friendly) if friendly else toutex.Message
             )
+        except System.UnauthorizedAccessException as readex:
+            friendly = describe_lock_error(readex)
+            raise KeynoteSetupError("\n\n".join(friendly))
         except Exception as ex:
             raise KeynoteSetupError(
                 "Cannot connect to this project's keynote file.\n%s\n\n"
@@ -2916,6 +2927,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 raise KeynoteSetupError(
                     "\n\n".join(friendly) if friendly else toutex.Message
                 )
+            except System.UnauthorizedAccessException as readex:
+                friendly = describe_lock_error(readex)
+                raise KeynoteSetupError("\n\n".join(friendly))
             except Exception as ex:
                 logger.debug("Connection failed | %s" % ex)
                 res = forms.alert(

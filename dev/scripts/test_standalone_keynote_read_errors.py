@@ -57,6 +57,14 @@ class _TimeoutError(Exception):
         self.InnerException = inner
 
 
+class _AccessDeniedError(Exception):
+    """Expose the .NET access-denied exception message."""
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.Message = message
+
+
 class KeynoteReadErrorTests(unittest.TestCase):
     """Read failures never suggest releasing another user's save lock."""
 
@@ -64,7 +72,10 @@ class KeynoteReadErrorTests(unittest.TestCase):
         """Load production code with inert substitutes for hosted dependencies."""
         self.namespace = _load_error_handlers()
         self.namespace.update(
-            System=SimpleNamespace(TimeoutException=_TimeoutError),
+            System=SimpleNamespace(
+                TimeoutException=_TimeoutError,
+                UnauthorizedAccessException=_AccessDeniedError,
+            ),
             logger=Mock(),
             op=SimpleNamespace(exists=lambda path: True),
             kdb=Mock(),
@@ -144,6 +155,27 @@ class KeynoteReadErrorTests(unittest.TestCase):
             with self.assertRaises(self.namespace["KeynoteSetupError"]) as raised:
                 method(*args)
             self.assertIn("Sharing violation.", str(raised.exception))
+
+    def test_access_denied_does_not_offer_conversion(self):
+        """Both connection paths report permissions and preserve the cause."""
+        self.namespace["forms"] = Mock()
+        self.namespace["kdb"].connect.side_effect = _AccessDeniedError(
+            "Access to Keynotes.txt is denied."
+        )
+        for method_name in ("_open_kfile", "_connect_kfile"):
+            with self.subTest(method=method_name):
+                method = getattr(self.window, method_name)
+                args = (self.window._kfile,) if method_name == "_open_kfile" else ()
+                with self.assertRaises(self.namespace["KeynoteSetupError"]) as raised:
+                    method(*args)
+                message = str(raised.exception)
+                self.assertIn("permission", message)
+                self.assertIn("Access to Keynotes.txt is denied.", message)
+                self.assertNotIn("conversion", message.lower())
+                self.assertNotIn("saving", message)
+        self.namespace["forms"].alert.assert_not_called()
+        self.window._offer_write_lock_release.assert_not_called()
+        self.assertEqual(2, self.namespace["kdb"].connect.call_count)
 
 
 if __name__ == "__main__":

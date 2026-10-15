@@ -222,7 +222,7 @@ def _load_error_description():
             and any(getattr(target, "id", None) in names for target in node.targets)
         )
     ]
-    namespace = {"re": re}
+    namespace = {"re": re, "System": System}
     eval(compile(tree, "script.py", "exec"), namespace)
     return namespace["describe_lock_error"]
 
@@ -256,6 +256,16 @@ class ReadErrorMessageTests(unittest.TestCase):
         self.assertEqual("The keynote file is busy.", headline)
         self.assertIn("Someone else is saving", details)
         self.assertIn("padlock", details)
+
+    def test_access_denied_explains_permissions(self):
+        """A .NET access error is not described as conversion or a save lock."""
+        describe = _load_error_description()
+        error = System.UnauthorizedAccessException("Access to Keynotes.txt is denied.")
+        headline, details = describe(error)
+        self.assertIn("permission", headline)
+        self.assertIn("read permissions", details)
+        self.assertIn(error.Message, details)
+        self.assertNotIn("conversion", details.lower())
 
 
 class ReadTimeoutCauseTests(_KeynoteFileTestCase):
