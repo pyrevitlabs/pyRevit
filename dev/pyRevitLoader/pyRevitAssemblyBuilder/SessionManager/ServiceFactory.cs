@@ -236,7 +236,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="buildStrategy">The build strategy to use for assembly generation.</param>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
-        /// <remarks>Invalidates the shared configuration before constructing any session services.</remarks>
+        /// <remarks>
+        ///     Important: configuration invalidation must remain before <see cref="CreateLogger"/> and <see cref="UIManagerService"/> construction; moving it later reinstates stale session settings from issue #3776.
+        /// </remarks>
         public static ISessionManagerService CreateSessionManagerService(
             string revitVersion,
             AssemblyBuildStrategy buildStrategy,
@@ -307,6 +309,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="ribbonScanner">Custom ribbon scanner service.</param>
         /// <param name="logger">Custom logger.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
+        /// <remarks>Callers injecting custom services own configuration freshness; this overload does not invalidate the shared configuration.</remarks>
         public static ISessionManagerService CreateSessionManagerService(
             IAssemblyBuilderService assemblyBuilder,
             IExtensionManagerService extensionManager,
