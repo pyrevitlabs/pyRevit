@@ -500,8 +500,10 @@ class _WPFMixin(object):
         by a style setter so disabled-state triggers remain authoritative,
         including when IsEnabled changes after the window opens. Safe to call
         again after a theme change; unchanged brushes reuse the managed style.
-        Detached elements are dropped from tracking on the next pass, and a
-        failed element does not prevent the remaining controls from updating.
+        Previously managed elements that stop qualifying regain their original
+        style, unless a local Foreground has been authored. Detached elements
+        are dropped from tracking on the next pass, and a failed element does
+        not prevent the remaining controls from updating.
         """
         res = self.Resources
         try:
@@ -534,21 +536,28 @@ class _WPFMixin(object):
                 back_prop = _background_property(element)
                 if fore_prop is None or back_prop is None:
                     continue
-                if not _is_authored_value(element, back_prop):
-                    continue
-                brush = element.GetValue(back_prop)
-                if not isinstance(brush, Media.SolidColorBrush):
-                    continue
-                background = brush.Color
-                if background.A != 0xFF:
-                    continue
-                if _argb(background) in theme_argbs:
-                    continue
                 if (
                     element.ReadLocalValue(fore_prop)
                     != framework.Windows.DependencyProperty.UnsetValue
                 ):
                     continue
+                brush = (
+                    element.GetValue(back_prop)
+                    if _is_authored_value(element, back_prop)
+                    else None
+                )
+                if (
+                    not isinstance(brush, Media.SolidColorBrush)
+                    or brush.Color.A != 0xFF
+                    or _argb(brush.Color) in theme_argbs
+                ):
+                    contrast_style = managed.get(element)
+                    if contrast_style is not None:
+                        if element.Style is contrast_style:
+                            element.Style = contrast_style.BasedOn
+                        del managed[element]
+                    continue
+                background = brush.Color
                 best = max(
                     candidates,
                     key=lambda candidate: _contrast_ratio(background, candidate.Color),

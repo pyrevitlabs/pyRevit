@@ -273,6 +273,66 @@ class FormsContrastTests(unittest.TestCase):
         self.assertIs(element.Style, contrast_style)
         self.assertIs(element.GetValue("Foreground"), self.disabled)
 
+    def test_dequalified_background_restores_original_style(self):
+        """Every excluded background restores the exact pre-contrast style."""
+        backgrounds = (
+            ("unset", _UNSET),
+            ("non-solid", object()),
+            ("translucent", _Brush(255, 200, 200, alpha=128)),
+            ("theme-colored", _Brush(255, 255, 255)),
+        )
+        for name, background in backgrounds:
+            for original in (None, _Style(_Element)):
+                with self.subTest(background=name, original=original):
+                    element = self.element(original)
+                    self.apply(self.window)
+                    self.assertIsNot(element.Style, original)
+                    if background is _UNSET:
+                        del element.local["Background"]
+                    else:
+                        element.local["Background"] = background
+                    self.apply(self.window)
+                    self.assertIs(element.Style, original)
+                    self.assertNotIn(element, self.window._contrast_managed)
+
+    def test_local_foreground_keeps_style_when_background_stops_qualifying(self):
+        """Authored foregrounds prevent changes even when contrast is no longer needed."""
+        backgrounds = (
+            ("unset", _UNSET),
+            ("non-solid", object()),
+            ("translucent", _Brush(255, 200, 200, alpha=128)),
+            ("theme-colored", self.white),
+        )
+        for name, background in backgrounds:
+            with self.subTest(background=name):
+                element = self.element()
+                self.apply(self.window)
+                contrast_style = element.Style
+                element.local["Foreground"] = self.disabled
+                if background is _UNSET:
+                    del element.local["Background"]
+                else:
+                    element.local["Background"] = background
+                self.apply(self.window)
+                self.assertIs(element.Style, contrast_style)
+                self.assertIs(element.GetValue("Foreground"), self.disabled)
+                self.assertIs(self.window._contrast_managed[element], contrast_style)
+                del element.local["Foreground"]
+                self.apply(self.window)
+                self.assertIsNone(element.Style)
+                self.assertNotIn(element, self.window._contrast_managed)
+
+    def test_dequalification_preserves_replacement_style(self):
+        """Removing tracking must not overwrite an externally replaced style."""
+        element = self.element()
+        self.apply(self.window)
+        replacement = _Style(_Element)
+        element.Style = replacement
+        element.local["Background"] = self.white
+        self.apply(self.window)
+        self.assertIs(element.Style, replacement)
+        self.assertNotIn(element, self.window._contrast_managed)
+
     def test_theme_and_translucent_backgrounds_are_untouched(self):
         """Existing exclusions do not create unnecessary contrast styles."""
         for background in (self.white, _Brush(255, 200, 200, alpha=128)):
