@@ -422,12 +422,15 @@ namespace pyRevitLabs.DeffrelDB {
             var time = Stopwatch.StartNew();
             string[] fileContents = { };
             bool isRead = false;
+            IOException readError = null;
             while (time.ElapsedMilliseconds < IOTimeOut && !isRead) {
                 try {
                     fileContents = File.ReadAllLines(FilePath, Encoding);
                     isRead = true;
                 }
-                catch { }
+                catch (IOException exception) {
+                    readError = exception;
+                }
             }
 
             if (isRead) {
@@ -437,7 +440,7 @@ namespace pyRevitLabs.DeffrelDB {
                 return dlines;
             }
             else
-                throw new TimeoutException("Read timeout.");
+                throw new TimeoutException("Read timeout.", readError);
         }
 
 #if TRACE

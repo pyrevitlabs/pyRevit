@@ -9,14 +9,17 @@ only deleted while it is still the stale one the user agreed to release.
 Breaking any of these lets two writes overlap and lose keynote changes.
 """
 
+import ast
 import os
 import os.path as op
 import shutil
+import re
 import sys
 import tempfile
 import time
 import unittest
 
+import System
 from pyrevit import EXTENSIONS_DEFAULT_DIR
 
 
@@ -203,3 +206,75 @@ class RecordLockReleaseTests(_KeynoteFileTestCase):
         kdb.release_locks(self.kfile, [lk.LockId for lk in stale])
         kdb.end_edit(self.window)
         self.assertEqual([], kdb.foreign_locks(self.window, [self.window]))
+
+
+def _load_error_description():
+    """Load the real error formatter without opening Keynote Manager."""
+    with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "r") as script_file:
+        tree = ast.parse(script_file.read())
+    names = {"describe_lock_error", "RELEASE_LOCKS_HINT", "_RESTRICTING_LOCK_RE"}
+    tree.body = [
+        node
+        for node in tree.body
+        if getattr(node, "name", None) in names
+        or (
+            isinstance(node, ast.Assign)
+            and any(getattr(target, "id", None) in names for target in node.targets)
+        )
+    ]
+    namespace = {"re": re}
+    eval(compile(tree, "script.py", "exec"), namespace)
+    return namespace["describe_lock_error"]
+
+
+class ReadErrorMessageTests(unittest.TestCase):
+    """Distinguish an unreadable file from a DeffrelDB save lock."""
+
+    def test_read_timeout_names_sync_clients(self):
+        """Read timeouts suggest waiting for syncing, not releasing locks."""
+        describe = _load_error_description()
+        headline, details = describe(System.TimeoutException("Read timeout."))
+        self.assertEqual("The keynote file could not be read.", headline)
+        self.assertIn("Desktop Connector or OneDrive", details)
+        self.assertNotIn("saving", details)
+        self.assertNotIn("padlock", details)
+
+    def test_read_timeout_keeps_the_file_error(self):
+        """The original I/O message is visible alongside the explanation."""
+        describe = _load_error_description()
+        inner = System.IO.IOException("Sharing violation.")
+        headline, details = describe(System.TimeoutException("Read timeout.", inner))
+        self.assertEqual("The keynote file could not be read.", headline)
+        self.assertIn(inner.Message, details)
+
+    def test_unlock_timeout_still_explains_saving(self):
+        """Write-lock timeouts retain their save and padlock guidance."""
+        describe = _load_error_description()
+        headline, details = describe(
+            System.TimeoutException("Wait for unlock timeout.")
+        )
+        self.assertEqual("The keynote file is busy.", headline)
+        self.assertIn("Someone else is saving", details)
+        self.assertIn("padlock", details)
+
+
+class ReadTimeoutCauseTests(_KeynoteFileTestCase):
+    """Keep the real file exception when an exclusive handle blocks reads."""
+
+    def test_exclusive_handle_is_preserved_as_timeout_cause(self):
+        """A bounded read failure carries the sharing violation."""
+        stream = System.IO.File.Open(
+            self.kfile,
+            System.IO.FileMode.Open,
+            System.IO.FileAccess.ReadWrite,
+            getattr(System.IO.FileShare, "None"),
+        )
+        try:
+            with self.assertRaises(System.TimeoutException) as raised:
+                kdb.connect(self.kfile)
+            self.assertEqual("Read timeout.", raised.exception.Message)
+            self.assertIsInstance(
+                raised.exception.InnerException, System.IO.IOException
+            )
+        finally:
+            stream.Dispose()

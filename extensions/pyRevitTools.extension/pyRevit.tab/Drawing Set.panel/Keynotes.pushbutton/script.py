@@ -287,12 +287,15 @@ def lock_target_label(db_name, table_name, record_key):
 
 
 def describe_lock_error(ex):
-    """Return (headline, details) for a lock failure, or None.
+    """Return (headline, details) for a lock or read failure, or None.
 
     DeffrelDB reports locks as raw signatures such as
     '<ConnectionLock id:"..." sig:"pc:user:conn" locking:"db:table:key">',
     which mean nothing to the person editing keynotes; this names the
     holder and says what to do instead.
+
+    Read failures name a possible sync conflict and include the underlying
+    file error when DeffrelDB provides one.
     """
     text = getattr(ex, "Message", None) or str(ex)
     holder = _RESTRICTING_LOCK_RE.search(text)
@@ -320,11 +323,14 @@ def describe_lock_error(ex):
             "session may have closed or crashed while saving. " + RELEASE_LOCKS_HINT,
         )
     if "Read timeout" in text:
-        return (
-            "The keynote file could not be read.",
+        details = (
             "Another program, such as Desktop Connector or OneDrive, may be "
-            "syncing it. Wait a moment and try again.",
+            "syncing it. Wait a moment and try again."
         )
+        read_error = getattr(ex, "InnerException", None)
+        if read_error:
+            details += "\n\n{}".format(read_error.Message)
+        return ("The keynote file could not be read.", details)
     return None
 
 
@@ -2786,10 +2792,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return kdb.connect(kfile)
         except System.TimeoutException as toutex:
             logger.debug("keynote file connect timed out | %s", toutex.Message)
+            friendly = describe_lock_error(toutex)
             raise KeynoteSetupError(
-                "The keynote file is busy or was left locked by a Revit "
-                "session that closed. Use the padlock button next to "
-                "Update Model to release it."
+                "\n\n".join(friendly) if friendly else toutex.Message
             )
         except Exception as ex:
             raise KeynoteSetupError(
@@ -2903,13 +2908,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 self._conn = kdb.connect(self._kfile)
             except System.TimeoutException as toutex:
-                if self._offer_write_lock_release(self._kfile):
+                if ("Wait for unlock timeout" in toutex.Message
+                        and self._offer_write_lock_release(self._kfile)):
                     continue
                 logger.debug("keynote file connect timed out | %s", toutex.Message)
+                friendly = describe_lock_error(toutex)
                 raise KeynoteSetupError(
-                    "The keynote file is busy.\n\n"
-                    "Someone else is saving changes to it right now. Wait a "
-                    "few seconds and open Keynote Manager again."
+                    "\n\n".join(friendly) if friendly else toutex.Message
                 )
             except Exception as ex:
                 logger.debug("Connection failed | %s" % ex)
