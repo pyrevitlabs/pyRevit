@@ -157,7 +157,7 @@ def unregister_exec_handlers(handler_group_id):
             handler_group = registered_handlers[handler_group_id]
             for event_name in list(handler_group.Keys):
                 try:
-                    unregister_handler(event_name, handler_group_id)
+                    unregister_handler(event_name, None, handler_group_id)
                 except Exception as ex:
                     mlogger.error(
                         "Could not unregister handlers for %s event in %s: %s",
