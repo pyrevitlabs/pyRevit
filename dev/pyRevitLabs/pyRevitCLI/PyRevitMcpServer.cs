@@ -75,7 +75,10 @@ namespace pyRevitCLI {
 
                 JObject message;
                 try {
-                    message = JObject.Parse(line);
+                    using var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None };
+                    message = JObject.Load(reader);
+                    // Match JObject.Parse's check for trailing content.
+                    while (reader.Read()) { }
                 }
                 catch (JsonException) {
                     Write(Error(null, -32700, "Parse error"));
@@ -174,6 +177,9 @@ namespace pyRevitCLI {
                 }
                 catch (FormatException) {
                     result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument format." }.ToString(Formatting.None), true);
+                }
+                catch (OverflowException) {
+                    result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Tool argument out of range." }.ToString(Formatting.None), true);
                 }
                 catch (Exception ex) {
                     result = ToolResult(new JObject { ["error"] = "server_error", ["message"] = ex.Message }.ToString(Formatting.None), true);

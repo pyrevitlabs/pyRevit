@@ -82,6 +82,30 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void DateLikeStringIdsArePreservedOnTheWire() {
+        using var input = new StringReader("{\"jsonrpc\":\"2.0\",\"id\":\"2025-06-18T00:00:00Z\",\"method\":\"ping\"}");
+        using var output = new StringWriter();
+
+        PyRevitMcpServer.Serve(null, input, output);
+
+        var line = Assert.Single(output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal("{\"jsonrpc\":\"2.0\",\"id\":\"2025-06-18T00:00:00Z\",\"result\":{}}", line.TrimEnd('\r'));
+        using var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None };
+        var response = JObject.Load(reader);
+        Assert.Equal(JTokenType.String, response["id"].Type);
+        Assert.Equal("2025-06-18T00:00:00Z", response.Value<string>("id"));
+        Assert.Empty((JObject)response["result"]);
+    }
+
+    [Fact]
+    public void DateLikeProtocolVersionsAreStringsAndNegotiateTheDefaultVersion() {
+        var response = Single("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18T00:00:00Z\"}}");
+
+        Assert.Null(response["error"]);
+        Assert.Equal("2025-06-18", response["result"].Value<string>("protocolVersion"));
+    }
+
+    [Fact]
     public void UnknownMethodsParseErrorsAndNotificationsAreHandledAsJsonRpcRequires() {
         var responses = Serve(
             Request(1, "no/such/method"),
@@ -263,6 +287,29 @@ public partial class McpServerTests : IDisposable {
         Assert.True(IsError(error));
         Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
         Assert.Equal("Invalid tool argument type.", Payload(error).Value<string>("message"));
+        Assert.Empty(host.Requests);
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+    }
+
+    [Theory]
+    [InlineData("list_automation", "offset")]
+    [InlineData("list_automation", "limit")]
+    [InlineData("get_run", "offset")]
+    [InlineData("get_run", "length")]
+    public void OutOfRangeIntegerArgumentsReturnInvalidParamsWithoutClrDetails(string tool, string argument) {
+        host.AddRun("abc123def456", response: "{\"status\":\"ok\"}", result: "0123456789");
+        var arguments = new JObject { [argument] = 2147483648L };
+        if (tool == "get_run")
+            arguments["run_id"] = "abc123def456";
+
+        var responses = Serve(ToolCall(1, tool, arguments), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.True(IsError(error));
+        Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
+        Assert.Equal("Tool argument out of range.", Payload(error).Value<string>("message"));
         Assert.Empty(host.Requests);
         var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
         Assert.Empty((JObject)ping["result"]);
