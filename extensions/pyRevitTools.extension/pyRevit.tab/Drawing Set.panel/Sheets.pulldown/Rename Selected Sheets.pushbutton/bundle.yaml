@@ -28,3 +28,5 @@ tooltip:
   pt_br: >-
     Renomear em lote as folhas selecionadas (localizar e substituir, prefixo,
     sufixo ou alteração de maiúsculas/minúsculas)
+context:
+  - doc-project

@@ -21,3 +21,5 @@ tooltip:
     dieser Prozess sehr lange dauern! Der Prozess kann nicht unterbrochen werden!
   pt_br: Definir espessura de linha da caixa de recorte para vistas selecionadas e vistas colocadas em folhas
 author: Jean-Marc Couffin
+context:
+  - doc-project

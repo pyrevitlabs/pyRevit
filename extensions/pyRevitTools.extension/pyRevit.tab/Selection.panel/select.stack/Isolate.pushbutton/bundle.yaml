@@ -8,26 +8,38 @@ title:
   de_de: Isolieren
   pt_br: Isolar
 tooltip:
-  en_us: >-
-    Isolates specific elements in current view and
+  en_us: |-
+    Temporarily isolate elements of a chosen category or type in the active view.
 
-    put the view in isolate element mode
-  ko: 현재 뷰에서 특정 요소를 격리하고 뷰를 요소 격리 모드로 설정합니다.
-  fr_fr: >-
-    Isole des éléments spécifiques dans la vue actuelle et
+    Shift-click:
+    Choose favorite categories for the isolate tool.
+  ko: |-
+    활성 뷰에서 선택한 카테고리 또는 유형의 요소를 임시로 격리합니다.
 
-    met la vue en mode 'élément isolé'
-  ru: >-
-    Изолирует определенные элементы в текущем виде
+    Shift 키를 누르고 클릭:
+    격리 도구에서 사용할 즐겨찾기 카테고리를 선택합니다.
+  fr_fr: |-
+    Isole temporairement dans la vue active les éléments d'une catégorie ou d'un type choisi.
 
-    и переводит вид в режим изоляции элементов.
-  chinese_s: 在当前视图中隔离特定图元，并将视图置于“隔离图元”模式
-  es_es: >-
-    Aísla elementos específicos en la vista actual y
+    Maj+clic :
+    Choisir les catégories favorites de l'outil d'isolation.
+  ru: |-
+    Временно изолирует в текущем виде элементы выбранной категории или типа.
 
-    pone la vista en modo de aislamiento de elementos
+    Щелчок с удержанием клавиши Shift:
+    Выбрать избранные категории для инструмента изоляции.
+  chinese_s: |-
+    在活动视图中临时隔离所选类别或类型的图元。
+
+    按住 Shift 键单击：
+    选择隔离工具的收藏类别。
+  es_es: |-
+    Aísla temporalmente en la vista activa los elementos de una categoría o tipo elegido.
+
+    Mayús-clic:
+    Elegir las categorías favoritas de la herramienta de aislamiento.
   de_de: >-
-    Isloiert spezifische Elemente in der aktuellen Ansicht  und stellt die Ansicht in den Isloationsmodus um.  Es werden folgende Kategorien als Schnellauswahl angeboten:
+    Isoliert vorübergehend Elemente einer ausgewählten Kategorie oder eines Typs in der aktiven Ansicht. Folgende Kategorien stehen als Schnellauswahl zur Verfügung:
     1) Flächenbegrenzungen
     2) Fenster
     3) Geschossdecken
@@ -41,9 +53,10 @@ tooltip:
     11) Painted Elemente (Eingefärbte Elemente)
     12) Model Elements (Modellelemente)
 
-    Shift-Select:
-    Es können in einem Auswahldialog gezielt Kategorien festgelegt werden,
-    die isoliert werden sollen.
-  pt_br: >-
-    Isola elementos específicos na vista atual e
-    coloca a vista no modo de isolar elemento
+    Bei gedrückter Umschalttaste klicken:
+    Favoritenkategorien für das Isolieren auswählen.
+  pt_br: |-
+    Isola temporariamente na vista ativa os elementos de uma categoria ou tipo escolhido.
+
+    Clique mantendo a tecla Shift pressionada:
+    Escolher categorias favoritas para a ferramenta de isolamento.

@@ -20,3 +20,4 @@ tooltip:
     Verwendet den Arbeitsteilungs-Tooltip, um das Element herauszufinden,  das dem Benutzer in der aktuellen Ansicht "gehört".  Wenn die aktuelle Ansicht ein Plan ist, durchsucht das Werkzeug  alle Ansichten, die auf diesem Plan platziert wurden.  "Eigene" Elemente sind die Elemente, die der Benutzer  seit der letzten Synchronisierung und Freigabe bearbeitet hat.
   pt_br: >-
     Usa a dica de ferramenta de Compartilhamento de Trabalho para descobrir o elemento "sob posse" do usuário na vista atual. Se a vista atual for uma folha, a ferramenta pesquisa todas as vistas colocadas nesta folha também. Elementos "sob posse" são os elementos editados pelo usuário desde a última sincronização e liberação.
+context: doc-workshared

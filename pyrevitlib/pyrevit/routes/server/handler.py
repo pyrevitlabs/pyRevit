@@ -7,6 +7,7 @@ import traceback
 import threading
 import json
 import numbers
+from collections import deque
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
@@ -88,74 +89,167 @@ RESERVED_VAR_NAMES = [
     ARGS_UIAPP,
 ]
 
+MAX_PENDING_REQUESTS = 256
+CALLBACK_TIMEOUT = 10.0
+
+
+class RequestWorkItem(object):
+    """One queued request, with an independent response and completion signal."""
+
+    def __init__(self, request, handler):
+        self.request = request
+        self.handler = handler
+        self.event = threading.Event()
+        self.response = None
+        self._lock = threading.Lock()
+
+    def complete(self, response):
+        """Publish the first result, preserving queued-request rejections."""
+        with self._lock:
+            if not self.event.is_set():
+                self.response = response
+                self.event.set()
+
 
 class RequestHandler(UI.IExternalEventHandler):
-    """Revit external event handler type."""
+    """Drain API requests using one external event per server lifetime.
 
-    # static privates
-    _request = None
-    _handler = None
-    _response = None
-    _done = False
-    _lock = threading.Lock()
+    Revit may coalesce Raise calls. The queue, rather than the number of event
+    invocations, therefore determines how many handlers Execute must run.
+    """
 
-    @property
-    def request(self):
-        """Get registered request."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._request
+    def __init__(self):
+        self._queue = deque()
+        self._lock = threading.RLock()
+        self.progress = threading.Event()
+        self._progress_count = 0
+        self._stopped = False
+        self.external_event = None
+        self._awaiting_idle = False
+        self._raised = False
+        self._uiapp = None
 
-    @request.setter
-    def request(self, request):
-        """Set a new request to be passed to handler when event is raised."""
+    def enqueue(self, item):
+        """Reject work when stopped or when the bounded queue is full."""
         with self._lock:
-            self._request = request
+            if self._stopped:
+                response = self.stopped_response(item.request)
+                item.complete(response)
+                return response
+            if len(self._queue) >= MAX_PENDING_REQUESTS:
+                response = excp.RouteHandlerDeniedException(
+                    item.request,
+                    message="Routes request queue is full: %s" % item.request.path,
+                )
+                item.complete(response)
+                return response
+            self._queue.append(item)
+        return None
 
-    @property
-    def handler(self):
-        """Get registered handler."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._handler
+    @staticmethod
+    def stopped_response(request):
+        """Explain why queued work cannot run during stop or session reload."""
+        return excp.RouteHandlerDeniedException(
+            request, message="Routes server stopped or reloaded: %s" % request.path
+        )
 
-    @handler.setter
-    def handler(self, handler):
-        """Set a new handler to be executed when event is raised."""
-        if handler and callable(handler):
-            with self._lock:
-                self._handler = handler
-        else:
-            raise excp.RouteHandlerIsNotCallableException(handler.__name__)
+    def cancel(self, item, response, progress_count=None):
+        """Reject only work that has not been taken by Execute."""
+        with self._lock:
+            if progress_count is not None and progress_count != self._progress_count:
+                return False
+            try:
+                self._queue.remove(item)
+            except ValueError:
+                return False
+            item.complete(response)
+            return True
 
-    @property
-    def response(self):
-        """Get registered response."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._response
+    def raise_event(self):
+        """Serialize raises with stop so accepted native work cannot be disposed."""
+        with self._lock:
+            if self._stopped:
+                return UI.ExternalEventRequest.Denied
+            result = self.external_event.Raise()
+            if result in (
+                UI.ExternalEventRequest.Accepted,
+                UI.ExternalEventRequest.Pending,
+            ):
+                self._raised = True
+            return result
 
-    @property
-    def done(self):
-        """Check if execution of handler is completed and response is set."""
-        with self._lock:  # pylint: disable=not-context-manager
-            return self._done
+    def progress_count(self):
+        """Snapshot queue progress without losing pulses between waiter checks."""
+        with self._lock:
+            return self._progress_count
 
-    def _set_response(self, response):
-        with self._lock:  # pylint: disable=not-context-manager
-            self._response = response
-            self._done = True
+    def stop(self):
+        """Reject queued work and notify callbacks without holding the queue lock.
 
-    def reset(self):
-        """Reset internals for new execution."""
-        with self._lock:  # pylint: disable=not-context-manager
-            self._response = None
-            self._done = False
+        Disposal waits for Idling after Execute or an accepted raise. If Revit
+        never dispatches an accepted raise, retain its event rather than dispose
+        a native event that may still be pending.
+        """
+        callbacks = []
+        external_event = None
+        with self._lock:
+            self._stopped = True
+            while self._queue:
+                item = self._queue.popleft()
+                item.complete(self.stopped_response(item.request))
+                if item.request.callback_url:
+                    callbacks.append(item)
+            if not self._awaiting_idle and not self._raised:
+                external_event = self.external_event
+                self.external_event = None
+        self._dispose_external_event(external_event)
+        if callbacks:
 
-    def join(self):
-        """Allow other threads to call this method and wait for completion."""
-        # wait until handler signals completion
-        while True:
-            with self._lock:
-                if self._done:
-                    return
+            def notify_callbacks():
+                for item in callbacks:
+                    self._notify_callback(item)
+
+            notifier = threading.Thread(target=notify_callbacks)
+            notifier.daemon = True
+            notifier.start()
+
+    @staticmethod
+    def _dispose_external_event(external_event):
+        """Release the native event without letting teardown errors escape."""
+        if external_event is not None:
+            try:
+                external_event.Dispose()
+            except Exception:
+                mlogger.debug(
+                    "Routes event disposal failed | %s", traceback.format_exc()
+                )
+
+    def _on_idle(self, sender, args):
+        """Dispose a stopped event only after Revit has returned from Execute."""
+        external_event = None
+        with self._lock:
+            try:
+                if self._uiapp is not None:
+                    self._uiapp.Idling -= self._on_idle
+            except Exception:
+                mlogger.debug(
+                    "Routes Idling unsubscribe failed | %s", traceback.format_exc()
+                )
+            self._uiapp = None
+            self._awaiting_idle = False
+            self._raised = False
+            if self._stopped:
+                external_event = self.external_event
+                self.external_event = None
+        self._dispose_external_event(external_event)
+
+    def _notify_callback(self, item):
+        """Deliver either a handler result or a queued-request rejection."""
+        try:
+            if item.request.callback_url:
+                self.make_callback(item.request.callback_url, item.response)
+        except Exception:
+            mlogger.debug("Routes callback failed | %s", traceback.format_exc())
 
     @staticmethod
     def run_handler(handler, kwargs):
@@ -195,7 +289,9 @@ class RequestHandler(UI.IExternalEventHandler):
         # parse response object
         r = RequestHandler.parse_response(response)
         # prepare and submit request
-        make_request(url=callback_url, headers=r.headers, data=r.data)
+        make_request(
+            url=callback_url, headers=r.headers, data=r.data, timeout=CALLBACK_TIMEOUT
+        )
 
     @staticmethod
     def wants_api_context(handler):
@@ -256,7 +352,7 @@ class RequestHandler(UI.IExternalEventHandler):
         # now process reponse based on obj type
         # it is an exception is has .message
         # write the exeption to output and return
-        if hasattr(response, "message"):
+        if isinstance(response, Exception) or hasattr(response, "message"):
             status = (
                 response.status
                 if hasattr(response, "status")
@@ -304,29 +400,39 @@ class RequestHandler(UI.IExternalEventHandler):
         return base.Response(status=status, data=data, headers=headers)
 
     def Execute(self, uiapp):
-        """This method is called to handle the external event."""
-        # grab data. getters are thread-safe
-        handler = self.handler
-        request = self.request
-        response = None
-
-        try:
-            # process necessary arguments for the handler
-            kwargs = RequestHandler.prepare_handler_kwargs(
-                request, handler, uiapp=uiapp
-            )
-            # run handler with prepared arguments, and grab the response
-            response = self.run_handler(handler, kwargs)
-        except Exception as exec_ex:
-            # create exception response
-            response = excp.RouteHandlerExecException(message=str(exec_ex))
-        finally:
-            # send response to callback url if requested
-            if request.callback_url:
-                RequestHandler.make_callback(request.callback_url, response)
-            # or set the response to be picked up by http request handler
-            else:
-                self._set_response(response)
+        """Drain all queued work, isolating both handler and callback failures."""
+        with self._lock:
+            if self.external_event is not None and not self._awaiting_idle:
+                try:
+                    uiapp.Idling += self._on_idle
+                    self._uiapp = uiapp
+                    self._awaiting_idle = True
+                except Exception:
+                    self._raised = True
+                    mlogger.debug(
+                        "Routes Idling subscribe failed | %s", traceback.format_exc()
+                    )
+            if self._stopped:
+                return
+        while True:
+            with self._lock:
+                if self._stopped or not self._queue:
+                    return
+                item = self._queue.popleft()
+                self._progress_count += 1
+                self.progress.set()
+                self.progress.clear()
+            response = None
+            try:
+                kwargs = self.prepare_handler_kwargs(
+                    item.request, item.handler, uiapp=uiapp
+                )
+                response = self.run_handler(item.handler, kwargs)
+            except Exception as exec_ex:
+                response = excp.RouteHandlerExecException(message=str(exec_ex))
+            finally:
+                item.complete(response)
+                self._notify_callback(item)
 
     def GetName(self):
         """String identification of the event handler."""

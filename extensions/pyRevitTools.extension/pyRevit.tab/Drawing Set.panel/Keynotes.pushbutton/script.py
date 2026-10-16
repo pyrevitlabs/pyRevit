@@ -252,6 +252,10 @@ class KeynoteSetupError(Exception):
 
 
 LOCK_ALERT_TITLE = "Keynote Manager - Locked"
+READ_ALERT_TITLE = "Keynote Manager - Read Error"
+PERMISSION_ALERT_TITLE = "Keynote Manager - Permission Error"
+WRITE_LOCK_TIMEOUT_MARKER = "Wait for unlock timeout"
+READ_TIMEOUT_MARKER = "Read timeout"
 RELEASE_LOCKS_HINT = (
     "If nobody is working on it - for example their Revit closed or "
     "crashed - click the padlock button next to Update Model to release "
@@ -286,15 +290,27 @@ def lock_target_label(db_name, table_name, record_key):
     return "the whole keynote file"
 
 
-def describe_lock_error(ex):
-    """Return (headline, details) for a lock failure, or None.
+def describe_lock_error(ex, operation=None):
+    """Return (headline, details) for a lock or read failure, or None.
 
     DeffrelDB reports locks as raw signatures such as
     '<ConnectionLock id:"..." sig:"pc:user:conn" locking:"db:table:key">',
     which mean nothing to the person editing keynotes; this names the
     holder and says what to do instead.
+
+    Read failures name a possible sync conflict and include the underlying
+    file error when DeffrelDB provides one.
+    Access-denied failures name read permissions only for a known read operation;
+    other operations use neutral permission guidance without suggesting conversion.
     """
     text = getattr(ex, "Message", None) or str(ex)
+    if isinstance(ex, System.UnauthorizedAccessException):
+        permission = "read permissions" if operation == "read" else "file permissions"
+        return (
+            "You do not have permission to access the keynote file.",
+            "Ask the file owner or your IT team to check your {}.".format(permission)
+            + "\n\n" + text,
+        )
     holder = _RESTRICTING_LOCK_RE.search(text)
     if holder:
         target = (holder.group("target").split(":", 2) + ["", ""])[:3]
@@ -312,31 +328,45 @@ def describe_lock_error(ex):
             "An earlier change in this window did not finish.",
             "Close Keynote Manager, open it again, and retry.",
         )
-    if "Wait for unlock timeout" in text:
+    if WRITE_LOCK_TIMEOUT_MARKER in text:
         return (
             "The keynote file is busy.",
             "Someone else is saving changes to it right now. Wait a few "
             "seconds and try again.\n\nIf this keeps happening, a Revit "
             "session may have closed or crashed while saving. " + RELEASE_LOCKS_HINT,
         )
-    if "Read timeout" in text:
-        return (
-            "The keynote file could not be read.",
+    if READ_TIMEOUT_MARKER in text:
+        details = (
             "Another program, such as Desktop Connector or OneDrive, may be "
-            "syncing it. Wait a moment and try again.",
+            "syncing it. Wait a moment and try again."
         )
+        read_error = getattr(ex, "InnerException", None)
+        if read_error:
+            details += "\n\n{}".format(read_error.Message)
+        return ("The keynote file could not be read.", details)
     return None
 
 
-def alert_db_error(ex, fallback=None):
+def alert_db_error(ex, fallback=None, operation=None):
     """Tell the user a keynote-file operation failed, in plain words.
 
-    Lock failures get the friendly explanation; anything else shows
-    `fallback`, or the raw message when there is none.
+    Lock and read failures get their respective explanation and title.
+    Access errors use neutral permission guidance unless operation is "read".
+    Anything else shows `fallback`, or the raw message when there is none.
     """
-    friendly = describe_lock_error(ex)
+    friendly = describe_lock_error(ex, operation=operation)
     if friendly:
-        forms.alert(friendly[0], sub_msg=friendly[1], title=LOCK_ALERT_TITLE)
+        text = getattr(ex, "Message", None) or str(ex)
+        access_denied = isinstance(ex, System.UnauthorizedAccessException)
+        if access_denied:
+            title = READ_ALERT_TITLE if operation == "read" else PERMISSION_ALERT_TITLE
+        else:
+            title = READ_ALERT_TITLE if READ_TIMEOUT_MARKER in text else LOCK_ALERT_TITLE
+        forms.alert(
+            friendly[0],
+            sub_msg=friendly[1],
+            title=title,
+        )
     else:
         forms.alert(fallback or getattr(ex, "Message", None) or str(ex))
 
@@ -2786,10 +2816,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return kdb.connect(kfile)
         except System.TimeoutException as toutex:
             logger.debug("keynote file connect timed out | %s", toutex.Message)
+            friendly = describe_lock_error(toutex)
             raise KeynoteSetupError(
-                "The keynote file is busy or was left locked by a Revit "
-                "session that closed. Use the padlock button next to "
-                "Update Model to release it."
+                "\n\n".join(friendly) if friendly else toutex.Message
+            )
+        except System.UnauthorizedAccessException as readex:
+            friendly = describe_lock_error(readex, operation="read")
+            raise KeynoteSetupError(
+                "\n\n".join(friendly) if friendly else readex.Message
             )
         except Exception as ex:
             raise KeynoteSetupError(
@@ -2903,13 +2937,18 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 self._conn = kdb.connect(self._kfile)
             except System.TimeoutException as toutex:
-                if self._offer_write_lock_release(self._kfile):
+                if (WRITE_LOCK_TIMEOUT_MARKER in toutex.Message
+                        and self._offer_write_lock_release(self._kfile)):
                     continue
                 logger.debug("keynote file connect timed out | %s", toutex.Message)
+                friendly = describe_lock_error(toutex)
                 raise KeynoteSetupError(
-                    "The keynote file is busy.\n\n"
-                    "Someone else is saving changes to it right now. Wait a "
-                    "few seconds and open Keynote Manager again."
+                    "\n\n".join(friendly) if friendly else toutex.Message
+                )
+            except System.UnauthorizedAccessException as readex:
+                friendly = describe_lock_error(readex, operation="read")
+                raise KeynoteSetupError(
+                    "\n\n".join(friendly) if friendly else readex.Message
                 )
             except Exception as ex:
                 logger.debug("Connection failed | %s" % ex)

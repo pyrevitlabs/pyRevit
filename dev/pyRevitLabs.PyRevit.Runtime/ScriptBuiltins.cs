@@ -1,18 +1,16 @@
 using System.Collections.Generic;
+using System.IO;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     /// <summary>
-    /// The builtin names pyRevit owns and injects into every script scope.
+    /// The runtime variables pyRevit owns and injects into every script scope.
     /// </summary>
     /// <remarks>
     /// <b>Invariant:</b> every engine that injects
     /// <see cref="ScriptRuntimeConfigs.Variables"/> into a script scope must filter
-    /// caller-supplied variables through <see cref="FilterUserVariables"/>. Scripts
-    /// and the pyrevit library treat these names as guaranteed to hold what the
-    /// runtime put there - <c>__revit__</c> above all, which the whole library
-    /// resolves the host application through. Letting a command generator's
-    /// variables win would break the host-handle contract silently, so the filter
-    /// drops them rather than letting one engine accept what another rejects.
+    /// caller-supplied variables through <see cref="FilterUserVariables"/>. These
+    /// runtime values are available both as engine builtins and in the individual
+    /// execution scope so deferred callbacks retain the identity of their command.
     /// </remarks>
     internal static class ScriptBuiltins {
         private static readonly HashSet<string> ReservedNames = new HashSet<string> {
@@ -38,6 +36,38 @@ namespace PyRevitLabs.PyRevit.Runtime {
             "__eventsender__",
             "__eventargs__",
         };
+
+        internal static IDictionary<string, object> CreateRuntimeVariables(
+            ScriptRuntime runtime,
+            bool recoveredFromCache,
+            string typeId) {
+            var scriptData = runtime.ScriptData;
+            var runtimeConfigs = runtime.ScriptRuntimeConfigs;
+
+            return new Dictionary<string, object> {
+                { "__execid__", runtime.ExecId },
+                { "__timestamp__", runtime.ExecTimestamp },
+                { "__cachedengine__", recoveredFromCache },
+                { "__cachedengineid__", typeId },
+                { "__scriptruntime__", runtime },
+                { "__revit__", runtime.UIApp },
+                { "__commanddata__", runtimeConfigs.CommandData },
+                { "__elements__", runtimeConfigs.SelectedElements },
+                { "__uibutton__", runtime.UIControl },
+                { "__commandpath__", Path.GetDirectoryName(scriptData.ScriptPath) },
+                { "__configcommandpath__", Path.GetDirectoryName(scriptData.ConfigScriptPath) },
+                { "__commandname__", scriptData.CommandName },
+                { "__commandbundle__", scriptData.CommandBundle },
+                { "__commandextension__", scriptData.CommandExtension },
+                { "__commanduniqueid__", scriptData.CommandUniqueId },
+                { "__commandcontrolid__", scriptData.CommandControlId },
+                { "__forceddebugmode__", runtimeConfigs.DebugMode },
+                { "__shiftclick__", runtimeConfigs.ConfigMode },
+                { "__result__", runtime.GetResultsDictionary() },
+                { "__eventsender__", runtimeConfigs.EventSender },
+                { "__eventargs__", runtimeConfigs.EventArgs },
+            };
+        }
 
         /// <summary>
         /// Whether <paramref name="name"/> is a builtin pyRevit reserves for itself.

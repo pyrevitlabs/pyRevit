@@ -17,3 +17,4 @@ tooltip:
   de_de: >-
     Listet alle Pläne auf, die Elemente enthalten,  die derzeit im "Besitz" des Benutzers sind.  "Eigene" Elemente, sind die Elemente des Benutzers,  die seit der letzten Synchronisierung und Freigabe  verwendet wurden.
   pt_br: Lista todas as folhas contendo elementos atualmente "sob posse" do usuário. Elementos "sob posse" são os elementos editados pelo usuário desde a última sincronização e liberação.
+context: doc-workshared

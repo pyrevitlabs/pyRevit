@@ -16,3 +16,5 @@ tooltip:
   es_es: Copiar las revisiones seleccionadas del modelo actual a los modelos abiertos seleccionados
   de_de: Es werden alle ausgewählten Änderungen vom aktiven Modell in andere ausgewählte offene Modelle kopiert
   pt_br: Copia revisões selecionadas do modelo atual para modelos abertos selecionados
+context:
+  - doc-project
