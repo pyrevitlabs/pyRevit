@@ -9,15 +9,18 @@ only deleted while it is still the stale one the user agreed to release.
 Breaking any of these lets two writes overlap and lose keynote changes.
 """
 
+import ast
 import os
 import os.path as op
 import shutil
+import re
 import sys
 import tempfile
 import time
 import unittest
 
-from pyrevit import EXTENSIONS_DEFAULT_DIR
+import System
+from pyrevit import EXTENSIONS_DEFAULT_DIR, HOST_APP
 
 
 KEYNOTES_BUNDLE_DIR = op.join(
@@ -203,3 +206,159 @@ class RecordLockReleaseTests(_KeynoteFileTestCase):
         kdb.release_locks(self.kfile, [lk.LockId for lk in stale])
         kdb.end_edit(self.window)
         self.assertEqual([], kdb.foreign_locks(self.window, [self.window]))
+
+
+def _load_error_description():
+    """Load the real error formatter without opening Keynote Manager."""
+    with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "r") as script_file:
+        tree = ast.parse(script_file.read())
+    names = {
+        "describe_lock_error",
+        "lock_owner_label",
+        "lock_target_label",
+        "RELEASE_LOCKS_HINT",
+        "_RESTRICTING_LOCK_RE",
+        "WRITE_LOCK_TIMEOUT_MARKER",
+        "READ_TIMEOUT_MARKER",
+    }
+    tree.body = [
+        node
+        for node in tree.body
+        if getattr(node, "name", None) in names
+        or (
+            isinstance(node, ast.Assign)
+            and any(getattr(target, "id", None) in names for target in node.targets)
+        )
+    ]
+    namespace = {"re": re, "System": System, "HOST_APP": HOST_APP, "kdb": kdb}
+    eval(compile(tree, "script.py", "exec"), namespace)
+    return namespace["describe_lock_error"]
+
+
+class ReadErrorMessageTests(unittest.TestCase):
+    """Distinguish an unreadable file from a DeffrelDB save lock."""
+
+    def test_read_timeout_names_sync_clients(self):
+        """Read timeouts suggest waiting for syncing, not releasing locks."""
+        describe = _load_error_description()
+        headline, details = describe(System.TimeoutException("Read timeout."))
+        self.assertEqual("The keynote file could not be read.", headline)
+        self.assertIn("Desktop Connector or OneDrive", details)
+        self.assertNotIn("saving", details)
+        self.assertNotIn("padlock", details)
+
+    def test_read_timeout_keeps_the_file_error(self):
+        """The original I/O message is visible alongside the explanation."""
+        describe = _load_error_description()
+        inner = System.IO.IOException("Sharing violation.")
+        headline, details = describe(System.TimeoutException("Read timeout.", inner))
+        self.assertEqual("The keynote file could not be read.", headline)
+        self.assertIn(inner.Message, details)
+
+    def test_unlock_timeout_still_explains_saving(self):
+        """Write-lock timeouts retain their save and padlock guidance."""
+        describe = _load_error_description()
+        headline, details = describe(
+            System.TimeoutException("Wait for unlock timeout.")
+        )
+        self.assertEqual("The keynote file is busy.", headline)
+        self.assertIn("Someone else is saving", details)
+        self.assertIn("padlock", details)
+
+    def test_access_denied_explains_permissions(self):
+        """A .NET access error reports the missing read permission."""
+        describe = _load_error_description()
+        error = System.UnauthorizedAccessException("Access to Keynotes.txt is denied.")
+        headline, details = describe(error, operation="read")
+        self.assertIn("permission", headline)
+        self.assertIn("read permissions", details)
+        self.assertIn(error.Message, details)
+
+
+class ReadTimeoutCauseTests(_KeynoteFileTestCase):
+    """Keep the real file exception when an exclusive handle blocks reads."""
+
+    def test_exclusive_handle_is_preserved_as_timeout_cause(self):
+        """A bounded read failure carries the sharing violation."""
+        stream = System.IO.File.Open(
+            self.kfile,
+            System.IO.FileMode.Open,
+            System.IO.FileAccess.ReadWrite,
+            getattr(System.IO.FileShare, "None"),
+        )
+        try:
+            with self.assertRaises(System.TimeoutException) as raised:
+                kdb.connect(self.kfile)
+            self.assertEqual("Read timeout.", raised.exception.Message)
+            self.assertIsInstance(
+                raised.exception.InnerException, System.IO.IOException
+            )
+        finally:
+            stream.Dispose()
+
+    def test_failed_read_leaves_no_lock_sidecar(self):
+        """A connect that cannot read the file must not leave a write lock behind."""
+        stream = System.IO.File.Open(
+            self.kfile,
+            System.IO.FileMode.Open,
+            System.IO.FileAccess.ReadWrite,
+            getattr(System.IO.FileShare, "None"),
+        )
+        try:
+            self.assertRaises(System.TimeoutException, kdb.connect, self.kfile)
+            self.assertIsNone(kdb.datastore_lock_stamp(self.kfile))
+        finally:
+            stream.Dispose()
+
+    def test_failed_load_preserves_error_when_sidecar_cleanup_times_out(self):
+        """An undeletable sidecar cannot hide or indefinitely delay a read error."""
+        import clr
+
+        flags = (
+            System.Reflection.BindingFlags.Instance
+            | System.Reflection.BindingFlags.NonPublic
+        )
+        store_type = clr.GetClrType(kdb.dfdb.DataBase).Assembly.GetType(
+            "pyRevitLabs.DeffrelDB.DataStore"
+        )
+        store = System.Activator.CreateInstance(
+            store_type,
+            flags | System.Reflection.BindingFlags.Public,
+            None,
+            System.Array[System.Object](
+                [kdb.dfdb.DataStoreType(self.kfile, None, None), False, 100]
+            ),
+            None,
+        )
+        store_type.GetProperty("ExclusiveAccess").SetValue(store, True, None)
+        store_type.GetMethod("AcquireLock", flags).Invoke(store, None)
+        lock_file = op.splitext(self.kfile)[0] + ".lock"
+        data_stream = None
+        lock_stream = None
+        try:
+            data_stream = System.IO.File.Open(
+                self.kfile,
+                System.IO.FileMode.Open,
+                System.IO.FileAccess.ReadWrite,
+                getattr(System.IO.FileShare, "None"),
+            )
+            lock_stream = System.IO.File.Open(
+                lock_file,
+                System.IO.FileMode.Open,
+                System.IO.FileAccess.ReadWrite,
+                getattr(System.IO.FileShare, "None"),
+            )
+            timer = System.Diagnostics.Stopwatch.StartNew()
+            with self.assertRaises(System.Reflection.TargetInvocationException) as raised:
+                store_type.GetMethod("Open", flags).Invoke(store, None)
+            self.assertLess(timer.ElapsedMilliseconds, 2000)
+            error = raised.exception.InnerException
+            self.assertIsInstance(error, System.TimeoutException)
+            self.assertEqual("Read timeout.", error.Message)
+            self.assertIsInstance(error.InnerException, System.IO.IOException)
+        finally:
+            if lock_stream:
+                lock_stream.Dispose()
+            if data_stream:
+                data_stream.Dispose()
+            store_type.GetMethod("Dispose").Invoke(store, None)

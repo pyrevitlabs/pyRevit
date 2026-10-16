@@ -452,13 +452,11 @@ class RKeynote(forms.Reactive):
 
 
 def _verify_keynotesdb_def(conn):
-    # NOTE: a lock TimeoutException means another user holds the file —
-    # it must NOT be misread as "schema missing" (the create call would
-    # also block, and the Convert offer downstream truncates live data).
+    """Preserve read failures instead of treating them as missing schemas."""
     # verify db
     try:
         conn.ReadDB(KEYNOTES_DB)
-    except System.TimeoutException:
+    except (System.TimeoutException, System.UnauthorizedAccessException):
         raise
     except Exception as dbex:
         mlogger.debug("Keynotes db read failed | %s", dbex)
@@ -469,7 +467,7 @@ def _verify_keynotesdb_def(conn):
     # verify root categories table
     try:
         conn.ReadTable(KEYNOTES_DB, CATEGORIES_TABLE)
-    except System.TimeoutException:
+    except (System.TimeoutException, System.UnauthorizedAccessException):
         raise
     except Exception as cattex:
         mlogger.debug("Category table read failed | %s", cattex)
@@ -487,7 +485,7 @@ def _verify_keynotesdb_def(conn):
     # verify keynote table
     try:
         conn.ReadTable(KEYNOTES_DB, KEYNOTES_TABLE)
-    except System.TimeoutException:
+    except (System.TimeoutException, System.UnauthorizedAccessException):
         raise
     except Exception as ktex:
         mlogger.debug("keynote table read failed | %s", ktex)

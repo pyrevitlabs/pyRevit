@@ -581,8 +581,21 @@ class _HostApplication(object):
 HOST_APP = _HostApplication()
 
 
+_EXEC_PARAMS_NOT_SET = object()
+
+
+def _get_execution_scope_value(name):
+    frame = sys._getframe(1)
+    while frame:
+        scope = frame.f_globals
+        if "__scriptruntime__" in scope and name in scope:
+            return scope[name]
+        frame = frame.f_back
+    return _EXEC_PARAMS_NOT_SET
+
+
 # -----------------------------------------------------------------------------
-# Wrapper to access builtin parameters set in scope by C# Script Executor
+# Wrapper to access execution-scoped parameters with builtin fallback
 # -----------------------------------------------------------------------------
 class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
@@ -590,6 +603,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def exec_id(self):
         """Return execution unique id."""
+        value = _get_execution_scope_value("__execid__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         try:
             return __execid__
         except NameError:
@@ -598,6 +614,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def exec_timestamp(self):
         """Return execution timestamp."""
+        value = _get_execution_scope_value("__timestamp__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         try:
             return __timestamp__
         except NameError:
@@ -606,6 +625,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def engine_id(self):
         """Return engine id."""
+        value = _get_execution_scope_value("__cachedengineid__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         try:
             return __cachedengineid__
         except NameError:
@@ -620,6 +642,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def cached_engine(self):
         """bool: Check whether pyrevit is running on a cached engine."""
+        value = _get_execution_scope_value("__cachedengine__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         try:
             return __cachedengine__
         except NameError:
@@ -639,6 +664,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def script_runtime(self):
         """``PyRevitLabs.PyRevit.Runtime.ScriptRuntime``: Return command."""
+        value = _get_execution_scope_value("__scriptruntime__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         try:
             return __scriptruntime__
         except NameError:
@@ -775,6 +803,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_path(self):
         """str: Return current command path."""
+        value = _get_execution_scope_value("__commandpath__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if "__commandpath__" in __builtins__ and __builtins__["__commandpath__"]:
             return __builtins__["__commandpath__"]
         elif self.script_runtime:
@@ -783,6 +814,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_config_path(self):
         """str: Return current command config script path."""
+        value = _get_execution_scope_value("__configcommandpath__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if (
             "__configcommandpath__" in __builtins__
             and __builtins__["__configcommandpath__"]
@@ -794,6 +828,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_name(self):
         """str: Return current command name."""
+        value = _get_execution_scope_value("__commandname__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if "__commandname__" in __builtins__ and __builtins__["__commandname__"]:
             return __builtins__["__commandname__"]
         elif self.script_runtime:
@@ -802,6 +839,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_bundle(self):
         """str: Return current command bundle name."""
+        value = _get_execution_scope_value("__commandbundle__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if "__commandbundle__" in __builtins__ and __builtins__["__commandbundle__"]:
             return __builtins__["__commandbundle__"]
         elif self.script_runtime:
@@ -810,6 +850,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_extension(self):
         """str: Return current command extension name."""
+        value = _get_execution_scope_value("__commandextension__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if (
             "__commandextension__" in __builtins__
             and __builtins__["__commandextension__"]
@@ -821,6 +864,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_uniqueid(self):
         """str: Return current command unique id."""
+        value = _get_execution_scope_value("__commanduniqueid__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if (
             "__commanduniqueid__" in __builtins__
             and __builtins__["__commanduniqueid__"]
@@ -832,6 +878,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_controlid(self):
         """str: Return current command control id."""
+        value = _get_execution_scope_value("__commandcontrolid__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if (
             "__commandcontrolid__" in __builtins__
             and __builtins__["__commandcontrolid__"]
@@ -843,6 +892,9 @@ class _ExecutorParams(object):
     @property  # read-only
     def command_uibutton(self):
         """str: Return current command ui button."""
+        value = _get_execution_scope_value("__uibutton__")
+        if value is not _EXEC_PARAMS_NOT_SET:
+            return value
         if "__uibutton__" in __builtins__ and __builtins__["__uibutton__"]:
             return __builtins__["__uibutton__"]
 
