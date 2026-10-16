@@ -25,6 +25,8 @@ namespace pyRevitCLI {
     /// session and every write goes through one lock.
     /// Implements the tools subset of MCP (initialize, ping, tools/list, tools/call) with
     /// newline-delimited JSON-RPC 2.0; no SDK dependency.
+    /// Malformed request fields receive JSON-RPC errors; notifications receive no response.
+    /// Unexpected dispatch failures receive an internal error without ending the session.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -73,36 +75,57 @@ namespace pyRevitCLI {
 
                 JObject message;
                 try {
-                    message = JObject.Parse(line);
+                    using var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None };
+                    message = JObject.Load(reader);
+                    // Match JObject.Parse's check for trailing content.
+                    while (reader.Read()) { }
                 }
                 catch (JsonException) {
                     Write(Error(null, -32700, "Parse error"));
                     continue;
                 }
 
-                var method = message.Value<string>("method");
+                var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
-                if (method == null || id == null)
+                if (id == null)
                     continue;
+                if (id.Type != JTokenType.Integer && id.Type != JTokenType.Float
+                    && id.Type != JTokenType.String && id.Type != JTokenType.Null) {
+                    Write(Error(null, -32600, "Invalid Request"));
+                    continue;
+                }
+                if (method == null) {
+                    Write(Error(id, -32600, "Invalid Request"));
+                    continue;
+                }
 
                 var parameters = message["params"] as JObject ?? new JObject();
-                switch (method) {
-                    case "initialize":
-                        Write(Result(id, Initialize(parameters)));
-                        break;
-                    case "ping":
-                        Write(Result(id, new JObject()));
-                        break;
-                    case "tools/list":
-                        Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
-                        break;
-                    case "tools/call":
-                        inFlight.RemoveAll(task => task.IsCompleted);
-                        inFlight.Add(Task.Run(() => CallTool(id, parameters)));
-                        break;
-                    default:
-                        Write(Error(id, -32601, "Method not found: " + method));
-                        break;
+                try {
+                    switch (method) {
+                        case "initialize":
+                            if ((parameters["protocolVersion"] as JValue)?.Value is not string) {
+                                Write(Error(id, -32602, "Invalid params: missing or invalid 'protocolVersion'; expected a string."));
+                                break;
+                            }
+                            Write(Result(id, Initialize(parameters)));
+                            break;
+                        case "ping":
+                            Write(Result(id, new JObject()));
+                            break;
+                        case "tools/list":
+                            Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
+                            break;
+                        case "tools/call":
+                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.Add(Task.Run(() => CallTool(id, parameters)));
+                            break;
+                        default:
+                            Write(Error(id, -32601, "Method not found"));
+                            break;
+                    }
+                }
+                catch (Exception) {
+                    Write(Error(id, -32603, "Internal error"));
                 }
             }
 
@@ -110,7 +133,7 @@ namespace pyRevitCLI {
         }
 
         private static JObject Initialize(JObject parameters) {
-            var requested = parameters.Value<string>("protocolVersion");
+            var requested = (parameters["protocolVersion"] as JValue)?.Value as string;
             return new JObject {
                 ["protocolVersion"] = SupportedProtocolVersions.Contains(requested) ? requested : LatestProtocolVersion,
                 ["capabilities"] = new JObject { ["tools"] = new JObject { ["listChanged"] = false } },
@@ -124,14 +147,22 @@ namespace pyRevitCLI {
         }
 
         private void CallTool(JToken id, JObject parameters) {
-            var name = parameters.Value<string>("name");
-            var arguments = parameters["arguments"] as JObject ?? new JObject();
-            var progressToken = parameters["_meta"]?["progressToken"];
-
-            var progress = StartProgress(progressToken);
+            Timer progress = null;
             try {
                 JObject result;
                 try {
+                    var name = (parameters["name"] as JValue)?.Value as string;
+                    if (string.IsNullOrWhiteSpace(name)) {
+                        Write(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        return;
+                    }
+                    if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
+                        Write(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        return;
+                    }
+                    var arguments = parameters["arguments"] as JObject ?? new JObject();
+                    var progressToken = (parameters["_meta"] as JObject)?["progressToken"];
+                    progress = StartProgress(progressToken);
                     var payload = Dispatch(name, arguments);
                     var isError = payload is JObject run && run.Value<string>("status") == "error";
                     result = payload is JObject captured && captured["image_base64"] != null
@@ -140,6 +171,15 @@ namespace pyRevitCLI {
                 }
                 catch (AgentClientException ex) {
                     result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
+                }
+                catch (InvalidCastException) {
+                    result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument type." }.ToString(Formatting.None), true);
+                }
+                catch (FormatException) {
+                    result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument format." }.ToString(Formatting.None), true);
+                }
+                catch (OverflowException) {
+                    result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Tool argument out of range." }.ToString(Formatting.None), true);
                 }
                 catch (Exception ex) {
                     result = ToolResult(new JObject { ["error"] = "server_error", ["message"] = ex.Message }.ToString(Formatting.None), true);
