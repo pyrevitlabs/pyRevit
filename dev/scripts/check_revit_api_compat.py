@@ -936,7 +936,13 @@ class FileAnalyzer:
         self._visit_block(stmt.finalbody, ctx)
 
     def _visit_definition(self, stmt, ctx):
-        """Visit a def/class: header in the outer scope, body in its own."""
+        """Visit a def/class: header in the outer scope, body in its own.
+
+        Note:
+            Decorators, defaults and class bodies run where the statement
+            runs, so they keep an enclosing try's guard; a function body runs
+            later, outside that try, so its guard is cleared.
+        """
         for item in getattr(stmt, "decorator_list", []):
             self._visit_any(item, ctx)
         for item in getattr(stmt, "bases", []) + getattr(stmt, "keywords", []):
@@ -945,9 +951,10 @@ class FileAnalyzer:
             self._visit_any(stmt.args, ctx)
             if stmt.returns is not None:
                 self._visit_any(stmt.returns, ctx)
+        body_ctx = ctx if isinstance(stmt, ast.ClassDef) else ctx.deferred()
         self._scope_stack.append(self._scopes.get(stmt, self._scope_stack[-1]))
         try:
-            self._visit_block(stmt.body, ctx)
+            self._visit_block(stmt.body, body_ctx)
         finally:
             self._scope_stack.pop()
 
@@ -978,7 +985,7 @@ class FileAnalyzer:
             self._visit_any(node.args, ctx)
             self._scope_stack.append(self._scopes.get(node, self._scope_stack[-1]))
             try:
-                self._visit_expr(node.body, ctx)
+                self._visit_expr(node.body, ctx.deferred())
             finally:
                 self._scope_stack.pop()
             return
@@ -1561,6 +1568,14 @@ class _Ctx:
     def ironpython(self):
         """Context only reachable on an IronPython engine."""
         return _Ctx(self.years, self.guarded, True, self.protected)
+
+    def deferred(self):
+        """Context for a function or lambda body, which runs after its try.
+
+        Year narrowing and probed names still describe where it is defined;
+        only the enclosing try's guard does not apply when it is called.
+        """
+        return _Ctx(self.years, False, self.ironpython_only, self.protected)
 
 
 IRONPYTHON_FLAGS = {"IRONPY", "IRONPY2", "IRONPY3", "PY2"}

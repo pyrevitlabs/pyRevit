@@ -896,6 +896,43 @@ class ReviewRegressionTests(_TempTree):
         """
         self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
 
+    def test_function_in_try_body_is_not_guarded(self):
+        """A def inside a try runs later, so neither absorbs nor narrows."""
+        source = """
+        try:
+            def helper():
+                return DB.ColorFillScheme
+            x = 1
+        except AttributeError:
+            DB.DisplayUnitType
+        """
+        findings = self.lint(source)
+        self.assertEqual(
+            ["`ColorFillScheme`", "`DisplayUnitType`"],
+            sorted(f.message.split(" ")[0] for f in findings),
+        )
+
+    def test_lambda_in_try_body_is_not_guarded(self):
+        """A lambda body runs when called, outside the try."""
+        source = """
+        try:
+            f = lambda: DB.ColorFillScheme
+        except AttributeError:
+            pass
+        """
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
+
+    def test_class_body_in_try_keeps_the_guard(self):
+        """A class body runs at definition, inside the try."""
+        source = """
+        try:
+            class A(object):
+                x = DB.ColorFillScheme
+        except AttributeError:
+            pass
+        """
+        self.assertEqual([], self.codes(source))
+
     def test_inherited_member_through_unchanged_classes(self):
         """Wall reaches Element.GetParameter through the bases map."""
         findings = self.lint("def f(w, p):\n    return DB.Wall.GetParameter(w, p)\n")
