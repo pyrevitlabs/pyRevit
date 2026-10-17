@@ -1393,9 +1393,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         elif is_2d_view(self.current_view):
             selected_view = forms.select_views(
                 multiple=False,
-                filterfunc=lambda view: isinstance(view, DB.View3D)
-                and not view.IsTemplate
-                and not view.IsPerspective,
+                filterfunc=lambda view: isinstance(view, DB.View3D),
                 doc=doc,
                 title=self.get_locale_string("Select3DViewForTempBox"),
             )
