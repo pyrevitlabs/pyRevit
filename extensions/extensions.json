@@ -375,7 +375,7 @@
             "type": "extension",
             "rocket_mode_compatible": "False",
             "name": "NdevTools",
-            "description": "pyRevit tools for Revit sheet and view management.",
+            "description": "NdevTools is a pyRevit extension for Autodesk Revit featuring automated detailing, structural wall tracing, sheet and view management, crop region matching, and viewport positioning.",
             "author": "Nataraj Devaraj",
             "author_profile": "https://github.com/ndev16",
             "url": "https://github.com/ndev16/NdevTools.git",

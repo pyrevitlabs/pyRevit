@@ -51,13 +51,11 @@ def activate_server():
     """Activate routes server for this host instance.
 
     The server module is imported on first activation, so that sessions with
-    the routes server disabled never import the HTTP stack.
+    the routes server disabled never import the HTTP stack. Each server owns
+    its request queue and Revit external event, which must be created on the
+    host's main thread. Activation must therefore run on the main thread.
 
     Important:
-        That module creates a Revit external event as it is imported, and the
-        host prohibits creating one off its main thread. Activation must run
-        on the main thread.
-
         Activation is idempotent within a session: an already active server
         serves the routes that are registered now, so handing it back is
         correct. It is not how a server survives a reload - init() still stops
