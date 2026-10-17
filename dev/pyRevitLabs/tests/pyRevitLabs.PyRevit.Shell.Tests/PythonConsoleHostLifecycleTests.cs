@@ -2,6 +2,8 @@ using System;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using ICSharpCode.AvalonEdit;
 using IronPython.Hosting;
@@ -57,10 +59,70 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
             await Task.Delay(1300);
             Assert.True(await VisibleAsync());
             stopWindow.Dispose();
+            Assert.True(await Task.Run(() => stopWindow.WaitForExit(TimeSpan.FromSeconds(2))));
             Assert.False(worker.IsAlive);
             stopWindow.End();
             stopWindow.Begin(CancellationToken.None, () => { });
             Assert.False(worker.IsAlive);
+        }
+
+        [Fact]
+        public async Task StaleStopWindowCannotCancelFollowingStatementAsync() {
+            using var stopWindow = new PythonStatementStopWindow();
+            using var firstCancellation = new CancellationTokenSource();
+            using var secondCancellation = new CancellationTokenSource();
+            var dispatcherField = typeof(PythonStatementStopWindow).GetField("dispatcher", BindingFlags.Instance | BindingFlags.NonPublic);
+            var windowField = typeof(PythonStatementStopWindow).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic);
+            var stopDispatcher = Assert.IsType<Dispatcher>(dispatcherField.GetValue(stopWindow));
+            try {
+                stopWindow.Begin(firstCancellation.Token, firstCancellation.Cancel);
+                await Task.Delay(1300);
+                await stopDispatcher.InvokeAsync(() => {
+                    var staleWindow = Assert.IsType<Window>(windowField.GetValue(stopWindow));
+                    var staleButton = Assert.IsType<Button>(staleWindow.Content);
+                    stopWindow.End();
+                    stopWindow.Begin(secondCancellation.Token, secondCancellation.Cancel);
+                    staleButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Assert.False(secondCancellation.IsCancellationRequested);
+                    staleWindow.Close();
+                    Assert.False(secondCancellation.IsCancellationRequested);
+                });
+                await Task.Delay(1300);
+                await stopDispatcher.InvokeAsync(() => {
+                    var currentWindow = Assert.IsType<Window>(windowField.GetValue(stopWindow));
+                    var currentButton = Assert.IsType<Button>(currentWindow.Content);
+                    currentButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                });
+                Assert.False(firstCancellation.IsCancellationRequested);
+                Assert.True(secondCancellation.IsCancellationRequested);
+            }
+            finally {
+                stopWindow.Dispose();
+                Assert.True(await Task.Run(() => stopWindow.WaitForExit(TimeSpan.FromSeconds(2))));
+            }
+        }
+
+        [Fact]
+        public async Task DisposeDoesNotWaitForBlockedStopDispatcherAsync() {
+            using var stopWindow = new PythonStatementStopWindow();
+            using var enteredDispatcher = new ManualResetEventSlim();
+            using var releaseDispatcher = new ManualResetEventSlim();
+            var dispatcherField = typeof(PythonStatementStopWindow).GetField("dispatcher", BindingFlags.Instance | BindingFlags.NonPublic);
+            var stopDispatcher = Assert.IsType<Dispatcher>(dispatcherField.GetValue(stopWindow));
+            _ = stopDispatcher.BeginInvoke(new Action(() => {
+                enteredDispatcher.Set();
+                releaseDispatcher.Wait();
+            }));
+            try {
+                Assert.True(await Task.Run(() => enteredDispatcher.Wait(TimeSpan.FromSeconds(10))));
+                await Task.Run(stopWindow.Dispose).WaitAsync(TimeSpan.FromSeconds(1));
+                Assert.True(GetWorker(stopWindow, "thread").IsAlive);
+            }
+            finally {
+                releaseDispatcher.Set();
+                stopWindow.Dispose();
+                Assert.True(await Task.Run(() => stopWindow.WaitForExit(TimeSpan.FromSeconds(2))));
+            }
         }
 
         static async Task DisposeHostAsync(bool runStatement) {

@@ -18,6 +18,8 @@ namespace PythonConsoleControl {
         Action stop;
         CancellationToken cancellation;
         long started;
+        long generation;
+        long windowGeneration;
         IntPtr anchor;
         bool disposed;
 
@@ -46,6 +48,7 @@ namespace PythonConsoleControl {
                 if (disposed) return;
                 cancellation = token;
                 stop = interrupt;
+                generation++;
                 started = Stopwatch.GetTimestamp();
                 dispatcher.BeginInvoke(new Action(() => timer.Start()));
             }
@@ -71,8 +74,9 @@ namespace PythonConsoleControl {
                     return;
                 }
                 if (window != null || (Stopwatch.GetTimestamp() - started) / (double)Stopwatch.Frequency < 1) return;
+                var statementGeneration = windowGeneration = generation;
                 var button = new Button { Content = "Stop (Ctrl+C)", Margin = new Thickness(12), Padding = new Thickness(16, 5, 16, 5) };
-                button.Click += (sender, args) => RequestStop();
+                button.Click += (sender, args) => RequestStop(statementGeneration);
                 window = new Window {
                     Title = "Python shell: Running...",
                     Content = button,
@@ -87,12 +91,12 @@ namespace PythonConsoleControl {
                 window.PreviewKeyDown += (sender, args) => {
                     if (args.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) != 0) {
                         args.Handled = true;
-                        RequestStop();
+                        RequestStop(statementGeneration);
                     }
                 };
                 window.Closing += (sender, args) => {
                     lock (stateLock) {
-                        if (!disposed && ReferenceEquals(window, sender) && stop != null) {
+                        if (!disposed && statementGeneration == generation && ReferenceEquals(window, sender) && stop != null) {
                             stop();
                             stop = null;
                         }
@@ -104,9 +108,11 @@ namespace PythonConsoleControl {
             }
         }
 
-        internal void RequestStop() {
+        internal void RequestStop() { RequestStop(windowGeneration); }
+
+        void RequestStop(long statementGeneration) {
             lock (stateLock) {
-                if (disposed) return;
+                if (disposed || statementGeneration != generation) return;
                 stop?.Invoke();
                 stop = null;
             }
@@ -130,8 +136,13 @@ namespace PythonConsoleControl {
                     dispatcher.InvokeShutdown();
                 }));
             }
-            if (Thread.CurrentThread != thread && !thread.Join(TimeSpan.FromSeconds(2)))
-                Trace.TraceError("Python shell Stop window did not exit within 2 seconds.");
+        }
+
+        internal bool WaitForExit(TimeSpan timeout) {
+            if (Thread.CurrentThread == thread) return false;
+            if (thread.Join(timeout)) return true;
+            Trace.TraceError("Python shell Stop window did not exit within {0}.", timeout);
+            return false;
         }
 
         [DllImport("user32.dll")]

@@ -268,7 +268,8 @@ namespace PythonConsoleControl
 
         internal bool WaitForExit(TimeSpan timeout)
         {
-            if (!dispatcherThread.Join(timeout)) return false;
+            var stopWindowExited = execution.StopWindow.WaitForExit(TimeSpan.FromSeconds(2));
+            if (!dispatcherThread.Join(timeout) || !stopWindowExited) return false;
             lineReceivedEvent.Dispose();
             disposedEvent.Dispose();
             return true;

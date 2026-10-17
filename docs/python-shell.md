@@ -65,10 +65,11 @@ After a statement runs for about one second, a small **Running... Stop** window 
 This window has its own STA thread and message dispatcher, remains responsive when Windows ghosts the busy Revit window, and has no owner relationship to that window.
 Click **Stop**, or focus the Stop window and press <kbd>Ctrl</kbd>+<kbd>C</kbd>, to request the same cancellation.
 The Stop window closes on cancellation, completion, errors, or shell disposal; short statements show no window.
-Its dispatcher thread is reused for that shell and is shut down with a bounded join when the shell is disposed.
+Its dispatcher thread is reused for that shell; disposal requests shutdown without waiting on Revit's UI thread, and the background cleanup joins the Stop worker for at most two seconds.
 Interrupts are checked at Python trace events, without processing nested Revit UI messages.
 A long single .NET or native call, such as `System.Threading.Thread.Sleep(8000)`, cannot be stopped until it returns; a Stop request takes effect at the next Python trace event.
 An interrupt belongs to its current statement; a delayed key event or a shortcut still held after that statement ends does not cancel the next statement.
+Input from a Stop window belongs to the statement that opened it; a queued click or close from an older window cannot cancel a following statement.
 Code that replaces or disables `sys.settrace` disables these trace checks.
 Each statement installs the shell's trace callback and resets `sys.settrace` to `None` when it finishes; user trace callbacks do not persist between statements.
 IronPython disables tracing when a trace callback raises an exception.
