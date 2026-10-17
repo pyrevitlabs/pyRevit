@@ -363,7 +363,23 @@ def _track_frame_transactions(frame, transactions):
     except Exception:
         return
     for value in values:
-        _track_transaction(value, transactions)
+        _track_transaction(_cell_contents(value), transactions)
+
+
+def _cell_contents(value):
+    """Return what a closure cell holds, or ``value`` itself when it isn't a cell.
+
+    IronPython engines with full frames, which agent runs request, list a
+    function's locals in ``frame.f_locals`` as cells rather than values, so
+    without this a transaction only a helper function holds is never rolled
+    back. An empty cell holds nothing yet.
+    """
+    if type(value).__name__ != "cell":
+        return value
+    try:
+        return value.cell_contents
+    except Exception:
+        return None
 
 
 def _track_transaction(value, transactions):
