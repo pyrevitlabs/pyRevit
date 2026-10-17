@@ -38,8 +38,7 @@ from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
-
-from print_output_folder import OutputFolder, OutputFolderError, PrintRun
+from pyrevit.coreutils import pathtemplate
 
 
 get_elementid_value = get_elementid_value_func()
@@ -1012,19 +1011,28 @@ class PrintSheetsWindow(forms.WPFWindow):
         Returns None after telling the user why the folder cannot be used,
         so callers can keep the window open for a correction.
         """
-        output_folder = OutputFolder(
-            self.output_folder_tb.Text.strip() or PrintUtils.get_dir(),
-            self.subfolder_tb.Text,
-        )
-        run = PrintRun(
-            model=self.selected_doc.Title,
-            sheet_index=self.selected_sheetlist.name if self.selected_sheetlist else "",
-            started_at=datetime.datetime.today(),
-        )
+        sheet_index = self.selected_sheetlist.name if self.selected_sheetlist else ""
         try:
-            dir_path = output_folder.path_for(run)
-        except OutputFolderError as folder_err:
-            forms.alert(str(folder_err))
+            dir_path = pathtemplate.resolve_folder(
+                self.output_folder_tb.Text.strip() or PrintUtils.get_dir(),
+                self.subfolder_tb.Text,
+                values={"model": self.selected_doc.Title, "sheet_index": sheet_index},
+            )
+        except pathtemplate.NotFullPathError as root_err:
+            forms.alert(
+                'The output folder "{}" must be a full path, '
+                "such as C:\\Prints or \\\\server\\share\\Prints.".format(
+                    root_err.template
+                )
+            )
+            return None
+        except pathtemplate.InvalidTemplateError as template_err:
+            forms.alert(
+                "The folder name is not valid. Use {} only.".format(
+                    ", ".join("{" + name + "}" for name in template_err.placeholders)
+                ),
+                expanded=template_err.template,
+            )
             return None
         try:
             return PrintUtils.ensure_dir(dir_path)
