@@ -60,9 +60,14 @@ modifications behave the same as they would from a button.
 <kbd>Ctrl</kbd>+<kbd>C</kbd> with no selection interrupts the current Python statement and prints `KeyboardInterrupt`.
 With a selection, the shortcut copies the selected text.
 The console handles <kbd>Ctrl</kbd>+<kbd>C</kbd> locally during execution and when idle; the shortcut does not invoke Revit's Copy command.
-The shell must have keyboard focus and its containing window must be in the foreground.
+The direct keyboard shortcut requires the shell to have focus in the foreground.
+After a statement runs for about one second, a small **Running... Stop** window appears near the shell without taking focus.
+This window has its own STA thread and message dispatcher, remains responsive when Windows ghosts the busy Revit window, and has no owner relationship to that window.
+Click **Stop**, or focus the Stop window and press <kbd>Ctrl</kbd>+<kbd>C</kbd>, to request the same cancellation.
+The Stop window closes on cancellation, completion, errors, or shell disposal; short statements show no window.
+Its dispatcher thread is reused for that shell and is shut down with a bounded join when the shell is disposed.
 Interrupts are checked at Python trace events, without processing nested Revit UI messages.
-A long-running .NET or native call, such as `time.sleep(60)`, cannot be preempted; cancellation takes effect at the next Python trace event.
+A long single .NET or native call, such as `System.Threading.Thread.Sleep(8000)`, cannot be stopped until it returns; a Stop request takes effect at the next Python trace event.
 An interrupt belongs to its current statement; a delayed key event or a shortcut still held after that statement ends does not cancel the next statement.
 Code that replaces or disables `sys.settrace` disables these trace checks.
 Each statement installs the shell's trace callback and resets `sys.settrace` to `None` when it finishes; user trace callbacks do not persist between statements.
@@ -99,7 +104,7 @@ The request queue (`ShellExternalEventDispatcher`) has no Revit API base types, 
 | `ShellExternalEventDispatcherTests` | `ShellExternalEventDispatcher`, `ShellExternalEventRequest` |
 | `ShellDispatcherTests` | `ShellLauncher.RunOnDispatcher`, `ShellExternalEventRequest` |
 | `InteractiveCommandLineLifecycleTests` | `PythonExecution` with an IronPython REPL test host |
-| `PythonConsoleHostLifecycleTests` | `PythonConsoleHost`, `PythonConsole`, `PythonTextEditor`, `PythonConsoleCompletionWindow`, `PythonExecution` |
+| `PythonConsoleHostLifecycleTests` | `PythonConsoleHost`, `PythonConsole`, `PythonTextEditor`, `PythonConsoleCompletionWindow`, `PythonExecution`, `PythonStatementStopWindow` |
 
 
 ## Startup cost

@@ -19,6 +19,7 @@ namespace PythonConsoleControl {
         bool hasInterruptedExecution;
         int interruptedStarted;
         int interruptedEnded;
+        internal PythonStatementStopWindow StopWindow { get; set; }
 
         /// <summary>
         /// Gets cancellation for the dispatch request being submitted on the current thread.
@@ -117,8 +118,16 @@ namespace PythonConsoleControl {
                         };
                         if (source.IsCancellationRequested) throw new KeyboardInterruptException("");
                         engine.SetTrace(trace);
+                        StopWindow?.Begin(source.Token, () => {
+                            lock (executionLock) {
+                                if (ReferenceEquals(cancellation, source)) source.Cancel();
+                            }
+                        });
                         try { command(); }
-                        finally { engine.SetTrace(null); }
+                        finally {
+                            StopWindow?.End();
+                            engine.SetTrace(null);
+                        }
                     }
                     finally { Monitor.Exit(engineLock); }
                 });
@@ -145,6 +154,7 @@ namespace PythonConsoleControl {
                 cancellation?.Cancel();
                 Monitor.PulseAll(executionLock);
             }
+            StopWindow?.Dispose();
         }
     }
 }

@@ -19,6 +19,50 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
             return DisposeHostAsync(true);
         }
 
+        [Fact]
+        public async Task StopWindowThresholdCompletionCancellationAndReuseAsync() {
+            using var stopWindow = new PythonStatementStopWindow();
+            var worker = GetWorker(stopWindow, "thread");
+            var dispatcherField = typeof(PythonStatementStopWindow).GetField("dispatcher", BindingFlags.Instance | BindingFlags.NonPublic);
+            var windowField = typeof(PythonStatementStopWindow).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic);
+            var stopDispatcher = Assert.IsType<Dispatcher>(dispatcherField.GetValue(stopWindow));
+            async Task<bool> VisibleAsync() {
+                return await stopDispatcher.InvokeAsync(() => windowField.GetValue(stopWindow) != null);
+            }
+            for (var statement = 0; statement < 10; statement++) {
+                using var cancellation = new CancellationTokenSource();
+                stopWindow.Begin(cancellation.Token, cancellation.Cancel);
+                await Task.Delay(100);
+                Assert.False(await VisibleAsync());
+                stopWindow.End();
+                Assert.False(await VisibleAsync());
+                Assert.Same(worker, GetWorker(stopWindow, "thread"));
+            }
+            using var activeCancellation = new CancellationTokenSource();
+            stopWindow.Begin(activeCancellation.Token, activeCancellation.Cancel);
+            await Task.Delay(1300);
+            Assert.True(await VisibleAsync());
+            await stopDispatcher.InvokeAsync(stopWindow.RequestStop);
+            Assert.True(activeCancellation.IsCancellationRequested);
+            Assert.False(await VisibleAsync());
+            stopWindow.End();
+            using var completedCancellation = new CancellationTokenSource();
+            stopWindow.Begin(completedCancellation.Token, completedCancellation.Cancel);
+            await Task.Delay(1300);
+            Assert.True(await VisibleAsync());
+            stopWindow.End();
+            Assert.False(await VisibleAsync());
+            Assert.False(completedCancellation.IsCancellationRequested);
+            stopWindow.Begin(completedCancellation.Token, completedCancellation.Cancel);
+            await Task.Delay(1300);
+            Assert.True(await VisibleAsync());
+            stopWindow.Dispose();
+            Assert.False(worker.IsAlive);
+            stopWindow.End();
+            stopWindow.Begin(CancellationToken.None, () => { });
+            Assert.False(worker.IsAlive);
+        }
+
         static async Task DisposeHostAsync(bool runStatement) {
             using var statementStarted = new ManualResetEventSlim();
             var ready = new TaskCompletionSource<PythonConsoleHost>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -59,6 +103,7 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                 var executionField = typeof(PythonConsole).GetField("execution", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.NotNull(executionField);
                 var execution = Assert.IsType<PythonExecution>(executionField.GetValue(productionHost.Console));
+                var stopWorker = GetWorker(execution.StopWindow, "thread");
                 if (runStatement) {
                     await dispatcher.InvokeAsync(() => {
                         productionHost.Console.ScriptScope.SetVariable("_statement_started", new Action(statementStarted.Set));
@@ -66,6 +111,13 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                     });
                     Assert.True(await Task.Run(() => statementStarted.Wait(TimeSpan.FromSeconds(15))));
                     Assert.True(execution.IsRunning);
+                    await Task.Delay(1300);
+                    var stopDispatcherField = typeof(PythonStatementStopWindow).GetField("dispatcher", BindingFlags.Instance | BindingFlags.NonPublic);
+                    var stopDispatcher = Assert.IsType<Dispatcher>(stopDispatcherField.GetValue(execution.StopWindow));
+                    await stopDispatcher.InvokeAsync(() => {
+                        var windowField = typeof(PythonStatementStopWindow).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic);
+                        Assert.NotNull(windowField.GetValue(execution.StopWindow));
+                    });
                 }
                 await dispatcher.InvokeAsync(() => {
                     var popup = new PythonConsoleCompletionWindow(productionHost.Editor.textArea, productionHost.Editor);
@@ -89,6 +141,7 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                 Assert.False(consoleWorker.IsAlive);
                 Assert.False(dispatcherWorker.IsAlive);
                 Assert.False(completionWorker.IsAlive);
+                Assert.False(stopWorker.IsAlive);
                 Assert.False(execution.IsRunning);
                 await dispatcher.InvokeAsync(() => {
                     productionHost.Editor.ShowCompletionWindow();

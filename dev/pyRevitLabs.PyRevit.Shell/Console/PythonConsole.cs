@@ -128,6 +128,9 @@ namespace PythonConsoleControl
             this.textEditor.textArea.Dispatcher.Invoke(new Action(delegate()
             {
                 CommandBinding pasteBinding = null;
+                execution.StopWindow = new PythonStatementStopWindow();
+                this.textEditor.textArea.Loaded += TextEditorLoaded;
+                TextEditorLoaded(null, null);
                 CommandBinding copyBinding = null;
                 CommandBinding cutBinding = null;
                 CommandBinding undoBinding = null;
@@ -157,6 +160,12 @@ namespace PythonConsoleControl
             {
                 SetCommandDispatcher(DispatchCommand);
             });
+        }
+
+        void TextEditorLoaded(object sender, RoutedEventArgs args)
+        {
+            var source = PresentationSource.FromVisual(textEditor.textArea) as System.Windows.Interop.HwndSource;
+            execution.StopWindow.SetAnchor(source?.Handle ?? IntPtr.Zero);
         }
 
         public Action<Action> GetCommandDispatcher()
@@ -248,6 +257,7 @@ namespace PythonConsoleControl
             disposedEvent.Set();
             Action detachEditor = () =>
             {
+                textEditor.textArea.Loaded -= TextEditorLoaded;
                 textEditor.PreviewKeyDown -= textEditor_PreviewKeyDown;
                 textEditor.TextEntering -= textEditor_TextEntering;
             };
