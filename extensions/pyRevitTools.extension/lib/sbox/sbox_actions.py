@@ -154,8 +154,22 @@ def align_to_face(doc, uidoc):
         mlogger.error("Error: {}".format(str(ex)))
 
 
-def temp_switch(doc, temp_datafilename, padding=1.0):
-    current_view = doc.ActiveView
+def temp_switch(doc, temp_datafilename, padding=1.0, target_view=None):
+    """Toggle a temporary section box on a 3D view.
+
+    The previous active state and section box are stored by view ID so the next
+    call restores the original box or disables the section box.
+
+    Args:
+        doc: Revit document containing the target view.
+        temp_datafilename: Path used to persist temporary view state.
+        padding: Padding around the selected or picked elements, in feet.
+        target_view: Optional 3D view; defaults to the document's active view.
+
+    Returns:
+        "set", "restored", or "cancelled"; None when the target is not 3D.
+    """
+    current_view = target_view if target_view is not None else doc.ActiveView
     if not isinstance(current_view, DB.View3D):
         return
     current_view_id_value = get_elementid_value(current_view.Id)
@@ -188,11 +202,15 @@ def temp_switch(doc, temp_datafilename, padding=1.0):
 
         except Exception as e:
             mlogger.error("Failed to restore previous state: {}".format(e))
+            raise
     else:
-        selection = revit.get_selection()
+        selection = revit.get_selection().no_views()
         if not selection:
             with forms.WarningBar(title="Pick Elements for temporary box"):
                 selection = revit.pick_elements()
+
+        if not selection:
+            return "cancelled"
 
         try:
             current_state = {
@@ -219,7 +237,10 @@ def temp_switch(doc, temp_datafilename, padding=1.0):
                 return "set"
 
             else:
-                mlogger.error("Could not create bounding box from selected elements")
+                raise RuntimeError(
+                    "Could not create bounding box from selected elements"
+                )
 
         except Exception as e:
             mlogger.error("Error creating section box: {}".format(e))
+            raise

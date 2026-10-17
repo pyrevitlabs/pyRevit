@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">섹션 박스 탐색기</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">섹션 박스 탐색기</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">자르기 영역 탐색기</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">지원되지 않는 뷰 유형</system:String>
 
     <system:String x:Key="LevelNavigation">레벨 탐색</system:String>
     <system:String x:Key="TopUp">위 ↑</system:String>
@@ -55,7 +58,6 @@
 
     <system:String x:Key="Settings">설정</system:String>
     <system:String x:Key="ShowPreviewOnHover">마우스 오버 시 미리보기 표시</system:String>
-    <system:String x:Key="UpdateUIOnEvents">이벤트 발생 시 UI 업데이트</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">링크된 레벨 및 그리드 포함</system:String>
 
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">축소 중 오류가 발생했습니다: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">섹션 박스용 2D 뷰 선택</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">복사할 3D 뷰 선택</system:String>
+    <system:String x:Key="Select3DViewForTempBox">임시 섹션 박스용 3D 뷰 선택</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">뷰 정보를 추출할 수 없습니다.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D 뷰에 섹션 박스가 없습니다.</system:String>
     <system:String x:Key="Unknown">알 수 없음</system:String>
