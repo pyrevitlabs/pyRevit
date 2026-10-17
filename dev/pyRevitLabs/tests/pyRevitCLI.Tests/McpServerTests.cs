@@ -99,6 +99,39 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void AClientInfoOrProtocolVersionOfTheWrongShapeIsIgnored() {
+        var responses = Serve(
+            Request(1, "initialize", new JObject { ["clientInfo"] = JValue.CreateNull() }),
+            Request(2, "initialize", new JObject { ["clientInfo"] = "Claude Code" }),
+            Request(3, "initialize", new JObject { ["clientInfo"] = new JArray("Claude Code"), ["protocolVersion"] = new JObject() }),
+            Request(4, "ping"));
+
+        Assert.Equal(new[] { 1, 2, 3, 4 }, responses.Select(response => response.Value<int>("id")));
+        Assert.All(responses.Take(3), response => Assert.Equal("2025-06-18", response["result"].Value<string>("protocolVersion")));
+        Assert.NotNull(responses[3]["result"]);
+    }
+
+    [Fact]
+    public void AMalformedMessageGetsAnErrorAndTheServerKeepsServing() {
+        var withNullMeta = ToolCall(2, "list_skills");
+        withNullMeta["params"]["_meta"] = JValue.CreateNull();
+        var withObjectName = ToolCall(3, "list_skills");
+        withObjectName["params"]["name"] = new JObject();
+
+        var responses = Serve(
+            new JObject { ["jsonrpc"] = "2.0", ["id"] = 1, ["method"] = new JObject() },
+            withNullMeta,
+            withObjectName,
+            Request(4, "ping")).ToDictionary(response => response.Value<int>("id"));
+
+        Assert.Equal(-32603, responses[1]["error"].Value<int>("code"));
+        Assert.False(IsError(responses[2]));
+        Assert.True(IsError(responses[3]));
+        Assert.Equal("unknown_tool", Payload(responses[3]).Value<string>("error"));
+        Assert.NotNull(responses[4]["result"]);
+    }
+
+    [Fact]
     public void TheToolListHasTheExpectedToolsWithConsistentSchemasAndHints() {
         var tools = ((JArray)Single(Request(1, "tools/list"))["result"]["tools"]).Cast<JObject>().ToList();
 

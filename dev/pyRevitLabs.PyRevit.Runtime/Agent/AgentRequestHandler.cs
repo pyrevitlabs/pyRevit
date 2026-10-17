@@ -20,15 +20,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <see cref="InvokeOnMainThread"/> is the session gate. It checks the session when the
     /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
     /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
-    /// The pipe can request, pause and end a session but never start or resume one.
+    /// The pipe can request and pause a session, and end one while sessions are required, but
+    /// never start or resume one.
     /// A model request's result carries <c>since_last_call</c> when the user changed the
     /// session's document, view or selection since the previous one; changes the request makes
     /// itself are never reported back to it.
-    /// After the user moves the session, only <c>get_context</c> passes the gate until one
-    /// succeeds; see <see cref="AgentSessionTracker.Move"/>. A <c>get_context</c> with
-    /// <c>keep_changes</c> reports <c>since_last_call</c> without clearing it and doesn't end that
-    /// handshake, for a client that checks the context before a request it makes on the agent's
-    /// behalf.
+    /// After the user moves the session, or starts one on another document, only
+    /// <c>get_context</c> passes the gate until one succeeds; see
+    /// <see cref="AgentSessionTracker.Move"/>. A <c>get_context</c> with <c>keep_changes</c>
+    /// reports <c>since_last_call</c> without clearing it and doesn't end that handshake, for a
+    /// client that checks the context before a request it makes on the agent's behalf. A model
+    /// request with a <c>generation</c> older than the session's is refused the same way, so a
+    /// client that read the context before the change still has to read it again after another
+    /// client did.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -211,14 +215,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
+            var contextGeneration = parameters.Value<int?>("generation");
             var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
             var readsContext = kind == "context";
             try {
                 refuseEarly?.Invoke();
-                AgentSessions.CheckOnArrival(readsContext);
+                AgentSessions.CheckOnArrival(readsContext, contextGeneration);
                 JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
                     AgentHost.Activity.Start(record, DateTime.UtcNow);
-                    AgentSessions.CheckOnDequeue(app, readsContext);
+                    AgentSessions.CheckOnDequeue(app, readsContext, contextGeneration);
                     if (runMode.HasValue) {
                         AgentHost.RefreshConfigIfChanged();
                         AgentPermissions.CheckRun(runMode.Value, AgentRunService.ReadPolicy());

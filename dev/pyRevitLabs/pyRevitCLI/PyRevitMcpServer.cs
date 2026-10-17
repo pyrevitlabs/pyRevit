@@ -23,6 +23,8 @@ namespace pyRevitCLI {
     /// policy, the transaction group and the approval prompt.
     /// Invariant: stdout carries protocol messages only. Logging is silenced for the whole
     /// session and every write goes through one lock.
+    /// Invariant: a malformed message gets a JSON-RPC error at most; it never ends the server,
+    /// since the client would lose every Revit tool until it restarts the server.
     /// Implements the tools subset of MCP (initialize, ping, tools/list, tools/call) with
     /// newline-delimited JSON-RPC 2.0; no SDK dependency.
     /// </remarks>
@@ -39,6 +41,7 @@ namespace pyRevitCLI {
         private readonly string defaultRevit;
         private readonly object writeLock = new object();
         private readonly SemaphoreSlim revitGate = new SemaphoreSlim(1, 1);
+        private readonly Dictionary<int, int> generations = new Dictionary<int, int>();
         private readonly List<McpTool> tools;
         private TextWriter output;
         private volatile string clientName;
@@ -83,29 +86,35 @@ namespace pyRevitCLI {
                     continue;
                 }
 
-                var method = message.Value<string>("method");
                 var id = message["id"];
-                if (method == null || id == null)
-                    continue;
+                try {
+                    var method = message.Value<string>("method");
+                    if (method == null || id == null)
+                        continue;
 
-                var parameters = message["params"] as JObject ?? new JObject();
-                switch (method) {
-                    case "initialize":
-                        Write(Result(id, Initialize(parameters)));
-                        break;
-                    case "ping":
-                        Write(Result(id, new JObject()));
-                        break;
-                    case "tools/list":
-                        Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
-                        break;
-                    case "tools/call":
-                        inFlight.RemoveAll(task => task.IsCompleted);
-                        inFlight.Add(Task.Run(() => CallTool(id, parameters)));
-                        break;
-                    default:
-                        Write(Error(id, -32601, "Method not found: " + method));
-                        break;
+                    var parameters = message["params"] as JObject ?? new JObject();
+                    switch (method) {
+                        case "initialize":
+                            Write(Result(id, Initialize(parameters)));
+                            break;
+                        case "ping":
+                            Write(Result(id, new JObject()));
+                            break;
+                        case "tools/list":
+                            Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
+                            break;
+                        case "tools/call":
+                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.Add(Task.Run(() => CallTool(id, parameters)));
+                            break;
+                        default:
+                            Write(Error(id, -32601, "Method not found: " + method));
+                            break;
+                    }
+                }
+                catch (Exception ex) {
+                    if (id != null)
+                        Write(Error(id, -32603, "Internal error: " + ex.Message));
                 }
             }
 
@@ -114,11 +123,12 @@ namespace pyRevitCLI {
 
         /// <remarks>
         /// Remembers the client's name from <c>clientInfo</c>, so every request to Revit can say
-        /// which client sent it and the agent panel can show it.
+        /// which client sent it and the agent panel can show it. The name is only a label, so a
+        /// malformed <c>clientInfo</c> is ignored rather than refused.
         /// </remarks>
         private JObject Initialize(JObject parameters) {
-            clientName = (parameters["clientInfo"]?["name"] as JValue)?.Value as string;
-            var requested = parameters.Value<string>("protocolVersion");
+            clientName = ((parameters["clientInfo"] as JObject)?["name"] as JValue)?.Value as string;
+            var requested = (parameters["protocolVersion"] as JValue)?.Value as string;
             return new JObject {
                 ["protocolVersion"] = SupportedProtocolVersions.Contains(requested) ? requested : LatestProtocolVersion,
                 ["capabilities"] = new JObject { ["tools"] = new JObject { ["listChanged"] = false } },
@@ -132,9 +142,9 @@ namespace pyRevitCLI {
         }
 
         private void CallTool(JToken id, JObject parameters) {
-            var name = parameters.Value<string>("name");
+            var name = (parameters["name"] as JValue)?.Value as string;
             var arguments = parameters["arguments"] as JObject ?? new JObject();
-            var progressToken = parameters["_meta"]?["progressToken"];
+            var progressToken = (parameters["_meta"] as JObject)?["progressToken"];
 
             var progress = StartProgress(progressToken);
             try {
@@ -230,16 +240,39 @@ namespace pyRevitCLI {
             return new JObject { ["instances"] = instances, ["default_selector"] = defaultRevit };
         }
 
+        /// <remarks>
+        /// Every request but <c>get_context</c> carries the session <c>generation</c> from this
+        /// server's last <c>get_context</c> in that Revit. The host then refuses it with
+        /// <c>session_moved</c> once the session's document changed since, even after another
+        /// client read the context and ended the host's own wait. A <c>get_context</c> with
+        /// <c>keep_changes</c> is a check made for the agent, not the agent's read, so it leaves the
+        /// generation alone. <see cref="generations"/> is used only while
+        /// <see cref="revitGate"/> is held.
+        /// </remarks>
         private JToken CallRevit(JObject arguments, string method, JObject parameters) {
             var selector = arguments["revit"]?.ToString() ?? defaultRevit;
             var instance = PyRevitAgentClient.Resolve(selector);
             revitGate.Wait();
             try {
-                return PyRevitAgentClient.Call(instance, method, WithClient(parameters));
+                var readsContext = method == "get_context";
+                if (!readsContext && generations.TryGetValue(instance.ProcessId, out var generation))
+                    parameters["generation"] = generation;
+                var result = PyRevitAgentClient.Call(instance, method, WithClient(parameters));
+                if (readsContext && parameters.Value<bool?>("keep_changes") != true)
+                    RememberGeneration(instance.ProcessId, result);
+                return result;
             }
             finally {
                 revitGate.Release();
             }
+        }
+
+        private void RememberGeneration(int processId, JToken context) {
+            var session = ((context as JObject)?["agent"] as JObject)?["session"] as JObject;
+            if (session?["generation"] is JValue generation && generation.Type == JTokenType.Integer)
+                generations[processId] = generation.Value<int>();
+            else
+                generations.Remove(processId);
         }
 
         private JObject WithClient(JObject parameters) {

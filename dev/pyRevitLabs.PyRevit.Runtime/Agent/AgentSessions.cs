@@ -16,10 +16,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// document, given in Revit.
     /// </summary>
     /// <remarks>
-    /// Only code running inside Revit can start or resume a session. The pipe can only request,
-    /// pause and end one, so an agent can't grant itself access by running the CLI. This guards
-    /// against well-behaved agents acting unseen, not against a hostile script: any code inside
-    /// Revit can call these methods too, except while an agent run executes.
+    /// Only code running inside Revit can start or resume a session. The pipe can only request and
+    /// pause one, and end one while sessions are required, so an agent can't grant itself access by
+    /// running the CLI. This guards against well-behaved agents acting unseen, not against a
+    /// hostile script: any code inside Revit can call these methods too, except while an agent run
+    /// executes.
     /// The bound document is held by reference and compared with <see cref="AgentDocuments.IsSame"/>,
     /// never by title or path. Closing it ends the session; after a move, closing the document the
     /// session left doesn't. Saving it under another name changes the session's title.
@@ -50,7 +51,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Starts a session bound to the active document.
+        /// Starts a session bound to the active document. When the agent last read the context
+        /// in another document, the session waits for it to read the context again, as after a
+        /// move, and its next summary of changes reports the move.
         /// </summary>
         /// <returns>The new session's id.</returns>
         /// <exception cref="InvalidOperationException">Called off the Revit main thread.</exception>
@@ -67,8 +70,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("no_active_document", "Open the document the agent should work on, then start the session.");
             WatchDocuments(app.Application);
             AgentAwarenessWatch.Attach(app);
-            var id = Tracker.Start(doc, doc.Title, DateTime.UtcNow);
+            var id = Tracker.Start(doc, doc.Title, DateTime.UtcNow, last => AgentDocuments.IsSame(last as Document, doc));
             AgentAwarenessWatch.Restart(app);
+            var lastRead = Tracker.AwaitingContextFrom;
+            if (lastRead != null)
+                AgentAwarenessWatch.Awareness.RecordMove(lastRead, doc.Title);
             return id;
         }
 
@@ -111,8 +117,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.Resume();
         }
 
+        /// <exception cref="AgentException">
+        /// <c>session_locked</c> while an agent run executes and sessions aren't required, since
+        /// ending the session would then let agents work in any document.
+        /// </exception>
         public static void End() {
-            Tracker.End(AgentSessionEndReasons.EndedInRevit, DateTime.UtcNow);
+            Tracker.EndInRevit(DateTime.UtcNow);
         }
 
         /// <summary>
@@ -127,8 +137,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return Tracker.Describe();
         }
 
+        /// <exception cref="AgentException"><c>session_locked</c> while sessions aren't required.</exception>
         internal static void EndByClient() {
-            Tracker.End(AgentSessionEndReasons.EndedByClient, DateTime.UtcNow);
+            Tracker.EndForAgent(DateTime.UtcNow);
         }
 
         /// <summary>
@@ -174,24 +185,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
+        /// <param name="contextGeneration">The session generation the request's client last read, when it says.</param>
         /// <exception cref="AgentException">
         /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c> or <c>session_inactive</c>.
         /// </exception>
-        internal static void CheckOnArrival(bool readsContext) {
-            Tracker.CheckOnArrival(readsContext);
+        internal static void CheckOnArrival(bool readsContext, int? contextGeneration) {
+            Tracker.CheckOnArrival(readsContext, contextGeneration);
         }
 
         /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
+        /// <param name="contextGeneration">The session generation the request's client last read, when it says.</param>
         /// <exception cref="AgentException">
         /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c>, <c>session_inactive</c> or
         /// <c>wrong_document</c>.
         /// </exception>
-        internal static void CheckOnDequeue(UIApplication app, bool readsContext) {
+        internal static void CheckOnDequeue(UIApplication app, bool readsContext, int? contextGeneration) {
             if (Tracker.BoundDocument is Document bound && !bound.IsValidObject)
                 Tracker.EndIfBoundTo(bound, AgentSessionEndReasons.DocumentClosed, DateTime.UtcNow);
             var active = app.ActiveUIDocument?.Document;
-            Tracker.CheckOnDequeue(candidate => AgentDocuments.IsSame(candidate as Document, active), active?.Title, readsContext);
+            Tracker.CheckOnDequeue(
+                candidate => AgentDocuments.IsSame(candidate as Document, active), active?.Title, readsContext, contextGeneration);
         }
 
         private static void WatchDocuments(Application app) {

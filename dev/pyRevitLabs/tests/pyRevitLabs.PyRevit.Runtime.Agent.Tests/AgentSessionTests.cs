@@ -117,7 +117,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             using (tracker.BeginRun()) {
                 Assert.Equal("session_locked", CodeOf(tracker.Resume));
                 Assert.Equal("session_locked", CodeOf(() => tracker.SetRequired(false)));
-                tracker.End(AgentSessionEndReasons.EndedInRevit, Now);
+                Assert.True(tracker.EndInRevit(Now));
                 Assert.Equal("session_locked", CodeOf(() => tracker.Start(document, "Tower.rvt", Now)));
             }
 
@@ -366,6 +366,107 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Arrive();
             Assert.Equal(new[] { "Tower.rvt" }, tracker.Describe()["documents"].Values<string>());
+        }
+
+        [Fact]
+        public void ASessionStartedOnAnotherDocumentWaitsForTheContextLikeAMove() {
+            StartOnDocument();
+            var generation = tracker.Generation;
+            tracker.EndInRevit(Now);
+
+            tracker.Start(new object(), "Annex.rvt", Now);
+
+            var refused = Assert.Throws<AgentException>(Arrive);
+            Assert.Equal("session_moved", refused.Code);
+            Assert.Contains("new agent session on 'Annex.rvt'", refused.Message);
+            Assert.Contains("'Tower.rvt'", refused.Message);
+            Assert.Equal("Tower.rvt", tracker.AwaitingContextFrom);
+            Assert.True(tracker.Describe().Value<bool>("awaiting_context"));
+            Assert.Equal(generation + 1, tracker.Generation);
+            tracker.CheckOnArrival(readsContext: true);
+
+            tracker.ContextRead();
+
+            Arrive();
+            Assert.Null(tracker.AwaitingContextFrom);
+        }
+
+        [Fact]
+        public void ASessionStartedAgainOnTheDocumentTheAgentLastReadDoesNotWait() {
+            StartOnDocument();
+            var generation = tracker.Generation;
+            tracker.EndInRevit(Now);
+
+            tracker.Start(new object(), "Tower.rvt", Now, last => ReferenceEquals(last, document));
+
+            Arrive();
+            Assert.Null(tracker.AwaitingContextFrom);
+            Assert.Equal(generation, tracker.Generation);
+        }
+
+        [Fact]
+        public void ANewSessionComparesWithTheDocumentTheAgentLastReadNotTheOneTheSessionLeft() {
+            StartOnDocument();
+            var annex = new object();
+            tracker.Move(annex, "Annex.rvt", Now);
+            tracker.EndInRevit(Now);
+
+            tracker.Start(annex, "Annex.rvt", Now);
+
+            Assert.Contains("You last read the context in 'Tower.rvt'", Assert.Throws<AgentException>(Arrive).Message);
+        }
+
+        [Fact]
+        public void TheGenerationAdvancesWithEveryMoveAndIsDescribed() {
+            Assert.Equal(0, tracker.Describe().Value<int>("generation"));
+            StartOnDocument();
+
+            tracker.Move(new object(), "Annex.rvt", Now);
+            tracker.Move(new object(), "Site.rvt", Now);
+
+            Assert.Equal(2, tracker.Generation);
+            Assert.Equal(2, tracker.Describe().Value<int>("generation"));
+        }
+
+        [Fact]
+        public void ARequestFromAnOlderGenerationWaitsForItsOwnClientToReadTheContext() {
+            StartOnDocument();
+            var before = tracker.Generation;
+            tracker.Move(new object(), "Annex.rvt", Now);
+            tracker.ContextRead();
+
+            var refused = Assert.Throws<AgentException>(() => tracker.CheckOnArrival(readsContext: false, contextGeneration: before));
+            Assert.Equal("session_moved", refused.Code);
+            Assert.Contains("'Annex.rvt'", refused.Message);
+            Assert.Equal("session_moved", CodeOf(() => tracker.CheckOnDequeue(_ => true, "Annex.rvt", false, before)));
+            tracker.CheckOnArrival(readsContext: true, contextGeneration: before);
+            tracker.CheckOnArrival(readsContext: false, contextGeneration: tracker.Generation);
+            Arrive();
+        }
+
+        [Fact]
+        public void WhileSessionsAreOptionalAnAgentCanNotEndTheSession() {
+            Assert.False(tracker.EndForAgent(Now));
+            StartOnDocument();
+
+            Assert.Equal("session_locked", CodeOf(() => tracker.EndForAgent(Now)));
+            Assert.Equal(AgentSessionState.Active, tracker.State);
+
+            tracker.SetRequired(true);
+            Assert.True(tracker.EndForAgent(Now));
+            Assert.Equal(AgentSessionEndReasons.EndedByClient, tracker.Describe()["last_ended"].Value<string>("reason"));
+        }
+
+        [Fact]
+        public void WhileSessionsAreOptionalRunCodeCanNotEndTheSession() {
+            StartOnDocument();
+
+            using (tracker.BeginRun())
+                Assert.Equal("session_locked", CodeOf(() => tracker.EndInRevit(Now)));
+
+            Assert.Equal(AgentSessionState.Active, tracker.State);
+            Assert.True(tracker.EndInRevit(Now));
+            Assert.Equal(AgentSessionEndReasons.EndedInRevit, tracker.Describe()["last_ended"].Value<string>("reason"));
         }
 
         [Fact]

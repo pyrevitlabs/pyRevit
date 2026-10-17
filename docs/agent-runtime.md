@@ -92,7 +92,7 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 | `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
 | `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
-| `[agent] require_session` | `pyrevit configs agent requiresession (yes \| no)` | `yes` (default): model requests need a session the user starts in the agent panel. `no`: requests pass without one, as before sessions existed; a session the user starts still binds agents to its document. Read only when pyRevit loads, and a reload from inside an agent run can't turn it off. Also in pyRevit Settings. |
+| `[agent] require_session` | `pyrevit configs agent requiresession (yes \| no)` | `yes` (default): model requests need a session the user starts in the agent panel. `no`: requests pass without one, as before sessions existed; a session the user starts still binds agents to its document, and only the user can end it. Read only when pyRevit loads, and a reload from inside an agent run can't turn it off. Also in pyRevit Settings. |
 
 Run any of these commands without a value to print the current setting.
 
@@ -153,13 +153,16 @@ Open it with **pyRevit → Agent Panel**. The button is hidden while the agent h
 disabled.
 
 - **Start on <document>** starts a session bound to the active document. Only a click in the
-  panel starts or resumes a session. Agents and the CLI can only ask for one, pause it or end it.
+  panel starts or resumes a session. Agents and the CLI can only ask for one or pause it, and
+  end it while sessions are required.
 - **Pause** and **Resume** stop and restart model requests. A request already waiting for
   Revit is refused when Revit picks it up.
 - **End** ends the session. Closing the session's document ends it too.
 - **Move session to <document>** appears while another document is active. The session keeps
   its id and state. Until the agent calls `get_context`, every other model request is refused
   with `session_moved`, because element ids from the old document don't apply in the new one.
+  Starting a session on another document than the one the agent last read the context in does
+  the same.
 - Closing the panel pauses the session. Reopening the panel shows why, and only the user
   resumes it.
 
@@ -182,8 +185,8 @@ session requests always pass.
 | `paused_by_user` | The user paused the session | Wait until the user resumes it |
 | `paused_by_host` | pyRevit paused it: a run changed another open document, or the panel was closed. The message says which | Tell the user; only they can resume it |
 | `wrong_document` | Another document, or none, is active | Ask the user to switch back or move the session |
-| `session_moved` | The user moved the session to another document | Call `get_context` before anything else, and drop ids from the old document |
-| `session_locked` | Code running inside an agent run tried to start, resume or move the session, or make sessions optional | Nothing; run code can't loosen its own session |
+| `session_moved` | The user moved the session to another document, or started one on another document than the agent last read the context in | Call `get_context` before anything else, and drop ids from the old document |
+| `session_locked` | Code running inside an agent run tried to start, resume or move the session or make sessions optional, or an agent tried to end it while sessions aren't required | Nothing; an agent can't loosen its own session. Pause it to stop |
 
 When the user changed the session's document, view or selection since the agent's previous
 model request, the next response carries `since_last_call`:
@@ -192,7 +195,8 @@ model request, the next response carries `since_last_call`:
   and how many were undone or redone.
 - `active_view`: the view now active, when it changed.
 - `selection`: the count and up to 200 ids, when it changed.
-- `session_moved`: `from` and `to`, when the user moved the session.
+- `session_moved`: `from` and `to`, when the user moved the session or started one on another
+  document.
 
 Nothing the host does for the agent is reported back to it. The active view and the
 selection are compared when the next request arrives, so switching away and back reports
@@ -204,7 +208,9 @@ The guidance agents read lives in markdown, not in the CLI, so it can change wit
 rebuild:
 
 - `pyrevitlib/pyrevit/agent/skills/INSTRUCTIONS.md` is the short entry text the MCP
-  server sends on `initialize`. `{skills}` is replaced with the list of skills.
+  server sends on `initialize`. `{skills}` is replaced with the list of skills. Keep it last,
+  and the text before it under 4,096 characters: Claude Code keeps only that much of a
+  server's instructions, and `list_skills` gives back a list cut short.
 - Each skill is a folder with a `SKILL.md` that starts with `name` and `description`
   front matter. PR 1 ships `revit-scripting`, the core contract for raw Revit API scripts.
   PR 2 adds domain guidance and library integration.
@@ -473,7 +479,9 @@ at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 requests `session_status`, `request_session`, `pause_session` and `end_session`.
 `get_context` with `keep_changes` reports `since_last_call` without clearing it and doesn't end
 the handshake after a move; `run_automation` uses it to check for a document before its run.
-Errors
+A model request can pass the `generation` from the session in its client's last `get_context`.
+Once the session's document has changed since, the request is refused with `session_moved`,
+even after another client read the context. `pyrevit mcp` does this for its agent. Errors
 carry a stable `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly`,
 `invalid_params` or one of the session refusals in
 [Sessions and the agent panel](#sessions-and-the-agent-panel).

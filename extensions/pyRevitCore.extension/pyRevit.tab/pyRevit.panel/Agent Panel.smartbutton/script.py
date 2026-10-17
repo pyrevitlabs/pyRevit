@@ -18,7 +18,7 @@ AGENT_PANEL = "PyRevitLabs.PyRevit.Runtime.Agent.AgentPanel"
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     """Show the button only while the agent host is turned on."""
-    ui_button_cmp.visible = bool(PyRevit.PyRevitConfigs.GetAgentEnabled())
+    ui_button_cmp.ui_button.Visible = bool(PyRevit.PyRevitConfigs.GetAgentEnabled())
     return True
 
 

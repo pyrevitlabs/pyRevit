@@ -37,12 +37,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// session.</item>
     /// <item>Whether or not sessions are required, a paused session refuses model requests, and an
     /// active one refuses requests made while another document is active.</item>
-    /// <item>After a move, every model request except a context read is refused with
+    /// <item>After a move, or once a session starts on a document other than the one the agent
+    /// last read the context in, every model request except a context read is refused with
     /// <c>session_moved</c> until the agent reads the context, because element ids from the old
-    /// document don't apply in the new one.</item>
-    /// <item>Nothing that loosens the gate (starting, resuming, making sessions optional) succeeds
-    /// while an agent run executes, so run code can't grant itself access. Pausing and ending
-    /// always succeed.</item>
+    /// document don't apply in the new one. Each such change advances the
+    /// <see cref="Generation"/>, and a request from a client that last read an older one is
+    /// refused the same way, so one client reading the context doesn't end another's wait.</item>
+    /// <item>Nothing that loosens the gate succeeds while an agent run executes, so run code can't
+    /// grant itself access: starting, resuming, moving, making sessions optional, or ending a
+    /// session while sessions aren't required. Pausing always succeeds, and so does ending while
+    /// sessions are required.</item>
+    /// <item>While sessions aren't required, an agent can't end a session over the pipe either,
+    /// because that would let agents work in any document.</item>
     /// </list>
     /// The bound document is an opaque reference; callers decide what counts as the same document.
     /// Every member is safe to call from any thread. <see cref="Changed"/> is raised on the thread
@@ -60,6 +66,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private string documentTitle;
         private readonly List<string> documents = new List<string>();
         private string movedFrom;
+        private object movedFromDocument;
+        private bool startedElsewhere;
+        private object lastDocument;
+        private string lastDocumentTitle;
+        private int generation;
         private DateTime startedUtc;
         private JObject pendingRequest;
         private JObject lastDeclined;
@@ -109,6 +120,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Counts the changes of document that invalidate the agent's element ids: moves, and
+        /// sessions started on another document than the one the agent last read the context in.
+        /// It only grows, for the life of the process.
+        /// </summary>
+        public int Generation {
+            get {
+                lock (sync)
+                    return generation;
+            }
+        }
+
+        /// <summary>
+        /// The document the agent last read the context in, while the open session waits for it
+        /// to read the context again; otherwise null.
+        /// </summary>
+        public string AwaitingContextFrom {
+            get {
+                lock (sync)
+                    return state == AgentSessionState.Inactive ? null : movedFrom;
+            }
+        }
+
         /// <exception cref="AgentException">
         /// <c>session_locked</c> when making sessions optional while an agent run executes.
         /// </exception>
@@ -123,12 +157,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             OnChanged();
         }
 
+        /// <summary>
+        /// Starts a session bound to <paramref name="document"/>. When an earlier session left the
+        /// agent with element ids from another document, the new one waits for the agent to read
+        /// the context, as after a move.
+        /// </summary>
+        /// <param name="isThisDocument">
+        /// Whether the document the agent last read the context in is <paramref name="document"/>;
+        /// called under the tracker's lock. Without it, only the same reference counts.
+        /// </param>
         /// <returns>The new session's id.</returns>
         /// <exception cref="AgentException">
         /// <c>session_active</c> when a session is already active or paused, or
         /// <c>session_locked</c> while an agent run executes.
         /// </exception>
-        public string Start(object document, string title, DateTime nowUtc) {
+        public string Start(object document, string title, DateTime nowUtc, Func<object, bool> isThisDocument = null) {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
             string id;
@@ -137,13 +180,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (state != AgentSessionState.Inactive)
                     throw new AgentException("session_active",
                         $"An agent session is already active on '{documentTitle}'. End it before starting another.");
+                var isStartDocument = isThisDocument ?? (candidate => ReferenceEquals(candidate, document));
+                var elsewhere = lastDocument != null && !isStartDocument(lastDocument);
                 state = AgentSessionState.Active;
                 id = sessionId = Guid.NewGuid().ToString("N").Substring(0, 12);
                 boundDocument = document;
                 documentTitle = title;
                 documents.Clear();
                 documents.Add(title);
-                movedFrom = null;
+                movedFrom = elsewhere ? lastDocumentTitle : null;
+                movedFromDocument = elsewhere ? lastDocument : null;
+                startedElsewhere = elsewhere;
+                if (elsewhere)
+                    generation++;
+                lastDocument = null;
+                lastDocumentTitle = null;
                 startedUtc = nowUtc;
                 pendingRequest = null;
                 lastDeclined = null;
@@ -177,8 +228,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 RefuseWhileRunExecutes("An agent session can't be moved while an agent run executes.");
                 if (state == AgentSessionState.Inactive)
                     throw new AgentException("session_inactive", "There is no agent session to move.");
-                if (movedFrom == null)
+                if (movedFrom == null) {
                     movedFrom = documentTitle;
+                    movedFromDocument = boundDocument;
+                }
+                startedElsewhere = false;
+                generation++;
                 from = movedFrom;
                 boundDocument = document;
                 documentTitle = title;
@@ -205,13 +260,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Records that the agent read the context, which ends the handshake after a move.
+        /// Records that the agent read the context, which ends the handshake after a move or a
+        /// session started elsewhere.
         /// </summary>
         public void ContextRead() {
             lock (sync) {
                 if (movedFrom == null)
                     return;
                 movedFrom = null;
+                movedFromDocument = null;
+                startedElsewhere = false;
             }
             OnChanged();
         }
@@ -269,11 +327,54 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             OnChanged();
         }
 
+        /// <summary>
+        /// Ends the session for one of the host's own reasons, such as the host stopping.
+        /// </summary>
         /// <returns>False when there was no session to end.</returns>
         public bool End(string reason, DateTime nowUtc) {
             bool ended;
             lock (sync)
                 ended = EndLocked(reason, nowUtc);
+            if (ended)
+                OnChanged();
+            return ended;
+        }
+
+        /// <summary>
+        /// Ends the session for code running in Revit: the agent panel, or any script.
+        /// </summary>
+        /// <returns>False when there was no session to end.</returns>
+        /// <exception cref="AgentException">
+        /// <c>session_locked</c> while an agent run executes and sessions aren't required.
+        /// </exception>
+        public bool EndInRevit(DateTime nowUtc) {
+            bool ended;
+            lock (sync) {
+                if (!required && state != AgentSessionState.Inactive)
+                    RefuseWhileRunExecutes(
+                        "Agent sessions aren't required in this Revit, so the session can't be ended while an agent run executes: "
+                        + "that would let agents work in any open document.");
+                ended = EndLocked(AgentSessionEndReasons.EndedInRevit, nowUtc);
+            }
+            if (ended)
+                OnChanged();
+            return ended;
+        }
+
+        /// <summary>
+        /// Ends the session for an agent that asked over the pipe.
+        /// </summary>
+        /// <returns>False when there was no session to end.</returns>
+        /// <exception cref="AgentException"><c>session_locked</c> while sessions aren't required.</exception>
+        public bool EndForAgent(DateTime nowUtc) {
+            bool ended;
+            lock (sync) {
+                if (!required && state != AgentSessionState.Inactive)
+                    throw new AgentException("session_locked",
+                        "Agent sessions aren't required in this Revit, so ending this one would let agents work in any open "
+                        + "document. Only the user can end it, in the agent panel. Pause it if you need to stop.");
+                ended = EndLocked(AgentSessionEndReasons.EndedByClient, nowUtc);
+            }
             if (ended)
                 OnChanged();
             return ended;
@@ -343,12 +444,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The gate when a request arrives, before it waits for Revit.
         /// </summary>
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
+        /// <param name="contextGeneration">
+        /// The <see cref="Generation"/> the request's client last read in the context, when it says.
+        /// </param>
         /// <exception cref="AgentException">
         /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c> or <c>session_inactive</c>.
         /// </exception>
-        public void CheckOnArrival(bool readsContext) {
+        public void CheckOnArrival(bool readsContext, int? contextGeneration = null) {
             lock (sync)
-                CheckStateLocked(readsContext);
+                CheckStateLocked(readsContext, contextGeneration);
         }
 
         /// <summary>
@@ -361,13 +465,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </param>
         /// <param name="activeTitle">Title of the active document, or null when none is active.</param>
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
+        /// <param name="contextGeneration">
+        /// The <see cref="Generation"/> the request's client last read in the context, when it says.
+        /// </param>
         /// <exception cref="AgentException">
         /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c>, <c>session_inactive</c> or
         /// <c>wrong_document</c>.
         /// </exception>
-        public void CheckOnDequeue(Func<object, bool> isBoundDocumentActive, string activeTitle, bool readsContext) {
+        public void CheckOnDequeue(
+            Func<object, bool> isBoundDocumentActive, string activeTitle, bool readsContext, int? contextGeneration = null) {
             lock (sync) {
-                CheckStateLocked(readsContext);
+                CheckStateLocked(readsContext, contextGeneration);
                 if (state != AgentSessionState.Active || isBoundDocumentActive(boundDocument))
                     return;
                 var active = activeTitle == null ? "no document is active" : $"'{activeTitle}' is the active document";
@@ -387,6 +495,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["document"] = isOpen ? documentTitle : null,
                     ["documents"] = isOpen ? new JArray(documents) : null,
                     ["awaiting_context"] = isOpen && movedFrom != null,
+                    ["generation"] = generation,
                     ["started"] = isOpen ? startedUtc.ToString("o") : null,
                     ["paused_cause"] = state == AgentSessionState.Paused ? pausedCause : null,
                     ["paused_reason"] = state == AgentSessionState.Paused ? pausedReason : null,
@@ -397,7 +506,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private void CheckStateLocked(bool readsContext) {
+        private void CheckStateLocked(bool readsContext, int? contextGeneration) {
             if (state == AgentSessionState.Paused && pausedReason != null)
                 throw new AgentException("paused_by_host",
                     $"The agent session is paused because {pausedReason} Tell the user; only they can resume the session in Revit.");
@@ -405,9 +514,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("paused_by_user",
                     "The user paused the agent session in Revit. Tell the user you are waiting, and try again after they resume it.");
             if (state == AgentSessionState.Active && movedFrom != null && !readsContext)
+                throw new AgentException("session_moved", startedElsewhere
+                    ? $"The user started a new agent session on '{documentTitle}'. You last read the context in '{movedFrom}', "
+                        + $"and its element ids don't apply in '{documentTitle}'. Call get_context before anything else."
+                    : $"The user moved the agent session from '{movedFrom}' to '{documentTitle}'. Element ids from '{movedFrom}' "
+                        + $"don't apply in '{documentTitle}'. Call get_context before anything else.");
+            if (state == AgentSessionState.Active && !readsContext && contextGeneration.HasValue && contextGeneration.Value != generation)
                 throw new AgentException("session_moved",
-                    $"The user moved the agent session from '{movedFrom}' to '{documentTitle}'. Element ids from '{movedFrom}' "
-                    + $"don't apply in '{documentTitle}'. Call get_context before anything else.");
+                    $"The agent session is now on '{documentTitle}', and you haven't read the context there. Element ids from "
+                    + "the document you last read don't apply in it. Call get_context before anything else.");
             if (state != AgentSessionState.Inactive || !required)
                 return;
             if (lastDeclined != null)
@@ -431,12 +546,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["reason"] = reason,
                 ["ended"] = nowUtc.ToString("o"),
             };
+            lastDocument = movedFromDocument ?? boundDocument;
+            lastDocumentTitle = movedFrom ?? documentTitle;
             state = AgentSessionState.Inactive;
             sessionId = null;
             boundDocument = null;
             documentTitle = null;
             documents.Clear();
             movedFrom = null;
+            movedFromDocument = null;
+            startedElsewhere = false;
             pausedCause = null;
             pausedReason = null;
             return true;

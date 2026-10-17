@@ -177,6 +177,17 @@ def restore_session():
         resume_session()
     elif state == "inactive":
         start_session()
+    catch_up()
+
+
+def catch_up():
+    """Read the context when the session waits for it, as an agent does.
+
+    A session started on another document than the one the agent last read the
+    context in refuses other model requests until it does.
+    """
+    if session_status()["awaiting_context"]:
+        request("get_context")
 
 
 def pipe_name():
@@ -292,6 +303,7 @@ def run_suites(modules):
         _session.open()
         require_sessions(True)
         start_session()
+        catch_up()
         with policy("auto"):
             for module in modules:
                 result = run_module_tests(module)

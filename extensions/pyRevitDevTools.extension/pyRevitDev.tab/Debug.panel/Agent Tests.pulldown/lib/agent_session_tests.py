@@ -23,6 +23,18 @@ SELF_GRANT_SCRIPT = (
     "        result.append('refused')\n"
 )
 
+END_SCRIPT = (
+    "from pyrevit.coreutils import assmutils\n"
+    "from pyrevit.runtime import RUNTIME_ASSM\n"
+    "sessions = assmutils.find_type_by_name(\n"
+    "    RUNTIME_ASSM, 'PyRevitLabs.PyRevit.Runtime.Agent.AgentSessions')\n"
+    "try:\n"
+    "    sessions.GetMethod('End').Invoke(None, None)\n"
+    "    result = 'allowed'\n"
+    "except Exception:\n"
+    "    result = 'refused'\n"
+)
+
 
 class SessionTests(TestCase):
     """Starting, pausing and ending a session, and what each state lets through."""
@@ -132,6 +144,47 @@ class SessionTests(TestCase):
         self.assertEqual(
             scratch.other.Title, harness.run("result = doc.Title")["result"]
         )
+
+    def test_a_session_started_on_another_document_waits_for_the_context(self):
+        """Ending the session and starting one elsewhere works like a move."""
+        scratch = harness.session()
+        harness.end_session()
+        scratch.activate(scratch.other_path)
+        harness.start_session()
+        self.assertTrue(harness.session_status()["awaiting_context"])
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.run("result = 1")
+        self.assertEqual("session_moved", raised.exception.code)
+        moved = harness.request("get_context")["since_last_call"]["session_moved"]
+        self.assertEqual(scratch.project.Title, moved["from"])
+        self.assertEqual(scratch.other.Title, moved["to"])
+        self.assertEqual(
+            scratch.other.Title, harness.run("result = doc.Title")["result"]
+        )
+
+    def test_a_client_that_read_before_a_move_waits_for_its_own_read(self):
+        """Another client's context read doesn't let an older generation through."""
+        scratch = harness.session()
+        before = harness.request("get_context")["agent"]["session"]["generation"]
+        scratch.activate(scratch.other_path)
+        harness.move_session()
+        current = harness.request("get_context")["agent"]["session"]["generation"]
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.run("result = 1", generation=before)
+        self.assertEqual("session_moved", raised.exception.code)
+        self.assertEqual(
+            scratch.other.Title,
+            harness.run("result = doc.Title", generation=current)["result"],
+        )
+
+    def test_while_sessions_are_optional_agents_can_not_end_the_session(self):
+        """Ending it would open every document to agents, so the pipe and run code can't."""
+        harness.require_sessions(False)
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.request("end_session")
+        self.assertEqual("session_locked", raised.exception.code)
+        self.assertEqual("refused", harness.run(END_SCRIPT)["result"])
+        self.assertEqual("active", harness.session_status()["state"])
 
     def test_moving_to_the_document_the_session_is_on_is_refused(self):
         """The panel decides by title, so the host refuses a move to the same document."""
