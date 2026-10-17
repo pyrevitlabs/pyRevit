@@ -61,8 +61,9 @@ your extension feel at home in pyRevit and may come up as review feedback.
   complete and accurate. Set `rocket_mode_compatible` to `"True"` only if you've
   verified the extension works in rocket mode.
 - **License.** The repository must include a license file.
-- **Working installation.** The extension must install and load without errors via
-  `pyrevit extend` on a supported Revit version.
+- **Working installation.** The extension must install without errors via
+  `pyrevit extend`, then load without errors after starting Revit or reloading
+  pyRevit on a supported Revit version.
 - **English titles and tooltips.** Provide `title` and `tooltip` in `bundle.yaml`
   with at least an `en_us` entry.
 
