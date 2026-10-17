@@ -2,14 +2,33 @@
 
 # pylint: disable=unused-argument
 from collections import deque
+from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
 from pyrevit import compat, PyRevitCPythonNotSupported
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 
 
 mlogger = get_logger(__name__)
+
+
+def _get_registered_handlers():
+    """Return the process-shared registry.
+
+    Initialization relies on pyRevit serializing Revit script loading and event
+    registration on the UI thread; concurrent initialization is unsupported.
+    """
+    registered_handlers = framework.AppDomain.CurrentDomain.GetData(
+        envvars.REGISTEREDEVENTHANDLERS_ENVVAR
+    )
+    if registered_handlers is None:
+        registered_handlers = Hashtable()
+        framework.AppDomain.CurrentDomain.SetData(
+            envvars.REGISTEREDEVENTHANDLERS_ENVVAR, registered_handlers
+        )
+    return registered_handlers
 
 
 class FuncAsEventHandler(UI.IExternalEventHandler):
@@ -89,35 +108,114 @@ def remove_handler(event_name, event_handler):
 
 
 def register_handler(event_name, handler_func, handler_group_id):
-    if handler_group_id not in REGISTERED_HANDLERS:
-        REGISTERED_HANDLERS[handler_group_id] = {}
+    registered_handlers = _get_registered_handlers()
+    if not registered_handlers.ContainsKey(handler_group_id):
+        registered_handlers[handler_group_id] = Hashtable()
     event_handler = add_handler(event_name, handler_func)
     if event_handler:
-        REGISTERED_HANDLERS[handler_group_id][event_name] = event_handler
+        handler_group = registered_handlers[handler_group_id]
+        if not handler_group.ContainsKey(event_name):
+            handler_group[event_name] = ArrayList()
+        handler_group[event_name].Add(event_handler)
 
 
 def unregister_handler(event_name, handler_func, handler_group_id):
-    if (
-        handler_group_id in REGISTERED_HANDLERS
-        and event_name in REGISTERED_HANDLERS[handler_group_id]
-    ):
-        event_handler = REGISTERED_HANDLERS[handler_group_id].pop(event_name)
-        remove_handler(event_name, event_handler)
+    # 'handler_func' argument only for backwards compat
+    registered_handlers = _get_registered_handlers()
+    if registered_handlers.ContainsKey(handler_group_id):
+        handler_group = registered_handlers[handler_group_id]
+    else:
+        return
+    if handler_group.ContainsKey(event_name):
+        event_handlers = handler_group[event_name]
+        try:
+            for event_handler in list(event_handlers):
+                try:
+                    remove_handler(event_name, event_handler)
+                except Exception as ex:
+                    mlogger.error(
+                        "Could not unregister %s handler for %s: %s",
+                        event_name,
+                        handler_group_id,
+                        ex,
+                    )
+        finally:
+            handler_group.Remove(event_name)
+
+
+def _clear_registered_handlers_if_empty(registered_handlers):
+    if registered_handlers.Count == 0:
+        framework.AppDomain.CurrentDomain.SetData(
+            envvars.REGISTEREDEVENTHANDLERS_ENVVAR, None
+        )
 
 
 def unregister_exec_handlers(handler_group_id):
-    if handler_group_id in REGISTERED_HANDLERS:
-        for event_name, handler_func in REGISTERED_HANDLERS[handler_group_id].items():
-            unregister_handler(event_name, handler_func, handler_group_id)
+    registered_handlers = _get_registered_handlers()
+    try:
+        if registered_handlers.ContainsKey(handler_group_id):
+            handler_group = registered_handlers[handler_group_id]
+            for event_name in list(handler_group.Keys):
+                try:
+                    unregister_handler(event_name, None, handler_group_id)
+                except Exception as ex:
+                    mlogger.error(
+                        "Could not unregister handlers for %s event in %s: %s",
+                        event_name,
+                        handler_group_id,
+                        ex,
+                    )
+    finally:
+        registered_handlers.Remove(handler_group_id)
+        _clear_registered_handlers_if_empty(registered_handlers)
+
+
+def _unregister_handler_groups(handler_group_ids):
+    if not isinstance(handler_group_ids, (list, tuple, ArrayList)):
+        handler_group_ids = [handler_group_ids]
+    for handler_group_id in handler_group_ids:
+        try:
+            unregister_exec_handlers(handler_group_id)
+        except Exception as ex:
+            mlogger.error(
+                "Could not unregister event handlers for %s: %s",
+                handler_group_id,
+                ex,
+            )
+
+
+def unregister_all_exec_handlers():
+    """Unregister every tracked execution group, directly or via ExternalEvent."""
+    registered_handlers = framework.AppDomain.CurrentDomain.GetData(
+        envvars.REGISTEREDEVENTHANDLERS_ENVVAR
+    )
+    if registered_handlers is None:
+        return
+    handler_group_ids = list(registered_handlers.Keys)
+    if not handler_group_ids:
+        _clear_registered_handlers_if_empty(registered_handlers)
+        return
+
+    if HOST_APP.has_api_context:
+        _unregister_handler_groups(handler_group_ids)
+    else:
+        delayed_unregister_exec_handlers(handler_group_ids)
 
 
 def delayed_unregister_exec_handlers(handler_group_id):
-    HANDLER_UNREGISTERER.handler_group_id = handler_group_id
+    handler_group_ids = (
+        handler_group_id
+        if isinstance(handler_group_id, (list, tuple, ArrayList))
+        else [handler_group_id]
+    )
+    HANDLER_UNREGISTERER.handler_group_id = handler_group_ids
     ext_event = _get_unregisterer_extevent()
     if ext_event is None:
         mlogger.error(
             "Could not create ExternalEvent; event handlers remain registered"
         )
+        if HOST_APP.has_api_context:
+            _unregister_handler_groups(handler_group_ids)
         return
     try:
         response = ext_event.Raise()
@@ -129,8 +227,12 @@ def delayed_unregister_exec_handlers(handler_group_id):
                 "Could not unregister event handlers; "
                 "ExternalEvent request was {}".format(response)
             )
+            if HOST_APP.has_api_context:
+                _unregister_handler_groups(handler_group_ids)
     except Exception as ex:
         mlogger.error("Could not unregister event handlers: {}".format(ex))
+        if HOST_APP.has_api_context:
+            _unregister_handler_groups(handler_group_ids)
 
 
 def _get_unregisterer_extevent():
@@ -146,8 +248,7 @@ def _get_unregisterer_extevent():
     return HANDLER_UNREGISTERER_EXTEVENT
 
 
-REGISTERED_HANDLERS = {}
-HANDLER_UNREGISTERER = FuncAsEventHandler(unregister_exec_handlers, purge=False)
+HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
 # Import can occur outside API context, so event creation may be deferred.
 try:
     HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
@@ -168,7 +269,12 @@ def handle(*args):  # pylint: disable=no-method-argument
 
 
 def stop_events():
-    if EXEC_PARAMS.exec_id in REGISTERED_HANDLERS:
+    registered_handlers = framework.AppDomain.CurrentDomain.GetData(
+        envvars.REGISTEREDEVENTHANDLERS_ENVVAR
+    )
+    if registered_handlers is not None and registered_handlers.ContainsKey(
+        EXEC_PARAMS.exec_id
+    ):
         if HOST_APP.has_api_context:
             unregister_exec_handlers(EXEC_PARAMS.exec_id)
         else:

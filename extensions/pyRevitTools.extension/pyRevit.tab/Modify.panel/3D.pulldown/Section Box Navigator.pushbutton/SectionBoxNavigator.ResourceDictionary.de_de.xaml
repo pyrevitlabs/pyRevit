@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Schnittbox-Navigator</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Schnittbox-Navigator</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Zuschneidebereich-Navigator</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Nicht unterstützter Ansichtstyp</system:String>
     
     <system:String x:Key="LevelNavigation">Ebenen-Navigation</system:String>
     <system:String x:Key="TopUp">Oben ↑</system:String>
@@ -55,7 +58,6 @@
     
     <system:String x:Key="Settings">Einstellungen</system:String>
     <system:String x:Key="ShowPreviewOnHover">Vorschau beim Überfahren anzeigen</system:String>
-    <system:String x:Key="UpdateUIOnEvents">UI bei Ereignissen aktualisieren</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Verknüpfte Ebenen und Raster einbeziehen</system:String>
     
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Fehler beim Verkleinern: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">2D-Ansicht für Schnittbox auswählen</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">3D-Ansicht zum Kopieren auswählen</system:String>
+    <system:String x:Key="Select3DViewForTempBox">3D-Ansicht für temporäre Schnittbox auswählen</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Ansichtsinformationen konnten nicht extrahiert werden.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D-Ansicht hat keine Schnittbox.</system:String>
     <system:String x:Key="Unknown">Unbekannt</system:String>
