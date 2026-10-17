@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Fehler beim Verkleinern: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">2D-Ansicht für Schnittbox auswählen</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">3D-Ansicht zum Kopieren auswählen</system:String>
+    <system:String x:Key="Select3DViewForTempBox">3D-Ansicht für temporäre Schnittbox auswählen</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Ansichtsinformationen konnten nicht extrahiert werden.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D-Ansicht hat keine Schnittbox.</system:String>
     <system:String x:Key="Unknown">Unbekannt</system:String>

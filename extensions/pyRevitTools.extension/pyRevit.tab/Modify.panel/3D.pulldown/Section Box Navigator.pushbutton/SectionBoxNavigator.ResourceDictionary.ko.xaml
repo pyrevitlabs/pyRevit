@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">축소 중 오류가 발생했습니다: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">섹션 박스용 2D 뷰 선택</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">복사할 3D 뷰 선택</system:String>
+    <system:String x:Key="Select3DViewForTempBox">임시 섹션 박스용 3D 뷰 선택</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">뷰 정보를 추출할 수 없습니다.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D 뷰에 섹션 박스가 없습니다.</system:String>
     <system:String x:Key="Unknown">알 수 없음</system:String>

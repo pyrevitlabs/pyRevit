@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ocorreu um erro ao contrair: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Selecionar vista 2D para caixa de corte</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Selecionar vista 3D para copiar de</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Selecionar vista 3D para caixa de corte temporária</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Não foi possível extrair informações da vista.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">A vista 3D não tem caixa de corte.</system:String>
     <system:String x:Key="Unknown">Desconhecido</system:String>

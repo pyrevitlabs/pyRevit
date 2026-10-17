@@ -435,7 +435,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.btnToggleBox.IsEnabled = is_3d_view or is_2d_view_active
             self.btnHideBox.IsEnabled = is_3d_view or is_2d_view_active
             self.btnAlignBoxToFace.IsEnabled = is_3d_view
-            self.btnTempSwitch.IsEnabled = is_3d_view
+            self.btnTempSwitch.IsEnabled = is_3d_view or is_2d_view_active
             self.btnAlignToView.IsEnabled = is_3d_view or is_plan_view
 
             if is_2d_view_active:
@@ -1391,11 +1391,34 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
 
     def do_temp_switch(self):
-        """Temporary switch to a box around elements"""
-        if not isinstance(self.current_view, DB.View3D):
+        """Set or restore an element-based temporary box on a 3D view."""
+        if isinstance(self.current_view, DB.View3D):
+            target_view = self.current_view
+        elif is_2d_view(self.current_view):
+            selected_view = forms.select_views(
+                multiple=False,
+                filterfunc=lambda view: isinstance(view, DB.View3D)
+                and not view.IsTemplate
+                and not view.IsPerspective,
+                doc=doc,
+                title=self.get_locale_string("Select3DViewForTempBox"),
+            )
+            if not selected_view:
+                return
+            target_view = selected_view
+        else:
             return
+
         try:
-            temp_switch(doc, TEMP_DATAFILE)
+            result = temp_switch(doc, TEMP_DATAFILE, target_view=target_view)
+            if result == "cancelled":
+                return
+            if result is None:
+                raise RuntimeError("Could not set or restore a temporary section box")
+
+            if target_view.Id != self.current_view.Id:
+                uidoc.ActiveView = target_view
+
             self.show_status_message(
                 3, self.get_locale_string("SuccessTempSwitch"), "success"
             )
@@ -1897,7 +1920,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def btn_temp_switch_click(self, sender, e):
-        """Temporary switch to a box around elements"""
+        """Set or restore an element-based temporary box on a 3D view."""
         self.pending_action = {
             "action": "temp_switch",
         }

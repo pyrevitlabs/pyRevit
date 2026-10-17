@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ошибка при сжатии: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Выбрать 2D Вид для Бокса Сечения</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Выбрать 3D Вид для Копирования</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Выбрать 3D вид для временного бокса сечения</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Не удалось извлечь информацию о виде.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D вид не имеет бокса сечения.</system:String>
     <system:String x:Key="Unknown">Неизвестно</system:String>

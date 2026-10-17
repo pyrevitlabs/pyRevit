@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ocurrió un error al contraer: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Seleccionar Vista 2D para Caja de Sección</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Seleccionar Vista 3D para Copiar</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Seleccionar Vista 3D para Caja de Sección Temporal</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">No se pudo extraer información de la vista.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">La vista 3D no tiene caja de sección.</system:String>
     <system:String x:Key="Unknown">Desconocido</system:String>

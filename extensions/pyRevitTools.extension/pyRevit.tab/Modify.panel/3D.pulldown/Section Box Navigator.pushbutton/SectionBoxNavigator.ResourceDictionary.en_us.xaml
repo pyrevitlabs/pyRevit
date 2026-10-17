@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">An error occurred while shrinking: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Select 2D View for Section Box</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Select 3D View to Copy From</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Select 3D View for Temporary Section Box</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Could not extract view information.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D view has no section box.</system:String>
     <system:String x:Key="Unknown">Unknown</system:String>

@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">收缩时发生错误：{0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">选择二维视图用于剖面框</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">选择要复制的三维视图</system:String>
+    <system:String x:Key="Select3DViewForTempBox">选择用于临时剖面框的三维视图</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">无法提取视图信息。</system:String>
     <system:String x:Key="View3DHasNoSectionBox">三维视图没有剖面框。</system:String>
     <system:String x:Key="Unknown">未知</system:String>

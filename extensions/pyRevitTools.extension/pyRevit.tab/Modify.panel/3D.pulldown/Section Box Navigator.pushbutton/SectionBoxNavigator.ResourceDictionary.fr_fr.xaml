@@ -125,6 +125,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Une erreur s'est produite lors du rétrécissement : {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Sélectionner la Vue 2D pour la Boîte de Coupe</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Sélectionner la Vue 3D à Copier</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Sélectionner la Vue 3D pour la Boîte de Coupe Temporaire</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Impossible d'extraire les informations de vue.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">La vue 3D n'a pas de boîte de coupe.</system:String>
     <system:String x:Key="Unknown">Inconnu</system:String>
