@@ -1,0 +1,65 @@
+{
+ "about": "Known findings of check_revit_api_compat.py, accepted so CI fails only on new ones. Fix an entry, then run with --update-baseline to drop it; never add entries by hand.",
+ "findings": [
+  {
+   "path": "extensions/pyRevitTools.extension/checks/audit_all_check.py",
+   "code": "API-MISSING",
+   "message": "`.GetPlacementOnSheetStatus` was added in Revit 2023, missing in Revit 2021-2022",
+   "count": 2
+  },
+  {
+   "path": "extensions/pyRevitTools.extension/checks/audit_all_check.py",
+   "code": "API-MISSING",
+   "message": "`.GetUnusedElements` was added in Revit 2024, missing in Revit 2021-2023",
+   "count": 1
+  },
+  {
+   "path": "extensions/pyRevitTools.extension/checks/audit_all_check.py",
+   "code": "API-MISSING",
+   "message": "`ViewPlacementOnSheetStatus` was added in Revit 2023, missing in Revit 2021-2022",
+   "count": 2
+  },
+  {
+   "path": "extensions/pyRevitTools.extension/pyRevit.tab/Drawing Set.panel/Print Sheets.pushbutton/script.py",
+   "code": "API-MISSING",
+   "message": "`PDFExportOptions` was added in Revit 2022, missing in Revit 2021",
+   "count": 1
+  },
+  {
+   "path": "extensions/pyRevitTools.extension/pyRevit.tab/Drawing Set.panel/Sheets.pulldown/Rename Selected Sheets.pushbutton/script.py",
+   "code": "API-MISSING",
+   "message": "`.IntegerValue` was removed in Revit 2026 (exists up to 2025)",
+   "count": 4
+  },
+  {
+   "path": "extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/ParametersValuesToParameter.pushbutton/script.py",
+   "code": "API-MISSING",
+   "message": "`.BuiltInCategory` was added in Revit 2023, missing in Revit 2021-2022",
+   "count": 1
+  },
+  {
+   "path": "pyrevitlib/pyrevit/framework.py",
+   "code": "API-DEPRECATED",
+   "message": "`System.Net.WebClient` is deprecated in Revit 2025-2027 (WebClient is obsolete on .NET 6+ (SYSLIB0014))",
+   "count": 1
+  },
+  {
+   "path": "pyrevitlib/pyrevit/revit/db/create.py",
+   "code": "API-MISSING",
+   "message": "`.NumberType` was removed in Revit 2023 (exists up to 2022)",
+   "count": 2
+  },
+  {
+   "path": "pyrevitlib/pyrevit/revit/db/create.py",
+   "code": "API-MISSING",
+   "message": "`Ceiling.Create` was added in Revit 2022, missing in Revit 2021",
+   "count": 1
+  },
+  {
+   "path": "pyrevitlib/rpw/db/parameter.py",
+   "code": "API-MISSING",
+   "message": "`.ParameterType` was removed in Revit 2023 (exists up to 2022)",
+   "count": 1
+  }
+ ]
+}
