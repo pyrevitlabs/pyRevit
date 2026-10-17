@@ -121,8 +121,9 @@ def on_view_or_doc_changed(sender, args):
                 sb_form.Dispatcher.Invoke(
                     System.Action(sb_form.update_grids_and_levels)
                 )
-        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+        if not sb_form:
             return
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         logger.info("Form updated due to view or document change.")
     except Exception as ex:
@@ -216,13 +217,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
-        self.chkAutoupdate.IsChecked = my_config.get_option("chkAutoupdate_state", True)
         self.rbLevel.IsChecked = my_config.get_option("rbLevel_state", True)
         self.rbLevelNudge.IsChecked = not self.rbLevel.IsChecked
         self.rbGrid.IsChecked = my_config.get_option("rbGrid_state", True)
         self.rbGridNudge.IsChecked = not self.rbGrid.IsChecked
 
         self.current_view = revit.active_view
+        self.update_window_title()
         self.current_length_unit = length_unit
         self.all_levels = None
         self.all_grids = None
@@ -248,16 +249,30 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.Closed += self.form_closed
         script.restore_window_position(self)
-        self.Show()
+        self.show()
+
+    def update_window_title(self):
+        view = revit.active_view
+        if not view:
+            return
+
+        if isinstance(view, DB.View3D):
+            navigator_type = self.get_locale_string("SectionBoxNavigatorTitle")
+        elif is_2d_view(view):
+            navigator_type = self.get_locale_string("CropBoxNavigatorTitle")
+        else:
+            navigator_type = self.get_locale_string("UnsupportedViewTypeTitle")
+
+        self.Title = "{} | {}".format(navigator_type, revit.query.get_name(view))
 
     def update_fields_with_unit_dependencies(self):
         if not length_unit_symbol_label:
-            self.project_unit_text.Visibility = forms.WPF_VISIBLE
+            self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
                 self.get_locale_string("LengthLabelAdjust") + "\n" + length_unit_label
             )
         else:
-            self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+            self.hide_element(self.project_unit_text)
 
         self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
         self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
@@ -408,16 +423,19 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.update_fields_with_unit_dependencies()
 
             is_3d_view = isinstance(self.current_view, DB.View3D)
+            is_2d_view_active = is_2d_view(self.current_view)
             is_plan_view = is_2d_view(self.current_view, only_plan=True)
 
             self.levelNavigationGroup.IsEnabled = is_3d_view
             self.gridNavigationGroup.IsEnabled = is_3d_view
             self.expansionGroup.IsEnabled = is_3d_view
+            self.btnToggleBox.IsEnabled = is_3d_view or is_2d_view_active
+            self.btnHideBox.IsEnabled = is_3d_view or is_2d_view_active
             self.btnAlignBoxToFace.IsEnabled = is_3d_view
-            self.btnTempSwitch.IsEnabled = is_3d_view
+            self.btnTempSwitch.IsEnabled = is_3d_view or is_2d_view_active
             self.btnAlignToView.IsEnabled = is_3d_view or is_plan_view
 
-            if is_2d_view(self.current_view):
+            if is_2d_view_active:
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith3DView")
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
@@ -571,7 +589,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def _on_no_document(self):
         """Disable all controls and clear status when no documents are open."""
         self.Content.IsEnabled = False
-        self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+        self.hide_element(self.project_unit_text)
         self.txtVerticalStatus.Text = ""
         self.txtGridStatus.Text = ""
         self.txtExpandActionsStatus.Text = ""
@@ -655,7 +673,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             elif action_type == "grid_move":
                 self.do_grid_move(params)
 
-            # Update info after action
             self.Dispatcher.Invoke(System.Action(self.update_info))
 
         except Exception as ex:
@@ -1370,11 +1387,32 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
 
     def do_temp_switch(self):
-        """Temporary switch to a box around elements"""
-        if not isinstance(self.current_view, DB.View3D):
+        """Set or restore an element-based temporary box on a 3D view."""
+        if isinstance(self.current_view, DB.View3D):
+            target_view = self.current_view
+        elif is_2d_view(self.current_view):
+            selected_view = forms.select_views(
+                multiple=False,
+                filterfunc=lambda view: isinstance(view, DB.View3D),
+                doc=doc,
+                title=self.get_locale_string("Select3DViewForTempBox"),
+            )
+            if not selected_view:
+                return
+            target_view = selected_view
+        else:
             return
+
         try:
-            temp_switch(doc, TEMP_DATAFILE)
+            result = temp_switch(doc, TEMP_DATAFILE, target_view=target_view)
+            if result == "cancelled":
+                return
+            if result is None:
+                raise RuntimeError("Could not set or restore a temporary section box")
+
+            if target_view.Id != self.current_view.Id:
+                uidoc.ActiveView = target_view
+
             self.show_status_message(
                 3, self.get_locale_string("SuccessTempSwitch"), "success"
             )
@@ -1876,7 +1914,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def btn_temp_switch_click(self, sender, e):
-        """Temporary switch to a box around elements"""
+        """Set or restore an element-based temporary box on a 3D view."""
         self.pending_action = {
             "action": "temp_switch",
         }
@@ -2009,7 +2047,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             my_config.set_option("rbGrid_state", self.rbGrid.IsChecked)
             my_config.set_option("chkLinks_state", self.chkIncludeLinks.IsChecked)
             my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
-            my_config.set_option("chkAutoupdate_state", self.chkAutoupdate.IsChecked)
             script.save_config()
 
         except Exception:

@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Navigateur de Boîte de Coupe</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Navigateur de Boîte de Coupe</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Navigateur de Région de Recadrage</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Type de vue non pris en charge</system:String>
     
     <system:String x:Key="LevelNavigation">Navigation par Niveau</system:String>
     <system:String x:Key="TopUp">Haut ↑</system:String>
@@ -55,7 +58,6 @@
     
     <system:String x:Key="Settings">Paramètres</system:String>
     <system:String x:Key="ShowPreviewOnHover">Afficher l'aperçu au survol</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Mettre à jour l'interface lors des événements</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Inclure les Niveaux et Grilles Liés</system:String>
     
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Une erreur s'est produite lors du rétrécissement : {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Sélectionner la Vue 2D pour la Boîte de Coupe</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Sélectionner la Vue 3D à Copier</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Sélectionner la Vue 3D pour la Boîte de Coupe Temporaire</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Impossible d'extraire les informations de vue.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">La vue 3D n'a pas de boîte de coupe.</system:String>
     <system:String x:Key="Unknown">Inconnu</system:String>

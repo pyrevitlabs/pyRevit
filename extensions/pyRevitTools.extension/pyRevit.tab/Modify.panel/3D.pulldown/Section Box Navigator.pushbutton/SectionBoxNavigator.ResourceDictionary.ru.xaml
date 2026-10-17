@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Навигатор Бокса Сечения</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Навигатор Бокса Сечения</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Навигатор Области Подрезки</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Неподдерживаемый тип вида</system:String>
     
     <system:String x:Key="LevelNavigation">Навигация по Уровням</system:String>
     <system:String x:Key="TopUp">Верх ↑</system:String>
@@ -55,7 +58,6 @@
     
     <system:String x:Key="Settings">Настройки</system:String>
     <system:String x:Key="ShowPreviewOnHover">Показать предпросмотр при наведении</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Обновлять интерфейс при событиях</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Включить Связанные Уровни и Сетки</system:String>
     
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ошибка при сжатии: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Выбрать 2D Вид для Бокса Сечения</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Выбрать 3D Вид для Копирования</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Выбрать 3D вид для временного бокса сечения</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Не удалось извлечь информацию о виде.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D вид не имеет бокса сечения.</system:String>
     <system:String x:Key="Unknown">Неизвестно</system:String>
