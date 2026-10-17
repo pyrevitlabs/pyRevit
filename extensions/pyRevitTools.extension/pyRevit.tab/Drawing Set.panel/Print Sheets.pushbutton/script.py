@@ -55,48 +55,67 @@ EXPORT_ENCODING = "utf_8"
 
 IS_REVIT_2022_OR_NEWER = HOST_APP.is_newer_than(2021)
 
+DEFAULT_SUBFOLDER_FORMAT = "{date}_{time}_PRINT"
+
 STANDARD_PAPER_FORMATS = (
-    'ANSI_A', 'ANSI_B', 'ANSI_C', 'ANSI_D', 'ANSI_E',
-    'ARCH_A', 'ARCH_B', 'ARCH_C', 'ARCH_D',
-    'ARCH_E', 'ARCH_E1', 'ARCH_E2', 'ARCH_E3',
-    'ISO_A0', 'ISO_A1', 'ISO_A2', 'ISO_A3', 'ISO_A4',
-    'ISO_B1', 'ISO_B2', 'ISO_B3', 'ISO_B4',
-    )
+    "ANSI_A",
+    "ANSI_B",
+    "ANSI_C",
+    "ANSI_D",
+    "ANSI_E",
+    "ARCH_A",
+    "ARCH_B",
+    "ARCH_C",
+    "ARCH_D",
+    "ARCH_E",
+    "ARCH_E1",
+    "ARCH_E2",
+    "ARCH_E3",
+    "ISO_A0",
+    "ISO_A1",
+    "ISO_A2",
+    "ISO_A3",
+    "ISO_A4",
+    "ISO_B1",
+    "ISO_B2",
+    "ISO_B3",
+    "ISO_B4",
+)
 
 PAPER_FORMAT_ALIASES = {
-    'LETTER': 'ANSI_A',
-    'USLETTER': 'ANSI_A',
-    'TABLOID': 'ANSI_B',
-    'LEDGER': 'ANSI_B',
-    }
+    "LETTER": "ANSI_A",
+    "USLETTER": "ANSI_A",
+    "TABLOID": "ANSI_B",
+    "LEDGER": "ANSI_B",
+}
 
 MM_PER_INCH = 25.4
 CM_TO_MM = 10.0
 
 STANDARD_PAPER_SIZES_MM = {
-    'ANSI_A': (215.9, 279.4),
-    'ANSI_B': (279.4, 431.8),
-    'ANSI_C': (431.8, 558.8),
-    'ANSI_D': (558.8, 863.6),
-    'ANSI_E': (863.6, 1117.6),
-    'ARCH_A': (228.6, 304.8),
-    'ARCH_B': (304.8, 457.2),
-    'ARCH_C': (457.2, 609.6),
-    'ARCH_D': (609.6, 914.4),
-    'ARCH_E': (914.4, 1219.2),
-    'ARCH_E1': (762.0, 1066.8),
-    'ARCH_E2': (660.4, 965.2),
-    'ARCH_E3': (685.8, 990.6),
-    'ISO_A0': (841.0, 1189.0),
-    'ISO_A1': (594.0, 841.0),
-    'ISO_A2': (420.0, 594.0),
-    'ISO_A3': (297.0, 420.0),
-    'ISO_A4': (210.0, 297.0),
-    'ISO_B1': (707.0, 1000.0),
-    'ISO_B2': (500.0, 707.0),
-    'ISO_B3': (353.0, 500.0),
-    'ISO_B4': (250.0, 353.0),
-    }
+    "ANSI_A": (215.9, 279.4),
+    "ANSI_B": (279.4, 431.8),
+    "ANSI_C": (431.8, 558.8),
+    "ANSI_D": (558.8, 863.6),
+    "ANSI_E": (863.6, 1117.6),
+    "ARCH_A": (228.6, 304.8),
+    "ARCH_B": (304.8, 457.2),
+    "ARCH_C": (457.2, 609.6),
+    "ARCH_D": (609.6, 914.4),
+    "ARCH_E": (914.4, 1219.2),
+    "ARCH_E1": (762.0, 1066.8),
+    "ARCH_E2": (660.4, 965.2),
+    "ARCH_E3": (685.8, 990.6),
+    "ISO_A0": (841.0, 1189.0),
+    "ISO_A1": (594.0, 841.0),
+    "ISO_A2": (420.0, 594.0),
+    "ISO_A3": (297.0, 420.0),
+    "ISO_A4": (210.0, 297.0),
+    "ISO_B1": (707.0, 1000.0),
+    "ISO_B2": (500.0, 707.0),
+    "ISO_B3": (353.0, 500.0),
+    "ISO_B4": (250.0, 353.0),
+}
 
 PAPER_SIZE_TOLERANCE_MM = 3.0
 
@@ -127,10 +146,33 @@ class PrintUtils:
         return os.path.join(os.path.expanduser("~"), "Desktop", "pyRevit Print Folder")
 
     @staticmethod
-    def get_folder(task="_PDF"):
-        dateStamp = datetime.datetime.today().strftime("%y%m%d")
-        timeStamp = datetime.datetime.today().strftime("%H%M%S")
-        return dateStamp + "_" + timeStamp + task
+    def format_subfolder(template, model="", sheet_index=""):
+        """Resolve a subfolder naming template for one print run.
+
+        Supports ``{date}`` (yymmdd), ``{time}`` (HHMMSS), ``{model}`` and
+        ``{sheet_index}``. Backslashes create nested folders. An empty
+        template returns an empty string, meaning files go straight into the
+        output folder.
+
+        Raises:
+            KeyError: the template uses an unknown placeholder.
+            ValueError: the template has unbalanced braces.
+        """
+        template = (template or "").strip()
+        if not template:
+            return ""
+        now = datetime.datetime.today()
+        folder = template.format(
+            date=now.strftime("%y%m%d"),
+            time=now.strftime("%H%M%S"),
+            model=model,
+            sheet_index=sheet_index,
+        )
+        parts = [
+            coreutils.cleanup_filename(part, windows_safe=True).strip(" .")
+            for part in folder.split("\\")
+        ]
+        return "\\".join(part for part in parts if part)
 
     @staticmethod
     def ensure_dir(dp):
@@ -153,29 +195,25 @@ class PrintUtils:
         Print drivers may include units after either dimension. Returns None
         when the name carries no usable pair of measurements.
         """
-        text = (name or '').lower().replace(u'\u00d7', 'x').replace(',', '.')
+        text = (name or "").lower().replace("\u00d7", "x").replace(",", ".")
         unit = (
-            u'(mm[.]?|cm[.]?|millimet(?:er|re)s?[.]?|'
-            u'centimet(?:er|re)s?[.]?|in(?:ch(?:es)?)?[.]?|["\u2033])?'
-            )
+            "(mm[.]?|cm[.]?|millimet(?:er|re)s?[.]?|"
+            'centimet(?:er|re)s?[.]?|in(?:ch(?:es)?)?[.]?|["\u2033])?'
+        )
         found = re.search(
-            r'(\d+(?:\.\d+)?)[\s_]*' + unit + r'[\s_]*x[\s_]*'
-            r'(\d+(?:\.\d+)?)[\s_]*' + unit,
-            text)
+            r"(\d+(?:\.\d+)?)[\s_]*" + unit + r"[\s_]*x[\s_]*"
+            r"(\d+(?:\.\d+)?)[\s_]*" + unit,
+            text,
+        )
         if not found:
             return None
         width, height = float(found.group(1)), float(found.group(3))
         if width <= 0 or height <= 0:
             return None
-        recognized_units = [
-            found.group(2), found.group(4)
-            ]
+        recognized_units = [found.group(2), found.group(4)]
         recognized_units = [item for item in recognized_units if item]
         if recognized_units:
-            scales = [
-                PrintUtils._paper_unit_scale(item)
-                for item in recognized_units
-                ]
+            scales = [PrintUtils._paper_unit_scale(item) for item in recognized_units]
             if any(value != scales[0] for value in scales):
                 return None
             scale = scales[0]
@@ -186,27 +224,27 @@ class PrintUtils:
 
     @staticmethod
     def _paper_unit_scale(unit):
-        if unit.startswith('mm') or unit.startswith('millim'):
+        if unit.startswith("mm") or unit.startswith("millim"):
             return 1.0
-        if unit.startswith('cm') or unit.startswith('centim'):
+        if unit.startswith("cm") or unit.startswith("centim"):
             return CM_TO_MM
         return MM_PER_INCH
 
     @staticmethod
     def paper_format_name(name):
         """Return the standard format a paper size's name refers to."""
-        key = re.sub(r'[^A-Z0-9]', '', (name or '').upper())
+        key = re.sub(r"[^A-Z0-9]", "", (name or "").upper())
         if not key:
             return None
-        key = key.replace('ARCHITECTURE', 'ARCH')
-        if key.endswith('SHEET'):
-            key = key[:-len('SHEET')]
-        key = PAPER_FORMAT_ALIASES.get(key, key).replace('_', '')
+        key = key.replace("ARCHITECTURE", "ARCH")
+        if key.endswith("SHEET"):
+            key = key[: -len("SHEET")]
+        key = PAPER_FORMAT_ALIASES.get(key, key).replace("_", "")
         keys = {key}
-        if key not in {'A', 'B', 'C', 'D', 'E'}:
-            keys.update(('ISO' + key, 'ANSI' + key, 'ARCH' + key))
+        if key not in {"A", "B", "C", "D", "E"}:
+            keys.update(("ISO" + key, "ANSI" + key, "ARCH" + key))
         for member in STANDARD_PAPER_FORMATS:
-            if member.replace('_', '') in keys:
+            if member.replace("_", "") in keys:
                 return member
         return None
 
@@ -219,9 +257,11 @@ class PrintUtils:
         width, height = dims
         for member in STANDARD_PAPER_FORMATS:
             standard = STANDARD_PAPER_SIZES_MM.get(member)
-            if standard \
-                    and abs(standard[0] - width) <= PAPER_SIZE_TOLERANCE_MM \
-                    and abs(standard[1] - height) <= PAPER_SIZE_TOLERANCE_MM:
+            if (
+                standard
+                and abs(standard[0] - width) <= PAPER_SIZE_TOLERANCE_MM
+                and abs(standard[1] - height) <= PAPER_SIZE_TOLERANCE_MM
+            ):
                 return member
         return None
 
@@ -232,9 +272,10 @@ class PrintUtils:
         Falls back to the sheet's own size, warning once per size, when the
         paper has no standard format that PDF export can represent.
         """
-        name = getattr(paper_size, 'Name', None) or ''
-        member = PrintUtils.paper_format_name(name) \
-            or PrintUtils.paper_format_size(name)
+        name = getattr(paper_size, "Name", None) or ""
+        member = PrintUtils.paper_format_name(name) or PrintUtils.paper_format_size(
+            name
+        )
         if member:
             paper_fmt = getattr(DB.ExportPaperFormat, member, None)
             if paper_fmt is not None:
@@ -243,8 +284,9 @@ class PrintUtils:
             WARNED_PAPER_SIZES.add(name)
             logger.warning(
                 'Paper size "%s" is not a standard size that PDF export can '
-                'apply; exporting at sheet size instead.', name
-                )
+                "apply; exporting at sheet size instead.",
+                name,
+            )
         return DB.ExportPaperFormat.Default
 
     @staticmethod
@@ -261,23 +303,23 @@ class PrintUtils:
             try:
                 opts.ColorDepth = print_params.ColorDepth
             except Exception as ex:
-                logger.debug('Could not map ColorDepth: %s', ex)
+                logger.debug("Could not map ColorDepth: %s", ex)
             try:
                 opts.RasterQuality = print_params.RasterQuality
             except Exception as ex:
-                logger.debug('Could not map RasterQuality: %s', ex)
+                logger.debug("Could not map RasterQuality: %s", ex)
             try:
                 opts.AlwaysUseRaster = (
                     print_params.HiddenLineViews
                     == DB.HiddenLineViewsType.RasterProcessing
-                    )
+                )
             except Exception as ex:
-                logger.debug('Could not map HiddenLineViews: %s', ex)
+                logger.debug("Could not map HiddenLineViews: %s", ex)
             try:
                 paper_format = PrintUtils.paper_format(print_params.PaperSize)
                 opts.PaperFormat = paper_format
             except Exception as ex:
-                logger.debug('Could not map PaperSize: %s', ex)
+                logger.debug("Could not map PaperSize: %s", ex)
                 paper_format = DB.ExportPaperFormat.Default
             if paper_format == DB.ExportPaperFormat.Default:
                 opts.PaperPlacement = DB.PaperPlacementType.Center
@@ -285,21 +327,21 @@ class PrintUtils:
                 try:
                     opts.PaperOrientation = print_params.PageOrientation
                 except Exception as ex:
-                    logger.debug('Could not map PageOrientation: %s', ex)
+                    logger.debug("Could not map PageOrientation: %s", ex)
                 try:
                     opts.PaperPlacement = print_params.PaperPlacement
                 except Exception as ex:
-                    logger.debug('Could not map PaperPlacement: %s', ex)
+                    logger.debug("Could not map PaperPlacement: %s", ex)
                 try:
                     opts.OriginOffsetX = print_params.OriginOffsetX
                     opts.OriginOffsetY = print_params.OriginOffsetY
                 except Exception as ex:
-                    logger.debug('Could not map OriginOffset: %s', ex)
+                    logger.debug("Could not map OriginOffset: %s", ex)
                 try:
                     opts.ZoomType = print_params.ZoomType
                     opts.ZoomPercentage = int(print_params.Zoom)
                 except Exception as ex:
-                    logger.debug('Could not map Zoom: %s', ex)
+                    logger.debug("Could not map Zoom: %s", ex)
         return opts
 
     @staticmethod
@@ -317,7 +359,7 @@ class PrintUtils:
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
         if not doc.Export(dir_path, export_sheet, opt):
-            raise RuntimeError('Revit reported an incomplete PDF export.')
+            raise RuntimeError("Revit reported an incomplete PDF export.")
         return True
 
     @staticmethod
@@ -803,19 +845,16 @@ class ScheduleSheetList(object):
 
         ordered_sheets_dict = {}
         for sheet in sheet_list:
-            logger.debug("finding index for: %s", sheet.SheetNumber)
+            sheet_number = re.escape(sheet.SheetNumber)
             for line_no, data_line in enumerate(sched_data):
-                match_pattern = r"(^|.*\t){}(\t.*|$)".format(sheet.SheetNumber)
-                matches_sheet = re.match(match_pattern, data_line)
-                logger.debug("match: %s", matches_sheet)
-                try:
-                    if matches_sheet:
-                        ordered_sheets_dict[line_no] = sheet
-                        break
-                    if not sheet.CanBePrinted:
-                        logger.debug("Sheet %s is not printable.", sheet.SheetNumber)
-                except Exception:
-                    continue
+                match_pattern = r"(^|.*\t){}(\t.*|$)".format(sheet_number)
+                if re.match(match_pattern, data_line):
+                    ordered_sheets_dict[line_no] = sheet
+                    break
+            else:
+                logger.debug(
+                    "Sheet %s was not found in the schedule.", sheet.SheetNumber
+                )
 
         sorted_keys = sorted(ordered_sheets_dict.keys())
         return [ordered_sheets_dict[x] for x in sorted_keys]
@@ -879,14 +918,114 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.project_info = revit.query.get_project_info(doc=revit.doc)
         self.sheet_cat_id = revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
+        self._setup_output_folder()
         self._setup_docs_list()
         self._setup_naming_formats()
 
         self._apply_projectinfo_naming_format_default()
+        self._restore_options()
 
         self._all_sheets_list = (
             list(self.sheets_lb.ItemsSource) if self.sheets_lb.ItemsSource else []
         )
+
+    @staticmethod
+    def _doc_key(doc):
+        try:
+            return revit.query.get_central_path(doc) or doc.PathName or doc.Title
+        except Exception:
+            return doc.Title
+
+    def _setup_output_folder(self):
+        self.output_folder_tb.Text = config.get_option("output_folder", "") or ""
+        self.subfolder_tb.Text = config.get_option(
+            "subfolder_format", DEFAULT_SUBFOLDER_FORMAT
+        )
+
+    def _restore_options(self):
+        self.reverse_cb.IsChecked = config.get_option("reverse_order", False)
+        self.placeholder_cb.IsChecked = config.get_option("show_placeholders", True)
+        self.indexspace_cb.IsChecked = config.get_option("include_placeholders", True)
+        if self.combine_cb.IsEnabled:
+            self.combine_cb.IsChecked = config.get_option("combine", False)
+        if self.export_dwg.IsEnabled:
+            self.export_dwg.IsChecked = config.get_option("export_dwg", False)
+        self.indexstart_tb.Text = str(config.get_option("index_start", 0))
+        self.options_changed(None, None)
+        self.index_slider.Value = config.get_option(
+            "index_digits", self.index_slider.Value
+        )
+
+    def save_options(self, sender, args):
+        """Remember the window's choices for the next run.
+
+        Note:
+            Runs on every close, including after printing, so a cancelled
+            window still keeps its last folder and naming choices.
+        """
+        try:
+            config.output_folder = self.output_folder_tb.Text.strip()
+            config.subfolder_format = self.subfolder_tb.Text.strip()
+            config.printer = self.selected_printer or ""
+            if self.selected_naming_format:
+                config.naming_format = self.selected_naming_format.name
+            config.reverse_order = bool(self.reverse_print)
+            config.show_placeholders = bool(self.show_placeholders)
+            config.include_placeholders = bool(self.include_placeholders)
+            config.combine = bool(self.combine_print)
+            config.export_dwg = bool(self.export_dwg.IsChecked)
+            config.index_digits = self.index_digits
+            config.index_start = self.index_start
+            if self.selected_doc and self.selected_sheetlist:
+                sheet_lists = config.get_option("sheet_lists", {})
+                sheet_lists[self._doc_key(self.selected_doc)] = (
+                    self.selected_sheetlist.name
+                )
+                config.sheet_lists = sheet_lists
+            script.save_config()
+        except Exception as save_err:
+            logger.debug("Could not save Print Sheets options: %s", save_err)
+
+    def browse_output_folder(self, sender, args):
+        current = self.output_folder_tb.Text.strip()
+        folder = forms.pick_folder(
+            owner=self,
+            init_dir=current if op.isdir(current) else PrintUtils.get_dir(),
+        )
+        if folder:
+            self.output_folder_tb.Text = folder
+
+    def _get_output_dir(self):
+        """Create this run's output folder and return its path.
+
+        Returns None after telling the user why the folder cannot be used,
+        so callers can keep the window open for a correction.
+        """
+        root = self.output_folder_tb.Text.strip() or PrintUtils.get_dir()
+        try:
+            subfolder = PrintUtils.format_subfolder(
+                self.subfolder_tb.Text,
+                model=self.selected_doc.Title,
+                sheet_index=(
+                    self.selected_sheetlist.name if self.selected_sheetlist else ""
+                ),
+            )
+        except (KeyError, ValueError, IndexError) as fmt_err:
+            forms.alert(
+                "The subfolder name is not valid. Use {date}, {time}, "
+                "{model} and {sheet_index} only.",
+                expanded=str(fmt_err),
+            )
+            return None
+        dir_path = op.join(root, subfolder) if subfolder else root
+        try:
+            return PrintUtils.ensure_dir(dir_path)
+        except Exception as dir_err:
+            forms.alert(
+                "Cannot create the output folder:\n{}".format(dir_path),
+                expanded=str(dir_err),
+            )
+            return None
 
     def copy_naming_format(self, sender, args):
         try:
@@ -903,11 +1042,16 @@ class PrintSheetsWindow(forms.WPFWindow):
         pi = self.selected_doc.ProjectInformation
         param = pi.LookupParameter("Naming Format") if pi else None
         param_value = param.AsString() if param else None
+        saved_value = config.get_option("naming_format", None)
 
-        selected_item = next(
-            (nf for nf in self.namingformat_cb.ItemsSource if nf.name == param_value),
-            None,
-        )
+        selected_item = None
+        for wanted in (param_value, saved_value):
+            selected_item = next(
+                (nf for nf in self.namingformat_cb.ItemsSource if nf.name == wanted),
+                None,
+            )
+            if selected_item is not None:
+                break
 
         if not selected_item and self.namingformat_cb.ItemsSource:
             selected_item = self.namingformat_cb.ItemsSource[0]
@@ -1072,7 +1216,10 @@ class PrintSheetsWindow(forms.WPFWindow):
             printers.insert(0, "Revit Internal Printer")
 
         self.printers_cb.ItemsSource = printers
-        if IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
+        saved_printer = config.get_option("printer", "")
+        if saved_printer and saved_printer in printers:
+            self.printers_cb.SelectedItem = saved_printer
+        elif IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
             self.printers_cb.SelectedItem = "Revit Internal Printer"
         else:
             print_mgr = self._get_printmanager()
@@ -1151,7 +1298,13 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet_indices.append(UnlistedSheetsList())
 
         self.schedules_cb.ItemsSource = sheet_indices
-        self.schedules_cb.SelectedIndex = 0
+        saved_name = config.get_option("sheet_lists", {}).get(
+            self._doc_key(self.selected_doc)
+        )
+        self.schedules_cb.SelectedItem = next(
+            (x for x in sheet_indices if x.name == saved_name),
+            sheet_indices[0] if sheet_indices else None,
+        )
         if self.schedules_cb.ItemsSource:
             self.enable_element(self.schedules_cb)
         else:
@@ -1167,17 +1320,17 @@ class PrintSheetsWindow(forms.WPFWindow):
             return False
         return True
 
-    def _print_combined_sheets_in_order(self, target_sheets):
-        if self.selected_print_setting is not None \
-                and self.selected_print_setting.allows_variable_paper:
+    def _print_combined_sheets_in_order(self, target_sheets, dir_path):
+        if (
+            self.selected_print_setting is not None
+            and self.selected_print_setting.allows_variable_paper
+        ):
             forms.alert(
-                "Combined export is unavailable when paper sizes vary "
-                "by sheet."
-                )
+                "Combined export is unavailable when paper sizes vary by sheet."
+            )
             return
-        if IS_REVIT_2022_OR_NEWER \
-                and self.selected_printer == "Revit Internal Printer":
-            self._export_combined_pdf_internal(target_sheets)
+        if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
+            self._export_combined_pdf_internal(target_sheets, dir_path)
             return
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
@@ -1282,7 +1435,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             except Exception as e:
                 forms.alert(str(e) + "\nSet printer correctly in Print settings.")
                 script.exit()
-            print_filepath = op.join("C:", "Ordered Sheet Set.pdf")
+            print_filepath = op.join(dir_path, "Ordered Sheet Set.pdf")
             print_mgr.PrintToFile = True
             print_mgr.PrintToFileName = print_filepath
 
@@ -1299,51 +1452,46 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             self._reset_psettings()
 
-    def _export_combined_pdf_internal(self, target_sheets):
+    def _export_combined_pdf_internal(self, target_sheets, dirPath):
         WARNED_PAPER_SIZES.clear()
         doc = self.selected_doc
-        dirPath = os.path.join(PrintUtils.get_dir(),
-                               PrintUtils.get_folder("_PRINT"))
-        PrintUtils.ensure_dir(dirPath)
         PrintUtils.open_dir(dirPath)
 
         sheet_ids = [x.revit_sheet.Id for x in target_sheets if x.printable]
         if not sheet_ids:
             return
 
-        with revit.Transaction('Reload Keynote File', doc=doc):
+        with revit.Transaction("Reload Keynote File", doc=doc):
             DB.KeynoteTable.GetKeynoteTable(doc).Reload(None)
 
         optspdf = PrintUtils.pdf_opts(
-            print_params=self.selected_print_setting.print_params)
+            print_params=self.selected_print_setting.print_params
+        )
         try:
             with forms.ProgressBar(
-                    title="Exporting combined PDF...",
-                    indeterminate=True):
+                title="Exporting combined PDF...", indeterminate=True
+            ):
                 exported = PrintUtils.export_combined_pdf(
-                    dirPath, sheet_ids, optspdf, doc, "Ordered Sheet Set")
+                    dirPath, sheet_ids, optspdf, doc, "Ordered Sheet Set"
+                )
         except Exception as e:
-            logger.error('Failed to export combined PDF: %s', e)
-            forms.alert('Failed to export combined PDF: {}'.format(e))
+            logger.error("Failed to export combined PDF: %s", e)
+            forms.alert("Failed to export combined PDF: {}".format(e))
         else:
             if not exported:
                 message = (
-                    'Combined PDF export was incomplete; some sheets may be '
-                    'missing.'
-                    )
+                    "Combined PDF export was incomplete; some sheets may be missing."
+                )
                 logger.error(message)
                 forms.alert(message)
 
-    def _print_sheets_in_order(self, target_sheets):
+    def _print_sheets_in_order(self, target_sheets, dirPath):
         WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
         per_sheet_psettings = self.selected_print_setting.allows_variable_paper
 
-        # make sure you can print, construct print path and make directory
-        dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
-        PrintUtils.ensure_dir(dirPath)
         doc = self.selected_doc
 
         if (
@@ -1538,7 +1686,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                         sheet.number,
                                     )
 
-    def _print_linked_sheets_in_order(self, target_sheets, target_doc):
+    def _print_linked_sheets_in_order(self, target_sheets, target_doc, dirPath):
         WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
@@ -1549,8 +1697,6 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.SelectNewPrintDriver(self.selected_printer)
         print_mgr.PrintRange = DB.PrintRange.Current
 
-        dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
-        PrintUtils.ensure_dir(dirPath)
         doc = target_doc
 
         if self.selected_printer == "Revit Internal Printer":
@@ -2025,15 +2171,20 @@ class PrintSheetsWindow(forms.WPFWindow):
                         no=True,
                     ):
                         return
+            dir_path = self._get_output_dir()
+            if not dir_path:
+                return
             # close window and submit print
             self.Close()
             if self.combine_print:
-                self._print_combined_sheets_in_order(target_sheets)
+                self._print_combined_sheets_in_order(target_sheets, dir_path)
             else:
                 if self.selected_doc.IsLinked:
-                    self._print_linked_sheets_in_order(target_sheets, self.selected_doc)
+                    self._print_linked_sheets_in_order(
+                        target_sheets, self.selected_doc, dir_path
+                    )
                 else:
-                    self._print_sheets_in_order(target_sheets)
+                    self._print_sheets_in_order(target_sheets, dir_path)
 
 
 def cleanup_sheetnumbers(doc):

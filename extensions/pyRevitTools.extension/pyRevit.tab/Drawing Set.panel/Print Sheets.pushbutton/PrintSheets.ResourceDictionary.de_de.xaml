@@ -22,6 +22,11 @@
     <system:String x:Key="EditFormats">Formate bearbeiten</system:String>
     <system:String x:Key="Printer">Drucker</system:String>
     <system:String x:Key="PageSettings">Seiteneinstellungen</system:String>
+    <system:String x:Key="OutputFolder">Ausgabeordner</system:String>
+    <system:String x:Key="Browse">Durchsuchen</system:String>
+    <system:String x:Key="OutputFolderTooltip">Speicherort für PDF- und DWG-Dateien. Leer lassen für Desktop\pyRevit Print Folder. Externe PDF-Drucker verwenden möglicherweise ihren eigenen Speicherort.</system:String>
+    <system:String x:Key="Subfolder">Unterordner</system:String>
+    <system:String x:Key="SubfolderTooltip">Verwenden Sie {date}, {time}, {model} und {sheet_index}. Verwenden Sie \ für verschachtelte Ordner. Leer lassen, um direkt im Ausgabeordner zu speichern.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">Nicht kompatibel mit Drucker</system:String>
     
     <system:String x:Key="ListOfSheets">Liste der Blätter im ausgewählten Blattindex</system:String>
