@@ -29,7 +29,7 @@
    "path": "extensions/pyRevitTools.extension/pyRevit.tab/Drawing Set.panel/Sheets.pulldown/Rename Selected Sheets.pushbutton/script.py",
    "code": "API-MISSING",
    "message": "`.IntegerValue` was removed in Revit 2026 (exists up to 2025)",
-   "count": 4
+   "count": 5
   },
   {
    "path": "extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/ParametersValuesToParameter.pushbutton/script.py",

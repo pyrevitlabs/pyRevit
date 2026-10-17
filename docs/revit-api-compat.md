@@ -29,7 +29,8 @@ Useful flags:
 - `--exclude GLOB` skips files.
 
 Exit code `0` means clean, `1` means errors were found (or warnings with
-`--strict`), and `2` means a usage or I/O problem. Clones are only parsed. No
+`--strict`), and `2` means a usage or I/O problem. That includes any
+failed clone, because the scan is then incomplete. Clones are only parsed. No
 hooks, submodules, or scripts from them run.
 
 ## When is a use protected?
@@ -51,12 +52,23 @@ is reported only for years in that set where the API does not exist.
    `and`/`or`/`not`, ternaries, flags such as
    `IS_2022 = HOST_APP.is_newer_than(2021)`, and early exits (`return`,
    `raise`, `script.exit()`, `forms.alert(..., exitscript=True)`).
-3. **Feature detection** protects both the guarded code and its fallback.
-   This covers `hasattr(...)`, `getattr(obj, name, default)` (including a
-   variable that holds the result), and a `try` whose handler catches
-   `AttributeError`, `ImportError`, `TypeError` or `Exception`, or is bare.
-   Code after a `try` that returns on success and swallows the failure is
-   treated as the fallback.
+3. **Feature detection** narrows by what it actually probes:
+   - `hasattr(obj, "X")` or `getattr(obj, "X", default)` (also through a
+     variable holding the result, e.g. `if probe is None: raise`): uses of
+     `X` itself are protected in the true branch, even in years where only
+     some updates have `X`. That branch is limited to the years `X` exists,
+     and the false branch to the years it does not. Other APIs in either
+     branch are still checked: probing `ColorFillScheme` does not cover
+     `STEPImportOptions`.
+   - A `try` whose handler catches `AttributeError`, `ImportError`,
+     `TypeError` or `Exception`, or is bare, absorbs failures in its body.
+     Its handlers are checked only for the years something cataloged in the
+     body is missing, and code after a `try` that returns on success gets
+     the same treatment. If nothing cataloged can fail in the body, the
+     handlers are checked for every year.
+
+   Flags and probe variables resolve per function scope, so a name bound in
+   one function never answers for another.
 
 Helpers that already contain the version branch don't trigger findings, so
 prefer them:
@@ -192,7 +204,8 @@ don't ship `dev/`.
   `rev.NumberType` is only a warning).
 - Guards are followed within a function, not across calls. A helper that is
   only called under a version check needs a guard of its own or a justified
-  suppression.
+  suppression. The same goes for a fallback the analysis cannot connect to
+  its failing attempt, e.g. one that depends on the receiver's type.
 - IronPython 2-only syntax (`print "x"`) cannot be parsed by CPython's `ast`.
   Those files are reported as `PARSE` warnings and skipped.
 - The Python 2 vs 3 language axis is covered by

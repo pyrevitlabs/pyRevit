@@ -1,4 +1,1195 @@
 {
+ "bases": {
+  "Autodesk.Revit.Creation.Application": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.Creation.Document": "Autodesk.Revit.Creation.ItemFactoryBase",
+  "Autodesk.Revit.Creation.FamilyItemFactory": "Autodesk.Revit.Creation.ItemFactoryBase",
+  "Autodesk.Revit.Creation.ItemFactoryBase": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ACADExportOptions": "Autodesk.Revit.DB.BaseExportOptions",
+  "Autodesk.Revit.DB.AXMImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.Analysis.AnalysisDisplayLegend": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.AnalysisDisplayStyle": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.BuildingOperatingDaySchedule": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.BuildingOperatingYearSchedule": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.ConceptualConstructionType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Analysis.ConceptualSurfaceType": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisConstruction": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisDetailModel": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisMaterial": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisOpening": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisSpace": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisSurface": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisWindowType": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyAnalysisZone": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.EnergyDataSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.FieldDomainPointsByParameter": "Autodesk.Revit.DB.Analysis.FieldDomainPoints",
+  "Autodesk.Revit.DB.Analysis.FieldDomainPointsByUV": "Autodesk.Revit.DB.Analysis.FieldDomainPoints",
+  "Autodesk.Revit.DB.Analysis.FieldDomainPointsByXYZ": "Autodesk.Revit.DB.Analysis.FieldDomainPoints",
+  "Autodesk.Revit.DB.Analysis.GenericZone": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.HVACLoadBuildingType": "Autodesk.Revit.DB.Analysis.HVACLoadType",
+  "Autodesk.Revit.DB.Analysis.HVACLoadSpaceType": "Autodesk.Revit.DB.Analysis.HVACLoadType",
+  "Autodesk.Revit.DB.Analysis.HVACLoadType": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.MassEnergyAnalyticalModel": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.MassLevelData": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.MassSurfaceData": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.MassZone": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.PathOfTravel": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.RouteAnalysisSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.SpatialFieldManager": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Analysis.ValueAtPoint": "Autodesk.Revit.DB.ValueAtPointBase",
+  "Autodesk.Revit.DB.Analysis.VectorAtPoint": "Autodesk.Revit.DB.ValueAtPointBase",
+  "Autodesk.Revit.DB.Analysis.ViewHVACLoadsReport": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.Analysis.ViewSystemsAnalysisReport": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.AngularDimension": "Autodesk.Revit.DB.Dimension",
+  "Autodesk.Revit.DB.AnnotationLabel": "Autodesk.Revit.DB.TextElement",
+  "Autodesk.Revit.DB.AnnotationSymbol": "Autodesk.Revit.DB.FamilyInstance",
+  "Autodesk.Revit.DB.AnnotationSymbolType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.AppearanceAssetElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Arc": "Autodesk.Revit.DB.Curve",
+  "Autodesk.Revit.DB.ArcLengthDimension": "Autodesk.Revit.DB.AngularDimension",
+  "Autodesk.Revit.DB.Architecture.BuildingPad": "Autodesk.Revit.DB.CeilingAndFloor",
+  "Autodesk.Revit.DB.Architecture.ContinuousRail": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.ContinuousRailType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.CutMarkType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.Fascia": "Autodesk.Revit.DB.HostedSweep",
+  "Autodesk.Revit.DB.Architecture.FasciaType": "Autodesk.Revit.DB.HostedSweepType",
+  "Autodesk.Revit.DB.Architecture.Gutter": "Autodesk.Revit.DB.HostedSweep",
+  "Autodesk.Revit.DB.Architecture.GutterType": "Autodesk.Revit.DB.HostedSweepType",
+  "Autodesk.Revit.DB.Architecture.HandRail": "Autodesk.Revit.DB.Architecture.ContinuousRail",
+  "Autodesk.Revit.DB.Architecture.HandRailType": "Autodesk.Revit.DB.Architecture.ContinuousRailType",
+  "Autodesk.Revit.DB.Architecture.MultistoryStairs": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.NumberSystemType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.Railing": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.RailingType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.Room": "Autodesk.Revit.DB.SpatialElement",
+  "Autodesk.Revit.DB.Architecture.RoomFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Architecture.RoomTag": "Autodesk.Revit.DB.SpatialElementTag",
+  "Autodesk.Revit.DB.Architecture.RoomTagFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Architecture.RoomTagType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.Architecture.Stairs": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.StairsLanding": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.StairsLandingType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.StairsPath": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.StairsPathType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.StairsRun": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Architecture.StairsRunType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.StairsType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.TopRail": "Autodesk.Revit.DB.Architecture.ContinuousRail",
+  "Autodesk.Revit.DB.Architecture.TopRailType": "Autodesk.Revit.DB.Architecture.ContinuousRailType",
+  "Autodesk.Revit.DB.Architecture.TopographyEditScope": "Autodesk.Revit.DB.EditScope",
+  "Autodesk.Revit.DB.Architecture.TopographyLinkType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Architecture.TopographySurface": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Area": "Autodesk.Revit.DB.SpatialElement",
+  "Autodesk.Revit.DB.AreaFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.AreaScheme": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.AreaTag": "Autodesk.Revit.DB.SpatialElementTag",
+  "Autodesk.Revit.DB.AreaTagFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.AreaTagType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.AreaVolumeSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.AssemblyCodeTable": "Autodesk.Revit.DB.KeyBasedTreeEntryTable",
+  "Autodesk.Revit.DB.AssemblyDifferenceConfiguration": "Autodesk.Revit.DB.AssemblyDifference",
+  "Autodesk.Revit.DB.AssemblyDifferenceMemberCount": "Autodesk.Revit.DB.AssemblyDifference",
+  "Autodesk.Revit.DB.AssemblyDifferenceMemberDifference": "Autodesk.Revit.DB.AssemblyDifference",
+  "Autodesk.Revit.DB.AssemblyDifferenceNamingCategory": "Autodesk.Revit.DB.AssemblyDifference",
+  "Autodesk.Revit.DB.AssemblyDifferenceNone": "Autodesk.Revit.DB.AssemblyDifference",
+  "Autodesk.Revit.DB.AssemblyInstance": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.AssemblyMemberDifferentCategory": "Autodesk.Revit.DB.AssemblyMemberDifference",
+  "Autodesk.Revit.DB.AssemblyMemberDifferentGeometry": "Autodesk.Revit.DB.AssemblyMemberDifference",
+  "Autodesk.Revit.DB.AssemblyMemberDifferentParameters": "Autodesk.Revit.DB.AssemblyMemberDifference",
+  "Autodesk.Revit.DB.AssemblyMemberDifferentType": "Autodesk.Revit.DB.AssemblyMemberDifference",
+  "Autodesk.Revit.DB.AssemblyType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.BRepBuilder": "Autodesk.Revit.DB.ShapeBuilder",
+  "Autodesk.Revit.DB.BackgroundProcessTask.BackgroundProcessTaskType": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.DB.BaseArray": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.BasePoint": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.BeamSystem": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.BeamSystemType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Binding": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.BindingMap": "Autodesk.Revit.DB.DefinitionBindingMap",
+  "Autodesk.Revit.DB.Blend": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.BoundingBoxContainsPointFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.BoundingBoxIntersectsFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.BoundingBoxIsInsideFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.BoundingBoxXYZ": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.BrowserOrganization": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.BuildingPadType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.CADLinkOperations": "Autodesk.Revit.DB.LinkOperations",
+  "Autodesk.Revit.DB.CADLinkType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Categories": "Autodesk.Revit.DB.CategoryNameMap",
+  "Autodesk.Revit.DB.Category": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CategoryNameMap": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CategoryNameMapIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CategorySet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CategorySetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Ceiling": "Autodesk.Revit.DB.CeilingAndFloor",
+  "Autodesk.Revit.DB.CeilingAndFloor": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.CeilingType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.City": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CitySet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CitySetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ClassificationEntries": "Autodesk.Revit.DB.KeyBasedTreeEntries",
+  "Autodesk.Revit.DB.ClassificationEntry": "Autodesk.Revit.DB.KeyBasedTreeEntry",
+  "Autodesk.Revit.DB.Color": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ColorBackgroundSettings": "Autodesk.Revit.DB.BackgroundSettings",
+  "Autodesk.Revit.DB.ColorFillLegend": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ColorFillScheme": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.CombinableElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.CombinableElementArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CombinableElementArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ComponentRepeater": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ComponentRepeaterSlot": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ConicalFace": "Autodesk.Revit.DB.Face",
+  "Autodesk.Revit.DB.ConicalSurface": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.ConnectorElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ConnectorSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ConnectorSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ContentNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.Control": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.CurtainCell": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurtainGrid": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurtainGridLine": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.CurtainGridSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurtainGridSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurtainSystem": "Autodesk.Revit.DB.CurtainSystemBase",
+  "Autodesk.Revit.DB.CurtainSystemBase": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.CurtainSystemType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.Curve": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.CurveArrArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurveArrArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurveArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurveArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurveByPoints": "Autodesk.Revit.DB.CurveElement",
+  "Autodesk.Revit.DB.CurveByPointsArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurveByPointsArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.CurveElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.CurveElementFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.CurveLoopsProfile": "Autodesk.Revit.DB.SweepProfile",
+  "Autodesk.Revit.DB.CurveNode": "Autodesk.Revit.DB.ModelCurveNode",
+  "Autodesk.Revit.DB.CylindricalFace": "Autodesk.Revit.DB.Face",
+  "Autodesk.Revit.DB.CylindricalHelix": "Autodesk.Revit.DB.Curve",
+  "Autodesk.Revit.DB.CylindricalSurface": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.DGNExportOptions": "Autodesk.Revit.DB.BaseExportOptions",
+  "Autodesk.Revit.DB.DGNImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.DWFExportOptions": "Autodesk.Revit.DB.CADExportOptions",
+  "Autodesk.Revit.DB.DWFXExportOptions": "Autodesk.Revit.DB.DWFExportOptions",
+  "Autodesk.Revit.DB.DWGExportOptions": "Autodesk.Revit.DB.ACADExportOptions",
+  "Autodesk.Revit.DB.DWGImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.DXFExportOptions": "Autodesk.Revit.DB.ACADExportOptions",
+  "Autodesk.Revit.DB.DatumPlane": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DefaultDivideSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DefinitionBindingMap": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DefinitionBindingMapIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DefinitionFile": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DefinitionGroup": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DeleteElements": "Autodesk.Revit.DB.FailureResolution",
+  "Autodesk.Revit.DB.DesignOption": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DetailArc": "Autodesk.Revit.DB.DetailCurve",
+  "Autodesk.Revit.DB.DetailCurve": "Autodesk.Revit.DB.CurveElement",
+  "Autodesk.Revit.DB.DetailCurveArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DetailCurveArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DetailEllipse": "Autodesk.Revit.DB.DetailCurve",
+  "Autodesk.Revit.DB.DetailLine": "Autodesk.Revit.DB.DetailCurve",
+  "Autodesk.Revit.DB.DetailNurbSpline": "Autodesk.Revit.DB.DetailCurve",
+  "Autodesk.Revit.DB.Dimension": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DimensionSegment": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DimensionSegmentArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DimensionSegmentArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DimensionType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.DirectContext3D.IndexLine": "Autodesk.Revit.DB.DirectContext3D.IndexPrimitive",
+  "Autodesk.Revit.DB.DirectContext3D.IndexPoint": "Autodesk.Revit.DB.DirectContext3D.IndexPrimitive",
+  "Autodesk.Revit.DB.DirectContext3D.IndexStreamLine": "Autodesk.Revit.DB.DirectContext3D.IndexStream",
+  "Autodesk.Revit.DB.DirectContext3D.IndexStreamPoint": "Autodesk.Revit.DB.DirectContext3D.IndexStream",
+  "Autodesk.Revit.DB.DirectContext3D.IndexStreamTriangle": "Autodesk.Revit.DB.DirectContext3D.IndexStream",
+  "Autodesk.Revit.DB.DirectContext3D.IndexTriangle": "Autodesk.Revit.DB.DirectContext3D.IndexPrimitive",
+  "Autodesk.Revit.DB.DirectContext3D.VertexPosition": "Autodesk.Revit.DB.DirectContext3D.Vertex",
+  "Autodesk.Revit.DB.DirectContext3D.VertexPositionColored": "Autodesk.Revit.DB.DirectContext3D.Vertex",
+  "Autodesk.Revit.DB.DirectContext3D.VertexPositionNormal": "Autodesk.Revit.DB.DirectContext3D.Vertex",
+  "Autodesk.Revit.DB.DirectContext3D.VertexPositionNormalColored": "Autodesk.Revit.DB.DirectContext3D.Vertex",
+  "Autodesk.Revit.DB.DirectContext3D.VertexStreamPosition": "Autodesk.Revit.DB.DirectContext3D.VertexStream",
+  "Autodesk.Revit.DB.DirectContext3D.VertexStreamPositionColored": "Autodesk.Revit.DB.DirectContext3D.VertexStream",
+  "Autodesk.Revit.DB.DirectContext3D.VertexStreamPositionNormal": "Autodesk.Revit.DB.DirectContext3D.VertexStream",
+  "Autodesk.Revit.DB.DirectContext3D.VertexStreamPositionNormalColored": "Autodesk.Revit.DB.DirectContext3D.VertexStream",
+  "Autodesk.Revit.DB.DirectShape": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DirectShapeType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.DisableAnalyticalModelCB": "Autodesk.Revit.DB.FailureResolution",
+  "Autodesk.Revit.DB.DisplacementElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DisplacementPath": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DividedPath": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DividedSurface": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.DocumentSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DocumentSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DoubleArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DoubleArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.DoubleParameterValue": "Autodesk.Revit.DB.ParameterValue",
+  "Autodesk.Revit.DB.Edge": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.EdgeArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.EdgeArrayArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.EdgeArrayArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.EdgeArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.AnalyticalBusData": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
+  "Autodesk.Revit.DB.Electrical.AnalyticalEquipmentLoadData": "Autodesk.Revit.DB.Electrical.AnalyticalDistributionNodePropertyData",
+  "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData": "Autodesk.Revit.DB.Electrical.AnalyticalDistributionNodePropertyData",
+  "Autodesk.Revit.DB.Electrical.AnalyticalPowerSourceData": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
+  "Autodesk.Revit.DB.Electrical.AnalyticalTransferSwitchData": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
+  "Autodesk.Revit.DB.Electrical.AnalyticalTransformerData": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
+  "Autodesk.Revit.DB.Electrical.AreaBasedLoadData": "Autodesk.Revit.DB.Mechanical.ZoneElementDomainData",
+  "Autodesk.Revit.DB.Electrical.AreaBasedLoadType": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.CableTray": "Autodesk.Revit.DB.Electrical.CableTrayConduitBase",
+  "Autodesk.Revit.DB.Electrical.CableTrayConduitBase": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.Electrical.CableTrayConduitRunBase": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.CableTrayRun": "Autodesk.Revit.DB.Electrical.CableTrayConduitRunBase",
+  "Autodesk.Revit.DB.Electrical.CableTraySettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.CableTraySizes": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.CableTrayType": "Autodesk.Revit.DB.MEPCurveType",
+  "Autodesk.Revit.DB.Electrical.CableType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.CircuitNamingScheme": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.CircuitNamingSchemeSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.Conduit": "Autodesk.Revit.DB.Electrical.CableTrayConduitBase",
+  "Autodesk.Revit.DB.Electrical.ConduitRun": "Autodesk.Revit.DB.Electrical.CableTrayConduitRunBase",
+  "Autodesk.Revit.DB.Electrical.ConduitSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ConduitSizeSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ConduitType": "Autodesk.Revit.DB.MEPCurveType",
+  "Autodesk.Revit.DB.Electrical.CorrectionFactor": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.CorrectionFactorSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.CorrectionFactorSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.DistributionSysType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.DistributionSysTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.DistributionSysTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.ElectricalAnalyticalLoadSet": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ElectricalAnalyticalNode": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ElectricalDemandFactorDefinition": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ElectricalEquipment": "Autodesk.Revit.DB.MEPModel",
+  "Autodesk.Revit.DB.Electrical.ElectricalLoadAreaData": "Autodesk.Revit.DB.SpatialElementDomainData",
+  "Autodesk.Revit.DB.Electrical.ElectricalLoadClassification": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ElectricalSetting": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.ElectricalSystem": "Autodesk.Revit.DB.MEPSystem",
+  "Autodesk.Revit.DB.Electrical.ElectricalSystemSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.ElectricalSystemSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.GroundConductorSize": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.GroundConductorSizeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.GroundConductorSizeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.InsulationType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.InsulationTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.InsulationTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.LightingDevice": "Autodesk.Revit.DB.MEPModel",
+  "Autodesk.Revit.DB.Electrical.LightingFixture": "Autodesk.Revit.DB.MEPModel",
+  "Autodesk.Revit.DB.Electrical.PanelScheduleData": "Autodesk.Revit.DB.TableData",
+  "Autodesk.Revit.DB.Electrical.PanelScheduleSheetInstance": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.PanelScheduleTemplate": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Electrical.PanelScheduleView": "Autodesk.Revit.DB.TableView",
+  "Autodesk.Revit.DB.Electrical.TemperatureRatingType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.TemperatureRatingTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.TemperatureRatingTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.VoltageType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.VoltageTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.VoltageTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.Wire": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.Electrical.WireConduitType": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireConduitTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireConduitTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireMaterialType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.WireMaterialTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireMaterialTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireSize": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireSizeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireSizeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Electrical.WireTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Electrical.WireTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ElementArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ElementArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ElementBinding": "Autodesk.Revit.DB.Binding",
+  "Autodesk.Revit.DB.ElementCategoryFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementClassFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementDesignOptionFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementIdParameterValue": "Autodesk.Revit.DB.ParameterValue",
+  "Autodesk.Revit.DB.ElementIdSetFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementIntersectsElementFilter": "Autodesk.Revit.DB.ElementIntersectsFilter",
+  "Autodesk.Revit.DB.ElementIntersectsFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.ElementIntersectsSolidFilter": "Autodesk.Revit.DB.ElementIntersectsFilter",
+  "Autodesk.Revit.DB.ElementIsCurveDrivenFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementIsElementTypeFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementLevelFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.ElementLogicalFilter": "Autodesk.Revit.DB.ElementFilter",
+  "Autodesk.Revit.DB.ElementMulticategoryFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementMulticlassFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.ElementOwnerViewFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementParameterFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.ElementPhaseStatusFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.ElementQuickFilter": "Autodesk.Revit.DB.ElementFilter",
+  "Autodesk.Revit.DB.ElementSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ElementSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ElementSlowFilter": "Autodesk.Revit.DB.ElementFilter",
+  "Autodesk.Revit.DB.ElementStructuralTypeFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElementType": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ElementWorksetFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ElevationMarker": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Ellipse": "Autodesk.Revit.DB.Curve",
+  "Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.Events.CreateRelatedFileProgressChangedEventArgs": "Autodesk.Revit.DB.Events.DataTransferProgressChangedEventArgs",
+  "Autodesk.Revit.DB.Events.DataTransferProgressChangedEventArgs": "Autodesk.Revit.DB.Events.WorksharedOperationProgressChangedEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentClosedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentClosingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentCreatedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentCreatingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentOpenedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentOpeningEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentPrintedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentPrintingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentReloadLatestProgressChangedEventArgs": "Autodesk.Revit.DB.Events.DataTransferProgressChangedEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentReloadedLatestEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentReloadingLatestEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSaveToCentralProgressChangedEventArgs": "Autodesk.Revit.DB.Events.DataTransferProgressChangedEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSaveToLocalProgressChangedEventArgs": "Autodesk.Revit.DB.Events.WorksharedOperationProgressChangedEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSavedAsEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSavedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSavingAsEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSavingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSynchronizedWithCentralEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentSynchronizingWithCentralEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.DocumentWorksharingEnabledEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.Events.ElementTypeDuplicatedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ElementTypeDuplicatingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataInstanceAddedIntoDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataInstanceAddingIntoDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataInstanceRemovedFromDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataInstanceRemovingFromDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataTypeServerFailureResolutionExecutingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataTypeUpdatedDataSourceIntoDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ExternalDataTypeUpdatingDataSourceIntoDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.FailuresProcessingEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.Events.FamilyLoadedIntoDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.FamilyLoadingIntoDocumentEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.FileExportedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.FileExportingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.FileImportedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.FileImportingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.LinkedResourceOpenedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.LinkedResourceOpeningEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.PostDocEventArgs": "Autodesk.Revit.DB.Events.PostEventArgs",
+  "Autodesk.Revit.DB.Events.PostEventArgs": "Autodesk.Revit.DB.Events.RevitEventArgs",
+  "Autodesk.Revit.DB.Events.PreDocEventArgs": "Autodesk.Revit.DB.Events.PreEventArgs",
+  "Autodesk.Revit.DB.Events.PreEventArgs": "Autodesk.Revit.DB.Events.RevitEventArgs",
+  "Autodesk.Revit.DB.Events.ProgressChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.Events.ProjectBrowserDataChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostEventArgs",
+  "Autodesk.Revit.DB.Events.RevitAPIPostEventArgs": "Autodesk.Revit.DB.Events.RevitAPIEventArgs",
+  "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs": "Autodesk.Revit.DB.Events.RevitAPIEventArgs",
+  "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs": "Autodesk.Revit.DB.Events.RevitAPIEventArgs",
+  "Autodesk.Revit.DB.Events.ViewExportedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ViewExportingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.ViewPrintedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ViewPrintingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.ViewsExportedByContextEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.DB.Events.ViewsExportingByContextEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.DB.Events.WorksharedOperationProgressChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.DB.ExclusionFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ExportDGNSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ExportDWGSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ExportPDFSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ExtensibleStorage.DataStorage": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ExtensibleStorage.ExtensibleStorageFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.ExternalData.ExtendedParameterElement": "Autodesk.Revit.DB.ParameterElement",
+  "Autodesk.Revit.DB.ExternalData.ExtendedPropertiesLink": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ExternalData.ExtendedPropertiesLinkLoadContent": "Autodesk.Revit.DB.ExternalResourceLoadContent",
+  "Autodesk.Revit.DB.ExternalDefinition": "Autodesk.Revit.DB.Definition",
+  "Autodesk.Revit.DB.ExternalDefinitions": "Autodesk.Revit.DB.Definitions",
+  "Autodesk.Revit.DB.ExternalResourceType": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.DB.ExternalService.ExternalServiceId": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.DB.ExternalService.MultiServerService": "Autodesk.Revit.DB.ExternalService.ExternalService",
+  "Autodesk.Revit.DB.ExternalService.SingleServerService": "Autodesk.Revit.DB.ExternalService.ExternalService",
+  "Autodesk.Revit.DB.ExternallyTaggedBRep": "Autodesk.Revit.DB.ExternallyTaggedGeometryObject",
+  "Autodesk.Revit.DB.ExternallyTaggedNonBRep": "Autodesk.Revit.DB.ExternallyTaggedGeometryObject",
+  "Autodesk.Revit.DB.Extrusion": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.ExtrusionRoof": "Autodesk.Revit.DB.RoofBase",
+  "Autodesk.Revit.DB.FabricationConfiguration": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FabricationPart": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FabricationPartInsulationLining": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FabricationPartType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.FabricationServiceSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Face": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.FaceArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FaceArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FaceDetailNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.FaceEdgeNode": "Autodesk.Revit.DB.FaceDetailNode",
+  "Autodesk.Revit.DB.FaceNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.FaceSilhouetteNode": "Autodesk.Revit.DB.FaceDetailNode",
+  "Autodesk.Revit.DB.FaceSplitter": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FaceToposolid": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.FaceWall": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.FailureDefinitionId": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.DB.Family": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FamilyElementVisibility": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyInstance": "Autodesk.Revit.DB.Instance",
+  "Autodesk.Revit.DB.FamilyInstanceFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.FamilyManager": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyParameter": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyParameterSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyParameterSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyPointLocation": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyPointPlacementReference": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilySymbol": "Autodesk.Revit.DB.InsertableObject",
+  "Autodesk.Revit.DB.FamilySymbolFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.FamilySymbolProfile": "Autodesk.Revit.DB.SweepProfile",
+  "Autodesk.Revit.DB.FamilyType": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FamilyTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FilePath": "Autodesk.Revit.DB.ModelPath",
+  "Autodesk.Revit.DB.FillPatternElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FilledRegion": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FilledRegionType": "Autodesk.Revit.DB.LineAndTextAttrSymbol",
+  "Autodesk.Revit.DB.FilterCategoryRule": "Autodesk.Revit.DB.FilterRule",
+  "Autodesk.Revit.DB.FilterDoubleRule": "Autodesk.Revit.DB.FilterNumericValueRule",
+  "Autodesk.Revit.DB.FilterElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.FilterElementIdRule": "Autodesk.Revit.DB.FilterNumericValueRule",
+  "Autodesk.Revit.DB.FilterGlobalParameterAssociationRule": "Autodesk.Revit.DB.FilterNumericValueRule",
+  "Autodesk.Revit.DB.FilterIntegerRule": "Autodesk.Revit.DB.FilterNumericValueRule",
+  "Autodesk.Revit.DB.FilterInverseRule": "Autodesk.Revit.DB.FilterRule",
+  "Autodesk.Revit.DB.FilterNumericEquals": "Autodesk.Revit.DB.FilterNumericRuleEvaluator",
+  "Autodesk.Revit.DB.FilterNumericGreater": "Autodesk.Revit.DB.FilterNumericRuleEvaluator",
+  "Autodesk.Revit.DB.FilterNumericGreaterOrEqual": "Autodesk.Revit.DB.FilterNumericRuleEvaluator",
+  "Autodesk.Revit.DB.FilterNumericLess": "Autodesk.Revit.DB.FilterNumericRuleEvaluator",
+  "Autodesk.Revit.DB.FilterNumericLessOrEqual": "Autodesk.Revit.DB.FilterNumericRuleEvaluator",
+  "Autodesk.Revit.DB.FilterNumericValueRule": "Autodesk.Revit.DB.FilterValueRule",
+  "Autodesk.Revit.DB.FilterStringBeginsWith": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringContains": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringEndsWith": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringEquals": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringGreater": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringGreaterOrEqual": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringLess": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringLessOrEqual": "Autodesk.Revit.DB.FilterStringRuleEvaluator",
+  "Autodesk.Revit.DB.FilterStringRule": "Autodesk.Revit.DB.FilterValueRule",
+  "Autodesk.Revit.DB.FilterValueRule": "Autodesk.Revit.DB.FilterRule",
+  "Autodesk.Revit.DB.Floor": "Autodesk.Revit.DB.CeilingAndFloor",
+  "Autodesk.Revit.DB.FloorType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.FootPrintRoof": "Autodesk.Revit.DB.RoofBase",
+  "Autodesk.Revit.DB.Form": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.FormArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FormArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.FreeFormElement": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.GenericForm": "Autodesk.Revit.DB.CombinableElement",
+  "Autodesk.Revit.DB.GeomCombination": "Autodesk.Revit.DB.CombinableElement",
+  "Autodesk.Revit.DB.GeomCombinationSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.GeomCombinationSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.GeometryElement": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.GeometryInstance": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.GeometryObject": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.GlobalParameter": "Autodesk.Revit.DB.ParameterElement",
+  "Autodesk.Revit.DB.GradientBackgroundSettings": "Autodesk.Revit.DB.BackgroundSettings",
+  "Autodesk.Revit.DB.GraphicsStyle": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Grid": "Autodesk.Revit.DB.DatumPlane",
+  "Autodesk.Revit.DB.GridType": "Autodesk.Revit.DB.LineAndTextAttrSymbol",
+  "Autodesk.Revit.DB.Group": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.GroupNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.GroupSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.GroupSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.GroupType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.HasNoValueFilterRule": "Autodesk.Revit.DB.ParameterValuePresenceRule",
+  "Autodesk.Revit.DB.HasValueFilterRule": "Autodesk.Revit.DB.ParameterValuePresenceRule",
+  "Autodesk.Revit.DB.HermiteFace": "Autodesk.Revit.DB.Face",
+  "Autodesk.Revit.DB.HermiteSpline": "Autodesk.Revit.DB.Curve",
+  "Autodesk.Revit.DB.HermiteSurface": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.HostObjAttributes": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.HostObject": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.HostedSweep": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.HostedSweepType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.IFCCategoryTemplate": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.IFCParameterTemplate": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.IFCUserDefinedPropertySet": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ImageBackgroundSettings": "Autodesk.Revit.DB.BackgroundSettings",
+  "Autodesk.Revit.DB.ImageInstance": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ImageType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.ImageView": "Autodesk.Revit.DB.ViewDrafting",
+  "Autodesk.Revit.DB.ImportInstance": "Autodesk.Revit.DB.Instance",
+  "Autodesk.Revit.DB.ImportOptions3DM": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.IndependentTag": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.InsertableObject": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Instance": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.InstanceBinding": "Autodesk.Revit.DB.ElementBinding",
+  "Autodesk.Revit.DB.InstanceNode": "Autodesk.Revit.DB.GroupNode",
+  "Autodesk.Revit.DB.InsulationLiningBase": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.IntegerParameterValue": "Autodesk.Revit.DB.ParameterValue",
+  "Autodesk.Revit.DB.InternalDefinition": "Autodesk.Revit.DB.Definition",
+  "Autodesk.Revit.DB.InternalDefinitions": "Autodesk.Revit.DB.Definitions",
+  "Autodesk.Revit.DB.InternalOrigin": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.IntersectionResult": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.IntersectionResultArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.IntersectionResultArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.KeyBasedTreeEntriesLoadContent": "Autodesk.Revit.DB.ExternalResourceLoadContent",
+  "Autodesk.Revit.DB.KeyBasedTreeEntryTable": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.KeynoteEntries": "Autodesk.Revit.DB.KeyBasedTreeEntries",
+  "Autodesk.Revit.DB.KeynoteEntry": "Autodesk.Revit.DB.KeyBasedTreeEntry",
+  "Autodesk.Revit.DB.KeynoteTable": "Autodesk.Revit.DB.KeyBasedTreeEntryTable",
+  "Autodesk.Revit.DB.LayoutRule": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.LayoutRuleClearSpacing": "Autodesk.Revit.DB.LayoutRule",
+  "Autodesk.Revit.DB.LayoutRuleFixedDistance": "Autodesk.Revit.DB.LayoutRule",
+  "Autodesk.Revit.DB.LayoutRuleFixedNumber": "Autodesk.Revit.DB.LayoutRule",
+  "Autodesk.Revit.DB.LayoutRuleMaximumSpacing": "Autodesk.Revit.DB.LayoutRule",
+  "Autodesk.Revit.DB.Leader": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.LeaderArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.LeaderArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Level": "Autodesk.Revit.DB.DatumPlane",
+  "Autodesk.Revit.DB.LevelType": "Autodesk.Revit.DB.LineAndTextAttrSymbol",
+  "Autodesk.Revit.DB.LightNode": "Autodesk.Revit.DB.ContentNode",
+  "Autodesk.Revit.DB.Lighting.AdvancedLossFactor": "Autodesk.Revit.DB.Lighting.LossFactor",
+  "Autodesk.Revit.DB.Lighting.BasicLossFactor": "Autodesk.Revit.DB.Lighting.LossFactor",
+  "Autodesk.Revit.DB.Lighting.CircleLightShape": "Autodesk.Revit.DB.Lighting.LightShape",
+  "Autodesk.Revit.DB.Lighting.CustomInitialColor": "Autodesk.Revit.DB.Lighting.InitialColor",
+  "Autodesk.Revit.DB.Lighting.HemisphericalLightDistribution": "Autodesk.Revit.DB.Lighting.LightDistribution",
+  "Autodesk.Revit.DB.Lighting.InitialFluxIntensity": "Autodesk.Revit.DB.Lighting.InitialIntensity",
+  "Autodesk.Revit.DB.Lighting.InitialIlluminanceIntensity": "Autodesk.Revit.DB.Lighting.InitialIntensity",
+  "Autodesk.Revit.DB.Lighting.InitialLuminousIntensity": "Autodesk.Revit.DB.Lighting.InitialIntensity",
+  "Autodesk.Revit.DB.Lighting.InitialWattageIntensity": "Autodesk.Revit.DB.Lighting.InitialIntensity",
+  "Autodesk.Revit.DB.Lighting.LineLightShape": "Autodesk.Revit.DB.Lighting.LightShape",
+  "Autodesk.Revit.DB.Lighting.PhotometricWebLightDistribution": "Autodesk.Revit.DB.Lighting.LightDistribution",
+  "Autodesk.Revit.DB.Lighting.PointLightShape": "Autodesk.Revit.DB.Lighting.LightShape",
+  "Autodesk.Revit.DB.Lighting.PresetInitialColor": "Autodesk.Revit.DB.Lighting.InitialColor",
+  "Autodesk.Revit.DB.Lighting.RectangleLightShape": "Autodesk.Revit.DB.Lighting.LightShape",
+  "Autodesk.Revit.DB.Lighting.SphericalLightDistribution": "Autodesk.Revit.DB.Lighting.LightDistribution",
+  "Autodesk.Revit.DB.Lighting.SpotLightDistribution": "Autodesk.Revit.DB.Lighting.LightDistribution",
+  "Autodesk.Revit.DB.Line": "Autodesk.Revit.DB.Curve",
+  "Autodesk.Revit.DB.LineAndTextAttrSymbol": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.LinePatternElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.LinearArray": "Autodesk.Revit.DB.BaseArray",
+  "Autodesk.Revit.DB.LinearDimension": "Autodesk.Revit.DB.Dimension",
+  "Autodesk.Revit.DB.LinkLoadContent": "Autodesk.Revit.DB.ExternalResourceLoadContent",
+  "Autodesk.Revit.DB.LinkNode": "Autodesk.Revit.DB.GroupNode",
+  "Autodesk.Revit.DB.Location": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.LocationCurve": "Autodesk.Revit.DB.Location",
+  "Autodesk.Revit.DB.LocationPoint": "Autodesk.Revit.DB.Location",
+  "Autodesk.Revit.DB.LogicalAndFilter": "Autodesk.Revit.DB.ElementLogicalFilter",
+  "Autodesk.Revit.DB.LogicalOrFilter": "Autodesk.Revit.DB.ElementLogicalFilter",
+  "Autodesk.Revit.DB.MEPAnalyticalConnection": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.MEPAnalyticalConnectionType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.MEPCurve": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.MEPCurveType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.MEPFamilyConnectorInfo": "Autodesk.Revit.DB.MEPConnectorInfo",
+  "Autodesk.Revit.DB.MEPModel": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.MEPSystem": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.MEPSystemType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Macros.ApplicationEntryPoint": "Autodesk.Revit.ApplicationServices.Application",
+  "Autodesk.Revit.DB.Macros.DocumentEntryPoint": "Autodesk.Revit.DB.Document",
+  "Autodesk.Revit.DB.Material": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.MaterialNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.Mechanical.Duct": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.Mechanical.DuctInsulation": "Autodesk.Revit.DB.InsulationLiningBase",
+  "Autodesk.Revit.DB.Mechanical.DuctInsulationType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Mechanical.DuctLining": "Autodesk.Revit.DB.InsulationLiningBase",
+  "Autodesk.Revit.DB.Mechanical.DuctLiningType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Mechanical.DuctSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mechanical.DuctSizeSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mechanical.DuctType": "Autodesk.Revit.DB.MEPCurveType",
+  "Autodesk.Revit.DB.Mechanical.FlexDuct": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.Mechanical.FlexDuctType": "Autodesk.Revit.DB.MEPCurveType",
+  "Autodesk.Revit.DB.Mechanical.HVACZoneData": "Autodesk.Revit.DB.Analysis.GenericZoneDomainData",
+  "Autodesk.Revit.DB.Mechanical.MEPAnalyticalSystem": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mechanical.MEPBuildingConstruction": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Mechanical.MEPBuildingConstructionSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Mechanical.MEPBuildingConstructionSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Mechanical.MEPHiddenLineSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mechanical.MechanicalEquipment": "Autodesk.Revit.DB.MEPModel",
+  "Autodesk.Revit.DB.Mechanical.MechanicalEquipmentSet": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mechanical.MechanicalEquipmentSetType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Mechanical.MechanicalFitting": "Autodesk.Revit.DB.MEPModel",
+  "Autodesk.Revit.DB.Mechanical.MechanicalSystem": "Autodesk.Revit.DB.MEPSystem",
+  "Autodesk.Revit.DB.Mechanical.MechanicalSystemType": "Autodesk.Revit.DB.MEPSystemType",
+  "Autodesk.Revit.DB.Mechanical.Space": "Autodesk.Revit.DB.SpatialElement",
+  "Autodesk.Revit.DB.Mechanical.SpaceFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Mechanical.SpaceSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Mechanical.SpaceSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Mechanical.SpaceTag": "Autodesk.Revit.DB.SpatialElementTag",
+  "Autodesk.Revit.DB.Mechanical.SpaceTagFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Mechanical.SpaceTagType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.Mechanical.SystemZoneData": "Autodesk.Revit.DB.Analysis.GenericZoneDomainData",
+  "Autodesk.Revit.DB.Mechanical.SystemZoneElementType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Mechanical.Zone": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mechanical.ZoneEquipment": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Mesh": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.ModelArc": "Autodesk.Revit.DB.ModelCurve",
+  "Autodesk.Revit.DB.ModelCurve": "Autodesk.Revit.DB.CurveElement",
+  "Autodesk.Revit.DB.ModelCurveArrArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ModelCurveArrArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ModelCurveArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ModelCurveArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ModelCurveNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.ModelEllipse": "Autodesk.Revit.DB.ModelCurve",
+  "Autodesk.Revit.DB.ModelHermiteSpline": "Autodesk.Revit.DB.ModelCurve",
+  "Autodesk.Revit.DB.ModelLine": "Autodesk.Revit.DB.ModelCurve",
+  "Autodesk.Revit.DB.ModelNurbSpline": "Autodesk.Revit.DB.ModelCurve",
+  "Autodesk.Revit.DB.ModelText": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ModelTextType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Mullion": "Autodesk.Revit.DB.FamilyInstance",
+  "Autodesk.Revit.DB.MullionType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.MullionTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.MullionTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.MultiReferenceAnnotation": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.MultiReferenceAnnotationType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.MultiSegmentGrid": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.MultipleValuesIndicationSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.NestedFamilyTypeReference": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.NullParameterValue": "Autodesk.Revit.DB.ParameterValue",
+  "Autodesk.Revit.DB.NumberSystem": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.NumberingSchema": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.NumberingSchemaType": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.DB.NurbSpline": "Autodesk.Revit.DB.Curve",
+  "Autodesk.Revit.DB.OBJExportOptions": "Autodesk.Revit.DB.BIMExportOptions",
+  "Autodesk.Revit.DB.OBJImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.OffsetSurface": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.Opening": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Options": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Panel": "Autodesk.Revit.DB.FamilyInstance",
+  "Autodesk.Revit.DB.PanelType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.PanelTypeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PanelTypeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PaperSize": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PaperSizeSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PaperSizeSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PaperSource": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PaperSourceSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PaperSourceSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Parameter": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ParameterElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ParameterFilterElement": "Autodesk.Revit.DB.FilterElement",
+  "Autodesk.Revit.DB.ParameterMap": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ParameterMapIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ParameterSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ParameterSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ParameterValuePresenceRule": "Autodesk.Revit.DB.FilterRule",
+  "Autodesk.Revit.DB.ParameterValueProvider": "Autodesk.Revit.DB.FilterableValueProvider",
+  "Autodesk.Revit.DB.Part": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.PartMaker": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Path3d": "Autodesk.Revit.DB.SketchBase",
+  "Autodesk.Revit.DB.PerformanceAdviserRuleId": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.DB.Phase": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.PhaseArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PhaseArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PhaseFilter": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.PlanCircuit": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PlanCircuitSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PlanCircuitSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PlanTopology": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PlanTopologySet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PlanTopologySetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PlanarFace": "Autodesk.Revit.DB.Face",
+  "Autodesk.Revit.DB.Plane": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.Plumbing.FlexPipe": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.Plumbing.FlexPipeType": "Autodesk.Revit.DB.MEPCurveType",
+  "Autodesk.Revit.DB.Plumbing.FluidType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Plumbing.Pipe": "Autodesk.Revit.DB.MEPCurve",
+  "Autodesk.Revit.DB.Plumbing.PipeInsulation": "Autodesk.Revit.DB.InsulationLiningBase",
+  "Autodesk.Revit.DB.Plumbing.PipeInsulationType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Plumbing.PipeScheduleType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Plumbing.PipeSegment": "Autodesk.Revit.DB.Segment",
+  "Autodesk.Revit.DB.Plumbing.PipeSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Plumbing.PipeType": "Autodesk.Revit.DB.MEPCurveType",
+  "Autodesk.Revit.DB.Plumbing.PipingSystem": "Autodesk.Revit.DB.MEPSystem",
+  "Autodesk.Revit.DB.Plumbing.PipingSystemType": "Autodesk.Revit.DB.MEPSystemType",
+  "Autodesk.Revit.DB.Point": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.PointCloudInstance": "Autodesk.Revit.DB.Instance",
+  "Autodesk.Revit.DB.PointCloudType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.PointNode": "Autodesk.Revit.DB.ModelCurveNode",
+  "Autodesk.Revit.DB.PointOnEdge": "Autodesk.Revit.DB.PointElementReference",
+  "Autodesk.Revit.DB.PointOnEdgeEdgeIntersection": "Autodesk.Revit.DB.PointElementReference",
+  "Autodesk.Revit.DB.PointOnEdgeFaceIntersection": "Autodesk.Revit.DB.PointElementReference",
+  "Autodesk.Revit.DB.PointOnFace": "Autodesk.Revit.DB.PointElementReference",
+  "Autodesk.Revit.DB.PointOnPlane": "Autodesk.Revit.DB.PointElementReference",
+  "Autodesk.Revit.DB.PointRelativeToPoint": "Autodesk.Revit.DB.PointElementReference",
+  "Autodesk.Revit.DB.PolyLine": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.PolylineNode": "Autodesk.Revit.DB.ModelCurveNode",
+  "Autodesk.Revit.DB.PrimaryDesignOptionMemberFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.PrimarySizeCriterion": "Autodesk.Revit.DB.RoutingCriterionBase",
+  "Autodesk.Revit.DB.PrintManager": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PrintParameters": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PrintSetting": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.PrintSetup": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Profile": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.ProjectInfo": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ProjectLocation": "Autodesk.Revit.DB.Instance",
+  "Autodesk.Revit.DB.ProjectLocationSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ProjectLocationSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.PropertyLine": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.PropertySetElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.RPCNode": "Autodesk.Revit.DB.ContentNode",
+  "Autodesk.Revit.DB.RadialArray": "Autodesk.Revit.DB.BaseArray",
+  "Autodesk.Revit.DB.RadialDimension": "Autodesk.Revit.DB.Dimension",
+  "Autodesk.Revit.DB.Reference": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ReferenceArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ReferenceArrayArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ReferenceArrayArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ReferenceArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ReferencePlane": "Autodesk.Revit.DB.DatumPlane",
+  "Autodesk.Revit.DB.ReferencePoint": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ReferencePointArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ReferencePointArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Revision": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.RevisionCloud": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.RevisionNumberingSequence": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.RevisionSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.RevitLinkInstance": "Autodesk.Revit.DB.Instance",
+  "Autodesk.Revit.DB.RevitLinkOperations": "Autodesk.Revit.DB.LinkOperations",
+  "Autodesk.Revit.DB.RevitLinkType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Revolution": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.RevolvedFace": "Autodesk.Revit.DB.Face",
+  "Autodesk.Revit.DB.RevolvedSurface": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.RoofBase": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.RoofType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.RuledFace": "Autodesk.Revit.DB.Face",
+  "Autodesk.Revit.DB.RuledSurface": "Autodesk.Revit.DB.Surface",
+  "Autodesk.Revit.DB.SATImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.SKPImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.SSEPointVisibilitySettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.STEPExportOptions": "Autodesk.Revit.DB.BIMExportOptions",
+  "Autodesk.Revit.DB.STEPImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.STLExportOptions": "Autodesk.Revit.DB.BIMExportOptions",
+  "Autodesk.Revit.DB.STLImportOptions": "Autodesk.Revit.DB.BaseImportOptions",
+  "Autodesk.Revit.DB.ScheduleSheetInstance": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Segment": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SelectionFilterElement": "Autodesk.Revit.DB.FilterElement",
+  "Autodesk.Revit.DB.ServerPath": "Autodesk.Revit.DB.ModelPath",
+  "Autodesk.Revit.DB.Settings": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SharedParameterApplicableRule": "Autodesk.Revit.DB.FilterRule",
+  "Autodesk.Revit.DB.SharedParameterElement": "Autodesk.Revit.DB.ParameterElement",
+  "Autodesk.Revit.DB.SheetCollection": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SiteLocation": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Sketch": "Autodesk.Revit.DB.SketchBase",
+  "Autodesk.Revit.DB.SketchBase": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SketchEditScope": "Autodesk.Revit.DB.EditScope",
+  "Autodesk.Revit.DB.SketchPlane": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SkyBackgroundSettings": "Autodesk.Revit.DB.BackgroundSettings",
+  "Autodesk.Revit.DB.SlabEdge": "Autodesk.Revit.DB.HostedSweep",
+  "Autodesk.Revit.DB.SlabEdgeType": "Autodesk.Revit.DB.HostedSweepType",
+  "Autodesk.Revit.DB.SlabShapeCreaseArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SlabShapeCreaseArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SlabShapeVertexArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SlabShapeVertexArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Solid": "Autodesk.Revit.DB.GeometryObject",
+  "Autodesk.Revit.DB.SpacingRule": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SpanDirectionSymbol": "Autodesk.Revit.DB.IndependentTag",
+  "Autodesk.Revit.DB.SpatialElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SpatialElementCalculationLocation": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SpatialElementCalculationPoint": "Autodesk.Revit.DB.SpatialElementCalculationLocation",
+  "Autodesk.Revit.DB.SpatialElementFromToCalculationPoints": "Autodesk.Revit.DB.SpatialElementCalculationLocation",
+  "Autodesk.Revit.DB.SpatialElementTag": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.SpotDimension": "Autodesk.Revit.DB.Dimension",
+  "Autodesk.Revit.DB.SpotDimensionType": "Autodesk.Revit.DB.DimensionType",
+  "Autodesk.Revit.DB.StairsEditScope": "Autodesk.Revit.DB.EditScope",
+  "Autodesk.Revit.DB.StartingViewSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Steel.SteelElementProperties": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.StringParameterValue": "Autodesk.Revit.DB.ParameterValue",
+  "Autodesk.Revit.DB.Structure.AnalyticalElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.AnalyticalLink": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.AnalyticalLinkType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.AnalyticalMember": "Autodesk.Revit.DB.Structure.AnalyticalElement",
+  "Autodesk.Revit.DB.Structure.AnalyticalModel": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.AnalyticalModelColumn": "Autodesk.Revit.DB.Structure.AnalyticalModelStick",
+  "Autodesk.Revit.DB.Structure.AnalyticalModelStick": "Autodesk.Revit.DB.Structure.AnalyticalModel",
+  "Autodesk.Revit.DB.Structure.AnalyticalModelSurface": "Autodesk.Revit.DB.Structure.AnalyticalModel",
+  "Autodesk.Revit.DB.Structure.AnalyticalOpening": "Autodesk.Revit.DB.Structure.AnalyticalSurfaceBase",
+  "Autodesk.Revit.DB.Structure.AnalyticalPanel": "Autodesk.Revit.DB.Structure.AnalyticalSurfaceBase",
+  "Autodesk.Revit.DB.Structure.AnalyticalSurfaceBase": "Autodesk.Revit.DB.Structure.AnalyticalElement",
+  "Autodesk.Revit.DB.Structure.AnalyticalToPhysicalAssociationManager": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.AreaLoad": "Autodesk.Revit.DB.Structure.LoadBase",
+  "Autodesk.Revit.DB.Structure.AreaLoadType": "Autodesk.Revit.DB.Structure.LoadTypeBase",
+  "Autodesk.Revit.DB.Structure.AreaReinforcement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.AreaReinforcementCurve": "Autodesk.Revit.DB.CurveElement",
+  "Autodesk.Revit.DB.Structure.AreaReinforcementType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.BoundaryConditions": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.EndTreatmentType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.FabricArea": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.FabricAreaType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.FabricReinSpanSymbol": "Autodesk.Revit.DB.IndependentTag",
+  "Autodesk.Revit.DB.Structure.FabricRoundingManager": "Autodesk.Revit.DB.Structure.ReinforcementRoundingManager",
+  "Autodesk.Revit.DB.Structure.FabricSheet": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.FabricSheetType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.FabricWireType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.FamilyStructuralMaterialTypeFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Structure.Hub": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.LineLoad": "Autodesk.Revit.DB.Structure.LoadBase",
+  "Autodesk.Revit.DB.Structure.LineLoadType": "Autodesk.Revit.DB.Structure.LoadTypeBase",
+  "Autodesk.Revit.DB.Structure.LoadBase": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.LoadCase": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.LoadCombination": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.LoadNature": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.LoadTypeBase": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.LoadUsage": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.PathReinSpanSymbol": "Autodesk.Revit.DB.IndependentTag",
+  "Autodesk.Revit.DB.Structure.PathReinforcement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.PathReinforcementType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.PointLoad": "Autodesk.Revit.DB.Structure.LoadBase",
+  "Autodesk.Revit.DB.Structure.PointLoadType": "Autodesk.Revit.DB.Structure.LoadTypeBase",
+  "Autodesk.Revit.DB.Structure.Rebar": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.RebarBarType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.RebarBendingDetailType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.RebarContainer": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.RebarContainerType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.RebarCoupler": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.RebarCoverType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.RebarHookType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.RebarInSystem": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.RebarReinforcementData": "Autodesk.Revit.DB.Structure.ReinforcementData",
+  "Autodesk.Revit.DB.Structure.RebarRoundingManager": "Autodesk.Revit.DB.Structure.ReinforcementRoundingManager",
+  "Autodesk.Revit.DB.Structure.RebarShape": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraint180DegreeBendArcLength": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraint180DegreeBendRadius": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraint180DegreeDefaultBend": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintAngleFromFixedDir": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintArcLength": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintChordLength": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintCircumference": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintDiameter": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintFixedSegmentDir": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintProjectedSegmentLength": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintRadius": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintSagittaLength": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeConstraintSegmentLength": "Autodesk.Revit.DB.Structure.RebarShapeConstraint",
+  "Autodesk.Revit.DB.Structure.RebarShapeDefinitionByArc": "Autodesk.Revit.DB.Structure.RebarShapeDefinition",
+  "Autodesk.Revit.DB.Structure.RebarShapeDefinitionBySegments": "Autodesk.Revit.DB.Structure.RebarShapeDefinition",
+  "Autodesk.Revit.DB.Structure.RebarSystemSpanSymbol": "Autodesk.Revit.DB.IndependentTag",
+  "Autodesk.Revit.DB.Structure.ReinforcementSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.StructuralConnectionApprovalType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.StructuralConnectionHandler": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.StructuralConnectionHandlerType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.StructuralConnectionSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.StructuralConnectionType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.Structure.StructuralInstanceUsageFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Structure.StructuralMaterialTypeFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionCParallelFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralU",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionCProfile": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralC",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionCProfileWithFold": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralCEx",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionCProfileWithLips": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralC",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionCSlopedFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralU",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteCross": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteI": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteL": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcretePolygon": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRound",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteRectangle": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteRectangleCut": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteRound": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRound",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteT": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralC": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralCEx": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralF": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralH": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralI": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionHotRolled",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralLA": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralLZ": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralR": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRound",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralS": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRound",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralT": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionHotRolled",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralU": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionHotRolled",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralW": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionHotRolled",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionHotRolled": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionIParallelFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralI",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionISlopedFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralI",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionISplitParallelFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralT",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionISplitSlopedFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralT",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionIWelded": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionIWideFlange": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionHotRolled",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionLAngle": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralW",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionLProfile": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralLA",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionLProfileWithLips": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralLA",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionPipeStandard": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralR",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangleHSS": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralH",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangleParameterized": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralF",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSection",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangularBar": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralF",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRound": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSection",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRoundBar": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralS",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRoundHSS": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralR",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionSigmaProfile": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionSigmaProfileWithFold": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionSigmaProfileWithLips": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionColdFormed",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionStructuralTees": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralT",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionUserDefined": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionZProfile": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralLZ",
+  "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionZProfileWithLips": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionGeneralLZ",
+  "Autodesk.Revit.DB.Structure.StructuralSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.StructuralWallUsageFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.DB.Structure.Truss": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Structure.TrussType": "Autodesk.Revit.DB.FamilySymbol",
+  "Autodesk.Revit.DB.SunAndShadowSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.Sweep": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.SweepProfile": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SweptBlend": "Autodesk.Revit.DB.GenericForm",
+  "Autodesk.Revit.DB.SymbolicCurve": "Autodesk.Revit.DB.CurveElement",
+  "Autodesk.Revit.DB.SymbolicCurveArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.SymbolicCurveArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.TableView": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.TemporaryViewModes": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.TessellatedShapeBuilder": "Autodesk.Revit.DB.ShapeBuilder",
+  "Autodesk.Revit.DB.TextElement": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.TextElementType": "Autodesk.Revit.DB.LineAndTextAttrSymbol",
+  "Autodesk.Revit.DB.TextNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.TextNote": "Autodesk.Revit.DB.TextElement",
+  "Autodesk.Revit.DB.TextNoteType": "Autodesk.Revit.DB.TextElementType",
+  "Autodesk.Revit.DB.ThermalProperties": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.TilePattern": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.TilePatterns": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Toposolid": "Autodesk.Revit.DB.CeilingAndFloor",
+  "Autodesk.Revit.DB.ToposolidType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.Transform": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.TriangulationInterfaceForTriangulatedShellComponent": "Autodesk.Revit.DB.TriangulationInterface",
+  "Autodesk.Revit.DB.TriangulationInterfaceForTriangulatedSolidOrShell": "Autodesk.Revit.DB.TriangulationInterface",
+  "Autodesk.Revit.DB.TypeBinding": "Autodesk.Revit.DB.ElementBinding",
+  "Autodesk.Revit.DB.VertexIndexPairArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.VertexIndexPairArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.View": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.View3D": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.ViewDrafting": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.ViewFamilyType": "Autodesk.Revit.DB.ElementType",
+  "Autodesk.Revit.DB.ViewNavigationToolSettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ViewNode": "Autodesk.Revit.DB.RenderNode",
+  "Autodesk.Revit.DB.ViewPlan": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.ViewPosition": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ViewSchedule": "Autodesk.Revit.DB.TableView",
+  "Autodesk.Revit.DB.ViewSection": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.ViewSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ViewSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.ViewShapeBuilder": "Autodesk.Revit.DB.ShapeBuilder",
+  "Autodesk.Revit.DB.ViewSheet": "Autodesk.Revit.DB.View",
+  "Autodesk.Revit.DB.ViewSheetSet": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.ViewSheetSetting": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Viewport": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.VisibleInViewFilter": "Autodesk.Revit.DB.ElementQuickFilter",
+  "Autodesk.Revit.DB.Visual.Asset": "Autodesk.Revit.DB.Visual.AssetProperties",
+  "Autodesk.Revit.DB.Visual.AssetProperties": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyBoolean": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyDistance": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyDouble": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyDoubleArray2d": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyDoubleArray3d": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyDoubleArray4d": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyDoubleMatrix44": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyEnum": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyFloat": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyFloatArray": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyInt64": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyInteger": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyList": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyReference": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyString": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyTime": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetPropertyUInt64": "Autodesk.Revit.DB.Visual.AssetProperty",
+  "Autodesk.Revit.DB.Visual.AssetSet": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Visual.AssetSetIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.DB.Wall": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.WallFoundation": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.WallFoundationType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.WallSweep": "Autodesk.Revit.DB.HostObject",
+  "Autodesk.Revit.DB.WallType": "Autodesk.Revit.DB.HostObjAttributes",
+  "Autodesk.Revit.DB.WireframeBuilder": "Autodesk.Revit.DB.ShapeBuilder",
+  "Autodesk.Revit.DB.Workset": "Autodesk.Revit.DB.WorksetPreview",
+  "Autodesk.Revit.DB.WorksetDefaultVisibilitySettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.DB.WorksetKindFilter": "Autodesk.Revit.DB.WorksetFilter",
+  "Autodesk.Revit.DB.WorksharingDisplaySettings": "Autodesk.Revit.DB.Element",
+  "Autodesk.Revit.Exceptions.AccessDeniedException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.ArgumentException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.ArgumentNullException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.ArgumentOutOfRangeException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.ArgumentsInconsistentException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.AutoJoinFailedException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.BackgroundTaskCancelledException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.CannotOpenBothCentralAndLocalException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.CentralFileCommunicationException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.CentralModelAccessDeniedException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.CentralModelAlreadyExistsException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.CentralModelContentionException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.CentralModelException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.CentralModelVersionArchivedException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.CheckoutElementsRequestTooLargeException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.CorruptModelException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.DefaultValueException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.DirectoryNotEmptyException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.DirectoryNotFoundException": "Autodesk.Revit.Exceptions.IOException",
+  "Autodesk.Revit.Exceptions.DisabledDisciplineException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.ExternalApplicationException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.FamilyContextException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.FileAccessException": "Autodesk.Revit.Exceptions.IOException",
+  "Autodesk.Revit.Exceptions.FileArgumentAlreadyExistsException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.FileArgumentNotFoundException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.FileNotFoundException": "Autodesk.Revit.Exceptions.IOException",
+  "Autodesk.Revit.Exceptions.ForbiddenForDynamicUpdateException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.IOException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.InapplicableDataException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.InsufficientResourcesException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.InternalException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.InvalidDataStreamException": "Autodesk.Revit.Exceptions.IOException",
+  "Autodesk.Revit.Exceptions.InvalidObjectException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.InvalidOperationException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.InvalidPathArgumentException": "Autodesk.Revit.Exceptions.ArgumentException",
+  "Autodesk.Revit.Exceptions.ModificationForbiddenException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.ModificationOutsideTransactionException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.NetworkCommunicationException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.NotTransmittedModelException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.ObjectAccessException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.OperationCanceledException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.OptionalFunctionalityNotAvailableException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.OutdatedDirectlyOpenedCentralException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.RegenerationFailedException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.ResourceNotFoundException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.RevitServerCollaborationNotAvailableException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.RevitServerCommunicationException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.RevitServerException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.RevitServerInternalException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.RevitServerModelAlreadyExistsException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.RevitServerModelNameBreaksConventionException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.RevitServerUnauthenticatedUserException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.RevitServerUnauthorizedException": "Autodesk.Revit.Exceptions.RevitServerException",
+  "Autodesk.Revit.Exceptions.SchemaException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.ServerInternalException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.ServerModelCorruptedException": "Autodesk.Revit.Exceptions.CentralModelException",
+  "Autodesk.Revit.Exceptions.TransientElementCreationException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.TransmittedModelException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.Exceptions.UnauthenticatedException": "Autodesk.Revit.Exceptions.ApplicationException",
+  "Autodesk.Revit.Exceptions.WrongUserException": "Autodesk.Revit.Exceptions.InvalidOperationException",
+  "Autodesk.Revit.UI.ButtonData": "Autodesk.Revit.UI.RibbonItemData",
+  "Autodesk.Revit.UI.ComboBox": "Autodesk.Revit.UI.RibbonItem",
+  "Autodesk.Revit.UI.ComboBoxData": "Autodesk.Revit.UI.RibbonItemData",
+  "Autodesk.Revit.UI.ComboBoxMember": "Autodesk.Revit.UI.RibbonItem",
+  "Autodesk.Revit.UI.ComboBoxMemberData": "Autodesk.Revit.UI.RibbonItemData",
+  "Autodesk.Revit.UI.CommandMenuItem": "Autodesk.Revit.UI.MenuItem",
+  "Autodesk.Revit.UI.DockablePaneId": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.UI.Events.ApplicationClosingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.UI.Events.BeforeExecutedEventArgs": "Autodesk.Revit.UI.Events.CommandEventArgs",
+  "Autodesk.Revit.UI.Events.CanExecuteEventArgs": "Autodesk.Revit.UI.Events.CommandEventArgs",
+  "Autodesk.Revit.UI.Events.ComboBoxCurrentChangedEventArgs": "Autodesk.Revit.UI.Events.RibbonItemEventArgs",
+  "Autodesk.Revit.UI.Events.ComboBoxDropDownClosedEventArgs": "Autodesk.Revit.UI.Events.RibbonItemEventArgs",
+  "Autodesk.Revit.UI.Events.ComboBoxDropDownOpenedEventArgs": "Autodesk.Revit.UI.Events.RibbonItemEventArgs",
+  "Autodesk.Revit.UI.Events.CommandEventArgs": "Autodesk.Revit.DB.Events.RevitEventArgs",
+  "Autodesk.Revit.UI.Events.DialogBoxData": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.UI.Events.DockableFrameFocusChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.ExecutedEventArgs": "Autodesk.Revit.UI.Events.CommandEventArgs",
+  "Autodesk.Revit.UI.Events.ExternalDataManagerChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.FormulaEditingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.UI.Events.IdlingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreEventArgs",
+  "Autodesk.Revit.UI.Events.MacroUpdatedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.MessageBoxData": "Autodesk.Revit.UI.Events.DialogBoxData",
+  "Autodesk.Revit.UI.Events.MessageBoxShowingEventArgs": "Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs",
+  "Autodesk.Revit.UI.Events.SelectionChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.TaskDialogShowingEventArgs": "Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs",
+  "Autodesk.Revit.UI.Events.TextBoxEnterPressedEventArgs": "Autodesk.Revit.UI.Events.RibbonItemEventArgs",
+  "Autodesk.Revit.UI.Events.ThemeChangedEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
+  "Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.UI.Events.ViewActivatedEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
+  "Autodesk.Revit.UI.Events.ViewActivatingEventArgs": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
+  "Autodesk.Revit.UI.ExternalApplicationArray": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.UI.ExternalApplicationArrayIterator": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.UI.ExternalCommandData": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.UI.ExternalDataManagerCommandId": "Autodesk.Revit.DB.GuidEnum",
+  "Autodesk.Revit.UI.FileOpenDialog": "Autodesk.Revit.UI.FileDialog",
+  "Autodesk.Revit.UI.FileSaveDialog": "Autodesk.Revit.UI.FileDialog",
+  "Autodesk.Revit.UI.Macros.ApplicationEntryPoint": "Autodesk.Revit.UI.UIApplication",
+  "Autodesk.Revit.UI.Macros.DocumentEntryPoint": "Autodesk.Revit.UI.UIDocument",
+  "Autodesk.Revit.UI.PulldownButton": "Autodesk.Revit.UI.RibbonButton",
+  "Autodesk.Revit.UI.PulldownButtonData": "Autodesk.Revit.UI.ButtonData",
+  "Autodesk.Revit.UI.PushButton": "Autodesk.Revit.UI.RibbonButton",
+  "Autodesk.Revit.UI.PushButtonData": "Autodesk.Revit.UI.ButtonData",
+  "Autodesk.Revit.UI.RadioButtonGroup": "Autodesk.Revit.UI.RibbonItem",
+  "Autodesk.Revit.UI.RadioButtonGroupData": "Autodesk.Revit.UI.RibbonItemData",
+  "Autodesk.Revit.UI.RibbonButton": "Autodesk.Revit.UI.RibbonItem",
+  "Autodesk.Revit.UI.RibbonItemData": "Autodesk.Revit.UI.ItemData",
+  "Autodesk.Revit.UI.Selection.SelectableInViewFilter": "Autodesk.Revit.DB.ElementSlowFilter",
+  "Autodesk.Revit.UI.SeparatorItem": "Autodesk.Revit.UI.MenuItem",
+  "Autodesk.Revit.UI.SplitButton": "Autodesk.Revit.UI.PulldownButton",
+  "Autodesk.Revit.UI.SplitButtonData": "Autodesk.Revit.UI.PulldownButtonData",
+  "Autodesk.Revit.UI.SubMenuItem": "Autodesk.Revit.UI.MenuItem",
+  "Autodesk.Revit.UI.TaskDialog": "Autodesk.Revit.DB.APIObject",
+  "Autodesk.Revit.UI.TextBox": "Autodesk.Revit.UI.RibbonItem",
+  "Autodesk.Revit.UI.TextBoxData": "Autodesk.Revit.UI.RibbonItemData",
+  "Autodesk.Revit.UI.ToggleButton": "Autodesk.Revit.UI.PushButton",
+  "Autodesk.Revit.UI.ToggleButtonData": "Autodesk.Revit.UI.PushButtonData"
+ },
+ "bcl_members": [
+  ".ctor",
+  "AddParameter",
+  "AddPoint",
+  "AddPoints",
+  "Anchors",
+  "Comments",
+  "CompareTo",
+  "Convert",
+  "Create",
+  "Description",
+  "DisplayMode",
+  "DisplayUnits",
+  "Dispose",
+  "Duplicate",
+  "Enabled",
+  "Encoding",
+  "Export",
+  "ExtendedProperties",
+  "Families",
+  "Format",
+  "Generate",
+  "Get",
+  "GetColor",
+  "GetDocument",
+  "GetGroupName",
+  "GetOptionValue",
+  "GetParameter",
+  "GetReferences",
+  "GetResult",
+  "GetStart",
+  "GetView",
+  "GroupIndex",
+  "Import",
+  "Insert",
+  "Intersect",
+  "Invalid",
+  "IsClosed",
+  "IsConnected",
+  "IsEqual",
+  "IsInEditMode",
+  "IsSet",
+  "IsValid",
+  "Link",
+  "LoadFrom",
+  "Minute",
+  "Miter",
+  "Move",
+  "Number",
+  "Origin",
+  "Other",
+  "ParameterType",
+  "Parse",
+  "Prefix",
+  "Priority",
+  "Rename",
+  "Revision",
+  "RotationAngle",
+  "RowHeight",
+  "SchemaType",
+  "SelectionChanged",
+  "Set",
+  "SetColor",
+  "SetComments",
+  "SetOptionValue",
+  "SetStart",
+  "SetTitle",
+  "SetVisibility",
+  "ShowDialog",
+  "Split",
+  "Symbol",
+  "Translate",
+  "TryParse",
+  "Type",
+  "UnitType",
+  "Value",
+  "VerticalAlignment",
+  "Volume",
+  "Zone"
+ ],
  "bcl_packages": {
   "Microsoft.NETCore.App": "8.0.32",
   "Microsoft.WindowsDesktop.App": "8.0.32"
@@ -12170,7 +13361,6 @@
    }
   },
   "Autodesk.Revit.Creation.Document": {
-   "base": "Autodesk.Revit.Creation.ItemFactoryBase",
    "kind": "class",
    "members": {
     "NewAreaBoundaryConditions": {
@@ -12249,7 +13439,6 @@
    }
   },
   "Autodesk.Revit.Creation.ItemFactoryBase": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "NewFamilyInstance": {
@@ -12281,7 +13470,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BaseImportOptions",
    "kind": "class",
    "obsolete": {
     "message": "This class is deprecated in Revit 2027 and may be removed in a later version of Revit.",
@@ -12336,7 +13524,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Analysis.BuildingOperatingYearSchedule": {
@@ -12346,7 +13533,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Analysis.ConstructionType": {
@@ -12389,7 +13575,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "HeatTransferCoefficient": {
@@ -12411,7 +13596,6 @@
    }
   },
   "Autodesk.Revit.DB.Analysis.EnergyAnalysisDetailModel": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetAnalyticalShadingSurfaces": {
@@ -12446,11 +13630,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Analysis.EnergyAnalysisOpening": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetConstruction": {
@@ -12510,7 +13692,6 @@
    }
   },
   "Autodesk.Revit.DB.Analysis.EnergyAnalysisSpace": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AnalyticalVolume": {
@@ -12560,7 +13741,6 @@
    }
   },
   "Autodesk.Revit.DB.Analysis.EnergyAnalysisSurface": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetConstruction": {
@@ -12631,7 +13811,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "HeatTransferCoefficient": {
@@ -12668,7 +13847,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AirChangesPerHour": {
@@ -12809,7 +13987,6 @@
    }
   },
   "Autodesk.Revit.DB.Analysis.EnergyDataSettings": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AnalyticalSpaceResolution": {
@@ -13091,7 +14268,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Analysis.GenericZone": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddSpaces": {
@@ -13452,7 +14628,6 @@
      2023
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "obsolete": {
     "message": "This class is deprecated in Revit 2023 and may be removed in a later version of Revit. We suggest you use the 'EnergyAnalyticalDetailModel' class instead.",
@@ -13473,7 +14648,6 @@
    }
   },
   "Autodesk.Revit.DB.Analysis.MassLevelData": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "MaterialType": {
@@ -13494,7 +14668,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "obsolete": {
     "message": "This class is deprecated in Revit 2023 and may be removed in a later version of Revit. We suggest you use the 'EnergyAnalyticalDetailModel' and 'EnergyAnalysisSurface' classes instead.",
@@ -13526,7 +14699,6 @@
      2023
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "obsolete": {
     "message": "This class is deprecated in Revit 2023 and may be removed in a later version of Revit. We suggest you use the 'EnergyAnalyticalDetailModel' and 'EnergyAnalysisSpace' classes instead.",
@@ -13607,11 +14779,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.View",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Analysis.ViewSystemsAnalysisReport": {
-   "base": "Autodesk.Revit.DB.View",
    "kind": "class",
    "members": {
     "CancelSystemsAnalysis": {
@@ -13704,7 +14874,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.TextElement",
    "kind": "class"
   },
   "Autodesk.Revit.DB.AnnotationLabelParameterFormatting": {
@@ -13744,7 +14913,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.AngularDimension",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Architecture.NumberSystemType": {
@@ -13754,7 +14922,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Architecture.SiteSubRegion": {
@@ -13778,7 +14945,6 @@
    }
   },
   "Autodesk.Revit.DB.Architecture.TopographySurface": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddPoints": {
@@ -13834,7 +15000,6 @@
    }
   },
   "Autodesk.Revit.DB.AssemblyInstance": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "IsMember": {
@@ -13873,7 +15038,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.BRepBuilder": {
-   "base": "Autodesk.Revit.DB.ShapeBuilder",
    "kind": "class",
    "members": {
     "GetResult": {
@@ -13938,7 +15102,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.GuidEnum",
    "kind": "class"
   },
   "Autodesk.Revit.DB.BarTypeDiameterOptions": {
@@ -14034,7 +15197,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.BindingMap": {
-   "base": "Autodesk.Revit.DB.DefinitionBindingMap",
    "kind": "class",
    "members": {
     "Insert": {
@@ -14105,7 +15267,6 @@
    }
   },
   "Autodesk.Revit.DB.BoundingBoxXYZ": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "IsSet": {
@@ -14120,7 +15281,6 @@
    }
   },
   "Autodesk.Revit.DB.BrowserOrganization": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "GetCurrentBrowserOrganizationForPanelSchedules": {
@@ -24617,7 +25777,6 @@
    }
   },
   "Autodesk.Revit.DB.Category": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "BuiltInCategory": {
@@ -24687,7 +25846,6 @@
    }
   },
   "Autodesk.Revit.DB.Ceiling": {
-   "base": "Autodesk.Revit.DB.CeilingAndFloor",
    "kind": "class",
    "members": {
     "Create": {
@@ -24748,7 +25906,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ColorFillScheme": {
@@ -24758,7 +25915,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ColorFillSchemeEntry": {
@@ -24858,7 +26014,6 @@
    }
   },
   "Autodesk.Revit.DB.ConnectorElement": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "ChangeHostReference": {
@@ -24937,7 +26092,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Curve": {
-   "base": "Autodesk.Revit.DB.GeometryObject",
    "kind": "class",
    "members": {
     "Intersect": {
@@ -24960,7 +26114,6 @@
    }
   },
   "Autodesk.Revit.DB.CurveElement": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "CreateAreaBasedLoadBoundaryLine": {
@@ -25083,7 +26236,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.DGNExportOptions": {
-   "base": "Autodesk.Revit.DB.BaseExportOptions",
    "kind": "class",
    "members": {
     "MasterUnits": {
@@ -25210,7 +26362,6 @@
    }
   },
   "Autodesk.Revit.DB.Dimension": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "HasOneSegment": {
@@ -25225,7 +26376,6 @@
    }
   },
   "Autodesk.Revit.DB.DimensionType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "Prefix": {
@@ -25294,7 +26444,6 @@
    }
   },
   "Autodesk.Revit.DB.DirectShape": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddExternallyTaggedGeometry": {
@@ -25505,7 +26654,6 @@
    }
   },
   "Autodesk.Revit.DB.DirectShapeType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "AddExternallyTaggedGeometry": {
@@ -26065,7 +27213,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
    "kind": "class",
    "members": {
     "Voltage": {
@@ -26123,7 +27270,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Electrical.AnalyticalDistributionNodePropertyData",
    "kind": "class",
    "members": {
     "LoadSet": {
@@ -26162,7 +27308,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Electrical.AnalyticalDistributionNodePropertyData",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.AnalyticalPowerSourceData": {
@@ -26172,7 +27317,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
    "kind": "class",
    "members": {
     "ApparentPowerRating": {
@@ -26206,7 +27350,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
    "kind": "class",
    "members": {
     "Voltage": {
@@ -26231,7 +27374,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Electrical.AnalyticalPowerDistributableNodeData",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.AreaBasedLoadBoundaryLineData": {
@@ -26250,7 +27392,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Mechanical.ZoneElementDomainData",
    "kind": "class",
    "members": {
     "CanConnectToUpstreamNode": {
@@ -26325,7 +27466,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "PowerFactorState": {
@@ -26355,7 +27495,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.ConductorMaterial": {
@@ -26392,7 +27531,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "GetTemperature": {
@@ -26430,7 +27568,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.CorrectionFactorSetIterator": {
@@ -26440,11 +27577,9 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.DistributionSysType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "HighLegPhase": {
@@ -26465,7 +27600,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.ElectricalAnalyticalNode": {
@@ -26475,7 +27609,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetAllDownstreamLoadIds": {
@@ -26514,11 +27647,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.SpatialElementDomainData",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.ElectricalLoadClassification": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "Other": {
@@ -26569,7 +27700,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Electrical.ElectricalSetting": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddWireMaterialType": {
@@ -26627,7 +27757,6 @@
    }
   },
   "Autodesk.Revit.DB.Electrical.ElectricalSystem": {
-   "base": "Autodesk.Revit.DB.MEPSystem",
    "kind": "class",
    "members": {
     "CableSize": {
@@ -26741,7 +27870,6 @@
      2022
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "obsolete": {
     "message": "This class is deprecated in Revit 2021.",
@@ -26755,7 +27883,6 @@
      2022
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "obsolete": {
     "message": "This class is deprecated in Revit 2021.",
@@ -26769,7 +27896,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "obsolete": {
     "message": "GroundConductorSize is deprecated in Revit 2026 and will be removed in a future version of Revit. Please use ConductorSize instead. ConductorSizes will be created by GroundConductorSize properly during document upgrade.",
@@ -26783,7 +27909,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.GroundConductorSizeSetIterator": {
@@ -26793,7 +27918,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.InsulationMaterial": {
@@ -26812,7 +27936,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "obsolete": {
     "message": "InsulationType is deprecated in Revit 2026 and will be removed in a future version of Revit. Please use InsulationMaterial instead. InsulationMaterials will be created by InsulationTypes properly during document upgrade.",
@@ -26826,7 +27949,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.InsulationTypeSetIterator": {
@@ -26836,11 +27958,9 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.PanelScheduleData": {
-   "base": "Autodesk.Revit.DB.TableData",
    "kind": "class",
    "members": {
     "IsAutoShadingForLoadDisplay": {
@@ -26868,7 +27988,6 @@
    }
   },
   "Autodesk.Revit.DB.Electrical.PanelScheduleView": {
-   "base": "Autodesk.Revit.DB.TableView",
    "kind": "class",
    "members": {
     "SetLockSlot": {
@@ -26898,7 +28017,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "obsolete": {
     "message": "TemperatureRatingType is deprecated in Revit 2026 and will be removed in a future version of Revit. Please use TemperatureRating instead. TemperatureRatings will be created by TemperatureRatingTypes properly during document upgrade.",
@@ -26912,7 +28030,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.TemperatureRatingTypeSetIterator": {
@@ -26922,7 +28039,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.WireMaterialType": {
@@ -26932,7 +28048,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "obsolete": {
     "message": "WireMaterialType is deprecated in Revit 2026 and will be removed in a future version of Revit. Please use ConductorMaterial instead. ConductorMaterials will be created by WireMaterialTypes properly during document upgrade.",
@@ -26946,7 +28061,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.WireMaterialTypeSetIterator": {
@@ -26956,7 +28070,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.WireSize": {
@@ -26966,7 +28079,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "obsolete": {
     "message": "WireSize is deprecated in Revit 2026 and will be removed in a future version of Revit. Please use ConductorSize instead. ConductorSizes will be created by WireSizes properly during document upgrade.",
@@ -26980,7 +28092,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Electrical.WireSizeSetIterator": {
@@ -26990,7 +28101,6 @@
      2026
     ]
    ],
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Element": {
@@ -27235,7 +28345,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.Events.DocumentSavedAsEventArgs": {
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
    "kind": "class",
    "members": {
     "IsSavingAsMasterFile": {
@@ -27254,7 +28363,6 @@
    }
   },
   "Autodesk.Revit.DB.Events.DocumentSavingAsEventArgs": {
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
    "kind": "class",
    "members": {
     "IsSavingAsMasterFile": {
@@ -27279,7 +28387,6 @@
      2025
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Events.ExternalDataInstanceAddingIntoDocumentEventArgs": {
@@ -27289,7 +28396,6 @@
      2025
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Events.ExternalDataInstanceRemovedFromDocumentEventArgs": {
@@ -27299,7 +28405,6 @@
      2025
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Events.ExternalDataInstanceRemovingFromDocumentEventArgs": {
@@ -27309,7 +28414,6 @@
      2025
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Events.ExternalDataTypeServerFailureResolutionExecutingEventArgs": {
@@ -27319,12 +28423,10 @@
      2025
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Events.ExternalDataTypeUpdatedDataSourceIntoDocumentEventArgs": {
    "avail": [],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
    "kind": "class",
    "partial": [
     [
@@ -27335,7 +28437,6 @@
   },
   "Autodesk.Revit.DB.Events.ExternalDataTypeUpdatingDataSourceIntoDocumentEventArgs": {
    "avail": [],
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
    "kind": "class",
    "partial": [
     [
@@ -27345,7 +28446,6 @@
    ]
   },
   "Autodesk.Revit.DB.Events.FileExportedEventArgs": {
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
    "kind": "class",
    "members": {
     "BackgroundOperation": {
@@ -27360,7 +28460,6 @@
    }
   },
   "Autodesk.Revit.DB.Events.FileExportingEventArgs": {
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPreDocEventArgs",
    "kind": "class",
    "members": {
     "BackgroundOperation": {
@@ -27375,7 +28474,6 @@
    }
   },
   "Autodesk.Revit.DB.Events.LinkedResourceOpenedEventArgs": {
-   "base": "Autodesk.Revit.DB.Events.RevitAPIPostDocEventArgs",
    "kind": "class",
    "members": {
     "ResourceTypeId": {
@@ -27396,7 +28494,6 @@
      2025
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ExportEnergyModelType": {
@@ -27445,7 +28542,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ExportResolution": {
@@ -27668,7 +28764,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ParameterElement",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ExternalData.ExtendedPropertiesBindingType": {
@@ -27696,7 +28791,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "CreateFromCloudDataset": {
@@ -27728,7 +28822,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ExternalResourceLoadContent",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ExternalData.ExtendedPropertiesLinkValues": {
@@ -27741,7 +28834,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.ExternalDefinition": {
-   "base": "Autodesk.Revit.DB.Definition",
    "kind": "class",
    "members": {
     "GetGroupTypeId": {
@@ -28219,7 +29311,6 @@
    }
   },
   "Autodesk.Revit.DB.ExternalService.MultiServerService": {
-   "base": "Autodesk.Revit.DB.ExternalService.ExternalService",
    "kind": "class",
    "members": {
     "SetServerState": {
@@ -28240,7 +29331,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ExternallyTaggedGeometryObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ExternallyTaggedGeometryObject": {
@@ -28294,7 +29384,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ExternallyTaggedGeometryObject",
    "kind": "class",
    "members": {
     "SetUsage": {
@@ -28525,7 +29614,6 @@
    }
   },
   "Autodesk.Revit.DB.FabricationConfiguration": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AirturnExists": {
@@ -28778,7 +29866,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.FabricationPart": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "CanFlipPart": {
@@ -28995,11 +30082,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.FabricationPartType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "ResetAssemblyTypes": {
@@ -29169,7 +30254,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.FaceToposolid": {
@@ -29179,7 +30263,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.HostObject",
    "kind": "class"
   },
   "Autodesk.Revit.DB.FailureDefinition": {
@@ -29213,7 +30296,6 @@
    }
   },
   "Autodesk.Revit.DB.FamilyManager": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "AddParameter": {
@@ -29294,7 +30376,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.FamilyParameter": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "DisplayUnitType": {
@@ -29344,7 +30425,6 @@
    }
   },
   "Autodesk.Revit.DB.FamilySymbol": {
-   "base": "Autodesk.Revit.DB.InsertableObject",
    "kind": "class",
    "members": {
     "Origin": {
@@ -29395,7 +30475,6 @@
    }
   },
   "Autodesk.Revit.DB.FilledRegion": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "Create": {
@@ -29423,7 +30502,6 @@
    }
   },
   "Autodesk.Revit.DB.FilledRegionType": {
-   "base": "Autodesk.Revit.DB.LineAndTextAttrSymbol",
    "kind": "class",
    "members": {
     "IsValidBackgroundPatternId": {
@@ -29474,7 +30552,6 @@
    }
   },
   "Autodesk.Revit.DB.FilterElementIdRule": {
-   "base": "Autodesk.Revit.DB.FilterNumericValueRule",
    "kind": "class",
    "members": {
     "UsesLevelFiltering": {
@@ -29499,7 +30576,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Floor": {
-   "base": "Autodesk.Revit.DB.CeilingAndFloor",
    "kind": "class",
    "members": {
     "Create": {
@@ -29806,7 +30882,6 @@
    }
   },
   "Autodesk.Revit.DB.GeometryInstance": {
-   "base": "Autodesk.Revit.DB.GeometryObject",
    "kind": "class",
    "members": {
     "GetDocument": {
@@ -29843,7 +30918,6 @@
    }
   },
   "Autodesk.Revit.DB.GlobalParameter": {
-   "base": "Autodesk.Revit.DB.ParameterElement",
    "kind": "class",
    "members": {
     "Create": {
@@ -29890,7 +30964,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.GroupNode": {
-   "base": "Autodesk.Revit.DB.RenderNode",
    "kind": "class",
    "members": {
     "GetSymbolId": {
@@ -29909,7 +30982,6 @@
    }
   },
   "Autodesk.Revit.DB.GroupType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "LoadFrom": {
@@ -30102,7 +31174,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "IsValidCategoryMappingFile": {
@@ -30152,7 +31223,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetPropertySetApplicableEntities": {
@@ -30205,7 +31275,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.IFCUserDefinedPropertySetType": {
@@ -30319,7 +31388,6 @@
    }
   },
   "Autodesk.Revit.DB.ImageType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "IsLoadedFromFile": {
@@ -30425,7 +31493,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.ImportInstance": {
-   "base": "Autodesk.Revit.DB.Instance",
    "kind": "class",
    "members": {
     "Create": {
@@ -30467,7 +31534,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BaseImportOptions",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ImportUnit": {
@@ -30536,7 +31602,6 @@
    }
   },
   "Autodesk.Revit.DB.IndependentTag": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddReferences": {
@@ -30855,7 +31920,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.InstanceNode": {
-   "base": "Autodesk.Revit.DB.GroupNode",
    "kind": "class",
    "members": {
     "GetSymbolGeometryId": {
@@ -30870,7 +31934,6 @@
    }
   },
   "Autodesk.Revit.DB.InternalDefinition": {
-   "base": "Autodesk.Revit.DB.Definition",
    "kind": "class",
    "members": {
     "GetGroupTypeId": {
@@ -31055,7 +32118,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Level": {
-   "base": "Autodesk.Revit.DB.DatumPlane",
    "kind": "class",
    "members": {
     "GetNearestLevelId": {
@@ -31080,7 +32142,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.LinearArray": {
-   "base": "Autodesk.Revit.DB.BaseArray",
    "kind": "class",
    "members": {
     "GetMinimumSize": {
@@ -31135,11 +32196,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Dimension",
    "kind": "class"
   },
   "Autodesk.Revit.DB.LinkNode": {
-   "base": "Autodesk.Revit.DB.GroupNode",
    "kind": "class",
    "members": {
     "SymbolId": {
@@ -31184,7 +32243,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.MEPModel": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "AssignedElectricalSystems": {
@@ -31231,11 +32289,9 @@
      2024
     ]
    ],
-   "base": "Autodesk.Revit.DB.Document",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Material": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "EmbodiedCarbonAssetId": {
@@ -31362,7 +32418,6 @@
    }
   },
   "Autodesk.Revit.DB.Mechanical.DuctSettings": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AirDynamicViscosity": {
@@ -31415,7 +32470,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Analysis.GenericZoneDomainData",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Mechanical.MEPHiddenLineSettings": {
@@ -31425,7 +32479,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Mechanical.OccupancyUnit": {
@@ -31444,7 +32497,6 @@
    }
   },
   "Autodesk.Revit.DB.Mechanical.Space": {
-   "base": "Autodesk.Revit.DB.SpatialElement",
    "kind": "class",
    "members": {
     "Zone": {
@@ -31463,7 +32515,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "CoolingAirTemperature": {
@@ -31487,7 +32538,6 @@
    }
   },
   "Autodesk.Revit.DB.Mechanical.Zone": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddSpaces": {
@@ -31749,7 +32799,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.Mechanical.ZoneEquipment": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "Create": {
@@ -31767,7 +32816,6 @@
    }
   },
   "Autodesk.Revit.DB.Mesh": {
-   "base": "Autodesk.Revit.DB.GeometryObject",
    "kind": "class",
    "members": {
     "ComputeSurfaceArea": {
@@ -31834,7 +32882,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.NumberedReferenceInfo": {
@@ -31883,7 +32930,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.NumberingSchema": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AddMatchingParameter": {
@@ -32235,7 +33281,6 @@
    }
   },
   "Autodesk.Revit.DB.NumberingSchemaType": {
-   "base": "Autodesk.Revit.DB.GuidEnum",
    "kind": "class",
    "obsolete": {
     "message": "Deprecated in Revit 2027 and may be removed in a later version of Revit. Schemas are no longer defined as unique based on this, the Name property is used.",
@@ -32273,7 +33318,6 @@
    }
   },
   "Autodesk.Revit.DB.NurbSpline": {
-   "base": "Autodesk.Revit.DB.Curve",
    "kind": "class",
    "members": {
     "isClosed": {
@@ -32375,7 +33419,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BIMExportOptions",
    "kind": "class"
   },
   "Autodesk.Revit.DB.OBJImportOptions": {
@@ -32385,7 +33428,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BaseImportOptions",
    "kind": "class"
   },
   "Autodesk.Revit.DB.OpenOptions": {
@@ -32403,7 +33445,6 @@
    }
   },
   "Autodesk.Revit.DB.Opening": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "SketchId": {
@@ -32560,7 +33601,6 @@
    }
   },
   "Autodesk.Revit.DB.Parameter": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "Description": {
@@ -38729,7 +39769,6 @@
    }
   },
   "Autodesk.Revit.DB.PointCloudType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "GetReCapProject": {
@@ -38744,7 +39783,6 @@
    }
   },
   "Autodesk.Revit.DB.PrintParameters": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "OriginOffsetX": {
@@ -38782,7 +39820,6 @@
    }
   },
   "Autodesk.Revit.DB.PropertyLine": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "Area": {
@@ -38935,7 +39972,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.PropertySetElement": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "Create": {
@@ -39007,7 +40043,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.RadialArray": {
-   "base": "Autodesk.Revit.DB.BaseArray",
    "kind": "class",
    "members": {
     "GetMinimumSize": {
@@ -39062,7 +40097,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Dimension",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ReferenceBaseOnHostType": {
@@ -39084,7 +40118,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.Revision": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "NumberType": {
@@ -39114,11 +40147,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.RevisionSettings": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetAlphanumericRevisionSettings": {
@@ -39359,7 +40390,6 @@
    }
   },
   "Autodesk.Revit.DB.RoofBase": {
-   "base": "Autodesk.Revit.DB.HostObject",
    "kind": "class",
    "members": {
     "GetSlabShapeEditor": {
@@ -39402,7 +40432,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.STEPApplicationProtocol": {
@@ -39421,7 +40450,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BIMExportOptions",
    "kind": "class"
   },
   "Autodesk.Revit.DB.STEPImportOptions": {
@@ -39431,7 +40459,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BaseImportOptions",
    "kind": "class",
    "partial": [
     [
@@ -39441,7 +40468,6 @@
    ]
   },
   "Autodesk.Revit.DB.STLExportOptions": {
-   "base": "Autodesk.Revit.DB.BIMExportOptions",
    "kind": "class",
    "members": {
     ".ctor": {
@@ -39500,7 +40526,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.BaseImportOptions",
    "kind": "class"
   },
   "Autodesk.Revit.DB.SchedulableField": {
@@ -39677,7 +40702,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.ScheduleSheetInstance": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "SegmentIndex": {
@@ -39758,7 +40782,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.SheetDuplicateOption": {
@@ -39771,7 +40794,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.SiteLocation": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "SetLatitudeAndLongitude": {
@@ -39787,7 +40809,6 @@
    }
   },
   "Autodesk.Revit.DB.Sketch": {
-   "base": "Autodesk.Revit.DB.SketchBase",
    "kind": "class",
    "members": {
     "GetAllElements": {
@@ -39817,7 +40838,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.EditScope",
    "kind": "class",
    "members": {
     "IsElementWithoutSketch": {
@@ -40045,11 +41065,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.IndependentTag",
    "kind": "class"
   },
   "Autodesk.Revit.DB.SpatialElement": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetDefaultLocation": {
@@ -40112,7 +41130,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.SpatialElementTag": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "LeaderStart": {
@@ -40357,7 +41374,6 @@
    }
   },
   "Autodesk.Revit.DB.SpotDimension": {
-   "base": "Autodesk.Revit.DB.Dimension",
    "kind": "class",
    "members": {
     "CanFlip": {
@@ -40466,7 +41482,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "ConnectorManager": {
@@ -40505,7 +41520,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalElement",
    "kind": "class",
    "members": {
     "CanSplit": {
@@ -40547,7 +41561,6 @@
      2022
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.AnalyticalModelColumn": {
@@ -40557,7 +41570,6 @@
      2022
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalModelStick",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.AnalyticalModelSketchComponent": {
@@ -40576,7 +41588,6 @@
      2022
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalModel",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.AnalyticalModelSupport": {
@@ -40595,7 +41606,6 @@
      2022
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalModel",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.AnalyticalNodeConnectionStatus": {
@@ -40623,7 +41633,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalSurfaceBase",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.AnalyticalPanel": {
@@ -40633,7 +41642,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalSurfaceBase",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.AnalyticalProjectionType": {
@@ -40686,7 +41694,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.AnalyticalElement",
    "kind": "class",
    "members": {
     "IsCurveLoopValid": {
@@ -40721,7 +41728,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "EnableAssistedAssociation": {
@@ -40784,7 +41790,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.AreaLoad": {
-   "base": "Autodesk.Revit.DB.Structure.LoadBase",
    "kind": "class",
    "members": {
     "AreCurveLoopsValid": {
@@ -40847,7 +41852,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.AreaReinforcement": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "ConvertRebarInSystemToRebars": {
@@ -41125,7 +42129,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Structure.BoundaryConditions": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AreCurveLoopsValid": {
@@ -41333,7 +42336,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.FabricArea": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "DistributionOfWiresAtCover": {
@@ -41348,7 +42350,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.FabricSheet": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "DistributionOfWiresAtCover": {
@@ -41407,7 +42408,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Structure.Hub": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetPointId": {
@@ -41422,7 +42422,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.LineLoad": {
-   "base": "Autodesk.Revit.DB.Structure.LoadBase",
    "kind": "class",
    "members": {
     "Create": {
@@ -41493,7 +42492,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.LoadBase": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "HostElement": {
@@ -41609,7 +42607,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Structure.PathReinforcement": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "ConvertRebarInSystemToRebars": {
@@ -41651,7 +42648,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.PointLoad": {
-   "base": "Autodesk.Revit.DB.Structure.LoadBase",
    "kind": "class",
    "members": {
     "Create": {
@@ -41707,7 +42703,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.Rebar": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AreBarIndicesValidForSplit": {
@@ -42340,7 +43335,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.RebarBarType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "BarDiameter": {
@@ -42940,7 +43934,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "AngularDimensionsForCranksEnabled": {
@@ -43573,7 +44566,6 @@
    "kind": "enum"
   },
   "Autodesk.Revit.DB.Structure.RebarContainer": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AppendItemFromCurves": {
@@ -43722,7 +44714,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.RebarCoupler": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "RotationAngle": {
@@ -44244,7 +45235,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.RebarInSystem": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "CanEditIndividualBars": {
@@ -44372,7 +45362,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.RebarShape": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "Create": {
@@ -44951,7 +45940,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.ReinforcementSettings": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "NumberVaryingLengthRebarsIndividually": {
@@ -45027,7 +46015,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.StructuralConnectionHandlerType": {
-   "base": "Autodesk.Revit.DB.ElementType",
    "kind": "class",
    "members": {
     "AddElementsToCustomConnection": {
@@ -45077,7 +46064,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcreteL": {
@@ -45087,7 +46073,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRectangular",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionConcretePolygon": {
@@ -45097,7 +46082,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionRound",
    "kind": "class"
   },
   "Autodesk.Revit.DB.Structure.StructuralSections.StructuralSectionPolygonDefinition": {
@@ -45145,7 +46129,6 @@
    }
   },
   "Autodesk.Revit.DB.Structure.StructuralSettings": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "AnalyticalLinkAutofixTolerance": {
@@ -45956,7 +46939,6 @@
    }
   },
   "Autodesk.Revit.DB.TemporaryViewModes": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "AcceleratedGraphicsMode": {
@@ -45971,7 +46953,6 @@
    }
   },
   "Autodesk.Revit.DB.ThermalProperties": {
-   "base": "Autodesk.Revit.DB.APIObject",
    "kind": "class",
    "members": {
     "HeatTransferCoefficient": {
@@ -45999,7 +46980,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.CeilingAndFloor",
    "kind": "class",
    "members": {
     "CanBeExcavatedBy": {
@@ -46098,7 +47078,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.HostObjAttributes",
    "kind": "class",
    "members": {
     "SetContourSettting": {
@@ -46999,7 +47978,6 @@
    "kind": "class"
   },
   "Autodesk.Revit.DB.View": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "CanApplyColorFillScheme": {
@@ -47140,7 +48118,6 @@
    }
   },
   "Autodesk.Revit.DB.View3D": {
-   "base": "Autodesk.Revit.DB.View",
    "kind": "class",
    "members": {
     "GetLevelsThatShowGrids": {
@@ -47230,11 +48207,9 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class"
   },
   "Autodesk.Revit.DB.ViewSchedule": {
-   "base": "Autodesk.Revit.DB.TableView",
    "kind": "class",
    "members": {
     "DeleteSegment": {
@@ -47361,7 +48336,6 @@
    }
   },
   "Autodesk.Revit.DB.ViewSheet": {
-   "base": "Autodesk.Revit.DB.View",
    "kind": "class",
    "members": {
     "CanBeDuplicated": {
@@ -47426,7 +48400,6 @@
    }
   },
   "Autodesk.Revit.DB.ViewSheetSet": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "IsAutomatic": {
@@ -47493,7 +48466,6 @@
    }
   },
   "Autodesk.Revit.DB.Viewport": {
-   "base": "Autodesk.Revit.DB.Element",
    "kind": "class",
    "members": {
     "GetPositionAtViewAnchor": {
@@ -47606,7 +48578,6 @@
    }
   },
   "Autodesk.Revit.DB.Visual.AssetPropertyDistance": {
-   "base": "Autodesk.Revit.DB.Visual.AssetProperty",
    "kind": "class",
    "members": {
     "DisplayUnitType": {
@@ -47625,7 +48596,6 @@
    }
   },
   "Autodesk.Revit.DB.Wall": {
-   "base": "Autodesk.Revit.DB.HostObject",
    "kind": "class",
    "members": {
     "AddAttachment": {
@@ -47876,7 +48846,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.ApplicationException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.DefaultValueException": {
@@ -47886,7 +48855,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.InvalidOperationException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.DirectoryNotEmptyException": {
@@ -47896,7 +48864,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.ArgumentException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.NetworkCommunicationException": {
@@ -47906,7 +48873,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.ApplicationException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.ResourceNotFoundException": {
@@ -47916,7 +48882,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.ApplicationException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.RevitServerModelAlreadyExistsException": {
@@ -47926,7 +48891,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.RevitServerException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.RevitServerModelNameBreaksConventionException": {
@@ -47936,7 +48900,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.RevitServerException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.SchemaException": {
@@ -47946,7 +48909,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.InvalidOperationException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.ServerInternalException": {
@@ -47956,7 +48918,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.ApplicationException",
    "kind": "class"
   },
   "Autodesk.Revit.Exceptions.ServerModelCorruptedException": {
@@ -47966,7 +48927,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.CentralModelException",
    "kind": "class",
    "partial": [
     [
@@ -47982,7 +48942,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.Exceptions.ApplicationException",
    "kind": "class"
   },
   "Autodesk.Revit.UI.CommandMenuItem": {
@@ -47992,7 +48951,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.UI.MenuItem",
    "kind": "class"
   },
   "Autodesk.Revit.UI.ContextMenu": {
@@ -48201,7 +49159,6 @@
   },
   "Autodesk.Revit.UI.Events.ExternalDataManagerChangedEventArgs": {
    "avail": [],
-   "base": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
    "kind": "class",
    "partial": [
     [
@@ -48232,7 +49189,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.UI.Events.SelectionChangedEventArgs": {
@@ -48242,7 +49198,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
    "kind": "class"
   },
   "Autodesk.Revit.UI.Events.ThemeChangedEventArgs": {
@@ -48252,7 +49207,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.Events.RevitAPISingleEventArgs",
    "kind": "class",
    "members": {
     "ThemeChangedType": {
@@ -48297,7 +49251,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.DB.GuidEnum",
    "kind": "class"
   },
   "Autodesk.Revit.UI.ExternalDataManagerCommands": {
@@ -48434,7 +49387,6 @@
      2024
     ]
    ],
-   "base": "Autodesk.Revit.UI.UIDocument",
    "kind": "class"
   },
   "Autodesk.Revit.UI.MenuItem": {
@@ -50778,7 +51730,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.UI.MenuItem",
    "kind": "class"
   },
   "Autodesk.Revit.UI.SetupEnergySimulationDialog": {
@@ -50840,7 +51791,6 @@
      2027
     ]
    ],
-   "base": "Autodesk.Revit.UI.MenuItem",
    "kind": "class"
   },
   "Autodesk.Revit.UI.TemporaryGraphicsCommandData": {

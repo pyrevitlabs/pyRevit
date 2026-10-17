@@ -12,7 +12,7 @@ imports or executes the code it reads:
 
 With no paths it lints the CI targets: ``extensions/pyRevitTools.extension``
 and ``pyrevitlib``. Exit code is 1 when errors exist (warnings too with
-``--strict``), 2 on usage or I/O problems.
+``--strict``), 2 on usage or I/O problems, including any failed clone.
 
 API facts come from ``revit_api_catalog/catalog.json``, generated from the
 real RevitAPI/RevitAPIUI assemblies by ``build_revit_api_catalog.py`` (an
@@ -28,10 +28,14 @@ and every parent bundle, bundle.yaml taking precedence over
 narrowed by enclosing runtime checks: ``HOST_APP.is_newer_than(v[, or_equal])``,
 ``is_older_than``, ``is_exactly``, comparisons of a version value with a year,
 ``pyrevit.compat.NETCORE``/``NETFRAMEWORK``, including ``and`` chains,
-ternaries and early exits. Feature detection - ``hasattr``, ``getattr`` with a
-default, or a ``try`` whose handler catches AttributeError/ImportError/
-TypeError/Exception (bare included) - protects both the guarded code and its
-fallback.
+ternaries and early exits. Feature detection narrows by what it probes:
+``hasattr(obj, "X")`` (or ``getattr`` with a default) protects uses of ``X``
+in its true branch and limits that branch to the years ``X`` exists, while
+the false branch is limited to the years it does not. A ``try`` whose
+handler catches AttributeError/ImportError/TypeError/Exception (bare
+included) absorbs failures in its body; its handlers, and code after a
+returning attempt, are limited to the years something in the body is
+missing. Name bindings used by these checks are resolved per function scope.
 
 Checks:
     API-MISSING     a type/member used in a year where it does not exist
@@ -175,6 +179,7 @@ def format_years(years):
 
 
 def _years_from_ranges(ranges):
+    """Expand inclusive [first, last] runs into a year set."""
     years = set()
     for first, last in ranges:
         years.update(range(first, last + 1))
@@ -182,6 +187,7 @@ def _years_from_ranges(ranges):
 
 
 def _deep_merge(base, extra):
+    """Merge extra into base recursively (mutates and returns base)."""
     for key, value in extra.items():
         if isinstance(value, dict) and isinstance(base.get(key), dict):
             _deep_merge(base[key], value)
@@ -210,6 +216,9 @@ class Catalog:
             json.loads(json.dumps(generated.get("instance_members", {}))),
             overrides.get("instance_members", {}),
         )
+        self.bases = dict(generated.get("bases", {}))
+        self.bcl_members = frozenset(generated.get("bcl_members", []))
+        self._member_unions = {}
         self.namespaces = overrides.get("namespaces", {})
         self.cpython_unavailable_modules = overrides.get("engine", {}).get(
             "cpython_unavailable_modules", {}
@@ -246,13 +255,13 @@ class Catalog:
         declares it; returns (None, None) when no cataloged ancestor has it.
         """
         seen = set()
-        while type_name in self.types and type_name not in seen:
+        while self.is_type(type_name) and type_name not in seen:
             seen.add(type_name)
-            type_entry = self.types[type_name]
+            type_entry = self.type_entry(type_name)
             entry = type_entry.get("members", {}).get(member)
             if entry is not None:
                 return entry, type_entry
-            type_name = type_entry.get("base", "")
+            type_name = self.base_of(type_name)
         return None, None
 
     def obsolete_years(self, entry):
@@ -272,7 +281,7 @@ class Catalog:
         parts = full_name.split(".")
         for cut in range(len(parts), 0, -1):
             type_name = ".".join(parts[:cut])
-            if type_name in self.types:
+            if self.is_type(type_name):
                 rest = parts[cut:]
                 return type_name, (rest[0] if rest else None), rest[1:]
         return None
@@ -285,8 +294,37 @@ class Catalog:
         return None
 
     def is_type(self, full_name):
-        """True if the name is a cataloged type (changed itself or a parent)."""
-        return full_name in self.types
+        """True if the name is a cataloged type or a known Revit class."""
+        return full_name in self.types or full_name in self.bases
+
+    def type_entry(self, type_name):
+        """The type's entry; an empty one (always available) if unchanged."""
+        return self.types.get(type_name, {})
+
+    def base_of(self, type_name):
+        """Full name of a type's Revit base class, or ``""``."""
+        return self.types.get(type_name, {}).get("base") or self.bases.get(
+            type_name, ""
+        )
+
+    def member_union(self, name):
+        """(avail, partial) unioned over every cataloged member called name.
+
+        Used to read an untyped ``hasattr(obj, name)`` probe when the name is
+        not in the instance-member index; (None, None) when no type has it.
+        """
+        if name not in self._member_unions:
+            avail, partial, found = set(), set(), False
+            for entry in self.types.values():
+                member = entry.get("members", {}).get(name)
+                if member is not None:
+                    found = True
+                    avail |= self.avail(member)
+                    partial |= self.partial(member)
+            self._member_unions[name] = (
+                (frozenset(avail), frozenset(partial)) if found else (None, None)
+            )
+        return self._member_unions[name]
 
 
 class Finding:
@@ -338,6 +376,7 @@ class Finding:
 
 
 def _parse_year(value):
+    """Parse a 4-digit year; None if empty, ValueError otherwise."""
     if value is None:
         return None
     text = str(value).strip().strip("\"'")
@@ -399,6 +438,7 @@ def read_script_versions(script_path):
 
 
 def _component_script(directory):
+    """The bundle's script, as the loader picks it, or None."""
     try:
         candidates = sorted(
             p
@@ -431,6 +471,7 @@ class BundleRanges:
         return self._for_dir(path.parent)
 
     def _for_dir(self, directory):
+        """Effective (years, reasons) for a directory, cached."""
         if directory in self._cache:
             return self._cache[directory]
         parent = directory.parent
@@ -445,6 +486,7 @@ class BundleRanges:
         return result
 
     def _apply_component(self, directory, years, reasons):
+        """Narrow years by one component's bundle/script constants."""
         values = {}
         script = None
         if not directory.name.lower().endswith(".extension"):
@@ -486,17 +528,61 @@ class BundleRanges:
 
 
 class _Condition:
-    """Years a test is true / false in, and whether it detects features."""
+    """Years a test is true / false in, and API names it proves present.
 
-    __slots__ = ("true", "false", "feature")
+    ``protects_true``/``protects_false`` hold names a feature probe shows to
+    exist when the test is true/false; uses of exactly those names are safe
+    there, update-dependent (partial) years included.
+    """
 
-    def __init__(self, true, false, feature=False):
+    __slots__ = ("true", "false", "protects_true", "protects_false")
+
+    def __init__(
+        self, true, false, protects_true=frozenset(), protects_false=frozenset()
+    ):
         self.true = true
         self.false = false
-        self.feature = feature
+        self.protects_true = protects_true
+        self.protects_false = protects_false
+
+    def negated(self):
+        """The condition of ``not test``."""
+        return _Condition(
+            self.false, self.true, self.protects_false, self.protects_true
+        )
+
+    def informative(self, universe):
+        """True if the test narrows years or protects any name."""
+        return bool(
+            self.true != universe
+            or self.false != universe
+            or self.protects_true
+            or self.protects_false
+        )
+
+
+class _Scope:
+    """Names bound in one function, class or module body.
+
+    ``assigns`` maps a name to the values assigned to it (None for bindings
+    that are not a plain ``name = value``); ``params`` are parameter names.
+    """
+
+    __slots__ = ("parent", "is_class", "assigns", "params")
+
+    def __init__(self, parent, is_class=False):
+        self.parent = parent
+        self.is_class = is_class
+        self.assigns = {}
+        self.params = set()
+
+    def bind(self, name, value=None):
+        """Record one binding of name."""
+        self.assigns.setdefault(name, []).append(value)
 
 
 def _year_literal(node):
+    """The Revit year a constant denotes, or None."""
     if isinstance(node, ast.Constant):
         value = node.value
         if isinstance(value, bool):
@@ -511,6 +597,7 @@ def _year_literal(node):
 
 
 def _strip_casts(node):
+    """Unwrap int()/str()/float() around a value."""
     while (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
@@ -522,6 +609,7 @@ def _strip_casts(node):
 
 
 def _terminal_name(node):
+    """Last identifier of a Name/Attribute/Call chain, or None."""
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute):
@@ -532,6 +620,7 @@ def _terminal_name(node):
 
 
 def _is_version_value(node):
+    """True if an expression looks like a Revit version value."""
     node = _strip_casts(node)
     name = _terminal_name(node)
     if not name:
@@ -545,6 +634,7 @@ def _is_version_value(node):
 
 
 def _compare_years(op, year, universe):
+    """Years satisfying ``year <op> value``, or None for other ops."""
     checks = {
         ast.Gt: lambda y: y > year,
         ast.GtE: lambda y: y >= year,
@@ -580,9 +670,11 @@ class FileAnalyzer:
         self.star_namespaces = []
         self.local_names = set()
         self.own_attributes = set()
-        self.feature_vars = set()
-        self.version_vars = {}
         self._resolving = set()
+        self._collectors = []
+        self._failing_years = {}
+        self._scopes = {}
+        self._scope_stack = []
         self.is_cpython = source.lstrip("﻿").startswith("#!") and (
             "python3" in source.splitlines()[0]
         )
@@ -591,25 +683,11 @@ class FileAnalyzer:
         self._collect_bindings()
 
     def _collect_bindings(self):
-        assignments = {}
-        for node in ast.walk(self.tree):
-            if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
-                targets = (
-                    node.targets if isinstance(node, ast.Assign) else [node.target]
-                )
-                for target in targets:
-                    for sub in ast.walk(target):
-                        if isinstance(sub, ast.Name):
-                            assignments.setdefault(sub.id, []).append(node)
-        for name, nodes in assignments.items():
-            node = nodes[0]
-            if (
-                len(nodes) == 1
-                and isinstance(node, ast.Assign)
-                and len(node.targets) == 1
-                and isinstance(node.targets[0], ast.Name)
-            ):
-                self.version_vars[name] = node.value
+        """Collect imports, aliases, own attributes and per-scope bindings."""
+        module_scope = _Scope(None)
+        self._scopes[self.tree] = module_scope
+        self._scope_stack = [module_scope]
+        self._fill_scope(self.tree, module_scope)
         for node in ast.walk(self.tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
@@ -640,12 +718,9 @@ class FileAnalyzer:
                                 if isinstance(target, ast.Name):
                                     self.own_attributes.add(target.id)
             elif isinstance(node, ast.Assign):
-                probes = _is_feature_probe(node.value)
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         self.local_names.add(target.id)
-                        if probes:
-                            self.feature_vars.add(target.id)
                     elif (
                         isinstance(target, ast.Attribute)
                         and isinstance(target.value, ast.Name)
@@ -655,8 +730,76 @@ class FileAnalyzer:
             elif isinstance(node, ast.arg):
                 self.local_names.add(node.arg)
 
+    def _fill_scope(self, node, scope):
+        """Record the bindings of node's subtree into scope, nesting new ones.
+
+        Functions, lambdas and classes get their own scope, so a flag or a
+        probe variable in one function never answers for another.
+        """
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                if not isinstance(child, ast.Lambda):
+                    scope.bind(child.name)
+                inner = _Scope(scope)
+                args = child.args
+                for arg in (
+                    list(getattr(args, "posonlyargs", []))
+                    + list(args.args)
+                    + list(args.kwonlyargs)
+                    + [args.vararg, args.kwarg]
+                ):
+                    if arg is not None:
+                        inner.params.add(arg.arg)
+                self._scopes[child] = inner
+                self._fill_scope(child, inner)
+            elif isinstance(child, ast.ClassDef):
+                scope.bind(child.name)
+                inner = _Scope(scope, is_class=True)
+                self._scopes[child] = inner
+                self._fill_scope(child, inner)
+            elif (
+                isinstance(child, ast.Assign)
+                and len(child.targets) == 1
+                and isinstance(child.targets[0], ast.Name)
+            ):
+                scope.bind(child.targets[0].id, child.value)
+                self._fill_scope(child.value, scope)
+            else:
+                if isinstance(child, ast.Name) and not isinstance(child.ctx, ast.Load):
+                    scope.bind(child.id)
+                elif isinstance(child, (ast.Import, ast.ImportFrom)):
+                    for alias in child.names:
+                        if alias.name != "*":
+                            scope.bind((alias.asname or alias.name).split(".")[0])
+                elif isinstance(child, ast.ExceptHandler) and child.name:
+                    scope.bind(child.name)
+                self._fill_scope(child, scope)
+
+    def _resolve_binding(self, name):
+        """The single value bound to name in the current lookup chain, or None.
+
+        Follows Python's rules: the innermost scope that binds the name
+        decides (class bodies are skipped for nested functions); a parameter,
+        a non-plain binding or several assignments make it unresolvable.
+        """
+        first = True
+        scope = self._scope_stack[-1] if self._scope_stack else None
+        while scope is not None:
+            if scope.is_class and not first:
+                scope = scope.parent
+                continue
+            first = False
+            if name in scope.params:
+                return None
+            values = scope.assigns.get(name)
+            if values is not None:
+                return values[0] if len(values) == 1 else None
+            scope = scope.parent
+        return None
+
     @staticmethod
     def _rewrite(dotted):
+        """Map pyrevit/rpw re-exports to their Autodesk namespaces."""
         for prefix, target in REEXPORTED_NAMESPACES.items():
             if dotted == prefix or dotted.startswith(prefix + "."):
                 return target + dotted[len(prefix) :]
@@ -695,29 +838,36 @@ class FileAnalyzer:
         """Analyze the module and return its findings."""
         if not self.base_years:
             return self.findings
-        self._visit_block(self.tree.body, _Ctx(self.base_years, False))
+        self._visit_block(self.tree.body, _Ctx(self.base_years))
         return self.findings
 
     def _visit_block(self, statements, ctx):
+        """Visit statements in order, carrying early-exit narrowing."""
         for stmt in statements:
             self._visit_stmt(stmt, ctx)
             ctx = self._after(stmt, ctx)
 
     def _after(self, stmt, ctx):
-        if _is_failed_attempt_fallthrough(stmt):
-            return ctx.guard()
+        """Context for the statements following stmt in the same block."""
+        attempts = _failed_attempts(stmt)
+        if attempts:
+            failing = frozenset().union(
+                *(self._failing_years.get(a, frozenset()) for a in attempts)
+            )
+            return ctx.narrow(failing) if failing else ctx
         if not isinstance(stmt, ast.If):
             return ctx
         cond = self.condition(stmt.test, ctx)
         body_exits = _terminates(stmt.body)
         else_exits = bool(stmt.orelse) and _terminates(stmt.orelse)
         if body_exits and not else_exits:
-            return ctx.narrow(cond.false, cond.feature)
+            return ctx.narrow(cond.false, cond.protects_false)
         if else_exits and not body_exits:
-            return ctx.narrow(cond.true, cond.feature)
+            return ctx.narrow(cond.true, cond.protects_true)
         return ctx
 
     def _visit_stmt(self, stmt, ctx):
+        """Visit one statement, branching the context on its tests."""
         previous = self._stmt
         self._stmt = stmt
         try:
@@ -725,8 +875,8 @@ class FileAnalyzer:
                 self._visit_expr(stmt.test, ctx)
                 cond = self.condition(stmt.test, ctx)
                 ironpython_branch = _ironpython_only_branch(stmt.test)
-                body_ctx = ctx.narrow(cond.true, cond.feature)
-                else_ctx = ctx.narrow(cond.false, cond.feature)
+                body_ctx = ctx.narrow(cond.true, cond.protects_true)
+                else_ctx = ctx.narrow(cond.false, cond.protects_false)
                 if ironpython_branch is True:
                     body_ctx = body_ctx.ironpython()
                 elif ironpython_branch is False:
@@ -734,15 +884,11 @@ class FileAnalyzer:
                 self._visit_block(stmt.body, body_ctx)
                 self._visit_block(stmt.orelse, else_ctx)
             elif isinstance(stmt, ast.Try) or type(stmt).__name__ == "TryStar":
-                guarded = _handlers_guard(stmt.handlers)
-                inner = ctx.guard() if guarded else ctx
-                self._visit_block(stmt.body, inner)
-                for handler in stmt.handlers:
-                    if handler.type is not None:
-                        self._visit_expr(handler.type, ctx)
-                    self._visit_block(handler.body, inner)
-                self._visit_block(stmt.orelse, ctx)
-                self._visit_block(stmt.finalbody, ctx)
+                self._visit_try(stmt, ctx)
+            elif isinstance(
+                stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ):
+                self._visit_definition(stmt, ctx)
             elif isinstance(stmt, (ast.Import, ast.ImportFrom)):
                 self._check_import(stmt, ctx)
             else:
@@ -758,7 +904,55 @@ class FileAnalyzer:
         finally:
             self._stmt = previous
 
+    def _visit_try(self, stmt, ctx):
+        """Visit a try statement.
+
+        Important:
+            A guarding try absorbs failures of its body, so the body is
+            checked only to learn which years it fails in. Handlers run in
+            those years only, the ``else`` clause in the others, and the
+            ``finally`` clause in all; with nothing cataloged failing, the
+            handlers get no narrowing (they then answer other errors).
+        """
+        handler_ctx = ctx
+        success_ctx = ctx
+        if _handlers_guard(stmt.handlers):
+            self._collectors.append(set())
+            try:
+                self._visit_block(stmt.body, ctx.guard())
+            finally:
+                failing = frozenset(self._collectors.pop())
+            self._failing_years[stmt] = failing
+            if failing:
+                handler_ctx = ctx.narrow(failing)
+                success_ctx = ctx.narrow(ctx.years - failing)
+        else:
+            self._visit_block(stmt.body, ctx)
+        for handler in stmt.handlers:
+            if handler.type is not None:
+                self._visit_expr(handler.type, ctx)
+            self._visit_block(handler.body, handler_ctx)
+        self._visit_block(stmt.orelse, success_ctx)
+        self._visit_block(stmt.finalbody, ctx)
+
+    def _visit_definition(self, stmt, ctx):
+        """Visit a def/class: header in the outer scope, body in its own."""
+        for item in getattr(stmt, "decorator_list", []):
+            self._visit_any(item, ctx)
+        for item in getattr(stmt, "bases", []) + getattr(stmt, "keywords", []):
+            self._visit_any(item, ctx)
+        if not isinstance(stmt, ast.ClassDef):
+            self._visit_any(stmt.args, ctx)
+            if stmt.returns is not None:
+                self._visit_any(stmt.returns, ctx)
+        self._scope_stack.append(self._scopes.get(stmt, self._scope_stack[-1]))
+        try:
+            self._visit_block(stmt.body, ctx)
+        finally:
+            self._scope_stack.pop()
+
     def _visit_any(self, value, ctx):
+        """Visit a non-expression node's children."""
         if isinstance(value, ast.expr):
             self._visit_expr(value, ctx)
         elif isinstance(value, ast.AST):
@@ -773,11 +967,20 @@ class FileAnalyzer:
                     self._visit_any(child, ctx)
 
     def _visit_expr(self, node, ctx):
+        """Visit an expression, checking API references in it."""
         if isinstance(node, ast.IfExp):
             self._visit_expr(node.test, ctx)
             cond = self.condition(node.test, ctx)
-            self._visit_expr(node.body, ctx.narrow(cond.true, cond.feature))
-            self._visit_expr(node.orelse, ctx.narrow(cond.false, cond.feature))
+            self._visit_expr(node.body, ctx.narrow(cond.true, cond.protects_true))
+            self._visit_expr(node.orelse, ctx.narrow(cond.false, cond.protects_false))
+            return
+        if isinstance(node, ast.Lambda):
+            self._visit_any(node.args, ctx)
+            self._scope_stack.append(self._scopes.get(node, self._scope_stack[-1]))
+            try:
+                self._visit_expr(node.body, ctx)
+            finally:
+                self._scope_stack.pop()
             return
         if isinstance(node, ast.BoolOp):
             current = ctx
@@ -785,9 +988,9 @@ class FileAnalyzer:
                 self._visit_expr(value, current)
                 cond = self.condition(value, current)
                 if isinstance(node.op, ast.And):
-                    current = current.narrow(cond.true, cond.feature)
+                    current = current.narrow(cond.true, cond.protects_true)
                 else:
-                    current = current.narrow(cond.false, cond.feature)
+                    current = current.narrow(cond.false, cond.protects_false)
             return
         if isinstance(node, ast.Attribute):
             full = self.qualified_name(node)
@@ -820,48 +1023,39 @@ class FileAnalyzer:
         """Classify a test expression's effect on the reachable years."""
         universe = ctx.years
         unknown = _Condition(universe, universe)
-        if self.feature_vars and any(
-            isinstance(n, ast.Name) and n.id in self.feature_vars
-            for n in ast.walk(node)
-        ):
-            return _Condition(universe, universe, True)
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-            inner = self.condition(node.operand, ctx)
-            return _Condition(inner.false, inner.true, inner.feature)
+            return self.condition(node.operand, ctx).negated()
         if isinstance(node, ast.BoolOp):
             parts = [self.condition(v, ctx) for v in node.values]
-            feature = any(p.feature for p in parts)
             if isinstance(node.op, ast.And):
-                true = frozenset.intersection(*[p.true for p in parts])
-                false = frozenset.union(*[p.false for p in parts])
-            else:
-                true = frozenset.union(*[p.true for p in parts])
-                false = frozenset.intersection(*[p.false for p in parts])
-            return _Condition(true, false, feature)
+                return _Condition(
+                    frozenset.intersection(*[p.true for p in parts]),
+                    frozenset.union(*[p.false for p in parts]),
+                    frozenset().union(*[p.protects_true for p in parts]),
+                )
+            return _Condition(
+                frozenset.union(*[p.true for p in parts]),
+                frozenset.intersection(*[p.false for p in parts]),
+                frozenset(),
+                frozenset().union(*[p.protects_false for p in parts]),
+            )
         if isinstance(node, ast.Call):
+            probe = self._probe(node, universe)
+            if probe is not None:
+                return probe
             func = node.func
-            if isinstance(func, ast.Name) and func.id in FEATURE_TEST_CALLS:
-                return _Condition(universe, universe, True)
-            if (
-                isinstance(func, ast.Name)
-                and func.id == "getattr"
-                and len(node.args) >= 3
-            ):
-                return _Condition(universe, universe, True)
             if isinstance(func, ast.Attribute) and func.attr in HOST_VERSION_METHODS:
                 return self._host_check(node, universe) or unknown
-        if (
-            isinstance(node, ast.Name)
-            and node.id in self.version_vars
-            and node.id not in self._resolving
-        ):
-            self._resolving.add(node.id)
-            try:
-                resolved = self.condition(self.version_vars[node.id], ctx)
-            finally:
-                self._resolving.discard(node.id)
-            if resolved.true != universe or resolved.false != universe:
-                return resolved
+        if isinstance(node, ast.Name) and node.id not in self._resolving:
+            resolved = self._resolve_binding(node.id)
+            if resolved is not None:
+                self._resolving.add(node.id)
+                try:
+                    bound = self.condition(resolved, ctx)
+                finally:
+                    self._resolving.discard(node.id)
+                if bound.informative(universe):
+                    return bound
         if isinstance(node, (ast.Name, ast.Attribute)):
             name = _terminal_name(node)
             if name in NETCORE_FLAGS:
@@ -871,11 +1065,79 @@ class FileAnalyzer:
                     return _Condition(core, framework)
                 return _Condition(framework, core)
         if isinstance(node, ast.Compare):
+            none_test = self._none_test(node, ctx)
+            if none_test is not None:
+                return none_test
             return self._compare(node, universe) or unknown
         return unknown
 
+    def _none_test(self, node, ctx):
+        """``x is None``/``x is not None`` on a probe result, else None."""
+        if len(node.ops) != 1:
+            return None
+        right = node.comparators[0]
+        if not (isinstance(right, ast.Constant) and right.value is None):
+            return None
+        base = self.condition(node.left, ctx)
+        if not base.informative(ctx.years):
+            return None
+        if isinstance(node.ops[0], (ast.Is, ast.Eq)):
+            return base.negated()
+        if isinstance(node.ops[0], (ast.IsNot, ast.NotEq)):
+            return base
+        return None
+
+    def _probe(self, call, universe):
+        """Condition of ``hasattr(obj, "X")``/``getattr(obj, "X", default)``.
+
+        True means X exists: that branch is limited to the years X exists in
+        some update and protects uses of X. False is limited to the years X
+        is not in every update. A dynamic name or an uncataloged X narrows
+        nothing; an uncataloged X is still protected in the true branch.
+        Returns None for calls that are not probes.
+        """
+        func = call.func
+        if not isinstance(func, ast.Name):
+            return None
+        if not (
+            (func.id in FEATURE_TEST_CALLS and len(call.args) == 2)
+            or (func.id == "getattr" and len(call.args) >= 3)
+        ):
+            return None
+        name_node = call.args[1]
+        if not (
+            isinstance(name_node, ast.Constant) and isinstance(name_node.value, str)
+        ):
+            return _Condition(universe, universe)
+        name = name_node.value
+        avail, partial = self._probed_availability(call.args[0], name)
+        protects = frozenset([name])
+        if avail is None:
+            return _Condition(universe, universe, protects)
+        return _Condition(universe & (avail | partial), universe - avail, protects)
+
+    def _probed_availability(self, receiver, name):
+        """(avail, partial) of the API a probe asks about, or (None, None)."""
+        full = self.qualified_name(receiver)
+        if full is not None:
+            candidate = full + "." + name
+            if candidate in self.catalog.types:
+                entry = self.catalog.types[candidate]
+                return self.catalog.avail(entry), self.catalog.partial(entry)
+            split = self.catalog.split_qualified(candidate)
+            if split is not None and split[1] == name and not split[2]:
+                entry, _ = self.catalog.member_entry(split[0], name)
+                if entry is not None:
+                    return self.catalog.avail(entry), self.catalog.partial(entry)
+            return None, None
+        entry = self.catalog.instance_members.get(name)
+        if entry is not None:
+            return self.catalog.avail(entry), self.catalog.partial(entry)
+        return self.catalog.member_union(name)
+
     @staticmethod
     def _host_check(node, universe):
+        """Condition of a HOST_APP.is_newer/older_than/is_exactly call."""
         if not node.args:
             return None
         year = _year_literal(node.args[0])
@@ -902,6 +1164,7 @@ class FileAnalyzer:
 
     @staticmethod
     def _compare(node, universe):
+        """Condition of a version comparison, or None if not one."""
         operands = [node.left] + list(node.comparators)
         true = universe
         matched = False
@@ -934,6 +1197,7 @@ class FileAnalyzer:
         return _Condition(true, universe - true)
 
     def _report(self, node, code, severity, message, fix, years=None):
+        """Record a finding at node, tied to the enclosing statement."""
         finding = Finding(
             self.path,
             getattr(node, "lineno", 1),
@@ -948,15 +1212,25 @@ class FileAnalyzer:
             finding.stmt_span = _header_span(self._stmt)
         self.findings.append(finding)
 
-    def _evaluate(self, node, label, entry, ctx, code="API-MISSING", parent=None):
+    def _evaluate(
+        self, node, label, entry, ctx, code="API-MISSING", parent=None, name=None
+    ):
         """Report an entry's missing or deprecated years against ctx.
+
+        Inside a guarding try body nothing is reported; the missing years
+        are recorded for the try's handlers instead. A name a feature probe
+        protects is never reported.
 
         Returns True when something was reported.
         """
-        if ctx.guarded:
+        if name is not None and name in ctx.protected:
             return False
         avail = self.catalog.avail(entry)
         missing = ctx.years - avail
+        if ctx.guarded:
+            if missing and self._collectors:
+                self._collectors[-1].update(missing)
+            return False
         partial = self.catalog.partial(entry) & missing
         tier = entry.get("tier") or (parent or {}).get("tier")
         if missing:
@@ -992,6 +1266,7 @@ class FileAnalyzer:
         return False
 
     def _fix(self, entry, missing, avail, parent=None, note="", partial=frozenset()):
+        """Compose the fix hint for a missing or deprecated entry."""
         hints = []
         curated = entry.get("fix") or (parent or {}).get("fix")
         if curated:
@@ -1048,7 +1323,12 @@ class FileAnalyzer:
         if namespace is not None:
             name, entry = namespace
             return self._evaluate(
-                node, "`{}`".format(name), entry, ctx, entry.get("code", "DOTNET")
+                node,
+                "`{}`".format(name),
+                entry,
+                ctx,
+                entry.get("code", "DOTNET"),
+                name=name.split(".")[-1],
             )
         split = self.catalog.split_qualified(full)
         if split is None:
@@ -1056,14 +1336,17 @@ class FileAnalyzer:
         type_name, member, rest = split
         if any(type_name in covered for covered in self._covered_types):
             return False
-        type_entry = self.catalog.types[type_name]
+        type_entry = self.catalog.type_entry(type_name)
         code = type_entry.get("code", "API-MISSING")
         short = _short(type_name)
-        if not ctx.guarded:
-            missing = ctx.years - self.catalog.avail(type_entry)
-            if missing or member is None:
-                if self._evaluate(node, "`{}`".format(short), type_entry, ctx, code):
-                    return True
+        type_label = "`{}`".format(short)
+        type_short_name = type_name.split(".")[-1]
+        missing = ctx.years - self.catalog.avail(type_entry)
+        if missing or member is None:
+            if self._evaluate(
+                node, type_label, type_entry, ctx, code, name=type_short_name
+            ):
+                return True
         if member is not None:
             member_entry, owner_entry = self.catalog.member_entry(type_name, member)
             if member_entry is not None:
@@ -1074,16 +1357,23 @@ class FileAnalyzer:
                     ctx,
                     member_entry.get("code", code),
                     owner_entry,
+                    name=member,
                 ):
                     return True
-            elif self._evaluate(node, "`{}`".format(short), type_entry, ctx, code):
+            elif self._evaluate(
+                node, type_label, type_entry, ctx, code, name=type_short_name
+            ):
                 return True
         for attr in rest:
             self._check_instance(node, attr, ctx)
         return False
 
     def _check_instance(self, node, attr, ctx, receiver=None):
+        """Check a bare attribute access against the instance-member index."""
         if attr in self.own_attributes:
+            return
+        if ctx.guarded:
+            self._collect_instance(attr, ctx)
             return
         entry = self.catalog.instance_members.get(attr)
         if not entry or entry.get("match") is False:
@@ -1099,8 +1389,38 @@ class FileAnalyzer:
             if exempt and re.search(exempt, ast.unparse(receiver)):
                 return
         self._evaluate(
-            node, "`.{}`".format(attr), entry, ctx, entry.get("code", "API-MISSING")
+            node,
+            "`.{}`".format(attr),
+            entry,
+            ctx,
+            entry.get("code", "API-MISSING"),
+            name=attr,
         )
+
+    def _collect_instance(self, attr, ctx):
+        """Record the years a bare attribute may fail in, inside a try body.
+
+        Reporting needs an unambiguous name, but estimating when a guarded
+        attempt fails does not: a name no .NET type shares falls back to the
+        union of cataloged members so called. Names .NET types share (e.g.
+        ``Value`` on ``clr.Reference``) are skipped, since over-estimating
+        the failing years would check a fallback in years it never runs.
+        """
+        if not self._collectors:
+            return
+        entry = self.catalog.instance_members.get(attr)
+        if entry is not None:
+            if entry.get("match") is False or (
+                entry.get("bcl") and entry.get("match") is not True
+            ):
+                return
+            avail = self.catalog.avail(entry)
+        elif attr in self.catalog.bcl_members:
+            return
+        else:
+            avail, _ = self.catalog.member_union(attr)
+        if avail is not None:
+            self._collectors[-1].update(ctx.years - avail)
 
     def _check_call(self, node, ctx):
         """Check getattr-by-name and removed overloads.
@@ -1125,8 +1445,8 @@ class FileAnalyzer:
             split = self.catalog.split_qualified(full)
             if split is None or split[1] is None:
                 return None
-            type_entry = self.catalog.types[split[0]]
-            entry = type_entry.get("members", {}).get(split[1], {})
+            entry, _ = self.catalog.member_entry(split[0], split[1])
+            entry = entry or {}
             label = "{}.{}".format(_short(split[0]), split[1])
         else:
             entry = self.catalog.instance_members.get(func.attr, {})
@@ -1146,11 +1466,13 @@ class FileAnalyzer:
                 synthetic,
                 ctx,
                 "API-OVERLOAD",
+                name=label.rsplit(".", 1)[-1],
             ):
                 covered.add(arg_type)
         return covered
 
     def _argument_types(self, call):
+        """Revit types referenced in a call's arguments."""
         types = set()
         values = list(call.args) + [k.value for k in call.keywords]
         for value in values:
@@ -1165,6 +1487,7 @@ class FileAnalyzer:
         return types
 
     def _check_import(self, stmt, ctx):
+        """Check imports of API names and CPython-unavailable modules."""
         if isinstance(stmt, ast.Import):
             for alias in stmt.names:
                 if self.is_cpython and alias.name.split(".")[0] in (
@@ -1191,6 +1514,7 @@ class FileAnalyzer:
                 self._check_qualified(stmt, module + "." + alias.name, ctx)
 
     def _engine_finding(self, stmt, module, ctx):
+        """Report an IronPython-only import in a CPython script."""
         if ctx.guarded or ctx.ironpython_only:
             return
         fix = self.catalog.cpython_unavailable_modules.get(module.split(".")[0], "")
@@ -1205,26 +1529,38 @@ class FileAnalyzer:
 
 
 class _Ctx:
-    """Reachable Revit years, feature-guard state and engine reachability."""
+    """Where a node can run: Revit years, try-absorbed, engine, probed names.
 
-    __slots__ = ("years", "guarded", "ironpython_only")
+    ``guarded`` is set inside a guarding try body, whose failures its
+    handlers absorb; ``protected`` names were proven present by a probe.
+    """
 
-    def __init__(self, years, guarded, ironpython_only=False):
+    __slots__ = ("years", "guarded", "ironpython_only", "protected")
+
+    def __init__(
+        self, years, guarded=False, ironpython_only=False, protected=frozenset()
+    ):
         self.years = years
         self.guarded = guarded
         self.ironpython_only = ironpython_only
+        self.protected = protected
 
-    def narrow(self, years, feature=False):
-        """Context restricted to years, guarded if this test probes features."""
-        return _Ctx(self.years & years, self.guarded or feature, self.ironpython_only)
+    def narrow(self, years, protects=frozenset()):
+        """Context restricted to years, with extra probed-present names."""
+        return _Ctx(
+            self.years & years,
+            self.guarded,
+            self.ironpython_only,
+            self.protected | protects,
+        )
 
     def guard(self):
-        """Context inside a feature guard or fallback."""
-        return _Ctx(self.years, True, self.ironpython_only)
+        """Context inside a guarding try body."""
+        return _Ctx(self.years, True, self.ironpython_only, self.protected)
 
     def ironpython(self):
         """Context only reachable on an IronPython engine."""
-        return _Ctx(self.years, self.guarded, True)
+        return _Ctx(self.years, self.guarded, True, self.protected)
 
 
 IRONPYTHON_FLAGS = {"IRONPY", "IRONPY2", "IRONPY3", "PY2"}
@@ -1244,6 +1580,7 @@ def _ironpython_only_branch(test):
 
 
 def _short(full_name):
+    """Drop the Autodesk.Revit[.DB|.UI] prefix for messages."""
     for prefix in ("Autodesk.Revit.DB.", "Autodesk.Revit.UI.", "Autodesk.Revit."):
         if full_name.startswith(prefix):
             return full_name[len(prefix) :]
@@ -1282,6 +1619,7 @@ def _describe_missing(missing, avail, partial=frozenset()):
 
 
 def _first_sentence_after(message, keyword):
+    """First sentence of message not containing keyword."""
     sentence = message.split(". ")
     for part in sentence:
         if keyword in part.lower():
@@ -1296,11 +1634,13 @@ _REPLACEMENT_RE = re.compile(
 
 
 def _replacement_from_message(message):
+    """The replacement an [Obsolete] message names, or ''."""
     match = _REPLACEMENT_RE.search(message or "")
     return match.group(1).strip().rstrip(".") if match else ""
 
 
 def _is_exit_call(node):
+    """True for exit()/sys.exit()/script.exit() and exitscript=True."""
     if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
         return False
     call = node.value
@@ -1318,6 +1658,7 @@ def _is_exit_call(node):
 
 
 def _terminates(statements):
+    """True if a block always leaves (return/raise/continue/exit)."""
     if not statements:
         return False
     last = statements[-1]
@@ -1326,38 +1667,35 @@ def _terminates(statements):
     )
 
 
-def _is_feature_probe(node):
-    """True for ``hasattr(...)`` or ``getattr(obj, name, default)`` calls."""
-    if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
-        return False
-    if node.func.id in FEATURE_TEST_CALLS:
-        return True
-    return node.func.id == "getattr" and len(node.args) >= 3
-
-
-def _is_failed_attempt_fallthrough(stmt):
-    """True when code after stmt runs only because a guarded attempt failed.
+def _failed_attempts(stmt):
+    """Guarding try statements whose failure is the only way past stmt.
 
     That is a ``try`` that returns on success and swallows the failure, or an
-    ``if``/``else`` whose every branch either returns or is such an attempt.
+    ``if``/``else`` whose every branch either returns or ends in such an
+    attempt. Returns an empty list otherwise.
     """
     if isinstance(stmt, ast.Try):
-        return (
+        if (
             _handlers_guard(stmt.handlers)
             and _terminates(stmt.body)
             and not all(_terminates(h.body) for h in stmt.handlers)
-        )
+        ):
+            return [stmt]
+        return []
     if isinstance(stmt, ast.If) and stmt.body and stmt.orelse:
-        branches = [stmt.body, stmt.orelse]
-        attempts = [_is_failed_attempt_fallthrough(b[-1]) for b in branches]
-        return any(attempts) and all(
-            attempt or _terminates(branch)
-            for attempt, branch in zip(attempts, branches)
-        )
-    return False
+        found = []
+        for branch in (stmt.body, stmt.orelse):
+            attempts = _failed_attempts(branch[-1])
+            if attempts:
+                found.extend(attempts)
+            elif not _terminates(branch):
+                return []
+        return found
+    return []
 
 
 def _handlers_guard(handlers):
+    """True if a handler catches missing-API errors."""
     for handler in handlers:
         if handler.type is None:
             return True
@@ -1386,6 +1724,7 @@ def _header_span(stmt):
 
 
 def _read_comments(source):
+    """Map line numbers to comment text; best effort on bad tokens."""
     comments = {}
     try:
         for token in tokenize.generate_tokens(io.StringIO(source).readline):
@@ -1543,6 +1882,7 @@ def _remove_tree(path):
     """Delete a directory tree, including git's read-only object files."""
 
     def _make_writable_and_retry(func, target, _):
+        """Error hook for rmtree: clear read-only and retry."""
         os.chmod(target, stat.S_IWRITE)
         func(target)
 
@@ -1553,11 +1893,13 @@ def _remove_tree(path):
 
 
 def _clone_dir_name(name):
+    """A filesystem-safe clone folder name ending in .extension."""
     safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("._") or "repo"
     return safe if safe.endswith(".extension") else safe + ".extension"
 
 
 def _print_text(groups, show_fix=True):
+    """Print grouped findings as the human-readable report."""
     for label, findings, base in groups:
         if label:
             print("\n== {} ==".format(label))
@@ -1582,23 +1924,35 @@ def _print_text(groups, show_fix=True):
                     print("        fix: {}".format(finding.fix))
 
 
+def _escape_command_data(text):
+    """Escape a GitHub workflow-command message."""
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def _escape_command_property(text):
+    """Escape a GitHub workflow-command property value (file=, title=)."""
+    return _escape_command_data(text).replace(":", "%3A").replace(",", "%2C")
+
+
 def _print_github(findings, base):
+    """Print findings as GitHub workflow annotations."""
     for finding in findings:
         level = "error" if finding.severity == ERROR else "warning"
         message = finding.message + (" | fix: " + finding.fix if finding.fix else "")
         print(
             "::{} file={},line={},col={},title={}::{}".format(
                 level,
-                finding.shown_path(base),
+                _escape_command_property(finding.shown_path(base)),
                 finding.line,
                 finding.col,
-                finding.code,
-                message.replace("%", "%25").replace("\n", "%0A"),
+                _escape_command_property(finding.code),
+                _escape_command_data(message),
             )
         )
 
 
 def _parse_year_range(text):
+    """Parse YEAR or YEAR-YEAR for argparse."""
     match = re.fullmatch(r"(\d{4})(?:-(\d{4}))?", text.strip())
     if not match:
         raise argparse.ArgumentTypeError("expected YEAR or YEAR-YEAR, got " + text)
@@ -1610,6 +1964,7 @@ def _parse_year_range(text):
 
 
 def _fingerprint(finding, base):
+    """Baseline key of a finding: (path, code, message)."""
     return (finding.shown_path(base), finding.code, finding.message)
 
 
@@ -1655,6 +2010,7 @@ def apply_baseline(findings, base, remaining):
 
 
 def _summarize(findings):
+    """(error count, warning count) of findings."""
     errors = sum(1 for f in findings if f.severity == ERROR)
     return errors, len(findings) - errors
 
@@ -1759,29 +2115,6 @@ def main(argv=None):
     if not targets and not remote:
         targets.append((None, [REPO_ROOT / p for p in DEFAULT_SCAN_ROOTS], REPO_ROOT))
 
-    clone_root = None
-    failures = []
-    if remote:
-        if args.keep_clones:
-            clone_root = args.keep_clones
-            clone_root.mkdir(parents=True, exist_ok=True)
-        else:
-            clone_root = Path(tempfile.mkdtemp(prefix="revit-api-compat-"))
-        for name, url, ref in remote:
-            destination = clone_root / _clone_dir_name(name)
-            if destination.exists():
-                _remove_tree(destination)
-            print("cloning {} ...".format(url), file=sys.stderr)
-            try:
-                clone_repo(url, destination, ref)
-            except (subprocess.SubprocessError, OSError) as err:
-                detail = getattr(err, "stderr", b"") or b""
-                failures.append(
-                    (name, url, detail.decode(errors="replace").strip() or str(err))
-                )
-                continue
-            targets.append((name, [destination], destination))
-
     baseline = None
     if args.update_baseline and not args.baseline:
         print("error: --update-baseline needs --baseline", file=sys.stderr)
@@ -1793,11 +2126,36 @@ def main(argv=None):
             print("error: cannot load baseline: {}".format(err), file=sys.stderr)
             return 2
 
+    clone_root = None
+    failures = []
     groups = []
     all_findings = []
     raw = []
     file_count = 0
     try:
+        if remote:
+            if args.keep_clones:
+                clone_root = args.keep_clones
+                clone_root.mkdir(parents=True, exist_ok=True)
+            else:
+                clone_root = Path(tempfile.mkdtemp(prefix="revit-api-compat-"))
+            for index, (name, url, ref) in enumerate(remote, start=1):
+                destination = clone_root / "{:02d}-{}".format(
+                    index, _clone_dir_name(name)
+                )
+                if destination.exists():
+                    _remove_tree(destination)
+                print("cloning {} ...".format(url), file=sys.stderr)
+                try:
+                    clone_repo(url, destination, ref)
+                except (subprocess.SubprocessError, OSError) as err:
+                    detail = getattr(err, "stderr", b"") or b""
+                    failures.append(
+                        (name, url, detail.decode(errors="replace").strip() or str(err))
+                    )
+                    continue
+                targets.append((name, [destination], destination))
+
         for label, roots, base in targets:
             findings, count = lint_paths(roots, catalog, universe, args.exclude)
             raw.extend((f, base) for f in findings)
@@ -1879,10 +2237,16 @@ def main(argv=None):
         ),
         file=sys.stderr,
     )
+    if failures:
+        print(
+            "error: {} of {} clone(s) failed; the scan is incomplete".format(
+                len(failures), len(remote)
+            ),
+            file=sys.stderr,
+        )
+        return 2
     if errors or (args.strict and warns):
         return 1
-    if failures and not groups:
-        return 2
     return 0
 
 

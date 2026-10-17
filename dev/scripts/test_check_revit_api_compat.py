@@ -336,7 +336,7 @@ class FeatureGuardTests(_TempTree):
     """hasattr/getattr probes and try/except fallbacks protect both paths."""
 
     def test_hasattr_guards_both_branches(self):
-        """A hasattr test protects both the probed path and its fallback."""
+        """A hasattr probe narrows both branches to the probed API's years."""
         self.assertEqual(
             [],
             self.codes(
@@ -359,7 +359,7 @@ class FeatureGuardTests(_TempTree):
         self.assertEqual([], self.codes(source))
 
     def test_try_attribute_error_guards_body_and_handler(self):
-        """An AttributeError handler protects the attempt and the fallback."""
+        """A handler runs only in the years its try body fails."""
         source = """
         def f(e):
             try:
@@ -657,6 +657,7 @@ class BuilderTests(unittest.TestCase):
         """Per-year surfaces diff into availability, obsoletion and overloads."""
 
         def surface(members, extra=None):
+            """Build a minimal per-year surface for the builder."""
             types = {
                 "Autodesk.Revit.DB.ElementId": {
                     "kind": "class",
@@ -716,6 +717,7 @@ class BuilderTests(unittest.TestCase):
         prop = {"kind": "property", "static": False, "obsolete": None}
 
         def surface(scope_members, base_members):
+            """Build a minimal per-year surface for the builder."""
             return {
                 "Autodesk.Revit.DB.EditScope": {
                     "kind": "class",
@@ -806,6 +808,200 @@ class UpdateAndInheritanceTests(_TempTree):
         findings = self.lint(source)
         self.assertEqual(["API-MISSING"], [f.code for f in findings])
         self.assertIn("StairsEditScope.Brand", findings[0].message)
+
+
+class ReviewRegressionTests(_TempTree):
+    """Guard precision, scoping, inheritance and CLI fixes from PR review."""
+
+    def setUp(self):
+        """Extend the synthetic catalog with inheritance and partial data."""
+        super().setUp()
+        generated = json.loads(json.dumps(GENERATED))
+        generated["types"]["Autodesk.Revit.DB.STEPImportOptions"] = {
+            "kind": "class",
+            "avail": [[2025, 2027]],
+            "partial": [[2024, 2024]],
+        }
+        generated["types"]["Autodesk.Revit.DB.Element"] = {
+            "kind": "class",
+            "members": {"GetParameter": {"kind": "method", "avail": [[2022, 2027]]}},
+        }
+        generated["bases"] = {
+            "Autodesk.Revit.DB.Wall": "Autodesk.Revit.DB.HostObject",
+            "Autodesk.Revit.DB.HostObject": "Autodesk.Revit.DB.Element",
+        }
+        self.generated = generated
+        self.catalog = checker.Catalog(generated, OVERRIDES)
+
+    def test_probe_does_not_protect_other_apis(self):
+        """A probe for one API leaves unrelated APIs in its branch checked."""
+        source = "if hasattr(DB, 'ColorFillScheme'):\n    DB.STEPImportOptions\n"
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
+
+    def test_probe_true_branch_is_limited_to_its_years(self):
+        """Inside a probe for a 2022+ API, a 2021-only API is flagged."""
+        source = "if hasattr(DB, 'ColorFillScheme'):\n    DB.DisplayUnitType\n"
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
+
+    def test_probe_false_branch_is_limited_to_missing_years(self):
+        """The else of a probe for a 2022+ API runs on 2021 only."""
+        source = (
+            "if hasattr(DB, 'ColorFillScheme'):\n"
+            "    x = DB.ColorFillScheme\n"
+            "else:\n"
+            "    x = DB.DisplayUnitType\n"
+        )
+        self.assertEqual([], self.codes(source))
+
+    def test_handler_without_cataloged_failure_is_checked(self):
+        """A handler for unrelated errors gets no exemption."""
+        source = "try:\n    x = 1 / 0\nexcept Exception:\n    DB.ColorFillScheme\n"
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
+
+    def test_handler_runs_in_the_failing_years(self):
+        """A fallback for a 2022+ API may use the API removed after 2021."""
+        source = (
+            "try:\n"
+            "    x = DB.ColorFillScheme\n"
+            "except AttributeError:\n"
+            "    x = DB.DisplayUnitType\n"
+        )
+        self.assertEqual([], self.codes(source))
+
+    def test_flags_resolve_per_function(self):
+        """The same flag name in two functions resolves in each one."""
+        source = """
+        def a():
+            supported = HOST_APP.is_newer_than(2021)
+            if supported:
+                return DB.ColorFillScheme
+
+        def b():
+            supported = HOST_APP.is_newer_than(2021)
+            if supported:
+                return DB.ColorFillScheme
+        """
+        self.assertEqual([], self.codes(source))
+
+    def test_probe_variable_does_not_leak_into_another_function(self):
+        """A parameter named like another function's probe is not a probe."""
+        source = """
+        def a(e):
+            probe = hasattr(e, "ColorFillScheme")
+            return probe
+
+        def b(probe):
+            if probe:
+                return DB.ColorFillScheme
+        """
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
+
+    def test_inherited_member_through_unchanged_classes(self):
+        """Wall reaches Element.GetParameter through the bases map."""
+        findings = self.lint("def f(w, p):\n    return DB.Wall.GetParameter(w, p)\n")
+        self.assertEqual(["API-MISSING"], [f.code for f in findings])
+        self.assertIn("added in Revit 2022", findings[0].message)
+
+    def test_github_annotation_escapes_properties(self):
+        """Commas and colons in a path are escaped in the file property."""
+        finding = checker.Finding(
+            self.root / "A, B.pushbutton" / "script.py",
+            3,
+            1,
+            "API-MISSING",
+            checker.ERROR,
+            "50%\ndone",
+        )
+        out = io.StringIO()
+        with redirect_stdout(out):
+            checker._print_github([finding], self.root)
+        line = out.getvalue().strip()
+        self.assertIn("file=A%2C B.pushbutton/script.py,", line)
+        self.assertTrue(line.endswith("::50%25%0Adone"))
+
+    def run_cli(self, fake_clone, *argv):
+        """Run the CLI with clone_repo replaced; returns the exit code."""
+        catalog_path = self.root / "catalog.json"
+        overrides_path = self.root / "overrides.json"
+        catalog_path.write_text(json.dumps(self.generated), encoding="utf-8")
+        overrides_path.write_text(json.dumps(OVERRIDES), encoding="utf-8")
+        original = checker.clone_repo
+        checker.clone_repo = fake_clone
+        err = io.StringIO()
+        try:
+            with redirect_stdout(io.StringIO()) as out, redirect_stderr(err):
+                code = checker.main(
+                    list(argv)
+                    + [
+                        "--catalog",
+                        str(catalog_path),
+                        "--overrides",
+                        str(overrides_path),
+                        "--format",
+                        "json",
+                    ]
+                )
+        finally:
+            checker.clone_repo = original
+        self.assertNotIn("cannot load catalog", err.getvalue())
+        return code, out.getvalue()
+
+    def test_same_named_repositories_get_separate_checkouts(self):
+        """Two URLs ending in the same name are both cloned and linted."""
+
+        def fake_clone(url, destination, ref=None):
+            """Stand-in for clone_repo that writes a tiny checkout."""
+            destination.mkdir(parents=True)
+            body = "DB.DisplayUnitType\n" if "team-a" in url else "x = 1\n"
+            (destination / "a.py").write_text(body, encoding="utf-8")
+
+        code, out = self.run_cli(
+            fake_clone,
+            "--git-url",
+            "https://example.invalid/team-a/Tools.git",
+            "--git-url",
+            "https://example.invalid/team-b/Tools.git",
+        )
+        targets = json.loads(out)["targets"]
+        self.assertEqual([1, 0], [len(t["findings"]) for t in targets])
+        self.assertEqual(1, code)
+
+    def test_failed_clone_fails_the_run(self):
+        """A failed clone makes the scan incomplete, even if others pass."""
+
+        def fake_clone(url, destination, ref=None):
+            """Stand-in for clone_repo that writes a tiny checkout."""
+            if "broken" in url:
+                raise OSError("unreachable")
+            destination.mkdir(parents=True)
+            (destination / "a.py").write_text("x = 1\n", encoding="utf-8")
+
+        code, _ = self.run_cli(
+            fake_clone,
+            "--git-url",
+            "https://example.invalid/ok.git",
+            "--git-url",
+            "https://example.invalid/broken.git",
+        )
+        self.assertEqual(2, code)
+
+    def test_bad_baseline_is_reported_before_cloning(self):
+        """A missing baseline aborts before any clone is made."""
+        calls = []
+
+        def fake_clone(url, destination, ref=None):
+            """Stand-in for clone_repo that writes a tiny checkout."""
+            calls.append(url)
+
+        code, _ = self.run_cli(
+            fake_clone,
+            "--git-url",
+            "https://example.invalid/ok.git",
+            "--baseline",
+            str(self.root / "missing.json"),
+        )
+        self.assertEqual(2, code)
+        self.assertEqual([], calls)
 
 
 class ShippedCatalogTests(unittest.TestCase):

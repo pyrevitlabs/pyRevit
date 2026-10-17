@@ -32,6 +32,7 @@ MAX_REPORTED = 40
 
 
 def _ranges_to_years(ranges):
+    """Expand inclusive [first, last] runs into a year set."""
     years = set()
     for first, last in ranges or []:
         years.update(range(first, last + 1))
@@ -52,6 +53,7 @@ def _expected(entry, year, all_years):
 
 
 def _resolve(full_name):
+    """Import a dotted .NET type name; raises if any part is missing."""
     parts = full_name.split(".")
     for cut in range(len(parts) - 1, 0, -1):
         try:
@@ -65,6 +67,7 @@ def _resolve(full_name):
 
 
 def _mismatch_report(problems):
+    """Readable, length-capped list of mismatches."""
     shown = sorted(problems)[:MAX_REPORTED]
     more = len(problems) - len(shown)
     return "\n".join(shown) + ("\n... and {} more".format(more) if more > 0 else "")
@@ -90,6 +93,7 @@ class RevitApiCatalogTests(unittest.TestCase):
             )
 
     def _live_types(self):
+        """Map each cataloged type to its live class, or None if absent."""
         live = {}
         for type_name in self.catalog["types"]:
             try:

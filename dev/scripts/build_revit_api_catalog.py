@@ -111,6 +111,7 @@ def _stable_versions_per_year(package_id, years):
 
 
 def _download(package_id, version, cache_dir):
+    """Return the cached .nupkg path, downloading it on first use."""
     target = cache_dir / "{}.{}.nupkg".format(package_id, version)
     if not target.exists():
         url = NUGET_PACKAGE.format(id=package_id, ver=version)
@@ -122,6 +123,7 @@ def _download(package_id, version, cache_dir):
 
 
 def _assembly_bytes(nupkg_path, assembly_name):
+    """Read an assembly out of a .nupkg; FileNotFoundError if absent."""
     with zipfile.ZipFile(nupkg_path) as archive:
         for name in archive.namelist():
             if name.lower().endswith("/" + assembly_name.lower() + ".dll"):
@@ -138,11 +140,13 @@ class _SignatureReader:
         self._resolve_token = resolve_token
 
     def _byte(self):
+        """Read one byte and advance."""
         value = self._blob[self._pos]
         self._pos += 1
         return value
 
     def _compressed(self):
+        """Read an ECMA-335 compressed unsigned integer."""
         first = self._byte()
         if first & 0x80 == 0:
             return first
@@ -156,10 +160,12 @@ class _SignatureReader:
         )
 
     def _type_token(self):
+        """Read a TypeDefOrRef coded token and resolve it to a name."""
         coded = self._compressed()
         return self._resolve_token(coded & 0x03, coded >> 2)
 
     def _type(self):
+        """Read one encoded type and return its display name."""
         element = self._byte()
         if element in _ELEMENT_TYPE_NAMES:
             return _ELEMENT_TYPE_NAMES[element]
@@ -209,6 +215,7 @@ class _SignatureReader:
 
 
 def _obsolete_message(blob):
+    """Decode an ObsoleteAttribute blob's message; '' if it has none."""
     if len(blob) < 3 or blob[0:2] != b"\x01\x00":
         return ""
     if len(blob) == 4 and blob[2:4] == b"\x00\x00":
@@ -252,6 +259,7 @@ def read_surface(dll_bytes):
     md = dnfile.dnPE(data=dll_bytes).net.mdtables
 
     def table_name(coded):
+        """Metadata table name a coded index points into."""
         return type(coded.table).__name__
 
     enclosing = {}
@@ -270,6 +278,7 @@ def read_surface(dll_bytes):
     full_names = {}
 
     def full_name(index):
+        """Namespace-qualified name of a TypeDef row, nesting included."""
         if index in full_names:
             return full_names[index]
         row = typedefs[index - 1]
@@ -283,12 +292,14 @@ def read_surface(dll_bytes):
         return result
 
     def is_visible(index):
+        """True if a TypeDef is public, including all enclosing types."""
         flags = typedefs[index - 1].Flags
         if index in enclosing:
             return bool(flags.tdNestedPublic) and is_visible(enclosing[index])
         return bool(flags.tdPublic)
 
     def resolve_token(tag, index):
+        """Name of a TypeDef (tag 0) or TypeRef (tag 1) row; '?' otherwise."""
         if tag == 0:
             return full_name(index)
         if tag == 1:
@@ -316,6 +327,7 @@ def read_surface(dll_bytes):
             accessors.setdefault(key, []).append(row.Method.row)
 
     def accessor_flags(key):
+        """(public, static) of a property or event, from its accessors."""
         methods = accessors.get(key, [])
         public = any(m.Flags.mdPublic for m in methods)
         static = any(m.Flags.mdStatic for m in methods)
@@ -579,18 +591,22 @@ class _YearView:
         self.latest = samples[-1]
 
     def type_state(self, type_name):
+        """Presence of a type across the year's update samples."""
         return _state([type_name in s for s in self.samples])
 
     def type_info(self, type_name):
+        """A type's info from the latest sample that has it."""
         for sample in reversed(self.samples):
             if type_name in sample:
                 return sample[type_name]
         return None
 
     def member_state(self, type_name, member_name):
+        """Presence of a member, inherited included, across the samples."""
         return _state([_find_member(s, type_name, member_name) for s in self.samples])
 
     def member_info(self, type_name, member_name):
+        """A member's info from the latest sample that has it."""
         for sample in reversed(self.samples):
             info = _find_member(sample, type_name, member_name)
             if info is not None:
@@ -598,6 +614,7 @@ class _YearView:
         return None
 
     def declared(self, type_name):
+        """Member names the type itself declares in any sample."""
         names = set()
         for sample in self.samples:
             if type_name in sample:
@@ -656,12 +673,17 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
         cataloged year; unchanged types without changed members are omitted
         to keep the catalog reviewable. A member's availability counts
         inherited declarations, so moving a member to a base class is not a
-        removal.
+        removal. ``bases`` maps every Revit class to its Revit base (latest
+        year), unchanged ones included, so the linter can walk from any
+        class to the base that declares a changed member. ``bcl_members``
+        lists changed member names that .NET types share, too generic to
+        attribute an untyped access to Revit.
     """
     years = sorted(samples)
     views = {y: _YearView(samples[y]) for y in years}
     type_names = sorted({n for y in years for s in samples[y] for n in s})
     types = {}
+    bases = {}
     instance_members = {}
     for type_name in type_names:
         type_states = {y: views[y].type_state(type_name) for y in years}
@@ -669,7 +691,7 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
         latest = views[max(present)].type_info(type_name)
         type_entry = {"kind": latest["kind"]}
         if latest.get("base", "").startswith(REVIT_NAMESPACE_PREFIX):
-            type_entry["base"] = latest["base"]
+            bases[type_name] = latest["base"]
         type_entry.update(_availability(type_states, years))
         obsolete_since, obsolete_msg = _first_obsolete(
             {y: views[y].type_info(type_name) for y in present}, years
@@ -726,7 +748,7 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
                 members[member_name] = entry
         if members:
             type_entry["members"] = members
-        if members or set(type_entry) - {"kind", "base"}:
+        if members or len(type_entry) > 1:
             types[type_name] = type_entry
 
     all_years = set(years)
@@ -763,6 +785,11 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
             str(year): versions for year, versions in sorted(package_versions.items())
         },
         "bcl_packages": bcl_sources or {},
+        "bases": dict(sorted(bases.items())),
+        "bcl_members": sorted(
+            {m for entry in types.values() for m in entry.get("members", {})}
+            & set(bcl_names)
+        ),
         "types": types,
         "instance_members": names,
     }
