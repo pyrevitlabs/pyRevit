@@ -33,8 +33,8 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
 A command bundle (e.g. `.pushbutton`) can contain:
 
-- `script.py` / `script.cs` / `script.vb` / `script.rb` / `script.dyn` / `script.gh` / `script.ghx` — the command's entry point; the file extension picks the [script engine](#script-engines).
-- `config.py` (or the matching extension for the script's language) — runs instead of `script.py` on a shift-click; falls back to `script.py` itself if absent.
+- `*script.py` / `*script.cs` / `*script.vb` / `*script.rb` / `*script.dyn` / `*script.gh` / `*script.ghx` — the command's entry point; the file extension picks the [script engine](#script-engines).
+- `*config.py` (or the matching extension for the script's language) — runs instead of `script.py` on a shift-click; falls back to `script.py` itself if absent.
 - `bundle.yaml` — [metadata](#bundleyaml) for the button.
 - `icon.png` — button icon; `on.png` / `off.png` for a toggle button's two states; `icon.dark.png` for a dark-theme variant.
 - `tooltip.*` — media (image/gif) shown in the extended tooltip.
@@ -51,7 +51,7 @@ Common keys:
 
 - `title`, `tooltip` — either a plain string or a map of locale (`en_us`, `fr_fr`, `ko`, ...) to string, for translations.
 - `author` / `authors`, `help_url`.
-- `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives`.
+- `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives` or human friendly [here](https://pyrevitlabs.notion.site/Bundle-Context-630fa1f3611f4ee0aa15d290275e7ef3).
 - `min_revit_version` / `max_revit_version`.
 - `is_beta`, `highlight` (`new` or `updated`), `collapsed`.
 - `engine` — `clean`, `full_frame`, `persistent`, `mainthread` (plus Dynamo-specific `automate`, `dynamo_path`, `dynamo_path_check_existing`, `dynamo_force_manual_run`, `dynamo_model_nodes_info`).
@@ -118,7 +118,7 @@ This is different from the entry an extension gets in `extensions/extensions.jso
 
 A `hooks/` folder (at the bundle, tab, panel, or extension level) can hold Python scripts named after a Revit/pyRevit event, e.g. `doc-opened.py`, `view-activated.py`, `command-before-exec[ID_INPLACE_COMPONENT].py` (the bracketed suffix scopes the hook to one command id). Each script runs whenever that event fires while the extension is loaded.
 
-There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`.
+There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`. A more detailed list of event names is published [here](https://pyrevitlabs.notion.site/Extension-Hooks-b771ecf65f6a45fe87ae12beab2a73a6).
 
 ## The `__revit__` host handle
 
@@ -126,7 +126,7 @@ Every script pyRevit runs — commands, event hooks, smart buttons, combo boxes 
 
 > `__revit__` is an `Autodesk.Revit.UI.UIApplication` wherever a usable session handle exists, and `None` only outside a Revit host.
 
-Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only. Before the handle was normalized, `__revit__` was simply whatever Revit sent, which made it polymorphic — and because the whole pyrevit library resolves the host application through it, `HOST_APP.uiapp`, `HOST_APP.uidoc` and `HOST_APP.doc` silently read `None` inside those hooks instead of failing.
+Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only.
 
 `PyRevitLabs.PyRevit.Runtime.RevitAppResolver` now funnels every handle into one shape before it reaches a script:
 
