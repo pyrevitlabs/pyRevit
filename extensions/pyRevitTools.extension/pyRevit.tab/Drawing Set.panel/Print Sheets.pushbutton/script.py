@@ -307,17 +307,28 @@ class PrintUtils:
                     opts.PaperPlacement = print_params.PaperPlacement
                 except Exception as ex:
                     logger.debug("Could not map PaperPlacement: %s", ex)
-                try:
-                    opts.OriginOffsetX = print_params.OriginOffsetX
-                    opts.OriginOffsetY = print_params.OriginOffsetY
-                except Exception as ex:
-                    logger.debug("Could not map OriginOffset: %s", ex)
+                if PrintUtils._has_user_defined_margins(print_params):
+                    try:
+                        opts.OriginOffsetX = print_params.OriginOffsetX
+                        opts.OriginOffsetY = print_params.OriginOffsetY
+                    except Exception as ex:
+                        logger.debug("Could not map OriginOffset: %s", ex)
                 try:
                     opts.ZoomType = print_params.ZoomType
                     opts.ZoomPercentage = int(print_params.Zoom)
                 except Exception as ex:
                     logger.debug("Could not map Zoom: %s", ex)
         return opts
+
+    @staticmethod
+    def _has_user_defined_margins(print_params):
+        try:
+            return (
+                print_params.PaperPlacement == DB.PaperPlacementType.Margins
+                and print_params.MarginType == DB.MarginType.UserDefined
+            )
+        except Exception:
+            return False
 
     @staticmethod
     def dwg_opts(sc=False, mv=True):
