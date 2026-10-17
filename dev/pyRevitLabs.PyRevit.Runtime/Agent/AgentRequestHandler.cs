@@ -25,7 +25,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// session's document, view or selection since the previous one; changes the request makes
     /// itself are never reported back to it.
     /// After the user moves the session, only <c>get_context</c> passes the gate until one
-    /// succeeds; see <see cref="AgentSessionTracker.Move"/>.
+    /// succeeds; see <see cref="AgentSessionTracker.Move"/>. A <c>get_context</c> with
+    /// <c>keep_changes</c> reports <c>since_last_call</c> without clearing it and doesn't end that
+    /// handshake, for a client that checks the context before a request it makes on the agent's
+    /// behalf.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -82,7 +85,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     AgentSessions.EndByClient();
                     return AgentSessions.Describe();
                 case "get_context":
-                    return InvokeCapturingDialogs((app, _) => ReadContext(app), parameters, "context", null);
+                    var keepChanges = parameters.Value<bool?>("keep_changes") == true;
+                    return InvokeCapturingDialogs(
+                        (app, _) => ReadContext(app, endHandshake: !keepChanges), parameters, "context", null, keepChanges);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
                     return InvokeOnMainThread(
@@ -123,15 +128,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Describes the context and ends a move's handshake, since the agent now has the new
-        /// document's context.
+        /// Describes the context and, unless the caller only checks it, ends a move's handshake,
+        /// since the agent now has the new document's context.
         /// </summary>
         /// <remarks>
         /// The session in the response is described again after the handshake ends, so the
         /// response doesn't report the handshake it ends.
         /// </remarks>
-        private static JToken ReadContext(Autodesk.Revit.UI.UIApplication app) {
+        private static JToken ReadContext(Autodesk.Revit.UI.UIApplication app, bool endHandshake) {
             var context = AgentContext.Describe(app);
+            if (!endHandshake)
+                return context;
             AgentSessions.Tracker.ContextRead();
             if (context["agent"] is JObject agent)
                 agent["session"] = AgentSessions.Describe();
@@ -166,7 +173,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// use this: its guard captures dialogs itself and must disarm for the approval prompt.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
-            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters, string kind, string title) {
+            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters, string kind, string title,
+            bool keepChanges = false) {
             return InvokeOnMainThread(app => {
                 using (var dialogs = new AgentDialogCapture(app)) {
                     var result = work(app, dialogs);
@@ -174,7 +182,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
                 }
-            }, parameters, kind, title, AgentRequestText.Reason(parameters));
+            }, parameters, kind, title, AgentRequestText.Reason(parameters), keepChanges: keepChanges);
         }
 
         /// <summary>
@@ -191,9 +199,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Checks that refuse the request before it waits for Revit, such as the policy; their
         /// refusals are logged like the session gate's.
         /// </param>
+        /// <param name="keepChanges">
+        /// Reports <c>since_last_call</c> without clearing it, so the next request reports it too.
+        /// </param>
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, string kind, string title, string reason,
-            AgentRunMode? runMode = null, Func<JToken, JObject> describe = null, Action refuseEarly = null) {
+            AgentRunMode? runMode = null, Func<JToken, JObject> describe = null, Action refuseEarly = null,
+            bool keepChanges = false) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
@@ -213,9 +225,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                     var sinceLastCall = AgentAwarenessWatch.SinceLastCall(app);
                     JToken done;
-                    using (AgentAwarenessWatch.Awareness.Suppress())
-                        done = work(app);
-                    AgentAwarenessWatch.Reset(app);
+                    try {
+                        using (AgentAwarenessWatch.Awareness.Suppress())
+                            done = work(app);
+                    }
+                    catch {
+                        AgentAwarenessWatch.Rebaseline(app);
+                        throw;
+                    }
+                    if (!keepChanges)
+                        AgentAwarenessWatch.Reset(app);
                     if (sinceLastCall != null && done is JObject response)
                         response["since_last_call"] = sinceLastCall;
                     return done;

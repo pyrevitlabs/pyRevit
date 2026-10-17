@@ -327,6 +327,7 @@ class ScratchSession(object):
         self.other = None
         self.wall_ids = []
         self.level_id = None
+        self.extra_paths = []
 
     @property
     def project_title(self):
@@ -358,13 +359,18 @@ class ScratchSession(object):
             self.uiapp.OpenAndActivateDocument(path)
 
     def create_extra(self, file_name):
-        """Create and save one more empty project in the scratch folder; return its path."""
+        """Create and save one more empty project in the scratch folder; return its path.
+
+        A test that opens it closes it, and ``close`` closes it if a failing test didn't.
+        """
         path = op.join(self.folder, file_name)
         self._create(path, with_walls=False)
+        self.extra_paths.append(path)
         return path
 
     def close(self):
-        """Close both projects without saving, reactivating the original document first."""
+        """Close every scratch project without saving, reactivating the original document first."""
+        self._close_extras()
         for document in (self.project, self.other):
             if document is None or not document.IsValidObject:
                 continue
@@ -381,6 +387,21 @@ class ScratchSession(object):
             except Exception as ex:
                 print("Could not close {}: {}".format(document.Title, ex))
         shutil.rmtree(self.folder, ignore_errors=True)
+
+    def _close_extras(self):
+        extra_paths = set(op.normcase(path) for path in self.extra_paths)
+        left_open = [
+            document
+            for document in self.app.Documents
+            if op.normcase(str(document.PathName)) in extra_paths
+        ]
+        if left_open and self.project is not None and self.project.IsValidObject:
+            self.activate(self.project_path)
+        for document in left_open:
+            try:
+                document.Close(False)
+            except Exception as ex:
+                print("Could not close {}: {}".format(document.Title, ex))
 
     def _create(self, path, with_walls):
         template = self.app.DefaultProjectTemplate

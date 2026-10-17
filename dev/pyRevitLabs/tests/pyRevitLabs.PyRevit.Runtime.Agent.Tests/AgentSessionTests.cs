@@ -24,6 +24,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return Assert.Throws<AgentException>(action).Code;
         }
 
+        private static string MessageOf(Action action) {
+            return Assert.Throws<AgentException>(action).Message;
+        }
+
         private static bool IsNull(JToken token) {
             return token == null || token.Type == JTokenType.Null;
         }
@@ -362,6 +366,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Arrive();
             Assert.Equal(new[] { "Tower.rvt" }, tracker.Describe()["documents"].Values<string>());
+        }
+
+        [Fact]
+        public void SavingTheDocumentUnderAnotherNameRetitlesTheSession() {
+            StartOnDocument();
+            tracker.Move(new object(), "Annex.rvt", Now);
+
+            Assert.True(tracker.Retitle("Annex v2.rvt"));
+
+            var status = tracker.Describe();
+            Assert.Equal("Annex v2.rvt", status.Value<string>("document"));
+            Assert.Equal(new[] { "Tower.rvt", "Annex v2.rvt" }, status["documents"].Values<string>());
+            Assert.Contains("'Annex v2.rvt'", MessageOf(Arrive));
+            Assert.False(tracker.Retitle("Annex v2.rvt"));
+            Assert.False(tracker.Retitle(null));
+        }
+
+        [Fact]
+        public void RetitlingWithoutASessionDoesNothing() {
+            Assert.False(tracker.Retitle("Annex.rvt"));
         }
 
         [Fact]

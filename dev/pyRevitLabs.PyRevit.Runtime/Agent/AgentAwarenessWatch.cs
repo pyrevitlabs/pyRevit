@@ -71,6 +71,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             RememberViewAndSelection(app.ActiveUIDocument);
         }
 
+        /// <summary>
+        /// Takes the view and selection a failed request left behind as the new baseline, and
+        /// keeps what was recorded. The request's own changes then aren't reported as the user's,
+        /// and the user's earlier changes still reach the next request.
+        /// </summary>
+        public static void Rebaseline(UIApplication app) {
+            RememberViewAndSelection(app.ActiveUIDocument);
+        }
+
         /// <remarks>
         /// Only from the session's document, so a request made while another document is active
         /// keeps the earlier baseline.

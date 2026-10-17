@@ -278,6 +278,22 @@ class BlockTests(TestCase):
         harness.resume_session()
         self.assertEqual(before, harness.run(levels, inputs={"title": title})["result"])
 
+    def test_a_failing_run_that_changed_another_document_still_pauses(self):
+        """A script that changes another open document and then raises still pauses the session."""
+        title = harness.session().other_title
+        response = _modify(
+            "other = [d for d in app.Documents if d.Title == inputs['title']][0]\n"
+            "t = DB.Transaction(other, 'touch other')\nt.Start()\nDB.Level.Create(other, 51.0)\nt.Commit()\n"
+            "raise ValueError('after touching the other document')\n",
+            inputs={"title": title},
+        )
+        self.assertEqual("ValueError", response["error"]["type"])
+        self.assertTrue(response["changes"]["other_documents"][0]["rolled_back"])
+        self.assertTrue(any("paused" in warning for warning in response["warnings"]))
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.request("get_context")
+        self.assertEqual("paused_by_host", raised.exception.code)
+
     def test_warnings_are_reported(self):
         """Revit warnings raised during a run are reported as failures."""
         response = _modify(

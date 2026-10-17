@@ -13,10 +13,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// An element a run added or changed, which the user can click to select and zoom to.
     /// </summary>
     internal sealed class AgentLogElement {
-        public AgentLogElement(long id, string label, string document, Action<AgentLogElement> select) {
+        public AgentLogElement(long id, string label, string document, string documentPath, Action<AgentLogElement> select) {
             Id = id;
             Label = label;
             Document = document;
+            DocumentPath = documentPath;
             SelectCommand = new AgentPanelCommand(() => select(this));
         }
 
@@ -25,6 +26,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>Title of the document the element belongs to.</summary>
         public string Document { get; }
+
+        /// <summary>
+        /// Path of that document, or null when it was never saved. With the title, it keeps a
+        /// click from selecting elements in another model of the same name.
+        /// </summary>
+        public string DocumentPath { get; }
 
         public ICommand SelectCommand { get; }
     }
@@ -140,6 +147,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static IList<AgentLogElement> ElementsOf(JObject details, Action<AgentLogElement> select) {
             var document = details?.Value<string>("document");
+            var documentPath = details?.Value<string>("document_path");
             return (details?["elements"] as JArray ?? new JArray())
                 .OfType<JObject>()
                 .Where(element => element["id"] != null)
@@ -147,7 +155,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var id = element.Value<long>("id");
                     var name = element.Value<string>("name") ?? element.Value<string>("category");
                     var label = string.IsNullOrEmpty(name) ? id.ToString(CultureInfo.InvariantCulture) : name + " " + id.ToString(CultureInfo.InvariantCulture);
-                    return new AgentLogElement(id, label, document, select);
+                    return new AgentLogElement(id, label, document, documentPath, select);
                 })
                 .ToList();
         }

@@ -362,6 +362,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var record = backend.Activity.Arrive("modify", "Add walls", null, ("s1", "Tower.rvt"), Started);
             backend.Activity.Finish(record, "committed", Started, new JObject {
                 ["document"] = "Tower.rvt",
+                ["document_path"] = "C:\\models\\Tower.rvt",
                 ["elements"] = new JArray(new JObject { ["id"] = 5, ["name"] = "Wall" }),
             });
             var panel = Panel();
@@ -372,6 +373,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var shown = Assert.Single(backend.Shown);
             Assert.Equal(new long[] { 5 }, shown.Ids);
             Assert.Equal("Tower.rvt", shown.Document);
+            Assert.Equal("C:\\models\\Tower.rvt", shown.DocumentPath);
             Assert.Equal("The link belongs to a different or closed document.", panel.ErrorText);
         }
 
@@ -409,12 +411,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 startFailure(message);
             }
 
-            public List<(IList<long> Ids, string Document)> Shown { get; } = new List<(IList<long>, string)>();
+            public List<(IList<long> Ids, string Document, string DocumentPath)> Shown { get; } = new List<(IList<long>, string, string)>();
 
             public Action<string> ShowFailure { get; private set; }
 
-            public void ShowElements(IList<long> ids, string document, Action<string> onError) {
-                Shown.Add((ids, document));
+            public void ShowElements(IList<long> ids, string document, string documentPath, Action<string> onError) {
+                Shown.Add((ids, document, documentPath));
                 ShowFailure = onError;
             }
 

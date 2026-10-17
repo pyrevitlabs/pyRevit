@@ -289,12 +289,11 @@ namespace pyRevitCLI {
         }
 
         /// <remarks>
-        /// The <c>get_context</c> call that checks for a document is the host's previous request
-        /// when the run arrives, so its <c>since_last_call</c> is passed on with the run's result
-        /// or refusal; otherwise the agent would never see it.
-        /// Invariant: that call also ends the handshake after the user moved the session, which
-        /// is the agent's to do. When it reports a move, the automation is refused with
-        /// <c>session_moved</c> instead of running in a document the agent hasn't looked at.
+        /// The <c>get_context</c> call that checks for a document passes <c>keep_changes</c>, so it
+        /// neither clears <c>since_last_call</c> nor ends the handshake after the user moved the
+        /// session. The run's own response then reports every change, and the host refuses the run
+        /// with <c>session_moved</c> until the agent reads the context itself. A refusal carries the
+        /// summary the check received.
         /// </remarks>
         private JToken RunAutomation(JObject arguments) {
             var operation = PyRevitAutomationOperations.Resolve(
@@ -302,15 +301,10 @@ namespace pyRevitCLI {
             var reason = Reason(arguments);
             JToken sinceLastCall = null;
             if (operation.Value<bool>("requires_document")) {
-                var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
+                var context = CallRevit(arguments, "get_context", new JObject { ["keep_changes"] = true }) as JObject;
                 if (context?["document"] == null || context["document"].Type == JTokenType.Null)
                     throw new AgentClientException("no_active_document", $"'{operation.Value<string>("id")}' requires an active document.");
                 sinceLastCall = context["since_last_call"];
-                if (sinceLastCall?["session_moved"] != null)
-                    throw new AgentClientException("session_moved",
-                        "The user moved the agent session to another document. Read 'since_last_call', call get_context, "
-                        + "and check the automation's inputs against the new document before running it again.",
-                        new JObject { ["since_last_call"] = sinceLastCall });
             }
             var parameters = new JObject {
                 ["script"] = operation.Value<string>("source"),

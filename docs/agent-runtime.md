@@ -271,9 +271,9 @@ Rules the host enforces:
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
   save-as, synchronize-with-central, file-export and view-export events. The response lists a
   cancelled operation in `blocked`.
-- A run in any mode that changes another open document fails with `other_document_modified`,
-  is rolled back, and pauses the session (`paused_by_host`) until the user resumes it.
-  `changes.other_documents` lists what changed. A project the script opens
+- A run in any mode that changes another open document is rolled back and pauses the session
+  (`paused_by_host`) until the user resumes it, even when the script also failed; otherwise it
+  fails with `other_document_modified`. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
   the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
@@ -374,7 +374,7 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `request.json`: title, reason, mode, engine and inputs, the session id and the active
   document's title
 - `response.json`: status, decision, changes, failures, dialogs, output and result, with the
-  same session id and document
+  same session id and document, and the document's path
 - `result.json`: present when the result was too large to return inline
 
 Run records and `capture_view` images older than 14 days are deleted when the host starts.
@@ -470,7 +470,10 @@ Deliberately **not** reused:
 Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one connection
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, and the session
-requests `session_status`, `request_session`, `pause_session` and `end_session`. Errors
+requests `session_status`, `request_session`, `pause_session` and `end_session`.
+`get_context` with `keep_changes` reports `since_last_call` without clearing it and doesn't end
+the handshake after a move; `run_automation` uses it to check for a document before its run.
+Errors
 carry a stable `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly`,
 `invalid_params` or one of the session refusals in
 [Sessions and the agent panel](#sessions-and-the-agent-panel).

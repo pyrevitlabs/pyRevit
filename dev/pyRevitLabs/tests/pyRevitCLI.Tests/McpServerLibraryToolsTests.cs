@@ -59,21 +59,21 @@ public partial class McpServerTests {
     }
 
     [Fact]
-    public void AnAutomationNeverRunsInADocumentTheSessionJustMovedTo() {
+    public void AnAutomationChecksTheContextWithoutTakingTheAgentsChangesOrHandshake() {
         var moved = new JObject { ["session_moved"] = new JObject { ["from"] = "Tower", ["to"] = "Annex" } };
         host.Handler = request => request.Value<string>("method") == "get_context"
             ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Annex" }, ["since_last_call"] = moved })
-            : RunResponse(request);
+            : FakeAgentHost.Failure(request, "session_moved", "The user moved the agent session. Call get_context first.");
 
         var response = Single(ToolCall(1, "run_automation", new JObject {
             ["id"] = "pyrevit.levels.resolve",
             ["inputs"] = new JObject { ["name"] = "Level 1" },
         }));
 
+        Assert.True(Assert.Single(host.RequestsFor("get_context"))["params"].Value<bool>("keep_changes"));
         Assert.True(IsError(response));
         Assert.Equal("session_moved", Payload(response).Value<string>("error"));
         Assert.Equal("Annex", Payload(response)["since_last_call"]["session_moved"].Value<string>("to"));
-        Assert.Empty(host.RequestsFor("run"));
     }
 
     [Fact]

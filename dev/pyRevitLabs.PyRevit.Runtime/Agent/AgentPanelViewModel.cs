@@ -44,7 +44,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// document is active. A failure is reported through <paramref name="onError"/> on the UI
         /// thread.
         /// </summary>
-        void ShowElements(IList<long> ids, string document, Action<string> onError);
+        /// <param name="documentPath">The document's path, or null when it was never saved.</param>
+        void ShowElements(IList<long> ids, string document, string documentPath, Action<string> onError);
 
         void Pause();
         void Resume();
@@ -213,7 +214,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void ShowElement(AgentLogElement element) {
-            Post(onError => backend.ShowElements(new[] { element.Id }, element.Document, onError));
+            Post(onError => backend.ShowElements(new[] { element.Id }, element.Document, element.DocumentPath, onError));
         }
 
         /// <summary>

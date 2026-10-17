@@ -83,6 +83,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 uiApp.DockableFrameVisibilityChanged += OnVisibilityChanged;
                 uiApp.ViewActivated += OnViewActivated;
                 uiApp.Application.DocumentClosed += OnDocumentClosed;
+                uiApp.Application.DocumentSavedAs += OnDocumentSavedAs;
                 uiApp.Idling += HideOnFirstIdlingWhileHostIsOff;
             }
             catch (Exception ex) {
@@ -137,6 +138,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
+            NoteCurrentActiveDocument();
+        }
+
+        private static void OnDocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
+            NoteCurrentActiveDocument();
+        }
+
+        private static void NoteCurrentActiveDocument() {
             try {
                 NoteActiveDocument(uiApplication?.ActiveUIDocument?.Document?.Title);
             }

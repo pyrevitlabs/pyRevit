@@ -28,6 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["approval"] = response["approval"],
                 ["elapsed_ms"] = response["elapsed_ms"],
                 ["document"] = response["document"],
+                ["document_path"] = response["document_path"],
                 ["run_id"] = response["run_id"],
                 ["run_dir"] = response["run_dir"],
                 ["added"] = changes.Value<int?>("added_count") ?? 0,

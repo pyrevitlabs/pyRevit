@@ -189,6 +189,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// Follows the bound document to the title it was saved under. The caller has checked that
+        /// the saved document is the bound one.
+        /// </summary>
+        /// <returns>False when there is no session or the title didn't change.</returns>
+        public bool Retitle(string title) {
+            lock (sync) {
+                if (state == AgentSessionState.Inactive || string.IsNullOrEmpty(title) || title == documentTitle)
+                    return false;
+                documentTitle = title;
+                documents[documents.Count - 1] = title;
+            }
+            OnChanged();
+            return true;
+        }
+
+        /// <summary>
         /// Records that the agent read the context, which ends the handshake after a move.
         /// </summary>
         public void ContextRead() {

@@ -137,12 +137,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <remarks>
-        /// Uses the same presenter as <c>show_elements</c>, with the document title as a guard,
-        /// so a click can't select whatever elements happen to have those ids in another
-        /// document. Not behind the session gate: the user is acting, not the agent.
+        /// Uses the same presenter as <c>show_elements</c>, with the document's title and path as
+        /// a guard, so a click can't select whatever elements happen to have those ids in another
+        /// document, even one of the same name. Not behind the session gate: the user is acting,
+        /// not the agent.
         /// </remarks>
-        public void ShowElements(IList<long> ids, string document, Action<string> onError) {
-            var request = new AgentPresenter.Request { Action = "select", Zoom = true, DocumentTitle = document };
+        public void ShowElements(IList<long> ids, string document, string documentPath, Action<string> onError) {
+            var request = new AgentPresenter.Request {
+                Action = "select",
+                Zoom = true,
+                DocumentTitle = document,
+                DocumentPath = string.IsNullOrEmpty(documentPath) ? null : documentPath,
+            };
             request.Ids.AddRange(ids);
             PostToRevit("show the elements", onError, app => {
                 using (var dialogs = new AgentDialogCapture(app)) {

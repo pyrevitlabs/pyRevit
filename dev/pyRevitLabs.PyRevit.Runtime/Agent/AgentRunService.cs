@@ -29,8 +29,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
-    /// <item>A run that changes any document other than the active one fails, rolls back and
-    /// pauses the session, whatever its mode and the policy.</item>
+    /// <item>A run that changes any document other than the active one is rolled back and
+    /// pauses the session, whatever its mode, the policy or any other error; when nothing else
+    /// failed, it fails with <c>other_document_modified</c>.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
     /// document remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
@@ -73,15 +74,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case AgentRunVerdict.OtherDocumentChanged:
                     context.SetError("other_document_modified",
                         "The script changed another open document. Agent runs may change only the active "
-                        + "document. See 'changes.other_documents' for rollback and discard outcomes. "
-                        + "The agent session is now paused until the user resumes it.",
+                        + "document. See 'changes.other_documents' for rollback and discard outcomes.",
                         null);
-                    try {
-                        guard.RollBack();
-                    }
-                    finally {
-                        AgentSessions.PauseForOtherDocument(guard.ChangedOtherOpenDocumentTitles);
-                    }
+                    guard.RollBack();
                     return verdict;
                 case AgentRunVerdict.NoDocument:
                     return verdict;
@@ -173,6 +168,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["reason"] = request.Reason,
                 ["session_id"] = sessionId,
                 ["document"] = doc?.Title,
+                ["document_path"] = string.IsNullOrEmpty(doc?.PathName) ? null : doc.PathName,
             };
 
             var openAtStart = AgentDocuments.Snapshot(app.Application);
@@ -246,6 +242,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);
                 warnings.Add("Closing leftover documents failed: " + ex.Message);
+            }
+            if (guard.ChangedOtherOpenDocument) {
+                var changedTitles = guard.ChangedOtherOpenDocumentTitles;
+                AgentSessions.PauseForOtherDocument(changedTitles);
+                warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
+                    + "), so the agent session is paused until the user resumes it in Revit.");
             }
             var finalOtherDocuments = guard.DescribeOtherDocuments();
             foreach (var failure in guard.CleanupFailures)

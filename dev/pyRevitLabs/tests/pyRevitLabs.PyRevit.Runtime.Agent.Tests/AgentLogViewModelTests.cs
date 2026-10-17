@@ -56,6 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 ["approval"] = "user",
                 ["elapsed_ms"] = 1500,
                 ["document"] = "Tower.rvt",
+                ["document_path"] = "C:\\models\\Tower.rvt",
                 ["run_dir"] = "C:\\runs\\abc",
                 ["added"] = 1,
                 ["modified"] = 2,
@@ -187,6 +188,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var element = Assert.Single(selected);
             Assert.Equal(101, element.Id);
             Assert.Equal("Tower.rvt", element.Document);
+            Assert.Equal("C:\\models\\Tower.rvt", element.DocumentPath);
         }
 
         [Fact]

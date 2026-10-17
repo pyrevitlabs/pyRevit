@@ -22,7 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Revit can call these methods too, except while an agent run executes.
     /// The bound document is held by reference and compared with <see cref="AgentDocuments.IsSame"/>,
     /// never by title or path. Closing it ends the session; after a move, closing the document the
-    /// session left doesn't.
+    /// session left doesn't. Saving it under another name changes the session's title.
     /// </remarks>
     public static class AgentSessions {
         internal static readonly AgentSessionTracker Tracker = new AgentSessionTracker();
@@ -65,7 +65,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new InvalidOperationException("Agent sessions must be started on the Revit main thread.");
             var doc = app.ActiveUIDocument?.Document
                 ?? throw new AgentException("no_active_document", "Open the document the agent should work on, then start the session.");
-            WatchDocumentClosing(app.Application);
+            WatchDocuments(app.Application);
             AgentAwarenessWatch.Attach(app);
             var id = Tracker.Start(doc, doc.Title, DateTime.UtcNow);
             AgentAwarenessWatch.Restart(app);
@@ -164,7 +164,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// and never thrown, so the rest of the host's configuration still runs.
         /// </remarks>
         internal static void Configure(Application app, bool required) {
-            WatchDocumentClosing(app);
+            WatchDocuments(app);
             try {
                 Tracker.SetRequired(required);
             }
@@ -194,14 +194,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.CheckOnDequeue(candidate => AgentDocuments.IsSame(candidate as Document, active), active?.Title, readsContext);
         }
 
-        private static void WatchDocumentClosing(Application app) {
+        private static void WatchDocuments(Application app) {
             lock (sync) {
                 if (eventsAttached)
                     return;
                 app.DocumentClosing += OnDocumentClosing;
                 app.DocumentClosed += OnDocumentClosed;
+                app.DocumentSavedAs += OnDocumentSavedAs;
                 eventsAttached = true;
             }
+        }
+
+        private static void OnDocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
+            if (e.Status != RevitAPIEventStatus.Succeeded)
+                return;
+            if (Tracker.BoundDocument is Document bound && AgentDocuments.IsSame(bound, e.Document))
+                Tracker.Retitle(e.Document.Title);
         }
 
         private static void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {

@@ -23,6 +23,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 ["approval"] = "user",
                 ["elapsed_ms"] = 1500,
                 ["document"] = "Tower.rvt",
+                ["document_path"] = "C:\\models\\Tower.rvt",
                 ["changes"] = new JObject {
                     ["added_count"] = 2,
                     ["modified_count"] = 1,
@@ -45,6 +46,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("user", details.Value<string>("approval"));
             Assert.Equal(1500, details.Value<int>("elapsed_ms"));
             Assert.Equal("Tower.rvt", details.Value<string>("document"));
+            Assert.Equal("C:\\models\\Tower.rvt", details.Value<string>("document_path"));
             Assert.Equal(2, details.Value<int>("added"));
             Assert.Equal(1, details.Value<int>("modified"));
             Assert.Equal(0, details.Value<int>("deleted"));
