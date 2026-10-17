@@ -36,7 +36,7 @@ print_output_folder = _load_output_folder()
 OutputFolder = print_output_folder.OutputFolder
 PrintRun = print_output_folder.PrintRun
 InvalidOutputRoot = print_output_folder.InvalidOutputRoot
-InvalidSubfolderTemplate = print_output_folder.InvalidSubfolderTemplate
+InvalidFolderTemplate = print_output_folder.InvalidFolderTemplate
 
 STARTED_AT = datetime.datetime(2026, 10, 17, 14, 5, 9)
 
@@ -56,6 +56,11 @@ class OutputRootTests(unittest.TestCase):
 
         self.assertEqual(folder.path_for(_run()), "\\\\server\\share\\Prints")
 
+    def test_unc_share_without_subfolders_is_a_valid_root(self):
+        folder = OutputFolder("\\\\server\\share", "{model}")
+
+        self.assertEqual(folder.path_for(_run()), "\\\\server\\share\\Tower")
+
     def test_environment_variables_in_the_root_are_expanded(self):
         folder = OutputFolder("%PRINT_ROOT_UNDER_TEST%\\Sets", "")
 
@@ -71,6 +76,39 @@ class OutputRootTests(unittest.TestCase):
 
                 with self.assertRaises(InvalidOutputRoot):
                     folder.path_for(_run())
+
+    def test_rejected_root_names_what_was_typed(self):
+        folder = OutputFolder("Prints", "")
+
+        with self.assertRaises(InvalidOutputRoot) as raised:
+            folder.path_for(_run())
+
+        self.assertIn('"Prints"', str(raised.exception))
+
+    def test_placeholders_in_the_root_are_filled_in(self):
+        folder = OutputFolder("C:\\Prints\\{date}_{model}", "{time}")
+
+        path = folder.path_for(_run())
+
+        self.assertEqual(path, "C:\\Prints\\261017_Tower\\140509")
+
+    def test_root_placeholders_cannot_nest_folders_through_names(self):
+        folder = OutputFolder("C:\\Prints\\{sheet_index}", "")
+
+        path = folder.path_for(_run(sheet_index="Arch\\Issue 01"))
+
+        self.assertEqual(path, "C:\\Prints\\Arch Issue 01")
+
+    def test_root_placeholders_remove_characters_windows_rejects(self):
+        folder = OutputFolder("C:\\Prints\\{model}", "")
+
+        self.assertEqual(folder.path_for(_run(model="A:B")), "C:\\Prints\\AB")
+
+    def test_root_must_still_be_a_full_path_once_filled_in(self):
+        folder = OutputFolder("{date}_{model}", "{time}")
+
+        with self.assertRaises(InvalidOutputRoot):
+            folder.path_for(_run())
 
 
 class SubfolderTemplateTests(unittest.TestCase):
@@ -108,8 +146,14 @@ class SubfolderTemplateTests(unittest.TestCase):
             with self.subTest(template=template):
                 folder = OutputFolder("C:\\Prints", template)
 
-                with self.assertRaises(InvalidSubfolderTemplate):
+                with self.assertRaises(InvalidFolderTemplate):
                     folder.path_for(_run())
+
+    def test_malformed_root_templates_are_rejected(self):
+        folder = OutputFolder("C:\\Prints\\{unknown}", "")
+
+        with self.assertRaises(InvalidFolderTemplate):
+            folder.path_for(_run())
 
 
 if __name__ == "__main__":

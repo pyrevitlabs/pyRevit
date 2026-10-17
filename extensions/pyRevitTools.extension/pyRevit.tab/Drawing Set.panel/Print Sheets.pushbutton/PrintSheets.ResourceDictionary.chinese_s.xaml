@@ -24,7 +24,7 @@
     <system:String x:Key="PageSettings">页面设置</system:String>
     <system:String x:Key="OutputFolder">输出文件夹</system:String>
     <system:String x:Key="Browse">浏览</system:String>
-    <system:String x:Key="OutputFolderTooltip">PDF 和 DWG 文件的保存位置。留空则使用 Desktop\pyRevit Print Folder。外部 PDF 打印机可能使用其自身的保存位置。</system:String>
+    <system:String x:Key="OutputFolderTooltip">PDF 和 DWG 文件的保存位置。可使用 {date}、{time}、{model} 和 {sheet_index}。留空则使用 Desktop\pyRevit Print Folder。外部 PDF 打印机可能使用其自身的保存位置。</system:String>
     <system:String x:Key="Subfolder">子文件夹</system:String>
     <system:String x:Key="SubfolderTooltip">可使用 {date}、{time}、{model} 和 {sheet_index}。使用 \ 创建嵌套文件夹。留空则直接保存到输出文件夹。</system:String>
     <system:String x:Key="IncompatibleWithPrinter">与打印机不兼容</system:String>

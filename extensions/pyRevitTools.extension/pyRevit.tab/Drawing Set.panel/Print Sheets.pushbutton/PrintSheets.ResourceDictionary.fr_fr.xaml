@@ -24,7 +24,7 @@
     <system:String x:Key="PageSettings">Paramètres de Page</system:String>
     <system:String x:Key="OutputFolder">Dossier de Sortie</system:String>
     <system:String x:Key="Browse">Parcourir</system:String>
-    <system:String x:Key="OutputFolderTooltip">Emplacement des fichiers PDF et DWG. Laisser vide pour Desktop\pyRevit Print Folder. Les imprimantes PDF externes peuvent utiliser leur propre emplacement.</system:String>
+    <system:String x:Key="OutputFolderTooltip">Emplacement des fichiers PDF et DWG. Prend en charge {date}, {time}, {model} et {sheet_index}. Laisser vide pour Desktop\pyRevit Print Folder. Les imprimantes PDF externes peuvent utiliser leur propre emplacement.</system:String>
     <system:String x:Key="Subfolder">Sous-dossier</system:String>
     <system:String x:Key="SubfolderTooltip">Utilisez {date}, {time}, {model} et {sheet_index}. Utilisez \ pour des dossiers imbriqués. Laisser vide pour enregistrer directement dans le dossier de sortie.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">Incompatible avec l'imprimante</system:String>

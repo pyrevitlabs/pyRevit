@@ -24,7 +24,7 @@
     <system:String x:Key="PageSettings">Настройки страницы</system:String>
     <system:String x:Key="OutputFolder">Папка вывода</system:String>
     <system:String x:Key="Browse">Обзор</system:String>
-    <system:String x:Key="OutputFolderTooltip">Куда сохраняются файлы PDF и DWG. Оставьте пустым для Desktop\pyRevit Print Folder. Внешние PDF-принтеры могут использовать собственную папку.</system:String>
+    <system:String x:Key="OutputFolderTooltip">Куда сохраняются файлы PDF и DWG. Поддерживает {date}, {time}, {model} и {sheet_index}. Оставьте пустым для Desktop\pyRevit Print Folder. Внешние PDF-принтеры могут использовать собственную папку.</system:String>
     <system:String x:Key="Subfolder">Подпапка</system:String>
     <system:String x:Key="SubfolderTooltip">Используйте {date}, {time}, {model} и {sheet_index}. Используйте \ для вложенных папок. Оставьте пустым, чтобы сохранять прямо в папку вывода.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">Несовместимо с принтером</system:String>
