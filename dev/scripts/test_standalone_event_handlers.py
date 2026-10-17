@@ -167,14 +167,20 @@ def load_events_module(app_domain, host, exec_id, logger, external_event_respons
         PyRevitCPythonNotSupported=RuntimeError,
     )
     coreutils = _module("pyrevit.coreutils")
+    envvars = _module(
+        "pyrevit.coreutils.envvars",
+        REGISTEREDEVENTHANDLERS_ENVVAR="PYREVIT_REGISTEREDEVENTHANDLERS",
+    )
     logger_module = _module("pyrevit.coreutils.logger", get_logger=lambda name: logger)
     pyrevit.coreutils = coreutils
+    coreutils.envvars = envvars
 
     replacements = {
         "System": system,
         "System.Collections": system_collections,
         "pyrevit": pyrevit,
         "pyrevit.coreutils": coreutils,
+        "pyrevit.coreutils.envvars": envvars,
         "pyrevit.coreutils.logger": logger_module,
     }
     previous = {key: sys.modules.get(key) for key in replacements}
@@ -220,7 +226,9 @@ class EventHandlerCleanupTests(unittest.TestCase):
 
         self.assertNotIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
         self.assertIsNone(
-            self.app_domain.GetData(reload_events._REGISTERED_HANDLERS_KEY)
+            self.app_domain.GetData(
+                reload_events.envvars.REGISTEREDEVENTHANDLERS_ENVVAR
+            )
         )
 
         next_handler = lambda sender, args: None
@@ -258,7 +266,9 @@ class EventHandlerCleanupTests(unittest.TestCase):
         self.assertEqual(self.host._app.DocumentOpened.handlers, [])
         self.assertIn(failed_handler, self.host._uiapp.ViewActivated.handlers)
         self.assertTrue(self.logger.errors)
-        self.assertIsNone(self.app_domain.GetData(events._REGISTERED_HANDLERS_KEY))
+        self.assertIsNone(
+            self.app_domain.GetData(events.envvars.REGISTEREDEVENTHANDLERS_ENVVAR)
+        )
 
     def test_non_api_reload_routes_cleanup_through_external_event(self):
         """Perform Revit event removal only when the deferred API callback runs."""
@@ -273,7 +283,9 @@ class EventHandlerCleanupTests(unittest.TestCase):
         self.host._api_context = True
         events.HANDLER_UNREGISTERER.Execute(None)
         self.assertNotIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
-        self.assertIsNone(self.app_domain.GetData(events._REGISTERED_HANDLERS_KEY))
+        self.assertIsNone(
+            self.app_domain.GetData(events.envvars.REGISTEREDEVENTHANDLERS_ENVVAR)
+        )
 
     def test_denied_external_event_does_not_block_cleanup_caller(self):
         """Keep handlers tracked and subscribed when an external event is denied."""
@@ -287,7 +299,7 @@ class EventHandlerCleanupTests(unittest.TestCase):
         self.assertTrue(self.logger.errors)
         self.assertIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
         registered_handlers = self.app_domain.GetData(
-            events._REGISTERED_HANDLERS_KEY
+            events.envvars.REGISTEREDEVENTHANDLERS_ENVVAR
         )
         self.assertIn("script-exec", registered_handlers)
         self.assertIn(

@@ -7,13 +7,11 @@ from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
 from pyrevit import compat, PyRevitCPythonNotSupported
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 
 
 mlogger = get_logger(__name__)
-
-
-_REGISTERED_HANDLERS_KEY = "pyRevitRegisteredEventHandlers"
 
 
 def _get_registered_handlers():
@@ -23,12 +21,12 @@ def _get_registered_handlers():
     registration on the UI thread; concurrent initialization is unsupported.
     """
     registered_handlers = framework.AppDomain.CurrentDomain.GetData(
-        _REGISTERED_HANDLERS_KEY
+        envvars.REGISTEREDEVENTHANDLERS_ENVVAR
     )
     if registered_handlers is None:
         registered_handlers = Hashtable()
         framework.AppDomain.CurrentDomain.SetData(
-            _REGISTERED_HANDLERS_KEY, registered_handlers
+            envvars.REGISTEREDEVENTHANDLERS_ENVVAR, registered_handlers
         )
     return registered_handlers
 
@@ -147,7 +145,9 @@ def unregister_handler(event_name, handler_func, handler_group_id):
 
 def _clear_registered_handlers_if_empty(registered_handlers):
     if registered_handlers.Count == 0:
-        framework.AppDomain.CurrentDomain.SetData(_REGISTERED_HANDLERS_KEY, None)
+        framework.AppDomain.CurrentDomain.SetData(
+            envvars.REGISTEREDEVENTHANDLERS_ENVVAR, None
+        )
 
 
 def unregister_exec_handlers(handler_group_id):
@@ -187,7 +187,7 @@ def _unregister_handler_groups(handler_group_ids):
 def unregister_all_exec_handlers():
     """Unregister every tracked execution group, directly or via ExternalEvent."""
     registered_handlers = framework.AppDomain.CurrentDomain.GetData(
-        _REGISTERED_HANDLERS_KEY
+        envvars.REGISTEREDEVENTHANDLERS_ENVVAR
     )
     if registered_handlers is None:
         return
@@ -270,7 +270,7 @@ def handle(*args):  # pylint: disable=no-method-argument
 
 def stop_events():
     registered_handlers = framework.AppDomain.CurrentDomain.GetData(
-        _REGISTERED_HANDLERS_KEY
+        envvars.REGISTEREDEVENTHANDLERS_ENVVAR
     )
     if registered_handlers is not None and registered_handlers.ContainsKey(
         EXEC_PARAMS.exec_id
