@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">剖面框导航器</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">剖面框导航器</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">裁剪区域导航器</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">不支持的视图类型</system:String>
     
     <system:String x:Key="LevelNavigation">标高导航</system:String>
     <system:String x:Key="TopUp">顶部 ↑</system:String>

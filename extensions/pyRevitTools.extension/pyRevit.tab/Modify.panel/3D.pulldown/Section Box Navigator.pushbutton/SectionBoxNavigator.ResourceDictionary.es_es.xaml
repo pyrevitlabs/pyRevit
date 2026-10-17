@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Navegador de Caja de Sección</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Navegador de Caja de Sección</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Navegador de Región de Recorte</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Tipo de vista no compatible</system:String>
     
     <system:String x:Key="LevelNavigation">Navegación por Nivel</system:String>
     <system:String x:Key="TopUp">Arriba ↑</system:String>

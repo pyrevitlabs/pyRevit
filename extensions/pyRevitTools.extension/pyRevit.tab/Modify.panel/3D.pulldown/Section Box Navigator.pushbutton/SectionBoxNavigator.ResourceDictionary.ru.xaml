@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Навигатор Бокса Сечения</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Навигатор Бокса Сечения</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Навигатор Области Подрезки</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Неподдерживаемый тип вида</system:String>
     
     <system:String x:Key="LevelNavigation">Навигация по Уровням</system:String>
     <system:String x:Key="TopUp">Верх ↑</system:String>

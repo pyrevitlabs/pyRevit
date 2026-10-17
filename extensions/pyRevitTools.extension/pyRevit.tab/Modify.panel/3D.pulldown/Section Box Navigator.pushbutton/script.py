@@ -121,7 +121,10 @@ def on_view_or_doc_changed(sender, args):
                 sb_form.Dispatcher.Invoke(
                     System.Action(sb_form.update_grids_and_levels)
                 )
-        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+        if not sb_form:
+            return
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
+        if not sb_form.chkAutoupdate.IsChecked:
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         logger.info("Form updated due to view or document change.")
@@ -223,6 +226,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.rbGridNudge.IsChecked = not self.rbGrid.IsChecked
 
         self.current_view = revit.active_view
+        self.update_window_title()
         self.current_length_unit = length_unit
         self.all_levels = None
         self.all_grids = None
@@ -249,6 +253,20 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.Closed += self.form_closed
         script.restore_window_position(self)
         self.Show()
+
+    def update_window_title(self):
+        view = revit.active_view
+        if not view:
+            return
+
+        if isinstance(view, DB.View3D):
+            navigator_type = self.get_locale_string("SectionBoxNavigatorTitle")
+        elif is_2d_view(view):
+            navigator_type = self.get_locale_string("CropBoxNavigatorTitle")
+        else:
+            navigator_type = self.get_locale_string("UnsupportedViewTypeTitle")
+
+        self.Title = "{} | {}".format(navigator_type, revit.query.get_name(view))
 
     def update_fields_with_unit_dependencies(self):
         if not length_unit_symbol_label:

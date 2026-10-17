@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">섹션 박스 탐색기</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">섹션 박스 탐색기</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">자르기 영역 탐색기</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">지원되지 않는 뷰 유형</system:String>
 
     <system:String x:Key="LevelNavigation">레벨 탐색</system:String>
     <system:String x:Key="TopUp">위 ↑</system:String>

@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Navigateur de Boîte de Coupe</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Navigateur de Boîte de Coupe</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Navigateur de Région de Recadrage</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Type de vue non pris en charge</system:String>
     
     <system:String x:Key="LevelNavigation">Navigation par Niveau</system:String>
     <system:String x:Key="TopUp">Haut ↑</system:String>
