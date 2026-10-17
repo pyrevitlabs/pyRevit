@@ -65,7 +65,7 @@ After a statement runs for about one second, a small **Running... Stop** window 
 This window has its own STA thread and message dispatcher, remains responsive when Windows ghosts the busy Revit window, and has no owner relationship to that window.
 Click **Stop**, or focus the Stop window and press <kbd>Ctrl</kbd>+<kbd>C</kbd>, to request the same cancellation.
 The Stop window closes on cancellation, completion, errors, or shell disposal; short statements show no window.
-Its dispatcher thread is reused for that shell; disposal requests shutdown without waiting on Revit's UI thread, and the background cleanup joins the Stop worker for at most two seconds.
+Its dispatcher thread is reused for that shell; disposal requests shutdown without waiting on Revit's UI thread, and background cleanup retries the two-second Stop worker join until it exits.
 Interrupts are checked at Python trace events, without processing nested Revit UI messages.
 A long single .NET or native call, such as `System.Threading.Thread.Sleep(8000)`, cannot be stopped until it returns; a Stop request takes effect at the next Python trace event.
 An interrupt belongs to its current statement; a delayed key event or a shortcut still held after that statement ends does not cancel the next statement.
@@ -82,7 +82,7 @@ Pressing <kbd>Enter</kbd> during completion cancels that completion request with
 Running editor code while another statement is pending prints a busy message; the editor retains the code for another run.
 
 Closing a floating shell or editor cancels queued work and starts cleanup on a dedicated background thread; closing the window does not block Revit's UI thread.
-Cleanup waits up to ten seconds for each console, dispatcher, and completion worker, and logs timeouts or failures through .NET tracing.
+Cleanup logs the first ten-second join timeout for each console, dispatcher, and completion worker through .NET tracing and continues waiting on its background thread until all workers exit; a hung worker does not block Revit exit.
 The runtime is shut down only after all workers exit. A statement that disables tracing, swallows cancellation, or remains in a blocking managed/native call can outlive that deadline; its runtime is not shut down while a worker is still using it.
 Opening another floating shell creates a new runtime.
 Hiding a docked pane retains its console for the Revit session.

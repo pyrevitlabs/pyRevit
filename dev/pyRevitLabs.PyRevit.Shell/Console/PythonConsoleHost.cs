@@ -67,13 +67,22 @@ namespace PythonConsoleControl
                 try
                 {
                     var timeout = TimeSpan.FromSeconds(10);
-                    var consoleExited = thread == null || thread.Join(timeout);
-                    if (!consoleExited) Trace.TraceWarning("Python shell console worker did not exit within {0}.", timeout);
-                    var dispatcherExited = consoleExited && (pythonConsole == null || pythonConsole.WaitForExit(timeout));
-                    if (!dispatcherExited) Trace.TraceWarning("Python shell dispatcher cleanup did not finish; console exit: {0}, join limit: {1}.", consoleExited, timeout);
-                    var completionExited = textEditor.WaitForExit(timeout);
-                    if (!completionExited) Trace.TraceWarning("Python shell completion worker did not exit within {0}.", timeout);
-                    if (consoleExited && dispatcherExited && completionExited) Runtime?.Shutdown();
+                    if (thread != null && !thread.Join(timeout))
+                    {
+                        Trace.TraceWarning("Python shell console worker did not exit within {0}.", timeout);
+                        thread.Join();
+                    }
+                    if (pythonConsole != null && !pythonConsole.WaitForExit(timeout))
+                    {
+                        Trace.TraceWarning("Python shell dispatcher cleanup did not finish within {0}.", timeout);
+                        while (!pythonConsole.WaitForExit(timeout)) { }
+                    }
+                    if (!textEditor.WaitForExit(timeout))
+                    {
+                        Trace.TraceWarning("Python shell completion worker did not exit within {0}.", timeout);
+                        while (!textEditor.WaitForExit(timeout)) { }
+                    }
+                    Runtime?.Shutdown();
                 }
                 catch (Exception exception)
                 {

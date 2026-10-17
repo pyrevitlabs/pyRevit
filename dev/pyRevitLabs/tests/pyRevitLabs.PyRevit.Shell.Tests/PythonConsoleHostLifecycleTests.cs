@@ -22,6 +22,11 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
         }
 
         [Fact]
+        public Task DisposeDuringManagedCallShutsDownRuntimeAfterJoinTimeoutAsync() {
+            return DisposeHostAsync(true, true);
+        }
+
+        [Fact]
         public async Task StopWindowThresholdCompletionCancellationAndReuseAsync() {
             using var stopWindow = new PythonStatementStopWindow();
             var worker = GetWorker(stopWindow, "thread");
@@ -125,8 +130,9 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
             }
         }
 
-        static async Task DisposeHostAsync(bool runStatement) {
+        static async Task DisposeHostAsync(bool runStatement, bool blockManagedCall = false) {
             using var statementStarted = new ManualResetEventSlim();
+            using var releaseStatement = new ManualResetEventSlim();
             var ready = new TaskCompletionSource<PythonConsoleHost>(TaskCreationOptions.RunContinuationsAsynchronously);
             var runtimeShutdown = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             Dispatcher dispatcher = null;
@@ -140,7 +146,9 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                     host.WhenConsoleCreated(created => {
                         try {
                             var sys = created.Engine.GetSysModule();
-                            var onShutdown = new Action(() => runtimeShutdown.TrySetResult(true));
+                            var onShutdown = new Action(() => {
+                                if (!blockManagedCall || releaseStatement.IsSet) runtimeShutdown.TrySetResult(true);
+                            });
                             sys.SetVariable("exitfunc", onShutdown);
                             sys.SetVariable("_exitfunc", onShutdown);
                             ready.TrySetResult(created);
@@ -168,8 +176,13 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                 var stopWorker = GetWorker(execution.StopWindow, "thread");
                 if (runStatement) {
                     await dispatcher.InvokeAsync(() => {
-                        productionHost.Console.ScriptScope.SetVariable("_statement_started", new Action(statementStarted.Set));
-                        productionHost.Console.RunStatements("_statement_started()\nimport time\nwhile True:\n    time.sleep(0.05)\n");
+                        productionHost.Console.ScriptScope.SetVariable("_statement_started", new Action(() => {
+                            statementStarted.Set();
+                            if (blockManagedCall) releaseStatement.Wait();
+                        }));
+                        productionHost.Console.RunStatements(blockManagedCall
+                            ? "_statement_started()\n"
+                            : "_statement_started()\nimport time\nwhile True:\n    time.sleep(0.05)\n");
                     });
                     Assert.True(await Task.Run(() => statementStarted.Wait(TimeSpan.FromSeconds(15))));
                     Assert.True(execution.IsRunning);
@@ -193,7 +206,13 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                     completionTimer.Start();
                     productionHost.Dispose();
                     Assert.False(completionTimer.IsEnabled);
-                });
+                }).Task.WaitAsync(TimeSpan.FromSeconds(1));
+                if (blockManagedCall) {
+                    await Task.Delay(TimeSpan.FromSeconds(15));
+                    Assert.True(dispatcherWorker.IsAlive);
+                    Assert.False(runtimeShutdown.Task.IsCompleted);
+                    releaseStatement.Set();
+                }
                 await Task.Run(() => {
                     Assert.True(consoleWorker.Join(TimeSpan.FromSeconds(10)));
                     Assert.True(dispatcherWorker.Join(TimeSpan.FromSeconds(10)));
@@ -212,6 +231,7 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                 Assert.Null(unhandled);
             }
             finally {
+                releaseStatement.Set();
                 if (host != null && dispatcher != null && !dispatcher.HasShutdownStarted)
                     await dispatcher.InvokeAsync(host.Dispose);
                 dispatcher?.BeginInvokeShutdown(DispatcherPriority.Send);
