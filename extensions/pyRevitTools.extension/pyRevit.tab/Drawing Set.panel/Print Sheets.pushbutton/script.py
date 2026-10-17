@@ -150,13 +150,15 @@ class PrintUtils:
         """Resolve a subfolder naming template for one print run.
 
         Supports ``{date}`` (yymmdd), ``{time}`` (HHMMSS), ``{model}`` and
-        ``{sheet_index}``. Backslashes create nested folders. An empty
-        template returns an empty string, meaning files go straight into the
-        output folder.
+        ``{sheet_index}``. Backslashes typed in the template create nested
+        folders; backslashes inside ``model`` or ``sheet_index`` values do
+        not. An empty template returns an empty string, meaning files go
+        straight into the output folder.
 
         Raises:
             KeyError: the template uses an unknown placeholder.
             ValueError: the template has unbalanced braces.
+            AttributeError: the template accesses a placeholder attribute.
         """
         template = (template or "").strip()
         if not template:
@@ -165,8 +167,8 @@ class PrintUtils:
         folder = template.format(
             date=now.strftime("%y%m%d"),
             time=now.strftime("%H%M%S"),
-            model=model,
-            sheet_index=sheet_index,
+            model=model.replace("\\", " "),
+            sheet_index=sheet_index.replace("\\", " "),
         )
         parts = [
             coreutils.cleanup_filename(part, windows_safe=True).strip(" .")
@@ -195,11 +197,13 @@ class PrintUtils:
         Print drivers may include units after either dimension. Returns None
         when the name carries no usable pair of measurements.
         """
-        text = (name or "").lower().replace("\u00d7", "x").replace(",", ".")
+        # fmt: off
+        text = (name or "").lower().replace(u"\u00d7", "x").replace(",", ".")
         unit = (
-            "(mm[.]?|cm[.]?|millimet(?:er|re)s?[.]?|"
-            'centimet(?:er|re)s?[.]?|in(?:ch(?:es)?)?[.]?|["\u2033])?'
+            u"(mm[.]?|cm[.]?|millimet(?:er|re)s?[.]?|"
+            u'centimet(?:er|re)s?[.]?|in(?:ch(?:es)?)?[.]?|["\u2033])?'
         )
+        # fmt: on
         found = re.search(
             r"(\d+(?:\.\d+)?)[\s_]*" + unit + r"[\s_]*x[\s_]*"
             r"(\d+(?:\.\d+)?)[\s_]*" + unit,
@@ -914,6 +918,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         self._init_psettings = None
         self._scheduled_sheets = []
+        self._restoring_options = False
 
         self.project_info = revit.query.get_project_info(doc=revit.doc)
         self.sheet_cat_id = revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
@@ -943,48 +948,72 @@ class PrintSheetsWindow(forms.WPFWindow):
         )
 
     def _restore_options(self):
-        self.reverse_cb.IsChecked = config.get_option("reverse_order", False)
-        self.placeholder_cb.IsChecked = config.get_option("show_placeholders", True)
-        self.indexspace_cb.IsChecked = config.get_option("include_placeholders", True)
-        if self.combine_cb.IsEnabled:
-            self.combine_cb.IsChecked = config.get_option("combine", False)
-        if self.export_dwg.IsEnabled:
-            self.export_dwg.IsChecked = config.get_option("export_dwg", False)
-        self.indexstart_tb.Text = str(config.get_option("index_start", 0))
+        self._restoring_options = True
+        try:
+            self.reverse_cb.IsChecked = config.get_option("reverse_order", False)
+            self.placeholder_cb.IsChecked = config.get_option("show_placeholders", True)
+            self.indexspace_cb.IsChecked = config.get_option(
+                "include_placeholders", True
+            )
+            if self.combine_cb.IsEnabled:
+                self.combine_cb.IsChecked = config.get_option("combine", False)
+            if self.export_dwg.IsEnabled:
+                self.export_dwg.IsChecked = config.get_option("export_dwg", False)
+            self.indexstart_tb.Text = str(config.get_option("index_start", 0))
+            self._update_index_slider()
+            self.index_slider.Value = config.get_option(
+                "index_digits", self.index_slider.Value
+            )
+        finally:
+            self._restoring_options = False
         self.options_changed(None, None)
-        self.index_slider.Value = config.get_option(
-            "index_digits", self.index_slider.Value
-        )
 
     def save_options(self, sender, args):
         """Remember the window's choices for the next run.
+
+        Each option is saved on its own, so one unreadable control does not
+        discard the others.
 
         Note:
             Runs on every close, including after printing, so a cancelled
             window still keeps its last folder and naming choices.
         """
+        for option_name, read_option in self._saved_option_readers():
+            try:
+                setattr(config, option_name, read_option())
+            except Exception as read_err:
+                logger.debug("Could not save option %s: %s", option_name, read_err)
         try:
-            config.output_folder = self.output_folder_tb.Text.strip()
-            config.subfolder_format = self.subfolder_tb.Text.strip()
-            config.printer = self.selected_printer or ""
-            if self.selected_naming_format:
-                config.naming_format = self.selected_naming_format.name
-            config.reverse_order = bool(self.reverse_print)
-            config.show_placeholders = bool(self.show_placeholders)
-            config.include_placeholders = bool(self.include_placeholders)
-            config.combine = bool(self.combine_print)
-            config.export_dwg = bool(self.export_dwg.IsChecked)
-            config.index_digits = self.index_digits
-            config.index_start = self.index_start
-            if self.selected_doc and self.selected_sheetlist:
-                sheet_lists = config.get_option("sheet_lists", {})
-                sheet_lists[self._doc_key(self.selected_doc)] = (
-                    self.selected_sheetlist.name
-                )
-                config.sheet_lists = sheet_lists
             script.save_config()
         except Exception as save_err:
             logger.debug("Could not save Print Sheets options: %s", save_err)
+
+    def _saved_option_readers(self):
+        return [
+            ("output_folder", lambda: self.output_folder_tb.Text.strip()),
+            ("subfolder_format", lambda: self.subfolder_tb.Text.strip()),
+            ("printer", lambda: self.selected_printer or ""),
+            ("naming_format", self._naming_format_to_save),
+            ("reverse_order", lambda: bool(self.reverse_print)),
+            ("show_placeholders", lambda: bool(self.show_placeholders)),
+            ("include_placeholders", lambda: bool(self.include_placeholders)),
+            ("combine", lambda: bool(self.combine_print)),
+            ("export_dwg", lambda: bool(self.export_dwg.IsChecked)),
+            ("index_digits", lambda: self.index_digits),
+            ("index_start", lambda: self.index_start),
+            ("sheet_lists", self._sheet_lists_to_save),
+        ]
+
+    def _naming_format_to_save(self):
+        if self.selected_naming_format:
+            return self.selected_naming_format.name
+        return config.get_option("naming_format", "")
+
+    def _sheet_lists_to_save(self):
+        sheet_lists = config.get_option("sheet_lists", {})
+        if self.selected_doc and self.selected_sheetlist:
+            sheet_lists[self._doc_key(self.selected_doc)] = self.selected_sheetlist.name
+        return sheet_lists
 
     def browse_output_folder(self, sender, args):
         current = self.output_folder_tb.Text.strip()
@@ -1001,7 +1030,15 @@ class PrintSheetsWindow(forms.WPFWindow):
         Returns None after telling the user why the folder cannot be used,
         so callers can keep the window open for a correction.
         """
-        root = self.output_folder_tb.Text.strip() or PrintUtils.get_dir()
+        typed_root = self.output_folder_tb.Text.strip()
+        root = op.expandvars(op.expanduser(typed_root)) or PrintUtils.get_dir()
+        if not op.isabs(root) or not op.splitdrive(root)[0]:
+            forms.alert(
+                "The output folder must be a full path, "
+                "such as C:\\Prints or \\\\server\\share\\Prints.",
+                expanded=typed_root,
+            )
+            return None
         try:
             subfolder = PrintUtils.format_subfolder(
                 self.subfolder_tb.Text,
@@ -1010,7 +1047,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                     self.selected_sheetlist.name if self.selected_sheetlist else ""
                 ),
             )
-        except (KeyError, ValueError, IndexError) as fmt_err:
+        except (KeyError, ValueError, IndexError, AttributeError) as fmt_err:
             forms.alert(
                 "The subfolder name is not valid. Use {date}, {time}, "
                 "{model} and {sheet_index} only.",
@@ -1216,13 +1253,14 @@ class PrintSheetsWindow(forms.WPFWindow):
             printers.insert(0, "Revit Internal Printer")
 
         self.printers_cb.ItemsSource = printers
+        print_mgr = self._get_printmanager()
+        restorable_printers = {"Revit Internal Printer", print_mgr.PrinterName}
         saved_printer = config.get_option("printer", "")
-        if saved_printer and saved_printer in printers:
+        if saved_printer in restorable_printers and saved_printer in printers:
             self.printers_cb.SelectedItem = saved_printer
         elif IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
             self.printers_cb.SelectedItem = "Revit Internal Printer"
         else:
-            print_mgr = self._get_printmanager()
             self.printers_cb.SelectedItem = print_mgr.PrinterName
 
     def _get_psetting_items(self, doc, psettings=None, include_varsettings=False):
@@ -1321,14 +1359,6 @@ class PrintSheetsWindow(forms.WPFWindow):
         return True
 
     def _print_combined_sheets_in_order(self, target_sheets, dir_path):
-        if (
-            self.selected_print_setting is not None
-            and self.selected_print_setting.allows_variable_paper
-        ):
-            forms.alert(
-                "Combined export is unavailable when paper sizes vary by sheet."
-            )
-            return
         if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
             self._export_combined_pdf_internal(target_sheets, dir_path)
             return
@@ -2015,6 +2045,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         self._setup_print_settings()
 
     def options_changed(self, sender, args):
+        if self._restoring_options:
+            return
         self._reset_error()
 
         # update index digit range
@@ -2171,6 +2203,14 @@ class PrintSheetsWindow(forms.WPFWindow):
                         no=True,
                     ):
                         return
+            elif (
+                self.selected_print_setting is not None
+                and self.selected_print_setting.allows_variable_paper
+            ):
+                forms.alert(
+                    "Combined export is unavailable when paper sizes vary by sheet."
+                )
+                return
             dir_path = self._get_output_dir()
             if not dir_path:
                 return

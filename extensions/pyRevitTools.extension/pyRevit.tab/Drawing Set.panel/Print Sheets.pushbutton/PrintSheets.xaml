@@ -223,37 +223,17 @@
                                     <TextBlock Text="{DynamicResource OutputFolderTooltip}" TextWrapping="Wrap" MaxWidth="200"/>
                                 </DockPanel.ToolTip>
                                 <TextBlock Text="{DynamicResource OutputFolder}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"
-                                           ToolTipService.ShowDuration="30000">
-                                    <TextBlock.ToolTip>
-                                        <TextBlock Text="{DynamicResource OutputFolderTooltip}" TextWrapping="Wrap" MaxWidth="200"/>
-                                    </TextBlock.ToolTip>
-                                </TextBlock>
+                                <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <Button Content="{DynamicResource Browse}" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="browse_output_folder"/>
-                                <TextBox x:Name="output_folder_tb" VerticalContentAlignment="Center" Padding="5,0,5,0"
-                                         ToolTipService.ShowDuration="30000">
-                                    <TextBox.ToolTip>
-                                        <TextBlock Text="{DynamicResource OutputFolderTooltip}" TextWrapping="Wrap" MaxWidth="200"/>
-                                    </TextBox.ToolTip>
-                                </TextBox>
+                                <TextBox x:Name="output_folder_tb" VerticalContentAlignment="Center" Padding="5,0,5,0"/>
                             </DockPanel>
                             <DockPanel Margin="0,5,0,0" Height="24" ToolTipService.ShowDuration="30000">
                                 <DockPanel.ToolTip>
                                     <TextBlock Text="{DynamicResource SubfolderTooltip}" TextWrapping="Wrap" MaxWidth="200"/>
                                 </DockPanel.ToolTip>
                                 <TextBlock Text="{DynamicResource Subfolder}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"
-                                           ToolTipService.ShowDuration="30000">
-                                    <TextBlock.ToolTip>
-                                        <TextBlock Text="{DynamicResource SubfolderTooltip}" TextWrapping="Wrap" MaxWidth="200"/>
-                                    </TextBlock.ToolTip>
-                                </TextBlock>
-                                <TextBox x:Name="subfolder_tb" FontFamily="Consolas" VerticalContentAlignment="Center" Padding="5,0,5,0"
-                                         ToolTipService.ShowDuration="30000">
-                                    <TextBox.ToolTip>
-                                        <TextBlock Text="{DynamicResource SubfolderTooltip}" TextWrapping="Wrap" MaxWidth="200"/>
-                                    </TextBox.ToolTip>
-                                </TextBox>
+                                <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBox x:Name="subfolder_tb" FontFamily="Consolas" VerticalContentAlignment="Center" Padding="5,0,5,0"/>
                             </DockPanel>
                         </StackPanel>
                     </DockPanel>
