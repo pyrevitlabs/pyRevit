@@ -58,7 +58,6 @@
     
     <system:String x:Key="Settings">Settings</system:String>
     <system:String x:Key="ShowPreviewOnHover">Show preview on hover</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Update UI on Events</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Include Linked Levels and Grids</system:String>
     
     <!-- Dynamic UI strings -->

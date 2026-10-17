@@ -571,8 +571,6 @@
             <StackPanel Orientation="Horizontal" Margin="5">
                 <CheckBox x:Name="chkPreview" Content="{DynamicResource ShowPreviewOnHover}" 
                         Margin="5" IsChecked="True"/>
-                <CheckBox x:Name="chkAutoupdate" Content="{DynamicResource UpdateUIOnEvents}" 
-                        Margin="5" IsChecked="True"/>
                 <CheckBox x:Name="chkIncludeLinks" Content="{DynamicResource IncludeLinkedLevelsAndGrids}" 
                         Margin="5" IsChecked="False"
                         Checked="chkIncludeLinks_checked" Unchecked="chkIncludeLinks_checked"/>

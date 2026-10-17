@@ -58,7 +58,6 @@
     
     <system:String x:Key="Settings">Настройки</system:String>
     <system:String x:Key="ShowPreviewOnHover">Показать предпросмотр при наведении</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Обновлять интерфейс при событиях</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Включить Связанные Уровни и Сетки</system:String>
     
     <!-- Dynamic UI strings -->

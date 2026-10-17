@@ -58,7 +58,6 @@
 
     <system:String x:Key="Settings">설정</system:String>
     <system:String x:Key="ShowPreviewOnHover">마우스 오버 시 미리보기 표시</system:String>
-    <system:String x:Key="UpdateUIOnEvents">이벤트 발생 시 UI 업데이트</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">링크된 레벨 및 그리드 포함</system:String>
 
     <!-- Dynamic UI strings -->

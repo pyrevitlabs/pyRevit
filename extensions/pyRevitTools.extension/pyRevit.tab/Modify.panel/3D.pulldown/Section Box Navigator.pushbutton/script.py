@@ -124,8 +124,6 @@ def on_view_or_doc_changed(sender, args):
         if not sb_form:
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
-        if not sb_form.chkAutoupdate.IsChecked:
-            return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         logger.info("Form updated due to view or document change.")
     except Exception as ex:
@@ -219,7 +217,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
-        self.chkAutoupdate.IsChecked = my_config.get_option("chkAutoupdate_state", True)
         self.rbLevel.IsChecked = my_config.get_option("rbLevel_state", True)
         self.rbLevelNudge.IsChecked = not self.rbLevel.IsChecked
         self.rbGrid.IsChecked = my_config.get_option("rbGrid_state", True)
@@ -676,7 +673,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             elif action_type == "grid_move":
                 self.do_grid_move(params)
 
-            # Update info after action
             self.Dispatcher.Invoke(System.Action(self.update_info))
 
         except Exception as ex:
@@ -2053,7 +2049,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             my_config.set_option("rbGrid_state", self.rbGrid.IsChecked)
             my_config.set_option("chkLinks_state", self.chkIncludeLinks.IsChecked)
             my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
-            my_config.set_option("chkAutoupdate_state", self.chkAutoupdate.IsChecked)
             script.save_config()
 
         except Exception:

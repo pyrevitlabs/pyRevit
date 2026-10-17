@@ -58,7 +58,6 @@
     
     <system:String x:Key="Settings">Einstellungen</system:String>
     <system:String x:Key="ShowPreviewOnHover">Vorschau beim Überfahren anzeigen</system:String>
-    <system:String x:Key="UpdateUIOnEvents">UI bei Ereignissen aktualisieren</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Verknüpfte Ebenen und Raster einbeziehen</system:String>
     
     <!-- Dynamic UI strings -->

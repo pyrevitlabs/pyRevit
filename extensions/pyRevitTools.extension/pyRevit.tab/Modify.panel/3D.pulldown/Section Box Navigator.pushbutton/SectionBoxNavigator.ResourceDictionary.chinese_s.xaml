@@ -58,7 +58,6 @@
     
     <system:String x:Key="Settings">设置</system:String>
     <system:String x:Key="ShowPreviewOnHover">悬停时显示预览</system:String>
-    <system:String x:Key="UpdateUIOnEvents">在事件时更新界面</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">包含链接的标高和网格</system:String>
     
     <!-- Dynamic UI strings -->

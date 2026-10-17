@@ -58,7 +58,6 @@
     
     <system:String x:Key="Settings">Paramètres</system:String>
     <system:String x:Key="ShowPreviewOnHover">Afficher l'aperçu au survol</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Mettre à jour l'interface lors des événements</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Inclure les Niveaux et Grilles Liés</system:String>
     
     <!-- Dynamic UI strings -->

@@ -58,7 +58,6 @@
     
     <system:String x:Key="Settings">Configuración</system:String>
     <system:String x:Key="ShowPreviewOnHover">Mostrar vista previa al pasar el mouse</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Actualizar interfaz en Eventos</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Incluir Niveles y Cuadrículas Vinculados</system:String>
     
     <!-- Dynamic UI strings -->
