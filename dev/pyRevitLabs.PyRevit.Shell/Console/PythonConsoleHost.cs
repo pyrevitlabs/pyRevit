@@ -1,6 +1,7 @@
 // Copyright (c) 2010 Joe Moorhouse
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using IronPython.Hosting;
@@ -22,6 +23,7 @@ namespace PythonConsoleControl
         Thread thread;
         PythonTextEditor textEditor;
         PythonConsole pythonConsole;
+        int disposed;
 
         public event ConsoleCreatedEventHandler ConsoleCreated;
 
@@ -57,15 +59,27 @@ namespace PythonConsoleControl
 
         public void Dispose()
         {
-            if (pythonConsole != null)
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            pythonConsole?.Dispose();
+            textEditor.Dispose();
+            new Thread(() =>
             {
-                pythonConsole.Dispose();
-            }
-
-            if (thread != null)
-            {
-                thread.Join();
-            }
+                try
+                {
+                    var timeout = TimeSpan.FromSeconds(10);
+                    var consoleExited = thread == null || thread.Join(timeout);
+                    if (!consoleExited) Trace.TraceWarning("Python shell console worker did not exit within {0}.", timeout);
+                    var dispatcherExited = consoleExited && (pythonConsole == null || pythonConsole.WaitForExit(timeout));
+                    if (!dispatcherExited) Trace.TraceWarning("Python shell dispatcher cleanup did not finish; console exit: {0}, join limit: {1}.", consoleExited, timeout);
+                    var completionExited = textEditor.WaitForExit(timeout);
+                    if (!completionExited) Trace.TraceWarning("Python shell completion worker did not exit within {0}.", timeout);
+                    if (consoleExited && dispatcherExited && completionExited) Runtime?.Shutdown();
+                }
+                catch (Exception exception)
+                {
+                    Trace.TraceError("Python shell cleanup failed: {0}", exception);
+                }
+            }) { IsBackground = true, Name = "Python shell cleanup" }.Start();
         }
 
 
@@ -86,15 +100,20 @@ namespace PythonConsoleControl
         {
             SetOutput(new PythonOutputStream(textEditor));
             pythonConsole = new PythonConsole(textEditor, commandLine);
+            if (Volatile.Read(ref disposed) != 0) pythonConsole.Dispose();
             if (ConsoleCreated != null) ConsoleCreated(this, EventArgs.Empty);
             return pythonConsole;
         }
 
         public void WhenConsoleCreated(Action<PythonConsoleHost> action)
         {
+            if (Volatile.Read(ref disposed) != 0) return;
             if (pythonConsole != null)
             {
-                pythonConsole.WhenConsoleInitialized(() => action(this));
+                pythonConsole.WhenConsoleInitialized(() =>
+                {
+                    if (Volatile.Read(ref disposed) == 0) action(this);
+                });
             }
             else
             {
