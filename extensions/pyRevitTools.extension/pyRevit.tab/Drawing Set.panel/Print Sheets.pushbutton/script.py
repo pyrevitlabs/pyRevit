@@ -39,6 +39,8 @@ from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
 
+from print_output_folder import OutputFolder, OutputFolderError, PrintRun
+
 
 get_elementid_value = get_elementid_value_func()
 
@@ -144,37 +146,6 @@ class PrintUtils:
     @staticmethod
     def get_dir():
         return os.path.join(os.path.expanduser("~"), "Desktop", "pyRevit Print Folder")
-
-    @staticmethod
-    def format_subfolder(template, model="", sheet_index=""):
-        """Resolve a subfolder naming template for one print run.
-
-        Supports ``{date}`` (yymmdd), ``{time}`` (HHMMSS), ``{model}`` and
-        ``{sheet_index}``. Backslashes typed in the template create nested
-        folders; backslashes inside ``model`` or ``sheet_index`` values do
-        not. An empty template returns an empty string, meaning files go
-        straight into the output folder.
-
-        Raises:
-            KeyError: the template uses an unknown placeholder.
-            ValueError: the template has unbalanced braces.
-            AttributeError: the template accesses a placeholder attribute.
-        """
-        template = (template or "").strip()
-        if not template:
-            return ""
-        now = datetime.datetime.today()
-        folder = template.format(
-            date=now.strftime("%y%m%d"),
-            time=now.strftime("%H%M%S"),
-            model=model.replace("\\", " "),
-            sheet_index=sheet_index.replace("\\", " "),
-        )
-        parts = [
-            coreutils.cleanup_filename(part, windows_safe=True).strip(" .")
-            for part in folder.split("\\")
-        ]
-        return "\\".join(part for part in parts if part)
 
     @staticmethod
     def ensure_dir(dp):
@@ -1030,31 +1001,20 @@ class PrintSheetsWindow(forms.WPFWindow):
         Returns None after telling the user why the folder cannot be used,
         so callers can keep the window open for a correction.
         """
-        typed_root = self.output_folder_tb.Text.strip()
-        root = op.expandvars(op.expanduser(typed_root)) or PrintUtils.get_dir()
-        if not op.isabs(root) or not op.splitdrive(root)[0]:
-            forms.alert(
-                "The output folder must be a full path, "
-                "such as C:\\Prints or \\\\server\\share\\Prints.",
-                expanded=typed_root,
-            )
-            return None
+        output_folder = OutputFolder(
+            self.output_folder_tb.Text.strip() or PrintUtils.get_dir(),
+            self.subfolder_tb.Text,
+        )
+        run = PrintRun(
+            model=self.selected_doc.Title,
+            sheet_index=self.selected_sheetlist.name if self.selected_sheetlist else "",
+            started_at=datetime.datetime.today(),
+        )
         try:
-            subfolder = PrintUtils.format_subfolder(
-                self.subfolder_tb.Text,
-                model=self.selected_doc.Title,
-                sheet_index=(
-                    self.selected_sheetlist.name if self.selected_sheetlist else ""
-                ),
-            )
-        except (KeyError, ValueError, IndexError, AttributeError) as fmt_err:
-            forms.alert(
-                "The subfolder name is not valid. Use {date}, {time}, "
-                "{model} and {sheet_index} only.",
-                expanded=str(fmt_err),
-            )
+            dir_path = output_folder.path_for(run)
+        except OutputFolderError as folder_err:
+            forms.alert(str(folder_err))
             return None
-        dir_path = op.join(root, subfolder) if subfolder else root
         try:
             return PrintUtils.ensure_dir(dir_path)
         except Exception as dir_err:
