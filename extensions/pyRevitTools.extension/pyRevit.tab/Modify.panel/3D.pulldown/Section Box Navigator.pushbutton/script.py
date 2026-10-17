@@ -426,16 +426,19 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.update_fields_with_unit_dependencies()
 
             is_3d_view = isinstance(self.current_view, DB.View3D)
+            is_2d_view_active = is_2d_view(self.current_view)
             is_plan_view = is_2d_view(self.current_view, only_plan=True)
 
             self.levelNavigationGroup.IsEnabled = is_3d_view
             self.gridNavigationGroup.IsEnabled = is_3d_view
             self.expansionGroup.IsEnabled = is_3d_view
+            self.btnToggleBox.IsEnabled = is_3d_view or is_2d_view_active
+            self.btnHideBox.IsEnabled = is_3d_view or is_2d_view_active
             self.btnAlignBoxToFace.IsEnabled = is_3d_view
             self.btnTempSwitch.IsEnabled = is_3d_view
             self.btnAlignToView.IsEnabled = is_3d_view or is_plan_view
 
-            if is_2d_view(self.current_view):
+            if is_2d_view_active:
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith3DView")
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
