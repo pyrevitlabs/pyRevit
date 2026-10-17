@@ -33,7 +33,7 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
 A command bundle (e.g. `.pushbutton`) can contain:
 
-- `*script.py` / `script.cs` / `script.vb` / `script.rb` / `script.dyn` / `script.gh` / `script.ghx` — the command's entry point; the file extension picks the [script engine](#script-engines).
+- `*script.py` / `*script.cs` / `*script.vb` / `*script.rb` / `*script.dyn` / `*script.gh` / `*script.ghx` — the command's entry point; the file extension picks the [script engine](#script-engines).
 - `*config.py` (or the matching extension for the script's language) — runs instead of `script.py` on a shift-click; falls back to `script.py` itself if absent.
 - `bundle.yaml` — [metadata](#bundleyaml) for the button.
 - `icon.png` — button icon; `on.png` / `off.png` for a toggle button's two states; `icon.dark.png` for a dark-theme variant.
