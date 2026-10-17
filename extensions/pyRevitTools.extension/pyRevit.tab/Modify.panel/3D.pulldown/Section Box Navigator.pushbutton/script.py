@@ -252,7 +252,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.Closed += self.form_closed
         script.restore_window_position(self)
-        self.Show()
+        self.show()
 
     def update_window_title(self):
         view = revit.active_view
@@ -270,12 +270,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def update_fields_with_unit_dependencies(self):
         if not length_unit_symbol_label:
-            self.project_unit_text.Visibility = forms.WPF_VISIBLE
+            self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
                 self.get_locale_string("LengthLabelAdjust") + "\n" + length_unit_label
             )
         else:
-            self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+            self.hide_element(self.project_unit_text)
 
         self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
         self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
@@ -592,7 +592,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def _on_no_document(self):
         """Disable all controls and clear status when no documents are open."""
         self.Content.IsEnabled = False
-        self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+        self.hide_element(self.project_unit_text)
         self.txtVerticalStatus.Text = ""
         self.txtGridStatus.Text = ""
         self.txtExpandActionsStatus.Text = ""
