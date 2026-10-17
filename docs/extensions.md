@@ -126,7 +126,7 @@ Every script pyRevit runs — commands, event hooks, smart buttons, combo boxes 
 
 > `__revit__` is an `Autodesk.Revit.UI.UIApplication` wherever a usable session handle exists, and `None` only outside a Revit host.
 
-Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only. Before the handle was normalized, `__revit__` was simply whatever Revit sent, which made it polymorphic — and because the whole pyrevit library resolves the host application through it, `HOST_APP.uiapp`, `HOST_APP.uidoc` and `HOST_APP.doc` silently read `None` inside those hooks instead of failing.
+Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only.
 
 `PyRevitLabs.PyRevit.Runtime.RevitAppResolver` now funnels every handle into one shape before it reaches a script:
 
