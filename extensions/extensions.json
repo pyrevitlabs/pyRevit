@@ -334,19 +334,6 @@
         {
             "builtin": "False",
             "type": "extension",
-            "rocket_mode_compatible": "False",
-            "name": "WWPTools",
-            "description": "Comprehensive Revit productivity toolbar (Setup, Context, Manage, Sheets, Cleanup panels).",
-            "author": "Jason Tian",
-            "author_profile": "https://github.com/jason-svn",
-            "url": "https://github.com/jason-svn/WWPTools_Publicly_Shared.git",
-            "website": "https://github.com/jason-svn/WWPTools_Publicly_Shared",
-            "image": "",
-            "dependencies": []
-        },
-        {
-            "builtin": "False",
-            "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "Sendit",
             "description": "Drawing-production tools for Revit. Sheet Manager gives you an editable sheet grid with bulk renumber and rename, find and replace, batch create from CSV, a revision manager, sheet sets, and PDF/CSV export with filename templating. View Manager does the same for views: bulk rename, apply templates, set scale, detail level and discipline, flag views not placed on a sheet, plus a template editor that can export and import view templates as JSON for office-standard reuse. Issue Manager exports issued sheets as PDFs into a dated folder with matching DWGs, maintains a running issue register CSV, and creates a Drawing Issue Register schedule in Revit. Sync Sprint turns waiting on Synchronize with Central into shortcut practice. Themed to Revit's dark and light UI (Revit 2024+). Free, MIT-licensed.",
