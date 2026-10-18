@@ -58,6 +58,8 @@ IS_REVIT_2022_OR_NEWER = HOST_APP.is_newer_than(2021)
 
 DEFAULT_SUBFOLDER_FORMAT = "{date}_{time}_PRINT"
 
+COMBINED_PDF_NAME = "Ordered Sheet Set"
+
 STANDARD_PAPER_FORMATS = (
     "ANSI_A",
     "ANSI_B",
@@ -1043,6 +1045,60 @@ class PrintSheetsWindow(forms.WPFWindow):
             )
             return None
 
+    def _planned_output_files(self, dir_path, target_sheets):
+        if self.combine_print:
+            return [op.join(dir_path, COMBINED_PDF_NAME + ".pdf")]
+        planned = []
+        for sheet in target_sheets:
+            if not (sheet.printable and sheet.print_filename):
+                continue
+            planned.append(op.join(dir_path, sheet.print_filename))
+            if self.export_dwg.IsChecked:
+                dwg_name = op.splitext(sheet.print_filename)[0] + ".dwg"
+                planned.append(op.join(dir_path, dwg_name))
+        return planned
+
+    def _replace_existing_outputs(self, dir_path, target_sheets):
+        """Ask before printing into a folder that already holds this run's files.
+
+        Print paths skip or overwrite existing files without telling the
+        user, so this runs before the window closes.
+
+        Returns:
+            (bool): False when the user cancels or a file cannot be removed,
+                so the caller keeps the window open.
+
+        Warning:
+            Deletes the existing files once the user chooses to replace them.
+        """
+        existing = [
+            path
+            for path in self._planned_output_files(dir_path, target_sheets)
+            if op.exists(path)
+        ]
+        if not existing:
+            return True
+        if not forms.alert(
+            "{} file(s) this print creates already exist in:\n{}\n\n"
+            "Replace them?".format(len(existing), dir_path),
+            expanded="\n".join(op.basename(path) for path in existing),
+            ok=False,
+            yes=True,
+            no=True,
+        ):
+            return False
+        for path in existing:
+            try:
+                os.remove(path)
+            except Exception as remove_err:
+                forms.alert(
+                    "Cannot replace {}. Close it if it is open, "
+                    "then print again.".format(op.basename(path)),
+                    expanded=str(remove_err),
+                )
+                return False
+        return True
+
     def copy_naming_format(self, sender, args):
         try:
             naming_format = sender.DataContext
@@ -1444,7 +1500,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             except Exception as e:
                 forms.alert(str(e) + "\nSet printer correctly in Print settings.")
                 script.exit()
-            print_filepath = op.join(dir_path, "Ordered Sheet Set.pdf")
+            print_filepath = op.join(dir_path, COMBINED_PDF_NAME + ".pdf")
             print_mgr.PrintToFile = True
             print_mgr.PrintToFileName = print_filepath
 
@@ -1481,7 +1537,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 title="Exporting combined PDF...", indeterminate=True
             ):
                 exported = PrintUtils.export_combined_pdf(
-                    dirPath, sheet_ids, optspdf, doc, "Ordered Sheet Set"
+                    dirPath, sheet_ids, optspdf, doc, COMBINED_PDF_NAME
                 )
         except Exception as e:
             logger.error("Failed to export combined PDF: %s", e)
@@ -2192,6 +2248,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                 return
             dir_path = self._get_output_dir()
             if not dir_path:
+                return
+            if not self._replace_existing_outputs(dir_path, target_sheets):
                 return
             # close window and submit print
             self.Close()

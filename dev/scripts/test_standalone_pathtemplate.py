@@ -57,10 +57,29 @@ class FillTests(unittest.TestCase):
 
         self.assertEqual(filled, "Tower\\Issue Set")
 
-    def test_backslashes_inside_values_do_not_nest_folders(self):
-        filled = pathtemplate.fill("{sheet_index}", {"sheet_index": "Arch\\Issue 01"})
+    def test_typed_forward_slashes_create_nested_folders(self):
+        filled = pathtemplate.fill("{model}/{sheet_index}", VALUES, now=NOW)
 
-        self.assertEqual(filled, "Arch Issue 01")
+        self.assertEqual(filled, "Tower\\Issue Set")
+
+    def test_slashes_inside_values_do_not_nest_folders(self):
+        for sheet_index in ("Arch\\Issue 01", "Arch/Issue 01"):
+            with self.subTest(sheet_index=sheet_index):
+                filled = pathtemplate.fill(
+                    "{sheet_index}", {"sheet_index": sheet_index}
+                )
+
+                self.assertEqual(filled, "Arch Issue 01")
+
+    def test_leading_dots_in_folder_names_are_kept(self):
+        filled = pathtemplate.fill(".exports\\{model}", VALUES, now=NOW)
+
+        self.assertEqual(filled, ".exports\\Tower")
+
+    def test_parent_folder_names_are_dropped(self):
+        filled = pathtemplate.fill("..\\{model}\\...", VALUES, now=NOW)
+
+        self.assertEqual(filled, "Tower")
 
     def test_characters_windows_rejects_are_removed(self):
         filled = pathtemplate.fill("{model}", {"model": 'Tower: "A" <B>|C?*/'})
@@ -118,6 +137,22 @@ class ResolveFolderTests(unittest.TestCase):
         )
 
         self.assertEqual(folder, "C:\\Prints\\AB C")
+
+    def test_forward_slash_roots_keep_their_folders(self):
+        for root, expected in (
+            ("C:/Prints/Issue", "C:\\Prints\\Issue"),
+            ("C:\\Prints/Issue", "C:\\Prints\\Issue"),
+            ("//server/share/Prints", "\\\\server\\share\\Prints"),
+        ):
+            with self.subTest(root=root):
+                self.assertEqual(pathtemplate.resolve_folder(root, now=NOW), expected)
+
+    def test_slashes_inside_root_values_do_not_nest_folders(self):
+        folder = pathtemplate.resolve_folder(
+            "C:/Prints/{model}", values={"model": "A/B"}, now=NOW
+        )
+
+        self.assertEqual(folder, "C:\\Prints\\A B")
 
     def test_unc_shares_are_full_paths(self):
         for root, expected in (

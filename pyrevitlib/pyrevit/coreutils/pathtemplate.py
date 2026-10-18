@@ -77,9 +77,10 @@ class NotFullPathError(PathTemplateError):
 def fill(template, values=None, now=None):
     r"""Fill a template's placeholders and return a safe relative path.
 
-    Backslashes typed in the template create nested folders; backslashes
-    inside values do not. Characters Windows rejects in folder names are
-    removed, and empty or dot-only folder names are dropped.
+    Backslashes or forward slashes typed in the template create nested
+    folders; slashes inside values do not. Characters Windows rejects in
+    folder names are removed, trailing dots and spaces are trimmed, and
+    empty or dot-only folder names are dropped.
 
     Args:
         template (str): folder template, such as ``{model}\{date}``.
@@ -133,7 +134,7 @@ def resolve_folder(root, subfolder="", values=None, now=None):
 def _format(template, values, now):
     placeholders = _placeholder_values(values, now or datetime.datetime.now())
     try:
-        return template.format(**placeholders)
+        return _with_backslashes(template).format(**placeholders)
     except (KeyError, ValueError, IndexError, AttributeError):
         raise InvalidTemplateError(template, sorted(placeholders))
 
@@ -144,13 +145,17 @@ def _placeholder_values(values, now):
         "time": now.strftime("%H%M%S"),
     }
     for name, value in (values or {}).items():
-        placeholders[name] = value.replace("\\", " ")
+        placeholders[name] = _with_backslashes(value).replace("\\", " ")
     return placeholders
+
+
+def _with_backslashes(path):
+    return path.replace("/", "\\")
 
 
 def _is_full_path(drive, rest):
     is_unc_share = drive.startswith("\\\\")
-    return bool(drive) and (is_unc_share or rest.startswith(("\\", "/")))
+    return bool(drive) and (is_unc_share or rest.startswith("\\"))
 
 
 def _safe_relative_path(path):
@@ -159,4 +164,4 @@ def _safe_relative_path(path):
 
 
 def _safe_folder_part(part):
-    return _WINDOWS_UNSAFE_CHARS.sub("", part).strip(" .")
+    return _WINDOWS_UNSAFE_CHARS.sub("", part).lstrip(" ").rstrip(" .")
