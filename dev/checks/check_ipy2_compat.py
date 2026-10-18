@@ -17,11 +17,11 @@ cannot land again under a different path.
 
 Run standalone for local checks::
 
-    python dev/scripts/check_ipy2_compat.py path/to/file.py ...
+    python dev/checks/check_ipy2_compat.py path/to/file.py ...
 
 Use ``--fix`` to remove only the incompatible trailing commas after formatting::
 
-    python dev/scripts/check_ipy2_compat.py --fix path/to/file.py ...
+    python dev/checks/check_ipy2_compat.py --fix path/to/file.py ...
 """
 
 import io

@@ -10,7 +10,7 @@ import pytest
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
-RUNNER = Path(__file__).resolve().parents[2] / "pyrevitlib/pyrevit/unittests/runner.py"
+RUNNER = Path(__file__).resolve().parents[4] / "pyrevitlib/pyrevit/unittests/runner.py"
 
 
 def _load_function(name, namespace):

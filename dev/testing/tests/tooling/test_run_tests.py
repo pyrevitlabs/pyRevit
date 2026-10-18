@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-import run_tests
+from dev.testing import run_tests
 import conftest
 
 TEST_ENVIRONMENT = "HostFree"
@@ -90,7 +90,9 @@ class SelectionTests(unittest.TestCase):
                     ),
                     encoding="utf-8",
                 )
-            with patch("run_tests.os.path.normcase", side_effect=str.casefold):
+            with patch(
+                "dev.testing.run_tests.os.path.normcase", side_effect=str.casefold
+            ):
                 measured = run_tests.collect_coverage(results)
             self.assertEqual(1, measured["dotnet/Example/net48"]["lines"])
             self.assertEqual(1, measured["dotnet/Example/net48"]["line"])

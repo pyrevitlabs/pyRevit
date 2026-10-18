@@ -6,8 +6,8 @@ ignore = ["D107", "D105"]
 convention = "google"
 
 [tool.pytest.ini_options]
-testpaths = ["dev/scripts"]
-pythonpath = ["dev/scripts"]
+testpaths = ["dev/testing/tests"]
+pythonpath = ["."]
 cache_dir = ".test-results/pytest-cache"
 addopts = "--strict-markers"
 junit_family = "xunit2"
@@ -19,13 +19,13 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["dev/scripts", "pyrevitlib"]
+source = ["dev/checks", "dev/testing", "pyrevitlib"]
 omit = ["*/test_*.py", "*/conftest.py"]
 
 [tool.coverage.report]
 include = [
-    "dev/scripts/check_*.py",
-    "dev/scripts/run_tests.py",
+    "dev/checks/check_*.py",
+    "dev/testing/run_tests.py",
     "pyrevitlib/pyrevit_automation.py",
     "pyrevitlib/pyrevit/coreutils/logger.py",
     "pyrevitlib/pyrevit/unittests/junit.py",

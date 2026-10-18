@@ -179,25 +179,25 @@
     "line": 0.24566088117489987,
     "lines": 749
   },
-  "python/dev/scripts/check_config_api.py": {
+  "python/dev/checks/check_config_api.py": {
     "branch": 0.851063829787234,
     "branches": 188,
     "line": 0.8313253012048193,
     "lines": 332
   },
-  "python/dev/scripts/check_ipy2_compat.py": {
+  "python/dev/checks/check_ipy2_compat.py": {
     "branch": 0.0,
     "branches": 24,
     "line": 0.0,
     "lines": 60
   },
-  "python/dev/scripts/check_py3_compat.py": {
+  "python/dev/checks/check_py3_compat.py": {
     "branch": 0.14367816091954022,
     "branches": 174,
     "line": 0.25311203319502074,
     "lines": 241
   },
-  "python/dev/scripts/run_tests.py": {
+  "python/dev/testing/run_tests.py": {
     "branch": 0.38181818181818183,
     "branches": 110,
     "line": 0.42,
