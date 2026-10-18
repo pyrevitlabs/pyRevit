@@ -199,6 +199,13 @@ def validate_trx(path):
         raise ValueError(f"{path}: test run failed")
     if int(counters.get("notExecuted", "0")):
         raise ValueError(f"{path}: required host-free tests were skipped")
+    if any(
+        result.get("outcome") != "Passed"
+        for result in root.findall(".//t:UnitTestResult", TRX_NS)
+    ):
+        raise ValueError(
+            f"{path}: a selected test did not pass (including skipped cases)"
+        )
     return dict(counters.attrib)
 
 

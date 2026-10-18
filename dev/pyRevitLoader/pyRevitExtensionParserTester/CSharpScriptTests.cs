@@ -7,7 +7,7 @@ namespace pyRevitExtensionParserTest
     [TestFixture]
     [Category("HostFree")]
     [Category("Integration")]
-    public class CSharpScriptTests
+    public class CSharpScriptTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         [Test]
         public void TestCSharpScriptDetection()

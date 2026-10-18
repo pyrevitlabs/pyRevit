@@ -13,8 +13,8 @@ namespace pyRevitExtensionParserTester
     /// </summary>
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class ControlIdTests
+    [Category("Integration")]
+    public class ControlIdTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         /// <summary>
         /// Integration test: parses the actual pyRevitDevTools extension and verifies

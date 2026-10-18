@@ -6,8 +6,8 @@ namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class PanelBackgroundTests
+    [Category("Integration")]
+    public class PanelBackgroundTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
 

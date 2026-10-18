@@ -10,7 +10,7 @@ namespace pyRevitExtensionParserTest
     [TestFixture]
     [Category("HostFree")]
     [Category("Integration")]
-    public class StartupScriptTests
+    public class StartupScriptTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private string _testBundlePath;
         private ParsedExtension _testExtension;

@@ -11,8 +11,8 @@ namespace pyRevitExtensionParserTest
     /// </summary>
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class TemplateInheritanceTests
+    [Category("Integration")]
+    public class TemplateInheritanceTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private string _extensionPath;
         private string _debugPanelPath;

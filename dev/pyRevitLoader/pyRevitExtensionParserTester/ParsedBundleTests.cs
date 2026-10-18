@@ -7,8 +7,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTest
 {
     [Category("HostFree")]
-    [Category("Unit")]
-    internal class ParsedBundleTests
+    [Category("Integration")]
+    internal class ParsedBundleTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
 
