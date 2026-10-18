@@ -198,10 +198,10 @@
     "lines": 241
   },
   "python/dev/scripts/run_tests.py": {
-    "branch": 0.35185185185185186,
-    "branches": 108,
-    "line": 0.40404040404040403,
-    "lines": 198
+    "branch": 0.38181818181818183,
+    "branches": 110,
+    "line": 0.42,
+    "lines": 200
   },
   "python/pyrevitlib/pyrevit/coreutils/logger.py": {
     "branch": 0.6041666666666666,

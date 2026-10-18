@@ -7,8 +7,8 @@ namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class IconFunctionalityTests
+    [Category("Integration")]
+    public class IconFunctionalityTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         [Test]
         public void TestIconParsingBasicFunctionality()

@@ -18,6 +18,21 @@ TEST_LEVEL = "Unit"
 class SelectionTests(unittest.TestCase):
     """Ensure discovery fails closed before importing hosted modules."""
 
+    def test_skipped_result_is_rejected_even_when_counters_omit_it(self):
+        """NUnit can emit NotExecuted results without incrementing its skip counter."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "skipped.trx"
+            path.write_text(
+                '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                '<Results><UnitTestResult outcome="Passed"/>'
+                '<UnitTestResult outcome="NotExecuted"/></Results>'
+                '<ResultSummary><Counters total="2" executed="1" failed="0" notExecuted="0"/>'
+                "</ResultSummary></TestRun>",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "did not pass"):
+                run_tests.validate_trx(path)
+
     def test_hosted_module_is_classified_without_import(self):
         """A hosted suite can be inspected without executing its imports."""
         with tempfile.TemporaryDirectory() as directory:

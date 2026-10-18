@@ -6,8 +6,8 @@ namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class DebugPanelCustomTitleTest
+    [Category("Integration")]
+    public class DebugPanelCustomTitleTest : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         [Test]
         public void TestDebugPanelMiscTestsCustomTitle()

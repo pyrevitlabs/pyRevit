@@ -99,6 +99,7 @@ jobs:
         with:
           name: test-results-${{ github.sha }}
           path: .test-results/**
+          include-hidden-files: true
           if-no-files-found: error
 
       - name: Capture build versions
