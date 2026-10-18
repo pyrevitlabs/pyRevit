@@ -22,6 +22,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import routes
 from pyrevit.compat import get_elementid_value_func
+from System import AppDomain
 
 
 # add your module paths to the sys.path here
@@ -37,35 +38,24 @@ print("lib/ import works in startup.py")
 
 
 # test code for creating event handlers =======================================
-DOCOPEN_HANDLER_SLOT = "pyRevitDevTools.DocumentOpeningHandler"
-
-
 # define event handler
 def docopen_eventhandler(sender, args):
     forms.alert("Document Opened: {}".format(args.PathName))
 
 
-def replace_docopen_handler(handler):
-    """Subscribe ``handler`` to DocumentOpening in place of the one an earlier load added.
+DOCOPEN_HANDLER_SLOT = "pyRevitDevTools.DocumentOpeningHandler"
 
-    pyRevit runs this script on every load, and Revit keeps each handler until
-    it is removed, so every reload would otherwise add one more alert. The
-    handler lives in AppDomain data because each load clears pyRevit's custom
-    environment variables before this script runs.
-    """
-    domain = framework.AppDomain.CurrentDomain
-    previous = domain.GetData(DOCOPEN_HANDLER_SLOT)
-    if previous is not None:
-        HOST_APP.app.DocumentOpening -= previous
-    HOST_APP.app.DocumentOpening += handler
-    domain.SetData(DOCOPEN_HANDLER_SLOT, handler)
-
+previous_docopen_handler = AppDomain.CurrentDomain.GetData(DOCOPEN_HANDLER_SLOT)
+if previous_docopen_handler is not None:
+    HOST_APP.app.DocumentOpening -= previous_docopen_handler
 
 # add to DocumentOpening
 # type is EventHandler[DocumentOpeningEventArgs] so create that correctly
-replace_docopen_handler(
-    framework.EventHandler[DB.Events.DocumentOpeningEventArgs](docopen_eventhandler)
+docopen_handler = framework.EventHandler[DB.Events.DocumentOpeningEventArgs](
+    docopen_eventhandler
 )
+HOST_APP.app.DocumentOpening += docopen_handler
+AppDomain.CurrentDomain.SetData(DOCOPEN_HANDLER_SLOT, docopen_handler)
 
 
 # test code routes module =====================================================

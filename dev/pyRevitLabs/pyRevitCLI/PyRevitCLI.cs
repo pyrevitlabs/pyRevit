@@ -206,6 +206,21 @@ namespace pyRevitCLI {
 
             else if (all("support")) CommonUtils.OpenUrl(PyRevitLabsConsts.SupportUrl);
 
+            else if (all("env", "path")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
+                else if (all("path", "list"))
+                    PyRevitCLIAppCmds.ListPathEntries(TryGetValue("--scope", "user"));
+                else if (all("path", "remove"))
+                    PyRevitCLIAppCmds.RemovePathEntry(arguments["<dir>"].Value as string,
+                                                      TryGetValue("--scope", "user"));
+                else if (all("path", "ensure"))
+                    PyRevitCLIAppCmds.EnsurePathEntry(arguments["<dir>"].Value as string,
+                                                      TryGetValue("--scope", "user"));
+                else
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
+            }
+
             else if (all("env")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);

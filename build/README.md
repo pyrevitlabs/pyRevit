@@ -116,9 +116,30 @@ The `ci` pipeline also runs the configuration core, INI backend, and parser pari
 | `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata (tag builds preserve the committed version; branch builds re-stamp) |
 | `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
+| `local` | Run `ci`, then sign `bin/` with a per-machine developer certificate so Revit loads it without the unsigned add-in dialog. Local only; refuses when `CI` is set or the channel is `wip`/`release` |
+| `sign-test` | Sign `bin/` with the certificate whose SHA-256 fingerprint is in `TestSigning__Fingerprint` (CI test runners). The certificate must be in `CurrentUser\My` and its subject must start with `CN=pyRevit CI Test` so packaging can detect it. Refuses `wip`/`release` and cannot be combined with `pack`, `sign` or `publish` |
+| `--trust-cert` | Create and trust the developer certificate for the current user. Separate from `local` because trusting a new self-signed root raises a modal Windows prompt, which belongs in its own step rather than in the middle of a build. Refuses when `CI` is set |
+| `--remove-cert` | Delete the developer certificate created by `local` from `CurrentUser\My`, `Root` and `TrustedPublisher` |
 | `publish` | Generate release notes, create draft GitHub release, push Chocolatey |
 | `winget` | Generate WinGet manifests (machine-scope installers only), strip `elevationProhibited` if present, submit PRs to winget-pkgs |
 | `notify` | Comment on linked GitHub issues |
+
+`local` signs with `CN=pyRevit Local Dev (<machine>)` — one year, non-exportable key, renewed when near expiry. Trust it once first; Windows asks you to confirm the new root, and `local` refuses to start until you have:
+
+```powershell
+dotnet run -c Debug -- --trust-cert
+dotnet run -c Debug -- ci local
+```
+
+`--trust-cert` on its own only touches the certificate — it never builds, and it cannot be combined with `local`.
+
+To undo it — note this removes the certificate only, so `bin/` keeps the test signatures it already has:
+
+```powershell
+dotnet run -c Debug -- --remove-cert
+```
+
+Rebuild with `ci` afterwards, or `pack` will refuse to package the test-signed binaries it finds.
 
 Combine modes as needed, e.g. WIP pack+sign:
 

@@ -8,45 +8,46 @@ title:
   de_de: Synchronisieren
   pt_br: Sincronizar
 tooltip:
-  en_us: >-
-    Replace the sync button
+  en_us: |-
+    Synchronize the current model with the central model using the pyRevit workflow.
 
-    Shift+Click: Enable or disable closing of inactive windows and activating the starting view
-  ko: >-
-    동기화 버튼을 교체합니다
+    Shift-click:
+    Choose how open views are handled during synchronization: leave them open, close and reopen them, or close them and switch to the starting view.
+  ko: |-
+    pyRevit 동기화 워크플로를 사용하여 현재 모델을 중앙 모델과 동기화합니다.
 
-    Shift+클릭: 비활성 창 닫기 및 시작 뷰 활성화를 켜거나 끕니다
-  fr_fr: >-
-    Remplace le bouton de synchronisation
+    Shift 키를 누르고 클릭:
+    동기화 중 열린 뷰를 유지할지, 닫았다가 다시 열지, 닫고 시작 뷰로 전환할지 선택합니다.
+  fr_fr: |-
+    Synchronise le modèle actuel avec le modèle central à l'aide du flux de travail pyRevit.
 
-    Shift+Clic: Activer ou désactiver la fermeture des fenêtres inactives et l'activation de la vue de départ
-  ru: >-
-    Заменяет кнопку синхронизации
+    Maj+clic :
+    Choisir de laisser les vues ouvertes, de les fermer puis de les rouvrir, ou de les fermer et d'afficher la vue de départ pendant la synchronisation.
+  ru: |-
+    Синхронизирует текущую модель с центральной моделью с помощью рабочего процесса pyRevit.
 
-    Shift+Клик: включает или отключает закрытие неактивных окон и активацию стартового вида
+    Щелчок с удержанием клавиши Shift:
+    Выбрать, оставить ли открытые виды, закрыть и открыть их снова или закрыть и перейти к начальному виду во время синхронизации.
+  chinese_s: |-
+    使用 pyRevit 工作流程将当前模型与中心模型同步。
 
+    按住 Shift 键单击：
+    选择同步时如何处理打开的视图：保持打开、关闭后重新打开，或关闭并切换到起始视图。
+  es_es: |-
+    Sincroniza el modelo actual con el modelo central mediante el flujo de trabajo de pyRevit.
 
-    Доступны следующие опции:
+    Mayús-clic:
+    Elegir si las vistas abiertas se mantienen, se cierran y vuelven a abrir, o se cierran para cambiar a la vista inicial.
+  de_de: |-
+    Synchronisiert das aktuelle Modell mit dem Zentralmodell über den pyRevit-Workflow.
 
-    "Close them and call it a day" – виды будут закрыты.
+    Bei gedrückter Umschalttaste klicken:
+    Festlegen, ob geöffnete Ansichten offen bleiben, geschlossen und wieder geöffnet oder geschlossen und zur Startansicht gewechselt werden.
+  pt_br: |-
+    Sincroniza o modelo atual com o modelo central usando o fluxo de trabalho do pyRevit.
 
-    "Close them but reopen them right after" – виды будут закрыты, но после синхронизации снова откроются.
-
-    "Don't touch my views" – виды при синхронизации останутся открытыми.
-  chinese_s: "替换同步按钮\nShift+单击： 启用或禁用关闭非活动窗口以及激活起始视图"
-  es_es: >-
-    Reemplazar el botón de sincronización
-
-    Shift+Click: Activar o desactivar el cierre de ventanas inactivas y la activación de la vista de inicio
-  de_de: >-
-    Dieses Skript ersetzt den Synchronisierungsfunktion von Revit
-
-    Shift+Click:  Wenn man mit gedrückte Shift Taste auf den Befehl klickt  kann man das automatische Schliessen von Ansichten vor  dem synchronisieren und das Öffnen der Startansicht  aktivieren bzw deaktivieren. Es stehen folgenden Optionen  zur Auswahl:
-    1) Close them and call it a day (Ansichten werden und bleiben geschlossen)
-    2) Close them but reopen them right after (Ansichten werden geschlossen und nach dem synchronisieren wieder geöffnet)
-    3) Don't touch my views (Ansichten bleiben beim Synchronisieren geöffnet)
-  pt_br: >-
-    Substitui o botão de sincronização
-    
-    Shift-Clique: Habilitar ou desabilitar o fechamento de janelas inativas e a ativação da vista inicial
+    Clique mantendo a tecla Shift pressionada:
+    Escolher se as vistas abertas permanecem abertas, são fechadas e reabertas ou fechadas com mudança para a vista inicial.
 author: Aniket Dikshit, Jean-Marc Couffin
+context:
+  - doc-workshared

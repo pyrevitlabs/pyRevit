@@ -57,7 +57,7 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">베타 도구 로드 (__beta__ = True인 스크립트, 재로드 필요)</system:String>
 
     <system:String x:Key="CoreSettings.Loader">로더</system:String>
-    <system:String x:Key="CoreSettings.Loader.Description">pyRevit의 어셈블리 로딩 메커니즘을 구성합니다. 새 로더는 Roslyn 빌드 전략을 사용하는 C# 구현입니다</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">pyRevit의 어셈블리 로딩 메커니즘을 구성합니다</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">스크립트 메타데이터 읽기 (재로드 필요)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         활성화 시 pyRevit이 Python 스크립트 파일에서 스크립트 메타데이터(__title__, __author__, __doc__ 등)를 읽습니다.

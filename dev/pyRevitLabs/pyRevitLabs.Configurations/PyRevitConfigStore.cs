@@ -79,7 +79,11 @@ public static class PyRevitConfigStore
     /// Drops the cached service so the next <see cref="GetShared"/> rebuilds from
     /// disk. Called when settings change and a reload is requested.
     /// </summary>
-    public static void Reload() => _cached = null;
+    public static void Reload()
+    {
+        lock (_lock)
+            _cached = null;
+    }
 
     /// <summary>
     /// Clears the cache and the registered factory. Intended for test isolation.

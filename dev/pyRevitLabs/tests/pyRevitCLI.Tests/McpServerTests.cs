@@ -82,6 +82,30 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void DateLikeStringIdsArePreservedOnTheWire() {
+        using var input = new StringReader("{\"jsonrpc\":\"2.0\",\"id\":\"2025-06-18T00:00:00Z\",\"method\":\"ping\"}");
+        using var output = new StringWriter();
+
+        PyRevitMcpServer.Serve(null, input, output);
+
+        var line = Assert.Single(output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal("{\"jsonrpc\":\"2.0\",\"id\":\"2025-06-18T00:00:00Z\",\"result\":{}}", line.TrimEnd('\r'));
+        using var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None };
+        var response = JObject.Load(reader);
+        Assert.Equal(JTokenType.String, response["id"].Type);
+        Assert.Equal("2025-06-18T00:00:00Z", response.Value<string>("id"));
+        Assert.Empty((JObject)response["result"]);
+    }
+
+    [Fact]
+    public void DateLikeProtocolVersionsAreStringsAndNegotiateTheDefaultVersion() {
+        var response = Single("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18T00:00:00Z\"}}");
+
+        Assert.Null(response["error"]);
+        Assert.Equal("2025-06-18", response["result"].Value<string>("protocolVersion"));
+    }
+
+    [Fact]
     public void UnknownMethodsParseErrorsAndNotificationsAreHandledAsJsonRpcRequires() {
         var responses = Serve(
             Request(1, "no/such/method"),
@@ -92,18 +116,239 @@ public partial class McpServerTests : IDisposable {
 
         Assert.Equal(3, responses.Count);
         Assert.Equal(-32601, responses[0]["error"].Value<int>("code"));
-        Assert.Contains("no/such/method", responses[0]["error"].Value<string>("message"));
+        Assert.Equal("Method not found", responses[0]["error"].Value<string>("message"));
         Assert.Equal(-32700, responses[1]["error"].Value<int>("code"));
         Assert.Equal(JTokenType.Null, responses[1]["id"].Type);
         Assert.Equal(2, responses[2].Value<int>("id"));
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("42")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public void InvalidMethodTypesAnswerAnErrorAndDoNotPreventTheNextPing(string method) {
+        var request = Request(1, "ping");
+        request["method"] = JToken.Parse(method);
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    [Theory]
+    [InlineData("name", "{}")]
+    [InlineData("name", "[]")]
+    [InlineData("name", "42")]
+    [InlineData("name", "true")]
+    [InlineData("name", "null")]
+    [InlineData("arguments", "[]")]
+    [InlineData("arguments", "\"invalid\"")]
+    [InlineData("arguments", "null")]
+    public void InvalidToolCallFieldTypesAnswerAnErrorAndDoNotPreventTheNextPing(string field, string value) {
+        var request = ToolCall(1, "get_context");
+        request["params"][field] = JToken.Parse(value);
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.Equal(-32602, error["error"].Value<int>("code"));
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("{}")]
+    [InlineData("42")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public void InvalidProtocolVersionTypesAnswerAnErrorAndDoNotPreventTheNextPing(string protocolVersion) {
+        var request = Request(1, "initialize", new JObject { ["protocolVersion"] = JToken.Parse(protocolVersion) });
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.Equal(-32602, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AnEmptyToolNameIsInvalidParamsAndDoesNotReachTheHost(string name) {
+        var request = ToolCall(1, "get_context");
+        request["params"]["name"] = name;
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.Equal(-32602, error["error"].Value<int>("code"));
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("true")]
+    public void InvalidIdsAreNotReflectedAndDoNotPreventTheNextPing(string id) {
+        var request = Request(1, "ping");
+        request["id"] = JToken.Parse(id);
+
+        var responses = Serve(request, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(JTokenType.Null, responses[0]["id"].Type);
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    [Theory]
+    [InlineData("1")]
+    [InlineData("1.5")]
+    [InlineData("\"request-1\"")]
+    [InlineData("null")]
+    public void ValidIdsArePreserved(string id) {
+        var request = Request(1, "ping");
+        request["id"] = JToken.Parse(id);
+
+        var response = Single(request);
+
+        Assert.True(JToken.DeepEquals(request["id"], response["id"]));
+        Assert.Empty((JObject)response["result"]);
+    }
+
+    [Theory]
+    [InlineData("name", "tools/call")]
+    [InlineData("protocolVersion", "initialize")]
+    public void MissingRequiredFieldsAnswerInvalidParams(string field, string method) {
+        var request = method == "tools/call" ? ToolCall(1, "get_context") : Request(1, method, new JObject());
+        ((JObject)request["params"]).Remove(field);
+
+        var response = Single(request);
+
+        Assert.Equal(-32602, response["error"].Value<int>("code"));
+        Assert.Contains("missing or invalid '" + field + "'", response["error"].Value<string>("message"));
+        Assert.Empty(host.Requests);
+    }
+
     [Fact]
-    public void AClientInfoOrProtocolVersionOfTheWrongShapeIsIgnored() {
+    public void MissingMethodsAreInvalidRequestsButMalformedNotificationsHaveNoResponse() {
+        var request = Request(1, "ping");
+        request.Remove("method");
+
+        var responses = Serve(request, new JObject { ["method"] = new JObject() }, Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+    }
+
+    [Fact]
+    public void OmittedToolArgumentsDefaultToAnEmptyObject() {
+        var request = ToolCall(1, "list_automation");
+        ((JObject)request["params"]).Remove("arguments");
+
+        var response = Single(request);
+
+        Assert.False(IsError(response));
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("run_query", "{\"script\":{}}")]
+    [InlineData("run_query", "{\"script\":[]}")]
+    [InlineData("run_query", "{\"script\":\"result = 1\",\"title\":{}}")]
+    [InlineData("navigate_revit_link", "{\"link\":{\"destination\":{},\"ids\":[1]}}")]
+    [InlineData("navigate_revit_link", "{\"link\":{\"destination\":\"element\",\"ids\":[1],\"document\":{}},\"action\":{}}")]
+    [InlineData("run_automation", "{\"id\":{}}")]
+    [InlineData("get_run", "{\"run_id\":{}}")]
+    [InlineData("get_skill", "{\"name\":{}}")]
+    [InlineData("get_skill", "{\"name\":\"revit-scripting\",\"file\":{}}")]
+    [InlineData("lookup_pyrevit_api", "{\"query\":{}}")]
+    public void WrongTypedStringArgumentsReturnInvalidParamsWithoutClrDetails(string tool, string arguments) {
+        var responses = Serve(ToolCall(1, tool, JObject.Parse(arguments)), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.True(IsError(error));
+        Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
+        Assert.Equal("Invalid tool argument type.", Payload(error).Value<string>("message"));
+        Assert.Empty(host.Requests);
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+    }
+
+    [Theory]
+    [InlineData("list_automation", "offset")]
+    [InlineData("list_automation", "limit")]
+    [InlineData("get_run", "offset")]
+    [InlineData("get_run", "length")]
+    public void OutOfRangeIntegerArgumentsReturnInvalidParamsWithoutClrDetails(string tool, string argument) {
+        host.AddRun("abc123def456", response: "{\"status\":\"ok\"}", result: "0123456789");
+        var arguments = new JObject { [argument] = 2147483648L };
+        if (tool == "get_run")
+            arguments["run_id"] = "abc123def456";
+
+        var responses = Serve(ToolCall(1, tool, arguments), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
+        Assert.True(IsError(error));
+        Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
+        Assert.Equal("Tool argument out of range.", Payload(error).Value<string>("message"));
+        Assert.Empty(host.Requests);
+        var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
+        Assert.Empty((JObject)ping["result"]);
+    }
+
+    [Fact]
+    public void DispatchFailuresAnswerInternalErrorAndDoNotPreventTheNextPing() {
+        var input = new StringReader(Request(1, "ping").ToString(Formatting.None) + "\n" + Request(2, "ping").ToString(Formatting.None));
+        var output = new FailingOnceWriter();
+
+        PyRevitMcpServer.Serve(null, input, output);
+
+        var responses = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(JObject.Parse).ToList();
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.Equal(-32603, responses[0]["error"].Value<int>("code"));
+        Assert.Equal("Internal error", responses[0]["error"].Value<string>("message"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        Assert.Empty((JObject)responses[1]["result"]);
+    }
+
+    private sealed class FailingOnceWriter : StringWriter {
+        private bool failed;
+
+        public override void WriteLine(string value) {
+            if (!failed) {
+                failed = true;
+                throw new IOException("Sensitive internal failure details");
+            }
+            base.WriteLine(value);
+        }
+    }
+
+    [Fact]
+    public void AClientInfoOfTheWrongShapeIsIgnored() {
         var responses = Serve(
-            Request(1, "initialize", new JObject { ["clientInfo"] = JValue.CreateNull() }),
-            Request(2, "initialize", new JObject { ["clientInfo"] = "Claude Code" }),
-            Request(3, "initialize", new JObject { ["clientInfo"] = new JArray("Claude Code"), ["protocolVersion"] = new JObject() }),
+            Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-06-18", ["clientInfo"] = JValue.CreateNull() }),
+            Request(2, "initialize", new JObject { ["protocolVersion"] = "2025-06-18", ["clientInfo"] = "Claude Code" }),
+            Request(3, "initialize", new JObject { ["protocolVersion"] = "2025-06-18", ["clientInfo"] = new JArray("Claude Code") }),
             Request(4, "ping"));
 
         Assert.Equal(new[] { 1, 2, 3, 4 }, responses.Select(response => response.Value<int>("id")));
@@ -112,23 +357,13 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
-    public void AMalformedMessageGetsAnErrorAndTheServerKeepsServing() {
-        var withNullMeta = ToolCall(2, "list_skills");
-        withNullMeta["params"]["_meta"] = JValue.CreateNull();
-        var withObjectName = ToolCall(3, "list_skills");
-        withObjectName["params"]["name"] = new JObject();
+    public void AMetaThatIsNotAnObjectStillGetsTheToolResult() {
+        var call = ToolCall(1, "list_skills");
+        call["params"]["_meta"] = JValue.CreateNull();
 
-        var responses = Serve(
-            new JObject { ["jsonrpc"] = "2.0", ["id"] = 1, ["method"] = new JObject() },
-            withNullMeta,
-            withObjectName,
-            Request(4, "ping")).ToDictionary(response => response.Value<int>("id"));
+        var response = Single(call);
 
-        Assert.Equal(-32603, responses[1]["error"].Value<int>("code"));
-        Assert.False(IsError(responses[2]));
-        Assert.True(IsError(responses[3]));
-        Assert.Equal("unknown_tool", Payload(responses[3]).Value<string>("error"));
-        Assert.NotNull(responses[4]["result"]);
+        Assert.False(IsError(response));
     }
 
     [Fact]

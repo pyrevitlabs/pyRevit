@@ -1,4 +1,10 @@
-"""Tests for the runtime-backed logging facade."""
+"""Tests for the runtime-backed logging facade.
+
+These load the module under test by path so they run without a Revit host, which is
+why they sit in `dev/scripts` rather than beside the code: every test in
+`pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs Revit. CI discovers them
+with `-p 'test_standalone_*.py'`.
+"""
 
 import importlib.util
 import logging
@@ -8,8 +14,10 @@ import tempfile
 import types
 import unittest
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
 LOGGER_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
+    REPO_ROOT,
     "pyrevitlib",
     "pyrevit",
     "coreutils",

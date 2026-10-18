@@ -26,15 +26,48 @@ title:
     
     Checks
 tooltip:
-  en_us: Run builtin or custom preflight checks on your models. Shift + click to configure the tool the first time.
-  ko: 모델에서 기본 제공 또는 사용자 지정 사전 점검을 실행합니다. Shift+클릭으로 처음 도구를 구성합니다.
-  fr_fr: Lance des validations preflight incluses ou personnalisées sur vos fichiers. Shift + click pour configurer loutil la première fois.
-  ru: Запустить встроенные или настраеваемые предварительные проверки вашей модели.
-  chinese_s: 在您的模型上运行内置的或自定义的预检检查。首次使用时，请按 Shift + 单击以配置此工具
-  es_es: Ejecutar verificaciones previas integradas o personalizadas en sus modelos. Shift + clic para configurar la herramienta la primera vez.
-  de_de: >-
-    Führe integrierte oder selbst erstellte Modell-Checks ("Preflight-Checks") aus.  Mit der Taste F1 erhält man zu der Funktionalität auf der Hilfe Seite  ausführliche Informationen!
-  pt_br: Execute preflight checks integradas ou personalizadas em seus modelos. Shift + clique para configurar a ferramenta na primeira vez.
+  en_us: |-
+    Run the configured built-in or custom preflight checks on the current model.
+
+    Shift-click:
+    Choose the critical-warning checks and configure whether and where collected data is exported.
+  ko: |-
+    모델에서 기본 제공 또는 사용자 지정 사전 점검을 실행합니다.
+
+    Shift 키를 누르고 클릭:
+    중요 경고 검사 항목과 수집된 데이터의 내보내기 여부 및 위치를 설정합니다.
+  fr_fr: |-
+    Lance les contrôles préalables intégrés ou personnalisés sur le modèle actuel.
+
+    Maj+clic :
+    Choisir les contrôles des avertissements critiques et configurer l'exportation des données collectées.
+  ru: |-
+    Запускает встроенные или пользовательские предварительные проверки текущей модели.
+
+    Щелчок с удержанием клавиши Shift:
+    Выбрать проверки критических предупреждений и настроить экспорт собранных данных.
+  chinese_s: |-
+    在当前模型上运行内置或自定义的预检。
+
+    按住 Shift 键单击：
+    选择严重警告检查项，并配置是否以及导出到何处保存收集的数据。
+  es_es: |-
+    Ejecuta comprobaciones previas integradas o personalizadas en el modelo actual.
+
+    Mayús-clic:
+    Elegir las comprobaciones de advertencias críticas y configurar si se exportan los datos recopilados y dónde.
+  de_de: |-
+    Führt integrierte oder benutzerdefinierte Vorabprüfungen für das aktuelle Modell aus.
+
+    Bei gedrückter Umschalttaste klicken:
+    Prüfungen kritischer Warnungen auswählen und festlegen, ob und wohin die erfassten Daten exportiert werden.
+  pt_br: |-
+    Executa verificações prévias integradas ou personalizadas no modelo atual.
+
+    Clique mantendo a tecla Shift pressionada:
+    Escolher as verificações de avisos críticos e configurar se e para onde os dados coletados serão exportados.
 authors:
   - '{{author}}'
 help_url: https://www.notion.so/pyrevitlabs/Extension-Checks-0cf10ac6717b41f2915fe3341f05a223
+context:
+  - doc-project

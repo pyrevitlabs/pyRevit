@@ -196,13 +196,23 @@ public sealed class ConfigurationService : IConfigurationService {
 
             object? storedValue = GetKeyValue(configuration, propertyInfo, sectionName, keyName);
 
+            string? legacyKeyName = GetCustomAttribute<LegacyKeyNameAttribute>(propertyInfo)?.KeyName;
+            object? legacyStoredValue = legacyKeyName is not null
+                ? GetKeyValue(configuration, propertyInfo, sectionName, legacyKeyName)
+                : null;
+
+            object? effectiveStoredValue = storedValue ?? legacyStoredValue;
+
             object? keyValue = propertyInfo.GetValue(sectionValue);
             if (keyValue is null)
                 continue;
-            if (storedValue is null && ValuesEqual(keyValue, GetPropertyDefault(propertyInfo)))
+            if (effectiveStoredValue is null && ValuesEqual(keyValue, GetPropertyDefault(propertyInfo)))
                 continue;
-            if (!ValuesEqual(keyValue, storedValue))
+            if (!ValuesEqual(keyValue, effectiveStoredValue)) {
                 configuration.SetValue(sectionName, keyName, keyValue);
+                if (storedValue is null && legacyStoredValue is not null)
+                    configuration.RemoveOption(sectionName, legacyKeyName!);
+            }
         }
     }
 

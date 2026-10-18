@@ -4,6 +4,10 @@ Usage:
 	pyrevit --usage
 	pyrevit (wiki | blog | docs | source | youtube | support)
 	pyrevit env [--json] [(-h | --help)] [--log=<log_file>]
+	pyrevit env path [(-h | --help)]
+	pyrevit env path list [--scope=<scope>] [--log=<log_file>]
+	pyrevit env path ensure <dir> [--scope=<scope>] [--log=<log_file>]
+	pyrevit env path remove <dir> [--scope=<scope>] [--log=<log_file>]
 	pyrevit update [--help] [--log=<log_file>]
 	pyrevit clone (-h | --help)
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--skip-bin] [--log=<log_file>]

@@ -11,6 +11,7 @@ using ModularPipelines.Options;
 
 namespace Build.Modules;
 
+[DependsOn<RejectTestSignedBinariesModule>(Optional = true)]
 [SkipIfNoGitHubToken]
 public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions) : Module
 {

@@ -158,16 +158,20 @@ namespace pyRevitLabs.DeffrelDB {
         }
 
         private void DeleteLock() {
-            // TODO: needs timeout
-            bool isDeleted = false;
-            while (!isDeleted) {
+            var time = Stopwatch.StartNew();
+            IOException deleteError = null;
+            while (time.ElapsedMilliseconds < IOTimeOut) {
                 try {
                     File.Delete(LockFilePath);
                     logger.Debug("    -lock");
-                    isDeleted = true;
+                    return;
                 }
-                catch { }
+                catch (IOException exception) {
+                    deleteError = exception;
+                    Thread.Sleep(50);
+                }
             }
+            throw new TimeoutException("Lock deletion timeout.", deleteError);
         }
 
         private void WaitForLockRelease() {
@@ -244,7 +248,20 @@ namespace pyRevitLabs.DeffrelDB {
             else
                 logger.Debug("    OPEN");
 
-            DataLines = Load();
+            try {
+                DataLines = Load();
+            }
+            catch {
+                if (ExclusiveAccess) {
+                    try {
+                        ReleaseLock();
+                    }
+                    catch (Exception cleanupError) {
+                        logger.Error("    FAILED LOAD LOCK CLEANUP | {0}", cleanupError);
+                    }
+                }
+                throw;
+            }
         }
 
         private void Close() {
@@ -422,12 +439,16 @@ namespace pyRevitLabs.DeffrelDB {
             var time = Stopwatch.StartNew();
             string[] fileContents = { };
             bool isRead = false;
+            IOException readError = null;
             while (time.ElapsedMilliseconds < IOTimeOut && !isRead) {
                 try {
                     fileContents = File.ReadAllLines(FilePath, Encoding);
                     isRead = true;
                 }
-                catch { }
+                catch (IOException exception) {
+                    readError = exception;
+                    Thread.Sleep(50);
+                }
             }
 
             if (isRead) {
@@ -436,8 +457,10 @@ namespace pyRevitLabs.DeffrelDB {
                     dlines.Add(new DataLine(line, DataLineCommitType.Read));
                 return dlines;
             }
-            else
-                throw new TimeoutException("Read timeout.");
+            else {
+                logger.Debug("    READ FAILED | {0}", readError);
+                throw new TimeoutException("Read timeout.", readError);
+            }
         }
 
 #if TRACE

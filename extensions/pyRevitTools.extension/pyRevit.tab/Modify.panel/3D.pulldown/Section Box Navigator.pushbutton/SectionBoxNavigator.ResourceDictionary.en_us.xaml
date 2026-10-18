@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Section Box Navigator</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Section Box Navigator</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Crop Box Navigator</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Unsupported View Type</system:String>
     
     <system:String x:Key="LevelNavigation">Level Navigation</system:String>
     <system:String x:Key="TopUp">Top ↑</system:String>
@@ -55,7 +58,6 @@
     
     <system:String x:Key="Settings">Settings</system:String>
     <system:String x:Key="ShowPreviewOnHover">Show preview on hover</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Update UI on Events</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Include Linked Levels and Grids</system:String>
     
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">An error occurred while shrinking: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Select 2D View for Section Box</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Select 3D View to Copy From</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Select 3D View for Temporary Section Box</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Could not extract view information.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">3D view has no section box.</system:String>
     <system:String x:Key="Unknown">Unknown</system:String>

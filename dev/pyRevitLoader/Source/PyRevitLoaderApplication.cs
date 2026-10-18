@@ -79,6 +79,7 @@ namespace PyRevitLoader
             {
                 var uiApplication = GetUIApplication(application);
                 _uiApplication = uiApplication;
+                RevitThemeDetector.SetHostRevitYear(uiApplication);
                 _themeChangeMonitor = new RevitThemeChangeMonitor(
                     uiApplication,
                     ServiceFactory.CreateLogger(),
@@ -199,7 +200,7 @@ namespace PyRevitLoader
             if (_uiApplication == null)
                 return;
 
-            _pendingDarkTheme = string.Equals(themeName, "Dark", StringComparison.OrdinalIgnoreCase);
+            _pendingDarkTheme = RevitThemeDetector.IsDarkRibbonTheme(themeName);
             if (_themeRefreshPending)
                 return;
 

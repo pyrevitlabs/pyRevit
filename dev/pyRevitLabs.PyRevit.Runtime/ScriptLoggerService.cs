@@ -21,7 +21,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     /// <summary>
     /// Owns logging policy and destinations for Python and other script engines.
-    /// Runtime-bound instances never keep their runtime alive.
+    /// Runtime-bound instances retain their output destination, but never keep
+    /// their runtime alive, so deferred modeless logging stays command-bound.
     /// </summary>
     public sealed class ScriptLoggerService {
         private static readonly object StateLock = new object();
@@ -40,6 +41,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private readonly WeakReference<ScriptRuntime> _runtime;
         private readonly bool _runtimeBound;
+        private readonly ScriptOutput _outputService;
+        private readonly bool _debugMode;
+        private readonly bool _suppressOutput;
+        private readonly string _logFilePath;
+        private readonly string _commandName;
         private bool _hasErrors;
 
         private ScriptLoggerService() { }
@@ -47,6 +53,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private ScriptLoggerService(ScriptRuntime runtime) {
             _runtime = new WeakReference<ScriptRuntime>(runtime);
             _runtimeBound = true;
+            _outputService = runtime.ExistingOutputService;
+            _debugMode = runtime.ScriptRuntimeConfigs?.DebugMode ?? false;
+            _suppressOutput = runtime.ScriptRuntimeConfigs?.SuppressOutput ?? false;
+            _logFilePath = runtime.ScriptRuntimeConfigs?.LogFilePath;
+            _commandName = runtime.ScriptData?.CommandName;
         }
 
         public static ScriptLoggerService GetDefault() {
@@ -54,7 +65,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static ScriptLoggerService GetForRuntime(ScriptRuntime runtime) {
-            if (runtime == null || runtime.IsDisposed)
+            if (runtime == null)
+                return SessionService;
+
+            ScriptLoggerService service;
+            if (RuntimeServices.TryGetValue(runtime, out service))
+                return service;
+            if (runtime.IsDisposed)
                 return SessionService;
 
             return RuntimeServices.GetValue(runtime, item => new ScriptLoggerService(item));
@@ -84,19 +101,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public bool IsEnabled(int level) {
             var runtime = GetActiveRuntime();
-            if (_runtimeBound && runtime == null)
-                return false;
-
             return IsVisibleEnabled(level, runtime)
                 || IsDefaultFileLoggingEnabled()
-                || !string.IsNullOrWhiteSpace(runtime?.ScriptRuntimeConfigs?.LogFilePath);
+                || !string.IsNullOrWhiteSpace(
+                    runtime?.ScriptRuntimeConfigs?.LogFilePath ?? _logFilePath);
         }
 
         public bool IsVisibleEnabled(int level) {
             var runtime = GetActiveRuntime();
-            if (_runtimeBound && runtime == null)
-                return false;
-
             return IsVisibleEnabled(level, runtime);
         }
 
@@ -110,14 +122,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Log(string loggerName, int level, string message, bool allowWindowCreation) {
             try {
                 var runtime = GetActiveRuntime();
-                if (_runtimeBound && runtime == null)
-                    return;
-
                 var normalizedLevel = NormalizeLevel(level);
                 var normalizedName = string.IsNullOrEmpty(loggerName) ? "root" : loggerName;
                 var normalizedMessage = message ?? string.Empty;
                 var visible = IsVisibleEnabled(level, runtime);
-                var explicitLogPath = runtime?.ScriptRuntimeConfigs?.LogFilePath;
+                var explicitLogPath = runtime?.ScriptRuntimeConfigs?.LogFilePath ?? _logFilePath;
                 var defaultLogPath = IsDefaultFileLoggingEnabled()
                     ? GetDefaultLogFilePath(runtime)
                     : null;
@@ -132,7 +141,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         _hasErrors = true;
                 }
 
-                if (visible && !(runtime?.ScriptRuntimeConfigs?.SuppressOutput ?? false))
+                if (visible && !(runtime?.ScriptRuntimeConfigs?.SuppressOutput ?? _suppressOutput))
                     WriteOutput(runtime, normalizedLevel, normalizedName, normalizedMessage,
                         allowWindowCreation);
 
@@ -143,7 +152,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         runtime,
                         normalizedLevel,
                         normalizedName,
-                        normalizedMessage);
+                        normalizedMessage,
+                        _commandName);
                     AppendFile(explicitLogPath, fileEntry);
                     if (!PathsEqual(explicitLogPath, defaultLogPath))
                         AppendFile(defaultLogPath, fileEntry);
@@ -165,8 +175,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return runtime;
         }
 
-        private static bool IsVisibleEnabled(int level, ScriptRuntime runtime) {
-            var minimumLevel = runtime?.ScriptRuntimeConfigs?.DebugMode ?? false
+        private bool IsVisibleEnabled(int level, ScriptRuntime runtime) {
+            var minimumLevel = runtime?.ScriptRuntimeConfigs?.DebugMode ?? _debugMode
                 ? (int)ScriptLogLevel.Debug
                 : GetSharedMinimumLevel();
             return level >= minimumLevel;
@@ -198,13 +208,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return ScriptLogLevel.Debug;
         }
 
-        private static void WriteOutput(
+        private void WriteOutput(
             ScriptRuntime runtime,
             ScriptLogLevel level,
             string loggerName,
             string message,
             bool allowWindowCreation) {
-            var output = ScriptOutput.GetForRuntime(runtime);
+            var output = _runtimeBound
+                ? _outputService ?? (runtime == null ? null : ScriptOutput.GetForRuntime(runtime))
+                : ScriptOutput.GetForRuntime(runtime);
+            if (output == null)
+                return;
             var rendered = FormatVisibleEntry(level, loggerName, message);
             var isError = level == ScriptLogLevel.Error || level == ScriptLogLevel.Critical;
 
@@ -265,8 +279,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ScriptRuntime runtime,
             ScriptLogLevel level,
             string loggerName,
-            string message) {
-            var commandName = runtime?.ScriptData?.CommandName;
+            string message,
+            string boundCommandName) {
+            var commandName = runtime?.ScriptData?.CommandName ?? boundCommandName;
             var loggerLabel = string.IsNullOrEmpty(commandName)
                 ? loggerName
                 : string.Format("<{0}> {1}", commandName, loggerName);

@@ -337,6 +337,34 @@ public class GoldenFileFidelityTests {
         }
     }
 
+    /// <summary>
+    /// When the config file contains only the legacy <c>load_beta</c> key set to
+    /// <c>true</c>, SaveSection with <c>LoadBeta = false</c> must write the
+    /// canonical <c>loadbeta = false</c> key and remove the legacy key — not skip
+    /// the write because the canonical key is absent and the new value equals the
+    /// default.
+    /// </summary>
+    [Fact]
+    public void SaveSection_LegacyKey_DisableBetaTools_RemovesLegacyAndWritesCanonical() {
+        var path = Path.Combine(Path.GetTempPath(), $"legacybeta_{Guid.NewGuid():N}.ini");
+        File.WriteAllText(path, "[core]\nload_beta = true\n");
+        try {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path).Build();
+
+            Assert.True(service.Core.LoadBeta);
+
+            service.SaveSection(new CoreSection { LoadBeta = false });
+
+            var reread = IniConfiguration.Create(path);
+            Assert.False(reread.GetValue<bool>("core", "loadbeta"));
+            Assert.False(reread.HasSectionKey("core", "load_beta"));
+        }
+        finally {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void Migration_LeavesUnreadableValue_WhenAlreadyStamped() {
         var path = Path.Combine(Path.GetTempPath(), $"selfheal_{Guid.NewGuid():N}.ini");

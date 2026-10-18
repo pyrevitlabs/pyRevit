@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit CLI"
 #define MyAppUUID "9557b432-cf79-4ece-91cf-b8f996c88b47"
-#define MyAppVersion "7.0.0.26237"
+#define MyAppVersion "7.0.0.26278"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #define MyAppExeName "pyrevit.exe"
@@ -48,15 +48,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; bin\
 Source: "..\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion
 
-[Registry]
-; Uninstaller does not undo this change
-; Multiple installs keep adding the path
-; https://stackoverflow.com/a/3431379/2350244
-; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
-
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 
 [UninstallRun]
@@ -65,6 +58,39 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden runascurrentuser
 
 [Code]
+function RunPyRevitCommand(const Params: String): Boolean;
+var
+  ResultCode: Integer;
+  PyRevitExe: String;
+begin
+  Result := False;
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not FileExists(PyRevitExe) then
+  begin
+    Log('pyrevit.exe not found: ' + PyRevitExe);
+    Exit;
+  end;
+  Result := Exec(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not Result then
+    Log('Failed to execute pyrevit ' + Params)
+  else if ResultCode <> 0 then
+  begin
+    Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
+    Result := False;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine') then
+      SuppressibleMsgBox(
+        'pyRevit CLI was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
+        'You may need to manually add the following folder to the machine PATH:' + #13#10 +
+        '  ' + ExpandConstant('{app}\bin'),
+        mbError, MB_OK, MB_OK);
+end;
+
 function InitializeSetup: Boolean;
 begin
   // WebView2 Runtime for the output window renderer

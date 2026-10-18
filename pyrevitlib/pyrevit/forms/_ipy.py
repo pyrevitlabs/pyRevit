@@ -502,13 +502,20 @@ class _WPFMixin(object):
         res = self.Resources
         try:
             candidates = [
-                res["pyRevitWindowForegroundBrush"],
-                res["pyRevitWindowBackgroundBrush"],
+                b
+                for b in [
+                    res["pyRevitWindowForegroundBrush"],
+                    res["pyRevitWindowBackgroundBrush"],
+                ]
+                if b is not None and b.Color is not None
             ]
             theme_argbs = set(
                 _argb(res[key]) for key in list(res.Keys) if str(key).endswith("Color")
             )
         except Exception:
+            return
+
+        if not candidates:
             return
 
         managed = getattr(self, "_contrast_managed", None)

@@ -148,7 +148,7 @@ def get_logger():
     Returns:
         (pyrevit.coreutils.logger.LoggerWrapper): Logging facade
     """
-    return logger.get_logger(EXEC_PARAMS.command_name)
+    return logger.get_bound_logger(EXEC_PARAMS.command_name)
 
 
 def get_output():

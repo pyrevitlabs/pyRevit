@@ -59,7 +59,7 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">Загружать бета-инструменты (Скрипты с __beta__ = True, требуется перезапуск)</system:String>
  
     <system:String x:Key="CoreSettings.Loader">Загрузчик</system:String>
-    <system:String x:Key="CoreSettings.Loader.Description">Настройка механизма загрузки сборок pyRevit. Новый загрузчик — это реализация на C#, которая использует стратегию сборки Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Настройка механизма загрузки сборок pyRevit</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Читать метаданные скриптов (Требуется перезапуск)</system:String>
     <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
         Когда этот параметр включен, pyRevit читает метаданные скриптов (__title__, __author__, __doc__ и т.д.) из файлов скриптов Python.

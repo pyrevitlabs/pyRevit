@@ -217,8 +217,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get {
                 var runtime = BoundRuntime;
                 if (runtime != null) {
-                    _window = runtime.OutputWindow;
-                    return _window;
+                    var runtimeWindow = runtime.OutputWindow;
+                    TrackRuntimeWindow(runtimeWindow);
+                    return runtimeWindow;
                 }
 
                 if (_window == null || _window.ClosedByUser) {
@@ -236,6 +237,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 return _window;
             }
+        }
+
+        internal void TrackRuntimeWindow(ScriptConsole window) {
+            if (window != null)
+                _window = window;
         }
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
@@ -258,7 +264,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get {
                 var runtime = BoundRuntime;
                 if (runtime != null) {
-                    _window = runtime.OutputWindow;
+                    TrackRuntimeWindow(runtime.OutputWindow);
                     return runtime.OutputStream;
                 }
 
@@ -355,10 +361,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// logged before that point - on a first load, the whole preload including its [PERF]
         /// checkpoints - would otherwise reach the runtime log file and nothing else.
         /// <para>
-        /// Only the session output holds, because only it gets its window through the
-        /// <see cref="window"/> getter, where the backlog is released. A command's window is
-        /// created by its <see cref="ScriptRuntime"/> and written through the runtime's own stream,
-        /// so nothing here would ever see it open.
+        /// Only the session output holds. A command's window is created by its
+        /// <see cref="ScriptRuntime"/> and retained here when its stream resolves the window; a
+        /// deferred record must write there or be dropped, not wait for a new window to release it.
         /// </para>
         /// <para>
         /// Invariant: held records are released when the window is created, whatever opened it -
@@ -369,7 +374,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </para>
         /// </remarks>
         internal void write_forwarded_log_record(string content, bool markError) {
-            if (BoundRuntime == null && _heldRecords.TryHold(content, markError))
+            if (_runtime == null && _heldRecords.TryHold(content, markError))
                 return;
             if (IsWindowReady)
                 write_log_record(content, markError);
@@ -731,8 +736,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
             var inList = false;
 
-            foreach (var rawLine in lines) {
-                var line = rawLine.TrimEnd();
+            for (var i = 0; i < lines.Length; i++) {
+                var line = lines[i].TrimEnd();
                 if (string.IsNullOrWhiteSpace(line)) {
                     if (inList) {
                         html.Append("</ul>");
@@ -777,8 +782,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         html.Append("</ul>");
                         inList = false;
                     }
-                    html.Append(MarkdownTableToHtml(lines));
-                    break;
+                    var tableEnd = i;
+                    while (tableEnd + 1 < lines.Length) {
+                        var next = lines[tableEnd + 1].Trim();
+                        if (!string.IsNullOrWhiteSpace(next) && next.StartsWith("|"))
+                            tableEnd++;
+                        else
+                            break;
+                    }
+                    html.Append(MarkdownTableToHtml(lines, i, tableEnd));
+                    i = tableEnd;
+                    continue;
                 }
 
                 if (inList) {
@@ -794,11 +808,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return html.ToString();
         }
 
-        private static string MarkdownTableToHtml(IEnumerable<string> lines) {
+        private static string MarkdownTableToHtml(string[] lines, int startIndex, int endIndex) {
             var rows = new List<string[]>();
             var aligns = new List<string>();
-            foreach (var line in lines) {
-                var trimmed = line.Trim();
+            for (var i = startIndex; i <= endIndex; i++) {
+                var trimmed = lines[i].Trim();
                 if (!(trimmed.StartsWith("|") && trimmed.EndsWith("|")))
                     continue;
                 if (Regex.IsMatch(trimmed, @"^\|[:\-\s\|]+\|$")) {

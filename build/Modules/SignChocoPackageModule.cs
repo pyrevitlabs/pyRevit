@@ -8,6 +8,7 @@ using ModularPipelines.Modules;
 
 namespace Build.Modules;
 
+[DependsOn<RejectTestSignedBinariesModule>]
 [DependsOn<BuildChocoModule>]
 public sealed class SignChocoPackageModule(
     IOptions<BuildOptions> buildOptions,

@@ -7,7 +7,8 @@ using ModularPipelines.Modules;
 
 namespace Build.Modules;
 
-// Engine assemblies must be deployed before the shell can bind to the selected Python fork.
+/// <summary>Builds the output-window shell for both Python forks.</summary>
+/// <remarks>Engine assemblies must be deployed before the shell can bind to the selected Python fork.</remarks>
 [DependsOn<BuildRuntimeModule>]
 public sealed class BuildShellModule(IOptions<BuildOptions> buildOptions) : Module
 {
