@@ -112,7 +112,7 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// A malformed marker, or an id used by more than one symbol, is left out instead of
-        /// failing the listing; <c>dev/testing/tests/library/test_automation_marker.py</c> fails on both.
+        /// failing the listing; <c>dev/tests/python/library/test_automation_marker.py</c> fails on both.
         /// </remarks>
         public static JObject ListAutomation(int offset = 0, int limit = DefaultAutomationResults) {
             if (offset < 0)
