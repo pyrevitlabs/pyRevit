@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,9 +115,14 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
             using var releaseDispatcher = new ManualResetEventSlim();
             var dispatcherField = typeof(PythonStatementStopWindow).GetField("dispatcher", BindingFlags.Instance | BindingFlags.NonPublic);
             var stopDispatcher = Assert.IsType<Dispatcher>(dispatcherField.GetValue(stopWindow));
+            var stateLockField = typeof(PythonStatementStopWindow).GetField("stateLock", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(stateLockField);
+            var stateLock = stateLockField.GetValue(stopWindow);
             _ = stopDispatcher.BeginInvoke(new Action(() => {
-                enteredDispatcher.Set();
-                releaseDispatcher.Wait();
+                lock (stateLock) {
+                    enteredDispatcher.Set();
+                    releaseDispatcher.Wait();
+                }
             }));
             try {
                 Assert.True(await Task.Run(() => enteredDispatcher.Wait(TimeSpan.FromSeconds(10))));
@@ -204,9 +210,13 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                     var completionTimer = Assert.IsType<DispatcherTimer>(timerField.GetValue(popup));
                     completionTimer.Interval = TimeSpan.FromMilliseconds(300);
                     completionTimer.Start();
+                    var disposeDuration = Stopwatch.StartNew();
                     productionHost.Dispose();
+                    disposeDuration.Stop();
+                    Assert.True(disposeDuration.Elapsed < TimeSpan.FromSeconds(1),
+                        $"Dispose took {disposeDuration.Elapsed}.");
                     Assert.False(completionTimer.IsEnabled);
-                }).Task.WaitAsync(TimeSpan.FromSeconds(1));
+                }).Task.WaitAsync(TimeSpan.FromSeconds(15));
                 if (blockManagedCall) {
                     await Task.Delay(TimeSpan.FromSeconds(15));
                     Assert.True(dispatcherWorker.IsAlive);

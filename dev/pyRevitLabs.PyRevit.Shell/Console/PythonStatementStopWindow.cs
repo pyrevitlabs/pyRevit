@@ -21,7 +21,7 @@ namespace PythonConsoleControl {
         long generation;
         long windowGeneration;
         IntPtr anchor;
-        bool disposed;
+        int disposed;
 
         internal PythonStatementStopWindow() {
             using var ready = new ManualResetEventSlim();
@@ -45,7 +45,7 @@ namespace PythonConsoleControl {
 
         internal void Begin(CancellationToken token, Action interrupt) {
             lock (stateLock) {
-                if (disposed) return;
+                if (Volatile.Read(ref disposed) != 0) return;
                 cancellation = token;
                 stop = interrupt;
                 generation++;
@@ -57,7 +57,7 @@ namespace PythonConsoleControl {
         internal void End() {
             lock (stateLock) {
                 stop = null;
-                if (!disposed) dispatcher.BeginInvoke(new Action(() => {
+                if (Volatile.Read(ref disposed) == 0) dispatcher.BeginInvoke(new Action(() => {
                     timer.Stop();
                     CloseWindow();
                 }));
@@ -68,7 +68,7 @@ namespace PythonConsoleControl {
 
         void TickNow() {
             lock (stateLock) {
-                if (disposed || stop == null || cancellation.IsCancellationRequested) {
+                if (Volatile.Read(ref disposed) != 0 || stop == null || cancellation.IsCancellationRequested) {
                     timer.Stop();
                     CloseWindow();
                     return;
@@ -96,7 +96,7 @@ namespace PythonConsoleControl {
                 };
                 window.Closing += (sender, args) => {
                     lock (stateLock) {
-                        if (!disposed && statementGeneration == generation && ReferenceEquals(window, sender) && stop != null) {
+                        if (Volatile.Read(ref disposed) == 0 && statementGeneration == generation && ReferenceEquals(window, sender) && stop != null) {
                             stop();
                             stop = null;
                         }
@@ -112,7 +112,7 @@ namespace PythonConsoleControl {
 
         void RequestStop(long statementGeneration) {
             lock (stateLock) {
-                if (disposed || statementGeneration != generation) return;
+                if (Volatile.Read(ref disposed) != 0 || statementGeneration != generation) return;
                 stop?.Invoke();
                 stop = null;
             }
@@ -126,16 +126,13 @@ namespace PythonConsoleControl {
         }
 
         public void Dispose() {
-            lock (stateLock) {
-                if (disposed) return;
-                disposed = true;
-                stop = null;
-                dispatcher.BeginInvoke(new Action(() => {
-                    timer.Stop();
-                    CloseWindow();
-                    dispatcher.InvokeShutdown();
-                }));
-            }
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            dispatcher.BeginInvoke(new Action(() => {
+                lock (stateLock) stop = null;
+                timer.Stop();
+                CloseWindow();
+                dispatcher.InvokeShutdown();
+            }));
         }
 
         internal bool WaitForExit(TimeSpan timeout) {
