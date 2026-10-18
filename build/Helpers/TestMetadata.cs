@@ -5,14 +5,17 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Build.Helpers;
 
 internal sealed record ClassifiedTest(string Source, string ClassName, string Method, string Environment, string Level);
+internal sealed record TestCatalogRequest(string Project, string Framework, string[] Sources, string[] Defines);
+internal sealed record TestCatalogSuite(string Project, string Framework, IReadOnlyList<ClassifiedTest> Tests);
 
 internal static class TestMetadata {
     private static readonly HashSet<string> TestAttributes = ["Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod", "Fact", "Theory"];
     private static readonly HashSet<string> Levels = ["Unit", "Integration", "E2E", "Performance"];
     private static readonly HashSet<string> Environments = ["HostFree", "Revit"];
 
-    internal static IReadOnlyList<ClassifiedTest> Read(string source, string path) {
-        var root = CSharpSyntaxTree.ParseText(source).GetRoot();
+    internal static IReadOnlyList<ClassifiedTest> Read(string source, string path, IEnumerable<string>? defines = null) {
+        var options = new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: defines);
+        var root = CSharpSyntaxTree.ParseText(source, options).GetRoot();
         var tests = new List<ClassifiedTest>();
         foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>()) {
             if (!method.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => TestAttributes.Contains(Name(attribute))))

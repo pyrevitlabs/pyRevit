@@ -8,6 +8,21 @@ namespace Build.Tests;
 [TestCategory("HostFree")]
 [TestCategory("Unit")]
 public class TestMetadataTests {
+    /// <summary>Framework-specific fixtures are classified using the symbols they compile with.</summary>
+    [TestMethod]
+    public void ConditionalFixtureUsesFrameworkSymbols() {
+        const string source = """
+            #if HOSTED
+            [Category("Revit"), Category("Integration")]
+            #else
+            [Category("HostFree"), Category("Unit")]
+            #endif
+            class ConditionalTests { [Test] public void Case() {} }
+            """;
+        Assert.AreEqual("Revit", TestMetadata.Read(source, "fixture.cs", ["HOSTED"]).Single().Environment);
+        Assert.AreEqual("HostFree", TestMetadata.Read(source, "fixture.cs", []).Single().Environment);
+    }
+
     /// <summary>Parameterized cases inherit their class classification.</summary>
     [TestMethod]
     public void ClassDefaultsApplyToParameterizedTests() {
