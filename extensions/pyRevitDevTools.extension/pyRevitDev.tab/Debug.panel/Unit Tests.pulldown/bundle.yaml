@@ -10,10 +10,12 @@ layout:
   - Revit Module Tests
   - Script Module Tests
   - Routes Module Tests
+  - Config Module Tests
   - Py3 Compat Tests
   - Py3 Compat Tests (CPython)
   - -----
   - Test Output Stream
+  - Test Linkify Append Selection
   - Test Input Stream
   - Test Multiple Outputs
   - Test UI Button
