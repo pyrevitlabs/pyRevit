@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <SkipPyRevitDeploy>true</SkipPyRevitDeploy>
+    <TestTfmsInParallel>false</TestTfmsInParallel>
+    <UseRevit>false</UseRevit>
+    <UseIronPython>false</UseIronPython>
+    <NoWarn>$(NoWarn);NUnit2005;NUnit2006;NUnit1033;NUnit2048;NUnit2049</NoWarn>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <ProjectReference Include="..\..\2024\pyRevitLabs.PyRevit.Runtime.2024.csproj" AdditionalProperties="Configuration=Debug IPY342;SkipPyRevitDeploy=true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <ProjectReference Include="..\..\2026\pyRevitLabs.PyRevit.Runtime.2026.csproj" AdditionalProperties="Configuration=Debug IPY342;SkipPyRevitDeploy=true" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="NUnit" Version="4.5.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="pyRevitLabs.NLog" HintPath="..\..\..\libs\netfx\pyRevitLabs.NLog.dll" Private="true" />
+    <Reference Include="pyRevitLabs.Json" HintPath="..\..\..\libs\netfx\pyRevitLabs.Json.dll" Private="true" />
+    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="..\..\..\libs\netfx\pyRevitLabs.MahAppsMetro.dll" Private="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <Reference Include="pyRevitLabs.NLog" HintPath="..\..\..\libs\netcore\pyRevitLabs.NLog.dll" Private="true" />
+    <Reference Include="pyRevitLabs.Json" HintPath="..\..\..\libs\netcore\pyRevitLabs.Json.dll" Private="true" />
+    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="..\..\..\libs\netcore\pyRevitLabs.MahAppsMetro.dll" Private="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\tests\TestSupport\RepositoryPaths.cs" Link="TestSupport\RepositoryPaths.cs" />
+    <Using Include="NUnit.Framework" />
+    <Using Include="NUnit.Framework.Legacy" />
+  </ItemGroup>
+</Project>

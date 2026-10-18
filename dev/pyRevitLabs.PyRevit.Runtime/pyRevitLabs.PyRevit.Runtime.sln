@@ -17,6 +17,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2027", "2027\pyRevitLabs.PyRevit.Runtime.2027.csproj", "{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.Tests", "tests\pyRevitLabs.PyRevit.Runtime.Tests\pyRevitLabs.PyRevit.Runtime.Tests.csproj", "{28A2D879-1B31-434E-90D3-CE134502FE4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug IPY2712PR|x64 = Debug IPY2712PR|x64
@@ -81,9 +85,20 @@ Global
 		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY2712PR|x64.Build.0 = Release IPY2712PR|x64
 		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY342|x64.ActiveCfg = Release IPY342|x64
 		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY342|x64.Build.0 = Release IPY342|x64
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Debug IPY2712PR|x64.ActiveCfg = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Debug IPY2712PR|x64.Build.0 = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Debug IPY342|x64.ActiveCfg = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Debug IPY342|x64.Build.0 = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Release IPY2712PR|x64.ActiveCfg = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Release IPY2712PR|x64.Build.0 = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Release IPY342|x64.ActiveCfg = Debug|Any CPU
+		{28A2D879-1B31-434E-90D3-CE134502FE4B}.Release IPY342|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{28A2D879-1B31-434E-90D3-CE134502FE4B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7C859D3-5930-40E5-A8DA-A9A71915EC30}

@@ -221,7 +221,7 @@ def run_dotnet(project, results):
         "</RunConfiguration><DataCollectionRunSettings><DataCollectors>"
         '<DataCollector friendlyName="XPlat Code Coverage"><Configuration>'
         "<Format>cobertura,json</Format><Include>[pyRevit*]*,[Build*]*</Include>"
-        "<ExcludeByFile>**/dev/modules/**,**/obj/**,**/tests/**,**/pyRevitLabs.UnitTests/**,**/pyRevitExtensionParserTester/**</ExcludeByFile>"
+        "<ExcludeByFile>**/dev/modules/**,**/obj/**,**/tests/**,**/pyRevitLabs.UnitTests/**</ExcludeByFile>"
         "<IncludeTestAssembly>true</IncludeTestAssembly>"
         "</Configuration></DataCollector></DataCollectors>"
         "</DataCollectionRunSettings></RunSettings>",
@@ -293,20 +293,20 @@ def collect_coverage(results):
                     relative.startswith("dev/modules/")
                     or "/tests/" in relative
                     or "/pyRevitLabs.UnitTests/" in relative
-                    or "/pyRevitExtensionParserTester/" in relative
                 ):
                     continue
                 lines = modules.setdefault(module, {})
+                document = os.path.normcase(str(source))
                 for methods in classes.values():
                     for method, details in methods.items():
                         for number, hits in details["Lines"].items():
-                            key = (filename, str(number))
+                            key = (document, str(number))
                             previous = lines.setdefault(
                                 key, {"hit": False, "branches": {}}
                             )
                             previous["hit"] |= hits > 0
                         for branch in details["Branches"]:
-                            key = (filename, str(branch["Line"]))
+                            key = (document, str(branch["Line"]))
                             previous = lines.setdefault(
                                 key, {"hit": False, "branches": {}}
                             )

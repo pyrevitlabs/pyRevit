@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="pyRevitExtensionParserTest" />
+        <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Runtime.Tests" />
     </ItemGroup>
     
     <Import Project="../Directory.Build.props" />

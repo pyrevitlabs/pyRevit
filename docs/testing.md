@@ -12,7 +12,20 @@ The shared entry point is `dev/scripts/run_tests.py`. It validates classificatio
 
 ### Ownership and placement
 
-C# test projects may live beside their owning module, for example `dev/<area>/<Module>.Tests/`. Existing test projects do not need to move. Keep tests in separate test assemblies so test dependencies and fixtures are not shipped with the product. `build/tests/` stays beside the build pipeline.
+C# test projects live beside their owning area, normally `dev/<area>/tests/<Module>.Tests/`. Keep tests in separate test assemblies so test dependencies and fixtures are not shipped with the product. `build/tests/` stays beside the build pipeline. Place tests according to the production behavior they exercise; a convenient existing test project is not a reason to put runtime or assembly-generation tests in the parser suite. Cross-component fixtures have an explicit integration suite and documented boundaries.
+
+| Owning behavior | C# test location |
+|---|---|
+| Extension parsing and parser configuration | `dev/pyRevitLoader/tests/pyRevitExtensionParser.Tests/` |
+| Assembly generation, session services, hooks, ribbon builders and themes | `dev/pyRevitLoader/tests/pyRevitAssemblyBuilder.Tests/` |
+| Parsed bundles flowing into command generation | `dev/pyRevitLoader/tests/pyRevitLoader.Integration.Tests/` |
+| Shared scripting runtime, output, logging, environment and engine compatibility | `dev/pyRevitLabs.PyRevit.Runtime/tests/pyRevitLabs.PyRevit.Runtime.Tests/` |
+| Common helpers, emoji rendering and configuration facade | Separate `pyRevitLabs.Common.Tests`, `pyRevitLabs.Emojis.Tests`, and `pyRevitLabs.PyRevit.Tests` projects under `dev/pyRevitLabs/tests/` |
+| CLI, configuration backends, agent and CPython adapters | Their named projects under `dev/pyRevitLabs/tests/` |
+| Existing MSTest contracts across Labs libraries | `dev/pyRevitLabs/pyRevitLabs.UnitTests/`; add new component suites beside their owners |
+| Build pipeline | `build/tests/` |
+
+Small repository-path helpers live in `dev/tests/TestSupport/`; loader fixture builders live in `dev/pyRevitLoader/tests/TestSupport/`. Neither is a test project or a production dependency. Runtime fixtures own their temporary scripts without depending on parser fixtures. Per-suite READMEs document focused commands and local Revit requirements.
 
 Centralize discovery conventions, metadata vocabulary, reporting, and coverage policy. Keep module-specific fixtures, helpers, and framework choices with their owners. Do not introduce a mandatory common test base class or convert existing NUnit, MSTest, and xUnit suites solely for uniformity.
 
@@ -126,6 +139,8 @@ TEST_LEVEL = "Unit"
 ```
 
 Existing `unittest` cases run through pytest without conversion. `conftest.py` resolves optional class defaults with the same names and method overrides using `@pytest.mark.environment("Revit")` or `@pytest.mark.level("Integration")`. It records effective classification in JUnit results and excludes Revit cases before fixture setup. A HostFree module must remain safe to import; put API-dependent imports in a separate Revit module. Hosted IronPython suites retain plain assignments and `unittest`, without importing pytest.
+
+Every explicitly selected Python module must collect at least one eligible case after classification and selection. An empty module or a HostFree module containing only Revit cases fails collection even when another module has passing tests.
 
 ## Coverage baselines
 
