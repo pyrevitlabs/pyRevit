@@ -83,7 +83,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["session"] = AgentSessions.Describe(),
                     };
                 case "pause_session":
-                    AgentSessions.Pause();
+                    AgentSessions.PauseByClient();
                     return AgentSessions.Describe();
                 case "end_session":
                     AgentSessions.EndByClient();

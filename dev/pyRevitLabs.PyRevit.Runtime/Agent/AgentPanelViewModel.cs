@@ -261,6 +261,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 PausedReason = string.Empty;
             else if (session.Value<string>("paused_cause") == AgentSessionPauseCauses.PanelHidden)
                 PausedReason = strings.Text("AgentPanel.Paused.PanelHidden");
+            else if (session.Value<string>("paused_cause") == AgentSessionPauseCauses.Agent)
+                PausedReason = strings.Text("AgentPanel.Paused.ByAgent");
             else
                 PausedReason = strings.Format("AgentPanel.Paused.ByHost", pausedReason);
         }

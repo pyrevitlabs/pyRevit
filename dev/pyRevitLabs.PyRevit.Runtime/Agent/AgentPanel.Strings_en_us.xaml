@@ -18,6 +18,7 @@
     <system:String x:Key="AgentPanel.Document.MovedAwaitingContext">Moved from {0}. The agent must read this model before it can do anything here.</system:String>
     <system:String x:Key="AgentPanel.Paused.ByHost">pyRevit paused the session because {0} Resume when you've checked the model.</system:String>
     <system:String x:Key="AgentPanel.Paused.PanelHidden">The session paused when this panel was closed or hidden. Resume when you want the agent to carry on.</system:String>
+    <system:String x:Key="AgentPanel.Paused.ByAgent">An agent paused the session. Resume when you want it to carry on.</system:String>
 
     <system:String x:Key="AgentPanel.Start">Start on {0}</system:String>
     <system:String x:Key="AgentPanel.Move">Move session to {0}</system:String>

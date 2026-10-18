@@ -30,8 +30,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
     /// <item>A run that changes any document other than the active one is rolled back and
-    /// pauses the session, whatever its mode, the policy or any other error; when nothing else
-    /// failed, it fails with <c>other_document_modified</c>.</item>
+    /// pauses the session, if one is open, whatever its mode, the policy or any other error; when
+    /// nothing else failed, it fails with <c>other_document_modified</c>.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
     /// document remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
@@ -245,9 +245,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             if (guard.ChangedOtherOpenDocument) {
                 var changedTitles = guard.ChangedOtherOpenDocumentTitles;
-                AgentSessions.PauseForOtherDocument(changedTitles);
-                warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
-                    + "), so the agent session is paused until the user resumes it in Revit.");
+                if (AgentSessions.PauseForOtherDocument(changedTitles))
+                    warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
+                        + "), so the agent session is paused until the user resumes it in Revit.");
             }
             var finalOtherDocuments = guard.DescribeOtherDocuments();
             foreach (var failure in guard.CleanupFailures)

@@ -52,6 +52,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         internal static event Action StateChanged;
 
+        /// <summary>
+        /// Raised after <see cref="RefreshConfigIfChanged"/> reloads the config, on the thread that
+        /// called it, so the agent panel can show a policy changed from outside Revit.
+        /// </summary>
+        internal static event Action ConfigChanged;
+
         public static string PipeName => "pyrevit-agent-" + Process.GetCurrentProcess().Id;
 
         public static bool IsRunning {
@@ -140,7 +146,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception ex) {
                 logger.Debug("Could not refresh agent config: {0}", ex.Message);
+                return;
             }
+            ConfigChanged?.Invoke();
         }
 
         private static bool ReadRequireSession() {

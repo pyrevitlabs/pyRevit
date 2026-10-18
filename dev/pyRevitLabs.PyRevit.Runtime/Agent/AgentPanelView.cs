@@ -26,11 +26,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// arrive on any thread and are marshalled to this page's dispatcher before the view model
     /// is refreshed; changes that arrive before that refresh runs share it. While a request is in
     /// flight the page also refreshes once a second, because a Revit dialog that blocks it raises
-    /// no event.
+    /// no event. The page checks the config file every few seconds too, so a policy changed from
+    /// outside Revit shows before the next request would reload it.
     /// </remarks>
     internal sealed class AgentPanelPage : Page {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly TimeSpan WaitingRefreshInterval = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan ConfigCheckInterval = TimeSpan.FromSeconds(3);
 
         private AgentPanelViewModel viewModel;
         private DispatcherTimer waitingTimer;
@@ -55,8 +57,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentSessions.Tracker.Changed += QueueRefresh;
                 AgentHost.Activity.Changed += QueueRefresh;
                 AgentHost.StateChanged += QueueRefresh;
+                AgentHost.ConfigChanged += QueueRefresh;
                 AgentPanel.ActiveDocumentChanged += QueueRefresh;
                 waitingTimer = new DispatcherTimer(WaitingRefreshInterval, DispatcherPriority.Background, (_, __) => Refresh(), Dispatcher);
+                new DispatcherTimer(
+                    ConfigCheckInterval, DispatcherPriority.Background, (_, __) => AgentHost.RefreshConfigIfChanged(), Dispatcher);
                 Refresh();
             }
             catch (Exception ex) {

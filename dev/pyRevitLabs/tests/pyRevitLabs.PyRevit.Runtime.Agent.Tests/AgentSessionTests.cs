@@ -445,6 +445,69 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void APauseAnAgentAskedForIsReportedAsTheAgents() {
+            StartOnDocument();
+
+            tracker.PauseForAgent();
+
+            var refused = Assert.Throws<AgentException>(Arrive);
+            Assert.Equal("paused_by_agent", refused.Code);
+            Assert.Contains("an agent paused it", refused.Message);
+            Assert.Equal(AgentSessionPauseCauses.Agent, tracker.Describe().Value<string>("paused_cause"));
+            tracker.Resume();
+            Arrive();
+            Assert.Equal("session_inactive", CodeOf(new AgentSessionTracker().PauseForAgent));
+        }
+
+        [Fact]
+        public void APauseByRunCodeIsTheAgentsAndOneOutsideARunIsTheUsers() {
+            StartOnDocument();
+
+            using (tracker.BeginRun())
+                tracker.Pause();
+
+            var refused = Assert.Throws<AgentException>(Arrive);
+            Assert.Equal("paused_by_agent", refused.Code);
+            Assert.Contains("code in an agent run", refused.Message);
+            tracker.Resume();
+            tracker.Pause();
+            Assert.Equal("paused_by_user", CodeOf(Arrive));
+        }
+
+        [Fact]
+        public void APauseKeepsWhoseItWasWhenAnotherPauseFollows() {
+            StartOnDocument();
+            tracker.Pause();
+            tracker.PauseForAgent();
+            Assert.Equal("paused_by_user", CodeOf(Arrive));
+
+            tracker.Resume();
+            tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "the agent panel in Revit was closed or hidden.");
+            tracker.PauseForAgent();
+            Assert.Equal("paused_by_host", CodeOf(Arrive));
+
+            tracker.Resume();
+            tracker.PauseForAgent();
+            Assert.False(tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "the agent panel in Revit was closed or hidden."));
+            Assert.Equal("paused_by_agent", CodeOf(Arrive));
+        }
+
+        [Fact]
+        public void ResumingClearsADeclineTheUserMadeWhileTheSessionWasPaused() {
+            tracker.SetRequired(true);
+            StartOnDocument();
+            tracker.Pause();
+            tracker.Request("Carry on with the doors", Now);
+            tracker.Decline(Now);
+
+            tracker.Resume();
+
+            Assert.True(IsNull(tracker.Describe()["declined_request"]));
+            tracker.EndInRevit(Now);
+            Assert.DoesNotContain("declined", MessageOf(Arrive));
+        }
+
+        [Fact]
         public void WhileSessionsAreOptionalAnAgentCanNotEndTheSession() {
             Assert.False(tracker.EndForAgent(Now));
             StartOnDocument();

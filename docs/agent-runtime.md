@@ -43,7 +43,7 @@ runtime is independent of the Routes server and doesn't need it enabled.
 
 3. **Start Revit** (or reload pyRevit), and open a model.
 4. **Start an agent session.** Open **pyRevit → Agent Panel** (next to Python Shell) and
-   click **Start on <document>**. Agents can read or change the model only while a session
+   click **Start on &lt;document&gt;**. Agents can read or change the model only while a session
    is active, and only in its document. When an agent asks for a session first, the panel
    opens with the agent's reason; click **Start** or **Decline**. See
    [Sessions and the agent panel](#sessions-and-the-agent-panel).
@@ -152,13 +152,13 @@ The **pyRevit Agent** panel is a dockable pane where the user decides when agent
 Open it with **pyRevit → Agent Panel**. The button is hidden while the agent host is
 disabled.
 
-- **Start on <document>** starts a session bound to the active document. Only a click in the
+- **Start on &lt;document&gt;** starts a session bound to the active document. Only a click in the
   panel starts or resumes a session. Agents and the CLI can only ask for one or pause it, and
   end it while sessions are required.
 - **Pause** and **Resume** stop and restart model requests. A request already waiting for
   Revit is refused when Revit picks it up.
 - **End** ends the session. Closing the session's document ends it too.
-- **Move session to <document>** appears while another document is active. The session keeps
+- **Move session to &lt;document&gt;** appears while another document is active. The session keeps
   its id and state. Until the agent calls `get_context`, every other model request is refused
   with `session_moved`, because element ids from the old document don't apply in the new one.
   Starting a session on another document than the one the agent last read the context in does
@@ -184,6 +184,7 @@ session requests always pass.
 | `session_inactive` | Sessions are required and none is active | Call `request_session`, tell the user, and wait |
 | `paused_by_user` | The user paused the session | Wait until the user resumes it |
 | `paused_by_host` | pyRevit paused it: a run changed another open document, or the panel was closed. The message says which | Tell the user; only they can resume it |
+| `paused_by_agent` | An agent paused it, with `pyrevit agent session pause` or from code in a run | Tell the user; only they can resume it |
 | `wrong_document` | Another document, or none, is active | Ask the user to switch back or move the session |
 | `session_moved` | The user moved the session to another document, or started one on another document than the agent last read the context in | Call `get_context` before anything else, and drop ids from the old document |
 | `session_locked` | Code running inside an agent run tried to start, resume or move the session or make sessions optional, or an agent tried to end it while sessions aren't required | Nothing; an agent can't loosen its own session. Pause it to stop |
@@ -277,8 +278,8 @@ Rules the host enforces:
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
   save-as, synchronize-with-central, file-export and view-export events. The response lists a
   cancelled operation in `blocked`.
-- A run in any mode that changes another open document is rolled back and pauses the session
-  (`paused_by_host`) until the user resumes it, even when the script also failed; otherwise it
+- A run in any mode that changes another open document is rolled back and pauses the session,
+  if one is open (`paused_by_host`), until the user resumes it, even when the script also failed; otherwise it
   fails with `other_document_modified`. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
   the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays

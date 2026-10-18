@@ -20,6 +20,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentSessionPauseCauses {
         public const string OtherDocument = "other_document";
         public const string PanelHidden = "panel_hidden";
+        public const string Agent = "agent";
     }
 
     /// <summary>
@@ -275,25 +276,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Pauses an active session. Pausing a paused one changes nothing, so a pause by the host
-        /// keeps its reason even when an agent or run code pauses again.
+        /// Pauses an active session for code running in Revit: the user's pause, or, while an
+        /// agent run executes, a pause by its code, which the next refusal reports as the agent's.
+        /// Pausing a paused one changes nothing, so a pause keeps whose it was.
         /// </summary>
         /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
         public void Pause() {
-            lock (sync) {
-                if (state == AgentSessionState.Inactive)
-                    throw new AgentException("session_inactive", "There is no agent session to pause.");
-                if (state == AgentSessionState.Paused)
-                    return;
-                state = AgentSessionState.Paused;
-            }
-            OnChanged();
+            bool paused;
+            lock (sync)
+                paused = runsExecuting > 0
+                    ? PauseLocked(AgentSessionPauseCauses.Agent, "code in an agent run paused it.")
+                    : PauseLocked(null, null);
+            if (paused)
+                OnChanged();
+        }
+
+        /// <summary>
+        /// Pauses an active session for an agent that asked over the pipe, so its next refusal is
+        /// <c>paused_by_agent</c> rather than a pause the user made. Pausing a paused one changes
+        /// nothing.
+        /// </summary>
+        /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
+        public void PauseForAgent() {
+            bool paused;
+            lock (sync)
+                paused = PauseLocked(AgentSessionPauseCauses.Agent, "an agent paused it.");
+            if (paused)
+                OnChanged();
         }
 
         /// <summary>
         /// Pauses the session on the host's own account, for example after a run changed another
         /// document, so the agent's next refusal is <c>paused_by_host</c> and says why. A pause by
-        /// the user becomes a pause by the host; an earlier pause by the host keeps its reason.
+        /// the user becomes a pause by the host; an earlier pause by the host or an agent keeps its
+        /// reason.
         /// </summary>
         /// <param name="cause">One of <see cref="AgentSessionPauseCauses"/>, for the panel.</param>
         /// <param name="reason">Why, for the agent, as a sentence fragment that follows "because".</param>
@@ -310,6 +326,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return true;
         }
 
+        /// <summary>
+        /// Resumes the session. That answers an agent's pending request, and a decline the user
+        /// made while it was paused no longer applies.
+        /// </summary>
         /// <exception cref="AgentException">
         /// <c>session_inactive</c> when there is no session, or <c>session_locked</c> while an
         /// agent run executes.
@@ -321,6 +341,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw new AgentException("session_inactive", "There is no agent session to resume.");
                 state = AgentSessionState.Active;
                 pendingRequest = null;
+                lastDeclined = null;
                 pausedCause = null;
                 pausedReason = null;
             }
@@ -448,7 +469,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The <see cref="Generation"/> the request's client last read in the context, when it says.
         /// </param>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c> or <c>session_inactive</c>.
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>paused_by_agent</c>, <c>session_moved</c> or <c>session_inactive</c>.
         /// </exception>
         public void CheckOnArrival(bool readsContext, int? contextGeneration = null) {
             lock (sync)
@@ -469,7 +490,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The <see cref="Generation"/> the request's client last read in the context, when it says.
         /// </param>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c>, <c>session_inactive</c> or
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>paused_by_agent</c>, <c>session_moved</c>, <c>session_inactive</c> or
         /// <c>wrong_document</c>.
         /// </exception>
         public void CheckOnDequeue(
@@ -507,6 +528,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void CheckStateLocked(bool readsContext, int? contextGeneration) {
+            if (state == AgentSessionState.Paused && pausedCause == AgentSessionPauseCauses.Agent)
+                throw new AgentException("paused_by_agent",
+                    $"The agent session is paused because {pausedReason} Only the user can resume it, in Revit: tell them, "
+                    + "and try again after they do.");
             if (state == AgentSessionState.Paused && pausedReason != null)
                 throw new AgentException("paused_by_host",
                     $"The agent session is paused because {pausedReason} Tell the user; only they can resume the session in Revit.");
@@ -535,6 +560,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             throw new AgentException("session_inactive",
                 ended + "No agent session is active in this Revit. Ask the user to start one in Revit; "
                 + "request_session tells them you are asking.");
+        }
+
+        private bool PauseLocked(string cause, string reason) {
+            if (state == AgentSessionState.Inactive)
+                throw new AgentException("session_inactive", "There is no agent session to pause.");
+            if (state == AgentSessionState.Paused)
+                return false;
+            state = AgentSessionState.Paused;
+            pausedCause = cause;
+            pausedReason = reason;
+            return true;
         }
 
         private bool EndLocked(string reason, DateTime nowUtc) {

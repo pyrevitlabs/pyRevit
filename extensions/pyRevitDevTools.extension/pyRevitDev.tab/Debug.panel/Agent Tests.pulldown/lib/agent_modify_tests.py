@@ -309,6 +309,19 @@ class BlockTests(TestCase):
             harness.request("get_context")
         self.assertEqual("paused_by_host", raised.exception.code)
 
+    def test_without_a_session_a_cross_document_run_claims_no_pause(self):
+        """With sessions optional and none open, nothing is paused and no warning says it is."""
+        harness.end_session()
+        harness.require_sessions(False)
+        title = harness.session().other_title
+        response = _modify(
+            "other = [d for d in app.Documents if d.Title == inputs['title']][0]\n"
+            "t = DB.Transaction(other, 'touch other')\nt.Start()\nDB.Level.Create(other, 52.0)\nt.Commit()\n",
+            inputs={"title": title},
+        )
+        self.assertEqual("other_document_modified", response["error"]["type"])
+        self.assertFalse(any("paused" in warning for warning in response["warnings"]))
+
     def test_warnings_are_reported(self):
         """Revit warnings raised during a run are reported as failures."""
         response = _modify(

@@ -104,6 +104,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentHost.Activity.RecordMove(left, Tracker.CurrentSession, DateTime.UtcNow);
         }
 
+        /// <summary>
+        /// Pauses the session. Called from an agent run's code, the pause counts as the agent's.
+        /// </summary>
         /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
         public static void Pause() {
             Tracker.Pause();
@@ -137,6 +140,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return Tracker.Describe();
         }
 
+        /// <exception cref="AgentException"><c>session_inactive</c> when there is no session.</exception>
+        internal static void PauseByClient() {
+            Tracker.PauseForAgent();
+        }
+
         /// <exception cref="AgentException"><c>session_locked</c> while sessions aren't required.</exception>
         internal static void EndByClient() {
             Tracker.EndForAgent(DateTime.UtcNow);
@@ -155,11 +163,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// on until the user has seen what happened and resumed it.
         /// </summary>
         /// <param name="documents">Titles of the documents that were open before the run and that it changed.</param>
-        internal static void PauseForOtherDocument(IEnumerable<string> documents) {
+        /// <returns>Whether the session is paused now: false when there is no session to pause.</returns>
+        internal static bool PauseForOtherDocument(IEnumerable<string> documents) {
             var names = string.Join(", ", documents.Where(name => !string.IsNullOrEmpty(name)).Distinct().Select(name => "'" + name + "'"));
             Tracker.PauseByHost(
                 AgentSessionPauseCauses.OtherDocument,
                 $"the last run changed another open document ({names}), and agents may change only the session's document.");
+            return Tracker.State == AgentSessionState.Paused;
         }
 
         internal static void EndForHostStop() {
@@ -187,7 +197,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
         /// <param name="contextGeneration">The session generation the request's client last read, when it says.</param>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c> or <c>session_inactive</c>.
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>paused_by_agent</c>, <c>session_moved</c> or <c>session_inactive</c>.
         /// </exception>
         internal static void CheckOnArrival(bool readsContext, int? contextGeneration) {
             Tracker.CheckOnArrival(readsContext, contextGeneration);
@@ -197,7 +207,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
         /// <param name="contextGeneration">The session generation the request's client last read, when it says.</param>
         /// <exception cref="AgentException">
-        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>session_moved</c>, <c>session_inactive</c> or
+        /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>paused_by_agent</c>, <c>session_moved</c>, <c>session_inactive</c> or
         /// <c>wrong_document</c>.
         /// </exception>
         internal static void CheckOnDequeue(UIApplication app, bool readsContext, int? contextGeneration) {

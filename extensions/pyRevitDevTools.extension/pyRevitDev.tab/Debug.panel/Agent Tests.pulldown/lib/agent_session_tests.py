@@ -58,11 +58,11 @@ class SessionTests(TestCase):
         self.assertEqual(session_id, context["agent"]["session"]["id"])
 
     def test_a_paused_session_refuses_model_requests_until_resumed(self):
-        """A pause refuses model requests, while ping and lookups stay open."""
+        """A pause over the pipe refuses model requests as the agent's, while ping and lookups stay open."""
         harness.request("pause_session")
         with self.assertRaises(AgentRequestError) as raised:
             harness.request("get_context")
-        self.assertEqual("paused_by_user", raised.exception.code)
+        self.assertEqual("paused_by_agent", raised.exception.code)
         self.assertTrue(harness.request("ping")["pong"])
         self.assertTrue(harness.request("lookup_api", name="Wall")["found"])
         harness.resume_session()

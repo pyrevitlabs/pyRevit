@@ -27,6 +27,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Resume"] = "Resume",
             ["AgentPanel.Paused.ByHost"] = "paused: {0}",
             ["AgentPanel.Paused.PanelHidden"] = "panel hidden",
+            ["AgentPanel.Paused.ByAgent"] = "agent paused",
             ["AgentPanel.Request.NoReason"] = "no reason",
             ["AgentPanel.Request.Time"] = "asked {0}",
             ["AgentPanel.Policy.Ask"] = "ask",
@@ -155,6 +156,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.True(panel.HasPausedReason);
             Assert.Equal("panel hidden", panel.PausedReason);
+        }
+
+        [Fact]
+        public void APauseByAnAgentSaysSoInThePanelsOwnWords() {
+            backend.Session = Session("paused");
+            backend.Session["paused_cause"] = "agent";
+            backend.Session["paused_reason"] = "an agent paused it.";
+
+            var panel = Panel();
+
+            Assert.True(panel.HasPausedReason);
+            Assert.Equal("agent paused", panel.PausedReason);
         }
 
         [Fact]
