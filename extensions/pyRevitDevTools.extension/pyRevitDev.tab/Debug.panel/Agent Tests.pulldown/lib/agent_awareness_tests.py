@@ -89,6 +89,18 @@ class AwarenessTests(TestCase):
         transaction.RollBack()
         self.assertNotIn("since_last_call", request("get_context"))
 
+    def test_a_rolled_back_transaction_group_cancels_its_edits(self):
+        """An element committed inside a group the user then rolls back isn't reported."""
+        project = harness.session().project
+        _catch_up()
+        group = DB.TransactionGroup(project, "Agent test group")
+        group.Start()
+        level_id = _create_level(project)
+        group.RollBack()
+        summary = request("get_context").get("since_last_call") or {}
+        added_ids = (summary.get("edits") or {}).get("added_ids", [])
+        self.assertNotIn(harness.id_value(level_id), added_ids)
+
     def test_edits_to_another_document_are_not_reported(self):
         """Only the session's document is watched."""
         other = harness.session().other

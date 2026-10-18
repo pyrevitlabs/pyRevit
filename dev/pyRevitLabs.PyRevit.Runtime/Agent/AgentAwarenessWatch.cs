@@ -17,7 +17,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// when the next request arrives, with the ones the last request left behind in the session's
     /// document, on every Revit version. Events would report a round trip to another document as
     /// a view change, <c>SelectionChanged</c> exists only from Revit 2023, and when Revit raises
-    /// either for the host's own changes is not something to rely on.
+    /// either for the host's own changes is not something to rely on. They are recorded again
+    /// when Revit next goes idle after a request, because a view change the request asked for
+    /// with <c>RequestViewChange</c> happens only after it returns.
     /// Invariant: only the session's document is watched, and nothing is recorded while the
     /// host handles a request; see <see cref="AgentAwareness"/>.
     /// </remarks>
@@ -27,6 +29,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxSelectionIds = 200;
         private static readonly object sync = new object();
         private static bool attached;
+        private static bool idleRecordQueued;
         private static HashSet<long> selectionBaseline = new HashSet<long>();
         private static long? viewBaseline;
 
@@ -69,6 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static void Reset(UIApplication app) {
             Awareness.Clear();
             RememberViewAndSelection(app.ActiveUIDocument);
+            RememberAgainWhenIdle(app);
         }
 
         /// <summary>
@@ -78,6 +82,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public static void Rebaseline(UIApplication app) {
             RememberViewAndSelection(app.ActiveUIDocument);
+            RememberAgainWhenIdle(app);
+        }
+
+        /// <remarks>
+        /// A view or selection change the user makes before Revit goes idle is taken as the
+        /// request's own, so it isn't reported; that window is the moment the request returns.
+        /// </remarks>
+        private static void RememberAgainWhenIdle(UIApplication app) {
+            lock (sync) {
+                if (idleRecordQueued)
+                    return;
+                idleRecordQueued = true;
+            }
+            app.Idling += OnIdlingAfterRequest;
+        }
+
+        private static void OnIdlingAfterRequest(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
+            var app = sender as UIApplication;
+            if (app != null)
+                app.Idling -= OnIdlingAfterRequest;
+            lock (sync)
+                idleRecordQueued = false;
+            RememberViewAndSelection(app?.ActiveUIDocument);
         }
 
         /// <remarks>
@@ -125,14 +152,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return new HashSet<long>(uidoc.Selection.GetElementIds().Select(AgentIds.ToValue));
         }
 
+        /// <remarks>
+        /// A transaction rolled back on its own never committed, so nothing of it was recorded. A
+        /// transaction group rolled back undoes transactions that did commit, so its changes are
+        /// recorded to cancel theirs.
+        /// </remarks>
         private static bool IsRollback(UndoOperation operation) {
-            return operation == UndoOperation.TransactionRolledBack || operation == UndoOperation.TransactionGroupRolledBack;
+            return operation == UndoOperation.TransactionRolledBack;
         }
 
         private static string OperationName(UndoOperation operation) {
             switch (operation) {
                 case UndoOperation.TransactionUndone: return "undo";
                 case UndoOperation.TransactionRedone: return "redo";
+                case UndoOperation.TransactionGroupRolledBack: return "rollback";
                 default: return "commit";
             }
         }

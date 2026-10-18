@@ -50,6 +50,35 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AnElementThatComesBackAfterADeletionIsModifiedNotAddedAndDeleted() {
+            Edit(deleted: new long[] { 7 }, name: "Delete");
+            Edit(added: new long[] { 7 }, name: "Delete", operation: "undo");
+
+            var edits = Peek()["edits"];
+
+            Assert.Equal(0, edits.Value<int>("added"));
+            Assert.Equal(0, edits.Value<int>("deleted"));
+            Assert.Equal(new long[] { 7 }, edits["modified_ids"].Values<long>());
+        }
+
+        [Fact]
+        public void ARolledBackGroupCancelsTheEditsItsTransactionsMadeAndAddsNoNames() {
+            Edit(added: new long[] { 7 }, name: "Step 1");
+            Edit(deleted: new long[] { 7 }, name: "Tool group", operation: "rollback");
+
+            Assert.Null(Peek());
+
+            Edit(added: new long[] { 8 }, name: "Step 2");
+            Edit(deleted: new long[] { 9 }, name: "Tool group", operation: "rollback");
+
+            var edits = Peek()["edits"];
+            Assert.Equal(new long[] { 8 }, edits["added_ids"].Values<long>());
+            Assert.Equal(new long[] { 9 }, edits["deleted_ids"].Values<long>());
+            Assert.DoesNotContain("Tool group", edits["operations"].Values<string>());
+            Assert.Null(edits["undone"]);
+        }
+
+        [Fact]
         public void UndoAndRedoAreCounted() {
             Edit(modified: new long[] { 1 }, name: "Move", operation: "undo");
             Edit(modified: new long[] { 1 }, name: "Move", operation: "redo");

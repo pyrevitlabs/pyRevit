@@ -67,9 +67,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Adds one change of the document to the summary. An element that comes back after it
+        /// was deleted counts as modified, since it may differ from before, and an element added
+        /// and then deleted leaves no trace.
+        /// </summary>
         /// <param name="operation">
-        /// <c>undo</c> or <c>redo</c> for a transaction the user undid or redid; anything else counts
-        /// as a new edit.
+        /// <c>undo</c> or <c>redo</c> for a transaction the user undid or redid, and <c>rollback</c>
+        /// for a transaction group the user rolled back, whose changes cancel the edits its
+        /// transactions made and add no operation names; anything else counts as a new edit.
         /// </param>
         public void RecordEdit(
             IEnumerable<long> addedIds, IEnumerable<long> modifiedIds, IEnumerable<long> deletedIds,
@@ -77,8 +83,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             lock (sync) {
                 if (suppressed > 0)
                     return;
-                foreach (var id in addedIds)
-                    added.Add(id);
+                foreach (var id in addedIds) {
+                    if (deleted.Remove(id))
+                        modified.Add(id);
+                    else
+                        added.Add(id);
+                }
                 foreach (var id in deletedIds) {
                     if (!added.Remove(id))
                         deleted.Add(id);
@@ -87,9 +97,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 foreach (var id in modifiedIds)
                     if (!added.Contains(id))
                         modified.Add(id);
-                foreach (var name in transactionNames)
-                    if (!string.IsNullOrEmpty(name) && !operations.Contains(name) && operations.Count < MaxOperations)
-                        operations.Add(name);
+                if (operation != "rollback")
+                    foreach (var name in transactionNames)
+                        if (!string.IsNullOrEmpty(name) && !operations.Contains(name) && operations.Count < MaxOperations)
+                            operations.Add(name);
                 if (operation == "undo")
                     undone++;
                 else if (operation == "redo")
