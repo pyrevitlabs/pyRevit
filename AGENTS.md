@@ -57,6 +57,8 @@ pipenv run check-docstrings           # Lint docstrings with ruff
 
 ## Testing
 
+Follow the repository testing policy in `docs/testing.md`. Every test that uses the Revit API or requires installed/running Revit runs locally outside CI; all other first-party automated tests must be discovered and run in CI. Require effective `Level` and `Environment` tags, allowing class/module defaults. Keep C# test projects beside their owning modules where practical, with shared discovery rather than class-name allowlists. Measure and ratchet coverage per module. The policy distinguishes these rules from enforcement still awaiting rollout.
+
 To test in Revit:
 
 ```bash
