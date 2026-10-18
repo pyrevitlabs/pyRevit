@@ -1,6 +1,6 @@
 # pyRevitLabs.Common.Tests
 
-Common-library load-timeline lifecycle and isolation.
+Common-library load-timeline lifecycle, isolation, and the portable identifier format.
 
 Owner: the owning module maintainers; unassigned failures and quarantines belong to the change author. Quarantines require an issue and review within 14 days.
 
