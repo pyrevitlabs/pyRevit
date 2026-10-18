@@ -1,15 +1,15 @@
 # Testing infrastructure
 
-`run_tests.py` owns shared C#/Python discovery and CI selection. `tests/tooling/` verifies developer tools and the runner; `tests/library/` verifies API-free Python library contracts. The separate `dev/checks/` and `dev/hooks/` directories own validators and formatting hooks.
+`run_tests.py` owns shared C#/Python discovery and CI selection. `python/tooling/` verifies developer tools and the runner; `python/library/` verifies API-free Python library contracts. The separate `dev/checks/` and `dev/hooks/` directories own validators and formatting hooks.
 
 From the repository root:
 
 ```powershell
-python dev/testing/run_tests.py --list
-python dev/testing/run_tests.py
+python dev/tests/run_tests.py --list
+python dev/tests/run_tests.py
 ```
 
-See `docs/testing.md` for policy and `tests/README.md` for Python fixture boundaries.
+See `docs/testing.md` for policy and `python/README.md` for Python fixture boundaries.
 
 ## Coverage and reporting policy
 
@@ -17,7 +17,7 @@ Owner: repository testing maintainers; suite owners review changes to their modu
 
 `coverage-baselines.json` records measured line and branch floors per Python source module or C# assembly/framework. The shared runner merges exact line hits and branch identities across suites, excludes test/vendor/generated source, and distinguishes linked production source from deployed assemblies. Missing established modules, regressions, and new measured modules without a baseline fail normal runs.
 
-From the repository root, use `python dev/testing/run_tests.py --update-baselines` only after reviewing the reports. This explicit update can lower a floor; include a reason and follow-up for every reduction. It does not grant an automatic exception to the policy. Scope and denominator changes require review as well as percentage changes. Reports and inventory live in a unique `.test-results/<run>/` directory, so old reports cannot satisfy a new run.
+From the repository root, use `python dev/tests/run_tests.py --update-baselines` only after reviewing the reports. This explicit update can lower a floor; include a reason and follow-up for every reduction. It does not grant an automatic exception to the policy. Scope and denominator changes require review as well as percentage changes. Reports and inventory live in a unique `.test-results/<run>/` directory, so old reports cannot satisfy a new run.
 
 Python reporting scope is declared in `pyproject.toml`. C# collectors include instrumented first-party code; assemblies never loaded by tests need dedicated suites and do not have measured coverage yet. No repository-wide percentage or performance budget is implied. See `docs/testing.md` for full rules.
 

@@ -36,7 +36,7 @@ which one is *the* API for extension authors, and what happens to the other.
 
 `PyRevitConfig` has 35 flat aliases. `dev/checks/check_config_api.py` derives
 this table from the source; the counts below are asserted by
-`dev/testing/tests/tooling/test_check_config_api.py` so the two cannot drift.
+`dev/tests/python/tooling/test_check_config_api.py` so the two cannot drift.
 
 ### 31 direct delegations
 

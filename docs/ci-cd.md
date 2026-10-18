@@ -35,7 +35,7 @@ This split guarantees that:
 
 ## Test execution
 
-`ci.yml` installs the pinned testing dependencies from `Pipfile.lock`, runs the unified Python selection before the product build, and runs the unified C# selection afterward. `dev/testing/run_tests.py` discovers suites, validates tags, checks per-module coverage baselines, and produces unique reports under `.test-results/`. Artifacts are uploaded even when a test or coverage gate fails.
+`ci.yml` installs the pinned testing dependencies from `Pipfile.lock`, runs the unified Python selection before the product build, and runs the unified C# selection afterward. `dev/tests/run_tests.py` discovers suites, validates tags, checks per-module coverage baselines, and produces unique reports under `.test-results/`. Artifacts are uploaded even when a test or coverage gate fails.
 
 All tests using the Revit API or requiring installed/running Revit are excluded from CI. Revit integration and load/signing checks run locally; see [Revit integration tests](testing.md#revit-integration-tests). The former self-hosted Revit workflow has been removed. Product building does not execute test fixtures; local and CI validation use the same shared test entry point.
 
@@ -59,7 +59,7 @@ Doc-only or other out-of-scope changes skip CI entirely.
 
 !!! warning "Anything the `build` job runs must be inside the filter"
 
-    The filter decides whether a change is verified at all. Shared test infrastructure and Python suites live under `dev/testing`, covered by `dev/**`. Add every new CI entry point and configuration input to both `paths:` lists. Missing inputs can leave changes unverified or block `release.yml`, which waits for the CI run.
+    The filter decides whether a change is verified at all. Shared test infrastructure and Python suites live under `dev/tests`, covered by `dev/**`. Add every new CI entry point and configuration input to both `paths:` lists. Missing inputs can leave changes unverified or block `release.yml`, which waits for the CI run.
 
 ### Official repository vs forks
 
@@ -238,7 +238,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 |---------|----------------|
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
-| `python dev/testing/run_tests.py` | Shared API-free C#/Python discovery, reports, and per-module coverage gates; CI uses the same language selections. |
+| `python dev/tests/run_tests.py` | Shared API-free C#/Python discovery, reports, and per-module coverage gates; CI uses the same language selections. |
 | `python dev/checks/check_revit_api_compat.py --baseline` | Revit API version-compatibility lint of `pyRevitTools.extension` and `pyrevitlib`. Run by `dotnet run -- ci` (`CheckRevitApiCompatModule`), and as `pipenv run check-revit-api`. Fails only on findings missing from the committed baseline. The module uses the first `python`, `python3` or `py` on `PATH` that is 3.10 or newer, so `ci.yml` has no Python setup step for it. See [Revit API compatibility lint](revit-api-compat.md). |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |

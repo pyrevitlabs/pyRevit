@@ -9,7 +9,7 @@ Fixtures and helpers are owned by this suite. Temporary configuration and output
 From the repository root, run all API-free C# suites with shared discovery and coverage gates:
 
 ```powershell
-python dev/testing/run_tests.py --language dotnet
+python dev/tests/run_tests.py --language dotnet
 ```
 
 For a focused debugging run, using one of the frameworks above:
