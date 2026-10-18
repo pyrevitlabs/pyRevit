@@ -22,10 +22,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-try:
-    from . import check_config_api
-except ImportError:
-    import check_config_api
+from dev.checks import check_config_api
 
 SCHEMA = {
     "core": {

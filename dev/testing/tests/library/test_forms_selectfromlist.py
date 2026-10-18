@@ -16,7 +16,16 @@ from types import SimpleNamespace
 
 
 FORMS = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "pyrevitlib", "pyrevit", "forms")
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "..",
+        "..",
+        "pyrevitlib",
+        "pyrevit",
+        "forms",
+    )
 )
 
 
@@ -26,9 +35,19 @@ def _load_classes():
     with open(path, encoding="utf-8-sig") as source:
         tree = ast.parse(source.read())
     methods = {
-        "_prepare_context_items", "_get_active_ctx", "_get_all_ctx", "_list_options",
-        "_unwrap_options", "_get_options", "_set_states", "checkbox_clicked",
-        "check_selected", "uncheck_selected", "check_all", "uncheck_all", "toggle_all",
+        "_prepare_context_items",
+        "_get_active_ctx",
+        "_get_all_ctx",
+        "_list_options",
+        "_unwrap_options",
+        "_get_options",
+        "_set_states",
+        "checkbox_clicked",
+        "check_selected",
+        "uncheck_selected",
+        "check_all",
+        "uncheck_all",
+        "toggle_all",
     }
     selected = []
     for node in tree.body:
@@ -37,7 +56,8 @@ def _load_classes():
         elif isinstance(node, ast.ClassDef) and node.name == "SelectFromList":
             node.bases = [ast.Name(id="object", ctx=ast.Load())]
             node.body = [
-                child for child in node.body
+                child
+                for child in node.body
                 if isinstance(child, ast.FunctionDef) and child.name in methods
             ]
             selected.append(node)
@@ -87,7 +107,9 @@ class _List:
     def emit(self, event, item, state):
         handler = self.events.get(event)
         if handler:
-            getattr(self.window, handler)(SimpleNamespace(DataContext=item, IsChecked=state), None)
+            getattr(self.window, handler)(
+                SimpleNamespace(DataContext=item, IsChecked=state), None
+            )
 
     def click(self, item, state):
         item.checked = state
@@ -109,8 +131,14 @@ class SelectFromListTests(unittest.TestCase):
         for name in ("checkall_b", "uncheckall_b", "toggleall_b"):
             setattr(self.window, name, SimpleNamespace())
         root = ET.parse(os.path.join(FORMS, "SelectFromList.xaml")).getroot()
-        checkbox = root.find(".//{http://schemas.microsoft.com/winfx/2006/xaml/presentation}CheckBox")
-        self.events = {name: checkbox.attrib[name] for name in ("Click", "Checked", "Unchecked") if name in checkbox.attrib}
+        checkbox = root.find(
+            ".//{http://schemas.microsoft.com/winfx/2006/xaml/presentation}CheckBox"
+        )
+        self.events = {
+            name: checkbox.attrib[name]
+            for name in ("Click", "Checked", "Unchecked")
+            if name in checkbox.attrib
+        }
         self.window.list_lb = _List(self.window, self.events)
         self.items = self.window._prepare_context_items(["Alpha", "Beta", "Gamma"])
         self.window._context = self.items

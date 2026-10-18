@@ -189,4 +189,4 @@ Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop
 - Look a function up before writing it: search `pyrevitlib/pyrevit/revit/db/{query,create,update}.py`, or use the MCP `lookup_pyrevit_api` tool.
 - Scripts you run through the MCP runtime (`run_query`, `run_modify`) follow the agent skills, which override this guide where they differ, for example no `pyrevit.forms` there. See [Agent runtime](agent-runtime.md).
 - Match the surrounding file's style over this guide when they conflict, and keep pre-existing comments.
-- Before finishing: `pipenv run ruff check --fix <path>`, `pipenv run check-py3 <path>`, `python dev/scripts/check_revit_api_compat.py <path>` (see [Revit API compatibility lint](revit-api-compat.md)), and test the button in Revit with a dev clone (see [Developer guide](dev-guide.md)).
+- Before finishing: `pipenv run ruff check --fix <path>`, `pipenv run check-py3 <path>`, `python dev/checks/check_revit_api_compat.py <path>` (see [Revit API compatibility lint](revit-api-compat.md)), and test the button in Revit with a dev clone (see [Developer guide](dev-guide.md)).

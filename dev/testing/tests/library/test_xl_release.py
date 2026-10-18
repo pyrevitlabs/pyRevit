@@ -12,6 +12,10 @@ host. The vendored xlrd and xlsxwriter are loaded by path from the repo's
 the stdlib backports vendored there can stand in for them.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import importlib.util
 import os
 import shutil
@@ -19,9 +23,10 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 from unittest import mock
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = str(Path(__file__).resolve().parents[4])
 SITE_PACKAGES = os.path.join(REPO_ROOT, "site-packages")
 XL_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "interop", "xl.py")
 

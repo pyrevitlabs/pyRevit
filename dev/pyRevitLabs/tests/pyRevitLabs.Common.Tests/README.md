@@ -9,7 +9,7 @@ The NUnit suite targets `net48` and `net8.0-windows`. Tests are discovered from 
 Run the full CI selection from the repository root:
 
 ```powershell
-python dev/scripts/run_tests.py --language dotnet
+python dev/testing/run_tests.py --language dotnet
 ```
 
 For focused debugging:
@@ -18,6 +18,6 @@ For focused debugging:
 dotnet test dev/pyRevitLabs/tests/pyRevitLabs.Common.Tests/pyRevitLabs.Common.Tests.csproj -c Release -f net48 -p:SkipPyRevitDeploy=true --filter "(Environment=HostFree|TestCategory=HostFree)&Environment!=Revit&TestCategory!=Revit"
 ```
 
-Temporary files and process-wide state must be reset after each test. Shared loader fixture builders stay in `pyRevitLoader/tests/TestSupport`; repository-root lookup is a small linked test helper under `dev/tests/TestSupport`. These helpers are not production dependencies.
+Temporary files and process-wide state must be reset after each test. Keep fixture helpers with this suite.
 
 See `docs/testing.md` for classification, coverage floors, reporting, and local Revit evidence.

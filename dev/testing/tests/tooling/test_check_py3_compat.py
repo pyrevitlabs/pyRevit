@@ -9,10 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-try:
-    from .check_py3_compat import _is_engine_guarded, check_file
-except ImportError:
-    from check_py3_compat import _is_engine_guarded, check_file
+from dev.checks.check_py3_compat import _is_engine_guarded, check_file
 
 
 def _unicode_reachability(source):

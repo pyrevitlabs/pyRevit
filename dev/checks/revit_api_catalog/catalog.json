@@ -1195,7 +1195,7 @@
   "Microsoft.WindowsDesktop.App": "8.0.32"
  },
  "generated_on": "2026-10-17",
- "generator": "dev/scripts/build_revit_api_catalog.py",
+ "generator": "dev/checks/build_revit_api_catalog.py",
  "instance_members": {
   "AcceleratedGraphicsMode": {
    "avail": [

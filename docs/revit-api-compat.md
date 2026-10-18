@@ -3,7 +3,7 @@
 pyRevit scripts run unchanged across many Revit years, but the Revit API
 does not stay put: members are added, deprecated, and removed (for example
 `ElementId.IntegerValue` disappears in 2026, `DisplayUnitType` after 2021,
-`BuiltInParameterGroup` after 2024). `dev/scripts/check_revit_api_compat.py`
+`BuiltInParameterGroup` after 2024). `dev/checks/check_revit_api_compat.py`
 is a static checker that finds uses of such APIs that are not protected for
 every Revit year the code can run in.
 
@@ -18,7 +18,7 @@ The build runs it as part of `dotnet run -- ci` (`CheckRevitApiCompatModule`),
 after version stamping, so a local build gates on it too and CI needs no extra
 step. The module also fails when `catalog.json` does not cover exactly the
 Revit years `dev/Directory.Build.targets` builds for. Its tests live in
-`dev/scripts/test_standalone_revit_api_compat.py`, which CI runs with the
+`dev/testing/tests/tooling/test_check_revit_api_compat.py`, which CI runs with the
 other standalone suites.
 
 ## Running it
@@ -26,7 +26,7 @@ other standalone suites.
 | Command | What it lints |
 |---------|---------------|
 | `pipenv run check-revit-api` | The CI targets, `extensions/pyRevitTools.extension` and `pyrevitlib`, against the committed baseline |
-| `python dev/scripts/check_revit_api_compat.py path/to/My.extension` | Any files or folders |
+| `python dev/checks/check_revit_api_compat.py path/to/My.extension` | Any files or folders |
 | `... --git-url https://github.com/org/repo.git [--git-ref tag]` | A shallow clone in a temp dir (repeatable) |
 | `... --extensions all` | Every extension listed in `extensions/extensions.json` |
 
@@ -155,7 +155,7 @@ lint was introduced, so CI fails only on new ones. Entries match on path,
 code and message, not line numbers. After fixing some, run:
 
 ```bash
-python dev/scripts/check_revit_api_compat.py --baseline --update-baseline
+python dev/checks/check_revit_api_compat.py --baseline --update-baseline
 ```
 
 Don't add entries by hand. A new finding needs a fix or a justified
@@ -163,7 +163,7 @@ suppression.
 
 ## The API catalog
 
-The checker reads two files in `dev/scripts/revit_api_catalog/`:
+The checker reads two files in `dev/checks/revit_api_catalog/`:
 
 - `catalog.json` is **generated**. It holds facts read from Autodesk's own
   assemblies. For every Revit year from 2021, the earliest and the newest
@@ -200,9 +200,9 @@ new Revit release (or an update that deprecates API) ships:
 
 ```bash
 pip install dnfile
-python dev/scripts/build_revit_api_catalog.py
-python -m unittest discover -s dev/scripts -p test_standalone_revit_api_compat.py
-python dev/scripts/check_revit_api_compat.py --baseline
+python dev/checks/build_revit_api_catalog.py
+python -m pytest dev/testing/tests/tooling/test_check_revit_api_compat.py
+python dev/checks/check_revit_api_compat.py --baseline
 ```
 
 It downloads about 100 MB of packages (cached under the system temp dir,
@@ -234,4 +234,4 @@ don't ship `dev/`.
 - IronPython 2-only syntax (`print "x"`) cannot be parsed by CPython's `ast`.
   Those files are reported as `PARSE` warnings and skipped.
 - The Python 2 vs 3 language axis is covered by
-  `dev/scripts/check_py3_compat.py`, not here.
+  `dev/checks/check_py3_compat.py`, not here.

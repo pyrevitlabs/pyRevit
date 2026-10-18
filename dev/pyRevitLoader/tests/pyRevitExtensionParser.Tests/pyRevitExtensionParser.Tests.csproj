@@ -43,7 +43,7 @@
     <Reference Include="pyRevitLabs.Json" HintPath="..\..\..\libs\netcore\pyRevitLabs.Json.dll" Private="true" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\tests\TestSupport\RepositoryPaths.cs" Link="TestSupport\RepositoryPaths.cs" />
+    <Compile Include="..\..\..\testing\csharp\RepositoryPaths.cs" Link="TestSupport\RepositoryPaths.cs" />
     <Using Include="NUnit.Framework" />
     <Using Include="NUnit.Framework.Legacy" />
   </ItemGroup>

@@ -78,10 +78,10 @@ jobs:
           python-version: '3.14'
 
       - name: Install test dependencies
-        run: python dev/scripts/run_tests.py --install-dependencies
+        run: python dev/testing/run_tests.py --install-dependencies
 
       - name: Run API-free Python tests
-        run: python dev/scripts/run_tests.py --language python
+        run: python dev/testing/run_tests.py --language python
 
       - name: Run CI pipeline
         working-directory: build
@@ -91,7 +91,7 @@ jobs:
         run: dotnet run -c Release -- ci
 
       - name: Run all API-free C# tests
-        run: python dev/scripts/run_tests.py --language dotnet
+        run: python dev/testing/run_tests.py --language dotnet
 
       - name: Upload test results and coverage
         if: always()

@@ -1,13 +1,18 @@
 """Host-free tests for the DevTools fill pattern preview geometry."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import math
 import os
 import types
 import unittest
+from pathlib import Path
 
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+REPO_ROOT = str(Path(__file__).resolve().parents[4])
 SCRIPT_PATH = os.path.join(
     REPO_ROOT,
     "extensions",

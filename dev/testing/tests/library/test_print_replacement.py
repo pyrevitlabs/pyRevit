@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 
 
 SCRIPT = (
-    Path(__file__).resolve().parents[2]
+    Path(__file__).resolve().parents[4]
     / "extensions/pyRevitTools.extension/pyRevit.tab"
     / "Drawing Set.panel/Print Sheets.pushbutton/script.py"
 )
