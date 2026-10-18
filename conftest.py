@@ -1,5 +1,7 @@
 """Apply repository classification to pytest and existing unittest cases."""
 
+from pathlib import Path
+
 import pytest
 
 
@@ -31,6 +33,7 @@ def classification(item):
     return environment, level
 
 
+@pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(config, items):
     """Exclude local Revit cases before any test fixture is set up."""
     selected = []
@@ -44,6 +47,18 @@ def pytest_collection_modifyitems(config, items):
             selected.append(item)
     items[:] = selected
     config.hook.pytest_deselected(items=excluded)
+    requested = {
+        (config.invocation_params.dir / argument.split("::", 1)[0]).resolve()
+        for argument in config.args
+        if Path(argument.split("::", 1)[0]).suffix == ".py"
+    }
+    collected = {Path(item.path).resolve() for item in selected}
+    empty = requested - collected
+    if empty:
+        paths = ", ".join(str(path) for path in sorted(empty))
+        raise pytest.UsageError(
+            f"Selected Python modules have no eligible cases: {paths}"
+        )
 
 
 def pytest_sessionfinish(session, exitstatus):

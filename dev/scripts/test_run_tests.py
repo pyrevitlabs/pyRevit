@@ -3,6 +3,9 @@
 import tempfile
 import unittest
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,6 +16,49 @@ import conftest
 
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
+
+
+@pytest.mark.parametrize(
+    "second_module, expected_status",
+    [
+        ("", 4),
+        (
+            '@pytest.mark.environment("Revit")\ndef test_hosted():\n'
+            '    raise AssertionError("must not execute")\n',
+            4,
+        ),
+        ("def test_second():\n    assert True\n", 0),
+    ],
+    ids=["empty-module", "all-revit-module", "both-eligible"],
+)
+def test_each_explicit_python_module_requires_eligible_cases(
+    second_module, expected_status
+):
+    """A populated neighbor must not hide an empty or entirely hosted suite."""
+    with tempfile.TemporaryDirectory() as directory:
+        tmp_path = Path(directory)
+        (tmp_path / "conftest.py").write_text(
+            Path(conftest.__file__).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        metadata = 'import pytest\nTEST_ENVIRONMENT = "HostFree"\nTEST_LEVEL = "Unit"\n'
+        first = tmp_path / "test_first.py"
+        second = tmp_path / "test_second.py"
+        first.write_text(
+            metadata + "def test_first():\n    assert True\n", encoding="utf-8"
+        )
+        second.write_text(metadata + second_module, encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest", "-q", str(first), str(second)],
+            cwd=tmp_path,
+            env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"},
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert result.returncode == expected_status, result.stdout + result.stderr
+        if expected_status:
+            assert "test_second.py" in result.stderr
+            assert "no eligible cases" in result.stderr
 
 
 class SelectionTests(unittest.TestCase):
