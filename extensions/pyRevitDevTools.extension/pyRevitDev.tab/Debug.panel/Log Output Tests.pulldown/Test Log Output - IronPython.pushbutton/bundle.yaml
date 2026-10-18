@@ -1,4 +1,4 @@
-title: "Test Log Output\n- IronPython"
+title: Test Log Output - IronPython
 tooltip: >-
   Output/log regression test for the IronPython engine: rapid stdout, every
   logger level, print/logger/print_html ordering, emoji and unicode, a trailing

@@ -1,4 +1,4 @@
-title: "Test Log\nOutput - C#"
+title: Test Log Output - C#
 tooltip: >-
   Output regression test for the CLR engine (also covers VB.NET). The window
   must show every numbered line. CLR command exceptions surface through a Revit
