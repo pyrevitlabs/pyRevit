@@ -27,6 +27,8 @@ C# test projects live beside their owning area, normally `dev/<area>/tests/<Modu
 
 Small repository-path helpers live in `dev/tests/TestSupport/`; loader fixture builders live in `dev/pyRevitLoader/tests/TestSupport/`. Neither is a test project or a production dependency. Runtime fixtures own their temporary scripts without depending on parser fixtures. Per-suite READMEs document focused commands and local Revit requirements.
 
+The reorganized suites appear in their area's solution for IDE navigation, with Debug/Release mappings but no default solution-build selection. The shared runner builds their projects explicitly. Adding a test project to a product solution must not make the product pipeline build it for every interpreter configuration.
+
 Centralize discovery conventions, metadata vocabulary, reporting, and coverage policy. Keep module-specific fixtures, helpers, and framework choices with their owners. Do not introduce a mandatory common test base class or convert existing NUnit, MSTest, and xUnit suites solely for uniformity.
 
 Host-free Python tooling tests currently live in `dev/scripts/test_*.py`. Keep a documented discovery root for each Python suite and shared fixtures within the owning suite. Hosted tests stay importable through `pyrevit.unittests` until their launchers are decoupled. Do not recursively collect arbitrary Python files across the repository: importing hosted tests requires Revit, and vendored tests are outside this policy.
