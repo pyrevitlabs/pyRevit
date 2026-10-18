@@ -1,5 +1,5 @@
 author: '{{author}}'
 context: zero-doc
-title: Test Persistent Engine (NonModal)
+title: "Test Persistent\nEngine (NonModal)"
 engine:
   persistent: true
