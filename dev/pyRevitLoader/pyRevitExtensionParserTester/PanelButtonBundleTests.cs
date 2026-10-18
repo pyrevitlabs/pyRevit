@@ -257,7 +257,7 @@ print('test')");
     /// These tests require the repo's pyRevitDevTools.extension directory.
     /// </summary>
     [TestFixture]
-    public class DevToolsPanelButtonTests
+    public class DevToolsPanelButtonTests : TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
 
