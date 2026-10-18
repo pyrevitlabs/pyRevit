@@ -1,4 +1,4 @@
-title: Run Agent Library Tests
+title: "Run Agent\nLibrary Tests"
 tooltip: >-
   Check the MCP server's skills and library tools through a short-lived
   pyrevit mcp process, and the pyrevitlib side of the automation operations
