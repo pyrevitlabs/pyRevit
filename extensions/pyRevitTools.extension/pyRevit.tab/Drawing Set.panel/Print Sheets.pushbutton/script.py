@@ -925,31 +925,60 @@ class PrintSheetsWindow(forms.WPFWindow):
             return doc.Title
 
     def _setup_output_folder(self):
-        self.output_folder_tb.Text = config.get_option("output_folder", "") or ""
-        self.subfolder_tb.Text = config.get_option(
+        self.output_folder_tb.Text = _saved_text("output_folder", "")
+        self.subfolder_tb.Text = _saved_text(
             "subfolder_format", DEFAULT_SUBFOLDER_FORMAT
         )
 
     def _restore_options(self):
+        """Apply the options saved by `save_options` to the window.
+
+        Each option is restored on its own and a bad saved value is skipped,
+        so a damaged config section cannot stop the window from opening.
+        """
         self._restoring_options = True
         try:
-            self.reverse_cb.IsChecked = config.get_option("reverse_order", False)
-            self.placeholder_cb.IsChecked = config.get_option("show_placeholders", True)
-            self.indexspace_cb.IsChecked = config.get_option(
-                "include_placeholders", True
-            )
-            if self.combine_cb.IsEnabled:
-                self.combine_cb.IsChecked = config.get_option("combine", False)
-            if self.export_dwg.IsEnabled:
-                self.export_dwg.IsChecked = config.get_option("export_dwg", False)
-            self.indexstart_tb.Text = str(config.get_option("index_start", 0))
-            self._update_index_slider()
-            self.index_slider.Value = config.get_option(
-                "index_digits", self.index_slider.Value
-            )
+            for option_name, default, apply_option in self._restored_option_writers():
+                try:
+                    apply_option(config.get_option(option_name, default))
+                except Exception as restore_err:
+                    logger.debug(
+                        "Could not restore option %s: %s", option_name, restore_err
+                    )
         finally:
             self._restoring_options = False
         self.options_changed(None, None)
+
+    def _restored_option_writers(self):
+        return [
+            ("reverse_order", False, lambda value: _check(self.reverse_cb, value)),
+            (
+                "show_placeholders",
+                True,
+                lambda value: _check(self.placeholder_cb, value),
+            ),
+            (
+                "include_placeholders",
+                True,
+                lambda value: _check(self.indexspace_cb, value),
+            ),
+            ("combine", False, lambda value: _check_if_enabled(self.combine_cb, value)),
+            (
+                "export_dwg",
+                False,
+                lambda value: _check_if_enabled(self.export_dwg, value),
+            ),
+            ("index_start", 0, self._restore_index_start),
+            ("index_digits", None, self._restore_index_digits),
+        ]
+
+    def _restore_index_start(self, value):
+        self.indexstart_tb.Text = str(int(value))
+
+    def _restore_index_digits(self, value):
+        self._update_index_slider()
+        if value is not None:
+            self.index_slider.Value = int(value)
 
     def save_options(self, sender, args):
         """Remember the window's choices for the next run.
@@ -993,7 +1022,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         return config.get_option("naming_format", "")
 
     def _sheet_lists_to_save(self):
-        sheet_lists = config.get_option("sheet_lists", {})
+        sheet_lists = _saved_sheet_lists()
         if self.selected_doc and self.selected_sheetlist:
             sheet_lists[self._doc_key(self.selected_doc)] = self.selected_sheetlist.name
         return sheet_lists
@@ -1065,17 +1094,15 @@ class PrintSheetsWindow(forms.WPFWindow):
         user, so this runs before the window closes.
 
         Returns:
-            (bool): False when the user cancels or a file cannot be removed,
+            (bool): False when the user cancels or a file cannot be replaced,
                 so the caller keeps the window open.
 
         Warning:
             Deletes the existing files once the user chooses to replace them.
+            Every file is first moved aside, so a locked file puts the others
+            back and nothing is deleted.
         """
-        existing = [
-            path
-            for path in self._planned_output_files(dir_path, target_sheets)
-            if op.exists(path)
-        ]
+        existing = _existing_files(self._planned_output_files(dir_path, target_sheets))
         if not existing:
             return True
         if not forms.alert(
@@ -1087,16 +1114,17 @@ class PrintSheetsWindow(forms.WPFWindow):
             no=True,
         ):
             return False
-        for path in existing:
-            try:
-                os.remove(path)
-            except Exception as remove_err:
-                forms.alert(
-                    "Cannot replace {}. Close it if it is open, "
-                    "then print again.".format(op.basename(path)),
-                    expanded=str(remove_err),
-                )
-                return False
+        try:
+            set_aside = _set_aside_files(existing)
+        except _LockedFileError as locked_err:
+            forms.alert(
+                "Cannot replace {}. Close it if it is open, then print again.".format(
+                    op.basename(locked_err.path)
+                ),
+                expanded=str(locked_err.cause),
+            )
+            return False
+        _delete_set_aside_files(set_aside)
         return True
 
     def copy_naming_format(self, sender, args):
@@ -1291,7 +1319,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         print_mgr = self._get_printmanager()
         restorable_printers = {"Revit Internal Printer", print_mgr.PrinterName}
         saved_printer = config.get_option("printer", "")
-        if saved_printer in restorable_printers and saved_printer in printers:
+        if saved_printer in printers and saved_printer in restorable_printers:
             self.printers_cb.SelectedItem = saved_printer
         elif IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
             self.printers_cb.SelectedItem = "Revit Internal Printer"
@@ -1371,9 +1399,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet_indices.append(UnlistedSheetsList())
 
         self.schedules_cb.ItemsSource = sheet_indices
-        saved_name = config.get_option("sheet_lists", {}).get(
-            self._doc_key(self.selected_doc)
-        )
+        saved_name = _saved_sheet_lists().get(self._doc_key(self.selected_doc))
         self.schedules_cb.SelectedItem = next(
             (x for x in sheet_indices if x.name == saved_name),
             sheet_indices[0] if sheet_indices else None,
@@ -2262,6 +2288,82 @@ class PrintSheetsWindow(forms.WPFWindow):
                     )
                 else:
                     self._print_sheets_in_order(target_sheets, dir_path)
+
+
+def _saved_text(option_name, default):
+    value = config.get_option(option_name, default)
+    return default if value is None else str(value)
+
+
+def _saved_sheet_lists():
+    sheet_lists = config.get_option("sheet_lists", {})
+    return sheet_lists if isinstance(sheet_lists, dict) else {}
+
+
+def _check(checkbox, value):
+    checkbox.IsChecked = bool(value)
+
+
+def _check_if_enabled(checkbox, value):
+    if checkbox.IsEnabled:
+        _check(checkbox, value)
+
+
+class _LockedFileError(Exception):
+    def __init__(self, path, cause):
+        super(_LockedFileError, self).__init__(path)
+        self.path = path
+        self.cause = cause
+
+
+def _existing_files(paths):
+    unique = {}
+    for path in paths:
+        if op.exists(path):
+            unique.setdefault(op.normcase(path), path)
+    return sorted(unique.values(), key=op.normcase)
+
+
+def _set_aside_files(paths):
+    set_aside = []
+    for path in paths:
+        backup = _unused_backup_path(path)
+        try:
+            os.rename(path, backup)
+        except Exception as rename_err:
+            if not op.exists(path):
+                continue
+            _put_back_files(set_aside)
+            raise _LockedFileError(path, rename_err)
+        set_aside.append((path, backup))
+    return set_aside
+
+
+def _put_back_files(set_aside):
+    for original, backup in set_aside:
+        try:
+            os.rename(backup, original)
+        except Exception as restore_err:
+            logger.warning(
+                "Could not restore %s from %s: %s", original, backup, restore_err
+            )
+
+
+def _delete_set_aside_files(set_aside):
+    for _, backup in set_aside:
+        try:
+            os.remove(backup)
+        except Exception as remove_err:
+            logger.warning("Could not delete replaced file %s: %s", backup, remove_err)
+
+
+def _unused_backup_path(path):
+    backup = path + ".replaced"
+    suffix = 1
+    while op.exists(backup):
+        backup = "{}.replaced{}".format(path, suffix)
+        suffix += 1
+    return backup
 
 
 def cleanup_sheetnumbers(doc):

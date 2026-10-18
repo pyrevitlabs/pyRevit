@@ -31,7 +31,7 @@ import datetime
 import ntpath
 import re
 
-_WINDOWS_UNSAFE_CHARS = re.compile(r'[/:*?"<>|]')
+_WINDOWS_UNSAFE_CHARS = re.compile(r'[/:*?"<>|\x00-\x1f\x7f]')
 
 
 class PathTemplateError(Exception):
@@ -79,7 +79,8 @@ def fill(template, values=None, now=None):
 
     Backslashes or forward slashes typed in the template create nested
     folders; slashes inside values do not. Characters Windows rejects in
-    folder names are removed, trailing dots and spaces are trimmed, and
+    folder names, including control characters such as tabs, are removed,
+    trailing dots and spaces are trimmed, and
     empty or dot-only folder names are dropped.
 
     Args:
@@ -135,7 +136,7 @@ def _format(template, values, now):
     placeholders = _placeholder_values(values, now or datetime.datetime.now())
     try:
         return _with_backslashes(template).format(**placeholders)
-    except (KeyError, ValueError, IndexError, AttributeError):
+    except (KeyError, ValueError, IndexError, AttributeError, TypeError):
         raise InvalidTemplateError(template, sorted(placeholders))
 
 

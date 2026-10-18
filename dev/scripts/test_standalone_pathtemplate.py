@@ -71,6 +71,13 @@ class FillTests(unittest.TestCase):
 
                 self.assertEqual(filled, "Arch Issue 01")
 
+    def test_control_characters_are_removed(self):
+        filled = pathtemplate.fill(
+            "{sheet_index}", {"sheet_index": "Issue\tSet\r\n01\x7f"}
+        )
+
+        self.assertEqual(filled, "IssueSet01")
+
     def test_leading_dots_in_folder_names_are_kept(self):
         filled = pathtemplate.fill(".exports\\{model}", VALUES, now=NOW)
 
@@ -95,7 +102,7 @@ class FillTests(unittest.TestCase):
         self.assertEqual(pathtemplate.fill("   ", VALUES, now=NOW), "")
 
     def test_malformed_templates_are_rejected(self):
-        for template in ("{unknown}", "{date", "{date.year}", "{0}"):
+        for template in ("{unknown}", "{date", "{date.year}", "{0}", "{date[x]}"):
             with self.subTest(template=template):
                 with self.assertRaises(pathtemplate.InvalidTemplateError) as raised:
                     pathtemplate.fill(template, VALUES, now=NOW)
