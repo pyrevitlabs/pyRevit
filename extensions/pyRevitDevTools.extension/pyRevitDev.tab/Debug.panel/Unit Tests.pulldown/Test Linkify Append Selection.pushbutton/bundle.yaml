@@ -5,3 +5,4 @@ tooltip: >-
   button, then use the printed links: plain click replaces the selection,
   ctrl+click adds the element to the current selection.
 context: doc-project
+inherit_icon: false
