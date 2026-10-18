@@ -13,6 +13,6 @@ layout:
   - DirectContext3D
   - Settings Window[title:Settings\nWindow]
   - Modeless
-  - DockablePane
+  - DockablePane[title:Dockable\nPane]
   - ExportIFC
   - AVF
