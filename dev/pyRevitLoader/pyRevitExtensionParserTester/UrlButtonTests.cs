@@ -8,8 +8,8 @@ namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class UrlButtonTests
+    [Category("Integration")]
+    public class UrlButtonTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         [Test]
         public void TestUrlButtonParsing()

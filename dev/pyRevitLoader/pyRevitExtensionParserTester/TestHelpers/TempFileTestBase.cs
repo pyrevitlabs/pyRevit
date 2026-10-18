@@ -7,8 +7,8 @@ using pyRevitLabs.Configurations.Ini.Extensions;
 namespace pyRevitExtensionParserTest.TestHelpers
 {
     /// <summary>
-    /// Base class for tests that need temporary file/directory management.
-    /// Automatically creates a unique temp directory for each test and cleans it up afterward.
+    /// Isolates parser fixtures from user configuration and owns their temporary files.
+    /// DevTools is enabled explicitly so smoke fixtures work on a clean machine.
     /// </summary>
     public abstract class TempFileTestBase
     {
@@ -30,7 +30,7 @@ namespace pyRevitExtensionParserTest.TestHelpers
             Directory.CreateDirectory(TestTempDir);
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
             PyRevitConfigStore.Reset();
-            File.WriteAllText(configPath, "[core]\nread_script_metadata = true\n[pyRevitDevTools.extension]\ndisabled = false\n");
+            File.WriteAllText(configPath, "[core]\nread_script_metadata = true\nuser_locale = en_us\n[pyRevitDevTools.extension]\ndisabled = false\n");
             PyRevitConfigStore.SetFactory(() => new ConfigurationBuilder(false).AddIniConfiguration(configPath).Build());
             pyRevitExtensionParser.PyRevitConfig.ClearCache();
             pyRevitExtensionParser.ExtensionParser.ClearAllCaches();

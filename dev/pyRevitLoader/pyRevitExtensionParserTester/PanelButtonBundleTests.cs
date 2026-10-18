@@ -260,8 +260,8 @@ print('test')");
     /// </summary>
     [TestFixture]
     [Category("HostFree")]
-    [Category("Unit")]
-    public class DevToolsPanelButtonTests
+    [Category("Integration")]
+    public class DevToolsPanelButtonTests : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
 
