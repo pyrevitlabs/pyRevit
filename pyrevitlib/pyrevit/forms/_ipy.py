@@ -31,6 +31,7 @@ if not IRONPY:
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
+from pyrevit.coreutils import envvars
 
 _perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
@@ -968,6 +969,47 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
     def conceal(self):
         """Conceal window."""
         return WindowToggler(self)
+
+
+def activate_open_window(envvar):
+    """Bring a modeless window left open by an earlier run to the front.
+
+    Single-instance guard for modeless tools: the tool stores its window
+    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
+    this on every run before creating a new one. A minimized window is
+    restored before activation.
+
+    Args:
+        envvar (str): pyRevit environment variable holding the window.
+
+    Returns:
+        (bool): True when a loaded window was found and activated. False
+            otherwise; a stale (closed or disposed) reference is cleared.
+
+    Examples:
+        ```python
+        from pyrevit import forms, script
+
+        if not forms.activate_open_window("MYTOOL_WINDOW"):
+            window = MyToolWindow("MyTool.xaml")
+            script.set_envvar("MYTOOL_WINDOW", window)
+            window.show()
+        ```
+    """
+    window = envvars.get_pyrevit_env_var(envvar)
+    if window is None:
+        return False
+    try:
+        is_open = window.IsLoaded
+    except Exception:
+        is_open = False
+    if not is_open:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if window.WindowState == framework.Windows.WindowState.Minimized:
+        window.WindowState = framework.Windows.WindowState.Normal
+    window.Activate()
+    return True
 
 
 class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):

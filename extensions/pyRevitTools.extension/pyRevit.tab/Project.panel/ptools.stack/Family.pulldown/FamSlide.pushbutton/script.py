@@ -672,16 +672,7 @@ def _gate_family_editor():
 
 
 if __name__ == "__main__":
-    ui = script.get_envvar(FAMSLIDE_WINDOW_KEY)
-    if ui is not None:
-        if ui.IsLoaded:
-            if ui.WindowState == Windows.WindowState.Minimized:
-                ui.WindowState = Windows.WindowState.Normal
-            ui.Activate()
-        else:
-            script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
-            ui = None
-    if ui is None:
+    if not forms.activate_open_window(FAMSLIDE_WINDOW_KEY):
         _gate_family_editor()
         ui = FamSlideWindow("FamSlideWindow.xaml")
         ui.show(modal=False)
