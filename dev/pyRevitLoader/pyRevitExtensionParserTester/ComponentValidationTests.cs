@@ -5,6 +5,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class ComponentValidationTests
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;

@@ -15,6 +15,10 @@ it marks a spot the current engine does not support yet.
 Static counterpart: ``dev/scripts/check_py3_compat.py`` (no Revit needed).
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import importlib
 import unittest
 

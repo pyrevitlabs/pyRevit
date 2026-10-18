@@ -9,6 +9,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class ComponentSupportUtilsTests
     {
         private readonly MockLogger _logger = new MockLogger();

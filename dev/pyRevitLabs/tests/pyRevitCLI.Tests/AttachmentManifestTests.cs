@@ -7,6 +7,8 @@ namespace pyRevitCLI.Tests;
 /// <summary>
 ///     Verifies attachment replacement ordering, temporary-file cleanup, and bulk failure reporting.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AttachmentManifestTests : IDisposable {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "pyRevit-attach-tests-" + Guid.NewGuid());
 

@@ -10,6 +10,8 @@ namespace pyRevitExtensionParserTest
     /// Tests for icon functionality. Only icon.png (Standard) and icon.dark.png (DarkStandard) are supported.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class DarkIconTests : TempFileTestBase
     {
 

@@ -7,6 +7,8 @@ namespace pyRevitExtensionParserTest
     /// </summary>
     [TestFixture]
     [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class RevitThemeDetectorTests
     {
         [SetUp]

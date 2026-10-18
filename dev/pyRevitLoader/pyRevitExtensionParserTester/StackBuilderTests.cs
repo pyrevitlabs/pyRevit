@@ -12,6 +12,8 @@ namespace pyRevitExtensionParserTest
     /// Unit tests for StackBuilder duplicate name handling.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class StackBuilderTests
     {
         private static readonly MockLogger _mockLogger = new MockLogger();

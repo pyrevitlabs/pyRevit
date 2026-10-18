@@ -4,6 +4,8 @@ using pyRevitExtensionParser;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class PanelBackgroundResolverTests
     {
         [Test]

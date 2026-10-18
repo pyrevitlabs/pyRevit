@@ -15,6 +15,8 @@ namespace pyRevitExtensionParserTest
     /// ExtensionManagerService or any real installed extensions.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class VersionFilteringTests : TempFileTestBase
     {
         // -------------------------------------------------------------------------

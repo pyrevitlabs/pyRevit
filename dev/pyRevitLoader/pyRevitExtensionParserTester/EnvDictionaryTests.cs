@@ -13,6 +13,8 @@ namespace pyRevitExtensionParserTester
     /// <summary>Verifies the environment values shared by Python and the session loader.</summary>
     [TestFixture]
     [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class EnvDictionaryTests
     {
         private object? _originalEnvData;

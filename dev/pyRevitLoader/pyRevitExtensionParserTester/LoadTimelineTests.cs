@@ -5,6 +5,8 @@ namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class LoadTimelineTests
     {
         [TearDown]

@@ -10,10 +10,15 @@ Revit to run, so a suite that has to gate CI cannot live there. CI discovers the
 `dev/scripts` tooling and are run through the `pipenv run test-*` scripts.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import importlib.util
 import os
 import tempfile
 import unittest
+import pytest
 from xml.etree import ElementTree
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -146,6 +151,7 @@ class TestDocumentWellFormedness(unittest.TestCase):
         )
 
 
+@pytest.mark.regression
 class TestWriting(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.mkdtemp(prefix="pyrevit-junit-")
@@ -159,21 +165,32 @@ class TestWriting(unittest.TestCase):
     def test_write_creates_missing_parent_directories(self):
         self.assertTrue(os.path.isfile(self._write_one("one", "a")))
 
-    def test_a_second_run_replaces_the_first(self):
+    def test_distinct_module_reports_are_aggregated(self):
         self._write_one("one", "a")
         self._write_one("two", "b")
         with open(self.target) as report_file:
             written = report_file.read()
-        self.assertEqual(1, written.count("<testsuite"))
-        self.assertEqual("1", ElementTree.fromstring(written).get("tests"))
+        root = ElementTree.fromstring(written)
+        self.assertEqual("testsuites", root.tag)
+        self.assertEqual(["one", "two"], [suite.get("name") for suite in root])
+
+    def test_repeating_a_module_replaces_its_previous_result(self):
+        self._write_one("one", "a")
+        self._write_one("two", "b")
+        self._write_one("one", "c")
+        root = ElementTree.parse(self.target).getroot()
+        self.assertEqual(2, len(root))
+        self.assertEqual(
+            ["b", "c"], [case.get("name") for case in root.iter("testcase")]
+        )
 
     def test_write_never_produces_several_roots(self):
         for name in ("one", "two", "three"):
             self._write_one(name, "t")
         with open(self.target) as report_file:
             content = report_file.read()
-        self.assertEqual(1, content.count("<testsuite"))
-        self.assertEqual(1, content.count("</testsuite>"))
+        self.assertEqual("testsuites", ElementTree.fromstring(content).tag)
+        self.assertEqual(3, len(ElementTree.fromstring(content)))
 
 
 class TestEnvironmentEntryPoint(unittest.TestCase):

@@ -11,6 +11,8 @@ namespace pyRevitExtensionParserTester
     /// not, so the same dictionary had two meanings depending on the engine.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ScriptBuiltinsTests
     {
         private static readonly string[] AllReservedNames = {

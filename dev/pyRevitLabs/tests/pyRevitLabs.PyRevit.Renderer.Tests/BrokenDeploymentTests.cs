@@ -20,6 +20,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// the script that opened it.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class BrokenDeploymentTests {
         [TestMethod]
         public void CreateIsolated_ReportsABrokenDeploymentWhenTheRendererIsMissing() {

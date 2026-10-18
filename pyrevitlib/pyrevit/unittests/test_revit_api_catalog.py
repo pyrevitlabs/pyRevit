@@ -20,6 +20,10 @@ Note:
     or when the running Revit year is outside the cataloged years.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import io
 import json
 import os

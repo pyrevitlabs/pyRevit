@@ -5,6 +5,8 @@ using System.IO;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     internal class QuotedValueTests : TempFileTestBase
     {
         private string _tempTestFile;

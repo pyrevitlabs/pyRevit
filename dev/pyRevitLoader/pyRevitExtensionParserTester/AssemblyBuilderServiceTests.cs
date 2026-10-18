@@ -7,6 +7,8 @@ namespace pyRevitExtensionParserTester
     /// Unit tests for AssemblyBuilderService.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class AssemblyBuilderServiceTests
     {
         private AssemblyBuilderService _service;
@@ -57,6 +59,8 @@ namespace pyRevitExtensionParserTester
     /// <summary>
     /// Mock logger for testing purposes that implements ILogger.
     /// </summary>
+    [Category("HostFree")]
+    [Category("Unit")]
     public class MockPythonLogger : ILogger
     {
         public void Debug(string message) { }

@@ -12,6 +12,8 @@ using PyRevitLabs.PyRevit.Runtime;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ScriptLoggerServiceTests
     {
         private string _tempDirectory;

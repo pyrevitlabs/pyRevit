@@ -6,6 +6,8 @@ using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.UnitTests.RevitCaches {
     [TestClass()]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class RevitCachesTests {
         private string _tempRoot;
 

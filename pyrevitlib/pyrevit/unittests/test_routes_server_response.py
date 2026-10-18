@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """Tests for routes server response framing behavior."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import unittest
 
 from pyrevit.routes.server import base

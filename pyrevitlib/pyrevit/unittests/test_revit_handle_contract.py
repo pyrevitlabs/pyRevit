@@ -5,6 +5,10 @@ small host doubles. This keeps None and missing-builtin tests isolated from the
 process-wide builtins used by live engines.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import io
 import os

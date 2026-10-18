@@ -7,6 +7,10 @@ are exercised with a skip-unless-doc pattern so the suite stays useful
 on an empty Revit session.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import unittest
 
 

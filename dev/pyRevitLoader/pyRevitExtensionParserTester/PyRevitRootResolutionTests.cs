@@ -20,6 +20,8 @@ namespace pyRevitExtensionParserTester
     /// </para>
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class PyRevitRootResolutionTests : TempFileTestBase
     {
         // ──────────────────────────────────────────────────────────────
@@ -160,7 +162,7 @@ namespace pyRevitExtensionParserTester
         // ──────────────────────────────────────────────────────────────
 
         [Test]
-        public void ReadIPYVersion_EmptyRoot_ReturnsUnknown()
+        public void ReadIPYVersion_EmptyRoot_UsesExecutingEngineWhenAvailable()
         {
             var emptyEngineDir = CreateSubDirectory("engine");
 

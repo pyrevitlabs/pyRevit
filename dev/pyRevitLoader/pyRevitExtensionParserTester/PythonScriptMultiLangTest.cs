@@ -7,7 +7,9 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
-    public class PythonScriptMultiLangTest
+    [Category("HostFree")]
+    [Category("Integration")]
+    public class PythonScriptMultiLangTest : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private string _extensionPath;
 

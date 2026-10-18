@@ -12,6 +12,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ExtensionAuthUsersTests : TempFileTestBase
     {
         [TearDown]
@@ -133,6 +135,7 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        [Category("Revit")]
         public void GetInstalledUIExtensions_ExcludesExtensionsRestrictedByRegistryAuth()
         {
             var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "UnauthorizedRegistryExt");

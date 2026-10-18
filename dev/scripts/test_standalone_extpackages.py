@@ -1,5 +1,9 @@
 """Exercise extension load-state resolution without a Revit host."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import importlib.util
 import json
 import logging

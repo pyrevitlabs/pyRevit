@@ -1,5 +1,9 @@
 """Parameter validation of the agent host requests: what each one refuses to run."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os.path as op
 
 import agent_harness as harness

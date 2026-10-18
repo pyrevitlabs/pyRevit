@@ -8,6 +8,8 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class PyRevitBuildVersionTests {
         private const string CommitHash = "0746b7c45feca2ad0a1efaa9232585b0402a3980";
 

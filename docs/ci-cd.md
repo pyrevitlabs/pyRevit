@@ -23,7 +23,6 @@ pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://g
 | **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | **Reusable workflow** (`workflow_call`) — it has no trigger of its own. The **`wip` job** of `ci.yml` calls it on `develop` pushes to the main repo. It downloads the CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. Because it runs as a job, WIP activity appears **inside the `pyRevit CI` run**, not as a separate workflow run. |
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
-| **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches every supported Revit year, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
 
 The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment. It `needs` both `build` and `wip`, so a failed WIP pack also holds back the notification.
 
@@ -34,56 +33,22 @@ This split guarantees that:
 - the `.nupkg`'s embedded checksum matches the signed installer users actually download, and
 - the `.nupkg` itself carries a NuGet author signature so Chocolatey clients can verify it.
 
-## Revit integration tests
+## Test execution
 
-!!! warning "Existing workflow differs from testing policy"
+`ci.yml` installs the pinned testing dependencies from `Pipfile.lock`, runs the unified Python selection before the product build, and runs the unified C# selection afterward. `dev/scripts/run_tests.py` discovers suites, validates tags, checks per-module coverage baselines, and produces unique reports under `.test-results/`. Artifacts are uploaded even when a test or coverage gate fails.
 
-    The [repository testing policy](testing.md#repository-testing-policy) requires every test using the Revit API or requiring installed/running Revit to run locally outside CI. All other first-party automated suites must be discovered and run in CI. The workflow described below still launches Revit on pushes to `develop`; moving Revit testing entirely out of CI is pending implementation. This section records current wiring, not the target policy.
-
-GitHub-hosted runners cannot run Revit, so [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) targets a self-hosted runner labelled `self-hosted, windows, revit`. It answers one question the unit tests cannot: **does Revit load the build without the unsigned add-in dialog?**
-
-The job builds `bin/`, signs it with a throwaway certificate via `dotnet run -- sign-test`, then launches each Revit year and reads the outcome out of that session's journal:
-
-| Journal evidence | Meaning |
-|---|---|
-| `Registering <event> event by application PyRevitLoader` | The add-in loaded and initialised |
-| `TaskDialog_Security_Unsigned_File_Loading` | The Unsigned Add-In dialog appeared — the failure this job exists to catch |
-| `TaskDialog_External_Tools_External_Tool_Failure` naming `PyRevitLoader` | Revit refused the add-in outright |
-
-Any dialog fails the job. An unattended prompt that nobody answers would otherwise hang Revit until the job timed out, and "it eventually loaded after a prompt" is exactly the regression being guarded against.
-
-The engine directory per year is not a free choice. `pyrevitlib/pyrevit/compat.py` defines `NETCORE` as Revit 2025 onwards and `NETFRAMEWORK` as 2024 and earlier, so the job points 2025-2027 at `bin/netcore/engines/` and 2022-2024 at `bin/netfx/engines/`. Handing a year the wrong one makes Revit refuse the add-in, which reads like a trust failure but is not.
-
-### Runner requirements
-
-- The runner session must be **non-interactive** (service or session 0). Adding the certificate to `CurrentUser\Root` raises a modal Windows Security Warning; a session that can display it blocks the add forever with nobody to answer, so the job runs that add under a 90-second watchdog and fails with an actionable message instead of hanging. `CurrentUser\TrustedPublisher` never prompts, which is why the job adds the certificate there without a watchdog.
-- Either let the job create the throwaway certificate, or pre-provision one and pass its SHA-256 fingerprint in `TestSigning__Fingerprint` — the sign tool rejects a SHA-1 thumbprint, so the job computes SHA-256 over `RawData`. The subject must start with `CN=pyRevit CI Test` so `RejectTestSignedBinariesModule` can detect the signatures and keep them out of installers.
-- The certificate is removed from `My`, `Root` and `TrustedPublisher` in an `if: always()` step.
-
-### Why not on pull requests
-
-The job does not run for pull requests, and in particular never for fork PRs. It needs a runner that holds a trusted certificate and executes the code under test; running unreviewed code there would let a PR sign binaries with a certificate the runner trusts. It is also slow, because each Revit year needs its own launch. Pushes to `develop` cover the change before it lands, and `workflow_dispatch` takes a `revit_years` input for targeted re-runs.
-
-### Verified support matrix
-
-Confirmed on a Windows 11 host with Revit 2021-2027 installed, using a self-signed code-signing certificate in `CurrentUser\Root` plus `CurrentUser\TrustedPublisher`:
-
-| Revit | Engine | Result |
-|---|---|---|
-| 2021 | `netfx` | Not verified: this host's Revit 2021 install is missing `Autodesk Shared\Revit Schemas 2021` and aborts at startup before add-ins are considered |
-| 2022-2024 | `netfx` | Loads silently |
-| 2025-2027 | `netcore` | Loads silently |
+All tests using the Revit API or requiring installed/running Revit are excluded from CI. Revit integration and load/signing checks run locally; see [Revit integration tests](testing.md#revit-integration-tests). The former self-hosted Revit workflow has been removed. Product building does not execute test fixtures; local and CI validation use the same shared test entry point.
 
 ### `ci.yml` triggers and path filter
 
 `ci.yml` runs when changes touch build-related paths:
 
-- `.github/workflows/`, `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`
+- `.github/workflows/`, `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`, and root `Pipfile`, `Pipfile.lock`, `pyproject.toml`, `conftest.py`
 
 It is triggered by:
 
 - **Push** to `develop`, `master`, or any `v*` tag (with the path filter above).
-- **Pull request** (`opened`, `reopened`, `synchronize`) targeting `develop` or `master` (with the path filter).
+- **Pull request** (`opened`, `reopened`, `synchronize`) targeting any branch, including a stacked PR's parent branch (with the path filter).
 - **`workflow_dispatch`** for manual runs.
 
 Doc-only or other out-of-scope changes skip CI entirely.
@@ -273,7 +238,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 |---------|----------------|
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
-| `python -m unittest discover -s dev/scripts -p 'test_standalone_*.py'` | Host-free CPython suites for `pyrevitlib` modules (also run in CI, and as `pipenv run test-standalone`). They live in `dev/scripts` because every test in `pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs a Revit host, so a suite that gates CI cannot live beside the code it covers. Same reason for the load-by-path at the top of each file. |
+| `python dev/scripts/run_tests.py` | Shared API-free C#/Python discovery, reports, and per-module coverage gates; CI uses the same language selections. |
 | `python dev/scripts/check_revit_api_compat.py --baseline` | Revit API version-compatibility lint of `pyRevitTools.extension` and `pyrevitlib`. Run by `dotnet run -- ci` (`CheckRevitApiCompatModule`), and as `pipenv run check-revit-api`. Fails only on findings missing from the committed baseline. The module uses the first `python`, `python3` or `py` on `PATH` that is 3.10 or newer, so `ci.yml` has no Python setup step for it. See [Revit API compatibility lint](revit-api-compat.md). |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |

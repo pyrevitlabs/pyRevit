@@ -10,6 +10,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class Tests : TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;

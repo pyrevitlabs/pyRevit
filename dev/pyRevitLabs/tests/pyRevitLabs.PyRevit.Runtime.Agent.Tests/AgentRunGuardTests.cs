@@ -4,6 +4,8 @@ using Autodesk.Revit.UI;
 using PyRevitLabs.PyRevit.Runtime.Agent;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentRunGuardTests {
         [Fact]
         public void OpenedDocumentsAreProtectedEvenWithAnEmptyPath() {

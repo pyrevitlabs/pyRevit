@@ -11,6 +11,9 @@ namespace pyRevitExtensionParserTest
     /// in a temp extension because pyRevitDevTools no longer ships these exact buttons.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
+    [Category("Regression")]
     public class DynamoScriptTests : TempFileTestBase
     {
         private const string EmptyDynamoGraph = "{}";

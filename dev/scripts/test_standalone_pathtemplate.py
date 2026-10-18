@@ -7,6 +7,10 @@ The module is loaded by path rather than imported, because importing anything un
 exercise the shipped cleanup rules.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import datetime
 import importlib.util

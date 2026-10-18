@@ -6,6 +6,8 @@ using System.Drawing.Imaging;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class IconFunctionalityTests
     {
         [Test]

@@ -5,6 +5,8 @@ using Microsoft.Scripting;
 using PyRevitLabs.PyRevit.Shell;
 
 namespace pyRevitLabs.PyRevit.Shell.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class ShellExternalEventDispatcherTests {
         [Fact]
         public async Task CancelRemovesPendingCommandAndReleasesWaitAsync() {

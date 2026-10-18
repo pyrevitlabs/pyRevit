@@ -5,12 +5,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Integration")]
 public sealed class BinCompleteModuleTests
 {
     [TestMethod]
     [DataRow(typeof(WriteCiBinManifestModule))]
     [DataRow(typeof(BuildShellModule))]
-    [DataRow(typeof(TestConfigurationsModule))]
+    [DataRow(typeof(BuildRunnersModule))]
     [DataRow(typeof(VerifyLibGit2Module))]
     public void BinCompleteModule_waits_for_every_bin_writer(Type writer)
     {

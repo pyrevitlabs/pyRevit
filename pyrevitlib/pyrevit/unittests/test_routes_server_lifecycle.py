@@ -16,6 +16,10 @@ write to stderr either, for the reason the request path may not: an exception
 printed off a worker thread is what terminated the process.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import sys
 import threading
 import time

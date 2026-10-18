@@ -8,6 +8,8 @@ namespace pyRevitExtensionParserTester
     /// Unit tests for ExtensionManagerService.
     /// </summary>
     [TestFixture]
+    [Category("Revit")]
+    [Category("Unit")]
     public class ExtensionManagerServiceTests
     {
         private ExtensionManagerService _service;

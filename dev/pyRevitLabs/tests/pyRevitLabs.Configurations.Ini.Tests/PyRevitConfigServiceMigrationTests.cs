@@ -11,6 +11,8 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// Operates on explicit temp files, so it needs no install-scope state and is
 /// safe to run in parallel.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class PyRevitConfigServiceMigrationTests {
     private static string NewTempDir() {
         var dir = Path.Combine(Path.GetTempPath(), "cfgmerge_" + Guid.NewGuid().ToString("N"));

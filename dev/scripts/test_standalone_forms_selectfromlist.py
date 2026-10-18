@@ -4,6 +4,10 @@ The list double models binding-generated toggle events during ItemsSource
 replacement. Native WPF binding, virtualization and input still need a bench run.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import os
 import unittest

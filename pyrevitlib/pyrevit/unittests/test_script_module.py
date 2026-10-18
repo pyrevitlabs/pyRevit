@@ -7,6 +7,10 @@ command-runtime contract: logger/output access, bundle file resolution,
 data file helpers, and environment variable round trips.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os
 import unittest
 

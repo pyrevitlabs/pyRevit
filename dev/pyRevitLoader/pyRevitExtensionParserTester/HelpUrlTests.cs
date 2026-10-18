@@ -5,6 +5,8 @@ using NUnit.Framework;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     internal class HelpUrlTests
     {
         [Test]

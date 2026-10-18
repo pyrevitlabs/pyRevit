@@ -26,6 +26,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// context binds to the folder of its first caller and keeps it.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class ProcessWideLoadContextTests {
         private static IsolatedRendererFixture _fixture;
 

@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class RevitApiCatalogHelperTests
 {
     private const string Targets = """

@@ -6,6 +6,8 @@ using pyRevitLabs.Emojis;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class EmojisTests
     {
         private static int CountEmojiImages(string html)

@@ -11,6 +11,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class LibraryExtensionSearchPathTests : TempFileTestBase
     {
         [Test]

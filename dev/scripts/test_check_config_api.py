@@ -13,6 +13,10 @@ No pyRevit, no Revit, and no labs assemblies are needed; everything here is
 source analysis.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import tempfile
 import unittest

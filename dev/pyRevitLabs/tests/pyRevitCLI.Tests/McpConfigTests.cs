@@ -5,6 +5,8 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [CollectionDefinition(Name, DisableParallelization = true)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public sealed class CliGlobalState {
     public const string Name = "CLI global state";
 }
@@ -24,6 +26,8 @@ internal sealed class ClientCliRecorder : IDisposable {
 }
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class McpProjectConfigTests : IDisposable {
     private readonly string previousDirectory = Environment.CurrentDirectory;
     private readonly string project = Directory.CreateTempSubdirectory("pyrevit-mcp-project-").FullName;
@@ -199,6 +203,8 @@ public class McpProjectConfigTests : IDisposable {
 }
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class McpOwnedUninstallTests : IDisposable {
     private readonly string root = Directory.CreateTempSubdirectory("pyrevit-mcp-profile-").FullName;
     private readonly string thisExecutable = Environment.ProcessPath;

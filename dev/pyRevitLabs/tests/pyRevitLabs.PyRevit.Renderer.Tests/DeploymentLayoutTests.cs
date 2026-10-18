@@ -16,6 +16,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// stack therefore lives in the isolated folder, and only there.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class DeploymentLayoutTests {
         private static readonly string[] WebView2StackFileNames = {
             "Microsoft.Web.WebView2.Core.dll",
