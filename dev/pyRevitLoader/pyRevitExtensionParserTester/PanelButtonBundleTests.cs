@@ -11,6 +11,8 @@ namespace pyRevitExtensionParserTest
     /// These tests don't depend on any repo files.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class PanelButtonBundleTests : TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
@@ -257,6 +259,8 @@ print('test')");
     /// These tests require the repo's pyRevitDevTools.extension directory.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class DevToolsPanelButtonTests
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
@@ -269,7 +273,7 @@ print('test')");
         }
 
         [Test]
-        public void TestPushButtonWithoutBundle()
+        public void TestLogsPushButtonWithBundle()
         {
             if (_installedExtensions == null)
             {
@@ -299,8 +303,7 @@ print('test')");
                     Assert.IsTrue(pushButton.ScriptPath.EndsWith("script.py"));
                     Assert.AreEqual("Logs", pushButton.DisplayName);
 
-                    // Should have no bundle file
-                    Assert.IsNull(pushButton.BundleFile);
+                    Assert.That(pushButton.BundleFile, Does.EndWith("bundle.yaml"));
 
                     // Test completed successfully
                     return;

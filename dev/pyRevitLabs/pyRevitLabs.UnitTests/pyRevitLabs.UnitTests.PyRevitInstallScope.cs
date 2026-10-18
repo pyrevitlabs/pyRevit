@@ -11,14 +11,19 @@ using pyRevitExtensionParser;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class PyRevitInstallScopeTests {
         private string _tempRoot;
         private string _previousPyRevitPathOverride;
         private string _previousProgramDataPathOverride;
         private string _previousConfigScopeOverride;
+        private Func<bool> _previousElevationDetector;
 
         [TestInitialize]
         public void Setup() {
+            _previousElevationDetector = PyRevitInstallScope.ElevatedProcessDetector;
+            PyRevitInstallScope.ElevatedProcessDetector = () => false;
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitInstallScope_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
             _previousPyRevitPathOverride = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
@@ -44,6 +49,7 @@ namespace pyRevitLabs.UnitTests {
 
         [TestCleanup]
         public void Cleanup() {
+            PyRevitInstallScope.ElevatedProcessDetector = _previousElevationDetector;
             PyRevitConfigService.Reload();
             PyRevitInstallScope.ClearCachedInstallScope();
             PyRevitInstallScope.SetRuntimeInstallRoot(null);
@@ -117,8 +123,7 @@ namespace pyRevitLabs.UnitTests {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 return;
-            if (UserEnv.IsRunAsElevated())
-                Assert.Inconclusive("Test requires a non-elevated Windows process.");
+            Assert.IsFalse(PyRevitInstallScope.IsElevatedProcess());
         }
 
         [TestMethod]
@@ -147,11 +152,11 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void GetActiveConfig_AllUsers_WritableMachineConfig_Elevated_UsesMachineConfig() {
+            PyRevitInstallScope.ElevatedProcessDetector = () => true;
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 Assert.Inconclusive("Elevation detection is only available on Windows.");
-            if (!UserEnv.IsRunAsElevated())
-                Assert.Inconclusive("Test requires an elevated Windows process.");
+            Assert.IsTrue(PyRevitInstallScope.IsElevatedProcess());
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -191,11 +196,11 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void GetActiveConfig_AllUsers_MissingMachineConfig_Elevated_CreatesMachineConfig() {
+            PyRevitInstallScope.ElevatedProcessDetector = () => true;
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 Assert.Inconclusive("Elevation detection is only available on Windows.");
-            if (!UserEnv.IsRunAsElevated())
-                Assert.Inconclusive("Test requires an elevated Windows process.");
+            Assert.IsTrue(PyRevitInstallScope.IsElevatedProcess());
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -301,11 +306,11 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void GetActiveConfig_AllUsers_UnwritableMachineConfig_Elevated_UsesMachineConfig() {
+            PyRevitInstallScope.ElevatedProcessDetector = () => true;
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 Assert.Inconclusive("File sharing violations are only enforced on Windows.");
-            if (!UserEnv.IsRunAsElevated())
-                Assert.Inconclusive("Test requires an elevated Windows process.");
+            Assert.IsTrue(PyRevitInstallScope.IsElevatedProcess());
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -380,8 +385,7 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void MigrateSplitAdminConfig_MergesClonesAndExtensionSections() {
-            if (!PyRevitInstallScope.IsElevatedProcess())
-                Assert.Inconclusive("Split-admin migration requires an elevated process.");
+            PyRevitInstallScope.ElevatedProcessDetector = () => true;
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,

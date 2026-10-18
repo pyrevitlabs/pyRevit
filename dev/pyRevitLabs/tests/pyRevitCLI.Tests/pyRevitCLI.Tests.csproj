@@ -29,6 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\pyRevitCLI\pyRevitCLI.csproj" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\..\pyRevitLabs.Common\pyRevitLabs.Common.csproj"/>
         <ProjectReference Include="..\..\pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj"/>
     </ItemGroup>

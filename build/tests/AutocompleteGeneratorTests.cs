@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class AutocompleteGeneratorTests
 {
     private const string AutocompSourceRepoPath = "dev/pyRevitLabs/pyRevitCLIAutoComplete/pyrevit-autocomplete.go";

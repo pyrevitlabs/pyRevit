@@ -1,5 +1,9 @@
 """Exercise Keynote Manager connection errors without starting Revit."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 from pathlib import Path
 import re

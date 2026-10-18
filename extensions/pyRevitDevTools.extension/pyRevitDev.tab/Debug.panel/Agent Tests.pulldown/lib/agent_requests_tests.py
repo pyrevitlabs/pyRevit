@@ -1,5 +1,9 @@
 """Agent host requests other than runs: context, inspection, presentation and capture."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os.path as op
 from unittest import skipUnless
 

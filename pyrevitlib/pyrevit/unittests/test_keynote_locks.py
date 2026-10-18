@@ -9,6 +9,10 @@ only deleted while it is still the stale one the user agreed to release.
 Breaking any of these lets two writes overlap and lose keynote changes.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import os
 import os.path as op
@@ -349,7 +353,9 @@ class ReadTimeoutCauseTests(_KeynoteFileTestCase):
                 getattr(System.IO.FileShare, "None"),
             )
             timer = System.Diagnostics.Stopwatch.StartNew()
-            with self.assertRaises(System.Reflection.TargetInvocationException) as raised:
+            with self.assertRaises(
+                System.Reflection.TargetInvocationException
+            ) as raised:
                 store_type.GetMethod("Open", flags).Invoke(store, None)
             self.assertLess(timer.ElapsedMilliseconds, 2000)
             error = raised.exception.InnerException

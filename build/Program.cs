@@ -8,6 +8,13 @@ using ModularPipelines.Extensions;
 
 PyRevitPaths.Initialize();
 
+if (args is ["test-catalog", var catalogPath, var outputPath]) {
+    var sources = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(catalogPath))!;
+    var tests = sources.SelectMany(path => TestMetadata.Read(File.ReadAllText(path), path)).ToArray();
+    File.WriteAllText(outputPath, System.Text.Json.JsonSerializer.Serialize(tests));
+    return;
+}
+
 var builder = Pipeline.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
@@ -33,13 +40,11 @@ builder.Services.AddOptions<PublishOptions>().Bind(builder.Configuration.GetSect
 
 builder.Services.Configure<BuildOptions>(options => options.RequireInstallerTooling = modes.Packages);
 
-if (modes.Release)
-{
+if (modes.Release) {
     builder.Services.AddModule<ValidateTagMatchesVersionModule>();
 }
 
-if (modes.Ci)
-{
+if (modes.Ci) {
     builder.Services.AddModule<CheckEnvironmentModule>();
     builder.Services.AddModule<ValidateAgentSkillsModule>();
     builder.Services.AddModule<ResolveVersioningModule>();
@@ -53,7 +58,6 @@ if (modes.Ci)
     builder.Services.AddModule<BuildLoadersModule>();
     builder.Services.AddModule<BuildRuntimeModule>();
     builder.Services.AddModule<BuildRunnersModule>();
-    builder.Services.AddModule<TestConfigurationsModule>();
     builder.Services.AddModule<BuildShellModule>();
     builder.Services.AddModule<StageBinAssetsModule>();
     builder.Services.AddModule<BuildAutocompModule>();
@@ -63,50 +67,42 @@ if (modes.Ci)
     builder.Services.AddModule<BinCompleteModule>();
 }
 
-if (modes.Packages)
-{
+if (modes.Packages) {
     builder.Services.AddModule<RejectTestSignedBinariesModule>();
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
     builder.Services.AddModule<BuildChocoModule>();
 }
 
-if (modes.Sign || modes.Publish)
-{
+if (modes.Sign || modes.Publish) {
     builder.Services.AddModule<SignBinariesModule>();
     builder.Services.AddModule<SignDistInstallersModule>();
     builder.Services.AddModule<SignChocoPackageModule>();
 }
 
-if (modes.SignsTestBinaries)
-{
+if (modes.SignsTestBinaries) {
     builder.Services.AddModule<SignTestBinariesModule>();
 }
 
-if (modes.RemoveCert)
-{
+if (modes.RemoveCert) {
     builder.Services.AddModule<RemoveTestCertificateModule>();
 }
 
-if (modes.TrustCert)
-{
+if (modes.TrustCert) {
     builder.Services.AddModule<TrustTestCertificateModule>();
 }
 
-if (modes.Publish)
-{
+if (modes.Publish) {
     builder.Services.AddModule<GenerateReleaseNotesModule>();
     builder.Services.AddModule<PublishGithubReleaseModule>();
     builder.Services.AddModule<PublishChocoModule>();
 }
 
-if (modes.Winget)
-{
+if (modes.Winget) {
     builder.Services.AddModule<PublishWingetModule>();
 }
 
-if (modes.Notify)
-{
+if (modes.Notify) {
     builder.Services.AddModule<NotifyIssuesModule>();
 }
 

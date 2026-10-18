@@ -6,7 +6,9 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
-    public class PythonScriptMultiLangTest
+    [Category("HostFree")]
+    [Category("Integration")]
+    public class PythonScriptMultiLangTest : pyRevitExtensionParserTest.TestHelpers.TempFileTestBase
     {
         private string _extensionPath;
 
@@ -150,8 +152,8 @@ namespace pyRevitExtensionParserTester
             Assert.IsNotEmpty(button.Title, "Button should have a title");
 
             // LocalizedTitles should be null or empty for simple strings
-            Assert.IsTrue(button.LocalizedTitles == null || button.LocalizedTitles.Count == 0,
-                "Simple string __title__ should not create localized titles collection");
+            Assert.That(button.Title, Is.EqualTo("Test Persistent Engine (NonModal)"));
+            Assert.That(button.LocalizedTitles?.Values, Does.Contain(button.Title));
 
             Assert.Pass("Simple string __title__ parsing validated successfully.");
         }

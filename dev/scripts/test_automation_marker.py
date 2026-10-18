@@ -1,5 +1,9 @@
 """Tests for the engine-neutral Python automation markers."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import io
 import os

@@ -8,6 +8,7 @@ repos:
     hooks:
       - id: dotnet-format
         name: dotnet format (C#)
+        require_serial: true
         entry: python dev/scripts/format_staged_csharp.py
         language: system
         files: \.cs$

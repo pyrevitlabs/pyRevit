@@ -6,6 +6,8 @@ using System.IO;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class MultilineTitleTest
     {
         private string _testDir;

@@ -16,6 +16,8 @@ namespace pyRevitExtensionParserTester
     /// </summary>
     [TestFixture]
     [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ScriptEngineManagerTests : TempFileTestBase
     {
         private string _sessionId;
@@ -314,6 +316,8 @@ namespace pyRevitExtensionParserTester
         }
 
         /// <summary>Engine standing in for a cached interpreter, counting its own shutdowns.</summary>
+        [Category("HostFree")]
+        [Category("Unit")]
         public class RecordingEngine : ScriptEngine
         {
             public int ShutdownCount { get; private set; }
@@ -328,6 +332,8 @@ namespace pyRevitExtensionParserTester
         /// Stands in for an engine left in the cache by another copy of the runtime assembly: its
         /// type derives from that copy's ScriptEngine, so this copy can never cast from it.
         /// </summary>
+        [Category("HostFree")]
+        [Category("Unit")]
         public class UnusableEngine
         {
             public int ShutdownCount { get; private set; }
@@ -339,6 +345,8 @@ namespace pyRevitExtensionParserTester
         }
 
         /// <summary>Stands in for a cached engine whose shutdown blows up.</summary>
+        [Category("HostFree")]
+        [Category("Unit")]
         public class ThrowingEngine
         {
             public void Shutdown()

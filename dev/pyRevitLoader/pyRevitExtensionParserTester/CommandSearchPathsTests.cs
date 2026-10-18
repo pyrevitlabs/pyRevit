@@ -17,6 +17,8 @@ namespace pyRevitExtensionParserTester
     /// paths - which put a duplicate entry on <c>sys.path</c> for every command. #3687.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class CommandSearchPathsTests : TempFileTestBase
     {
         private const string Bundle = "DummyUi.extension/Dummy.tab/Smoke.panel/Check.pushbutton";

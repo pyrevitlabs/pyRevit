@@ -6,6 +6,10 @@ why they sit in `dev/scripts` rather than beside the code: every test in
 with `-p 'test_standalone_*.py'`.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import importlib.util
 import logging
 import os

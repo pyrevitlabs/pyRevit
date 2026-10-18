@@ -11,6 +11,8 @@ namespace pyRevitExtensionParserTest
     /// Tests for ComboBox parsing functionality.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ComboBoxTests : TempFileTestBase
     {
         [Test]

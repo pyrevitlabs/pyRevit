@@ -1119,6 +1119,7 @@ namespace pyRevitExtensionParser
                             scriptPath = bundleDirFiles.FirstOrDefault(f =>
                                 (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
                                  (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) &&
+                                  !string.Equals(Path.GetFileName(f), $"config{scriptExt}", StringComparison.OrdinalIgnoreCase) &&
                                   !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
                             if (scriptPath != null)
                                 break;

@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using pyRevitLabs.Configurations;
+using pyRevitLabs.Configurations.Ini.Extensions;
 
 namespace pyRevitExtensionParserTest.TestHelpers
 {
@@ -26,11 +28,20 @@ namespace pyRevitExtensionParserTest.TestHelpers
         {
             TestTempDir = Path.Combine(Path.GetTempPath(), $"pyRevitTest_{Guid.NewGuid():N}");
             Directory.CreateDirectory(TestTempDir);
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
+            PyRevitConfigStore.Reset();
+            File.WriteAllText(configPath, "[core]\nread_script_metadata = true\n[pyRevitDevTools.extension]\ndisabled = false\n");
+            PyRevitConfigStore.SetFactory(() => new ConfigurationBuilder(false).AddIniConfiguration(configPath).Build());
+            pyRevitExtensionParser.PyRevitConfig.ClearCache();
+            pyRevitExtensionParser.ExtensionParser.ClearAllCaches();
         }
 
         [TearDown]
         public virtual void BaseTearDown()
         {
+            PyRevitConfigStore.Reset();
+            pyRevitExtensionParser.PyRevitConfig.ClearCache();
+            pyRevitExtensionParser.ExtensionParser.ClearAllCaches();
             if (CleanupAfterTest && !string.IsNullOrEmpty(TestTempDir) && Directory.Exists(TestTempDir))
             {
                 try

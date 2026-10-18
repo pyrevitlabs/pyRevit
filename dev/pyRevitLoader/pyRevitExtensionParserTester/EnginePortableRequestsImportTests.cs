@@ -22,6 +22,8 @@ namespace pyRevitExtensionParserTest
     /// the failure is silent: a direct import looks fine until it is run on the default engine.
     /// </remarks>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class EnginePortableRequestsImportTests
     {
         private const string RequestsModule = "requests";
@@ -202,7 +204,8 @@ namespace pyRevitExtensionParserTest
                 "def f():\n    '''\n    import requests\n    '''",
             };
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 foreach (string source in shouldMatch)
                 {
                     string stripped = StripStringLiteralsAndComments(source);

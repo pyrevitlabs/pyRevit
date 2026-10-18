@@ -2,6 +2,8 @@ using pyRevitCLI;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AgentSkillsTests {
     private const string Core = PyRevitAgentSkills.CoreSkill;
 

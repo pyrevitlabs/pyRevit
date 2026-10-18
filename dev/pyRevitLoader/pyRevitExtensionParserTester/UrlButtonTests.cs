@@ -7,6 +7,8 @@ using System.Linq;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class UrlButtonTests
     {
         [Test]

@@ -8,6 +8,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class SmartButtonTests : TempFileTestBase
     {
         private string _extensionDir;

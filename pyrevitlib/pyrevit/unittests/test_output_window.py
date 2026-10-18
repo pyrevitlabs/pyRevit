@@ -12,6 +12,10 @@ the print-based regression buttons under Log Output Tests and by the
 behavior.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import unittest
 
 

@@ -18,6 +18,8 @@ namespace pyRevitExtensionParserTester
     /// </summary>
     [TestFixture]
     [Apartment(ApartmentState.STA)]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ScriptOutputUiGateTests
     {
         private ScriptOutputUiGate _gate;

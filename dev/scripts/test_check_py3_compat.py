@@ -1,5 +1,9 @@
 """Regression tests for IronPython 3 branch reachability in the static checker."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import unittest
 

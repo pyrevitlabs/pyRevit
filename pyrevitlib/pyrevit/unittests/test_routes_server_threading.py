@@ -14,6 +14,10 @@ Access logging runs on those same threads, so ``HttpRequestHandler`` must
 report every request through ``mlogger`` and never reach stderr either.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import socket
 import sys
 import threading

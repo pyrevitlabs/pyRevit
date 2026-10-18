@@ -8,6 +8,7 @@ Deliberately free of pyrevit imports so a plain CPython test can load it without
 Revit host. Targets IronPython 2.7 as well as CPython 3, since 2.7 is the default engine.
 """
 
+import io
 import os
 import time
 from xml.etree import ElementTree
@@ -198,11 +199,12 @@ class JUnitReport(object):
             child.text = _to_text(case["message"])
 
     def write(self, path=None):
-        """Writes the report, replacing any previous file and creating parents as needed.
+        """Preserves other module suites while replacing this suite's previous result.
 
         Important: writes once per run. Writing per outcome would either lose earlier
         results or leave several root elements in the file, which no JUnit consumer
-        accepts.
+        accepts. Module runs sharing a destination must execute serially; give
+        independent runs separate paths.
 
         Args:
             path (str): destination file. Defaults to `PATH_ENV_VAR`; when that is unset
@@ -220,8 +222,32 @@ class JUnitReport(object):
         if directory and not os.path.isdir(directory):
             os.makedirs(directory)
 
-        with open(path, "w") as report_file:
-            report_file.write(self.to_xml())
-            report_file.write("\n")
+        current = ElementTree.fromstring(self.to_xml())
+        suites = []
+        if os.path.isfile(path):
+            previous = ElementTree.parse(path).getroot()
+            if previous.tag == "testsuite":
+                suites = [previous]
+            elif previous.tag == "testsuites":
+                suites = list(previous)
+            else:
+                raise ValueError("Expected a JUnit testsuite or testsuites root")
+        suites = [suite for suite in suites if suite.get("name") != current.get("name")]
+        suites.append(current)
+        root = current
+        if len(suites) > 1:
+            root = ElementTree.Element("testsuites")
+            for suite in suites:
+                root.append(suite)
+            for attribute in ("tests", "failures", "errors", "skipped"):
+                root.set(
+                    attribute,
+                    str(sum(int(suite.get(attribute, "0")) for suite in suites)),
+                )
+
+        with io.open(path, "w", encoding="utf-8") as report_file:
+            report_file.write(_to_text('<?xml version="1.0" encoding="utf-8"?>'))
+            report_file.write(ElementTree.tostring(root, encoding="unicode"))
+            report_file.write(_to_text("\n"))
 
         return path

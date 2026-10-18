@@ -8,8 +8,9 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// uses, without touching real machine directories or install-scope detection.
 /// Order mirrors the documented Python precedence in userconfig.py.
 /// </summary>
-public class PyRevitConfigServiceSelectionTests
-{
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
+public class PyRevitConfigServiceSelectionTests {
     /// <summary>
     /// Exercises every rung of the selection ladder documented in userconfig.py.
     /// </summary>
@@ -48,8 +49,7 @@ public class PyRevitConfigServiceSelectionTests
         bool adminExists,
         bool adminLocked,
         bool userExists,
-        PyRevitConfigService.ConfigSelection expected)
-    {
+        PyRevitConfigService.ConfigSelection expected) {
         Assert.Equal(
             expected,
             PyRevitConfigService.SelectConfig(
@@ -65,8 +65,7 @@ public class PyRevitConfigServiceSelectionTests
     [InlineData(false, PyRevitConfigService.ConfigSelection.Seed)]
     [InlineData(true, PyRevitConfigService.ConfigSelection.User)]
     public void SelectConfig_UnwritableMachineConfigIsNotALockdown(
-        bool userExists, PyRevitConfigService.ConfigSelection expected)
-    {
+        bool userExists, PyRevitConfigService.ConfigSelection expected) {
         Assert.Equal(
             expected,
             PyRevitConfigService.SelectConfig(

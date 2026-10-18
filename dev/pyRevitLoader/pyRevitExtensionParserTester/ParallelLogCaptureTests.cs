@@ -8,6 +8,8 @@ using pyRevitAssemblyBuilder.SessionManager;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class ParallelLogCaptureTests
     {
         private sealed class RecordingLogger : ILogger

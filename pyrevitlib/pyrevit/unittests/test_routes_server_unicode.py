@@ -9,6 +9,10 @@ Also verifies that parse_response falls back to _safe_json_dumps
 when json.dumps raises Unicode errors.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import json
 import unittest
 

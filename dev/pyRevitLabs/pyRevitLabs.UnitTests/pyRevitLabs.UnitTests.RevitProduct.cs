@@ -22,6 +22,8 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
     /// outcome to the identity the caller can actually supply.
     /// </remarks>
     [TestClass()]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class RevitProductDataTests {
         private const string Shared2020_2021Build = "20220517_1515";
         private const string Shared2021_2022Build = "20220123_1515";
@@ -223,14 +225,13 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
     /// setup - and warning about it made every session announce a product the
     /// user never launched and advise them to switch pyRevit releases.
     /// <para>
-    /// These tests resolve real products off this machine, so the level split is
-    /// only observable where a below-minimum Revit is actually installed. A
-    /// machine without one skips instead of failing, which is what lets the class
-    /// run in CI: it guards the reporting contract there and only a developer
-    /// machine carrying an old Revit exercises the full comparison.
+    /// These tests resolve real installed products. Run locally with the required
+    /// Revit versions; pure metadata matching remains in the HostFree fixtures.
     /// </para>
     /// </remarks>
     [TestClass()]
+    [TestCategory("Revit")]
+    [TestCategory("Integration")]
     public class BelowMinimumProductReportingTests {
         private const string LevelSeparator = "|";
         private const string SwitchReleaseAdvice = "Use a pyRevit release that supports Revit";
@@ -368,16 +369,7 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
                 StringAssert.Contains(product.ToString(), RevitProductData.MinimumSupportedProductYear.ToString());
         }
 
-        [TestMethod()]
-        public void ResolveProduct_DefaultsToTreatingTheProductAsTheRunningHost() {
-            var roleParameter = typeof(RevitProduct).GetMethod("ResolveProduct")
-                                                        .GetParameters()
-                                                        .Single(par => par.Name == "role");
 
-            Assert.IsTrue(roleParameter.IsOptional,
-                          "Callers that omit the role resolve the host they are launching into");
-            Assert.AreEqual(ResolvedProductRole.RunningHost, roleParameter.DefaultValue);
-        }
     }
 
     /// <summary>
@@ -390,6 +382,8 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
     /// "Installed" is therefore not the same question as "attachable".
     /// </remarks>
     [TestClass()]
+    [TestCategory("Revit")]
+    [TestCategory("Integration")]
     public class AttachableProductTests {
         private const string LevelSeparator = "|";
         private const string NotAttaching = "Not attaching to Revit";
@@ -488,6 +482,8 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
     /// to be installed.
     /// </summary>
     [TestClass()]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class AttachableProductFilterTests {
         private const int BelowMinimumYear = 2017;
         private const int SupportedYear = 2025;
@@ -676,4 +672,22 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
             Assert.AreEqual(SupportedYear, attachable[0].ProductYear);
         }
     }
+    /// <summary>Guards the default reporting role without an installed product.</summary>
+    [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
+    public class RevitProductRoleContractTests {
+        /// <summary>Existing callers that omit the role still resolve their running host.</summary>
+        [TestMethod()]
+        public void ResolveProduct_DefaultsToTreatingTheProductAsTheRunningHost() {
+            var roleParameter = typeof(RevitProduct).GetMethod("ResolveProduct")
+                                                        .GetParameters()
+                                                        .Single(par => par.Name == "role");
+
+            Assert.IsTrue(roleParameter.IsOptional,
+                          "Callers that omit the role resolve the host they are launching into");
+            Assert.AreEqual(ResolvedProductRole.RunningHost, roleParameter.DefaultValue);
+        }
+    }
+
 }

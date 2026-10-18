@@ -23,6 +23,8 @@ namespace pyRevitExtensionParserTester
     /// by pyrevit.unittests.test_config_roundtrip.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ConfigParityTests
     {
         /// <summary>

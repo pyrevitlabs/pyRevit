@@ -11,8 +11,9 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// canonical JSON, JSON whose legacy Windows paths carry unescaped backslashes,
 /// and the legacy Python single-quoted literal.
 /// </summary>
-public class ListDecodingTests
-{
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
+public class ListDecodingTests {
     /// <summary>
     /// Injects the stored text directly, so the decode is exercised without the
     /// INI file writer/parser round-trip in between.
@@ -20,8 +21,7 @@ public class ListDecodingTests
     private static List<string> Decode(string stored) =>
         Store(stored).GetValue<List<string>>("core", "userextensions");
 
-    private static IConfiguration Store(string stored)
-    {
+    private static IConfiguration Store(string stored) {
         IConfiguration config = IniConfiguration.Create(
             Path.Combine(Path.GetTempPath(), $"list_{Guid.NewGuid():N}.ini"));
         config.SetRawValue("core", "userextensions", stored);
@@ -101,17 +101,14 @@ public class ListDecodingTests
     /// The migrator finds it through the same failure, and can then repair it.
     /// </summary>
     [Fact]
-    public void UndecodableList_IsReportedAsUnreadable()
-    {
+    public void UndecodableList_IsReportedAsUnreadable() {
         var warnings = new List<string>();
         Action<string>? previous = ConfigurationDiagnostics.Warn;
         ConfigurationDiagnostics.Warn = warnings.Add;
-        try
-        {
+        try {
             Store(@"['C:\Users\ext").GetValueOrDefault<List<string>>("core", "userextensions");
         }
-        finally
-        {
+        finally {
             ConfigurationDiagnostics.Warn = previous;
         }
 
