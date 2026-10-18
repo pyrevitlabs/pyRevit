@@ -366,11 +366,13 @@ class PrintUtils:
 
     @staticmethod
     def export_sheet_dwg(dir_path, sheet, opt, doc, filename):
+        """Export a sheet to DWG, raising if Revit reports incomplete output."""
         base_name = op.splitext(filename)[0]
         dwg_doc_name = base_name + ".dwg"
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
-        doc.Export(dir_path, dwg_doc_name, export_sheet, opt)
+        if not doc.Export(dir_path, dwg_doc_name, export_sheet, opt):
+            raise RuntimeError("Revit reported an incomplete DWG export.")
         return True
 
 
@@ -1094,18 +1096,17 @@ class PrintSheetsWindow(forms.WPFWindow):
         user, so this runs before the window closes.
 
         Returns:
-            (bool): False when the user cancels or a file cannot be replaced,
-                so the caller keeps the window open.
+            (_OutputReplacement): Recovery state, or None when the user cancels
+                or a file cannot be moved aside.
 
         Warning:
-            Deletes the existing files once the user chooses to replace them.
-            Every file is first moved aside, so a locked file puts the others
-            back and nothing is deleted.
+            Existing files remain in backups until export completion is verified.
+            External printer jobs retain backups for manual recovery because
+            submission does not confirm that the driver has finished writing.
         """
-        existing = _existing_files(self._planned_output_files(dir_path, target_sheets))
-        if not existing:
-            return True
-        if not forms.alert(
+        planned = self._planned_output_files(dir_path, target_sheets)
+        existing = _existing_files(planned)
+        if existing and not forms.alert(
             "{} file(s) this print creates already exist in:\n{}\n\n"
             "Replace them?".format(len(existing), dir_path),
             expanded="\n".join(op.basename(path) for path in existing),
@@ -1113,9 +1114,9 @@ class PrintSheetsWindow(forms.WPFWindow):
             yes=True,
             no=True,
         ):
-            return False
+            return None
         try:
-            set_aside = _set_aside_files(existing)
+            return _OutputReplacement(planned)
         except _LockedFileError as locked_err:
             forms.alert(
                 "Cannot replace {}. Close it if it is open, then print again.".format(
@@ -1123,9 +1124,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 ),
                 expanded=str(locked_err.cause),
             )
-            return False
-        _delete_set_aside_files(set_aside)
-        return True
+            return None
 
     def copy_naming_format(self, sender, args):
         try:
@@ -1565,6 +1564,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                 exported = PrintUtils.export_combined_pdf(
                     dirPath, sheet_ids, optspdf, doc, COMBINED_PDF_NAME
                 )
+                if exported:
+                    self._completed_outputs.append(
+                        op.join(dirPath, COMBINED_PDF_NAME + ".pdf")
+                    )
         except Exception as e:
             logger.error("Failed to export combined PDF: %s", e)
             forms.alert("Failed to export combined PDF: {}".format(e))
@@ -1662,6 +1665,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                         doc,
                                                         sheet.print_filename,
                                                     )
+                                                    self._completed_outputs.append(
+                                                        print_filepath
+                                                    )
                                                 else:
                                                     print_mgr.SubmitPrint(
                                                         sheet.revit_sheet
@@ -1683,6 +1689,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                     optsdwg,
                                                     doc,
                                                     sheet.print_filename,
+                                                )
+                                                self._completed_outputs.append(
+                                                    op.splitext(print_filepath)[0]
+                                                    + ".dwg"
                                                 )
                                             except Exception as e:
                                                 logger.error(
@@ -1752,6 +1762,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                         optspdf,
                                                         doc,
                                                         sheet.print_filename,
+                                                    )
+                                                    self._completed_outputs.append(
+                                                        print_filepath
                                                     )
                                                 else:
                                                     print_mgr.SubmitPrint(
@@ -1830,6 +1843,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 optspdf,
                                                 doc,
                                                 sheet.print_filename,
+                                            )
+                                            self._completed_outputs.append(
+                                                print_filepath
                                             )
                                         else:
                                             print_mgr.SubmitPrint(sheet.revit_sheet)
@@ -2275,19 +2291,25 @@ class PrintSheetsWindow(forms.WPFWindow):
             dir_path = self._get_output_dir()
             if not dir_path:
                 return
-            if not self._replace_existing_outputs(dir_path, target_sheets):
+            replacement = self._replace_existing_outputs(dir_path, target_sheets)
+            if replacement is None:
                 return
-            # close window and submit print
-            self.Close()
-            if self.combine_print:
-                self._print_combined_sheets_in_order(target_sheets, dir_path)
-            else:
-                if self.selected_doc.IsLinked:
+            self._completed_outputs = []
+            try:
+                self.Close()
+                if self.combine_print:
+                    self._print_combined_sheets_in_order(target_sheets, dir_path)
+                elif self.selected_doc.IsLinked:
                     self._print_linked_sheets_in_order(
                         target_sheets, self.selected_doc, dir_path
                     )
                 else:
                     self._print_sheets_in_order(target_sheets, dir_path)
+            finally:
+                replacement.finish(
+                    self._completed_outputs,
+                    asynchronous=self.selected_printer != "Revit Internal Printer",
+                )
 
 
 def _saved_text(option_name, default):
@@ -2307,6 +2329,42 @@ def _check(checkbox, value):
 def _check_if_enabled(checkbox, value):
     if checkbox.IsEnabled:
         _check(checkbox, value)
+
+
+class _OutputReplacement(object):
+    def __init__(self, paths):
+        self.paths = sorted(set(paths))
+        self.backups = _set_aside_files(_existing_files(self.paths))
+
+    def finish(self, completed, asynchronous=False):
+        if asynchronous:
+            if self.backups:
+                forms.alert(
+                    "External printer completion cannot be verified. Previous files "
+                    "were kept as .replaced backups. Keep them until you verify the new exports.",
+                    expanded="\n".join(backup for _, backup in self.backups),
+                )
+            return
+        confirmed = set(op.normcase(path) for path in completed)
+        if all(
+            op.normcase(path) in confirmed and op.isfile(path) for path in self.paths
+        ):
+            _delete_set_aside_files(self.backups)
+            return
+        for path in self.paths:
+            if op.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as remove_err:
+                    logger.warning(
+                        "Could not remove partial export %s: %s", path, remove_err
+                    )
+        _put_back_files(self.backups)
+        forms.alert(
+            "Export did not complete. Previous files were restored where possible. "
+            "Any backup that could not be restored remains at its .replaced path; "
+            "check the output log for recovery details."
+        )
 
 
 class _LockedFileError(Exception):
@@ -2342,6 +2400,8 @@ def _set_aside_files(paths):
 def _put_back_files(set_aside):
     for original, backup in set_aside:
         try:
+            if op.exists(original):
+                raise OSError("The output still exists; its backup has been retained")
             os.rename(backup, original)
         except Exception as restore_err:
             logger.warning(
