@@ -7,9 +7,9 @@
 From the repository root on Windows, with the product's .NET SDKs installed:
 
 ```powershell
-python dev/testing/run_tests.py --install-dependencies
-python dev/testing/run_tests.py --list
-python dev/testing/run_tests.py
+python dev/tests/run_tests.py --install-dependencies
+python dev/tests/run_tests.py --list
+python dev/tests/run_tests.py
 ```
 
 Dependencies are pinned in `Pipfile.lock`. An existing development environment can use `pipenv run test`. Add `--language python` or `--language dotnet` for one language. `--list` inventories Revit suites without executing them.
@@ -20,7 +20,7 @@ CI uses the same runner: Python checks, product build, then C# tests. Product bu
 
 ```mermaid
 flowchart LR
-    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>dev/testing/tests/**/test_*.py"]
+    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>dev/tests/python/**/test_*.py"]
     Runner --> Loader
     Runner --> Runtime
     Runner --> Labs
@@ -78,11 +78,11 @@ Keep C# tests in separate assemblies beside their owning area, normally `dev/<ar
 | CLI, Common, Emojis, configuration, PyRevit facade, agent and CPython adapters | Named projects under `dev/pyRevitLabs/tests/` |
 | Legacy MSTest library contracts | `dev/pyRevitLabs/pyRevitLabs.UnitTests/` |
 | Build pipeline | `build/tests/` |
-| API-free Python tooling/library checks | `dev/testing/tests/**/test_*.py` |
+| API-free Python tooling/library checks | `dev/tests/python/**/test_*.py` |
 | Hosted Python library tests | `pyrevitlib/pyrevit/unittests/` |
 | Hosted agent tests and manual checks | DevTools command bundles under `extensions/` |
 
-Each suite's README owns its fixtures, maintainer, frameworks/engines and focused commands. Small repository helpers live in `dev/testing/csharp/`; loader helpers live in `dev/pyRevitLoader/tests/TestSupport/`. A shared base class is not mandatory.
+Each suite's README owns its fixtures, maintainer, frameworks/engines and focused commands. Small repository helpers live in `dev/tests/csharp/`; loader helpers live in `dev/pyRevitLoader/tests/TestSupport/`. A shared base class is not mandatory.
 
 Reorganized C# suites appear in area solutions for navigation, without default solution-build selection. The shared runner builds them explicitly; product builds must not build tests for every interpreter configuration.
 
@@ -115,17 +115,17 @@ Adding a test or adjacent project must not require changing a central list. Netw
 
 ## Coverage baselines
 
-`dev/testing/coverage-baselines.json` sets **line and branch floors per module/framework**, not a repository-wide target. Normal runs fail on decreases, missing established modules, or new measured modules without a baseline. Review scope/denominator changes as well as percentages. Raise floors as coverage improves.
+`dev/tests/coverage-baselines.json` sets **line and branch floors per module/framework**, not a repository-wide target. Normal runs fail on decreases, missing established modules, or new measured modules without a baseline. Review scope/denominator changes as well as percentages. Raise floors as coverage improves.
 
 ```powershell
-python dev/testing/run_tests.py --update-baselines
+python dev/tests/run_tests.py --update-baselines
 ```
 
 This explicit update can lower floors: review its diff and explain every reduction with a reason and follow-up. Never remove source from reporting to make a gate pass.
 
 Python scope is explicit in `pyproject.toml`, including unexecuted files. C# coverage includes instrumented first-party assemblies and their unexecuted code; assemblies never loaded by tests still need dedicated suites. Exclude vendor/generated/test code, normalize Windows document paths, and merge line/branch identities without duplicate deployment copies. `dotnet-linked/` measures production source compiled into test assemblies. Source inspection does not establish execution coverage of the inspected code. Keep language and local Revit results separate.
 
-`dev/testing/README.md` records collector details and initial baseline calibration.
+`dev/tests/README.md` records collector details and initial baseline calibration.
 
 ## Revit integration tests
 

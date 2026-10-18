@@ -197,7 +197,7 @@
     "line": 0.25311203319502074,
     "lines": 241
   },
-  "python/dev/testing/run_tests.py": {
+  "python/dev/tests/run_tests.py": {
     "branch": 0.38181818181818183,
     "branches": 110,
     "line": 0.42,

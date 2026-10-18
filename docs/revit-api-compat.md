@@ -18,7 +18,7 @@ The build runs it as part of `dotnet run -- ci` (`CheckRevitApiCompatModule`),
 after version stamping, so a local build gates on it too and CI needs no extra
 step. The module also fails when `catalog.json` does not cover exactly the
 Revit years `dev/Directory.Build.targets` builds for. Its tests live in
-`dev/testing/tests/tooling/test_check_revit_api_compat.py`, which CI runs with the
+`dev/tests/python/tooling/test_check_revit_api_compat.py`, which CI runs with the
 other standalone suites.
 
 ## Running it
@@ -201,7 +201,7 @@ new Revit release (or an update that deprecates API) ships:
 ```bash
 pip install dnfile
 python dev/checks/build_revit_api_catalog.py
-python -m pytest dev/testing/tests/tooling/test_check_revit_api_compat.py
+python -m pytest dev/tests/python/tooling/test_check_revit_api_compat.py
 python dev/checks/check_revit_api_compat.py --baseline
 ```
 

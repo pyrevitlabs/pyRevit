@@ -8,8 +8,8 @@ Owner: repository tooling maintainers, or the owning library maintainers for sta
 From the repository root:
 
 ```powershell
-python dev/testing/run_tests.py --install-dependencies
-python dev/testing/run_tests.py --language python
+python dev/tests/run_tests.py --install-dependencies
+python dev/tests/run_tests.py --language python
 pipenv run test-library
 ```
 
@@ -17,6 +17,6 @@ Discovery includes every `test_*.py` module, including compatibility and automat
 
 Tests use temporary files, local module doubles, or extracted helpers. Keep fixture cleanup with the owning suite. Contract checks do not claim execution of source merely inspected as text. JUnit and coverage artifacts have unique run paths below `.test-results/`. Python coverage scope is explicit in `pyproject.toml`; extend it when adding a measured module and review its baseline.
 
-See `docs/testing.md` for policy and `dev/testing/README.md` for baseline review.
+See `docs/testing.md` for policy and `dev/tests/README.md` for baseline review.
 
 `pipenv run test-standalone` remains an alias for the library suites. Hosted Python tests remain under `pyrevitlib/pyrevit/unittests/` and are excluded from CI.

@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEVELS = {"Unit", "Integration", "E2E", "Performance"}
 ENVIRONMENTS = {"HostFree", "Revit"}
 EXCLUDED = {"modules", "bin", "obj", ".git", ".venv", "site-packages"}
-BASELINES = ROOT / "dev/testing/coverage-baselines.json"
+BASELINES = ROOT / "dev/tests/coverage-baselines.json"
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
 
 

@@ -9,7 +9,7 @@ The NUnit suite targets `net48` and `net8.0-windows`. Tests are discovered from 
 Run the full CI selection from the repository root:
 
 ```powershell
-python dev/testing/run_tests.py --language dotnet
+python dev/tests/run_tests.py --language dotnet
 ```
 
 For focused debugging:
