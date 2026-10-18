@@ -1,4 +1,4 @@
-title: Test Linkify Append Selection
+title: "Test Linkify\nAppend Selection"
 tooltip: >-
   Manual test for output.linkify() ctrl+click append-to-selection. Select a few
   elements (all model elements are used when nothing is selected), run the
