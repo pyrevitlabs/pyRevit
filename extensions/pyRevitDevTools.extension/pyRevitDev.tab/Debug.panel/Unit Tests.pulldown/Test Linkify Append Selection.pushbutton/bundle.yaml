@@ -1,0 +1,7 @@
+title: Test Linkify Append Selection
+tooltip: >-
+  Manual test for output.linkify() ctrl+click append-to-selection. Select a few
+  elements (all model elements are used when nothing is selected), run the
+  button, then use the printed links: plain click replaces the selection,
+  ctrl+click adds the element to the current selection.
+context: doc-project
