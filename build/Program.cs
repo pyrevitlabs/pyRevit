@@ -9,9 +9,12 @@ using ModularPipelines.Extensions;
 PyRevitPaths.Initialize();
 
 if (args is ["test-catalog", var catalogPath, var outputPath]) {
-    var sources = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(catalogPath))!;
-    var tests = sources.SelectMany(path => TestMetadata.Read(File.ReadAllText(path), path)).ToArray();
-    File.WriteAllText(outputPath, System.Text.Json.JsonSerializer.Serialize(tests));
+    var requests = System.Text.Json.JsonSerializer.Deserialize<TestCatalogRequest[]>(File.ReadAllText(catalogPath))!;
+    var suites = requests.Select(request => new TestCatalogSuite(
+        request.Project,
+        request.Framework,
+        request.Sources.SelectMany(path => TestMetadata.Read(File.ReadAllText(path), path, request.Defines)).ToArray())).ToArray();
+    File.WriteAllText(outputPath, System.Text.Json.JsonSerializer.Serialize(suites));
     return;
 }
 
