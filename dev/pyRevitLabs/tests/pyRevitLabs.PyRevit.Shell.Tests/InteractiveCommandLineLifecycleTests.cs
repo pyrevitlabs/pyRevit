@@ -10,6 +10,8 @@ using Microsoft.Scripting.Hosting.Shell;
 using PythonConsoleControl;
 
 namespace pyRevitLabs.PyRevit.Shell.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Integration")]
     public class InteractiveCommandLineLifecycleTests {
         [Fact]
         public void ClosingInputEndsInteractiveLoopAndInvokesRuntimeShutdownHook() {

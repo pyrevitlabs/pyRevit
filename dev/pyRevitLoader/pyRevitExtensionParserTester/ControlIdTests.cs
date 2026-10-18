@@ -12,6 +12,8 @@ namespace pyRevitExtensionParserTester
     /// Control IDs are used by the runtime to find ribbon items via findRibbonItem().
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class ControlIdTests
     {
         /// <summary>

@@ -4,6 +4,8 @@ using NUnit.Framework;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class SessionManagerReflectionCompatibilityTests
     {
         private class ConfigWithProperty

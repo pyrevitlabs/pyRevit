@@ -1,5 +1,9 @@
 """Host-free tests for shared event-handler registration and cleanup."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import importlib.util
 import os
 import sys

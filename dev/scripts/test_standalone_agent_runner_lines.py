@@ -1,5 +1,9 @@
 """Host-free regression tests for agent-script source locations and narrowing."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import builtins
 import importlib.util

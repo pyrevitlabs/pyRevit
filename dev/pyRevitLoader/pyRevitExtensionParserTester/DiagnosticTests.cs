@@ -3,6 +3,8 @@ using System.IO;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class DiagnosticTests
     {
         [Test]

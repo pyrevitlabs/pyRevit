@@ -1,5 +1,9 @@
 """Tests for the Revit API compatibility checker and its catalog builder."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import io
 import json
 import shutil

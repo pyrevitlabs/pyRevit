@@ -9,6 +9,8 @@ using PyRevitLabs.PyRevit.Runtime;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class HeldRecordBufferTests
     {
         private static List<string> DrainAll(HeldRecordBuffer buffer, out int dropped)

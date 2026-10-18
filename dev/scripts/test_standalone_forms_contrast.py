@@ -4,6 +4,10 @@ These portable tests cover style composition and state changes. Actual WPF
 value sources and rendering still require the Windows probe window.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import io
 import os

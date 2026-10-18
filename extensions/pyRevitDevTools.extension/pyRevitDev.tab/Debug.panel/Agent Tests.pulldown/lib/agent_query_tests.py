@@ -1,5 +1,9 @@
 """Agent query runs on both engines: results, errors, timeouts, workspaces and records."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import json
 import os
 import os.path as op

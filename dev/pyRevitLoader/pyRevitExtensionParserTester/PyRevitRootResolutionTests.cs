@@ -20,6 +20,8 @@ namespace pyRevitExtensionParserTester
     /// </para>
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class PyRevitRootResolutionTests : TempFileTestBase
     {
         // ──────────────────────────────────────────────────────────────
@@ -160,16 +162,14 @@ namespace pyRevitExtensionParserTester
         // ──────────────────────────────────────────────────────────────
 
         [Test]
-        public void ReadIPYVersion_EmptyRoot_ReturnsUnknown()
+        public void ReadIPYVersion_EmptyRoot_UsesExecutingEngineWhenAvailable()
         {
-            // Same bug scenario as ReadPyRevitVersion: empty root means no
-            // candidate directories are checked except the executing assembly dir.
-            // In a test environment, IronPython.dll won't be beside the test runner,
-            // so this should return "Unknown".
             var version = EnvDictionarySeeder.ReadIPYVersion(string.Empty);
-
-            Assert.AreEqual("Unknown", version,
-                "An empty root with no IronPython.dll beside the test runner must yield 'Unknown'");
+            var engineDirectory = Path.GetDirectoryName(typeof(EnvDictionarySeeder).Assembly.Location)!;
+            var enginePath = new[] { "IronPython.dll", "pyRevitLabs.IronPython.dll" }
+                .Select(name => Path.Combine(engineDirectory, name)).FirstOrDefault(File.Exists);
+            var expected = enginePath == null ? "Unknown" : System.Reflection.AssemblyName.GetAssemblyName(enginePath).Version!.ToString();
+            Assert.That(version, Is.EqualTo(expected));
         }
 
         // ──────────────────────────────────────────────────────────────

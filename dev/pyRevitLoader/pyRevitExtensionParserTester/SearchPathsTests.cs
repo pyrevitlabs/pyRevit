@@ -17,6 +17,8 @@ namespace pyRevitExtensionParserTester
     /// is how an out-of-date copy shadows a corrected one. #3687.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class SearchPathsTests : TempFileTestBase
     {
         private static List<string> Repeated(IEnumerable<string> paths)

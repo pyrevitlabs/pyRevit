@@ -17,6 +17,8 @@ namespace pyRevitLabs.Configurations.Tests;
 /// has no cross-platform path, so a green run here means the Windows-only
 /// assumption still holds.
 /// </remarks>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class ExtensionCredentialProtectorTests {
     private const string Token = "ghp_0123456789abcdefABCDEF0123456789abcdefAB";
     private const string Password = "correct horse battery staple";

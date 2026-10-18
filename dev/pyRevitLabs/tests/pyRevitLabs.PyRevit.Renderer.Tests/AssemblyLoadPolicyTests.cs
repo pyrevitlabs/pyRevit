@@ -14,6 +14,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// leave alone, so that the loader and the deployment cannot drift apart.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class AssemblyLoadPolicyTests {
         private static readonly string[] WebView2StackFileNames = {
             "Microsoft.Web.WebView2.Core.dll",

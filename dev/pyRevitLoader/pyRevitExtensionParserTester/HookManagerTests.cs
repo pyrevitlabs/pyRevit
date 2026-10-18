@@ -14,6 +14,8 @@ namespace pyRevitExtensionParserTester
     /// and hook script search paths.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class HookManagerTests : TempFileTestBase
     {
         // -------------------------------------------------------------------------

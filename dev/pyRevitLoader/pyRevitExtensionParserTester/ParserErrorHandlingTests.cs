@@ -11,6 +11,8 @@ using pyRevitLabs.NLog.Targets;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ParserErrorHandlingTests : TempFileTestBase
     {
         private LoggingConfiguration? _previousConfig;

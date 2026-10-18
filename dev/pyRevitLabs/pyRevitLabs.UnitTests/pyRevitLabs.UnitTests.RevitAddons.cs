@@ -6,6 +6,8 @@ using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.UnitTests.RevitAddons {
     [TestClass()]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class RevitAddonsTests {
         [TestMethod()]
         public void GetRevitAddonsFolder_UserLevel_AllVersions_Test() {

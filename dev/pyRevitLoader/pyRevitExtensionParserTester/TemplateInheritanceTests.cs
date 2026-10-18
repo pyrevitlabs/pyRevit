@@ -10,6 +10,8 @@ namespace pyRevitExtensionParserTest
     /// Uses the actual pyRevitDevTools extension to verify template substitution works correctly.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class TemplateInheritanceTests
     {
         private string _extensionPath;

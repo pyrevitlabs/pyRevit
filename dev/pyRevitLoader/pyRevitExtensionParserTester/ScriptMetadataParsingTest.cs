@@ -13,6 +13,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class ScriptMetadataParsingTest : TempFileTestBase
     {
         private string _extensionPath;

@@ -1,5 +1,9 @@
 """Check replacement recovery using real files without loading Revit."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import os
 from pathlib import Path

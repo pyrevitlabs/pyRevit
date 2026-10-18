@@ -24,6 +24,8 @@ namespace pyRevitExtensionParserTester
     /// </summary>
     [TestFixture]
     [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class PyRevitConfigsFacadeTests
     {
         private string _path;

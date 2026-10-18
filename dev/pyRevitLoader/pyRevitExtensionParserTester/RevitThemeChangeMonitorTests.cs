@@ -3,6 +3,8 @@ using pyRevitAssemblyBuilder.SessionManager;
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class RevitThemeChangeMonitorTests
     {
         [Test]

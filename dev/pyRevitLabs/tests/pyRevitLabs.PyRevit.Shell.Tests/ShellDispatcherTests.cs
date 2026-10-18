@@ -5,6 +5,8 @@ using System.Windows.Threading;
 using PyRevitLabs.PyRevit.Shell;
 
 namespace pyRevitLabs.PyRevit.Shell.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class ShellDispatcherTests {
         [Fact]
         public async Task RunOnDispatcherReturnsCallbackErrorWithoutUnhandledWpfExceptionAsync() {
