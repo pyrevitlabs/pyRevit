@@ -16,21 +16,43 @@ Dependencies are pinned in `Pipfile.lock`. An existing development environment c
 
 CI uses the same runner: Python checks, product build, then C# tests. Product builds do not execute fixtures. Results, inventory and coverage go into a fresh `.test-results/<run>/` directory and are uploaded even on failure. See [CI/CD](ci-cd.md).
 
-## Test chart
+## Implemented test suites
 
 ```mermaid
-flowchart TD
-    Tests["First-party automated tests"] --> Tags["Required tags: Environment and Level"]
-    Tags --> Gate{"Revit API or installed/running Revit?"}
-    Gate -->|No: HostFree| Runner["Shared runner: local and CI"]
-    Runner --> Python["Python: tooling and API-free library checks"]
-    Runner --> CSharp["C#: parser, builder, loader integration,<br/>runtime, Labs and build suites"]
-    Python --> Evidence["Results and per-module line/branch coverage gates"]
-    CSharp --> Evidence
-    Gate -->|Yes: Revit| Local["Local Revit validation"]
-    Local --> Hosted["Python: DevTools library and agent commands"]
-    Local --> Host["C#: fixture-specific host setup required"]
+flowchart LR
+    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>dev/scripts/test_*.py"]
+    Runner --> Loader
+    Runner --> Runtime
+    Runner --> Labs
+    Runner --> Build["Build.Tests"]
+
+    subgraph Loader["Loader tests"]
+        Parser["pyRevitExtensionParser.Tests"]
+        Builder["pyRevitAssemblyBuilder.Tests"]
+        Integration["pyRevitLoader.Integration.Tests"]
+    end
+
+    subgraph Runtime["Shared scripting runtime"]
+        SharedRuntime["pyRevitLabs.PyRevit.Runtime.Tests"]
+    end
+
+    subgraph Labs["Labs tests"]
+        CLI["pyRevitCLI.Tests"]
+        Common["pyRevitLabs.Common.Tests"]
+        Emojis["pyRevitLabs.Emojis.Tests"]
+        Config["pyRevitLabs.Configurations.Tests"]
+        INI["pyRevitLabs.Configurations.Ini.Tests"]
+        Facade["pyRevitLabs.PyRevit.Tests"]
+        Agent["pyRevitLabs.PyRevit.Runtime.Agent.Tests"]
+        CPython["pyRevitLabs.PyRevit.Runtime.CPython.Tests"]
+        Legacy["pyRevitLabs.UnitTests"]
+    end
+
+    Local["Local Revit validation<br/>Outside CI"] --> Hosted["Python library and agent suites<br/>DevTools commands"]
+    Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
+
+The implemented CI selection has **14 C# projects across 22 project/framework runs** and the API-free Python suite. [Verified run](https://github.com/pyrevitlabs/pyRevit/actions/runs/39171094599): **1,894 C# cases and 142 Python cases, zero skips**. Counts include each framework run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
