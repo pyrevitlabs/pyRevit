@@ -18,7 +18,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="pyRevitExtensionParserTest" />
+        <InternalsVisibleTo Include="pyRevitAssemblyBuilder.Tests" />
+        <InternalsVisibleTo Include="pyRevitLoader.Integration.Tests" />
     </ItemGroup>
 
     <ItemGroup>

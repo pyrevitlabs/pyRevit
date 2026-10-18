@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -18,6 +19,7 @@ TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
 
+@pytest.mark.level("Integration")
 @pytest.mark.parametrize(
     "second_module, expected_status",
     [
@@ -63,6 +65,35 @@ def test_each_explicit_python_module_requires_eligible_cases(
 
 class SelectionTests(unittest.TestCase):
     """Ensure discovery fails closed before importing hosted modules."""
+
+    def test_windows_document_casing_does_not_duplicate_coverage(self):
+        """MSBuild references can spell one Windows source path with different casing."""
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory)
+            for suite, filename, hit in (
+                ("first", "Source.cs", 1),
+                ("second", "source.cs", 0),
+            ):
+                report = results / suite / "net48" / "run" / "coverage.json"
+                report.parent.mkdir(parents=True)
+                report.write_text(
+                    json.dumps(
+                        {
+                            "Example.dll": {
+                                str(run_tests.ROOT / "dev/example" / filename): {
+                                    "Example": {
+                                        "Method": {"Lines": {"1": hit}, "Branches": []}
+                                    }
+                                }
+                            }
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+            with patch("run_tests.os.path.normcase", side_effect=str.casefold):
+                measured = run_tests.collect_coverage(results)
+            self.assertEqual(1, measured["dotnet/Example/net48"]["lines"])
+            self.assertEqual(1, measured["dotnet/Example/net48"]["line"])
 
     def test_skipped_result_is_rejected_even_when_counters_omit_it(self):
         """NUnit can emit NotExecuted results without incrementing its skip counter."""

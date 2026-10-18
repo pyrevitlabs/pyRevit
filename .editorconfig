@@ -18,5 +18,5 @@ csharp_new_line_before_open_brace = none
 # and its test project - uses Allman-style braces (opening brace on its own
 # line) instead. Scoped here so `dotnet format` follows whichever convention
 # a given area of the codebase already uses, instead of fighting either one.
-[dev/pyRevitLoader/{pyRevitAssemblyBuilder,pyRevitExtensionParser,pyRevitExtensionParserTester}/**.cs]
+[dev/pyRevitLoader/{pyRevitAssemblyBuilder,pyRevitExtensionParser,tests}/**.cs]
 csharp_new_line_before_open_brace = all
