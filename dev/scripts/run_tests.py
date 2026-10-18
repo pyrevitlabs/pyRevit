@@ -75,45 +75,71 @@ def evaluate_project(path, framework=None):
         "dotnet",
         "msbuild",
         path,
-        "-getProperty:IsTestProject,TargetFramework,TargetFrameworks,AssemblyName",
-        "-getItem:Compile",
+        "-getProperty:IsTestProject,TargetFramework,TargetFrameworks,AssemblyName,DefineConstants",
+        "-getItem:Compile,PackageReference",
         "-p:Configuration=Release",
         "-m:1",
         "-nr:false",
     ]
     if framework:
         arguments.append(f"-p:TargetFramework={framework}")
+        arguments.append("-target:AddImplicitDefineConstants")
     return json.loads(command(arguments, capture=True))
 
 
 def discover_dotnet(results):
     """Discover adjacent test projects by evaluated IsTestProject metadata."""
     projects = []
-    sources = set()
     for root in (ROOT / "dev", ROOT / "build"):
         for path in first_party_files(root, "*.csproj"):
             data = evaluate_project(path)
             properties = data["Properties"]
             if properties["IsTestProject"].lower() != "true":
+                if any(
+                    item["Identity"] == "Microsoft.NET.Test.Sdk"
+                    for item in data["Items"]["PackageReference"]
+                ):
+                    raise ValueError(
+                        f"{path}: test SDK requires IsTestProject=true for discovery"
+                    )
                 continue
             frameworks = properties["TargetFrameworks"] or properties["TargetFramework"]
             for framework in frameworks.split(";"):
                 evaluated = evaluate_project(path, framework)
                 compiled = [item["FullPath"] for item in evaluated["Items"]["Compile"]]
-                sources.update(compiled)
                 projects.append(
                     {
                         "path": str(path),
                         "framework": framework,
                         "assembly": evaluated["Properties"]["AssemblyName"],
                         "sources": compiled,
+                        "defines": [
+                            value
+                            for value in evaluated["Properties"][
+                                "DefineConstants"
+                            ].split(";")
+                            if value
+                        ],
                     }
                 )
     if not projects:
         raise ValueError("No first-party .NET test projects discovered")
     source_list = results / "sources.json"
     catalog_path = results / "dotnet-catalog.json"
-    source_list.write_text(json.dumps(sorted(sources)), encoding="utf-8")
+    source_list.write_text(
+        json.dumps(
+            [
+                {
+                    "Project": project["path"],
+                    "Framework": project["framework"],
+                    "Sources": project["sources"],
+                    "Defines": project["defines"],
+                }
+                for project in projects
+            ]
+        ),
+        encoding="utf-8",
+    )
     command(
         [
             "dotnet",
@@ -137,9 +163,12 @@ def discover_dotnet(results):
     )
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     for project in projects:
-        project["tests"] = [
-            test for test in catalog if test["Source"] in project["sources"]
-        ]
+        project["tests"] = next(
+            suite["Tests"]
+            for suite in catalog
+            if suite["Project"] == project["path"]
+            and suite["Framework"] == project["framework"]
+        )
         if not project["tests"]:
             raise ValueError(f"No classified tests: {project['path']}")
     return projects

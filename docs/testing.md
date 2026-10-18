@@ -96,7 +96,7 @@ CI runs Python before the product build and C# afterward, using these same selec
 
 ### C# discovery and tags
 
-Discovery evaluates `IsTestProject`, frameworks, and `Compile` items through MSBuild for projects under `dev/` and `build/`, excluding vendored dependencies and build outputs. All declared frameworks participate. A Roslyn syntax reader validates literal classification attributes without constructing test objects. Framework adapters discover actual cases and select tags; no central list of project names, test classes, or methods is maintained.
+Discovery evaluates `IsTestProject`, frameworks, and `Compile` items through MSBuild for projects under `dev/` and `build/`, excluding vendored dependencies and build outputs. All declared frameworks participate. The SDK's `AddImplicitDefineConstants` target resolves each framework's compiler symbols without compiling or executing fixtures. A Roslyn syntax reader uses those symbols to validate literal classification attributes, including conditional fixtures. Framework adapters discover actual cases and select tags; no central list of project names, test classes, or methods is maintained.
 
 | Framework | Class defaults or method overrides |
 |---|---|

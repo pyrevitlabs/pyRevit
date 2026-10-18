@@ -12,21 +12,21 @@
     "lines": 363
   },
   "dotnet/pyRevit.Build/net10.0": {
-    "branch": 0.3643410852713178,
+    "branch": 0.36563307493540054,
     "branches": 774,
-    "line": 0.28546177640300485,
-    "lines": 2263
+    "line": 0.2851476421330983,
+    "lines": 2269
   },
   "dotnet/pyRevitAssemblyBuilder/net48": {
-    "branch": 0.11427486712224753,
+    "branch": 0.11655277145026575,
     "branches": 2634,
-    "line": 0.12426453283125441,
+    "line": 0.12803012473523182,
     "lines": 4249
   },
   "dotnet/pyRevitAssemblyBuilder/net8.0-windows": {
-    "branch": 0.11427486712224753,
+    "branch": 0.11579347000759302,
     "branches": 2634,
-    "line": 0.12426453283125441,
+    "line": 0.1263826782772417,
     "lines": 4249
   },
   "dotnet/pyRevitExtensionParser/net48": {
@@ -198,10 +198,10 @@
     "lines": 241
   },
   "python/dev/scripts/run_tests.py": {
-    "branch": 0.3584905660377358,
-    "branches": 106,
-    "line": 0.40609137055837563,
-    "lines": 197
+    "branch": 0.35185185185185186,
+    "branches": 108,
+    "line": 0.40404040404040403,
+    "lines": 198
   },
   "python/pyrevitlib/pyrevit/coreutils/logger.py": {
     "branch": 0.6041666666666666,
