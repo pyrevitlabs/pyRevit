@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using Microsoft.Scripting.Hosting;
@@ -24,6 +25,7 @@ namespace PythonConsoleControl
         PythonTextEditor textEditor;
         PythonConsole pythonConsole;
         int disposed;
+        readonly TaskCompletionSource<bool> cleanupCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public event ConsoleCreatedEventHandler ConsoleCreated;
 
@@ -41,6 +43,11 @@ namespace PythonConsoleControl
         {
             get { return textEditor; }
         }
+
+        /// <summary>
+        /// Gets a task that completes when background cleanup finishes.
+        /// </summary>
+        internal Task CleanupCompleted => cleanupCompleted.Task;
 
         protected override Type Provider
         {
@@ -87,6 +94,10 @@ namespace PythonConsoleControl
                 catch (Exception exception)
                 {
                     Trace.TraceError("Python shell cleanup failed: {0}", exception);
+                }
+                finally
+                {
+                    cleanupCompleted.TrySetResult(true);
                 }
             }) { IsBackground = true, Name = "Python shell cleanup" }.Start();
         }

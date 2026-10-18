@@ -213,11 +213,13 @@ namespace pyRevitLabs.PyRevit.Shell.Tests {
                     Assert.False(runtimeShutdown.Task.IsCompleted);
                     releaseStatement.Set();
                 }
+                await productionHost.CleanupCompleted.WaitAsync(TimeSpan.FromSeconds(35));
                 await Task.Run(() => {
                     Assert.True(consoleWorker.Join(TimeSpan.FromSeconds(10)));
                     Assert.True(dispatcherWorker.Join(TimeSpan.FromSeconds(10)));
                     Assert.True(completionWorker.Join(TimeSpan.FromSeconds(10)));
-                }).WaitAsync(TimeSpan.FromSeconds(35));
+                    Assert.True(stopWorker.Join(TimeSpan.FromSeconds(10)));
+                }).WaitAsync(TimeSpan.FromSeconds(45));
                 Assert.True(await runtimeShutdown.Task.WaitAsync(TimeSpan.FromSeconds(10)));
                 Assert.False(consoleWorker.IsAlive);
                 Assert.False(dispatcherWorker.IsAlive);
