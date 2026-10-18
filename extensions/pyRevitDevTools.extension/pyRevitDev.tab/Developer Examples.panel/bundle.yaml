@@ -11,7 +11,7 @@ layout:
   - CLR
   - Inspect IExporter
   - DirectContext3D
-  - Settings Window
+  - Settings Window[title:Settings\nWindow]
   - Modeless
   - DockablePane
   - ExportIFC
