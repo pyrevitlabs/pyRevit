@@ -15,12 +15,8 @@ from unittest import mock
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-try:
-    from . import build_revit_api_catalog as builder
-    from . import check_revit_api_compat as checker
-except ImportError:
-    import build_revit_api_catalog as builder
-    import check_revit_api_compat as checker
+from dev.checks import build_revit_api_catalog as builder
+from dev.checks import check_revit_api_compat as checker
 
 YEARS = list(range(2021, 2028))
 

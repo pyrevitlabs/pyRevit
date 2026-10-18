@@ -88,6 +88,8 @@ def _load_contrast_pass(test):
             os.path.dirname(__file__),
             "..",
             "..",
+            "..",
+            "..",
             "pyrevitlib",
             "pyrevit",
             "forms",

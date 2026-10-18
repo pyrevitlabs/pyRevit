@@ -11,9 +11,10 @@ import os
 import sys
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+REPO_ROOT = str(Path(__file__).resolve().parents[4])
 PYREVIT_ROOT = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit")
 
 

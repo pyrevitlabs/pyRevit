@@ -12,10 +12,11 @@ import sys
 import traceback
 import types
 import unittest
+from pathlib import Path
 from unittest import mock
 
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+REPO_ROOT = str(Path(__file__).resolve().parents[4])
 RUNNER_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "agent", "_runner.py")
 SAMPLE = """from contextlib import contextmanager
 def decorate(fn):

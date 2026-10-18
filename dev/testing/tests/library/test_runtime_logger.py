@@ -1,9 +1,7 @@
 """Tests for the runtime-backed logging facade.
 
-These load the module under test by path so they run without a Revit host, which is
-why they sit in `dev/scripts` rather than beside the code: every test in
-`pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs Revit. CI discovers them
-with `-p 'test_standalone_*.py'`.
+Load the module by path to avoid importing the Revit-dependent pyrevit package.
+API-free library fixtures live here; hosted library suites remain in pyrevit.unittests.
 """
 
 TEST_ENVIRONMENT = "HostFree"
@@ -17,8 +15,9 @@ import sys
 import tempfile
 import types
 import unittest
+from pathlib import Path
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+REPO_ROOT = str(Path(__file__).resolve().parents[4])
 
 LOGGER_PATH = os.path.join(
     REPO_ROOT,

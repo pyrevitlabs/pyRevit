@@ -7,10 +7,7 @@ TEST_LEVEL = "Integration"
 import ast
 import unittest
 
-try:
-    from .check_py3_compat import _is_engine_guarded
-except ImportError:
-    from check_py3_compat import _is_engine_guarded
+from dev.checks.check_py3_compat import _is_engine_guarded
 
 
 def _unicode_reachability(source):

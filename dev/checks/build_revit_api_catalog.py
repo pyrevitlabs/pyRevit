@@ -6,7 +6,7 @@ offline. Rerun this when a new Revit release (or a point release that
 deprecates API) ships, then commit the regenerated catalog:
 
     pip install dnfile
-    python dev/scripts/build_revit_api_catalog.py
+    python dev/checks/build_revit_api_catalog.py
 
 Ground truth is the shipped API itself, not scraped documentation: for every
 Revit year the earliest and the newest stable ``Nice3point.Revit.Api.RevitAPI``
@@ -817,7 +817,7 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_on": datetime.date.today().isoformat(),
-        "generator": "dev/scripts/build_revit_api_catalog.py",
+        "generator": "dev/checks/build_revit_api_catalog.py",
         "years": years,
         "packages": {
             str(year): versions for year, versions in sorted(package_versions.items())

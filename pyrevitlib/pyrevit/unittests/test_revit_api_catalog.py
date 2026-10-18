@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Revit-hosted check that the Revit API change catalog matches the live API.
 
-The static linter ``dev/scripts/check_revit_api_compat.py`` trusts
-``dev/scripts/revit_api_catalog/catalog.json``, which is generated offline
+The static linter ``dev/checks/check_revit_api_compat.py`` trusts
+``dev/checks/revit_api_catalog/catalog.json``, which is generated offline
 from each Revit year's RevitAPI/RevitAPIUI assemblies. Running this suite in
 a given Revit confirms that every cataloged type and member exists exactly
 when the catalog says it does for that year, catching extraction mistakes and
@@ -32,7 +32,7 @@ import unittest
 from pyrevit import HOME_DIR, HOST_APP
 
 CATALOG_PATH = os.path.join(
-    HOME_DIR, "dev", "scripts", "revit_api_catalog", "catalog.json"
+    HOME_DIR, "dev", "checks", "revit_api_catalog", "catalog.json"
 )
 MAX_REPORTED = 40
 REVIT_NAMESPACES = ("Autodesk.Revit.DB", "Autodesk.Revit.UI")
