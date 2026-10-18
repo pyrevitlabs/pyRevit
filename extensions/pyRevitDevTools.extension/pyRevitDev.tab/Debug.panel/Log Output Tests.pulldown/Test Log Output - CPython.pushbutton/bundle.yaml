@@ -1,4 +1,4 @@
-title: "Test Log Output\n- CPython"
+title: Test Log Output - CPython
 tooltip: >-
   Output/log regression test for the CPython engine: rapid stdout, every logger
   level, print/logger/print_html ordering, emoji and unicode, a trailing error
