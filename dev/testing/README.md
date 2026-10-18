@@ -7,3 +7,9 @@ Owner: repository testing maintainers; suite owners review changes to their modu
 From the repository root, use `python dev/scripts/run_tests.py --update-baselines` only after reviewing the reports. This explicit update can lower a floor; include a reason and follow-up for every reduction. It does not grant an automatic exception to the policy. Scope and denominator changes require review as well as percentage changes. Reports and inventory live in a unique `.test-results/<run>/` directory, so old reports cannot satisfy a new run.
 
 Python reporting scope is declared in `pyproject.toml`. C# collectors include instrumented first-party code; assemblies never loaded by tests need dedicated suites and do not have measured coverage yet. No repository-wide percentage or performance budget is implied. See `docs/testing.md` for full rules.
+
+## Initial baseline calibration
+
+The initial floors use the lower measured line and branch coverage from the complete local run and [the clean Windows CI run](https://github.com/pyrevitlabs/pyRevit/actions/runs/39161623577). Both passed 138 Python and 1,882 C# tests without skips. Production-source denominators matched across environments; no source was excluded to make the gate pass.
+
+The clean runner exercises fewer installed-product, extension-root, and configuration-discovery paths. For example, `ExtensionParser.GetExtensionRoots` traverses additional roots on a configured developer machine. Those differences also affect instrumented Common, Configurations, Configurations.Ini, PyRevit, and TargetApps.Revit dependencies. This calibration replaces machine-specific initial expectations with observed floors; it is not permission to lower established floors on future failures. The baseline calibration commit diff preserves the higher local measurements for review. Add controlled fixtures for the remaining machine-discovery paths before raising their floors; tests requiring the Revit API remain outside CI.
