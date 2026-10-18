@@ -30,33 +30,33 @@
     "lines": 4249
   },
   "dotnet/pyRevitExtensionParser/net48": {
-    "branch": 0.716580310880829,
+    "branch": 0.7160621761658031,
     "branches": 1930,
-    "line": 0.7594442032132002,
+    "line": 0.7590099869735129,
     "lines": 2303
   },
   "dotnet/pyRevitExtensionParser/net8.0-windows": {
-    "branch": 0.716580310880829,
+    "branch": 0.7160621761658031,
     "branches": 1930,
-    "line": 0.7594442032132002,
+    "line": 0.7590099869735129,
     "lines": 2303
   },
   "dotnet/pyRevitLabs.Common/net10.0-windows": {
-    "branch": 0.07428571428571429,
+    "branch": 0.048,
     "branches": 875,
-    "line": 0.08032955715756952,
+    "line": 0.05046343975283213,
     "lines": 1942
   },
   "dotnet/pyRevitLabs.Common/net48": {
-    "branch": 0.28883774453394706,
+    "branch": 0.286536248561565,
     "branches": 869,
-    "line": 0.2845360824742268,
+    "line": 0.28350515463917525,
     "lines": 1940
   },
   "dotnet/pyRevitLabs.Common/net8.0-windows": {
-    "branch": 0.2948571428571429,
+    "branch": 0.2925714285714286,
     "branches": 875,
-    "line": 0.2857878475798146,
+    "line": 0.2847579814624099,
     "lines": 1942
   },
   "dotnet/pyRevitLabs.CommonWPF/net10.0-windows": {
@@ -78,33 +78,33 @@
     "lines": 299
   },
   "dotnet/pyRevitLabs.Configurations.Ini/net10.0-windows": {
-    "branch": 0.18048780487804877,
+    "branch": 0.15609756097560976,
     "branches": 205,
     "line": 0.22580645161290322,
     "lines": 372
   },
   "dotnet/pyRevitLabs.Configurations.Ini/net48": {
-    "branch": 0.6390243902439025,
+    "branch": 0.6048780487804878,
     "branches": 205,
-    "line": 0.6370967741935484,
+    "line": 0.5752688172043011,
     "lines": 372
   },
   "dotnet/pyRevitLabs.Configurations.Ini/net8.0-windows": {
-    "branch": 0.848780487804878,
+    "branch": 0.8195121951219512,
     "branches": 205,
-    "line": 0.8118279569892473,
+    "line": 0.771505376344086,
     "lines": 372
   },
   "dotnet/pyRevitLabs.Configurations/net10.0-windows": {
-    "branch": 0.15025906735751296,
+    "branch": 0.11139896373056994,
     "branches": 386,
-    "line": 0.16951566951566951,
+    "line": 0.16381766381766383,
     "lines": 702
   },
   "dotnet/pyRevitLabs.Configurations/net48": {
-    "branch": 0.45595854922279794,
+    "branch": 0.43523316062176165,
     "branches": 386,
-    "line": 0.4886039886039886,
+    "line": 0.47435897435897434,
     "lines": 702
   },
   "dotnet/pyRevitLabs.Configurations/net8.0": {
@@ -150,21 +150,21 @@
     "lines": 2046
   },
   "dotnet/pyRevitLabs.PyRevit/net48": {
-    "branch": 0.12436868686868686,
+    "branch": 0.12310606060606061,
     "branches": 1584,
-    "line": 0.12121212121212122,
+    "line": 0.12072336265884653,
     "lines": 4092
   },
   "dotnet/pyRevitLabs.PyRevit/net8.0-windows": {
-    "branch": 0.125,
+    "branch": 0.12374371859296482,
     "branches": 1592,
-    "line": 0.11999022482893451,
+    "line": 0.11950146627565983,
     "lines": 4092
   },
   "dotnet/pyRevitLabs.TargetApps.Revit/net10.0-windows": {
-    "branch": 0.3588235294117647,
+    "branch": 0.11470588235294117,
     "branches": 340,
-    "line": 0.35514018691588783,
+    "line": 0.15620827770360482,
     "lines": 749
   },
   "dotnet/pyRevitLabs.TargetApps.Revit/net48": {
