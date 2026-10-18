@@ -1,40 +1,40 @@
 layout:
   - Run All Tests
   - -----
-  - pyRevitLabs Module Tests[title:pyRevitLabs\nModule Tests]
-  - Output Window Tests[title:Output\nWindow Tests]
-  - Appdata Module Tests[title:Appdata\nModule Tests]
-  - CoreUtils Module Tests[title:CoreUtils\nModule Tests]
-  - Credentials Module Tests[title:Credentials\nModule Tests]
-  - Forms Module Tests[title:Forms\nModule Tests]
-  - Revit Module Tests[title:Revit\nModule Tests]
-  - Script Module Tests[title:Script\nModule Tests]
-  - Routes Module Tests[title:Routes\nModule Tests]
-  - Config Module Tests[title:Config\nModule Tests]
+  - pyRevitLabs Module Tests
+  - Output Window Tests
+  - Appdata Module Tests
+  - CoreUtils Module Tests
+  - Credentials Module Tests
+  - Forms Module Tests
+  - Revit Module Tests
+  - Script Module Tests
+  - Routes Module Tests
+  - Config Module Tests
   - Py3 Compat Tests
-  - Py3 Compat Tests (CPython)[title:Py3 Compat\nTests (CPython)]
+  - Py3 Compat Tests (CPython)
   - Revit API Catalog Tests
   - -----
-  - Test Output Stream[title:Test Output\nStream]
+  - Test Output Stream
   - Test Linkify Append Selection
   - Test Input Stream
-  - Test Multiple Outputs[title:Test Multiple\nOutputs]
+  - Test Multiple Outputs
   - Test UI Button
-  - Test Independent Logging[title:Test Independent\nLogging]
+  - Test Independent Logging
   - Test Markdown
   - -----
   - Test XAML
-  - Test XAML (Localized)[title:Test XAML\n(Localized)]
-  - Test XAML (Localized Resource)[title:Test XAML\n(Localized Resource)]
-  - Test Modeless (Sensors)[title:Test Modeless\n(Sensors)]
+  - Test XAML (Localized)
+  - Test XAML (Localized Resource)
+  - Test Modeless (Sensors)
   - Test Progressbar
   - Test Charts
   - Test D3
   - Test Vue
   - Test XML
   - Test Toast
-  - Test FillPatternViewer[title:Test\nFillPatternViewer]
+  - Test FillPatternViewer
   - Test Family API
-  - Query get_name Tests[title:Query\nget_name Tests]
+  - Query get_name Tests
   - -----
-  - Test Project Parameters[title:Test Project\nParameters]
+  - Test Project Parameters

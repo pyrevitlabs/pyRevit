@@ -1,26 +1,26 @@
 layout:
-  - Test Engine Stability[title:Test Engine\nStability]
-  - Test Cached Engines[title:Test Cached\nEngines]
-  - Test FullFrame Engine[title:Test FullFrame\nEngine]
+  - Test Engine Stability
+  - Test Cached Engines
+  - Test FullFrame Engine
   - Test Persistent Engine
-  - Rocket Mode Cache Warmup[title:Rocket Mode\nCache Warmup]
-  - Rocket Mode Scope Test[title:Rocket Mode\nScope Test]
-  - Test IronPython Compile[title:Test IronPython\nCompile]
-  - Test IronPython Search Paths[title:Test IronPython\nSearch Paths]
-  - Test IronPython Threading[title:Test IronPython\nThreading]
-  - Test IronPython Events[title:Test IronPython\nEvents]
-  - Test IronPython Debugger[title:Test IronPython\nDebugger]
+  - Rocket Mode Cache Warmup
+  - Rocket Mode Scope Test
+  - Test IronPython Compile
+  - Test IronPython Search Paths
+  - Test IronPython Threading
+  - Test IronPython Events
+  - Test IronPython Debugger
   - Test IronPython Revit Handle
   - -----
-  - Test CPython Command[title:Test CPython\nCommand]
-  - Test CPython Namespace[title:Test CPython\nNamespace]
-  - Test CPython Engine[title:Test CPython\nEngine]
-  - Test CPython Search Paths[title:Test CPython\nSearch Paths]
-  - Test CPython Events[title:Test CPython\nEvents]
-  - Test CPython Debugger[title:Test CPython\nDebugger]
-  - Test CPython Regressions[title:Test CPython\nRegressions]
+  - Test CPython Command
+  - Test CPython Namespace
+  - Test CPython Engine
+  - Test CPython Search Paths
+  - Test CPython Events
+  - Test CPython Debugger
+  - Test CPython Regressions
   - Test CPython Revit Handle
   - -----
   - Test CLR Engine Debugger
   - -----
-  - Test Smart Button Revit Handle[title:Test Smart Button\nRevit Handle]
+  - Test Smart Button Revit Handle
