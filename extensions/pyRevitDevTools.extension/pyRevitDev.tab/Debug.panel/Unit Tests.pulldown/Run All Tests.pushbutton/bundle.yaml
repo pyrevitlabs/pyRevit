@@ -3,3 +3,4 @@ tooltip: >-
   Discovers every test module in pyrevit.unittests and runs it through the
   pyRevit test runner. Requires an open project document so the
   document-dependent tests run instead of skipping.
+inherit_icon: false
