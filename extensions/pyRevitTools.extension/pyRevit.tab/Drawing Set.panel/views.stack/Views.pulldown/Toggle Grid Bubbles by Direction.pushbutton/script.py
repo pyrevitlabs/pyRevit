@@ -1,21 +1,13 @@
 # -*- coding: UTF-8 -*-
 import math
 
-import clr
-
-clr.AddReference("PresentationFramework")
-
-import System
-from System.Windows import WindowStartupLocation
-from System.Collections.Generic import List
-from pyrevit import HOST_APP, DB, script, forms
-from pyrevit.revit.db import transaction
+from pyrevit import DB, script, forms, revit
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.framework import List
 from coordinate_selector import show_coordinate_system_selector
 
-doc = HOST_APP.doc
-uidoc = HOST_APP.uidoc
-active_view = doc.ActiveView
+doc = revit.doc
+active_view = revit.active_view
 xamlfile = script.get_bundle_file("ui.xaml")
 
 get_elementid_value = get_elementid_value_func()
@@ -56,7 +48,7 @@ class GridsCollector:
 
     def _get_selection(self):
         """Get current selection if any."""
-        selection_ids = HOST_APP.uidoc.Selection.GetElementIds()
+        selection_ids = revit.uidoc.Selection.GetElementIds()
         if selection_ids:
             return [self.document.GetElement(el_id) for el_id in selection_ids]
         return None
@@ -91,11 +83,7 @@ class GridsCollector:
         self.from_selection = True
 
     def _analyze_all_grids(self):
-        grids = (
-            DB.FilteredElementCollector(self.document)
-            .OfCategory(DB.BuiltInCategory.OST_Grids)
-            .WhereElementIsNotElementType()
-        )
+        grids = revit.query.get_all_grids(doc=self.document)
         self._analyze_grids(grids)
 
     def _analyze_grids(self, grids):
@@ -212,7 +200,7 @@ class CustomGrids:
         self._original_selection = []
         self._all_active_grids_selected = False
 
-        selection_ids = HOST_APP.uidoc.Selection.GetElementIds()
+        selection_ids = revit.uidoc.Selection.GetElementIds()
         self.selection = (
             [document.GetElement(el_id) for el_id in selection_ids]
             if selection_ids
@@ -295,7 +283,7 @@ class CustomGrids:
             if not self._all_active_grids_selected:
                 self._original_selection = [
                     self.__document.GetElement(el_id)
-                    for el_id in HOST_APP.uidoc.Selection.GetElementIds()
+                    for el_id in revit.uidoc.Selection.GetElementIds()
                 ]
 
                 active_grids = self.get_active_grids()
@@ -303,7 +291,7 @@ class CustomGrids:
                     grid_ids = [grid.Id for grid in active_grids if grid and grid.Id]
                     if grid_ids:
                         id_list = List[DB.ElementId](grid_ids)
-                        HOST_APP.uidoc.Selection.SetElementIds(id_list)
+                        revit.uidoc.Selection.SetElementIds(id_list)
                         self._all_active_grids_selected = True
         except:
             pass
@@ -312,7 +300,7 @@ class CustomGrids:
         """Clear selection."""
         try:
             if self._all_active_grids_selected:
-                HOST_APP.uidoc.Selection.SetElementIds(List[DB.ElementId]())
+                revit.uidoc.Selection.SetElementIds(List[DB.ElementId]())
                 self._all_active_grids_selected = False
         except:
             pass
@@ -520,7 +508,6 @@ class CustomGrids:
             return bbox.Min if corner == "min" else bbox.Max
         return None
 
-    @transaction.carryout("Toggle bubbles")
     def toggle_bubbles(self, grid, action, end=None):
         """Toggle the bubbles of a grid in the view."""
 
@@ -546,45 +533,44 @@ class CustomGrids:
         else:
             grids = self.get_horizontal_grids()
 
-        for grid in grids:
-            # Use transformed coordinate system
-            xyz_0, xyz_1 = self.get_transformed_endpoints(grid)
-            if xyz_0 and xyz_1:
-                if direction in {"top", "right"}:
-                    ref_point = self.get_bounding_box_corner(grid, "max")
-                else:
-                    ref_point = self.get_bounding_box_corner(grid, "min")
-
-                if ref_point:
-                    # Transform reference point to selected coordinate system
-                    transformed_ref_point = self._transform_point(ref_point)
-
-                    if xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(
-                        transformed_ref_point
-                    ):
-                        self.toggle_bubbles(grid, action, 0)
+        with revit.Transaction("Toggle bubbles", doc=self.__document):
+            for grid in grids:
+                xyz_0, xyz_1 = self.get_transformed_endpoints(grid)
+                if xyz_0 and xyz_1:
+                    if direction in {"top", "right"}:
+                        ref_point = self.get_bounding_box_corner(grid, "max")
                     else:
-                        self.toggle_bubbles(grid, action, 1)
+                        ref_point = self.get_bounding_box_corner(grid, "min")
 
-    @transaction.carryout("Hide all bubbles")
+                    if ref_point:
+                        transformed_ref_point = self._transform_point(ref_point)
+
+                        if xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(
+                            transformed_ref_point
+                        ):
+                            self.toggle_bubbles(grid, action, 0)
+                        else:
+                            self.toggle_bubbles(grid, action, 1)
+
     def hide_all_bubbles(self):
         """Hide the bubbles of only the actively managed grids."""
         active_grids = self.get_active_grids()
 
-        for grid in active_grids:
-            if grid.CanBeVisibleInView(self.__view):
-                grid.HideBubbleInView(DB.DatumEnds.End0, self.__view)
-                grid.HideBubbleInView(DB.DatumEnds.End1, self.__view)
+        with revit.Transaction("Hide all bubbles", doc=self.__document):
+            for grid in active_grids:
+                if grid.CanBeVisibleInView(self.__view):
+                    grid.HideBubbleInView(DB.DatumEnds.End0, self.__view)
+                    grid.HideBubbleInView(DB.DatumEnds.End1, self.__view)
 
-    @transaction.carryout("Show all bubbles")
     def show_all_bubbles(self):
         """Show the bubbles of only the actively managed grids."""
         active_grids = self.get_active_grids()
 
-        for grid in active_grids:
-            if grid.CanBeVisibleInView(self.__view):
-                grid.ShowBubbleInView(DB.DatumEnds.End0, self.__view)
-                grid.ShowBubbleInView(DB.DatumEnds.End1, self.__view)
+        with revit.Transaction("Show all bubbles", doc=self.__document):
+            for grid in active_grids:
+                if grid.CanBeVisibleInView(self.__view):
+                    grid.ShowBubbleInView(DB.DatumEnds.End0, self.__view)
+                    grid.ShowBubbleInView(DB.DatumEnds.End1, self.__view)
 
 
 class ToggleGridWindow(forms.WPFWindow):
@@ -597,24 +583,16 @@ class ToggleGridWindow(forms.WPFWindow):
         coordinate_system,
         angle_tolerance,
         grid_collector,
-        transaction_group=None,
-        window_left=None,
-        window_top=None,
     ):
         super(ToggleGridWindow, self).__init__(xaml_source)
 
         self.result = None
-        self.PreviewKeyDown += self.handle_key_press
-
-        if window_left is not None and window_top is not None:
-            self.WindowStartupLocation = WindowStartupLocation.Manual
-            self.Left = window_left
-            self.Top = window_top
+        self.Closed += self._window_closed
+        script.restore_window_position(self, "ToggleGridBubblesByDirection")
 
         self.view = view
         self.coordinate_system = coordinate_system
         self.angle_tolerance = angle_tolerance
-        self.transaction_group = transaction_group
         self.grids = CustomGrids(
             doc, self.view, coordinate_system, angle_tolerance, grid_collector
         )
@@ -627,7 +605,7 @@ class ToggleGridWindow(forms.WPFWindow):
         # Hide back button if in elevation mode
         self.back_button = self.FindName("back_button")
         if self.coordinate_system == "elevation_mode" and self.back_button:
-            self.back_button.Visibility = System.Windows.Visibility.Collapsed
+            self.hide_element(self.back_button)
 
         # Flags to control the visibility of the checkboxes
         self.right_left_collapsed = False
@@ -653,22 +631,17 @@ class ToggleGridWindow(forms.WPFWindow):
         }
 
         if self.coordinate_system == "all_grids":
-            self.checkboxes["top"].Visibility = System.Windows.Visibility.Collapsed
-            self.checkboxes["bottom"].Visibility = System.Windows.Visibility.Collapsed
-            self.checkboxes["left"].Visibility = System.Windows.Visibility.Collapsed
-            self.checkboxes["right"].Visibility = System.Windows.Visibility.Collapsed
+            self.hide_element(*self.checkboxes.values())
             self.right_left_collapsed = True
             self.top_bottom_collapsed = True
 
         # Display the checkboxes based on the orientation of the grids and the view type
         if self.is_view_elevation() or not self.grids.get_horizontal_grids():
-            self.checkboxes["right"].Visibility = System.Windows.Visibility.Collapsed
-            self.checkboxes["left"].Visibility = System.Windows.Visibility.Collapsed
+            self.hide_element(self.checkboxes["right"], self.checkboxes["left"])
             self.right_left_collapsed = True
 
         if not self.grids.get_vertical_grids():
-            self.checkboxes["top"].Visibility = System.Windows.Visibility.Collapsed
-            self.checkboxes["bottom"].Visibility = System.Windows.Visibility.Collapsed
+            self.hide_element(self.checkboxes["top"], self.checkboxes["bottom"])
             self.top_bottom_collapsed = True
 
         self.grids.set_ui_state(self.right_left_collapsed, self.top_bottom_collapsed)
@@ -708,11 +681,11 @@ class ToggleGridWindow(forms.WPFWindow):
             self.status_grids_active.Text = " ({} active - selected in view)".format(
                 active_grids
             )
-            self.status_grids_active.Visibility = System.Windows.Visibility.Visible
+            self.show_element(self.status_grids_active)
         else:
             self.status_grids.Text = grid_status
             self.status_grids_active.Text = ""
-            self.status_grids_active.Visibility = System.Windows.Visibility.Collapsed
+            self.hide_element(self.status_grids_active)
 
         coord_system_map = {
             "all_grids": "No coordinates",
@@ -759,9 +732,6 @@ class ToggleGridWindow(forms.WPFWindow):
         coordinate_system,
         angle_tolerance,
         grid_collector=None,
-        transaction_group=None,
-        window_left=None,
-        window_top=None,
     ):
         """Factory method to handle a clean exit"""
         window = cls(
@@ -770,9 +740,6 @@ class ToggleGridWindow(forms.WPFWindow):
             coordinate_system,
             angle_tolerance,
             grid_collector,
-            transaction_group,
-            window_left,
-            window_top,
         )
         if not window.is_valid:
             return None
@@ -871,31 +838,22 @@ class ToggleGridWindow(forms.WPFWindow):
         # Re-enable event handling
         self.updating_checkboxes = False
 
-    def move_window(self, sender, args):
-        self.DragMove()
+    def _window_closed(self, sender, args):
+        script.save_window_position(self, "ToggleGridBubblesByDirection")
+        if self.result is None:
+            self.grids.unhighlight_grids()
+            self.result = "cancel"
 
     def go_back(self, sender, args):
         """Go back to coordinate system selector."""
         self.grids.unhighlight_grids()
-        # Return action + current window coordinates
-        self.result = {
-            "action": "back",
-            "window_left": self.Left,
-            "window_top": self.Top,
-        }
+        self.result = {"action": "back"}
         self.Close()
 
     def cancel(self, sender, args):
         self.grids.unhighlight_grids()
-        if self.transaction_group:
-            self.transaction_group.RollBack()
         self.result = "cancel"
         self.Close()
-
-    def handle_key_press(self, sender, args):
-        """Handle keyboard input, especially ESC key."""
-        if args.Key == System.Windows.Input.Key.Escape:
-            self.cancel(None, None)
 
     def confirm(self, sender, args):
         self.grids.unhighlight_grids()
@@ -905,10 +863,8 @@ class ToggleGridWindow(forms.WPFWindow):
 
 def validate_active_view():
     if active_view.ViewType == DB.ViewType.ProjectBrowser:
-        forms.alert(
-            "You've selected a view in the project browser. \
-					Click inside the active view and try again."
-        )
+        forms.alert("You've selected a view in the project browser. \
+					Click inside the active view and try again.")
         return False
     elif active_view.ViewType not in VIEW_TYPES:
         forms.alert(
@@ -917,6 +873,10 @@ def validate_active_view():
         )
         return False
     return True
+
+
+class _UserCancelled(Exception):
+    pass
 
 
 def main():
@@ -928,96 +888,59 @@ def main():
     if not grid_collector.check_validity():
         return
 
-    tg = DB.TransactionGroup(doc, "Toggle Grids")
-    tg.Start()
-
-    # Check if view is elevation/section, if true skip coordinate system selection
-    if active_view.ViewType in ELEVATION_VIEWS:
-        coordinate_system = "elevation_mode"
-        angle_tolerance = 1
-
-        window = ToggleGridWindow.create(
-            xamlfile,
-            active_view,
-            coordinate_system,
-            angle_tolerance,
-            tg,
-            None,
-            None,
-        )
-
-        if window is not None:
-            window.ShowDialog()
-
-            if window.result == "cancel":
-                if tg.GetStatus() == DB.TransactionStatus.Started:
-                    tg.RollBack()
+    try:
+        with revit.TransactionGroup("Toggle Grids", doc=doc, log_errors=False):
+            if active_view.ViewType in ELEVATION_VIEWS:
+                window = ToggleGridWindow.create(
+                    xamlfile,
+                    active_view,
+                    "elevation_mode",
+                    1,
+                    grid_collector,
+                )
+                if window is None:
+                    raise _UserCancelled()
+                window.ShowDialog()
+                if window.result != "ok":
+                    raise _UserCancelled()
                 return
-            elif window.result == "ok":
-                if tg.GetStatus() == DB.TransactionStatus.Started:
-                    tg.Assimilate()
-        else:
-            if tg.GetStatus() == DB.TransactionStatus.Started:
-                tg.RollBack()
+
+            previous_system = None
+            previous_tolerance = None
+
+            while True:
+                selection_result = show_coordinate_system_selector(
+                    previous_system, previous_tolerance
+                )
+                if selection_result is None:
+                    raise _UserCancelled()
+
+                coordinate_system = selection_result["coordinate_system"]
+                angle_tolerance = selection_result["angle_tolerance"]
+                previous_system = coordinate_system
+                previous_tolerance = angle_tolerance
+
+                window = ToggleGridWindow.create(
+                    xamlfile,
+                    active_view,
+                    coordinate_system,
+                    angle_tolerance,
+                    grid_collector,
+                )
+                if window is None:
+                    raise _UserCancelled()
+                window.ShowDialog()
+
+                if (
+                    isinstance(window.result, dict)
+                    and window.result.get("action") == "back"
+                ):
+                    continue
+                if window.result == "ok":
+                    break
+                raise _UserCancelled()
+    except _UserCancelled:
         return
-
-    previous_system = None
-    previous_tolerance = None
-    window_left = None
-    window_top = None
-
-    # Loop to handle back button
-    while True:
-        selection_result = show_coordinate_system_selector(
-            previous_system, previous_tolerance, window_left, window_top
-        )
-        if selection_result is None:
-            if tg.GetStatus() == DB.TransactionStatus.Started:
-                tg.RollBack()
-            return
-
-        coordinate_system = selection_result["coordinate_system"]
-        angle_tolerance = selection_result["angle_tolerance"]
-        previous_system = coordinate_system
-        previous_tolerance = angle_tolerance
-
-        window_left = selection_result.get("window_left", None)
-        window_top = selection_result.get("window_top", None)
-
-        window = ToggleGridWindow.create(
-            xamlfile,
-            active_view,
-            coordinate_system,
-            angle_tolerance,
-            grid_collector,
-            tg,
-            window_left,
-            window_top,
-        )
-
-        if window is not None:
-            window.ShowDialog()
-
-            if (
-                isinstance(window.result, dict)
-                and window.result.get("action") == "back"
-            ):
-                window_left = window.result.get("window_left", window_left)
-                window_top = window.result.get("window_top", window_top)
-                continue
-            elif window.result == "cancel":
-                if tg.GetStatus() == DB.TransactionStatus.Started:
-                    tg.RollBack()
-                return
-            elif window.result == "ok":
-                break
-        else:
-            if tg.GetStatus() == DB.TransactionStatus.Started:
-                tg.RollBack()
-            return
-
-    if tg.GetStatus() == DB.TransactionStatus.Started:
-        tg.Assimilate()
 
 
 if __name__ == "__main__":
