@@ -1,12 +1,16 @@
 using System;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
+using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
 using Microsoft.Win32;
 
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.Common.Tests {
     [TestClass]
+    [DoNotParallelize]
     [TestCategory("HostFree")]
     [TestCategory("Unit")]
     public class SystemPathTests {
@@ -166,8 +170,9 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void OpenKeyIsReturnedWhenItExists() {
-            var subKey = @"Software\pyRevitLabs\UnitTests\SystemPathGuard";
+            var subKey = @"Software\pyRevitLabs\Tests\SystemPathGuard\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey)) {
                     Assert.AreSame(key,
@@ -180,8 +185,9 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void RawValueWriteKeepsExpandStringKindAndUnexpandedText() {
-            var subKey = @"Software\pyRevitLabs\UnitTests\SystemPath";
+            var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey)) {
                     SystemPath.WriteRawPathValue(key, @"%USERPROFILE%\bin;" + TestDir);
@@ -197,8 +203,9 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void RawValueWriteDoesNotDowngradeExistingStringKind() {
-            var subKey = @"Software\pyRevitLabs\UnitTests\SystemPath";
+            var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey)) {
                     key.SetValue("Path", @"C:\a", RegistryValueKind.String);
@@ -213,8 +220,9 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void RawValueReadOfMissingValueIsNull() {
-            var subKey = @"Software\pyRevitLabs\UnitTests\SystemPath";
+            var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey))
                     Assert.IsNull(SystemPath.ReadRawPathValue(key));

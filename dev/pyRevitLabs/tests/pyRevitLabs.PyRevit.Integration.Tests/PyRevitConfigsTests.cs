@@ -7,7 +7,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.PyRevit;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.PyRevit.Integration.Tests {
     /// <summary>Tests seeding the machine-wide configuration from the active configuration.</summary>
     [TestClass]
     [DoNotParallelize]
@@ -46,7 +46,7 @@ namespace pyRevitLabs.UnitTests {
             PyRevitInstallScope.ClearCachedInstallScope();
             PyRevitInstallScope.SetRuntimeInstallRoot(null);
             PyRevitConfigService.Reload();
-            CommonUtils.DeleteDirectory(_tempRoot, verbose: false);
+            FixtureDirectory.Delete(_tempRoot);
         }
 
         [TestMethod]

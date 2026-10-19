@@ -4,7 +4,7 @@ using System.IO;
 
 using pyRevitLabs.TargetApps.Revit;
 
-namespace pyRevitLabs.UnitTests.RevitAddons {
+namespace pyRevitLabs.TargetApps.Revit.Tests {
     [TestClass()]
     [TestCategory("HostFree")]
     [TestCategory("Unit")]

@@ -15,12 +15,12 @@ namespace Dynamo.Applications {
     }
 
     [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestCategory("Integration")]
     public class FakeRevitUIApplication {
     }
 
     [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestCategory("Integration")]
     public class FakeRevitDynamoModel {
         public string State { get; set; } = "StartedUI";
     }
@@ -38,7 +38,7 @@ namespace Dynamo.Applications {
     /// resolution finds it the same way it finds the real add-in.
     /// </summary>
     [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestCategory("Integration")]
     public class DynamoRevitApp {
         public static readonly List<IDictionary<string, string>> ReceivedJournalData =
             new List<IDictionary<string, string>>();
@@ -70,10 +70,11 @@ namespace Dynamo.Applications {
     }
 }
 
-namespace pyRevitLabs.UnitTests.DynamoRevit {
+namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
     [TestClass]
+    [DoNotParallelize]
     [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestCategory("Integration")]
     public class DynamoRevitInteropTests {
         private const string GraphPath = @"C:\scripts\report.dyn";
 
@@ -89,6 +90,8 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
 
         [TestCleanup]
         public void Cleanup() {
+            Dynamo.Applications.DynamoRevitApp.Reset();
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = null;
             if (Directory.Exists(_tempRoot))
                 Directory.Delete(_tempRoot, recursive: true);
         }

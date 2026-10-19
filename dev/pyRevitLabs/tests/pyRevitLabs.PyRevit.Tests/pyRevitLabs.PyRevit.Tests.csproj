@@ -17,6 +17,8 @@
     <ProjectReference Include="..\..\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="NUnit" Version="4.5.1" />

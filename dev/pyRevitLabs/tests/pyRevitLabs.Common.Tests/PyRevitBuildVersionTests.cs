@@ -3,10 +3,13 @@ using System.IO;
 using System.Reflection;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
+using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
 
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.Common.Tests {
     [TestClass]
     [TestCategory("HostFree")]
     [TestCategory("Unit")]
@@ -102,6 +105,7 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void FromAssemblyFile_ReadsStampFromDisk() {
             var assemblyPath = typeof(PyRevitBuildVersionTests).Assembly.Location;
 
@@ -114,6 +118,7 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void FromAssemblyFile_MissingFileReturnsNull() {
             Assert.IsNull(PyRevitBuildVersion.FromAssemblyFile(null));
             Assert.IsNull(PyRevitBuildVersion.FromAssemblyFile(string.Empty));
@@ -122,6 +127,7 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
         public void FromAssemblyFile_NonAssemblyFileReturnsNull() {
             var notAnAssembly = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll");
             File.WriteAllText(notAnAssembly, "not a PE image");

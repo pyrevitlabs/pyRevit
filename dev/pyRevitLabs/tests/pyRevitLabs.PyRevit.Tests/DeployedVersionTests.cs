@@ -3,19 +3,22 @@ using System.IO;
 using System.Reflection;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
+using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.PyRevit;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.PyRevit.Tests {
     [TestClass]
     [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestCategory("Integration")]
     public class DeployedVersionTests {
         private const string VersionFileContent = "9.9.9.99999+9999";
         private const string BuiltAssemblyName = "pyRevitLabs.PyRevit.dll";
 
-        private string _clonePath;
+        private string _clonePath = null!;
 
         /// <summary>
         /// A clone is valid to PyRevitClone as long as pyrevitlib/pyrevit exists, so the

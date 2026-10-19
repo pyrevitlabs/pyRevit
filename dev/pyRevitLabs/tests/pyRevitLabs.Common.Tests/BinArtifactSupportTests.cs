@@ -2,14 +2,17 @@ using System;
 using System.IO;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
+using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.UnitTests.Common {
+namespace pyRevitLabs.Common.Tests {
     [TestClass]
     [TestCategory("HostFree")]
     [TestCategory("Integration")]
     public class BinArtifactSupportTests {
-        private string _tempRoot;
+        private string _tempRoot = null!;
 
         [TestInitialize]
         public void SetUp() {
@@ -22,7 +25,7 @@ namespace pyRevitLabs.UnitTests.Common {
         [TestCleanup]
         public void TearDown() {
             if (Directory.Exists(_tempRoot))
-                CommonUtils.DeleteDirectory(_tempRoot, verbose: false);
+                Directory.Delete(_tempRoot, recursive: true);
         }
 
         [TestMethod]
