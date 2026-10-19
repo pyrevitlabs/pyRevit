@@ -2,15 +2,11 @@
 import math
 
 from pyrevit import DB, script, forms, revit
-from pyrevit.compat import get_elementid_value_func
-from pyrevit.framework import List
 from coordinate_selector import show_coordinate_system_selector
 
 doc = revit.doc
 active_view = revit.active_view
 xamlfile = script.get_bundle_file("ui.xaml")
-
-get_elementid_value = get_elementid_value_func()
 
 VIEW_TYPES = [
     DB.ViewType.FloorPlan,
@@ -36,36 +32,18 @@ def angle_to_dot_product_threshold(angle_degrees):
 class GridsCollector:
     """Handles all grid collection, filtering, and validation."""
 
-    def __init__(self, document, view):
-        self.document = document
+    def __init__(self, view):
         self.view = view
-        self.selection = self._get_selection()
-
-        if self.selection:
-            self._analyze_selection()
-        else:
-            self._analyze_all_grids()
-
-    def _get_selection(self):
-        """Get current selection if any."""
-        selection_ids = revit.uidoc.Selection.GetElementIds()
-        if selection_ids:
-            return [self.document.GetElement(el_id) for el_id in selection_ids]
-        return None
-
-    def _is_valid_grid(self, elem):
-        """Check if an element is a valid grid for processing."""
-        try:
-            grid_category_id = int(DB.BuiltInCategory.OST_Grids)
-            return (
-                elem.Category
-                and int(get_elementid_value(elem.Category.Id)) == grid_category_id
-                and hasattr(elem, "GetCurvesInView")
-                and not elem.IsCurved
-                and not self._is_grid_segment(elem)
+        selected_elements = revit.get_selection().elements
+        self.selection = (
+            revit.query.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_Grids], elements=selected_elements
             )
-        except:
-            return False
+            if selected_elements
+            else []
+        )
+        self.from_selection = bool(self.selection)
+        self._analyze_grids(self.selection or revit.query.get_all_grids())
 
     def _is_grid_segment(self, grid):
         """Check if a grid is a segment (not a full grid)."""
@@ -74,21 +52,10 @@ class GridsCollector:
                 grid.HasBubbleInView(DB.DatumEnds.End0, self.view)
                 and grid.HasBubbleInView(DB.DatumEnds.End1, self.view)
             )
-        except:
+        except Exception:
             return True
 
-    def _analyze_selection(self):
-        """Analyze selected elements."""
-        self._analyze_grids(self.selection)
-        self.from_selection = True
-
-    def _analyze_all_grids(self):
-        grids = revit.query.get_all_grids(doc=self.document)
-        self._analyze_grids(grids)
-
     def _analyze_grids(self, grids):
-        """Analyze all grids in view."""
-
         self.valid_grids = []
         self.hidden_count = 0
         self.curved_count = 0
@@ -104,24 +71,14 @@ class GridsCollector:
             else:
                 self.valid_grids.append(grid)
 
-        self.from_selection = False
-
     def get_grid_chain_count(self):
-        """Get the count of the multi-segment grids in the active view."""
-        grid_chains = (
-            DB.FilteredElementCollector(self.document, self.view.Id)
+        """Count the multi-segment grids visible in the view."""
+        return (
+            DB.FilteredElementCollector(doc, self.view.Id)
             .OfCategory(DB.BuiltInCategory.OST_GridChains)
             .WhereElementIsNotElementType()
-            .ToElements()
+            .GetElementCount()
         )
-
-        # Count only visible grid chains
-        count = 0
-        for chain in grid_chains:
-            if not chain.IsHidden(self.view):
-                count += 1
-
-        return count
 
     def check_validity(self):
         """Check if any valid grids exist and show appropriate alerts."""
@@ -135,10 +92,9 @@ class GridsCollector:
             sub_message = ""
             if self.hidden_count > 0:
                 sub_message += "Hidden grids: {}\n".format(self.hidden_count)
-            if self.get_grid_chain_count() > 0:
-                sub_message += "Multi-segment grids: {}\n".format(
-                    self.get_grid_chain_count()
-                )
+            grid_chain_count = self.get_grid_chain_count()
+            if grid_chain_count > 0:
+                sub_message += "Multi-segment grids: {}\n".format(grid_chain_count)
             if self.curved_count > 0:
                 sub_message += "Curved grids: {}".format(self.curved_count)
 
@@ -161,15 +117,13 @@ class GridsCollector:
 class CustomGrids:
     def __init__(
         self,
-        document,
         view,
         coordinate_system="project_north",
         angle_tolerance=1,
         grid_collector=None,
     ):
-        """Initialize with the document, view, coordinate system choice, and angle tolerance and GridsCollector instance."""
+        """Initialize with the view, coordinate system choice, angle tolerance and GridsCollector instance."""
         self.__view = view
-        self.__document = document
         self.__coordinate_system = coordinate_system
         self.__angle_tolerance = angle_tolerance
         self.is_valid = True
@@ -181,7 +135,7 @@ class CustomGrids:
             self.selection = grid_collector.selection
         else:
             # Fallback - create collector
-            self.collector = GridsCollector(document, view)
+            self.collector = GridsCollector(view)
             if not self.collector.check_validity():
                 self.is_valid = False
                 return
@@ -197,15 +151,7 @@ class CustomGrids:
         self.right_left_collapsed = False
         self.top_bottom_collapsed = False
 
-        self._original_selection = []
         self._all_active_grids_selected = False
-
-        selection_ids = revit.uidoc.Selection.GetElementIds()
-        self.selection = (
-            [document.GetElement(el_id) for el_id in selection_ids]
-            if selection_ids
-            else []
-        )
 
         # Setyp transformation only if not in elevation or all grids mode
         if coordinate_system in ["project_north", "true_north", "view"]:
@@ -225,10 +171,7 @@ class CustomGrids:
 
             elif self.__coordinate_system == "true_north":
                 # Get project base point transformation
-                pbp_collector = DB.FilteredElementCollector(self.__document).OfCategory(
-                    DB.BuiltInCategory.OST_ProjectBasePoint
-                )
-                pbp = pbp_collector.FirstElement()
+                pbp = DB.BasePoint.GetProjectBasePoint(doc)
 
                 if pbp:
                     # Get the angle parameter
@@ -259,7 +202,7 @@ class CustomGrids:
             else:
                 self._transform = DB.Transform.Identity
 
-        except:
+        except Exception:
             self._transform = DB.Transform.Identity
 
     def _transform_point(self, point):
@@ -269,7 +212,7 @@ class CustomGrids:
                 return point
             else:
                 return self._transform.OfPoint(point)
-        except:
+        except Exception:
             return point
 
     def set_ui_state(self, right_left_collapsed, top_bottom_collapsed):
@@ -281,28 +224,20 @@ class CustomGrids:
         """Highlight all active grids once at startup and keep them selected."""
         try:
             if not self._all_active_grids_selected:
-                self._original_selection = [
-                    self.__document.GetElement(el_id)
-                    for el_id in revit.uidoc.Selection.GetElementIds()
-                ]
-
                 active_grids = self.get_active_grids()
                 if active_grids:
-                    grid_ids = [grid.Id for grid in active_grids if grid and grid.Id]
-                    if grid_ids:
-                        id_list = List[DB.ElementId](grid_ids)
-                        revit.uidoc.Selection.SetElementIds(id_list)
-                        self._all_active_grids_selected = True
-        except:
+                    revit.get_selection().set_to(active_grids)
+                    self._all_active_grids_selected = True
+        except Exception:
             pass
 
     def unhighlight_grids(self):
         """Clear selection."""
         try:
             if self._all_active_grids_selected:
-                revit.uidoc.Selection.SetElementIds(List[DB.ElementId]())
+                revit.get_selection().clear()
                 self._all_active_grids_selected = False
-        except:
+        except Exception:
             pass
 
     def get_active_grids(self):
@@ -334,7 +269,7 @@ class CustomGrids:
             if not hasattr(grid, "GetCurvesInView"):
                 return []
             return grid.GetCurvesInView(DB.DatumExtentType.ViewSpecific, self.__view)
-        except:
+        except Exception:
             return []
 
     def is_linear(self, grid):
@@ -533,7 +468,7 @@ class CustomGrids:
         else:
             grids = self.get_horizontal_grids()
 
-        with revit.Transaction("Toggle bubbles", doc=self.__document):
+        with revit.Transaction("Toggle bubbles"):
             for grid in grids:
                 xyz_0, xyz_1 = self.get_transformed_endpoints(grid)
                 if xyz_0 and xyz_1:
@@ -556,7 +491,7 @@ class CustomGrids:
         """Hide the bubbles of only the actively managed grids."""
         active_grids = self.get_active_grids()
 
-        with revit.Transaction("Hide all bubbles", doc=self.__document):
+        with revit.Transaction("Hide all bubbles"):
             for grid in active_grids:
                 if grid.CanBeVisibleInView(self.__view):
                     grid.HideBubbleInView(DB.DatumEnds.End0, self.__view)
@@ -566,7 +501,7 @@ class CustomGrids:
         """Show the bubbles of only the actively managed grids."""
         active_grids = self.get_active_grids()
 
-        with revit.Transaction("Show all bubbles", doc=self.__document):
+        with revit.Transaction("Show all bubbles"):
             for grid in active_grids:
                 if grid.CanBeVisibleInView(self.__view):
                     grid.ShowBubbleInView(DB.DatumEnds.End0, self.__view)
@@ -588,13 +523,13 @@ class ToggleGridWindow(forms.WPFWindow):
 
         self.result = None
         self.Closed += self._window_closed
-        script.restore_window_position(self, "ToggleGridBubblesByDirection")
+        script.restore_window_position(self)
 
         self.view = view
         self.coordinate_system = coordinate_system
         self.angle_tolerance = angle_tolerance
         self.grids = CustomGrids(
-            doc, self.view, coordinate_system, angle_tolerance, grid_collector
+            self.view, coordinate_system, angle_tolerance, grid_collector
         )
 
         if not self.grids.is_valid:
@@ -839,7 +774,7 @@ class ToggleGridWindow(forms.WPFWindow):
         self.updating_checkboxes = False
 
     def _window_closed(self, sender, args):
-        script.save_window_position(self, "ToggleGridBubblesByDirection")
+        script.save_window_position(self)
         if self.result is None:
             self.grids.unhighlight_grids()
             self.result = "cancel"
@@ -863,84 +798,87 @@ class ToggleGridWindow(forms.WPFWindow):
 
 def validate_active_view():
     if active_view.ViewType == DB.ViewType.ProjectBrowser:
-        forms.alert("You've selected a view in the project browser. \
-					Click inside the active view and try again.")
+        forms.alert(
+            "You've selected a view in the project browser. Click inside the active view and try again."
+        )
         return False
     elif active_view.ViewType not in VIEW_TYPES:
         forms.alert(
-            "The view must be a floor plan, ceiling plan, elevation or section.\n\
-		Your active view is : {}".format(active_view.ViewType)
+            "The view must be a floor plan, ceiling plan, elevation or section.\nYour active view is : {}".format(
+                active_view.ViewType
+            )
         )
         return False
     return True
 
 
-class _UserCancelled(Exception):
-    pass
-
-
 def main():
+    """Run the tool inside one transaction group.
+
+    Note:
+        Cancelling at any step calls ``script.exit()``. The resulting
+        ``SystemExit`` makes ``revit.TransactionGroup`` roll back every bubble
+        toggled so far, and the pyRevit runtime treats it as a normal exit.
+        ``log_errors=False`` keeps that rollback out of the log.
+    """
     if not validate_active_view():
         return
 
-    grid_collector = GridsCollector(doc, active_view)
+    grid_collector = GridsCollector(active_view)
 
     if not grid_collector.check_validity():
         return
 
-    try:
-        with revit.TransactionGroup("Toggle Grids", doc=doc, log_errors=False):
-            if active_view.ViewType in ELEVATION_VIEWS:
-                window = ToggleGridWindow.create(
-                    xamlfile,
-                    active_view,
-                    "elevation_mode",
-                    1,
-                    grid_collector,
-                )
-                if window is None:
-                    raise _UserCancelled()
-                window.ShowDialog()
-                if window.result != "ok":
-                    raise _UserCancelled()
-                return
+    with revit.TransactionGroup("Toggle Grids", log_errors=False):
+        if active_view.ViewType in ELEVATION_VIEWS:
+            window = ToggleGridWindow.create(
+                xamlfile,
+                active_view,
+                "elevation_mode",
+                1,
+                grid_collector,
+            )
+            if window is None:
+                script.exit()
+            window.ShowDialog()
+            if window.result != "ok":
+                script.exit()
+            return
 
-            previous_system = None
-            previous_tolerance = None
+        previous_system = None
+        previous_tolerance = None
 
-            while True:
-                selection_result = show_coordinate_system_selector(
-                    previous_system, previous_tolerance
-                )
-                if selection_result is None:
-                    raise _UserCancelled()
+        while True:
+            selection_result = show_coordinate_system_selector(
+                previous_system, previous_tolerance
+            )
+            if selection_result is None:
+                script.exit()
 
-                coordinate_system = selection_result["coordinate_system"]
-                angle_tolerance = selection_result["angle_tolerance"]
-                previous_system = coordinate_system
-                previous_tolerance = angle_tolerance
+            coordinate_system = selection_result["coordinate_system"]
+            angle_tolerance = selection_result["angle_tolerance"]
+            previous_system = coordinate_system
+            previous_tolerance = angle_tolerance
 
-                window = ToggleGridWindow.create(
-                    xamlfile,
-                    active_view,
-                    coordinate_system,
-                    angle_tolerance,
-                    grid_collector,
-                )
-                if window is None:
-                    raise _UserCancelled()
-                window.ShowDialog()
+            window = ToggleGridWindow.create(
+                xamlfile,
+                active_view,
+                coordinate_system,
+                angle_tolerance,
+                grid_collector,
+            )
+            if window is None:
+                script.exit()
+            window.ShowDialog()
 
-                if (
-                    isinstance(window.result, dict)
-                    and window.result.get("action") == "back"
-                ):
-                    continue
-                if window.result == "ok":
-                    break
-                raise _UserCancelled()
-    except _UserCancelled:
-        return
+            if (
+                isinstance(window.result, dict)
+                and window.result.get("action") == "back"
+            ):
+                continue
+            if window.result == "ok":
+                break
+            script.exit()
 
 
 if __name__ == "__main__":
