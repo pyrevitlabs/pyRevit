@@ -1,5 +1,6 @@
 layout:
   - Run All Tests
+  - Dynamo Module Tests
   - -----
   - pyRevitLabs Module Tests
   - Output Window Tests
