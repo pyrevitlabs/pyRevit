@@ -108,7 +108,7 @@ Local validation on 2026-10-19 used IronPython 2.7.12 and a fresh project in eac
 | 2026 | 3.7.0.11777 | Passed / passed |
 | 2027 | 4.2.1.5887 | Passed / passed |
 
-Each report records the test-source SHA-256. Interactive ribbon verification is separate from this journal evidence; other Python engines and independently installed Dynamo versions remain unverified.
+Each report records the test-source SHA-256. Interactive ribbon verification also passed twice on Revit 2025 build `25.5.0.57` with Dynamo `3.3.2.11986`: each run returned matching token/output values, the tokens differed between runs, and Dynamo reported `StartedUIless`. The measured execution times were 2.546 seconds and 0.124 seconds. Other Python engines and independently installed Dynamo versions remain unverified; this ribbon evidence does not establish model-change isolation.
 
 `pyrevitlib/pyrevit/unittests/` holds the hosted suite. `runner.py` is the shared entry point; module buttons call `run_module_tests` (report only) or `assert_module_tests_successful` (raise on failure, so the button fails visibly).
 
