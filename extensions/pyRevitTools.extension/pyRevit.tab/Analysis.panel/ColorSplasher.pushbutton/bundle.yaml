@@ -83,7 +83,13 @@ tooltip:
     
     versão de Criação de Filtros de Vista por Jean-Marc Couffin, Dezembro 2023, Outubro 2025
 author: BIMOne Inc.(2021), Nonica (Jaime Alonso Candau - 2023), BIMOne Inc. (Jean-Marc Couffin - 2023-2025)
+context:
+  - doc-project
+  - any:
+    - active-plan-view
+    - active-section-view
+    - active-elevation-view
+    - active-detail-view
+    - active-3d-view
 engine:
-  clean: true
   persistent: true
-  full_frame: true

@@ -19,6 +19,9 @@ from pyrevit.coreutils import applocales, distinct_rgb_colors, unique_name
 from pyrevit.framework import Drawing, Forms, List, Media, System, Windows, Input
 from pyrevit.revit import create, events, query
 
+from legend.table import LegendLayout, LegendRow, create_legend_view, draw_legend_table
+from scheme_storage import get_view_scheme, has_view_scheme, save_view_scheme
+
 logger = script.get_logger()
 config = script.get_config()
 get_elementid_value = get_elementid_value_func()
@@ -523,23 +526,11 @@ def get_solid_filled_region_type():
     return new_type
 
 
-def rectangle_loops(x, y, width, height):
-    corners = [
-        DB.XYZ(x, y, 0),
-        DB.XYZ(x, y + height, 0),
-        DB.XYZ(x + width, y + height, 0),
-        DB.XYZ(x + width, y, 0),
-    ]
-    loop = DB.CurveLoop()
-    for start, end in zip(corners, corners[1:] + corners[:1]):
-        loop.Append(DB.Line.CreateBound(start, end))
-    loops = List[DB.CurveLoop]()
-    loops.Add(loop)
-    return loops
+def create_legend(template_legend, legend_name, header, values, options):
+    """Duplicate a legend view and draw a color swatch and label per value.
 
-
-def create_legend(template_legend, legend_name, label_prefix, values, options):
-    """Duplicate a legend view and draw one label and color swatch per value.
+    Uses the shared ``legend.table`` layout of Filter Legend, with the
+    default layout sizes and the document's default text type.
 
     Returns:
         DB.View: the new legend, named after ``legend_name`` made unique.
@@ -547,47 +538,27 @@ def create_legend(template_legend, legend_name, label_prefix, values, options):
     Note:
         Must run in Revit API context.
     """
-    text_type_id = get_text_note_type_id()
+    layout = LegendLayout.from_mm(get_text_note_type_id())
     solid_fill_id = get_solid_fill_id()
+    rows = [
+        LegendRow(
+            [value.name or NONE_VALUE],
+            build_overrides(value.color, options, solid_fill_id),
+        )
+        for value in values
+    ]
     taken_names = {
         query.get_name(view)
         for view in query.get_all_views(doc, include_nongraphical=True)
     }
     with revit.Transaction("Create Legend", doc=doc, log_errors=False):
         region_type = get_solid_filled_region_type()
-        legend = doc.GetElement(
-            template_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
+        legend = create_legend_view(
+            doc, template_legend, sanitize_name(legend_name), taken_names
         )
-        legend.Name = unique_name(sanitize_name(legend_name), taken_names)
-
-        rows = []
-        y_position = 0.0
-        for value in values:
-            text_note = DB.TextNote.Create(
-                doc,
-                legend.Id,
-                DB.XYZ(0, y_position, 0),
-                label_prefix + value.name,
-                text_type_id,
-            )
-            doc.Regenerate()
-            box = text_note.get_BoundingBox(legend)
-            height = box.Max.Y - box.Min.Y
-            rows.append((value, box.Min.Y, box.Max.X, height))
-            y_position = box.Min.Y - height * 1.25
-
-        spacing = rows[-1][3] * 0.25
-        swatch_x = max(row[2] for row in rows) + spacing
-        for value, bottom, _, height in rows:
-            region = DB.FilledRegion.Create(
-                doc,
-                region_type.Id,
-                legend.Id,
-                rectangle_loops(swatch_x, bottom, height * 2, height),
-            )
-            legend.SetElementOverrides(
-                region.Id, build_overrides(value.color, options, solid_fill_id)
-            )
+        draw_legend_table(
+            doc, legend, layout, [header], rows, region_type_id=region_type.Id
+        )
     return legend
 
 
@@ -799,24 +770,22 @@ class ColorSplasherWindow(forms.WPFWindow):
             category.name,
             parameter.name,
         )
-        label_prefix = "{} / {} - ".format(category.name, parameter.name)
+        header = "{} / {}".format(category.name, parameter.name)
         events.execute_in_revit_context(
             self._create_legend,
             legend_name,
-            label_prefix,
+            header,
             list(self._values),
             self._override_options().for_legend(),
         )
 
-    def _create_legend(self, legend_name, label_prefix, values, options):
+    def _create_legend(self, legend_name, header, values, options):
         legends = query.get_all_views(doc, view_types=[DB.ViewType.Legend])
         if not legends:
             self.alert("ColorSplasher.Messages.NoLegendView")
             return
         try:
-            legend = create_legend(
-                legends[0], legend_name, label_prefix, values, options
-            )
+            legend = create_legend(legends[0], legend_name, header, values, options)
         except Exception as ex:
             logger.debug("Legend creation failed.", exc_info=True)
             self.alert("ColorSplasher.Messages.LegendFailed", [ex])
@@ -855,17 +824,48 @@ class ColorSplasherWindow(forms.WPFWindow):
                 title_key="ColorSplasher.SaveLoadDialog.NoValuesDetected",
             )
             return
-        FormSaveLoadScheme(self).Show()
+        FormSaveLoadScheme(self, active_view).Show()
 
-    def save_scheme(self, path):
+    def scheme_entries(self):
+        """Return the window's colors as (value_name, (red, green, blue)) in list order."""
+        return [(value.name, value.color) for value in self._values]
+
+    def save_scheme_to_file(self, path):
         with open(path, "w") as scheme_file:
-            for value in self._values:
-                scheme_file.write("{}::R{}G{}B{}\n".format(value.name, *value.color))
+            for name, color in self.scheme_entries():
+                scheme_file.write("{}::R{}G{}B{}\n".format(name, *color))
 
-    def load_scheme(self, path, by_value):
-        """Recolor values from a scheme file, matched by value name or by position."""
+    def load_scheme_from_file(self, path, by_value):
         with open(path, "r") as scheme_file:
             entries = [parse_scheme_line(line) for line in scheme_file if line.strip()]
+        self.apply_scheme(entries, by_value)
+
+    def save_scheme_to_view(self, view):
+        """Store the window's colors on ``view``, replacing its previous scheme."""
+        events.execute_in_revit_context(
+            self._save_scheme_to_view, view, self.scheme_entries()
+        )
+
+    def _save_scheme_to_view(self, view, entries):
+        try:
+            with revit.Transaction(
+                "Save Color Scheme to View", doc=view.Document, log_errors=False
+            ):
+                save_view_scheme(view, entries)
+        except Exception as ex:
+            logger.debug("Saving color scheme to view failed.", exc_info=True)
+            self.show_message(
+                str(ex),
+                self.get_locale_string("ColorSplasher.SaveLoadDialog.ErrorSaving"),
+            )
+            return
+        self.alert("ColorSplasher.SaveLoadDialog.SavedToView", [query.get_name(view)])
+
+    def load_scheme_from_view(self, view, by_value):
+        self.apply_scheme(get_view_scheme(view) or [], by_value)
+
+    def apply_scheme(self, entries, by_value):
+        """Recolor values from scheme entries, matched by value name or by position."""
         if by_value:
             colors = dict(entries)
             for value in self._values:
@@ -897,10 +897,17 @@ class ColorSplasherWindow(forms.WPFWindow):
 
 
 class FormSaveLoadScheme(Forms.Form):
-    """Dialog to save the window's colors to, or load them from, a .cschn file."""
+    """Dialog to save the window's colors to, or load them from, a file or the view.
 
-    def __init__(self, splasher):
+    Invariant:
+        Loading from the view is only enabled while ``view`` has a stored
+        scheme; the view option is disabled when there is no colorable view.
+    """
+
+    def __init__(self, splasher, view):
         self._splasher = splasher
+        self._view = view
+        self._view_has_scheme = view is not None and has_view_scheme(view)
         self.Font = Drawing.Font(
             self.Font.FontFamily,
             9,
@@ -924,16 +931,48 @@ class FormSaveLoadScheme(Forms.Form):
         separator.Size = Drawing.Size(500, 2)
         separator.BackColor = Drawing.Color.FromArgb(82, 53, 239)
 
+        storage_label = Forms.Label()
+        storage_label.Anchor = anchor_top_left
+        storage_label.Location = Drawing.Point(12, 10)
+        storage_label.Size = Drawing.Size(239, 23)
+        storage_label.Text = self._text("StorageLocation")
+        tooltip.SetToolTip(storage_label, self._text("StorageLocation.Tooltip"))
+
+        storage_panel = Forms.Panel()
+        storage_panel.Anchor = anchor_top_left
+        storage_panel.Location = Drawing.Point(0, 35)
+        storage_panel.Size = Drawing.Size(500, 25)
+
+        radio_file = Forms.RadioButton()
+        radio_file.Location = Drawing.Point(19, 0)
+        radio_file.Size = Drawing.Size(230, 25)
+        radio_file.Text = self._text("StorageFile")
+        radio_file.Checked = True
+        tooltip.SetToolTip(radio_file, self._text("StorageFile.Tooltip"))
+
+        self._radio_view = Forms.RadioButton()
+        self._radio_view.Location = Drawing.Point(250, 0)
+        self._radio_view.Size = Drawing.Size(239, 25)
+        self._radio_view.Text = self._text(
+            "StorageView" if self._view_has_scheme else "StorageView.Empty"
+        )
+        self._radio_view.Enabled = self._view is not None
+        self._radio_view.CheckedChanged += self.storage_changed
+        tooltip.SetToolTip(self._radio_view, self._text("StorageView.Tooltip"))
+
+        storage_panel.Controls.Add(radio_file)
+        storage_panel.Controls.Add(self._radio_view)
+
         if_loading = Forms.Label()
         if_loading.Anchor = anchor_top_left
-        if_loading.Location = Drawing.Point(12, 10)
+        if_loading.Location = Drawing.Point(12, 65)
         if_loading.Size = Drawing.Size(239, 23)
         if_loading.Text = self._text("IfLoading")
         tooltip.SetToolTip(if_loading, self._text("IfLoading.Tooltip"))
 
         self._radio_by_value = Forms.RadioButton()
         self._radio_by_value.Anchor = anchor_top_left
-        self._radio_by_value.Location = Drawing.Point(19, 35)
+        self._radio_by_value.Location = Drawing.Point(19, 90)
         self._radio_by_value.Size = Drawing.Size(230, 25)
         self._radio_by_value.Text = self._text("LoadByValue")
         self._radio_by_value.Checked = True
@@ -941,52 +980,77 @@ class FormSaveLoadScheme(Forms.Form):
 
         radio_by_position = Forms.RadioButton()
         radio_by_position.Anchor = anchor_top_left
-        radio_by_position.Location = Drawing.Point(250, 35)
+        radio_by_position.Location = Drawing.Point(250, 90)
         radio_by_position.Size = Drawing.Size(239, 25)
         radio_by_position.Text = self._text("LoadByPosition")
         tooltip.SetToolTip(radio_by_position, self._text("LoadByPosition.Tooltip"))
 
         button_save = Forms.Button()
         button_save.Anchor = anchor_bottom_right
-        button_save.Location = Drawing.Point(13, 70)
+        button_save.Location = Drawing.Point(13, 125)
         button_save.Size = Drawing.Size(236, 25)
         button_save.Text = self._text("SaveButton")
         button_save.Cursor = Forms.Cursors.Hand
-        button_save.Click += self.specify_path_save
+        button_save.Click += self.save_clicked
 
-        button_load = Forms.Button()
-        button_load.Anchor = anchor_bottom_right
-        button_load.Location = Drawing.Point(253, 70)
-        button_load.Size = Drawing.Size(236, 25)
-        button_load.Text = self._text("LoadButton")
-        button_load.Cursor = Forms.Cursors.Hand
-        button_load.Click += self.specify_path_load
+        self._button_load = Forms.Button()
+        self._button_load.Anchor = anchor_bottom_right
+        self._button_load.Location = Drawing.Point(253, 125)
+        self._button_load.Size = Drawing.Size(236, 25)
+        self._button_load.Text = self._text("LoadButton")
+        self._button_load.Cursor = Forms.Cursors.Hand
+        self._button_load.Click += self.load_clicked
 
         self.SuspendLayout()
         for control in (
+            storage_label,
+            storage_panel,
             if_loading,
             self._radio_by_value,
             radio_by_position,
             button_save,
-            button_load,
+            self._button_load,
             separator,
         ):
             self.Controls.Add(control)
         self.MaximizeBox = False
         self.MinimizeBox = False
-        self.ClientSize = Drawing.Size(500, 105)
+        self.ClientSize = Drawing.Size(500, 160)
         self.Text = self._text("Title")
         self.FormBorderStyle = Forms.FormBorderStyle.FixedSingle
         self.Icon = Drawing.Icon(script.get_bundle_file("color_splasher.ico"))
         self.CenterToScreen()
         self.ResumeLayout(False)
 
+    @property
+    def _use_view(self):
+        return self._radio_view.Checked
+
+    def storage_changed(self, sender, args):
+        self._button_load.Enabled = not self._use_view or self._view_has_scheme
+
+    def save_clicked(self, sender, args):
+        if self._use_view:
+            self._splasher.save_scheme_to_view(self._view)
+            self.Close()
+        else:
+            self.specify_path_save()
+
+    def load_clicked(self, sender, args):
+        if self._use_view:
+            self._splasher.load_scheme_from_view(
+                self._view, self._radio_by_value.Checked
+            )
+            self.Close()
+        else:
+            self.specify_path_load()
+
     def _desktop(self):
         return System.Environment.GetFolderPath(
             System.Environment.SpecialFolder.Desktop
         )
 
-    def specify_path_save(self, sender, args):
+    def specify_path_save(self):
         path = forms.save_file(
             files_filter=SCHEME_FILES_FILTER,
             init_dir=self._desktop(),
@@ -996,13 +1060,13 @@ class FormSaveLoadScheme(Forms.Form):
         if not path:
             return
         try:
-            self._splasher.save_scheme(path)
+            self._splasher.save_scheme_to_file(path)
         except Exception as ex:
             logger.debug("Saving color scheme failed.", exc_info=True)
             self._splasher.show_message(str(ex), self._text("ErrorSaving"))
         self.Close()
 
-    def specify_path_load(self, sender, args):
+    def specify_path_load(self):
         path = forms.pick_file(
             files_filter=SCHEME_FILES_FILTER,
             init_dir=self._desktop(),
@@ -1011,7 +1075,7 @@ class FormSaveLoadScheme(Forms.Form):
         if not path:
             return
         try:
-            self._splasher.load_scheme(path, self._radio_by_value.Checked)
+            self._splasher.load_scheme_from_file(path, self._radio_by_value.Checked)
         except Exception as ex:
             logger.debug("Loading color scheme failed.", exc_info=True)
             self._splasher.show_message(str(ex), self._text("ErrorLoading"))
