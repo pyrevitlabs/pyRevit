@@ -1,6 +1,6 @@
 """Journal entry point for #2992 validation in a disposable Revit process.
 
-Run with ``pyrevit run <absolute-script-path> --revit=<year>``. The journal owns
+Run with ``pyrevit run <absolute-script-path> --revit=<year> --purge``. The journal owns
 the process and exits it afterward. Reports remain under .test-results/dynamo;
 this script must never be executed in an existing user session.
 """
@@ -8,10 +8,10 @@ this script must never be executed in an existing user session.
 import hashlib
 import json
 import os
-import tempfile
 import traceback
+import uuid
 
-from pyrevit import DB
+from pyrevit import DB, EXEC_PARAMS
 from pyrevit.unittests import test_dynamo_execution
 
 
@@ -31,15 +31,17 @@ def run():
     uiapp = __revit__
     year = str(uiapp.Application.VersionNumber)
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    reports = os.path.join(root, ".test-results", "dynamo")
-    if not os.path.isdir(reports):
-        os.makedirs(reports)
-    report_path = os.path.join(reports, year + ".json")
-    report = {"revit": year, "status": "started"}
+    run_id = uuid.uuid4().hex
+    reports = os.path.join(root, ".test-results", "dynamo", year, run_id)
+    os.makedirs(reports)
+    report_path = os.path.join(reports, "result.json")
+    report = {"revit": year, "run_id": run_id, "status": "started"}
     with open(report_path, "w") as report_file:
         json.dump(report, report_file, indent=2)
     try:
-        directory = tempfile.mkdtemp(prefix="pyrevit-dynamo-project-")
+        directory = os.path.dirname(
+            str(EXEC_PARAMS.command_data.JournalData["LogFile"])
+        )
         model_path = os.path.join(directory, "DynamoValidation.rvt")
         project = uiapp.Application.NewProjectDocument(DB.UnitSystem.Metric)
         project.SaveAs(model_path)

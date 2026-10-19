@@ -9,8 +9,10 @@ Important:
 import json
 import os
 import shutil
+import sys
 import tempfile
 import time
+import traceback
 import unittest
 import uuid
 
@@ -87,18 +89,36 @@ def _graph(token, node_id):
     }
 
 
-def _is_test_workspace(workspace):
-    if workspace is None or workspace.Name != _GRAPH_NAME:
-        return False
-    if (
-        workspace.Description
-        != "Issue #2992: fresh token proves DesignScript execution."
-    ):
-        return False
-    nodes = list(workspace.Nodes)
-    return len(nodes) == 1 and str(getattr(nodes[0], "Code", "")).startswith(
-        'token = "pyrevit-dynamo-'
-    )
+def _cleanup(group, directory, graph_path):
+    failures = []
+    try:
+        model = _model()
+        workspace = model.CurrentWorkspace if model is not None else None
+        if (
+            workspace is not None
+            and graph_path is not None
+            and os.path.normcase(str(workspace.FileName))
+            == os.path.normcase(graph_path)
+        ):
+            workspace.Clear()
+            workspace.FileName = ""
+            workspace.HasUnsavedChanges = False
+    except Exception:
+        failures.append(traceback.format_exc())
+    if group is not None:
+        try:
+            if group.GetStatus() == DB.TransactionStatus.Started:
+                if group.RollBack() != DB.TransactionStatus.RolledBack:
+                    raise AssertionError("Dynamo test changes were not rolled back.")
+        except Exception:
+            failures.append(traceback.format_exc())
+        try:
+            group.Dispose()
+        except Exception:
+            failures.append(traceback.format_exc())
+    if directory is not None:
+        shutil.rmtree(directory, ignore_errors=True)
+    return failures
 
 
 def assert_dynamo_execution(ui_application=None):
@@ -125,19 +145,10 @@ def assert_dynamo_execution(ui_application=None):
     current_model = _model()
     if current_model is not None:
         workspace = current_model.CurrentWorkspace
-        own_graph = _is_test_workspace(workspace)
-        if (
-            workspace is not None
-            and not own_graph
-            and (
-                workspace.HasUnsavedChanges
-                or workspace.FileName
-                or list(workspace.Nodes)
-            )
+        if workspace is not None and (
+            workspace.HasUnsavedChanges or workspace.FileName or list(workspace.Nodes)
         ):
             raise AssertionError("Close the current Dynamo graph before this test.")
-        if own_graph:
-            workspace.HasUnsavedChanges = False
 
     clr.AddReference("pyRevitLabs.PyRevit.Runtime.Shared")
     from pyRevitLabs.PyRevit.Runtime.Shared import (
@@ -147,12 +158,18 @@ def assert_dynamo_execution(ui_application=None):
 
     token = "pyrevit-dynamo-" + uuid.uuid4().hex
     node_id = uuid.uuid4().hex
-    directory = tempfile.mkdtemp(prefix="pyrevit-dynamo-smoke-")
-    graph_path = os.path.join(directory, "script.dyn")
     started = time.time()
-    group = DB.TransactionGroup(ui_application.ActiveUIDocument.Document, _GRAPH_NAME)
-    group.Start()
+    directory = None
+    graph_path = None
+    group = None
     try:
+        directory = tempfile.mkdtemp(prefix="pyrevit-dynamo-smoke-")
+        graph_path = os.path.join(directory, "script.dyn")
+        group = DB.TransactionGroup(
+            ui_application.ActiveUIDocument.Document, _GRAPH_NAME
+        )
+        if group.Start() != DB.TransactionStatus.Started:
+            raise AssertionError("Dynamo test transaction group did not start.")
         with open(graph_path, "w") as graph_file:
             json.dump(_graph(token, node_id), graph_file)
         options = DynamoExecutionOptions()
@@ -195,19 +212,15 @@ def assert_dynamo_execution(ui_application=None):
             "elapsed_seconds": round(time.time() - started, 3),
         }
     finally:
-        try:
-            model = _model()
-            if model is not None and _is_test_workspace(model.CurrentWorkspace):
-                model.CurrentWorkspace.Clear()
-                model.CurrentWorkspace.FileName = ""
-                model.CurrentWorkspace.HasUnsavedChanges = False
-        finally:
-            try:
-                if group.RollBack() != DB.TransactionStatus.RolledBack:
-                    raise AssertionError("Dynamo test changes were not rolled back.")
-            finally:
-                group.Dispose()
-                shutil.rmtree(directory)
+        execution_failure = traceback.format_exc() if sys.exc_info()[0] else None
+        cleanup_failures = _cleanup(group, directory, graph_path)
+        if cleanup_failures:
+            details = "Cleanup failures:\n" + "\n".join(cleanup_failures)
+            if execution_failure:
+                details = (
+                    "Dynamo execution failure:\n" + execution_failure + "\n" + details
+                )
+            raise AssertionError(details)
 
 
 class DynamoExecutionTests(unittest.TestCase):
