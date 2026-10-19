@@ -14,7 +14,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
             <Label Content="{DynamicResource SelectCategory}" FontWeight="Bold" Margin="0,0,0,5"/>
             <ComboBox x:Name="categoryComboBox" Height="30" FontSize="12" 
-                      DisplayMemberPath="Name" SelectedValuePath="BuiltInCategory"/>
+                      DisplayMemberPath="Name" SelectedValuePath="Id"/>
         </StackPanel>
         
         <!-- Parameters Selection Area -->

@@ -228,8 +228,17 @@ class Parameter(BaseObjectWrapper):
 
     @property
     def parameter_type(self):
-        parameter_type = self._revit_object.Definition.ParameterType
-        return parameter_type
+        """Returns the data type of the Parameter.
+
+        Returns:
+            (``DB.ForgeTypeId``): on Revit 2022+, from ``Definition.GetDataType()``
+            (``DB.ParameterType``): on older Revit versions
+
+        """
+        definition = self._revit_object.Definition
+        if hasattr(definition, 'GetDataType'):
+            return definition.GetDataType()
+        return definition.ParameterType
 
     @property
     def id(self):

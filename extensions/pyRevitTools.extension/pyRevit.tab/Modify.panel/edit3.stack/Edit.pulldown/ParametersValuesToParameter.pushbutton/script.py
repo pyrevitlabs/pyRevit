@@ -163,10 +163,10 @@ def get_localized_texts():
 
 
 def get_category_mapping():
-    """Create a sorted mapping of category names to built-in categories."""
+    """Create a sorted mapping of category names to category ids."""
     doc = HOST_APP.doc
     return {
-        cat.Name: cat.BuiltInCategory
+        cat.Name: cat.Id
         for cat in sorted(doc.Settings.Categories, key=lambda x: x.Name)
     }
 
@@ -180,7 +180,7 @@ def get_elements_by_category(category_name, category_mapping, texts):
 
     elements = list(
         DB.FilteredElementCollector(doc)
-        .OfCategory(category_mapping[category_name])
+        .OfCategoryId(category_mapping[category_name])
         .WhereElementIsNotElementType()
         .ToElements()
     )
@@ -361,9 +361,9 @@ class Params2ParamWindow(forms.WPFWindow):
         sorted_categories = sorted(
             self.category_mapping.items(), key=lambda kv: str(kv[0])
         )
-        for name, built_in_cat in sorted_categories:
+        for name, category_id in sorted_categories:
             category_item = type(
-                "CategoryItem", (), {"Name": name, "BuiltInCategory": built_in_cat}
+                "CategoryItem", (), {"Name": name, "Id": category_id}
             )()
             category_list.Add(category_item)
 
