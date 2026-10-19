@@ -42,7 +42,7 @@ def run():
         directory = os.path.dirname(
             str(EXEC_PARAMS.command_data.JournalData["LogFile"])
         )
-        model_path = os.path.join(directory, "DynamoValidation.rvt")
+        model_path = os.path.join(directory, "DynamoValidation-{}.rvt".format(run_id))
         project = uiapp.Application.NewProjectDocument(DB.UnitSystem.Metric)
         project.SaveAs(model_path)
         project.Close(False)

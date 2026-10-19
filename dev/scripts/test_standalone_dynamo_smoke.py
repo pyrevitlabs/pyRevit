@@ -166,9 +166,12 @@ class DynamoJournalEvidenceTests(unittest.TestCase):
             side_effect=[{"token": "cold"}, {"token": "warm"}]
         )
         self.project = Mock()
-        self.project.SaveAs.side_effect = lambda path: Path(path).write_text(
-            "disposable model"
-        )
+
+        def _save_project(path):
+            with open(path, "x") as project:
+                project.write("disposable model")
+
+        self.project.SaveAs.side_effect = _save_project
         pyrevit = ModuleType("pyrevit")
         pyrevit.DB = SimpleNamespace(UnitSystem=SimpleNamespace(Metric=0))
         pyrevit.EXEC_PARAMS = SimpleNamespace(
