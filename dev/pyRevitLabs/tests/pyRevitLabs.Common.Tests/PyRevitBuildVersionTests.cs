@@ -2,138 +2,112 @@ using System;
 using System.IO;
 using System.Reflection;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
-using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
+using NUnit.Framework;
 
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
-    [TestClass]
-    [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class PyRevitBuildVersionTests {
         private const string CommitHash = "0746b7c45feca2ad0a1efaa9232585b0402a3980";
 
-        [TestMethod]
+        [Test]
         public void Normalize_DropsSdkAppendedCommitHash() {
-            Assert.AreEqual(
-                "7.0.0.26273+1554",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554." + CommitHash));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554." + CommitHash), Is.EqualTo("7.0.0.26273+1554"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_DropsCommitHashAfterPlus() {
-            Assert.AreEqual(
-                "7.0.0.26273",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+" + CommitHash));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+" + CommitHash), Is.EqualTo("7.0.0.26273"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_KeepsPlainBuildMetadata() {
-            Assert.AreEqual(
-                "7.0.0.26237+2139",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26237+2139"));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26237+2139"), Is.EqualTo("7.0.0.26237+2139"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_KeepsEveryMetadataIdentifierButTheCommitHash() {
-            Assert.AreEqual(
-                "7.0.0.26273+1554.2",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554.2"));
-            Assert.AreEqual(
-                "7.0.0.26273+1554.2",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554.2." + CommitHash));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554.2"), Is.EqualTo("7.0.0.26273+1554.2"));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+1554.2." + CommitHash), Is.EqualTo("7.0.0.26273+1554.2"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_KeepsChannelSuffix() {
-            Assert.AreEqual(
-                "7.0.0.26273-wip+1554",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273-wip+1554." + CommitHash));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273-wip+1554." + CommitHash), Is.EqualTo("7.0.0.26273-wip+1554"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_KeepsVersionWithoutBuildMetadata() {
-            Assert.AreEqual(
-                "7.0.0.26273",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273"));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273"), Is.EqualTo("7.0.0.26273"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_TrimsWhitespace() {
-            Assert.AreEqual(
-                "7.0.0.26273+1554",
-                PyRevitBuildVersion.NormalizeInformationalVersion("  7.0.0.26273+1554\r\n"));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("  7.0.0.26273+1554\r\n"), Is.EqualTo("7.0.0.26273+1554"));
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_UnusableValuesReturnNull() {
-            Assert.IsNull(PyRevitBuildVersion.NormalizeInformationalVersion(null));
-            Assert.IsNull(PyRevitBuildVersion.NormalizeInformationalVersion(""));
-            Assert.IsNull(PyRevitBuildVersion.NormalizeInformationalVersion("   "));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion(null), Is.Null);
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion(""), Is.Null);
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("   "), Is.Null);
         }
 
-        [TestMethod]
+        [Test]
         public void Normalize_DropsEmptyBuildMetadata() {
-            Assert.AreEqual(
-                "7.0.0.26273",
-                PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+"));
+            Assert.That(PyRevitBuildVersion.NormalizeInformationalVersion("7.0.0.26273+"), Is.EqualTo("7.0.0.26273"));
         }
 
-        [TestMethod]
+        [Test]
         public void FromAssembly_ReadsLoadedAssemblyStamp() {
             var assembly = typeof(PyRevitBuildVersionTests).Assembly;
 
             var version = PyRevitBuildVersion.FromAssembly(assembly);
 
-            Assert.IsNotNull(version, "The test assembly must carry an informational version.");
-            Assert.IsFalse(
-                version.Contains(CommitHash),
-                "The commit hash must not be part of the reported version: " + version);
-            Assert.IsTrue(
-                Version.TryParse(
+            Assert.That(version, Is.Not.Null, "The test assembly must carry an informational version.");
+            Assert.That(version.Contains(CommitHash), Is.False, "The commit hash must not be part of the reported version: " + version);
+            Assert.That(Version.TryParse(
                     version.Split('+')[0],
-                    out _),
-                "Reported version must start with a parsable version: " + version);
+                    out _), Is.True, "Reported version must start with a parsable version: " + version);
         }
 
-        [TestMethod]
+        [Test]
         public void FromAssembly_MissingAssemblyReturnsNull() {
-            Assert.IsNull(PyRevitBuildVersion.FromAssembly(null));
+            Assert.That(PyRevitBuildVersion.FromAssembly(null), Is.Null);
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void FromAssemblyFile_ReadsStampFromDisk() {
             var assemblyPath = typeof(PyRevitBuildVersionTests).Assembly.Location;
 
             var version = PyRevitBuildVersion.FromAssemblyFile(assemblyPath);
 
-            Assert.IsNotNull(version, "Must read the version from the assembly on disk: " + assemblyPath);
-            Assert.IsFalse(
-                version.Contains(CommitHash),
-                "The commit hash must not be part of the reported version: " + version);
+            Assert.That(version, Is.Not.Null, "Must read the version from the assembly on disk: " + assemblyPath);
+            Assert.That(version.Contains(CommitHash), Is.False, "The commit hash must not be part of the reported version: " + version);
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void FromAssemblyFile_MissingFileReturnsNull() {
-            Assert.IsNull(PyRevitBuildVersion.FromAssemblyFile(null));
-            Assert.IsNull(PyRevitBuildVersion.FromAssemblyFile(string.Empty));
-            Assert.IsNull(PyRevitBuildVersion.FromAssemblyFile(
-                Path.Combine(Path.GetTempPath(), "no-such-pyrevit-build-7.0.0.26273.dll")));
+            Assert.That(PyRevitBuildVersion.FromAssemblyFile(null), Is.Null);
+            Assert.That(PyRevitBuildVersion.FromAssemblyFile(string.Empty), Is.Null);
+            Assert.That(PyRevitBuildVersion.FromAssemblyFile(
+                Path.Combine(Path.GetTempPath(), "no-such-pyrevit-build-7.0.0.26273.dll")), Is.Null);
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void FromAssemblyFile_NonAssemblyFileReturnsNull() {
             var notAnAssembly = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll");
             File.WriteAllText(notAnAssembly, "not a PE image");
 
             try {
-                Assert.IsNull(PyRevitBuildVersion.FromAssemblyFile(notAnAssembly));
+                Assert.That(PyRevitBuildVersion.FromAssemblyFile(notAnAssembly), Is.Null);
             }
             finally {
                 File.Delete(notAnAssembly);

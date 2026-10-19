@@ -56,7 +56,7 @@ flowchart LR
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **16 C# projects across 26 project/framework runs** and the API-free Python suite. The legacy mixed suite is split by owner without converting its MSTest cases. Counts include each framework run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **16 C# projects across 26 project/framework runs** and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Counts include each framework run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
@@ -71,7 +71,7 @@ Regression is a purpose, not a level. Bug fixes need a reproducer at the lowest 
 
 ## Ownership and placement
 
-Keep C# tests in separate assemblies beside their owning area, normally `dev/<area>/tests/<Module>.Tests/`. Keep existing NUnit, MSTest and xUnit frameworks. Share discovery and policy; keep fixtures with their owners. Cross-component tests belong in an explicit integration suite.
+Keep C# tests in separate assemblies beside their owning area, normally `dev/<area>/tests/<Module>.Tests/`. NUnit, MSTest and xUnit are supported. A reviewed framework migration must preserve cases, effective tags, fixture isolation and coverage floors. Share discovery and policy; keep fixtures with their owners. Cross-component tests belong in an explicit integration suite.
 
 | Area | Suite locations |
 |---|---|

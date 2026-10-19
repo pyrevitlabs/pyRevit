@@ -1,24 +1,22 @@
 using System;
 using System.IO;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
-using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
+using NUnit.Framework;
 
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
-    [TestClass]
-    [DoNotParallelize]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class CommonUtilsPathTests {
         private string _tempRoot = null!;
         private string? _previousTemp;
         private string? _previousLocalAppData;
 
-        [TestInitialize]
+        [SetUp]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitPathTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
@@ -26,7 +24,7 @@ namespace pyRevitLabs.Common.Tests {
             _previousLocalAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         }
 
-        [TestCleanup]
+        [TearDown]
         public void Cleanup() {
             Environment.SetEnvironmentVariable("TEMP", _previousTemp);
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _previousLocalAppData);
@@ -34,37 +32,37 @@ namespace pyRevitLabs.Common.Tests {
                 Directory.Delete(_tempRoot, recursive: true);
         }
 
-        [TestMethod]
+        [Test]
         public void ExpandEnvironmentPath_ExpandsNestedVariables() {
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);
             var expanded = CommonUtils.ExpandEnvironmentPath("%LOCALAPPDATA%\\pyRevit");
-            Assert.AreEqual(Path.Combine(_tempRoot, "pyRevit"), expanded);
+            Assert.That(expanded, Is.EqualTo(Path.Combine(_tempRoot, "pyRevit")));
         }
 
-        [TestMethod]
+        [Test]
         public void GetUserTempDirectory_ExpandsPercentTemp() {
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);
             Environment.SetEnvironmentVariable("TEMP", "%LOCALAPPDATA%\\Temp");
             var tempDir = CommonUtils.GetUserTempDirectory();
-            Assert.IsFalse(tempDir.Contains("%"), "Temp path should not contain unexpanded variables.");
-            StringAssert.StartsWith(tempDir, _tempRoot);
-            Assert.IsTrue(tempDir.EndsWith("Temp", StringComparison.OrdinalIgnoreCase));
+            Assert.That(tempDir.Contains("%"), Is.False, "Temp path should not contain unexpanded variables.");
+            Assert.That(tempDir, Does.StartWith(_tempRoot));
+            Assert.That(tempDir.EndsWith("Temp", StringComparison.OrdinalIgnoreCase), Is.True);
         }
 
-        [TestMethod]
+        [Test]
         public void GetUserTempDirectory_FallsBackToPathGetTempPathWhenUnexpanded() {
             Environment.SetEnvironmentVariable("TEMP", "%NONEXISTENT_PYREVIT_VAR%\\Temp");
             var tempDir = CommonUtils.GetUserTempDirectory();
-            Assert.IsFalse(tempDir.Contains("%"));
+            Assert.That(tempDir.Contains("%"), Is.False);
             var expected = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            Assert.AreEqual(expected, tempDir);
+            Assert.That(tempDir, Is.EqualTo(expected));
         }
 
-        [TestMethod]
+        [Test]
         public void UserTemp_MatchesGetUserTempDirectory() {
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);
             Environment.SetEnvironmentVariable("TEMP", "%LOCALAPPDATA%\\Temp");
-            Assert.AreEqual(CommonUtils.GetUserTempDirectory(), UserEnv.UserTemp);
+            Assert.That(UserEnv.UserTemp, Is.EqualTo(CommonUtils.GetUserTempDirectory()));
         }
 
     }

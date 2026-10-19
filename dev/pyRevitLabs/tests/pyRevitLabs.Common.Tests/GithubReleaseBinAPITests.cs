@@ -1,51 +1,45 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
-using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
+using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
-    [TestClass]
-    [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class GithubReleaseBinAPITests {
-        [TestMethod]
+        [Test]
         public void BuildReleaseAssetUrl_ShaZip_Test() {
             var url = GithubReleaseBinAPI.BuildReleaseAssetUrl(
                 "pyrevitlabs/pyRevit",
                 "unsigned-bin-abc123.zip");
-            Assert.AreEqual(
-                "https://github.com/pyrevitlabs/pyRevit/releases/download/ci-binaries/unsigned-bin-abc123.zip",
-                url);
+            Assert.That(url, Is.EqualTo("https://github.com/pyrevitlabs/pyRevit/releases/download/ci-binaries/unsigned-bin-abc123.zip"));
         }
 
-        [TestMethod]
+        [Test]
         public void BuildShaAssetName_Test() {
             var name = GithubReleaseBinAPI.BuildShaAssetName("abc123def456");
-            Assert.AreEqual("unsigned-bin-abc123def456.zip", name);
+            Assert.That(name, Is.EqualTo("unsigned-bin-abc123def456.zip"));
         }
 
-        [TestMethod]
+        [Test]
         public void BuildBranchLatestAssetName_Test() {
             var name = GithubReleaseBinAPI.BuildBranchLatestAssetName("develop");
-            Assert.AreEqual("unsigned-bin-develop-latest.zip", name);
+            Assert.That(name, Is.EqualTo("unsigned-bin-develop-latest.zip"));
         }
 
-        [TestMethod]
+        [Test]
         public void BuildVersionTagBinAssetName_Test() {
             var name = GithubReleaseBinAPI.BuildVersionTagBinAssetName("v6.5.3.26176+2017");
-            Assert.AreEqual("bin-v6.5.3.26176+2017.zip", name);
+            Assert.That(name, Is.EqualTo("bin-v6.5.3.26176+2017.zip"));
         }
 
-        [TestMethod]
+        [Test]
         public void BuildReleaseAssetUrl_VersionTagEncodesPlus_Test() {
             var url = GithubReleaseBinAPI.BuildReleaseAssetUrl(
                 "pyrevitlabs/pyRevit",
                 "bin-v6.5.3.26176+2017.zip",
                 "v6.5.3.26176+2017");
-            Assert.AreEqual(
-                "https://github.com/pyrevitlabs/pyRevit/releases/download/v6.5.3.26176%2B2017/bin-v6.5.3.26176%2B2017.zip",
-                url);
+            Assert.That(url, Is.EqualTo("https://github.com/pyrevitlabs/pyRevit/releases/download/v6.5.3.26176%2B2017/bin-v6.5.3.26176%2B2017.zip"));
         }
     }
 }
