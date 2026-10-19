@@ -262,10 +262,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Records that the agent read the context, which ends the handshake after a move or a
-        /// session started elsewhere.
+        /// session started elsewhere. With no session open, the document it read in is the one
+        /// the next session's document is compared with.
         /// </summary>
-        public void ContextRead() {
+        /// <param name="activeDocument">
+        /// The active document the context described, or null when none was active, which keeps
+        /// the document the agent read in before.
+        /// </param>
+        public void ContextRead(object activeDocument, string activeTitle) {
             lock (sync) {
+                if (state == AgentSessionState.Inactive) {
+                    if (activeDocument != null) {
+                        lastDocument = activeDocument;
+                        lastDocumentTitle = activeTitle;
+                    }
+                    return;
+                }
                 if (movedFrom == null)
                     return;
                 movedFrom = null;

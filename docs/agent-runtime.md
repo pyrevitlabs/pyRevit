@@ -162,7 +162,7 @@ disabled.
   its id and state. Until the agent calls `get_context`, every other model request is refused
   with `session_moved`, because element ids from the old document don't apply in the new one.
   Starting a session on another document than the one the agent last read the context in does
-  the same.
+  the same, also when the agent read it while no session was open.
 - Closing the panel pauses the session. Reopening the panel shows why, and only the user
   resumes it.
 
@@ -278,9 +278,10 @@ Rules the host enforces:
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
   save-as, synchronize-with-central, file-export and view-export events. The response lists a
   cancelled operation in `blocked`.
-- A run in any mode that changes another open document is rolled back and pauses the session,
-  if one is open (`paused_by_host`), until the user resumes it, even when the script also failed; otherwise it
-  fails with `other_document_modified`. `changes.other_documents` lists what changed. A project the script opens
+- A run in any mode that changes another open document is rolled back. When nothing else
+  failed, it fails with `other_document_modified`. If a session is open, the run also pauses it
+  (`paused_by_host`) until the user resumes it, whatever else failed. `changes.other_documents`
+  lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
   the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;

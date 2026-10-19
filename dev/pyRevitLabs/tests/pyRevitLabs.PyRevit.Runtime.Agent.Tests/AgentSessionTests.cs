@@ -20,6 +20,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             tracker.CheckOnDequeue(isBoundDocumentActive, activeTitle, readsContext);
         }
 
+        private void ReadContextInBoundDocument() {
+            tracker.ContextRead(tracker.BoundDocument, tracker.CurrentSession.Document);
+        }
+
         private static string CodeOf(Action action) {
             return Assert.Throws<AgentException>(action).Code;
         }
@@ -313,7 +317,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             tracker.CheckOnArrival(readsContext: true);
             Dequeue(_ => true, "Annex.rvt", readsContext: true);
 
-            tracker.ContextRead();
+            ReadContextInBoundDocument();
 
             Arrive();
             Dequeue(_ => true, "Annex.rvt");
@@ -385,7 +389,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(generation + 1, tracker.Generation);
             tracker.CheckOnArrival(readsContext: true);
 
-            tracker.ContextRead();
+            ReadContextInBoundDocument();
 
             Arrive();
             Assert.Null(tracker.AwaitingContextFrom);
@@ -402,6 +406,42 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Arrive();
             Assert.Null(tracker.AwaitingContextFrom);
             Assert.Equal(generation, tracker.Generation);
+        }
+
+        [Fact]
+        public void AContextReadWithoutASessionMakesTheFirstSessionOnAnotherDocumentWait() {
+            var generation = tracker.Generation;
+            tracker.ContextRead(document, "Tower.rvt");
+
+            tracker.Start(new object(), "Annex.rvt", Now);
+
+            var refused = Assert.Throws<AgentException>(Arrive);
+            Assert.Equal("session_moved", refused.Code);
+            Assert.Contains("You last read the context in 'Tower.rvt'", refused.Message);
+            Assert.Equal(generation + 1, tracker.Generation);
+        }
+
+        [Fact]
+        public void AContextReadWithoutASessionReplacesTheDocumentTheLastSessionLeft() {
+            StartOnDocument();
+            tracker.EndInRevit(Now);
+            var annex = new object();
+            tracker.ContextRead(annex, "Annex.rvt");
+
+            tracker.Start(annex, "Annex.rvt", Now);
+
+            Arrive();
+            Assert.Null(tracker.AwaitingContextFrom);
+        }
+
+        [Fact]
+        public void AContextReadWithNoActiveDocumentKeepsTheDocumentTheAgentReadBefore() {
+            tracker.ContextRead(document, "Tower.rvt");
+            tracker.ContextRead(null, null);
+
+            tracker.Start(new object(), "Annex.rvt", Now);
+
+            Assert.Equal("Tower.rvt", tracker.AwaitingContextFrom);
         }
 
         [Fact]
@@ -433,7 +473,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             StartOnDocument();
             var before = tracker.Generation;
             tracker.Move(new object(), "Annex.rvt", Now);
-            tracker.ContextRead();
+            ReadContextInBoundDocument();
 
             var refused = Assert.Throws<AgentException>(() => tracker.CheckOnArrival(readsContext: false, contextGeneration: before));
             Assert.Equal("session_moved", refused.Code);
@@ -559,8 +599,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             tracker.Changed += () => raised++;
 
             tracker.Move(new object(), "Annex.rvt", Now);
-            tracker.ContextRead();
-            tracker.ContextRead();
+            ReadContextInBoundDocument();
+            ReadContextInBoundDocument();
 
             Assert.Equal(2, raised);
         }

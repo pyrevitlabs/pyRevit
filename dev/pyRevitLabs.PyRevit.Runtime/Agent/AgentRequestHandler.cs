@@ -132,8 +132,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Describes the context and, unless the caller only checks it, ends a move's handshake,
-        /// since the agent now has the new document's context.
+        /// Describes the context and, unless the caller only checks it, records it as the agent's
+        /// read: that ends a move's handshake, since the agent now has the new document's context.
         /// </summary>
         /// <remarks>
         /// The session in the response is described again after the handshake ends, so the
@@ -143,7 +143,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var context = AgentContext.Describe(app);
             if (!endHandshake)
                 return context;
-            AgentSessions.Tracker.ContextRead();
+            var active = app.ActiveUIDocument?.Document;
+            AgentSessions.Tracker.ContextRead(active, active?.Title);
             if (context["agent"] is JObject agent)
                 agent["session"] = AgentSessions.Describe();
             return context;
