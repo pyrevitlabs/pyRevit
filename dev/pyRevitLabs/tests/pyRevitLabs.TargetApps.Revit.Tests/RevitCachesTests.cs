@@ -4,10 +4,10 @@ using System.IO;
 
 using pyRevitLabs.TargetApps.Revit;
 
-namespace pyRevitLabs.UnitTests.RevitCaches {
+namespace pyRevitLabs.TargetApps.Revit.Tests {
     [TestClass()]
     [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestCategory("Integration")]
     public class RevitCachesTests {
         private string _tempRoot;
 
@@ -19,14 +19,8 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
 
         [TestCleanup]
         public void Cleanup() {
-            if (Directory.Exists(_tempRoot)) {
-                try {
-                    Directory.Delete(_tempRoot, recursive: true);
-                }
-                catch {
-                    // best-effort cleanup in temp
-                }
-            }
+            if (Directory.Exists(_tempRoot))
+                Directory.Delete(_tempRoot, recursive: true);
         }
 
         [TestMethod()]
