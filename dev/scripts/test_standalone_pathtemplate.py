@@ -1,36 +1,61 @@
 """Tests for folder path templates.
 
 The module is loaded by path rather than imported, because importing anything under
-`pyrevit` pulls in .NET and needs a Revit host.
+`pyrevit` pulls in .NET and needs a Revit host. Its one pyrevit dependency,
+`pyrevit.coreutils.cleanup_filename`, is compiled from the real source of
+`coreutils/__init__.py` and served through stub `pyrevit` modules, so these tests
+exercise the shipped cleanup rules.
 """
 
+import ast
 import datetime
 import importlib.util
 import os
+import re
+import sys
+import types
 import unittest
 from unittest import mock
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-PATHTEMPLATE_PATH = os.path.join(
-    REPO_ROOT,
-    "pyrevitlib",
-    "pyrevit",
-    "coreutils",
-    "pathtemplate.py",
-)
+COREUTILS_DIR = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "coreutils")
+COREUTILS_PATH = os.path.join(COREUTILS_DIR, "__init__.py")
+PATHTEMPLATE_PATH = os.path.join(COREUTILS_DIR, "pathtemplate.py")
+
+
+def _load_cleanup_filename():
+    with open(COREUTILS_PATH, encoding="utf-8") as source_file:
+        tree = ast.parse(source_file.read(), COREUTILS_PATH)
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "cleanup_filename"
+    )
+    namespace = {"re": re}
+    module = ast.Module(body=[function], type_ignores=[])
+    exec(compile(module, COREUTILS_PATH, "exec"), namespace)
+    return namespace["cleanup_filename"]
 
 
 def _load_pathtemplate():
+    coreutils = types.ModuleType("pyrevit.coreutils")
+    coreutils.cleanup_filename = _load_cleanup_filename()
+    pyrevit = types.ModuleType("pyrevit")
+    pyrevit.coreutils = coreutils
     spec = importlib.util.spec_from_file_location(
         "pyrevit_pathtemplate_under_test", PATHTEMPLATE_PATH
     )
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    with mock.patch.dict(
+        sys.modules, {"pyrevit": pyrevit, "pyrevit.coreutils": coreutils}
+    ):
+        spec.loader.exec_module(module)
     return module
 
 
 pathtemplate = _load_pathtemplate()
+cleanup_filename = pathtemplate.cleanup_filename
 
 NOW = datetime.datetime(2026, 10, 17, 14, 5, 9)
 VALUES = {"model": "Tower", "sheet_index": "Issue Set"}
@@ -116,6 +141,44 @@ class FillTests(unittest.TestCase):
         self.assertEqual(
             raised.exception.placeholders, ["date", "model", "sheet_index", "time"]
         )
+
+
+class WindowsSafeCleanupFilenameTests(unittest.TestCase):
+    def test_characters_windows_rejects_are_removed(self):
+        self.assertEqual(
+            cleanup_filename('A1.00 Plan: "North" <B>|C?*.pdf', windows_safe=True),
+            "A1.00 Plan North BC.pdf",
+        )
+
+    def test_slashes_are_removed_from_a_single_name(self):
+        self.assertEqual(
+            cleanup_filename("Arch\\Issue/01.pdf", windows_safe=True),
+            "ArchIssue01.pdf",
+        )
+
+    def test_control_characters_are_removed(self):
+        self.assertEqual(
+            cleanup_filename("Sheet\t01\r\n.pdf", windows_safe=True), "Sheet01.pdf"
+        )
+
+    def test_leading_spaces_and_trailing_spaces_and_dots_are_trimmed(self):
+        self.assertEqual(cleanup_filename("  Plan . ", windows_safe=True), "Plan")
+
+    def test_leading_dots_are_kept(self):
+        self.assertEqual(cleanup_filename(".exports", windows_safe=True), ".exports")
+
+    def test_dot_only_names_become_empty(self):
+        for name in (".", "..", " . "):
+            with self.subTest(name=name):
+                self.assertEqual(cleanup_filename(name, windows_safe=True), "")
+
+    def test_ordinary_file_names_are_unchanged(self):
+        name = "0001 A1.00 1ST FLOOR PLAN (Rev-A) #2.pdf"
+
+        self.assertEqual(cleanup_filename(name, windows_safe=True), name)
+
+    def test_default_mode_is_unchanged(self):
+        self.assertEqual(cleanup_filename("Myfile-(3).txt"), "Myfile(3).txt")
 
 
 class ResolveFolderTests(unittest.TestCase):

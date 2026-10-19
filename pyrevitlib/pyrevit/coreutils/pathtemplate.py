@@ -7,10 +7,11 @@ template accepts ``{date}`` (yymmdd) and ``{time}`` (HHMMSS); callers add
 their own placeholders as values.
 
 Important:
-    This module imports only the standard library, so it loads without a
-    Revit host and is tested on CPython outside Revit. It must stay
-    source-compatible with IronPython 2.7, IronPython 3 and CPython 3.
-    Paths follow Windows rules (``ntpath``) on every platform.
+    Folder names are cleaned by `pyrevit.coreutils.cleanup_filename`, so
+    importing this module loads ``pyrevit`` and needs a Revit host. The
+    standalone tests stub that import with the real function's source. It
+    must stay source-compatible with IronPython 2.7, IronPython 3 and
+    CPython 3. Paths follow Windows rules (``ntpath``) on every platform.
 
 Note:
     Nothing here touches the filesystem; creating the folder is left to the
@@ -29,9 +30,8 @@ Examples:
 
 import datetime
 import ntpath
-import re
 
-_WINDOWS_UNSAFE_CHARS = re.compile(r'[/:*?"<>|\x00-\x1f\x7f]')
+from pyrevit.coreutils import cleanup_filename
 
 
 class PathTemplateError(Exception):
@@ -160,9 +160,5 @@ def _is_full_path(drive, rest):
 
 
 def _safe_relative_path(path):
-    parts = [_safe_folder_part(part) for part in path.split("\\")]
+    parts = [cleanup_filename(part, windows_safe=True) for part in path.split("\\")]
     return "\\".join(part for part in parts if part)
-
-
-def _safe_folder_part(part):
-    return _WINDOWS_UNSAFE_CHARS.sub("", part).lstrip(" ").rstrip(" .")
