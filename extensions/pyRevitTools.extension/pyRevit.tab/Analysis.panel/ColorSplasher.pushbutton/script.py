@@ -1,1668 +1,906 @@
-# -- coding: utf-8 --
-import sys
+# -*- coding: utf-8 -*-
+"""Color the elements of the active view by parameter value.
+
+The window is modeless and single-instance: running the command again brings
+the open window to the front. Revit API writes run through
+``events.execute_in_revit_context``; view and document changes reach the
+window through ``events.handle`` subscriptions owned by this execution.
+"""
+
 from re import split
-from math import fabs
-from random import randint
-from os.path import exists, isfile
-from traceback import extract_tb
-from unicodedata import normalize
 from unicodedata import category as unicode_category
-from pyrevit.framework import Forms
-from pyrevit.framework import Drawing
-from pyrevit.framework import System
-from pyrevit import HOST_APP, revit, DB, UI
-from pyrevit.framework import List
+from unicodedata import normalize
+
+from pyrevit import forms, revit, script
+from pyrevit import HOST_APP
+from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.script import get_logger
-from pyrevit import script as pyrevit_script
-from pyrevit import forms
-import clr
+from pyrevit.coreutils import applocales, distinct_rgb_colors, unique_name
+from pyrevit.framework import Drawing, Forms, List, Media, System, Windows, Input
+from pyrevit.revit import create, events, query
 
-clr.AddReference("System.Data")
-clr.AddReference("System")
-from System.Data import DataTable
+logger = script.get_logger()
+config = script.get_config()
+get_elementid_value = get_elementid_value_func()
 
+WINDOW_ENV_KEY = "PYREVITTOOLS_COLORSPLASHER_WINDOW"
+XAML_FILE = "ColorSplasherWindow.xaml"
+SCHEME_FILES_FILTER = "Color Scheme (*.cschn)|*.cschn"
+NONE_VALUE = "None"
+INVALID_NAME_CHARS = "{}[]:\\|?/<>*"
 
-# Categories to exclude
-CAT_EXCLUDED = (
-    int(DB.BuiltInCategory.OST_RoomSeparationLines),
-    int(DB.BuiltInCategory.OST_Cameras),
-    int(DB.BuiltInCategory.OST_CurtainGrids),
-    int(DB.BuiltInCategory.OST_Elev),
-    int(DB.BuiltInCategory.OST_Grids),
-    int(DB.BuiltInCategory.OST_IOSModelGroups),
-    int(DB.BuiltInCategory.OST_Views),
-    int(DB.BuiltInCategory.OST_SitePropertyLineSegment),
-    int(DB.BuiltInCategory.OST_SectionBox),
-    int(DB.BuiltInCategory.OST_ShaftOpening),
-    int(DB.BuiltInCategory.OST_BeamAnalytical),
-    int(DB.BuiltInCategory.OST_StructuralFramingOpening),
-    int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines),
-    int(DB.BuiltInCategory.OST_DuctSystem),
-    int(DB.BuiltInCategory.OST_Lines),
-    int(DB.BuiltInCategory.OST_PipingSystem),
-    int(DB.BuiltInCategory.OST_Matchline),
-    int(DB.BuiltInCategory.OST_CenterLines),
-    int(DB.BuiltInCategory.OST_CurtainGridsRoof),
-    int(DB.BuiltInCategory.OST_SWallRectOpening),
-    -2000278,
-    -1,
+CAT_EXCLUDED = frozenset(
+    (
+        int(DB.BuiltInCategory.OST_RoomSeparationLines),
+        int(DB.BuiltInCategory.OST_Cameras),
+        int(DB.BuiltInCategory.OST_CurtainGrids),
+        int(DB.BuiltInCategory.OST_Elev),
+        int(DB.BuiltInCategory.OST_Grids),
+        int(DB.BuiltInCategory.OST_IOSModelGroups),
+        int(DB.BuiltInCategory.OST_Views),
+        int(DB.BuiltInCategory.OST_SitePropertyLineSegment),
+        int(DB.BuiltInCategory.OST_SectionBox),
+        int(DB.BuiltInCategory.OST_ShaftOpening),
+        int(DB.BuiltInCategory.OST_BeamAnalytical),
+        int(DB.BuiltInCategory.OST_StructuralFramingOpening),
+        int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines),
+        int(DB.BuiltInCategory.OST_DuctSystem),
+        int(DB.BuiltInCategory.OST_Lines),
+        int(DB.BuiltInCategory.OST_PipingSystem),
+        int(DB.BuiltInCategory.OST_Matchline),
+        int(DB.BuiltInCategory.OST_CenterLines),
+        int(DB.BuiltInCategory.OST_CurtainGridsRoof),
+        int(DB.BuiltInCategory.OST_SWallRectOpening),
+        -2000278,
+        -1,
+    )
+)
+COLOR_SCHEME_CATEGORIES = frozenset(
+    (
+        int(DB.BuiltInCategory.OST_Rooms),
+        int(DB.BuiltInCategory.OST_MEPSpaces),
+        int(DB.BuiltInCategory.OST_Areas),
+    )
+)
+EXCLUDED_PARAMETERS = (
+    DB.BuiltInParameter.ELEM_CATEGORY_PARAM,
+    DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT,
+)
+FILTERABLE_STORAGE_TYPES = (
+    DB.StorageType.String,
+    DB.StorageType.Integer,
+    DB.StorageType.Double,
+    DB.StorageType.ElementId,
 )
 
-logger = get_logger()  # get logger and trigger debug mode using CTRL+click
+doc = None
+active_view = None
+splasher_window = None
 
 
-class SubscribeView(UI.IExternalEventHandler):
-    def __init__(self):
-        self.registered = 1
+class FilterCreationError(Exception):
+    """View filters cannot be built; ``message_key`` names the locale message."""
 
-    def Execute(self, uiapp):
-        try:
-            if self.registered == 1:
-                self.registered = 0
-                uiapp.ViewActivated += self.view_changed
-            else:
-                self.registered = 1
-                uiapp.ViewActivated -= self.view_changed
-        except Exception:
-            external_event_trace()
-
-    def view_changed(self, sender, e):
-        wndw = SubscribeView._wndw
-        if wndw and wndw.IsOpen == 1:
-            if self.registered == 0:
-                new_doc = e.Document
-                if new_doc:
-                    if wndw:
-                        try:
-                            current_doc = revit.DOCS.doc
-                            if not new_doc.Equals(current_doc):
-                                wndw.Close()
-                        except (AttributeError, RuntimeError):
-                            # If we can't get current doc, continue without closing window
-                            pass
-                new_view = get_active_view(e.Document)
-                if new_view != 0:
-                    wndw.list_box2.SelectionChanged -= wndw.list_selected_index_changed
-                    wndw.crt_view = new_view
-                    categ_inf_used_up = get_used_categories_parameters(
-                        CAT_EXCLUDED, wndw.crt_view, new_doc
-                    )
-                    wndw.table_data = DataTable("Data")
-                    wndw.table_data.Columns.Add("Key", System.String)
-                    wndw.table_data.Columns.Add("Value", System.Object)
-                    names = [x.name for x in categ_inf_used_up]
-                    select_category_text = wndw.get_locale_string(
-                        "ColorSplasher.Messages.SelectCategory"
-                    )
-                    wndw.table_data.Rows.Add(select_category_text, 0)
-                    for key_, value_ in zip(names, categ_inf_used_up):
-                        wndw.table_data.Rows.Add(key_, value_)
-                    wndw._categories.ItemsSource = wndw.table_data.DefaultView
-                    if wndw._categories.Items.Count > 0:
-                        wndw._categories.SelectedIndex = 0
-                    wndw._table_data_3 = DataTable("Data")
-                    wndw._table_data_3.Columns.Add("Key", System.String)
-                    wndw._table_data_3.Columns.Add("Value", System.Object)
-                    wndw.list_box2.ItemsSource = wndw._table_data_3.DefaultView
-                    wndw._update_placeholder_visibility()
-
-    def GetName(self):
-        return "Subscribe View Changed Event"
+    def __init__(self, message_key):
+        Exception.__init__(self, message_key)
+        self.message_key = message_key
 
 
-class ApplyColors(UI.IExternalEventHandler):
-    def __init__(self):
-        pass
+class CategoryInfo(object):
+    """Category with elements in the active view and its selectable parameters."""
 
-    def Execute(self, uiapp):
-        try:
-            new_doc = uiapp.ActiveUIDocument.Document
-            view = get_active_view(new_doc)
-            if not view:
-                return
-            wndw = ApplyColors._wndw
-            if not wndw:
-                return
-            apply_line_color = wndw._chk_line_color.IsChecked
-            apply_foreground_pattern_color = wndw._chk_foreground_pattern.IsChecked
-            apply_background_pattern_color = wndw._chk_background_pattern.IsChecked
-            if (
-                not apply_line_color
-                and not apply_foreground_pattern_color
-                and not apply_background_pattern_color
-            ):
-                apply_foreground_pattern_color = True
-            solid_fill_id = getattr(
-                revit.query.get_solid_fillpattern_element(new_doc), "Id", None
-            )
-
-            if wndw._categories.SelectedItem is None:
-                return
-            sel_cat_row = wndw._categories.SelectedItem
-            row = wndw._get_data_row_from_item(
-                sel_cat_row, wndw._categories.SelectedIndex
-            )
-            if row is None:
-                return
-            sel_cat = row["Value"]
-            if sel_cat == 0:
-                return
-
-            if (
-                wndw._list_box1.SelectedIndex == -1
-                or wndw._list_box1.SelectedIndex == 0
-            ):
-                if wndw._list_box1.SelectedIndex == 0:
-                    sel_param_row = wndw._list_box1.SelectedItem
-                    if sel_param_row is not None:
-                        param_row = wndw._get_data_row_from_item(sel_param_row, 0)
-                        if param_row is not None and param_row["Value"] == 0:
-                            return
-                return
-            sel_param_row = wndw._list_box1.SelectedItem
-            param_row = wndw._get_data_row_from_item(
-                sel_param_row, wndw._list_box1.SelectedIndex
-            )
-            if param_row is None:
-                return
-            checked_param = param_row["Value"]
-
-            refreshed_values = get_range_values(sel_cat, checked_param, view)
-
-            color_map = {}
-            for indx in range(wndw.list_box2.Items.Count):
-                try:
-                    item = wndw.list_box2.Items[indx]
-                    row = wndw._get_data_row_from_item(item, indx)
-                    if row is None:
-                        continue
-                    value_item = row["Value"]
-                    color_map[value_item.value] = (
-                        value_item.n1,
-                        value_item.n2,
-                        value_item.n3,
-                    )
-                except (KeyError, AttributeError, IndexError) as ex:
-                    logger.debug("Error accessing listbox item %d: %s", indx, str(ex))
-                    continue
-
-            with revit.Transaction("Apply colors to elements"):
-                get_elementid_value = get_elementid_value_func()
-                version = int(HOST_APP.version)
-                if get_elementid_value(sel_cat.cat.Id) in (
-                    int(DB.BuiltInCategory.OST_Rooms),
-                    int(DB.BuiltInCategory.OST_MEPSpaces),
-                    int(DB.BuiltInCategory.OST_Areas),
-                ):
-                    if version > 2021:
-                        if (
-                            wndw.crt_view.GetColorFillSchemeId(
-                                sel_cat.cat.Id
-                            ).ToString()
-                            == "-1"
-                        ):
-                            color_schemes = (
-                                DB.FilteredElementCollector(new_doc)
-                                .OfClass(DB.ColorFillScheme)
-                                .ToElements()
-                            )
-                            if len(color_schemes) > 0:
-                                for sch in color_schemes:
-                                    if sch.CategoryId == sel_cat.cat.Id:
-                                        if len(sch.GetEntries()) > 0:
-                                            wndw.crt_view.SetColorFillSchemeId(
-                                                sel_cat.cat.Id, sch.Id
-                                            )
-                                            break
-                    else:
-                        from System.Windows import Visibility
-
-                        wndw._txt_block5.Visibility = Visibility.Visible
-                else:
-                    from System.Windows import Visibility
-
-                    wndw._txt_block5.Visibility = Visibility.Collapsed
-
-                for val_info in refreshed_values:
-                    if val_info.value in color_map:
-                        ogs = DB.OverrideGraphicSettings()
-                        r, g, b = color_map[val_info.value]
-                        base_color = DB.Color(r, g, b)
-                        line_color, foreground_color, background_color = (
-                            get_color_shades(
-                                base_color,
-                                apply_line_color,
-                                apply_foreground_pattern_color,
-                                apply_background_pattern_color,
-                            )
-                        )
-                        if apply_line_color:
-                            ogs.SetProjectionLineColor(line_color)
-                            ogs.SetCutLineColor(line_color)
-                        if apply_foreground_pattern_color:
-                            ogs.SetSurfaceForegroundPatternColor(foreground_color)
-                            ogs.SetCutForegroundPatternColor(foreground_color)
-                            if solid_fill_id is not None:
-                                ogs.SetSurfaceForegroundPatternId(solid_fill_id)
-                                ogs.SetCutForegroundPatternId(solid_fill_id)
-                        if apply_background_pattern_color and version >= 2019:
-                            ogs.SetSurfaceBackgroundPatternColor(background_color)
-                            ogs.SetCutBackgroundPatternColor(background_color)
-                            if solid_fill_id is not None:
-                                ogs.SetSurfaceBackgroundPatternId(solid_fill_id)
-                                ogs.SetCutBackgroundPatternId(solid_fill_id)
-                        for idt in val_info.ele_id:
-                            view.SetElementOverrides(idt, ogs)
-        except Exception:
-            external_event_trace()
-
-    def GetName(self):
-        return "Set colors to elements"
-
-
-class ResetColors(UI.IExternalEventHandler):
-    def __init__(self):
-        pass
-
-    def Execute(self, uiapp):
-        try:
-            new_doc = revit.DOCS.doc
-            view = get_active_view(new_doc)
-            if view == 0:
-                return
-            wndw = ResetColors._wndw
-            if not wndw:
-                return
-            ogs = DB.OverrideGraphicSettings()
-            collector = (
-                DB.FilteredElementCollector(new_doc, view.Id)
-                .WhereElementIsNotElementType()
-                .WhereElementIsViewIndependent()
-                .ToElementIds()
-            )
-            if wndw._categories.SelectedItem is None:
-                sel_cat = 0
-            else:
-                sel_cat_row = wndw._categories.SelectedItem
-                if hasattr(sel_cat_row, "Row"):
-                    sel_cat = sel_cat_row.Row["Value"]
-                else:
-                    sel_cat = wndw._categories.SelectedItem["Value"]
-            if sel_cat == 0:
-                task_no_cat = UI.TaskDialog(
-                    wndw.get_locale_string("ColorSplasher.TaskDialog.Title")
-                )
-                task_no_cat.MainInstruction = wndw.get_locale_string(
-                    "ColorSplasher.Messages.NoCategorySelected"
-                )
-                wndw.Topmost = False
-                task_no_cat.Show()
-                wndw.Topmost = True
-                return
-            with revit.Transaction("Reset colors in elements"):
-                try:
-                    filter_name = sel_cat.name + "/"
-                    filters = view.GetFilters()
-                    for filt_id in filters:
-                        filt_ele = new_doc.GetElement(filt_id)
-                        if filt_ele.Name.StartsWith(filter_name):
-                            view.RemoveFilter(filt_id)
-                            try:
-                                new_doc.Delete(filt_id)
-                            except Exception:
-                                external_event_trace()
-                except Exception:
-                    external_event_trace()
-                for i in collector:
-                    view.SetElementOverrides(i, ogs)
-        except Exception:
-            external_event_trace()
-
-    def GetName(self):
-        return "Reset colors in elements"
-
-
-class CreateLegend(UI.IExternalEventHandler):
-    def __init__(self):
-        pass
-
-    def Execute(self, uiapp):
-        try:
-            new_doc = uiapp.ActiveUIDocument.Document
-            wndw = CreateLegend._wndw
-            if not wndw:
-                return
-            apply_line_color = wndw._chk_line_color.IsChecked
-            apply_foreground_pattern_color = wndw._chk_foreground_pattern.IsChecked
-            apply_background_pattern_color = wndw._chk_background_pattern.IsChecked
-            if (
-                not apply_line_color
-                and not apply_foreground_pattern_color
-                and not apply_background_pattern_color
-            ):
-                apply_foreground_pattern_color = True
-            collector = (
-                DB.FilteredElementCollector(new_doc).OfClass(DB.View).ToElements()
-            )
-            legends = []
-            for vw in collector:
-                if vw.ViewType == DB.ViewType.Legend:
-                    legends.append(vw)
-                    break
-
-            if len(legends) == 0:
-                task2 = UI.TaskDialog(
-                    wndw.get_locale_string("ColorSplasher.TaskDialog.Title")
-                )
-                task2.MainInstruction = wndw.get_locale_string(
-                    "ColorSplasher.Messages.NoLegendView"
-                )
-                wndw.Topmost = False
-                task2.Show()
-                wndw.Topmost = True
-                return
-
-            if wndw.list_box2.Items.Count == 0:
-                task2 = UI.TaskDialog(
-                    wndw.get_locale_string("ColorSplasher.TaskDialog.Title")
-                )
-                task2.MainInstruction = wndw.get_locale_string(
-                    "ColorSplasher.Messages.NoItemsForLegend"
-                )
-                wndw.Topmost = False
-                task2.Show()
-                wndw.Topmost = True
-                return
-
-            t = DB.Transaction(new_doc, "Create Legend")
-            t.Start()
-
-            try:
-                new_id_legend = legends[0].Duplicate(DB.ViewDuplicateOption.Duplicate)
-                new_legend = new_doc.GetElement(new_id_legend)
-                sel_cat_row = wndw._categories.SelectedItem
-                sel_par_row = wndw._list_box1.SelectedItem
-                cat_row = wndw._get_data_row_from_item(
-                    sel_cat_row, wndw._categories.SelectedIndex
-                )
-                par_row = wndw._get_data_row_from_item(
-                    sel_par_row, wndw._list_box1.SelectedIndex
-                )
-                if cat_row is None or par_row is None:
-                    return
-                sel_cat = cat_row["Value"]
-                sel_par = par_row["Value"]
-                cat_name = strip_accents(sel_cat.name)
-                par_name = strip_accents(sel_par.name)
-                renamed = False
-                legend_prefix = wndw.get_locale_string("ColorSplasher.LegendNamePrefix")
-                try:
-                    new_legend.Name = legend_prefix + cat_name + " - " + par_name
-                    renamed = True
-                except Exception:
-                    external_event_trace()
-                if not renamed:
-                    for i in range(1000):
-                        try:
-                            new_legend.Name = (
-                                legend_prefix
-                                + cat_name
-                                + " - "
-                                + par_name
-                                + " - "
-                                + str(i)
-                            )
-                            break
-                        except Exception:
-                            external_event_trace()
-                            if i == 999:
-                                raise Exception("Could not rename legend view")
-                old_all_ele = DB.FilteredElementCollector(
-                    new_doc, legends[0].Id
-                ).ToElements()
-                ele_id_type = None
-                for ele in old_all_ele:
-                    if ele.Id != new_legend.Id and ele.Category is not None:
-                        if isinstance(ele, DB.TextNote):
-                            ele_id_type = ele.GetTypeId()
-                            break
-                get_elementid_value = get_elementid_value_func()
-                if not ele_id_type:
-                    all_text_notes = (
-                        DB.FilteredElementCollector(new_doc)
-                        .OfClass(DB.TextNoteType)
-                        .ToElements()
-                    )
-                    for ele in all_text_notes:
-                        ele_id_type = ele.Id
-                        break
-                if get_elementid_value(ele_id_type) == 0:
-                    raise Exception("No text note type found in the model")
-                filled_type = None
-                filled_region_types = (
-                    DB.FilteredElementCollector(new_doc)
-                    .OfClass(DB.FilledRegionType)
-                    .ToElements()
-                )
-
-                for filled_region_type in filled_region_types:
-                    pattern = new_doc.GetElement(filled_region_type.ForegroundPatternId)
-                    if (
-                        pattern is not None
-                        and pattern.GetFillPattern().IsSolidFill
-                        and filled_region_type.ForegroundPatternColor.IsValid
-                    ):
-                        filled_type = filled_region_type
-                        break
-                if not filled_type and filled_region_types:
-                    for idx in range(100):
-                        try:
-                            new_type = filled_region_types[0].Duplicate(
-                                "Fill Region " + str(idx)
-                            )
-                            break
-                        except Exception:
-                            external_event_trace()
-                            if idx == 99:
-                                raise Exception("Could not create fill region type")
-                    for idx in range(100):
-                        try:
-                            new_pattern = DB.FillPattern(
-                                "Fill Pattern " + str(idx),
-                                DB.FillPatternTarget.Drafting,
-                                DB.FillPatternHostOrientation.ToView,
-                                float(0),
-                                float(0.00001),
-                            )
-                            new_ele_pat = DB.FillPatternElement.Create(
-                                new_doc, new_pattern
-                            )
-                            break
-                        except Exception:
-                            external_event_trace()
-                            if idx == 99:
-                                raise Exception("Could not create fill pattern")
-                    new_type.ForegroundPatternId = new_ele_pat.Id
-                    filled_type = new_type
-                if filled_type is None:
-                    raise Exception("Could not find or create a fill region type")
-
-                list_max_x = []
-                list_y = []
-                list_text_heights = []
-                y_pos = 0
-                spacing = 0
-                for index, vw_item in enumerate(wndw.list_box2.Items):
-                    punto = DB.XYZ(0, y_pos, 0)
-                    item = vw_item["Value"]
-                    text_line = cat_name + " / " + par_name + " - " + item.value
-                    new_text = DB.TextNote.Create(
-                        new_doc, new_legend.Id, punto, text_line, ele_id_type
-                    )
-                    new_doc.Regenerate()
-                    prev_bbox = new_text.get_BoundingBox(new_legend)
-                    height = prev_bbox.Max.Y - prev_bbox.Min.Y
-                    spacing = height * 0.25
-                    list_max_x.append(prev_bbox.Max.X)
-                    list_y.append(prev_bbox.Min.Y)
-                    list_text_heights.append(height)
-                    y_pos = prev_bbox.Min.Y - (height + spacing)
-                ini_x = max(list_max_x) + spacing
-                solid_fill_id = (
-                    getattr(
-                        revit.query.get_solid_fillpattern_element(new_doc), "Id", None
-                    )
-                    if apply_foreground_pattern_color
-                    else None
-                )
-
-                for indx, y in enumerate(list_y):
-                    try:
-                        vw_item = wndw.list_box2.Items[indx]
-                        row = wndw._get_data_row_from_item(vw_item, indx)
-                        if row is None:
-                            continue
-                        item = row["Value"]
-                        height = list_text_heights[indx]
-                        rect_width = height * 2
-
-                        point0 = DB.XYZ(ini_x, y, 0)
-                        point1 = DB.XYZ(ini_x, y + height, 0)
-                        point2 = DB.XYZ(ini_x + rect_width, y + height, 0)
-                        point3 = DB.XYZ(ini_x + rect_width, y, 0)
-                        line01 = DB.Line.CreateBound(point0, point1)
-                        line12 = DB.Line.CreateBound(point1, point2)
-                        line23 = DB.Line.CreateBound(point2, point3)
-                        line30 = DB.Line.CreateBound(point3, point0)
-                        list_curve_loops = List[DB.CurveLoop]()
-                        curve_loops = DB.CurveLoop()
-                        curve_loops.Append(line01)
-                        curve_loops.Append(line12)
-                        curve_loops.Append(line23)
-                        curve_loops.Append(line30)
-                        list_curve_loops.Add(curve_loops)
-                        reg = DB.FilledRegion.Create(
-                            new_doc, filled_type.Id, new_legend.Id, list_curve_loops
-                        )
-                        ogs = DB.OverrideGraphicSettings()
-                        base_color = DB.Color(item.n1, item.n2, item.n3)
-                        line_color, foreground_color, background_color = (
-                            get_color_shades(
-                                base_color,
-                                apply_line_color,
-                                apply_foreground_pattern_color,
-                                apply_background_pattern_color,
-                            )
-                        )
-                        if apply_line_color:
-                            ogs.SetProjectionLineColor(line_color)
-                            ogs.SetCutLineColor(line_color)
-                        if apply_foreground_pattern_color:
-                            ogs.SetSurfaceForegroundPatternColor(foreground_color)
-                            ogs.SetCutForegroundPatternColor(foreground_color)
-                            if solid_fill_id is not None:
-                                ogs.SetSurfaceForegroundPatternId(solid_fill_id)
-                                ogs.SetCutForegroundPatternId(solid_fill_id)
-                        elif apply_background_pattern_color:
-                            ogs.SetSurfaceForegroundPatternColor(background_color)
-                            ogs.SetCutForegroundPatternColor(background_color)
-                            if solid_fill_id is not None:
-                                ogs.SetSurfaceForegroundPatternId(solid_fill_id)
-                                ogs.SetCutForegroundPatternId(solid_fill_id)
-                        new_legend.SetElementOverrides(reg.Id, ogs)
-
-                    except Exception as e:
-                        logger.debug("Error creating filled region: %s", str(e))
-                        continue
-
-                t.Commit()
-
-                task2 = UI.TaskDialog(
-                    wndw.get_locale_string("ColorSplasher.TaskDialog.Title")
-                )
-                success_msg = wndw.get_locale_string(
-                    "ColorSplasher.Messages.LegendCreated"
-                )
-                task2.MainInstruction = success_msg.replace("{0}", new_legend.Name)
-                wndw.Topmost = False
-                task2.Show()
-                wndw.Topmost = True
-
-            except Exception as e:
-                if t.HasStarted() and not t.HasEnded():
-                    t.RollBack()
-
-                logger.debug("Legend creation failed: %s", str(e))
-                task2 = UI.TaskDialog(
-                    wndw.get_locale_string("ColorSplasher.TaskDialog.Title")
-                )
-                error_msg = wndw.get_locale_string(
-                    "ColorSplasher.Messages.LegendFailed"
-                )
-                task2.MainInstruction = error_msg.replace("{0}", str(e))
-                wndw.Topmost = False
-                task2.Show()
-                wndw.Topmost = True
-        except Exception:
-            external_event_trace()
-
-    def GetName(self):
-        return "Create Legend"
-
-
-class CreateFilters(UI.IExternalEventHandler):
-    def __init__(self):
-        pass
-
-    def Execute(self, uiapp):
-        try:
-            new_doc = uiapp.ActiveUIDocument.Document
-            view = get_active_view(new_doc)
-            if view != 0:
-                wndw = CreateFilters._wndw
-                if not wndw:
-                    return
-                apply_line_color = wndw._chk_line_color.IsChecked
-                apply_foreground_pattern_color = wndw._chk_foreground_pattern.IsChecked
-                apply_background_pattern_color = wndw._chk_background_pattern.IsChecked
-                if (
-                    not apply_line_color
-                    and not apply_foreground_pattern_color
-                    and not apply_background_pattern_color
-                ):
-                    apply_foreground_pattern_color = True
-                dict_filters = {}
-                for filt_id in view.GetFilters():
-                    filter_ele = new_doc.GetElement(filt_id)
-                    dict_filters[filter_ele.Name] = filt_id
-                dict_rules = {}
-                iterator = (
-                    DB.FilteredElementCollector(new_doc)
-                    .OfClass(DB.ParameterFilterElement)
-                    .GetElementIterator()
-                )
-                while iterator.MoveNext():
-                    ele = iterator.Current
-                    dict_rules[ele.Name] = ele.Id
-                with revit.Transaction("Create View Filters"):
-                    sel_cat_row = wndw._categories.SelectedItem
-                    sel_par_row = wndw._list_box1.SelectedItem
-                    cat_row = wndw._get_data_row_from_item(
-                        sel_cat_row, wndw._categories.SelectedIndex
-                    )
-                    par_row = wndw._get_data_row_from_item(
-                        sel_par_row, wndw._list_box1.SelectedIndex
-                    )
-                    if cat_row is None or par_row is None:
-                        return
-                    sel_cat = cat_row["Value"]
-                    sel_par = par_row["Value"]
-                    parameter_id = sel_par.rl_par.Id
-                    param_storage_type = sel_par.rl_par.StorageType
-                    categories = List[DB.ElementId]()
-                    categories.Add(sel_cat.cat.Id)
-                    solid_fill_id = getattr(
-                        revit.query.get_solid_fillpattern_element(new_doc), "Id", None
-                    )
-                    version = int(HOST_APP.version)
-                    items_listbox = wndw.list_box2.Items
-                    for i in range(items_listbox.Count):
-                        vw_item = wndw.list_box2.Items[i]
-                        row = wndw._get_data_row_from_item(vw_item, i)
-                        if row is None:
-                            continue
-                        item = row["Value"]
-                        ogs = DB.OverrideGraphicSettings()
-                        base_color = DB.Color(item.n1, item.n2, item.n3)
-                        line_color, foreground_color, background_color = (
-                            get_color_shades(
-                                base_color,
-                                apply_line_color,
-                                apply_foreground_pattern_color,
-                                apply_background_pattern_color,
-                            )
-                        )
-                        if apply_line_color:
-                            ogs.SetProjectionLineColor(line_color)
-                            ogs.SetCutLineColor(line_color)
-                        if apply_foreground_pattern_color:
-                            ogs.SetSurfaceForegroundPatternColor(foreground_color)
-                            ogs.SetCutForegroundPatternColor(foreground_color)
-                            if solid_fill_id is not None:
-                                ogs.SetSurfaceForegroundPatternId(solid_fill_id)
-                                ogs.SetCutForegroundPatternId(solid_fill_id)
-                        if apply_background_pattern_color and version >= 2019:
-                            ogs.SetSurfaceBackgroundPatternColor(background_color)
-                            ogs.SetCutBackgroundPatternColor(background_color)
-                            if solid_fill_id is not None:
-                                ogs.SetSurfaceBackgroundPatternId(solid_fill_id)
-                                ogs.SetCutBackgroundPatternId(solid_fill_id)
-                        filter_name = (
-                            sel_cat.name + " " + sel_par.name + " - " + item.value
-                        )
-                        filter_name = filter_name.translate(
-                            {ord(i): None for i in "{}[]:\\|?/<>*"}
-                        )
-                        if filter_name in dict_filters or filter_name in dict_rules:
-                            if (
-                                filter_name in dict_rules
-                                and filter_name not in dict_filters
-                            ):
-                                view.AddFilter(dict_rules[filter_name])
-                                view.SetFilterOverrides(dict_rules[filter_name], ogs)
-                            else:
-                                view.SetFilterOverrides(dict_filters[filter_name], ogs)
-                        else:
-                            if param_storage_type == DB.StorageType.Double:
-                                if item.value == "None" or len(item.values_double) == 0:
-                                    equals_rule = (
-                                        DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                                            parameter_id, "", 0.001
-                                        )
-                                    )
-                                else:
-                                    minimo = min(item.values_double)
-                                    maximo = max(item.values_double)
-                                    avg_values = (maximo + minimo) / 2
-                                    equals_rule = (
-                                        DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                                            parameter_id,
-                                            avg_values,
-                                            fabs(avg_values - minimo) + 0.001,
-                                        )
-                                    )
-                            elif param_storage_type == DB.StorageType.ElementId:
-                                if item.value == "None":
-                                    prevalue = DB.ElementId.InvalidElementId
-                                else:
-                                    prevalue = item.par.AsElementId()
-                                equals_rule = (
-                                    DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                                        parameter_id, prevalue
-                                    )
-                                )
-                            elif param_storage_type == DB.StorageType.Integer:
-                                if item.value == "None":
-                                    prevalue = 0
-                                else:
-                                    prevalue = item.par.AsInteger()
-                                equals_rule = (
-                                    DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                                        parameter_id, prevalue
-                                    )
-                                )
-                            elif param_storage_type == DB.StorageType.String:
-                                if item.value == "None":
-                                    prevalue = ""
-                                else:
-                                    prevalue = item.value
-                                if version > 2023:
-                                    equals_rule = (
-                                        DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                                            parameter_id, prevalue
-                                        )
-                                    )
-                                else:
-                                    equals_rule = (
-                                        DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                                            parameter_id, prevalue, True
-                                        )
-                                    )
-                            else:
-                                task2 = UI.TaskDialog(
-                                    wndw.get_locale_string(
-                                        "ColorSplasher.TaskDialog.Title"
-                                    )
-                                )
-                                task2.MainInstruction = wndw.get_locale_string(
-                                    "ColorSplasher.Messages.FilterNotSupported"
-                                )
-                                wndw.Topmost = False
-                                task2.Show()
-                                wndw.Topmost = True
-                                break
-                            try:
-                                elem_filter = DB.ElementParameterFilter(equals_rule)
-                                fltr = DB.ParameterFilterElement.Create(
-                                    new_doc, filter_name, categories, elem_filter
-                                )
-                                view.AddFilter(fltr.Id)
-                                view.SetFilterOverrides(fltr.Id, ogs)
-                            except Exception:
-                                external_event_trace()
-                                task2 = UI.TaskDialog(
-                                    wndw.get_locale_string(
-                                        "ColorSplasher.TaskDialog.Title"
-                                    )
-                                )
-                                task2.MainInstruction = wndw.get_locale_string(
-                                    "ColorSplasher.Messages.FilterCreationFailed"
-                                )
-                                wndw.Topmost = False
-                                task2.Show()
-                                wndw.Topmost = True
-                                break
-        except Exception:
-            external_event_trace()
-
-    def GetName(self):
-        return "Create Filters"
-
-
-class ValuesInfo:
-    def __init__(self, para, val, idt, num1, num2, num3):
-        self.par = para
-        self.value = val
-        self.name = strip_accents(para.Definition.Name)
-        self.ele_id = List[DB.ElementId]()
-        self.ele_id.Add(idt)
-        self.n1 = num1
-        self.n2 = num2
-        self.n3 = num3
-        self.colour = Drawing.Color.FromArgb(self.n1, self.n2, self.n3)
-        self.values_double = []
-        if para.StorageType == DB.StorageType.Double:
-            self.values_double.append(para.AsDouble())
-        elif para.StorageType == DB.StorageType.ElementId:
-            self.values_double.append(para.AsElementId())
-
-
-class ParameterInfo:
-    def __init__(self, param_type, para):
-        self.param_type = param_type
-        self.rl_par = para
-        self.par = para.Definition
-        self.name = strip_accents(para.Definition.Name)
-
-
-class CategoryInfo:
-    def __init__(self, category, param):
+    def __init__(self, category, parameters):
         self.name = strip_accents(category.Name)
-        self.cat = category
-        get_elementid_value = get_elementid_value_func()
-        self.int_id = get_elementid_value(category.Id)
-        self.par = param
+        self.category = category
+        self.parameters = parameters
+
+    @property
+    def uses_color_scheme(self):
+        return int(get_elementid_value(self.category.Id)) in COLOR_SCHEME_CATEGORIES
+
+
+class ParameterInfo(object):
+    """Parameter sampled from one element of a category.
+
+    Values are looked up by definition name on every element, or on its type
+    when ``is_type_parameter`` is set.
+    """
+
+    def __init__(self, parameter, is_type_parameter):
+        self.name = strip_accents(parameter.Definition.Name)
+        self.lookup_name = parameter.Definition.Name
+        self.id = parameter.Id
+        self.storage_type = parameter.StorageType
+        self.is_type_parameter = is_type_parameter
+
+
+class ValueInfo(object):
+    """One display value of a parameter, the elements holding it, and its color.
+
+    ``raw_values`` keeps every distinct stored value behind the display value,
+    since rounding in ``AsValueString`` can merge several of them.
+    """
+
+    def __init__(self, name):
+        self.name = name
+        self.element_ids = List[DB.ElementId]()
+        self.raw_values = []
+        self.color = (0, 0, 0)
+        self.background_brush = None
+        self.foreground_brush = None
+
+    @property
+    def is_none(self):
+        return self.name == NONE_VALUE
+
+    def add(self, element_id, raw_value):
+        self.element_ids.Add(element_id)
+        if raw_value not in self.raw_values:
+            self.raw_values.append(raw_value)
+
+    def set_color(self, red, green, blue):
+        self.color = (red, green, blue)
+        self.background_brush = Media.SolidColorBrush(
+            Media.Color.FromRgb(red, green, blue)
+        )
+        is_light = (red * 299 + green * 587 + blue * 114) / 1000.0 > 128
+        self.foreground_brush = Media.Brushes.Black if is_light else Media.Brushes.White
+
+
+class OverrideOptions(object):
+    """Graphic override channels that receive the value colors.
+
+    Invariant:
+        At least one channel is enabled; with none checked in the UI the
+        foreground pattern is used.
+    """
+
+    def __init__(self, line, foreground, background):
+        self.line = line
+        self.foreground = foreground or not (line or background)
+        self.background = background
+
+    def for_legend(self):
+        """Return options for legend swatches, which only have a foreground pattern."""
+        return OverrideOptions(self.line, self.foreground or self.background, False)
+
+
+def update_context():
+    """Refresh the module-wide ``doc`` and ``active_view`` every action reads."""
+    global doc, active_view
+    doc = revit.doc
+    active_view = get_colorable_view(doc)
+
+
+def get_colorable_view(document):
+    """Return the view whose graphics Color Splasher overrides, or None.
+
+    When the project or system browser has focus, the first open UI view
+    stands in for it. Views that cannot take temporary visibility modes are
+    rejected because they do not support element overrides.
+    """
+    if document is None or document.ActiveView is None:
+        return None
+    view = document.ActiveView
+    if view.ViewType in (DB.ViewType.ProjectBrowser, DB.ViewType.SystemBrowser):
+        view = document.GetElement(revit.uidoc.GetOpenUIViews()[0].ViewId)
+    if not view.CanUseTemporaryVisibilityModes():
+        return None
+    return view
+
+
+def refresh_window(sender, args):
+    """Reload the window's categories for the newly active view or document."""
+    try:
+        update_context()
+        if splasher_window:
+            splasher_window.Dispatcher.Invoke(
+                System.Action(splasher_window.reload_categories)
+            )
+    except Exception:
+        logger.exception("Could not refresh Color Splasher for the active view.")
+
+
+def strip_accents(text):
+    return "".join(
+        char for char in normalize("NFKD", text) if unicode_category(char) != "Mn"
+    )
+
+
+def sanitize_name(text):
+    """Remove characters Revit rejects in view and filter names."""
+    return "".join(char for char in text if char not in INVALID_NAME_CHARS)
+
+
+def get_filter_name(category, parameter, value_name):
+    """Return the view filter name for a value; with an empty value, the shared prefix."""
+    return sanitize_name("{} {} - {}".format(category.name, parameter.name, value_name))
+
+
+def get_used_categories(view):
+    """Return the model categories with view-independent elements in the view."""
+    collector = (
+        DB.FilteredElementCollector(doc, view.Id)
+        .WhereElementIsNotElementType()
+        .WhereElementIsViewIndependent()
+    )
+    categories = {}
+    for element in collector:
+        category = element.Category
+        if category is None:
+            continue
+        category_id = int(get_elementid_value(category.Id))
+        if (
+            category_id >= -1
+            or category_id in CAT_EXCLUDED
+            or category_id in categories
+        ):
+            continue
+        categories[category_id] = CategoryInfo(category, get_parameters(element))
+    return sorted(categories.values(), key=lambda info: info.name)
+
+
+def get_parameters(element):
+    """Return the instance and type parameters of a sample element, sorted by name."""
+    parameters = [
+        ParameterInfo(parameter, False)
+        for parameter in element.Parameters
+        if parameter.Definition.BuiltInParameter not in EXCLUDED_PARAMETERS
+    ]
+    element_type = query.get_type(element)
+    if element_type:
+        parameters.extend(
+            ParameterInfo(parameter, True)
+            for parameter in element_type.Parameters
+            if parameter.Definition.BuiltInParameter not in EXCLUDED_PARAMETERS
+        )
+    return sorted(parameters, key=lambda info: info.name.upper())
+
+
+def collect_values(view, category, parameter):
+    """Group the category's elements in the view by the parameter's display value.
+
+    Returns:
+        list[ValueInfo]: without colors; ordered by ``sort_values``.
+    """
+    values = {}
+    elements = query.get_elements_by_categories(
+        [category.category], doc=doc, view_id=view.Id
+    )
+    for element in elements:
+        source = query.get_type(element) if parameter.is_type_parameter else element
+        revit_parameter = query.get_param(source, parameter.lookup_name)
+        if revit_parameter is None:
+            continue
+        display_value = (
+            revit_parameter.AsValueString() if revit_parameter.HasValue else NONE_VALUE
+        )
+        if display_value not in values:
+            values[display_value] = ValueInfo(display_value)
+        values[display_value].add(element.Id, query.get_param_value(revit_parameter))
+    return sort_values(list(values.values()))
+
+
+def sort_values(values):
+    """Sort values alphabetically, or numerically when they end in a unit suffix.
+
+    The suffix length is taken from the first value; values that do not parse
+    as numbers go last, followed by the None value.
+    """
+    named = sorted(
+        (value for value in values if not value.is_none), key=lambda value: value.name
+    )
+    if named:
+        first_name = named[0].name
+        suffix_length = _count_trailing_non_digits(first_name)
+        if suffix_length == 0:
+            named.sort(key=lambda value: _to_float(value.name))
+        elif 0 < suffix_length < len(first_name):
+            named.sort(key=lambda value: _to_float(value.name[:-suffix_length]))
+    return named + [value for value in values if value.is_none]
+
+
+def _count_trailing_non_digits(text):
+    for index, char in enumerate(reversed(text)):
+        if char.isdigit():
+            return index
+    return -1
+
+
+def _to_float(text):
+    try:
+        return float(text)
+    except ValueError:
+        return float("inf")
+
+
+def assign_distinct_colors(values):
+    for value, color in zip(values, distinct_rgb_colors(len(values))):
+        value.set_color(*color)
+
+
+def interpolate_color(start, end, ratio):
+    return tuple(int(round(s + (e - s) * ratio)) for s, e in zip(start, end))
+
+
+def faded_color(color):
+    """Return a lighter, desaturated shade used for lines next to pattern fills."""
+    tinted = [int(channel + (255 - channel) * 0.6) for channel in color]
+    gray = sum(tinted) / 3.0
+    return DB.Color(*[int(channel * 0.7 + gray * 0.3) for channel in tinted])
+
+
+def build_overrides(color, options, solid_fill_id):
+    base_color = DB.Color(*color)
+    overrides = DB.OverrideGraphicSettings()
+    if options.line:
+        if options.foreground or options.background:
+            line_color = faded_color(color)
+        else:
+            line_color = base_color
+        overrides.SetProjectionLineColor(line_color)
+        overrides.SetCutLineColor(line_color)
+    if options.foreground:
+        overrides.SetSurfaceForegroundPatternColor(base_color)
+        overrides.SetCutForegroundPatternColor(base_color)
+        if solid_fill_id is not None:
+            overrides.SetSurfaceForegroundPatternId(solid_fill_id)
+            overrides.SetCutForegroundPatternId(solid_fill_id)
+    if options.background:
+        overrides.SetSurfaceBackgroundPatternColor(base_color)
+        overrides.SetCutBackgroundPatternColor(base_color)
+        if solid_fill_id is not None:
+            overrides.SetSurfaceBackgroundPatternId(solid_fill_id)
+            overrides.SetCutBackgroundPatternId(solid_fill_id)
+    return overrides
+
+
+def get_solid_fill_id():
+    solid_fill = query.get_solid_fillpattern_element(doc)
+    return solid_fill.Id if solid_fill else None
+
+
+def ensure_color_fill_scheme(category):
+    """Give the view the category's first non-empty color scheme if it has none.
+
+    Rooms, spaces and areas may not show element overrides without one.
+    """
+    category_id = category.category.Id
+    if active_view.GetColorFillSchemeId(category_id) != DB.ElementId.InvalidElementId:
+        return
+    for scheme in query.get_elements_by_class(DB.ColorFillScheme, doc=doc):
+        if scheme.CategoryId == category_id and len(scheme.GetEntries()) > 0:
+            active_view.SetColorFillSchemeId(category_id, scheme.Id)
+            return
+
+
+def apply_colors(category, parameter, colors, options):
+    """Override element graphics in the active view with their value's color.
+
+    Values are collected again so elements added since the list was built
+    are colored too; ``colors`` maps display values to RGB tuples.
+
+    Note:
+        Must run in Revit API context.
+    """
+    solid_fill_id = get_solid_fill_id()
+    with revit.Transaction("Apply colors to elements", doc=doc):
+        if category.uses_color_scheme and HOST_APP.is_newer_than(2021):
+            ensure_color_fill_scheme(category)
+        for value in collect_values(active_view, category, parameter):
+            color = colors.get(value.name)
+            if color is None:
+                continue
+            overrides = build_overrides(color, options, solid_fill_id)
+            for element_id in value.element_ids:
+                active_view.SetElementOverrides(element_id, overrides)
+
+
+def reset_colors(filter_prefix):
+    """Clear element overrides in the active view and drop its matching filters.
+
+    Filters whose name starts with ``filter_prefix`` are removed from the view
+    only; the filter elements stay in the document for reuse.
+
+    Note:
+        Must run in Revit API context.
+    """
+    with revit.Transaction("Reset colors in elements", doc=doc):
+        if filter_prefix:
+            for view_filter in query.get_view_filters(active_view):
+                if view_filter.Name.startswith(filter_prefix):
+                    active_view.RemoveFilter(view_filter.Id)
+        overrides = DB.OverrideGraphicSettings()
+        element_ids = (
+            DB.FilteredElementCollector(doc, active_view.Id)
+            .WhereElementIsNotElementType()
+            .WhereElementIsViewIndependent()
+            .ToElementIds()
+        )
+        for element_id in element_ids:
+            active_view.SetElementOverrides(element_id, overrides)
+
+
+def get_filter_rule_values(storage_type, value):
+    """Return the stored values a filter must match for a display value.
+
+    An empty list means no rule can express the value, which happens for
+    unset double parameters.
+    """
+    if not value.is_none:
+        return value.raw_values
+    if storage_type == DB.StorageType.String:
+        return [""]
+    if storage_type == DB.StorageType.Integer:
+        return [0]
+    if storage_type == DB.StorageType.ElementId:
+        return [DB.ElementId.InvalidElementId]
+    return []
+
+
+def create_filters(category, parameter, values, options):
+    """Add one view filter per value to the active view, colored like the value.
+
+    Filters with the same name from earlier runs are reused instead of
+    recreated. All filters are created in one transaction.
+
+    Raises:
+        FilterCreationError: the parameter cannot drive a filter rule.
+
+    Note:
+        Must run in Revit API context.
+    """
+    if parameter.storage_type not in FILTERABLE_STORAGE_TYPES:
+        raise FilterCreationError("ColorSplasher.Messages.FilterNotSupported")
+    category_ids = List[DB.ElementId]([category.category.Id])
+    filterable_ids = DB.ParameterFilterUtilities.GetFilterableParametersInCommon(
+        doc, category_ids
+    )
+    if not filterable_ids.Contains(parameter.id):
+        raise FilterCreationError("ColorSplasher.Messages.FilterCreationFailed")
+
+    builtin_category = query.get_builtincategory(category.category, doc=doc)
+    existing_filters = {
+        view_filter.Name: view_filter for view_filter in query.get_rule_filters(doc)
+    }
+    solid_fill_id = get_solid_fill_id()
+    with revit.Transaction("Create View Filters", doc=doc, log_errors=False):
+        for value in values:
+            filter_name = get_filter_name(category, parameter, value.name)
+            view_filter = existing_filters.get(filter_name)
+            if view_filter is None:
+                rule_values = get_filter_rule_values(parameter.storage_type, value)
+                if not rule_values:
+                    logger.debug("No filter rule for value '%s'.", value.name)
+                    continue
+                view_filter = create.create_param_value_filter(
+                    filter_name,
+                    parameter.id,
+                    rule_values,
+                    "==",
+                    match_any=True,
+                    category_list=[builtin_category],
+                    doc=doc,
+                )
+            if not active_view.IsFilterApplied(view_filter.Id):
+                active_view.AddFilter(view_filter.Id)
+            active_view.SetFilterOverrides(
+                view_filter.Id, build_overrides(value.color, options, solid_fill_id)
+            )
+
+
+def get_text_note_type_id():
+    type_id = doc.GetDefaultElementTypeId(DB.ElementTypeGroup.TextNoteType)
+    if type_id != DB.ElementId.InvalidElementId:
+        return type_id
+    text_types = query.get_types_by_class(DB.TextNoteType, doc=doc)
+    if not text_types:
+        raise Exception("No text note type found in the model")
+    return text_types[0].Id
+
+
+def get_solid_filled_region_type():
+    """Return a filled region type with a solid foreground, creating one if needed.
+
+    Note:
+        Must run inside a transaction.
+    """
+    region_types = query.get_types_by_class(DB.FilledRegionType, doc=doc)
+    for region_type in region_types:
+        pattern = doc.GetElement(region_type.ForegroundPatternId)
+        if (
+            pattern is not None
+            and pattern.GetFillPattern().IsSolidFill
+            and region_type.ForegroundPatternColor.IsValid
+        ):
+            return region_type
+    solid_fill = query.get_solid_fillpattern_element(doc)
+    if not region_types or solid_fill is None:
+        raise Exception("Could not find or create a solid fill region type")
+    taken_names = {query.get_name(region_type) for region_type in region_types}
+    new_type = region_types[0].Duplicate(unique_name("Solid Fill", taken_names))
+    new_type.ForegroundPatternId = solid_fill.Id
+    return new_type
+
+
+def rectangle_loops(x, y, width, height):
+    corners = [
+        DB.XYZ(x, y, 0),
+        DB.XYZ(x, y + height, 0),
+        DB.XYZ(x + width, y + height, 0),
+        DB.XYZ(x + width, y, 0),
+    ]
+    loop = DB.CurveLoop()
+    for start, end in zip(corners, corners[1:] + corners[:1]):
+        loop.Append(DB.Line.CreateBound(start, end))
+    loops = List[DB.CurveLoop]()
+    loops.Add(loop)
+    return loops
+
+
+def create_legend(template_legend, legend_name, label_prefix, values, options):
+    """Duplicate a legend view and draw one label and color swatch per value.
+
+    Returns:
+        DB.View: the new legend, named after ``legend_name`` made unique.
+
+    Note:
+        Must run in Revit API context.
+    """
+    text_type_id = get_text_note_type_id()
+    solid_fill_id = get_solid_fill_id()
+    taken_names = {
+        query.get_name(view)
+        for view in query.get_all_views(doc, include_nongraphical=True)
+    }
+    with revit.Transaction("Create Legend", doc=doc, log_errors=False):
+        region_type = get_solid_filled_region_type()
+        legend = doc.GetElement(
+            template_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
+        )
+        legend.Name = unique_name(sanitize_name(legend_name), taken_names)
+
+        rows = []
+        y_position = 0.0
+        for value in values:
+            text_note = DB.TextNote.Create(
+                doc,
+                legend.Id,
+                DB.XYZ(0, y_position, 0),
+                label_prefix + value.name,
+                text_type_id,
+            )
+            doc.Regenerate()
+            box = text_note.get_BoundingBox(legend)
+            height = box.Max.Y - box.Min.Y
+            rows.append((value, box.Min.Y, box.Max.X, height))
+            y_position = box.Min.Y - height * 1.25
+
+        spacing = rows[-1][3] * 0.25
+        swatch_x = max(row[2] for row in rows) + spacing
+        for value, bottom, _, height in rows:
+            region = DB.FilledRegion.Create(
+                doc,
+                region_type.Id,
+                legend.Id,
+                rectangle_loops(swatch_x, bottom, height * 2, height),
+            )
+            legend.SetElementOverrides(
+                region.Id, build_overrides(value.color, options, solid_fill_id)
+            )
+    return legend
+
+
+def select_elements(element_ids):
+    revit.get_selection().set_to(element_ids)
+
+
+def parse_scheme_line(line):
+    """Parse a ``<value>::R<r>G<g>B<b>`` line of a .cschn color scheme file."""
+    name, rgb = line.strip().rsplit("::R", 1)
+    red, green, blue = (int(channel) for channel in split(r"[GB]", rgb))
+    return name, (red, green, blue)
 
 
 class ColorSplasherWindow(forms.WPFWindow):
+    """Modeless Color Splasher window; at most one is open per Revit session.
+
+    Invariant:
+        UI handlers only gather state. Revit API writes happen in callbacks
+        scheduled through ``events.execute_in_revit_context``.
+    """
+
     resolve_theme = True
 
-    def __init__(
-        self,
-        xaml_file_name,
-        categories,
-        ext_ev,
-        uns_ev,
-        s_view,
-        reset_event,
-        ev_legend,
-        ev_filters,
-    ):
-        forms.WPFWindow.__init__(self, xaml_file_name)
-        self.IsOpen = 1
-        self.filter_ev = ev_filters
-        self.legend_ev = ev_legend
-        self.reset_ev = reset_event
-        self.crt_view = s_view
-        self.event = ext_ev
-        self.uns_event = uns_ev
-        self.uns_event.Raise()
-        self.categs = categories
-        self.width_par = 1
-        self.table_data = DataTable("Data")
-        self.table_data.Columns.Add("Key", System.String)
-        self.table_data.Columns.Add("Value", System.Object)
-        names = [x.name for x in self.categs]
-        select_category_text = self.get_locale_string(
-            "ColorSplasher.Messages.SelectCategory"
-        )
-        self.table_data.Rows.Add(select_category_text, 0)
-        for key_, value_ in zip(names, self.categs):
-            self.table_data.Rows.Add(key_, value_)
-        self.out = []
-        self._filtered_parameters = []
-        self._all_parameters = []
-        self._config = pyrevit_script.get_config()
-
-        self._table_data_3 = DataTable("Data")
-        self._table_data_3.Columns.Add("Key", System.String)
-        self._table_data_3.Columns.Add("Value", System.Object)
-
-        self.Closed += self.closed
-        pyrevit_script.restore_window_position(self)
-
-        self._setup_ui()
-
-    def closed(self, sender, args):
-        pyrevit_script.save_window_position(self)
-
-    def _get_data_row_from_item(self, item, item_index=None):
-        """Get DataRow from ListBox item consistently.
-
-        Args:
-            item: ListBox item (DataRowView or other)
-            item_index: Optional index for fallback access
-
-        Returns:
-            DataRow or None if not accessible
-        """
-        from System.Data import DataRowView
-
-        if isinstance(item, DataRowView):
-            return item.Row
-        elif hasattr(item, "Row"):
-            return item.Row
-        elif (
-            item_index is not None
-            and hasattr(self, "_table_data_3")
-            and self._table_data_3 is not None
-        ):
-            if item_index < self._table_data_3.Rows.Count:
-                return self._table_data_3.Rows[item_index]
-        return None
-
-    def _update_placeholder_visibility(self):
-        """Update placeholder text visibility based on list_box2 item count."""
-        from System.Windows import Visibility
-
-        if self.list_box2.ItemsSource is None or self.list_box2.Items.Count == 0:
-            self._txt_placeholder_values.Visibility = Visibility.Visible
-        else:
-            self._txt_placeholder_values.Visibility = Visibility.Collapsed
-
-    def _setup_ui(self):
-        """Initialize UI controls after XAML is loaded."""
-        placeholder_text = self.get_locale_string(
-            "ColorSplasher.Placeholders.SearchParameters"
-        )
-        self._search_box.Text = placeholder_text
-        from System.Windows.Media import Brushes
-
-        self._search_box.Foreground = Brushes.Gray
-
-        self._categories.ItemsSource = self.table_data.DefaultView
-        self._categories.SelectionChanged += self.update_filter
-        self._categories.SelectedIndex = 0
-
-        self._chk_line_color.IsChecked = self._config.get_option(
-            "apply_line_color", False
-        )
-        self._chk_foreground_pattern.IsChecked = self._config.get_option(
+    def __init__(self):
+        forms.WPFWindow.__init__(self, XAML_FILE)
+        self._values = []
+        self._chk_line_color.IsChecked = config.get_option("apply_line_color", False)
+        self._chk_foreground_pattern.IsChecked = config.get_option(
             "apply_foreground_pattern_color", True
         )
-
-        self._chk_background_pattern.IsChecked = self._config.get_option(
+        self._chk_background_pattern.IsChecked = config.get_option(
             "apply_background_pattern_color", False
         )
-        self._chk_background_pattern.IsEnabled = True
+        self.Closed += self.window_closed
+        script.restore_window_position(self)
+        self.reload_categories()
 
-        self.list_box2.SelectionChanged += self.list_selected_index_changed
-        self.list_box2.MouseDown += self.list_box2_mouse_down
-        self._shift_pressed_on_click = False
+    @property
+    def selected_category(self):
+        return self._categories.SelectedItem
 
-        self.list_box2.ItemsSource = self._table_data_3.DefaultView
-        self._update_placeholder_visibility()
+    @property
+    def selected_parameter(self):
+        return self._parameters.SelectedItem
 
-        if not hasattr(self, "_table_data_2") or self._table_data_2 is None:
-            self._table_data_2 = DataTable("Data")
-            self._table_data_2.Columns.Add("Key", System.String)
-            self._table_data_2.Columns.Add("Value", System.Object)
-            select_parameter_text = self.get_locale_string(
-                "ColorSplasher.Messages.SelectParameter"
+    def reload_categories(self):
+        """Repopulate categories from the active view, clearing the selection."""
+        self._categories.ItemsSource = (
+            get_used_categories(active_view) if active_view else []
+        )
+        self._categories.SelectedIndex = -1
+        self.category_changed(None, None)
+        self.update_window_title()
+
+    def update_window_title(self):
+        title = self.get_locale_string("ColorSplasher.Title")
+        if active_view is not None:
+            title = "{} | {}".format(title, query.get_name(active_view))
+        self.Title = title
+
+    def show_message(self, message, title=None):
+        """Show a task dialog above this topmost window."""
+        self.Topmost = False
+        try:
+            forms.alert(
+                message,
+                title=title or self.get_locale_string("ColorSplasher.TaskDialog.Title"),
             )
-            self._table_data_2.Rows.Add(select_parameter_text, 0)
-            self._list_box1.ItemsSource = self._table_data_2.DefaultView
-            self._list_box1.SelectedIndex = 0
-
-        try:
-            from System.Windows.Controls import ScrollViewer
-
-            ScrollViewer.SetHorizontalScrollBarVisibility(
-                self.list_box2, System.Windows.Controls.ScrollBarVisibility.Auto
-            )
-        except Exception as exc:
-            # Best-effort: if scrollbar configuration fails, continue without breaking the UI
-            get_logger(__name__).debug(
-                "Failed to set horizontal scrollbar visibility for ColorSplasher list_box2.",
-                exc_info=exc,
-            )
-            pass
-
-        self.Closing += self.closing_event
-
-        icon_filename = __file__.replace("script.py", "color_splasher.ico")
-        if exists(icon_filename):
-            try:
-                self.Icon = Drawing.Icon(icon_filename)
-            except Exception:
-                # Icon loading is optional, continue if it fails
-                pass
-
-    def search_box_enter(self, sender, e):
-        """Clear placeholder text when search box gets focus"""
-        from System.Windows.Media import Brushes
-
-        placeholder_text = self.get_locale_string(
-            "ColorSplasher.Placeholders.SearchParameters"
-        )
-        if self._search_box.Text == placeholder_text:
-            self._search_box.Text = ""
-            self._search_box.Foreground = Brushes.Black
-
-    def search_box_leave(self, sender, e):
-        """Restore placeholder text if search box is empty"""
-        from System.Windows.Media import Brushes
-
-        placeholder_text = self.get_locale_string(
-            "ColorSplasher.Placeholders.SearchParameters"
-        )
-        if self._search_box.Text == "":
-            self._search_box.Text = placeholder_text
-            self._search_box.Foreground = Brushes.Gray
-
-    def checkbox_changed(self, sender, e):
-        """Handle checkbox state changes"""
-        self._config.set_option("apply_line_color", self._chk_line_color.IsChecked)
-        self._config.set_option(
-            "apply_foreground_pattern_color", self._chk_foreground_pattern.IsChecked
-        )
-        self._config.set_option(
-            "apply_background_pattern_color", self._chk_background_pattern.IsChecked
-        )
-        pyrevit_script.save_config()
-
-    def button_click_set_colors(self, sender, e):
-        if self.list_box2.Items.Count <= 0:
-            return
-        else:
-            self.event.Raise()
-
-    def button_click_reset(self, sender, e):
-        self.reset_ev.Raise()
-
-    def button_click_select_all(self, sender, e):
-        """Select all elements from all parameter values."""
-        try:
-            if self.list_box2.Items.Count <= 0:
-                return
-
-            uidoc = HOST_APP.uidoc
-            if uidoc is None:
-                return
-
-            all_element_ids = List[DB.ElementId]()
-
-            for i in range(self.list_box2.Items.Count):
-                try:
-                    item = self.list_box2.Items[i]
-                    row = self._get_data_row_from_item(item, i)
-                    if row is None:
-                        continue
-
-                    value_item = row["Value"]
-                    if hasattr(value_item, "ele_id") and value_item.ele_id is not None:
-                        for ele_id in value_item.ele_id:
-                            all_element_ids.Add(ele_id)
-                except (KeyError, AttributeError, IndexError) as ex:
-                    logger.debug(
-                        "Error accessing listbox item %d in select_all: %s", i, str(ex)
-                    )
-                    continue
-
-            if all_element_ids.Count > 0:
-                uidoc.Selection.SetElementIds(all_element_ids)
-                uidoc.RefreshActiveView()
-                logger.debug(
-                    "Selected %d elements via Select All", all_element_ids.Count
-                )
-        except Exception as ex:
-            logger.debug("Error in button_click_select_all: %s", str(ex))
-
-    def button_click_select_none(self, sender, e):
-        """Clear the current selection in Revit."""
-        try:
-            uidoc = HOST_APP.uidoc
-            if uidoc is None:
-                return
-
-            empty_list = List[DB.ElementId]()
-            uidoc.Selection.SetElementIds(empty_list)
-            uidoc.RefreshActiveView()
-            logger.debug("Cleared selection via Select None")
-        except Exception as ex:
-            logger.debug("Error in button_click_select_none: %s", str(ex))
-
-    def button_click_random_colors(self, sender, e):
-        """Trigger random color assignment by reselecting parameter"""
-        try:
-            if self._list_box1.SelectedIndex != -1:
-                sel_index = self._list_box1.SelectedIndex
-                self._list_box1.SelectedIndex = -1
-                self._list_box1.SelectedIndex = sel_index
-        except Exception:
-            external_event_trace()
-
-    def button_click_gradient_colors(self, sender, e):
-        """Apply gradient colors to all values"""
-        self.list_box2.SelectionChanged -= self.list_selected_index_changed
-        try:
-            number_items = self.list_box2.Items.Count
-            if number_items <= 2:
-                return
-
-            # Get first and last colors
-            first_item = self.list_box2.Items[0]
-            last_item = self.list_box2.Items[number_items - 1]
-            first_row = self._get_data_row_from_item(first_item, 0)
-            last_row = self._get_data_row_from_item(last_item, number_items - 1)
-            if first_row is None or last_row is None:
-                return
-            start_color = first_row["Value"].colour
-            end_color = last_row["Value"].colour
-
-            # Generate gradient colors
-            list_colors = self.get_gradient_colors(start_color, end_color, number_items)
-
-            # Collect existing values and update their colors
-            list_values = []
-            for indx in range(number_items):
-                item = self.list_box2.Items[indx]
-                row = self._get_data_row_from_item(item, indx)
-                if row is None:
-                    continue
-                value = row["Value"]
-                # Update colors in existing ValuesInfo object (preserve all data including ele_id list)
-                value.n1 = abs(list_colors[indx][1])
-                value.n2 = abs(list_colors[indx][2])
-                value.n3 = abs(list_colors[indx][3])
-                value.colour = Drawing.Color.FromArgb(value.n1, value.n2, value.n3)
-                list_values.append(value)
-
-            # Recreate table with new ValuesInfo objects (like check_item does)
-            self._table_data_3 = DataTable("Data")
-            self._table_data_3.Columns.Add("Key", System.String)
-            self._table_data_3.Columns.Add("Value", System.Object)
-
-            vl_par = [x.value for x in list_values]
-            for key_, value_ in zip(vl_par, list_values):
-                self._table_data_3.Rows.Add(key_, value_)
-
-            # Set ItemsSource and update (same pattern as check_item)
-            default_view = self._table_data_3.DefaultView
-            self.list_box2.ItemsSource = default_view
-            self.list_box2.SelectedIndex = -1
-            self._update_placeholder_visibility()
-            self.list_box2.UpdateLayout()
-
-            try:
-                self.list_box2.SelectionChanged -= self.list_selected_index_changed
-            except Exception:
-                # Handler may not be subscribed, ignore unsubscribe errors
-                pass
-            self.list_box2.SelectionChanged += self.list_selected_index_changed
-
-            # Update colors asynchronously (same as check_item)
-            self._update_listbox_colors_async()
-        except Exception:
-            external_event_trace()
         finally:
-            self.list_box2.SelectionChanged += self.list_selected_index_changed
+            self.Topmost = True
 
-    def button_click_create_legend(self, sender, e):
-        if self.list_box2.Items.Count <= 0:
-            return
+    def alert(self, message_key, args=(), title_key=None):
+        """Show the localized message ``message_key`` formatted with ``args``."""
+        title = self.get_locale_string(title_key) if title_key else None
+        self.show_message(self.get_locale_string(message_key).format(*args), title)
+
+    def _set_visible(self, element, visible):
+        if visible:
+            self.show_element(element)
         else:
-            self.legend_ev.Raise()
+            self.hide_element(element)
 
-    def button_click_create_view_filters(self, sender, e):
-        if self.list_box2.Items.Count <= 0:
-            return
-        else:
-            self.reset_ev.Raise()
-            self.filter_ev.Raise()
+    def _set_values(self, values):
+        self._values = values
+        self._values_list.ItemsSource = values
+        self._set_visible(self._txt_placeholder_values, not values)
 
-    def save_load_color_scheme(self, sender, e):
-        saveform = FormSaveLoadScheme()
-        saveform.Show()
+    def _refresh_value_colors(self):
+        self._values_list.Items.Refresh()
 
-    def get_gradient_colors(self, start_color, end_color, steps):
-        a_step = float((end_color.A - start_color.A) / steps)
-        r_step = float((end_color.R - start_color.R) / steps)
-        g_step = float((end_color.G - start_color.G) / steps)
-        b_step = float((end_color.B - start_color.B) / steps)
-        color_list = []
-        for index in range(steps):
-            a = max(start_color.A + int(a_step * index) - 1, 0)
-            r = max(start_color.R + int(r_step * index) - 1, 0)
-            g = max(start_color.G + int(g_step * index) - 1, 0)
-            b = max(start_color.B + int(b_step * index) - 1, 0)
-            color_list.append([a, r, g, b])
-        return color_list
-
-    def closing_event(self, sender, e):
-        """Handle window closing"""
-        self.IsOpen = 0
-        self.uns_event.Raise()
-
-    def list_box2_mouse_down(self, sender, e):
-        """Track clicking on dialogbox
-
-        :param self: Description
-        :param sender: Description
-        :param e: Description
-        """
-        from System.Windows.Input import ModifierKeys, Keyboard, Key
-        from System.Windows.Media import VisualTreeHelper
-        from System.Windows.Controls import ListBoxItem
-
-        hit_on_item = False
-        try:
-            pos = e.GetPosition(self.list_box2)
-            hit = VisualTreeHelper.HitTest(self.list_box2, pos)
-            if hit is not None and hit.VisualHit is not None:
-                element = hit.VisualHit
-                while element is not None:
-                    if isinstance(element, ListBoxItem):
-                        hit_on_item = True
-                        break
-                    element = VisualTreeHelper.GetParent(element)
-        except Exception as e:
-            logger.debug("Error in list_box2_mouse_down: {0}".format(e))
-            hit_on_item = False
-
-        if not hit_on_item:
-            self._shift_pressed_on_click = False
-            e.Handled = True
-            return
-
-        shift_from_event = (
-            e.KeyboardDevice.Modifiers & ModifierKeys.Shift
-        ) == ModifierKeys.Shift
-        shift_from_keyboard = Keyboard.IsKeyDown(Key.LeftShift) or Keyboard.IsKeyDown(
-            Key.RightShift
-        )
-        self._shift_pressed_on_click = shift_from_event or shift_from_keyboard
-
-    def list_selected_index_changed(self, sender, e):
-        """Handle ListBox selection change for color picking or element selection."""
-        # Reset shift flag if clicking outside (SelectedIndex == -1)
-        if sender.SelectedIndex == -1:
-            if hasattr(self, "_shift_pressed_on_click"):
-                self._shift_pressed_on_click = False
-            return
-        if sender.SelectedItem is None:
-            self._shift_pressed_on_click = False
-            return
-
-        from System.Windows.Input import Keyboard, Key
-
-        shift_pressed = Keyboard.IsKeyDown(Key.LeftShift) or Keyboard.IsKeyDown(
-            Key.RightShift
+    def _override_options(self):
+        return OverrideOptions(
+            bool(self._chk_line_color.IsChecked),
+            bool(self._chk_foreground_pattern.IsChecked),
+            bool(self._chk_background_pattern.IsChecked),
         )
 
-        if (
-            not shift_pressed
-            and hasattr(self, "_shift_pressed_on_click")
-            and self._shift_pressed_on_click
-        ):
-            shift_pressed = True
-
-        if shift_pressed:
-            try:
-                selected_item = sender.SelectedItem
-                if selected_item is not None:
-                    # Access DataRowView in WPF
-                    from System.Data import DataRowView
-
-                    row = None
-                    if isinstance(selected_item, DataRowView):
-                        row = selected_item.Row
-                    elif hasattr(selected_item, "Row"):
-                        row = selected_item.Row
-                    else:
-                        # Fallback for direct DataTable access with bounds checking
-                        if (
-                            hasattr(self, "_table_data_3")
-                            and self._table_data_3 is not None
-                            and sender.SelectedIndex >= 0
-                            and sender.SelectedIndex < self._table_data_3.Rows.Count
-                        ):
-                            row = self._table_data_3.Rows[sender.SelectedIndex]
-
-                    if row is None:
-                        # Temporarily unsubscribe to prevent recursive calls
-                        try:
-                            self.list_box2.SelectionChanged -= (
-                                self.list_selected_index_changed
-                            )
-                            sender.SelectedIndex = -1
-                        except Exception:
-                            pass
-                        finally:
-                            try:
-                                self.list_box2.SelectionChanged += (
-                                    self.list_selected_index_changed
-                                )
-                            except Exception:
-                                pass
-                        self._shift_pressed_on_click = False
-                        return
-
-                    value_item = row["Value"]
-                    if (
-                        hasattr(value_item, "ele_id")
-                        and value_item.ele_id is not None
-                        and value_item.ele_id.Count > 0
-                    ):
-                        uidoc = HOST_APP.uidoc
-                        if uidoc is None:
-                            return
-                        element_ids = value_item.ele_id
-                        uidoc.Selection.SetElementIds(element_ids)
-                        uidoc.RefreshActiveView()
-                        logger.debug("Selected %d elements", element_ids.Count)
-                    else:
-                        logger.debug("No elements found for selected value")
-
-                # Temporarily unsubscribe to prevent recursive calls
-                try:
-                    self.list_box2.SelectionChanged -= self.list_selected_index_changed
-                    sender.SelectedIndex = -1
-                except Exception:
-                    pass
-                finally:
-                    try:
-                        self.list_box2.SelectionChanged += (
-                            self.list_selected_index_changed
-                        )
-                    except Exception:
-                        pass
-            except Exception as ex:
-                logger.debug("Error selecting elements: %s", str(ex))
-                # Temporarily unsubscribe to prevent recursive calls
-                try:
-                    self.list_box2.SelectionChanged -= self.list_selected_index_changed
-                    sender.SelectedIndex = -1
-                except Exception:
-                    pass
-                finally:
-                    try:
-                        self.list_box2.SelectionChanged += (
-                            self.list_selected_index_changed
-                        )
-                    except Exception:
-                        pass
-            finally:
-                self._shift_pressed_on_click = False
-        else:
-            clr_dlg = Forms.ColorDialog()
-            clr_dlg.AllowFullOpen = True
-            if clr_dlg.ShowDialog() == Forms.DialogResult.OK:
-                selected_item = sender.SelectedItem
-                if selected_item is not None:
-                    row = self._get_data_row_from_item(
-                        selected_item, sender.SelectedIndex
-                    )
-                    if row is None:
-                        # Temporarily unsubscribe to prevent recursive calls
-                        try:
-                            self.list_box2.SelectionChanged -= (
-                                self.list_selected_index_changed
-                            )
-                            sender.SelectedIndex = -1
-                        except Exception:
-                            pass
-                        finally:
-                            try:
-                                self.list_box2.SelectionChanged += (
-                                    self.list_selected_index_changed
-                                )
-                            except Exception:
-                                pass
-                        self._shift_pressed_on_click = False
-                        return
-                    value_item = row["Value"]
-                    value_item.n1 = clr_dlg.Color.R
-                    value_item.n2 = clr_dlg.Color.G
-                    value_item.n3 = clr_dlg.Color.B
-                    value_item.colour = Drawing.Color.FromArgb(
-                        clr_dlg.Color.R, clr_dlg.Color.G, clr_dlg.Color.B
-                    )
-                    self._update_listbox_colors()
-            # Temporarily unsubscribe to prevent recursive calls
-            try:
-                self.list_box2.SelectionChanged -= self.list_selected_index_changed
-                sender.SelectedIndex = -1
-            except Exception:
-                pass
-            finally:
-                try:
-                    self.list_box2.SelectionChanged += self.list_selected_index_changed
-                except Exception:
-                    pass
-            self._shift_pressed_on_click = False
-
-    def _update_listbox_colors_async(self):
-        """Update listbox colors after UI is ready using timer."""
-        try:
-            from System.Windows.Threading import DispatcherTimer, DispatcherPriority
-
-            timer = DispatcherTimer(DispatcherPriority.Loaded)
-            timer.Interval = System.TimeSpan.FromMilliseconds(100)
-
-            def update_colors(s, ev):
-                try:
-                    self._update_listbox_colors()
-                except Exception as ex:
-                    logger.debug("Error in update_colors timer: %s", str(ex))
-                finally:
-                    timer.Stop()
-
-            timer.Tick += update_colors
-            timer.Start()
-        except Exception as ex:
-            logger.debug("Error setting up color update timer: %s", str(ex))
-            self._update_listbox_colors()
-
-    def _update_listbox_colors(self):
-        """Update ListBox item backgrounds to show colors."""
-        try:
-            from System.Windows.Media import SolidColorBrush, Color
-
-            if not hasattr(self, "_table_data_3") or self._table_data_3 is None:
-                return
-
-            for i in range(self.list_box2.Items.Count):
-                try:
-                    item = self.list_box2.Items[i]
-                    row = self._get_data_row_from_item(item, i)
-                    if row is None:
-                        continue
-
-                    value_item = row["Value"]
-                    if not hasattr(value_item, "colour"):
-                        continue
-
-                    color_obj = value_item.colour
-                    wpf_color = Color.FromArgb(
-                        color_obj.A, color_obj.R, color_obj.G, color_obj.B
-                    )
-                    brush = SolidColorBrush(wpf_color)
-
-                    listbox_item = (
-                        self.list_box2.ItemContainerGenerator.ContainerFromIndex(i)
-                    )
-                    if listbox_item is not None:
-                        listbox_item.Background = brush
-                        brightness = (
-                            color_obj.R * 299 + color_obj.G * 587 + color_obj.B * 114
-                        ) / 1000
-                        if brightness > 128 or (
-                            color_obj.R == 255
-                            and color_obj.G == 255
-                            and color_obj.B == 255
-                        ):
-                            listbox_item.Foreground = SolidColorBrush(
-                                Color.FromRgb(0, 0, 0)
-                            )
-                        else:
-                            listbox_item.Foreground = SolidColorBrush(
-                                Color.FromRgb(255, 255, 255)
-                            )
-                except (KeyError, AttributeError, IndexError) as ex:
-                    logger.debug(
-                        "Error updating listbox color for item %d: %s", i, str(ex)
-                    )
-                    continue
-        except Exception:
-            external_event_trace()
-
-    def check_item(self, sender, e):
-        """Handle parameter selection change."""
-        try:
-            self.list_box2.SelectionChanged -= self.list_selected_index_changed
-        except Exception:
-            # Handler may not be subscribed, ignore unsubscribe errors
-            pass
-
-        # Get selected category
-        if self._categories.SelectedItem is None:
-            logger.debug("No category selected")
-            return
-        sel_cat_row = self._categories.SelectedItem
-        # DataRowView from DataTable.DefaultView
-        from System.Data import DataRowView
-
-        try:
-            if isinstance(sel_cat_row, DataRowView):
-                sel_cat = sel_cat_row.Row["Value"]
-            elif hasattr(sel_cat_row, "Row"):
-                sel_cat = sel_cat_row.Row["Value"]
-            elif hasattr(sel_cat_row, "Item"):
-                sel_cat = sel_cat_row.Item["Value"]
-            else:
-                sel_cat = sel_cat_row["Value"]
-        except Exception as ex:
-            logger.debug("Error getting category: %s", str(ex))
-            return
-
-        if sel_cat is None or sel_cat == 0:
-            return
-        if (
-            sender.SelectedIndex == -1
-            or sender.SelectedItem is None
-            or sender.SelectedIndex == 0
-        ):
-            if sender.SelectedIndex == 0:
-                selected_item = sender.SelectedItem
-                if selected_item is not None:
-                    row = self._get_data_row_from_item(selected_item, 0)
-                    if row is not None and row["Value"] == 0:
-                        self._table_data_3 = DataTable("Data")
-                        self._table_data_3.Columns.Add("Key", System.String)
-                        self._table_data_3.Columns.Add("Value", System.Object)
-                        self.list_box2.ItemsSource = self._table_data_3.DefaultView
-                        self._update_placeholder_visibility()
-                        return
-            self._table_data_3 = DataTable("Data")
-            self._table_data_3.Columns.Add("Key", System.String)
-            self._table_data_3.Columns.Add("Value", System.Object)
-            self.list_box2.ItemsSource = self._table_data_3.DefaultView
-            self._update_placeholder_visibility()
-            return
-
-        sel_param_row = sender.SelectedItem
-        row = self._get_data_row_from_item(sel_param_row, sender.SelectedIndex)
-        if row is None:
-            return
-        sel_param = row["Value"]
-
-        self._table_data_3 = DataTable("Data")
-        self._table_data_3.Columns.Add("Key", System.String)
-        self._table_data_3.Columns.Add("Value", System.Object)
-
-        rng_val = get_range_values(sel_cat, sel_param, self.crt_view)
-        vl_par = [x.value for x in rng_val]
-
-        for key_, value_ in zip(vl_par, rng_val):
-            self._table_data_3.Rows.Add(key_, value_)
-
-        if self._table_data_3.Rows.Count == 0:
-            self.list_box2.ItemsSource = None
-            self._update_placeholder_visibility()
-            return
-
-        default_view = self._table_data_3.DefaultView
-        self.list_box2.ItemsSource = default_view
-        self.list_box2.SelectedIndex = -1
-        self._update_placeholder_visibility()
-        self.list_box2.UpdateLayout()
-
-        try:
-            self.list_box2.SelectionChanged -= self.list_selected_index_changed
-        except Exception:
-            # Handler may not be subscribed, ignore unsubscribe errors
-            pass
-        self.list_box2.SelectionChanged += self.list_selected_index_changed
-
-        self._update_listbox_colors_async()
-
-    def update_filter(self, sender, e):
-        """Update parameter list when category selection changes."""
-        if sender.SelectedItem is None:
-            return
-
-        sel_cat_row = sender.SelectedItem
-        row = self._get_data_row_from_item(sel_cat_row, sender.SelectedIndex)
-        if row is None:
-            return
-        sel_cat = row["Value"]
-
-        self._table_data_2 = DataTable("Data")
-        self._table_data_2.Columns.Add("Key", System.String)
-        self._table_data_2.Columns.Add("Value", System.Object)
-        self._table_data_3 = DataTable("Data")
-        self._table_data_3.Columns.Add("Key", System.String)
-        self._table_data_3.Columns.Add("Value", System.Object)
-
-        select_parameter_text = self.get_locale_string(
-            "ColorSplasher.Messages.SelectParameter"
+    def _ensure_colorable_view(self):
+        if active_view is not None:
+            return True
+        view = revit.active_view
+        self.alert(
+            "ColorSplasher.Messages.ViewTypeNotSupported",
+            [view.ViewType if view else ""],
         )
-        self._table_data_2.Rows.Add(select_parameter_text, 0)
+        return False
 
-        if sel_cat != 0 and sender.SelectedIndex != 0:
-            names_par = [x.name for x in sel_cat.par]
-            for key_, value_ in zip(names_par, sel_cat.par):
-                self._table_data_2.Rows.Add(key_, value_)
-            self._all_parameters = [
-                (key_, value_) for key_, value_ in zip(names_par, sel_cat.par)
-            ]
-            self._list_box1.ItemsSource = self._table_data_2.DefaultView
-            self._list_box1.SelectedIndex = 0
-            from System.Windows.Media import Brushes
-
-            placeholder_text = self.get_locale_string(
-                "ColorSplasher.Placeholders.SearchParameters"
-            )
-            self._search_box.Text = placeholder_text
-            self._search_box.Foreground = Brushes.Gray
-            self.list_box2.ItemsSource = self._table_data_3.DefaultView
-            self._update_placeholder_visibility()
-        else:
-            self._all_parameters = []
-            self._list_box1.ItemsSource = self._table_data_2.DefaultView
-            self._list_box1.SelectedIndex = 0
-            self.list_box2.ItemsSource = self._table_data_3.DefaultView
-            self._update_placeholder_visibility()
-
-    def on_search_text_changed(self, sender, e):
-        """Filter parameters based on search text."""
-        placeholder_text = self.get_locale_string(
-            "ColorSplasher.Placeholders.SearchParameters"
-        )
-        if self._search_box.Text == placeholder_text:
-            return
+    def _apply_parameter_filter(self):
         search_text = self._search_box.Text.lower()
+        self._set_visible(self._txt_search_prompt, not search_text)
+        if search_text:
+            self._parameters.Items.Filter = System.Predicate[System.Object](
+                lambda parameter: search_text in parameter.name.lower()
+            )
+        else:
+            self._parameters.Items.Filter = None
 
-        filtered_table = DataTable("Data")
-        filtered_table.Columns.Add("Key", System.String)
-        filtered_table.Columns.Add("Value", System.Object)
+    def category_changed(self, sender, args):
+        category = self.selected_category
+        self._set_visible(self._txt_category_prompt, category is None)
+        self._parameters.ItemsSource = category.parameters if category else []
+        self._search_box.Text = ""
+        self._apply_parameter_filter()
+        self.parameter_changed(None, None)
 
-        select_parameter_text = self.get_locale_string(
-            "ColorSplasher.Messages.SelectParameter"
+    def search_text_changed(self, sender, args):
+        self._apply_parameter_filter()
+
+    def parameter_changed(self, sender, args):
+        category = self.selected_category
+        parameter = self.selected_parameter
+        self._set_visible(self._txt_parameter_prompt, parameter is None)
+        if category is None or parameter is None or active_view is None:
+            self._set_values([])
+            return
+        values = collect_values(active_view, category, parameter)
+        assign_distinct_colors(values)
+        self._set_values(values)
+
+    def value_clicked(self, sender, args):
+        """Pick a color for the clicked value, or select its elements on Shift+Click."""
+        value = self._values_list.SelectedItem
+        if value is None:
+            return
+        self._values_list.SelectedIndex = -1
+        if (
+            Input.Keyboard.Modifiers & Input.ModifierKeys.Shift
+        ) == Input.ModifierKeys.Shift:
+            events.execute_in_revit_context(select_elements, value.element_ids)
+            return
+        color_dialog = Forms.ColorDialog()
+        color_dialog.AllowFullOpen = True
+        color_dialog.Color = Drawing.Color.FromArgb(*value.color)
+        if color_dialog.ShowDialog() == Forms.DialogResult.OK:
+            picked = color_dialog.Color
+            value.set_color(int(picked.R), int(picked.G), int(picked.B))
+            self._refresh_value_colors()
+
+    def button_click_random_colors(self, sender, args):
+        assign_distinct_colors(self._values)
+        self._refresh_value_colors()
+
+    def button_click_gradient_colors(self, sender, args):
+        """Recolor all values on a gradient between the first and last color."""
+        if len(self._values) < 3:
+            return
+        start = self._values[0].color
+        end = self._values[-1].color
+        last_index = float(len(self._values) - 1)
+        for index, value in enumerate(self._values):
+            value.set_color(*interpolate_color(start, end, index / last_index))
+        self._refresh_value_colors()
+
+    def button_click_set_colors(self, sender, args):
+        if not self._values or not self._ensure_colorable_view():
+            return
+        category = self.selected_category
+        self._set_visible(
+            self._txt_color_scheme_hint,
+            category.uses_color_scheme and not HOST_APP.is_newer_than(2021),
         )
-        filtered_table.Rows.Add(select_parameter_text, 0)
+        events.execute_in_revit_context(
+            apply_colors,
+            category,
+            self.selected_parameter,
+            dict((value.name, value.color) for value in self._values),
+            self._override_options(),
+        )
 
-        if len(self._all_parameters) > 0:
-            for key_, value_ in self._all_parameters:
-                if search_text == "" or search_text in key_.lower():
-                    filtered_table.Rows.Add(key_, value_)
+    def button_click_reset(self, sender, args):
+        if not self._ensure_colorable_view():
+            return
+        category = self.selected_category
+        if category is None:
+            self.alert("ColorSplasher.Messages.NoCategorySelected")
+            return
+        parameter = self.selected_parameter
+        filter_prefix = get_filter_name(category, parameter, "") if parameter else None
+        events.execute_in_revit_context(reset_colors, filter_prefix)
 
-        selected_item_value = None
-        if self._list_box1.SelectedIndex != -1 and self._list_box1.SelectedIndex < len(
-            self._list_box1.Items
-        ):
-            sel_item = self._list_box1.SelectedItem
-            row = self._get_data_row_from_item(sel_item, self._list_box1.SelectedIndex)
-            if row is not None:
-                selected_item_value = row["Value"]
+    def button_click_create_legend(self, sender, args):
+        if not self._values:
+            return
+        category = self.selected_category
+        parameter = self.selected_parameter
+        legend_name = "{}{} - {}".format(
+            self.get_locale_string("ColorSplasher.LegendNamePrefix"),
+            category.name,
+            parameter.name,
+        )
+        label_prefix = "{} / {} - ".format(category.name, parameter.name)
+        events.execute_in_revit_context(
+            self._create_legend,
+            legend_name,
+            label_prefix,
+            list(self._values),
+            self._override_options().for_legend(),
+        )
 
-        self._list_box1.ItemsSource = filtered_table.DefaultView
+    def _create_legend(self, legend_name, label_prefix, values, options):
+        legends = query.get_all_views(doc, view_types=[DB.ViewType.Legend])
+        if not legends:
+            self.alert("ColorSplasher.Messages.NoLegendView")
+            return
+        try:
+            legend = create_legend(
+                legends[0], legend_name, label_prefix, values, options
+            )
+        except Exception as ex:
+            logger.debug("Legend creation failed.", exc_info=True)
+            self.alert("ColorSplasher.Messages.LegendFailed", [ex])
+            return
+        self.alert("ColorSplasher.Messages.LegendCreated", [legend.Name])
 
-        if selected_item_value is not None:
-            for indx in range(self._list_box1.Items.Count):
-                item = self._list_box1.Items[indx]
-                row = self._get_data_row_from_item(item, indx)
-                if row is not None:
-                    item_value = row["Value"]
-                    if item_value == selected_item_value:
-                        self._list_box1.SelectedIndex = indx
-                        break
+    def button_click_create_view_filters(self, sender, args):
+        if not self._values or not self._ensure_colorable_view():
+            return
+        category = self.selected_category
+        parameter = self.selected_parameter
+        events.execute_in_revit_context(
+            reset_colors, get_filter_name(category, parameter, "")
+        )
+        events.execute_in_revit_context(
+            self._create_filters,
+            category,
+            parameter,
+            list(self._values),
+            self._override_options(),
+        )
+
+    def _create_filters(self, category, parameter, values, options):
+        try:
+            create_filters(category, parameter, values, options)
+        except FilterCreationError as ex:
+            self.alert(ex.message_key)
+        except Exception:
+            logger.debug("View filter creation failed.", exc_info=True)
+            self.alert("ColorSplasher.Messages.FilterCreationFailed")
+
+    def save_load_color_scheme(self, sender, args):
+        if not self._values:
+            self.alert(
+                "ColorSplasher.SaveLoadDialog.NoValuesDetected.Message",
+                title_key="ColorSplasher.SaveLoadDialog.NoValuesDetected",
+            )
+            return
+        FormSaveLoadScheme(self).Show()
+
+    def save_scheme(self, path):
+        with open(path, "w") as scheme_file:
+            for value in self._values:
+                scheme_file.write("{}::R{}G{}B{}\n".format(value.name, *value.color))
+
+    def load_scheme(self, path, by_value):
+        """Recolor values from a scheme file, matched by value name or by position."""
+        with open(path, "r") as scheme_file:
+            entries = [parse_scheme_line(line) for line in scheme_file if line.strip()]
+        if by_value:
+            colors = dict(entries)
+            for value in self._values:
+                if value.name in colors:
+                    value.set_color(*colors[value.name])
+        else:
+            for value, (_, color) in zip(self._values, entries):
+                value.set_color(*color)
+        self._refresh_value_colors()
+
+    def window_closed(self, sender, args):
+        global splasher_window
+        try:
+            events.stop_events()
+            config.set_option("apply_line_color", self._chk_line_color.IsChecked)
+            config.set_option(
+                "apply_foreground_pattern_color", self._chk_foreground_pattern.IsChecked
+            )
+            config.set_option(
+                "apply_background_pattern_color", self._chk_background_pattern.IsChecked
+            )
+            script.save_config()
+            script.save_window_position(self)
+        except Exception:
+            logger.exception("Error while closing Color Splasher.")
+        finally:
+            splasher_window = None
+            script.set_envvar(WINDOW_ENV_KEY, None)
 
 
 class FormSaveLoadScheme(Forms.Form):
-    def __init__(self):
+    """Dialog to save the window's colors to, or load them from, a .cschn file."""
+
+    def __init__(self, splasher):
+        self._splasher = splasher
         self.Font = Drawing.Font(
             self.Font.FontFamily,
             9,
@@ -1672,580 +910,166 @@ class FormSaveLoadScheme(Forms.Form):
         self.TopMost = True
         self.InitializeComponent()
 
+    def _text(self, key):
+        return self._splasher.get_locale_string("ColorSplasher.SaveLoadDialog." + key)
+
     def InitializeComponent(self):
-        self._btn_save = Forms.Button()
-        self._btn_load = Forms.Button()
-        self._txt_ifloading = Forms.Label()
+        tooltip = Forms.ToolTip()
+        anchor_top_left = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        anchor_bottom_right = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Right
+
+        separator = Forms.Label()
+        separator.Anchor = anchor_top_left | Forms.AnchorStyles.Right
+        separator.Location = Drawing.Point(0, 0)
+        separator.Size = Drawing.Size(500, 2)
+        separator.BackColor = Drawing.Color.FromArgb(82, 53, 239)
+
+        if_loading = Forms.Label()
+        if_loading.Anchor = anchor_top_left
+        if_loading.Location = Drawing.Point(12, 10)
+        if_loading.Size = Drawing.Size(239, 23)
+        if_loading.Text = self._text("IfLoading")
+        tooltip.SetToolTip(if_loading, self._text("IfLoading.Tooltip"))
+
         self._radio_by_value = Forms.RadioButton()
-        self._radio_by_pos = Forms.RadioButton()
-        self.tooltip1 = Forms.ToolTip()
-        self._spr_top = Forms.Label()
-        self.SuspendLayout()
-        # Separator Top
-        self._spr_top.Anchor = (
-            Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
-        )
-        self._spr_top.Location = Drawing.Point(0, 0)
-        self._spr_top.Name = "spr_top"
-        self._spr_top.Size = Drawing.Size(500, 2)
-        self._spr_top.BackColor = Drawing.Color.FromArgb(82, 53, 239)
-        # If loading
-        self._txt_ifloading.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._txt_ifloading.Location = Drawing.Point(12, 10)
-        self._txt_ifloading.Text = "If Loading a Color Scheme:"
-        self._txt_ifloading.Name = "_radio_byValue"
-        self._txt_ifloading.Size = Drawing.Size(239, 23)
-        self.tooltip1.SetToolTip(self._txt_ifloading, "Only if loading.")
-        # Radio by value
-        self._radio_by_value.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._radio_by_value.Anchor = anchor_top_left
         self._radio_by_value.Location = Drawing.Point(19, 35)
-        self._radio_by_value.Text = "Load by Parameter Value."
-        self._radio_by_value.Name = "_radio_byValue"
         self._radio_by_value.Size = Drawing.Size(230, 25)
+        self._radio_by_value.Text = self._text("LoadByValue")
         self._radio_by_value.Checked = True
-        self.tooltip1.SetToolTip(
+        tooltip.SetToolTip(self._radio_by_value, self._text("LoadByValue.Tooltip"))
+
+        radio_by_position = Forms.RadioButton()
+        radio_by_position.Anchor = anchor_top_left
+        radio_by_position.Location = Drawing.Point(250, 35)
+        radio_by_position.Size = Drawing.Size(239, 25)
+        radio_by_position.Text = self._text("LoadByPosition")
+        tooltip.SetToolTip(radio_by_position, self._text("LoadByPosition.Tooltip"))
+
+        button_save = Forms.Button()
+        button_save.Anchor = anchor_bottom_right
+        button_save.Location = Drawing.Point(13, 70)
+        button_save.Size = Drawing.Size(236, 25)
+        button_save.Text = self._text("SaveButton")
+        button_save.Cursor = Forms.Cursors.Hand
+        button_save.Click += self.specify_path_save
+
+        button_load = Forms.Button()
+        button_load.Anchor = anchor_bottom_right
+        button_load.Location = Drawing.Point(253, 70)
+        button_load.Size = Drawing.Size(236, 25)
+        button_load.Text = self._text("LoadButton")
+        button_load.Cursor = Forms.Cursors.Hand
+        button_load.Click += self.specify_path_load
+
+        self.SuspendLayout()
+        for control in (
+            if_loading,
             self._radio_by_value,
-            "Only if loading. This will load the color scheme based on the Value the item had when saving.",
-        )
-        # Radio by Pos
-        self._radio_by_pos.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._radio_by_pos.Location = Drawing.Point(250, 35)
-        self._radio_by_pos.Text = "Load by Position in Window."
-        self._radio_by_pos.Name = "_radio_byValue"
-        self._radio_by_pos.Size = Drawing.Size(239, 25)
-        self.tooltip1.SetToolTip(
-            self._radio_by_pos,
-            "Only if loading. This will load the color scheme based on the Position the item had when saving.",
-        )
-        # Button Save
-        self._btn_save.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Right
-        self._btn_save.Location = Drawing.Point(13, 70)
-        self._btn_save.Name = "btn_cancel"
-        self._btn_save.Size = Drawing.Size(236, 25)
-        self._btn_save.Text = "Save Color Scheme"
-        self._btn_save.Cursor = Forms.Cursors.Hand
-        self._btn_save.Click += self.specify_path_save
-        # Button Load
-        self._btn_load.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Right
-        self._btn_load.Location = Drawing.Point(253, 70)
-        self._btn_load.Name = "btn_cancel"
-        self._btn_load.Size = Drawing.Size(236, 25)
-        self._btn_load.Text = "Load Color Scheme"
-        self._btn_load.Cursor = Forms.Cursors.Hand
-        self._btn_load.Click += self.specify_path_load
-        # Add Controls and Window configuration.
-        self.Controls.Add(self._txt_ifloading)
-        self.Controls.Add(self._radio_by_value)
-        self.Controls.Add(self._radio_by_pos)
-        self.Controls.Add(self._btn_save)
-        self.Controls.Add(self._btn_load)
-        self.Controls.Add(self._spr_top)
-        self.MaximizeBox = 0
-        self.MinimizeBox = 0
+            radio_by_position,
+            button_save,
+            button_load,
+            separator,
+        ):
+            self.Controls.Add(control)
+        self.MaximizeBox = False
+        self.MinimizeBox = False
         self.ClientSize = Drawing.Size(500, 105)
-        self.Name = "Save / Load Color Scheme"
-        self.Text = "Save / Load Color Scheme"
+        self.Text = self._text("Title")
         self.FormBorderStyle = Forms.FormBorderStyle.FixedSingle
+        self.Icon = Drawing.Icon(script.get_bundle_file("color_splasher.ico"))
         self.CenterToScreen()
-        icon_filename = __file__.replace("script.py", "color_splasher.ico")
-        if not exists(icon_filename):
-            icon_filename = __file__.replace("script.py", "color_splasher.ico")
-        self.Icon = Drawing.Icon(icon_filename)
         self.ResumeLayout(False)
 
-    def specify_path_save(self, sender, e):
-        with Forms.SaveFileDialog() as save_file_dialog:
-            wndw = getattr(ColorSplasherWindow, "_current_wndw", None)
-            if wndw:
-                save_file_dialog.Title = wndw.get_locale_string(
-                    "ColorSplasher.SaveLoadDialog.SaveTitle"
-                )
-            else:
-                save_file_dialog.Title = "Specify Path to Save Color Scheme"
-            save_file_dialog.Filter = "Color Scheme (*.cschn)|*.cschn"
-            save_file_dialog.RestoreDirectory = True
-            save_file_dialog.OverwritePrompt = True
-            save_file_dialog.InitialDirectory = System.Environment.GetFolderPath(
-                System.Environment.SpecialFolder.Desktop
-            )
-            save_file_dialog.FileName = "Color Scheme.cschn"
-            wndw = getattr(ColorSplasherWindow, "_current_wndw", None)
-            if not wndw or wndw.list_box2.Items.Count == 0:
-                if wndw:
-                    wndw.Hide()
-                self.Hide()
-                if wndw:
-                    no_colors_title = wndw.get_locale_string(
-                        "ColorSplasher.SaveLoadDialog.NoColorsDetected"
-                    )
-                    no_colors_msg = wndw.get_locale_string(
-                        "ColorSplasher.SaveLoadDialog.NoColorsDetected.Message"
-                    )
-                    UI.TaskDialog.Show(no_colors_title, no_colors_msg)
-                else:
-                    UI.TaskDialog.Show(
-                        "No Colors Detected",
-                        "The list of values in the main window is empty. Please, select a category and parameter to add items with colors.",
-                    )
-                if wndw:
-                    wndw.Show()
-                self.Close()
-            elif save_file_dialog.ShowDialog() == Forms.DialogResult.OK:
-                self.save_path_to_file(save_file_dialog.FileName)
-                self.Close()
+    def _desktop(self):
+        return System.Environment.GetFolderPath(
+            System.Environment.SpecialFolder.Desktop
+        )
 
-    def save_path_to_file(self, new_path):
+    def specify_path_save(self, sender, args):
+        path = forms.save_file(
+            files_filter=SCHEME_FILES_FILTER,
+            init_dir=self._desktop(),
+            default_name="Color Scheme.cschn",
+            title=self._text("SaveTitle"),
+        )
+        if not path:
+            return
         try:
-            wndw = getattr(ColorSplasherWindow, "_current_wndw", None)
-            if not wndw:
-                return
-            # Save location selected in save file dialog.
-            with open(new_path, "w") as file:
-                for i in range(wndw.list_box2.Items.Count):
-                    item = wndw.list_box2.Items[i]
-                    if hasattr(item, "Row"):
-                        value_item = item.Row["Value"]
-                        item_key = item.Row["Key"]
-                    else:
-                        value_item = wndw._table_data_3.Rows[i]["Value"]
-                        item_key = wndw._table_data_3.Rows[i]["Key"]
-                    color_inst = value_item.colour
-                    file.write(
-                        item_key
-                        + "::R"
-                        + str(color_inst.R)
-                        + "G"
-                        + str(color_inst.G)
-                        + "B"
-                        + str(color_inst.B)
-                        + "\n"
-                    )
+            self._splasher.save_scheme(path)
         except Exception as ex:
-            external_event_trace()
-            wndw = getattr(ColorSplasherWindow, "_current_wndw", None)
-            if wndw:
-                error_title = wndw.get_locale_string(
-                    "ColorSplasher.SaveLoadDialog.ErrorSaving"
-                )
-                UI.TaskDialog.Show(error_title, str(ex))
-            else:
-                UI.TaskDialog.Show("Error Saving Scheme", str(ex))
+            logger.debug("Saving color scheme failed.", exc_info=True)
+            self._splasher.show_message(str(ex), self._text("ErrorSaving"))
+        self.Close()
 
-    def specify_path_load(self, sender, e):
-        with Forms.OpenFileDialog() as open_file_dialog:
-            wndw = getattr(ColorSplasherWindow, "_current_wndw", None)
-            if wndw:
-                open_file_dialog.Title = wndw.get_locale_string(
-                    "ColorSplasher.SaveLoadDialog.LoadTitle"
-                )
-            else:
-                open_file_dialog.Title = "Specify Path to Load Color Scheme"
-            open_file_dialog.Filter = "Color Scheme (*.cschn)|*.cschn"
-            open_file_dialog.RestoreDirectory = True
-            open_file_dialog.InitialDirectory = System.Environment.GetFolderPath(
-                System.Environment.SpecialFolder.Desktop
-            )
-            if not wndw or wndw.list_box2.Items.Count == 0:
-                if wndw:
-                    wndw.Hide()
-                self.Hide()
-                if wndw:
-                    no_values_title = wndw.get_locale_string(
-                        "ColorSplasher.SaveLoadDialog.NoValuesDetected"
-                    )
-                    no_values_msg = wndw.get_locale_string(
-                        "ColorSplasher.SaveLoadDialog.NoValuesDetected.Message"
-                    )
-                    UI.TaskDialog.Show(no_values_title, no_values_msg)
-                else:
-                    UI.TaskDialog.Show(
-                        "No Values Detected",
-                        "The list of values in the main window is empty. Please, select a category and parameter to add items to apply colors.",
-                    )
-                if wndw:
-                    wndw.Show()
-                self.Close()
-            elif open_file_dialog.ShowDialog() == Forms.DialogResult.OK:
-                self.load_path_from_file(open_file_dialog.FileName)
-                self.Close()
-
-    def load_path_from_file(self, path):
-        wndw = getattr(ColorSplasherWindow, "_current_wndw", None)
-        if not isfile(path):
-            if wndw:
-                error_title = wndw.get_locale_string(
-                    "ColorSplasher.SaveLoadDialog.ErrorLoading"
-                )
-                error_msg = wndw.get_locale_string(
-                    "ColorSplasher.SaveLoadDialog.FileDoesNotExist"
-                )
-                UI.TaskDialog.Show(error_title, error_msg)
-            else:
-                UI.TaskDialog.Show("Error Loading Scheme", "The file does not exist.")
-        else:
-            if not wndw:
-                return
-            try:
-                with open(path, "r") as file:
-                    all_lines = file.readlines()
-                    if self._radio_by_value.Checked:
-                        for line in all_lines:
-                            line_val = line.strip().split("::R")
-                            par_val = line_val[0]
-                            rgb_result = split(r"[RGB]", line_val[1])
-                            for item in wndw._table_data_3.Rows:
-                                if item["Key"] == par_val:
-                                    self.apply_color_to_item(rgb_result, item)
-                                    break
-                    else:
-                        for ind, line in enumerate(all_lines):
-                            if ind < len(wndw._table_data_3.Rows):
-                                line_val = line.strip().split("::R")
-                                par_val = line_val[0]
-                                rgb_result = split(r"[RGB]", line_val[1])
-                                item = wndw._table_data_3.Rows[ind]
-                                self.apply_color_to_item(rgb_result, item)
-                            else:
-                                break
-                    wndw._update_listbox_colors()
-            except Exception as ex:
-                external_event_trace()
-                if wndw:
-                    error_title = wndw.get_locale_string(
-                        "ColorSplasher.SaveLoadDialog.ErrorLoading"
-                    )
-                    UI.TaskDialog.Show(error_title, str(ex))
-                else:
-                    UI.TaskDialog.Show("Error Loading Scheme", str(ex))
-
-    def apply_color_to_item(self, rgb_result, item):
-        r = int(rgb_result[0])
-        g = int(rgb_result[1])
-        b = int(rgb_result[2])
-        item["Value"].n1 = r
-        item["Value"].n2 = g
-        item["Value"].n3 = b
-        item["Value"].colour = Drawing.Color.FromArgb(r, g, b)
-
-
-def get_active_view(ac_doc):
-    uidoc = HOST_APP.uidoc
-    selected_view = ac_doc.ActiveView
-    if (
-        selected_view.ViewType == DB.ViewType.ProjectBrowser
-        or selected_view.ViewType == DB.ViewType.SystemBrowser
-    ):
-        selected_view = ac_doc.GetElement(uidoc.GetOpenUIViews()[0].ViewId)
-    if not selected_view.CanUseTemporaryVisibilityModes():
-        wndw = getattr(SubscribeView, "_wndw", None)
-        task2 = None
-        try:
-            if wndw:
-                task2 = UI.TaskDialog(
-                    wndw.get_locale_string("ColorSplasher.TaskDialog.Title")
-                )
-                view_type_msg = wndw.get_locale_string(
-                    "ColorSplasher.Messages.ViewTypeNotSupported"
-                )
-                task2.MainInstruction = view_type_msg.replace(
-                    "{0}", str(selected_view.ViewType)
-                )
-                wndw.Topmost = False
-            else:
-                task2 = UI.TaskDialog("Color Elements by Parameter")
-                task2.MainInstruction = (
-                    "Visibility settings cannot be modified in "
-                    + str(selected_view.ViewType)
-                    + " views. Please, change your current view."
-                )
-        except Exception:
-            external_event_trace()
-            task2 = UI.TaskDialog("Color Elements by Parameter")
-            task2.MainInstruction = (
-                "Visibility settings cannot be modified in "
-                + str(selected_view.ViewType)
-                + " views. Please, change your current view."
-            )
-        task2.Show()
-        try:
-            if wndw:
-                wndw.Topmost = True
-        except Exception:
-            external_event_trace()
-        return 0
-    else:
-        return selected_view
-
-
-def get_parameter_value(para):
-    if not para.HasValue:
-        return "None"
-    if para.StorageType == DB.StorageType.Double:
-        return get_double_value(para)
-    if para.StorageType == DB.StorageType.ElementId:
-        return get_elementid_value(para)
-    if para.StorageType == DB.StorageType.Integer:
-        return get_integer_value(para)
-    if para.StorageType == DB.StorageType.String:
-        return para.AsString()
-    else:
-        return "None"
-
-
-def get_double_value(para):
-    return para.AsValueString()
-
-
-def get_elementid_value(para, doc_param=None):
-    if doc_param is None:
-        doc_param = revit.DOCS.doc
-    id_val = para.AsElementId()
-    elementid_value = get_elementid_value_func()
-    if elementid_value(id_val) >= 0:
-        return DB.Element.Name.GetValue(doc_param.GetElement(id_val))
-    else:
-        return "None"
-
-
-def get_integer_value(para):
-    version = int(HOST_APP.version)
-    if version > 2021:
-        param_type = para.Definition.GetDataType()
-        if DB.SpecTypeId.Boolean.YesNo == param_type:
-            return "True" if para.AsInteger() == 1 else "False"
-        else:
-            return para.AsValueString()
-    else:
-        param_type = para.Definition.ParameterType
-        if DB.ParameterType.YesNo == param_type:
-            return "True" if para.AsInteger() == 1 else "False"
-        else:
-            return para.AsValueString()
-
-
-def strip_accents(text):
-    return "".join(
-        char for char in normalize("NFKD", text) if unicode_category(char) != "Mn"
-    )
-
-
-def random_color():
-    r = randint(0, 230)
-    g = randint(0, 230)
-    b = randint(0, 230)
-    return r, g, b
-
-
-def get_range_values(category, param, new_view):
-    doc_param = new_view.Document
-    for sample_bic in System.Enum.GetValues(DB.BuiltInCategory):
-        if category.int_id == int(sample_bic):
-            bic = sample_bic
-            break
-    collector = (
-        DB.FilteredElementCollector(doc_param, new_view.Id)
-        .OfCategory(bic)
-        .WhereElementIsNotElementType()
-        .WhereElementIsViewIndependent()
-        .ToElements()
-    )
-    list_values = []
-    used_colors = {(x.n1, x.n2, x.n3) for x in list_values}
-    for ele in collector:
-        ele_par = (
-            ele if param.param_type != 1 else doc_param.GetElement(ele.GetTypeId())
+    def specify_path_load(self, sender, args):
+        path = forms.pick_file(
+            files_filter=SCHEME_FILES_FILTER,
+            init_dir=self._desktop(),
+            title=self._text("LoadTitle"),
         )
-        for pr in ele_par.Parameters:
-            if pr.Definition.Name == param.par.Name:
-                value = get_parameter_value(pr) or "None"
-                match = [x for x in list_values if x.value == value]
-                if match:
-                    match[0].ele_id.Add(ele.Id)
-                    if pr.StorageType == DB.StorageType.Double:
-                        match[0].values_double.Add(pr.AsDouble())
-                else:
-                    while True:
-                        r, g, b = random_color()
-                        if (r, g, b) not in used_colors:
-                            used_colors.add((r, g, b))
-                            val = ValuesInfo(pr, value, ele.Id, r, g, b)
-                            list_values.append(val)
-                            break
-                break
-    none_values = [x for x in list_values if x.value == "None"]
-    list_values = [x for x in list_values if x.value != "None"]
-    list_values = sorted(list_values, key=lambda x: x.value, reverse=False)
-    if len(list_values) > 1:
+        if not path:
+            return
         try:
-            first_value = list_values[0].value
-            indx_del = get_index_units(first_value)
-            if indx_del == 0:
-                list_values = sorted(list_values, key=lambda x: safe_float(x.value))
-            elif 0 < indx_del < len(first_value):
-                list_values = sorted(
-                    list_values, key=lambda x: safe_float(x.value[:-indx_del])
-                )
-        except ValueError as ve:
-            print("ValueError during sorting: {}".format(ve))
-        except Exception:
-            external_event_trace()
-    if none_values and any(len(x.ele_id) > 0 for x in none_values):
-        list_values.extend(none_values)
-    return list_values
+            self._splasher.load_scheme(path, self._radio_by_value.Checked)
+        except Exception as ex:
+            logger.debug("Loading color scheme failed.", exc_info=True)
+            self._splasher.show_message(str(ex), self._text("ErrorLoading"))
+        self.Close()
 
 
-def safe_float(value):
-    try:
-        return float(value)
-    except ValueError:
-        return float("inf")  # Place non-numeric values at the end
+def activate_open_window():
+    """Bring a window left open by an earlier run to the front.
 
-
-def get_used_categories_parameters(cat_exc, acti_view, doc_param=None):
-    try:
-        if doc_param is None:
-            doc_param = acti_view.Document
-    except (AttributeError, RuntimeError):
-        doc_param = revit.DOCS.doc
-    collector = (
-        DB.FilteredElementCollector(doc_param, acti_view.Id)
-        .WhereElementIsNotElementType()
-        .WhereElementIsViewIndependent()
-        .ToElements()
-    )
-    list_cat = []
-    for ele in collector:
-        if ele.Category is None:
-            continue
-        elementid_value_getter = get_elementid_value_func()
-        current_int_cat_id = elementid_value_getter(ele.Category.Id)
-        if (
-            current_int_cat_id in cat_exc
-            or current_int_cat_id >= -1
-            or any(x.int_id == current_int_cat_id for x in list_cat)
-        ):
-            continue
-        list_parameters = []
-        for par in ele.Parameters:
-            if par.Definition.BuiltInParameter not in (
-                DB.BuiltInParameter.ELEM_CATEGORY_PARAM,
-                DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT,
-            ):
-                list_parameters.append(ParameterInfo(0, par))
-        typ = ele.Document.GetElement(ele.GetTypeId())
-        if typ:
-            for par in typ.Parameters:
-                if par.Definition.BuiltInParameter not in (
-                    DB.BuiltInParameter.ELEM_CATEGORY_PARAM,
-                    DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT,
-                ):
-                    list_parameters.append(ParameterInfo(1, par))
-        list_parameters = sorted(list_parameters, key=lambda x: x.name.upper())
-        list_cat.append(CategoryInfo(ele.Category, list_parameters))
-    list_cat = sorted(list_cat, key=lambda x: x.name)
-    return list_cat
-
-
-def external_event_trace():
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    logger.debug("Exception type: %s", exc_type)
-    logger.debug("Exception value: %s", exc_value)
-    logger.debug("Traceback details:")
-    for tb in extract_tb(exc_traceback):
-        logger.debug(
-            "File: %s, Line: %s, Function: %s, Code: %s", tb[0], tb[1], tb[2], tb[3]
-        )
-
-
-def get_index_units(str_value):
-    for let in str_value[::-1]:
-        if let.isdigit():
-            return str_value[::-1].index(let)
-    return -1
-
-
-def get_color_shades(base_color, apply_line, apply_foreground, apply_background):
-    """Generate color shades for different override types.
-
-    Returns tuple: (line_color, foreground_color, background_color)
-    Foreground and background use full base color. Line color is faded when
-    used with pattern colors.
+    Returns:
+        bool: True when an open window was found; stale references are cleared.
     """
-    r, g, b = base_color.Red, base_color.Green, base_color.Blue
-    foreground_color = base_color
-    background_color = base_color
-
-    if apply_line and (apply_foreground or apply_background):
-        line_r = max(0, min(255, int(r + (255 - r) * 0.6)))
-        line_g = max(0, min(255, int(g + (255 - g) * 0.6)))
-        line_b = max(0, min(255, int(b + (255 - b) * 0.6)))
-        gray = (line_r + line_g + line_b) / 3
-        line_r = int(line_r * 0.7 + gray * 0.3)
-        line_g = int(line_g * 0.7 + gray * 0.3)
-        line_b = int(line_b * 0.7 + gray * 0.3)
-        line_color = DB.Color(line_r, line_g, line_b)
-    else:
-        line_color = base_color
-
-    return line_color, foreground_color, background_color
+    window = script.get_envvar(WINDOW_ENV_KEY)
+    if window is None:
+        return False
+    try:
+        is_open = window.IsLoaded
+    except Exception:
+        is_open = False
+    if not is_open:
+        script.set_envvar(WINDOW_ENV_KEY, None)
+        return False
+    if window.WindowState == Windows.WindowState.Minimized:
+        window.WindowState = Windows.WindowState.Normal
+    window.Activate()
+    return True
 
 
 def launch_color_splasher():
-    """Main entry point for Color Splasher tool."""
-    try:
-        doc = revit.DOCS.doc
-        if doc is None:
-            raise AttributeError("Revit document is not available")
-    except (AttributeError, RuntimeError, Exception):
-        error_msg = UI.TaskDialog("Color Splasher Error")
-        error_msg.MainInstruction = "Unable to access Revit document"
-        error_msg.MainContent = (
-            "Please ensure you have a Revit project open and try again."
+    global splasher_window
+    xaml_path = script.get_bundle_file(XAML_FILE)
+
+    def _t(key):
+        return applocales.get_locale_string_from_xaml(xaml_path, key)
+
+    update_context()
+    if doc is None:
+        forms.alert(
+            _t("ColorSplasher.Messages.UnableToAccessDocument"),
+            sub_msg=_t("ColorSplasher.Messages.UnableToAccessDocument.Content"),
+            title=_t("ColorSplasher.TaskDialog.Error"),
+            exitscript=True,
         )
-        error_msg.Show()
-        return
-
-    sel_view = get_active_view(doc)
-    if sel_view != 0:
-        categ_inf_used = get_used_categories_parameters(CAT_EXCLUDED, sel_view, doc)
-        # Window
-        event_handler = ApplyColors()
-        ext_event = UI.ExternalEvent.Create(event_handler)
-
-        event_handler_uns = SubscribeView()
-        ext_event_uns = UI.ExternalEvent.Create(event_handler_uns)
-
-        event_handler_filters = CreateFilters()
-        ext_event_filters = UI.ExternalEvent.Create(event_handler_filters)
-
-        event_handler_reset = ResetColors()
-        ext_event_reset = UI.ExternalEvent.Create(event_handler_reset)
-
-        event_handler_Legend = CreateLegend()
-        ext_event_legend = UI.ExternalEvent.Create(event_handler_Legend)
-
-        xaml_file = __file__.replace("script.py", "ColorSplasherWindow.xaml")
-        wndw = ColorSplasherWindow(
-            xaml_file,
-            categ_inf_used,
-            ext_event,
-            ext_event_uns,
-            sel_view,
-            ext_event_reset,
-            ext_event_legend,
-            ext_event_filters,
+    if active_view is None:
+        forms.alert(
+            _t("ColorSplasher.Messages.ViewTypeNotSupported").format(
+                getattr(revit.active_view, "ViewType", "")
+            ),
+            title=_t("ColorSplasher.TaskDialog.Title"),
+            exitscript=True,
         )
-        if wndw._categories.Items.Count > 0:
-            wndw._categories.SelectedIndex = 0
-        wndw.show()
 
-        SubscribeView._wndw = wndw
-        ApplyColors._wndw = wndw
-        ResetColors._wndw = wndw
-        CreateLegend._wndw = wndw
-        CreateFilters._wndw = wndw
-        ColorSplasherWindow._current_wndw = wndw
+    splasher_window = ColorSplasherWindow()
+    script.set_envvar(WINDOW_ENV_KEY, splasher_window)
+    events.handle("view-activated", "doc-closed")(refresh_window)
+    splasher_window.show()
 
 
 if __name__ == "__main__":
-    launch_color_splasher()
+    if not activate_open_window():
+        launch_color_splasher()
