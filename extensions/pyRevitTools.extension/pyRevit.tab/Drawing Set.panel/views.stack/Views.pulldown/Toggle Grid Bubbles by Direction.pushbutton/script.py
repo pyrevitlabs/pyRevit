@@ -1,4 +1,10 @@
 # -*- coding: UTF-8 -*-
+"""Toggle grid bubbles in the active view by grid direction.
+
+Operates on the selected grids, or on every grid visible in the active view
+when nothing is selected.
+"""
+
 import math
 
 from pyrevit import DB, script, forms, revit
@@ -35,15 +41,14 @@ class GridsCollector:
     def __init__(self, view):
         self.view = view
         selected_elements = revit.get_selection().elements
-        self.selection = (
-            revit.query.get_elements_by_categories(
-                [DB.BuiltInCategory.OST_Grids], elements=selected_elements
-            )
-            if selected_elements
-            else []
+        self.from_selection = bool(selected_elements)
+        grids = revit.query.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_Grids],
+            elements=selected_elements,
+            view_id=view.Id,
         )
-        self.from_selection = bool(self.selection)
-        self._analyze_grids(self.selection or revit.query.get_all_grids())
+        self.selection = grids if self.from_selection else []
+        self._analyze_grids(grids)
 
     def _is_grid_segment(self, grid):
         """Check if a grid is a segment (not a full grid)."""
@@ -115,6 +120,13 @@ class GridsCollector:
 
 
 class CustomGrids:
+    """Classifies grids by direction and toggles their bubbles in one view.
+
+    Note:
+        Bubble changes open their own transactions; callers are expected to
+        wrap the whole session in a transaction group.
+    """
+
     def __init__(
         self,
         view,
@@ -151,6 +163,7 @@ class CustomGrids:
         self.right_left_collapsed = False
         self.top_bottom_collapsed = False
 
+        self._original_selection = []
         self._all_active_grids_selected = False
 
         # Setyp transformation only if not in elevation or all grids mode
@@ -226,16 +239,18 @@ class CustomGrids:
             if not self._all_active_grids_selected:
                 active_grids = self.get_active_grids()
                 if active_grids:
-                    revit.get_selection().set_to(active_grids)
+                    selection = revit.get_selection()
+                    self._original_selection = selection.element_ids
+                    selection.set_to(active_grids)
                     self._all_active_grids_selected = True
         except Exception:
             pass
 
     def unhighlight_grids(self):
-        """Clear selection."""
+        """Restore the selection that was active before highlighting."""
         try:
             if self._all_active_grids_selected:
-                revit.get_selection().clear()
+                revit.get_selection().set_to(self._original_selection)
                 self._all_active_grids_selected = False
         except Exception:
             pass
@@ -365,7 +380,6 @@ class CustomGrids:
 
     def are_bubbles_visible(self, direction=None, reverse=False):
         """Check if the bubbles of the grids are visible."""
-
         if not direction:
             # Check bubbles for only active grids
             active_grids = self.get_active_grids()
@@ -438,6 +452,7 @@ class CustomGrids:
         return self.filter_grids_by_orientation(is_vertical=False)
 
     def get_bounding_box_corner(self, grid, corner):
+        """Return the view bounding box ``min`` or ``max`` point, or None if unavailable."""
         bbox = grid.get_BoundingBox(self.__view)
         if bbox and bbox.Enabled:
             return bbox.Min if corner == "min" else bbox.Max
@@ -445,7 +460,6 @@ class CustomGrids:
 
     def toggle_bubbles(self, grid, action, end=None):
         """Toggle the bubbles of a grid in the view."""
-
         map_end = {0: DB.DatumEnds.End0, 1: DB.DatumEnds.End1}
         if end == 0 or end == 1:
             if action == "hide":
@@ -509,6 +523,11 @@ class CustomGrids:
 
 
 class ToggleGridWindow(forms.WPFWindow):
+    """Bubble toggle dialog.
+
+    ``result`` is ``"ok"``, ``"cancel"`` or ``{"action": "back"}`` after closing.
+    """
+
     resolve_theme = True
 
     def __init__(
@@ -596,7 +615,6 @@ class ToggleGridWindow(forms.WPFWindow):
 
     def update_status_display(self):
         """Update the status display to show current operation scope."""
-
         total_grids = len(self.grids.grids())
         active_grids = len(self.grids.get_active_grids())
 
@@ -668,7 +686,7 @@ class ToggleGridWindow(forms.WPFWindow):
         angle_tolerance,
         grid_collector=None,
     ):
-        """Factory method to handle a clean exit"""
+        """Build the window, or return None if no grids can be toggled."""
         window = cls(
             xaml_source,
             view,
@@ -681,15 +699,18 @@ class ToggleGridWindow(forms.WPFWindow):
         return window
 
     def is_view_elevation(self):
+        """Return True for elevation and section views."""
         return self.view.ViewType in ELEVATION_VIEWS
 
     def on_hide_all_checked(self, sender, e):
+        """Hide every bubble unless the checkboxes are being synced."""
         if self.updating_checkboxes:
             return
         self.update_checkboxes(False)
         self.grids.hide_all_bubbles()
 
     def on_show_all_checked(self, sender, e):
+        """Show every bubble unless the checkboxes are being synced."""
         if self.updating_checkboxes:
             return
         self.update_checkboxes(True)
@@ -697,7 +718,6 @@ class ToggleGridWindow(forms.WPFWindow):
 
     def update_checkboxes(self, state=None):
         """Update checkboxes visibility based on the state of the grids."""
-
         self.updating_checkboxes = True
         if state is not None:
             for checkbox in self.checkboxes.values():
@@ -716,7 +736,6 @@ class ToggleGridWindow(forms.WPFWindow):
 
     def toggle_bubbles(self, sender, e):
         """Toggle the bubbles of the grids based on the checkbox state."""
-
         if self.updating_checkboxes:
             return
         action = "show" if sender.IsChecked else "hide"
@@ -786,17 +805,20 @@ class ToggleGridWindow(forms.WPFWindow):
         self.Close()
 
     def cancel(self, sender, args):
+        """Close and roll back all bubble changes."""
         self.grids.unhighlight_grids()
         self.result = "cancel"
         self.Close()
 
     def confirm(self, sender, args):
+        """Close and keep the bubble changes."""
         self.grids.unhighlight_grids()
         self.result = "ok"
         self.Close()
 
 
 def validate_active_view():
+    """Alert and return False if the active view type is not supported."""
     if active_view.ViewType == DB.ViewType.ProjectBrowser:
         forms.alert(
             "You've selected a view in the project browser. Click inside the active view and try again."
