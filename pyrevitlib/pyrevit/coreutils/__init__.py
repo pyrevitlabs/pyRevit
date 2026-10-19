@@ -671,10 +671,17 @@ def cleanup_filename(file_name, windows_safe=False):
 
     Args:
         file_name (str): file name
-        windows_safe (bool): whether to use windows safe characters
+        windows_safe (bool): apply Windows naming rules instead of keeping
+            only word characters: remove slashes, ``:*?"<>|`` and control
+            characters, then trim leading spaces and trailing spaces and
+            dots. Leading dots are kept.
 
     Returns:
         (str): cleaned up file name
+
+    Invariant:
+        `pathtemplate` cleans every folder name with ``windows_safe=True``,
+        so changing that branch changes Print Sheets output folders too.
 
     Examples:
         ```python
@@ -688,7 +695,8 @@ def cleanup_filename(file_name, windows_safe=False):
         "Perforations 18 (New).txt"
     """
     if windows_safe:
-        return re.sub(r'[\/:*?"<>|]', "", file_name)
+        cleaned = re.sub(r'[\\/:*?"<>|\x00-\x1f\x7f]', "", file_name)
+        return cleaned.lstrip(" ").rstrip(" .")
     else:
         return re.sub(r'[^\w_.() -#]|["]', "", file_name)
 
