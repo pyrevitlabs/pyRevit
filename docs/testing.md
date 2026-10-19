@@ -52,7 +52,7 @@ flowchart LR
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **14 C# projects across 22 project/framework runs** and the API-free Python suite. Local validation on 2026-10-19: **1,902 C# cases and 142 Python cases, zero skips**, including the Dynamo parser regressions inherited from PR1. Counts include each framework run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **14 C# projects across 22 project/framework runs** and the API-free Python suite. Local validation on 2026-10-19: **1,902 C# cases and 150 Python cases, zero skips**, including the Dynamo parser regressions inherited from PR1. Counts include each framework run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
