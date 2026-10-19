@@ -109,7 +109,7 @@ def assert_dynamo_execution(ui_application=None):
             the hosted pyRevit app.
 
     Returns:
-        dict[str, object]: Actual versions and execution evidence for a local matrix.
+        evidence (dict): Actual versions and execution evidence for a local matrix.
 
     Raises:
         AssertionError: No document, unsafe workspace, failed startup or wrong output.
