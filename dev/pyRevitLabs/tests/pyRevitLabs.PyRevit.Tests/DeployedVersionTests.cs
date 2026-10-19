@@ -2,18 +2,16 @@ using System;
 using System.IO;
 using System.Reflection;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
-using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
+using NUnit.Framework;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.PyRevit.Tests {
-    [TestClass]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class DeployedVersionTests {
         private const string VersionFileContent = "9.9.9.99999+9999";
         private const string BuiltAssemblyName = "pyRevitLabs.PyRevit.dll";
@@ -24,7 +22,7 @@ namespace pyRevitLabs.PyRevit.Tests {
         /// A clone is valid to PyRevitClone as long as pyrevitlib/pyrevit exists, so the
         /// fixture is only the version file plus whichever framework trees the test needs.
         /// </summary>
-        [TestInitialize]
+        [SetUp]
         public void CreateClone() {
             _clonePath = Path.Combine(
                 Path.GetTempPath(), "pyRevitDeployedVersion_" + Guid.NewGuid().ToString("N"));
@@ -34,7 +32,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             File.WriteAllText(Path.Combine(moduleDir, "version"), VersionFileContent);
         }
 
-        [TestCleanup]
+        [TearDown]
         public void RemoveClone() {
             if (Directory.Exists(_clonePath))
                 Directory.Delete(_clonePath, recursive: true);
@@ -58,48 +56,40 @@ namespace pyRevitLabs.PyRevit.Tests {
                 overwrite: true);
         }
 
-        [TestMethod]
+        [Test]
         public void UnbuiltCloneReportsTheVersionFile() {
-            Assert.AreEqual(
-                VersionFileContent, PyRevitClone.GetDeployedVersion(_clonePath, null));
+            Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, null), Is.EqualTo(VersionFileContent));
         }
 
-        [TestMethod]
+        [Test]
         public void BuiltCloneReportsTheAssemblyOverTheVersionFile() {
             StageBuiltAssembly(PyRevitConsts.NetFxFolder);
 
-            Assert.AreNotEqual(
-                VersionFileContent, PyRevitClone.GetDeployedVersion(_clonePath, null));
-            Assert.AreEqual(BuiltAssemblyVersion, PyRevitClone.GetDeployedVersion(_clonePath, null));
+            Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, null), Is.Not.EqualTo(VersionFileContent));
+            Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, null), Is.EqualTo(BuiltAssemblyVersion));
         }
 
-        [TestMethod]
+        [Test]
         public void RequestedFrameworkSelectsTheTreeToRead() {
             StageBuiltAssembly(PyRevitConsts.NetFxFolder);
 
-            Assert.AreEqual(
-                BuiltAssemblyVersion,
-                PyRevitClone.GetDeployedVersion(_clonePath, isNetCore: false),
-                "A netfx host must read the netfx tree, which is the only one built here.");
+            Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, isNetCore: false), Is.EqualTo(BuiltAssemblyVersion), "A netfx host must read the netfx tree, which is the only one built here.");
         }
 
-        [TestMethod]
+        [Test]
         public void MissingRequestedFrameworkFallsBackToTheVersionFile() {
             StageBuiltAssembly(PyRevitConsts.NetFxFolder);
 
-            Assert.AreEqual(
-                VersionFileContent,
-                PyRevitClone.GetDeployedVersion(_clonePath, isNetCore: true),
-                "Asking for a tree the clone does not have must not read the other one.");
+            Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, isNetCore: true), Is.EqualTo(VersionFileContent), "Asking for a tree the clone does not have must not read the other one.");
         }
 
-        [TestMethod]
+        [Test]
         public void VersionFileFallbackIsTrimmed() {
             File.WriteAllText(
                 Path.Combine(_clonePath, "pyrevitlib", "pyrevit", "version"),
                 VersionFileContent + "\n");
 
-            Assert.AreEqual(VersionFileContent, PyRevitClone.GetDeployedVersion(_clonePath, null));
+            Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, null), Is.EqualTo(VersionFileContent));
         }
     }
 }

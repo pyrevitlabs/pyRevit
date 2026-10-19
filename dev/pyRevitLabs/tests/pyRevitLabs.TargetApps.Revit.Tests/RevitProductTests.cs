@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,15 +20,16 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
     /// resolver a set of records with a deliberate build collision and pins the
     /// outcome to the identity the caller can actually supply.
     /// </remarks>
-    [TestClass()]
-    [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestFixture()]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class RevitProductDataTests {
         /// <summary>The host database is sourced from the development branch.</summary>
-        [TestMethod]
+        [Test]
         public void HostFileURL_UsesDevelopBranch_Test() {
-            Assert.IsTrue(RevitProductData.HostFileURL.Contains("develop"));
-            Assert.IsTrue(RevitProductData.HostFileURL.Contains("release/pyrevit-hosts.json"));
+            Assert.That(RevitProductData.HostFileURL.Contains("develop"), Is.True);
+            Assert.That(RevitProductData.HostFileURL.Contains("release/pyrevit-hosts.json"), Is.True);
         }
 
         private const string Shared2020_2021Build = "20220517_1515";
@@ -68,60 +69,60 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             };
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_CollidingBuild_UsesFullVersionOfHost() {
             var records = Colliding2020And2021Records();
 
             var for2020 = RevitProductData.FindProductInfo(records, Shared2020_2021Build,
                                                             productVersion: new Version(20, 2, 90, 12));
-            Assert.AreEqual("2020.2.9", for2020.release);
+            Assert.That(for2020.release, Is.EqualTo("2020.2.9"));
 
             var for2021 = RevitProductData.FindProductInfo(records, Shared2020_2021Build,
                                                             productVersion: new Version(21, 1, 70, 21));
-            Assert.AreEqual("2021.1.7", for2021.release);
+            Assert.That(for2021.release, Is.EqualTo("2021.1.7"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_CollidingBuild_UsesInstallPathOfHost() {
             var records = Colliding2020And2021Records();
 
             var for2020 = RevitProductData.FindProductInfo(records, Shared2020_2021Build,
                                                             installPath: @"C:\Program Files\Autodesk\Revit 2020\");
-            Assert.AreEqual("2020.2.9", for2020.release);
+            Assert.That(for2020.release, Is.EqualTo("2020.2.9"));
 
             var for2021 = RevitProductData.FindProductInfo(records, Shared2020_2021Build,
                                                             installPath: @"C:\Program Files\Autodesk\Revit 2021\");
-            Assert.AreEqual("2021.1.7", for2021.release);
+            Assert.That(for2021.release, Is.EqualTo("2021.1.7"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_CollidingBuild_WithoutIdentity_DoesNotGuess() {
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), Shared2020_2021Build);
-            Assert.IsNull(found, "A build shared by two product years must not resolve to an arbitrary record");
+            Assert.That(found, Is.Null, "A build shared by two product years must not resolve to an arbitrary record");
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_UniqueBuildMatch_ContradictingProductYear_IsRejected() {
             var found = RevitProductData.FindProductInfo(CollidingRecordWithout2020(), Shared2020_2021Build,
                                                           installPath: @"C:\Program Files\Autodesk\Revit 2020\",
                                                           productVersion: new Version(20, 2, 90, 12));
-            Assert.IsNull(found, "A record from another product year must not match a Revit 2020 install");
+            Assert.That(found, Is.Null, "A record from another product year must not match a Revit 2020 install");
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_CollidingBuildAcrossSupportedYears_UsesProductIdentity() {
             var records = Colliding2021And2022Records();
 
             var for2021 = RevitProductData.FindProductInfo(records, Shared2021_2022Build,
                                                             productVersion: new Version(21, 1, 60, 25));
-            Assert.AreEqual("2021.1.6", for2021.release);
+            Assert.That(for2021.release, Is.EqualTo("2021.1.6"));
 
             var for2022 = RevitProductData.FindProductInfo(records, Shared2021_2022Build,
                                                             installPath: @"C:\Program Files\Autodesk\Revit 2022\");
-            Assert.AreEqual("2022.1.2", for2022.release);
+            Assert.That(for2022.release, Is.EqualTo("2022.1.2"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_CollidingBuildWithinSameProductYear_StillMatches() {
             var records = new List<HostProductInfo>() {
                 Record("2023.1.1", "23.1.10.4", Shared2023Build),
@@ -129,95 +130,94 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             };
 
             var found = RevitProductData.FindProductInfo(records, Shared2023Build);
-            Assert.IsNotNull(found, "Records of the same product year describe the same host");
-            Assert.AreEqual(2023, RevitProductData.GetProductYearFromVersionString(found.version));
+            Assert.That(found, Is.Not.Null, "Records of the same product year describe the same host");
+            Assert.That(RevitProductData.GetProductYearFromVersionString(found.version), Is.EqualTo(2023));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_RevitExeProductVersionString_ResolvesNamedRelease() {
             var found = RevitProductData.FindProductInfo(Colliding2021And2022Records(),
                                                           "Revit 2022.1.2 (20220123_1515(x64))");
-            Assert.IsNotNull(found);
-            Assert.AreEqual("2022.1.2", found.release);
+            Assert.That(found, Is.Not.Null);
+            Assert.That(found.release, Is.EqualTo("2022.1.2"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_RegistryDisplayVersionNotInDatabase_DoesNotMatch() {
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), "2020.2");
-            Assert.IsNull(found);
+            Assert.That(found, Is.Null);
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_RegistryVersionOfAnotherProductYear_IsRejected() {
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), "2021.1.7",
                                                           installPath: @"C:\Program Files\Autodesk\Revit 2020\");
-            Assert.IsNull(found);
+            Assert.That(found, Is.Null);
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_UniqueRecord_ResolvesWithoutAnyIdentity() {
             var records = new List<HostProductInfo>() {
                 Record("2021.1.7", "21.1.70.21", Shared2020_2021Build)
             };
 
-            Assert.AreEqual("2021.1.7", RevitProductData.FindProductInfo(records, "2021.1.7").release);
-            Assert.AreEqual("2021.1.7", RevitProductData.FindProductInfo(records, "21.1.70.21").release);
-            Assert.AreEqual("2021.1.7", RevitProductData.FindProductInfo(records, Shared2020_2021Build).release);
+            Assert.That(RevitProductData.FindProductInfo(records, "2021.1.7").release, Is.EqualTo("2021.1.7"));
+            Assert.That(RevitProductData.FindProductInfo(records, "21.1.70.21").release, Is.EqualTo("2021.1.7"));
+            Assert.That(RevitProductData.FindProductInfo(records, Shared2020_2021Build).release, Is.EqualTo("2021.1.7"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_NoIdentifierOrNoRecords_ReturnsNull() {
-            Assert.IsNull(RevitProductData.FindProductInfo(Colliding2020And2021Records(), null));
-            Assert.IsNull(RevitProductData.FindProductInfo(Colliding2020And2021Records(), string.Empty));
-            Assert.IsNull(RevitProductData.FindProductInfo(new List<HostProductInfo>(), Shared2020_2021Build));
-            Assert.IsNull(RevitProductData.FindProductInfo(null, Shared2020_2021Build));
+            Assert.That(RevitProductData.FindProductInfo(Colliding2020And2021Records(), null), Is.Null);
+            Assert.That(RevitProductData.FindProductInfo(Colliding2020And2021Records(), string.Empty), Is.Null);
+            Assert.That(RevitProductData.FindProductInfo(new List<HostProductInfo>(), Shared2020_2021Build), Is.Null);
+            Assert.That(RevitProductData.FindProductInfo(null, Shared2020_2021Build), Is.Null);
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindProductInfo_IgnoresRecordsOfAnUnknownSchema() {
             var records = new List<HostProductInfo>() {
                 Record("2021.1.7", "21.1.70.21", Shared2020_2021Build)
             };
             records[0].meta.schema = "2.0";
 
-            Assert.IsNull(RevitProductData.FindProductInfo(records, Shared2020_2021Build));
+            Assert.That(RevitProductData.FindProductInfo(records, Shared2020_2021Build), Is.Null);
         }
 
-        [TestMethod()]
+        [Test()]
         public void MinimumSupportedProductYear_ExcludesRevit2020() {
-            Assert.AreEqual(2021, RevitProductData.MinimumSupportedProductYear);
-            Assert.IsFalse(RevitProductData.IsSupportedProductYear(2020));
-            Assert.IsFalse(RevitProductData.IsSupportedProductYear(0));
-            Assert.IsTrue(RevitProductData.IsSupportedProductYear(2021));
-            Assert.IsTrue(RevitProductData.IsSupportedProductYear(2026));
+            Assert.That(RevitProductData.MinimumSupportedProductYear, Is.EqualTo(2021));
+            Assert.That(RevitProductData.IsSupportedProductYear(2020), Is.False);
+            Assert.That(RevitProductData.IsSupportedProductYear(0), Is.False);
+            Assert.That(RevitProductData.IsSupportedProductYear(2021), Is.True);
+            Assert.That(RevitProductData.IsSupportedProductYear(2026), Is.True);
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetUnsupportedProductNote_ReportsTheYearAndTheMinimum() {
-            Assert.IsNull(RevitProductData.GetUnsupportedProductNote(2021),
-                          "Supported years must not carry a rejection note");
+            Assert.That(RevitProductData.GetUnsupportedProductNote(2021), Is.Null, "Supported years must not carry a rejection note");
 
             var note = RevitProductData.GetUnsupportedProductNote(2020);
-            Assert.IsNotNull(note);
-            StringAssert.Contains(note, "2020");
-            StringAssert.Contains(note, "2021");
+            Assert.That(note, Is.Not.Null);
+            Assert.That(note, Does.Contain("2020"));
+            Assert.That(note, Does.Contain("2021"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetProductYearFromPath_ReadsTheRevitFolder() {
-            Assert.AreEqual(2020, RevitProductData.GetProductYearFromPath(@"C:\Program Files\Autodesk\Revit 2020\"));
-            Assert.AreEqual(2025, RevitProductData.GetProductYearFromPath(@"C:\Program Files\Autodesk\Revit 2025\Program\Revit.exe"));
-            Assert.AreEqual(0, RevitProductData.GetProductYearFromPath(@"C:\Autodesk\Revit\"));
-            Assert.AreEqual(0, RevitProductData.GetProductYearFromPath(null));
+            Assert.That(RevitProductData.GetProductYearFromPath(@"C:\Program Files\Autodesk\Revit 2020\"), Is.EqualTo(2020));
+            Assert.That(RevitProductData.GetProductYearFromPath(@"C:\Program Files\Autodesk\Revit 2025\Program\Revit.exe"), Is.EqualTo(2025));
+            Assert.That(RevitProductData.GetProductYearFromPath(@"C:\Autodesk\Revit\"), Is.EqualTo(0));
+            Assert.That(RevitProductData.GetProductYearFromPath(null), Is.EqualTo(0));
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetProductYearFromVersionString_ReadsTheMajorVersion() {
-            Assert.AreEqual(2020, RevitProductData.GetProductYearFromVersionString("20.2.90.12"));
-            Assert.AreEqual(2021, RevitProductData.GetProductYearFromVersionString("21.1.70.21"));
-            Assert.AreEqual(2022, RevitProductData.GetProductYearFromVersionString("22.1.21.13"));
-            Assert.AreEqual(0, RevitProductData.GetProductYearFromVersionString("not-a-version"));
-            Assert.AreEqual(0, RevitProductData.GetProductYearFromVersionString(null));
+            Assert.That(RevitProductData.GetProductYearFromVersionString("20.2.90.12"), Is.EqualTo(2020));
+            Assert.That(RevitProductData.GetProductYearFromVersionString("21.1.70.21"), Is.EqualTo(2021));
+            Assert.That(RevitProductData.GetProductYearFromVersionString("22.1.21.13"), Is.EqualTo(2022));
+            Assert.That(RevitProductData.GetProductYearFromVersionString("not-a-version"), Is.EqualTo(0));
+            Assert.That(RevitProductData.GetProductYearFromVersionString(null), Is.EqualTo(0));
         }
     }
 
@@ -235,10 +235,11 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
     /// Revit versions; pure metadata matching remains in the HostFree fixtures.
     /// </para>
     /// </remarks>
-    [TestClass()]
-    [DoNotParallelize]
-    [TestCategory("Revit")]
-    [TestCategory("Integration")]
+    [TestFixture()]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("Revit")]
+    [Category("Integration")]
     public class BelowMinimumProductReportingTests {
         private const string LevelSeparator = "|";
         private const string SwitchReleaseAdvice = "Use a pyRevit release that supports Revit";
@@ -247,7 +248,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         private LoggingConfiguration _previousConfig;
         private MemoryTarget _capture;
 
-        [TestInitialize()]
+        [SetUp()]
         public void StartCapturingLog() {
             _previousConfig = LogManager.Configuration;
             _capture = new MemoryTarget("belowMinimumProductReports") {
@@ -260,7 +261,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             LogManager.ReconfigExistingLoggers();
         }
 
-        [TestCleanup()]
+        [TearDown()]
         public void StopCapturingLog() {
             LogManager.Configuration = _previousConfig;
             LogManager.ReconfigExistingLoggers();
@@ -325,7 +326,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             return readable.OrderBy(prod => prod.ProductYear).First();
         }
 
-        [TestMethod()]
+        [Test()]
         public void ResolveProduct_RunningHost_BelowMinimumProduct_WarnsToSwitchRelease() {
             var installed = BelowMinimumInstalledProduct();
 
@@ -334,14 +335,14 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                                                         installed.InstallLocation,
                                                         ResolvedProductRole.RunningHost);
 
-            Assert.IsNotNull(resolved);
-            Assert.IsFalse(resolved.IsSupported);
+            Assert.That(resolved, Is.Not.Null);
+            Assert.That(resolved.IsSupported, Is.False);
             var warnings = Report("Warn");
-            StringAssert.Contains(warnings, SwitchReleaseAdvice);
-            StringAssert.Contains(warnings, installed.ProductYear.ToString());
+            Assert.That(warnings, Does.Contain(SwitchReleaseAdvice));
+            Assert.That(warnings, Does.Contain(installed.ProductYear.ToString()));
         }
 
-        [TestMethod()]
+        [Test()]
         public void ResolveProduct_InstalledSibling_BelowMinimumProduct_OnlyReportsInfo() {
             var installed = BelowMinimumInstalledProduct();
 
@@ -350,50 +351,47 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                                                         installed.InstallLocation,
                                                         ResolvedProductRole.InstalledSibling);
 
-            Assert.IsNotNull(resolved, "A below-minimum install is still detected, only the report changes");
-            Assert.IsFalse(resolved.IsSupported);
-            Assert.AreEqual(0, CapturedAtLevel("Warn").Count,
-                            "An installed product the user did not launch must never warn: " + Report("Warn"));
+            Assert.That(resolved, Is.Not.Null, "A below-minimum install is still detected, only the report changes");
+            Assert.That(resolved.IsSupported, Is.False);
+            Assert.That(CapturedAtLevel("Warn").Count, Is.EqualTo(0), "An installed product the user did not launch must never warn: " + Report("Warn"));
             var reports = Report("Info");
-            StringAssert.Contains(reports, NotATargetStatement);
-            StringAssert.Contains(reports, installed.ProductYear.ToString());
-            Assert.IsFalse(reports.Contains(SwitchReleaseAdvice),
-                           "The scan must not tell the user to switch pyRevit releases for a product they did not launch");
+            Assert.That(reports, Does.Contain(NotATargetStatement));
+            Assert.That(reports, Does.Contain(installed.ProductYear.ToString()));
+            Assert.That(reports.Contains(SwitchReleaseAdvice), Is.False, "The scan must not tell the user to switch pyRevit releases for a product they did not launch");
         }
 
-        [TestMethod()]
+        [Test()]
         public void ListInstalledProducts_DoesNotWarnAboutAnyProductItFinds() {
             ScanInstalledProducts();
 
-            Assert.AreEqual(0, CapturedAtLevel("Warn").Count,
-                            "Session start must not warn about products it merely found installed: " + Report("Warn"));
-            Assert.AreEqual(0, CapturedAtLevel("Error").Count, Report("Error"));
+            Assert.That(CapturedAtLevel("Warn").Count, Is.EqualTo(0), "Session start must not warn about products it merely found installed: " + Report("Warn"));
+            Assert.That(CapturedAtLevel("Error").Count, Is.EqualTo(0), Report("Error"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void ListInstalledProducts_KeepsBelowMinimumProductsListed() {
             foreach (var product in BelowMinimumInstalledProducts())
-                StringAssert.Contains(product.ToString(), RevitProductData.MinimumSupportedProductYear.ToString());
+                Assert.That(product.ToString(), Does.Contain(RevitProductData.MinimumSupportedProductYear.ToString()));
         }
 
 
     }
 
     /// <summary>Guards the default reporting role without an installed product.</summary>
-    [TestClass]
-    [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class RevitProductRoleContractTests {
         /// <summary>Existing callers that omit the role still resolve their running host.</summary>
-        [TestMethod()]
+        [Test()]
         public void ResolveProduct_DefaultsToTreatingTheProductAsTheRunningHost() {
             var roleParameter = typeof(RevitProduct).GetMethod("ResolveProduct")
                                                         .GetParameters()
                                                         .Single(par => par.Name == "role");
 
-            Assert.IsTrue(roleParameter.IsOptional,
-                          "Callers that omit the role resolve the host they are launching into");
-            Assert.AreEqual(ResolvedProductRole.RunningHost, roleParameter.DefaultValue);
+            Assert.That(roleParameter.IsOptional, Is.True, "Callers that omit the role resolve the host they are launching into");
+            Assert.That(roleParameter.DefaultValue, Is.EqualTo(ResolvedProductRole.RunningHost));
         }
     }
 

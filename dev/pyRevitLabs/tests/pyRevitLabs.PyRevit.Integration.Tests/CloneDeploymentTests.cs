@@ -2,17 +2,18 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using LibGit2Sharp;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using pyRevitLabs.Common;
 using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.PyRevit.Integration.Tests {
     /// <summary>Exercises deployment against local archives and repositories without user configuration.</summary>
-    [TestClass]
-    [DoNotParallelize]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class PyRevitTests {
         private string _root;
         private string _source;
@@ -25,7 +26,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         private const string CloneName = "FixtureClone";
 
         /// <summary>Creates a minimal clone and an isolated configuration directory.</summary>
-        [TestInitialize]
+        [SetUp]
         public void Setup() {
             _root = Path.Combine(Path.GetTempPath(), "pyrevit-deploy-" + Guid.NewGuid().ToString("N"));
             _source = Path.Combine(_root, "source");
@@ -48,7 +49,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         }
 
         /// <summary>Restores configuration discovery and removes fixture files.</summary>
-        [TestCleanup]
+        [TearDown]
         public void Cleanup() {
             try {
                 PyRevitConfigService.Reload();
@@ -65,7 +66,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         }
 
         /// <summary>Expands environment variables before creating deployment staging directories.</summary>
-        [TestMethod]
+        [Test]
         public void DeployFromImage_UsesExpandedTempForStaging() {
             var localAppData = Path.Combine(_root, "LocalAppData");
             Directory.CreateDirectory(localAppData);
@@ -76,30 +77,28 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             PyRevitClones.DeployFromImage(CloneName, deploymentName: "core", branchName: null,
                 imagePath: _archive, destPath: destination, installBinaries: false);
 
-            Assert.IsTrue(Directory.Exists(Path.Combine(destination, "bin")));
-            Assert.IsTrue(Directory.Exists(Path.Combine(destination, "pyrevitlib", "pyrevit")));
+            Assert.That(Directory.Exists(Path.Combine(destination, "bin")), Is.True);
+            Assert.That(Directory.Exists(Path.Combine(destination, "pyrevitlib", "pyrevit")), Is.True);
             var expandedTemp = CommonUtils.GetUserTempDirectory();
-            Assert.IsFalse(expandedTemp.Contains("%"));
-            Assert.IsTrue(Directory.Exists(expandedTemp));
+            Assert.That(expandedTemp.Contains("%"), Is.False);
+            Assert.That(Directory.Exists(expandedTemp), Is.True);
         }
 
         /// <summary>Deploys a local image with full or reduced content.</summary>
-        [DataTestMethod]
-        [DataRow(null)]
-        [DataRow("core")]
+        [TestCase(null)]
+        [TestCase("core")]
         public void DeployFromImage_RegistersRequestedDeployment(string deployment) {
             PyRevitClones.DeployFromImage(CloneName, deploymentName: deployment, branchName: "fixture",
                 imagePath: _archive, destPath: Path.Combine(_root, "image"), installBinaries: false);
             var clone = PyRevitClones.GetRegisteredClone(CloneName);
-            Assert.AreEqual("fixture", clone.Branch);
-            Assert.IsTrue(File.Exists(Path.Combine(clone.ClonePath, "pyRevitfile")));
-            if (deployment != null) Assert.AreEqual(deployment, clone.Deployment.Name);
+            Assert.That(clone.Branch, Is.EqualTo("fixture"));
+            Assert.That(File.Exists(Path.Combine(clone.ClonePath, "pyRevitfile")), Is.True);
+            if (deployment != null) Assert.That(clone.Deployment.Name, Is.EqualTo(deployment));
         }
 
         /// <summary>Clones a local Git repository without downloading binary artifacts.</summary>
-        [DataTestMethod]
-        [DataRow("master")]
-        [DataRow("develop")]
+        [TestCase("master")]
+        [TestCase("develop")]
         public void DeployFromRepo_ChecksOutRequestedBranch(string branch) {
             Repository.Init(_source);
             using (var repository = new Repository(_source)) {
@@ -111,20 +110,20 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             PyRevitClones.DeployFromRepo(CloneName, branchName: branch, repoUrl: _source,
                 destPath: Path.Combine(_root, "repo"), installBinaries: false);
             var clone = PyRevitClones.GetRegisteredClone(CloneName);
-            Assert.IsTrue(clone.IsRepoDeploy);
-            Assert.AreEqual(branch, clone.Branch);
+            Assert.That(clone.IsRepoDeploy, Is.True);
+            Assert.That(clone.Branch, Is.EqualTo(branch));
         }
 
         /// <summary>Reduced deployments are explicitly unsupported for Git clones.</summary>
-        [TestMethod]
+        [Test]
         public void DeployFromRepo_WithDeployment_ThrowsNotImplemented() {
-            Assert.ThrowsException<NotImplementedException>(() => PyRevitClones.DeployFromRepo(
+            Assert.Throws<NotImplementedException>(() => PyRevitClones.DeployFromRepo(
                 CloneName, deploymentName: "core", repoUrl: _source,
                 destPath: Path.Combine(_root, "unsupported"), installBinaries: false));
         }
 
         /// <summary>Removing a clone registration preserves other clones and the checkout on disk.</summary>
-        [TestMethod]
+        [Test]
         public void UnregisterClone_PersistsRemovalAndPreservesOtherClones() {
             const string sourceCloneName = "SourceClone";
             var destination = Path.Combine(_root, "registered-clone");
@@ -135,9 +134,9 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
             PyRevitConfigService.Reload();
 
-            Assert.ThrowsException<PyRevitException>(() => PyRevitClones.GetRegisteredClone(CloneName));
-            Assert.AreEqual(_source, PyRevitClones.GetRegisteredClone(sourceCloneName).ClonePath);
-            Assert.IsTrue(Directory.Exists(destination));
+            Assert.Throws<PyRevitException>(() => PyRevitClones.GetRegisteredClone(CloneName));
+            Assert.That(PyRevitClones.GetRegisteredClone(sourceCloneName).ClonePath, Is.EqualTo(_source));
+            Assert.That(Directory.Exists(destination), Is.True);
         }
     }
 }
