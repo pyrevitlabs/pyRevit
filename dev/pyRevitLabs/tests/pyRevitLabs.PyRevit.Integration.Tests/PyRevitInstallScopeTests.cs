@@ -9,8 +9,9 @@ using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.PyRevit;
 using pyRevitExtensionParser;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.PyRevit.Integration.Tests {
     [TestClass]
+    [DoNotParallelize]
     [TestCategory("HostFree")]
     [TestCategory("Integration")]
     public class PyRevitInstallScopeTests {
@@ -62,8 +63,7 @@ namespace pyRevitLabs.UnitTests {
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
                 _previousConfigScopeOverride);
-            if (Directory.Exists(_tempRoot))
-                Directory.Delete(_tempRoot, recursive: true);
+            FixtureDirectory.Delete(_tempRoot);
         }
 
         [TestMethod]

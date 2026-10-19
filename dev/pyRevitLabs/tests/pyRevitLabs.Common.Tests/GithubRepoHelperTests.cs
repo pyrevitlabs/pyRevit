@@ -1,7 +1,10 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
+using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.UnitTests.Common {
+namespace pyRevitLabs.Common.Tests {
     [TestClass]
     [TestCategory("HostFree")]
     [TestCategory("Unit")]

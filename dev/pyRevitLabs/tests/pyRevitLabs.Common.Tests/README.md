@@ -1,10 +1,10 @@
 # pyRevitLabs.Common.Tests
 
-Common-library load-timeline lifecycle, isolation, and the portable identifier format.
+Common-library load timelines, identifiers, path/environment handling, build stamps, registry PATH values, and GitHub artifact naming. Deployment integration belongs to `pyRevitLabs.PyRevit.Integration.Tests`.
 
 Owner: the owning module maintainers; unassigned failures and quarantines belong to the change author. Quarantines require an issue and review within 14 days.
 
-The NUnit suite targets `net48` and `net8.0-windows`. Tests are discovered from source globs; add literal Environment and Level categories to every test class. Revit API use requires the Revit category and local host setup. No test outputs deploy into a clone.
+NUnit and MSTest cases target `net48` and `net8.0-windows`; each keeps its existing framework. MSTest files alias assertion types explicitly to avoid NUnit global-using ambiguity. Tests are discovered from source globs; add literal Environment and Level categories to every test class. Registry cases use unique test subkeys, never the user's PATH. Environment-changing fixtures run nonparallel and restore previous values. No test outputs deploy into a clone.
 
 Run the full CI selection from the repository root:
 

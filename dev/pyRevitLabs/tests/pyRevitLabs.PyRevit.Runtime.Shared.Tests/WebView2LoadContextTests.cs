@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.PyRevit.Runtime.Shared;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
     /// <summary>
     /// Exercises the deployed shared runtime's WebView2 load context: only the
     /// WebView2 stack is isolated, and a missing isolated file fails loudly.
