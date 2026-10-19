@@ -145,3 +145,30 @@ Set `PYREVIT_TEST_JUNIT_PATH` before launching Revit for XML evidence. Use a fre
 For load/signing smoke checks, launch the intended Revit year and inspect its journal and dialogs. Loading successfully does not prove functional correctness or contribute to CI coverage. Never publish locally test-signed binaries.
 
 **Remaining coverage gaps:** assemblies outside the instrumented scope need dedicated tests; no general performance budget has been established. Suite READMEs should record fixture-specific gaps as they are found.
+
+### Dynamo execution check (#2992)
+
+Use **DevTools > Debug > Unit Tests > Dynamo Tests** in a disposable project. The test starts Dynamo headlessly and requires a newly generated DesignScript token from the engine's evaluated output. A successful command return is insufficient. The graph has no Python nodes, external packages, or model geometry, and the test rolls back Dynamo's startup preview materials. An existing user Dynamo workspace is never replaced.
+
+For a reproducible local matrix, use an absolute script path:
+
+```powershell
+pyrevit run C:/path/to/pyRevit/dev/tests/revit/run_dynamo.py --revit=2026
+```
+
+The journal launches a separate Revit process, creates a disposable project, checks cold and repeat execution with different tokens, and exits. Evidence is written to `.test-results/dynamo/<year>.json`, including actual Revit/Dynamo versions and a test-source hash. These tests stay outside CI. Validate the installed Dynamo bundled with each supported Revit 2021–2027 host; this is not a claim about every independently installed Dynamo package or patch version.
+
+Local validation on 2026-10-19 used IronPython 2.7.12 and a fresh project in each journal process. Both cold startup and repeat execution passed with distinct, verified tokens:
+
+| Revit | Loaded DynamoCore | Cold / repeat |
+|---|---|---|
+| 2021 | 2.6.1.8786 | Passed / passed |
+| 2022 | 2.10.1.3976 | Passed / passed |
+| 2023 | 2.16.4.10216 | Passed / passed |
+| 2024 | 2.18.1.5096 | Passed / passed |
+| 2025 | 3.3.2.11986 | Passed / passed |
+| 2026 | 3.7.0.11777 | Passed / passed |
+| 2027 | 4.2.1.5887 | Passed / passed |
+
+Each report records the test-source SHA-256. Interactive ribbon verification is separate from this journal evidence; other Python engines and independently installed Dynamo versions remain unverified.
+
