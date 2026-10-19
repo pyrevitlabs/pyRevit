@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,10 +11,6 @@ using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.PyRevit;
 using pyRevitLabs.TargetApps.Revit;
-
-using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
-using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
 namespace pyRevitLabs.PyRevit.Tests {
     /// <summary>
     /// Covers which installed Revits a clone may be attached to.
@@ -25,10 +21,11 @@ namespace pyRevitLabs.PyRevit.Tests {
     /// writing one for a stale registry entry points a Revit that is not installed.
     /// "Installed" is therefore not the same question as "attachable".
     /// </remarks>
-    [TestClass()]
-    [DoNotParallelize]
-    [TestCategory("Revit")]
-    [TestCategory("Integration")]
+    [TestFixture()]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("Revit")]
+    [Category("Integration")]
     public class AttachableProductTests {
         private const string LevelSeparator = "|";
         private const string NotAttaching = "Not attaching to Revit";
@@ -36,7 +33,7 @@ namespace pyRevitLabs.PyRevit.Tests {
         private LoggingConfiguration? _previousConfig;
         private MemoryTarget _capture = null!;
 
-        [TestInitialize()]
+        [SetUp()]
         public void StartCapturingLog() {
             _previousConfig = LogManager.Configuration;
             _capture = new MemoryTarget("attachableProductReports") {
@@ -49,7 +46,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             LogManager.ReconfigExistingLoggers();
         }
 
-        [TestCleanup()]
+        [TearDown()]
         public void StopCapturingLog() {
             LogManager.Configuration = _previousConfig;
             LogManager.ReconfigExistingLoggers();
@@ -70,41 +67,38 @@ namespace pyRevitLabs.PyRevit.Tests {
             return belowMinimum;
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_NeverReturnsAProductThisLineCanNotRunOn() {
             foreach (var product in PyRevitAttachments.GetAttachableProducts()) {
-                Assert.IsTrue(product.IsSupported,
-                              "Revit " + product.ProductYear + " is below the minimum supported year but was offered as attachable");
-                Assert.IsTrue(CommonUtils.VerifyFile(product.ExecutiveLocation),
-                              "Revit " + product.ProductYear + " has no executable at \"" + product.ExecutiveLocation
+                Assert.That(product.IsSupported, Is.True, "Revit " + product.ProductYear + " is below the minimum supported year but was offered as attachable");
+                Assert.That(CommonUtils.VerifyFile(product.ExecutiveLocation), Is.True, "Revit " + product.ProductYear + " has no executable at \"" + product.ExecutiveLocation
                               + "\" but was offered as attachable");
             }
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_ExcludesBelowMinimumInstalledRevits() {
             var belowMinimum = BelowMinimumInstalledProducts();
             var attachableYears = PyRevitAttachments.GetAttachableProducts().Select(prod => prod.ProductYear).ToList();
 
             foreach (var product in belowMinimum)
-                Assert.IsFalse(attachableYears.Contains(product.ProductYear),
-                               "pyrevit attach --installed would write a manifest for Revit " + product.ProductYear
+                Assert.That(attachableYears.Contains(product.ProductYear), Is.False, "pyrevit attach --installed would write a manifest for Revit " + product.ProductYear
                                + ", pointing it at a loader that line can not load");
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_SaysWhyItSkippedEachBelowMinimumRevit() {
             var belowMinimum = BelowMinimumInstalledProducts();
 
             PyRevitAttachments.GetAttachableProducts();
 
             var report = Report("Warn");
-            StringAssert.Contains(report, NotAttaching);
+            Assert.That(report, Does.Contain(NotAttaching));
             foreach (var product in belowMinimum)
-                StringAssert.Contains(report, product.ProductYear.ToString());
+                Assert.That(report, Does.Contain(product.ProductYear.ToString()));
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_KeepsEverySupportedInstalledRevit() {
             var supported = RevitProduct.ListInstalledProducts()
                                            .Where(prod => prod.IsSupported
@@ -116,8 +110,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             var attachableYears = PyRevitAttachments.GetAttachableProducts().Select(prod => prod.ProductYear).ToList();
 
             foreach (var product in supported)
-                Assert.IsTrue(attachableYears.Contains(product.ProductYear),
-                              "Revit " + product.ProductYear + " is supported and installed, so it must stay attachable");
+                Assert.That(attachableYears.Contains(product.ProductYear), Is.True, "Revit " + product.ProductYear + " is supported and installed, so it must stay attachable");
         }
     }
 
@@ -126,10 +119,11 @@ namespace pyRevitLabs.PyRevit.Tests {
     /// rule is checked on every machine rather than only where an old Revit happens
     /// to be installed.
     /// </summary>
-    [TestClass()]
-    [DoNotParallelize]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture()]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class AttachableProductFilterTests {
         private const int BelowMinimumYear = 2017;
         private const int SupportedYear = 2025;
@@ -138,13 +132,13 @@ namespace pyRevitLabs.PyRevit.Tests {
 
         private string _tempRoot = null!;
 
-        [TestInitialize()]
+        [SetUp()]
         public void CreateFakeRevitInstalls() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyrevit-attachable-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
         }
 
-        [TestCleanup()]
+        [TearDown()]
         public void RemoveFakeRevitInstalls() {
             if (_tempRoot != null && Directory.Exists(_tempRoot))
                 Directory.Delete(_tempRoot, recursive: true);
@@ -196,33 +190,33 @@ namespace pyRevitLabs.PyRevit.Tests {
                                Path.Combine(_tempRoot, "Revit 2025 German"), withExecutable: false);
         }
 
-        [TestMethod()]
+        [Test()]
         public void IsAttachableProductYear_RejectsBelowMinimumAndAcceptsSupported() {
-            Assert.IsFalse(PyRevitAttachments.IsAttachableProductYear(BelowMinimumYear));
-            Assert.IsTrue(PyRevitAttachments.IsAttachableProductYear(SupportedYear));
-            Assert.IsTrue(PyRevitAttachments.IsAttachableProductYear(RevitProductData.MinimumSupportedProductYear));
+            Assert.That(PyRevitAttachments.IsAttachableProductYear(BelowMinimumYear), Is.False);
+            Assert.That(PyRevitAttachments.IsAttachableProductYear(SupportedYear), Is.True);
+            Assert.That(PyRevitAttachments.IsAttachableProductYear(RevitProductData.MinimumSupportedProductYear), Is.True);
         }
 
-        [TestMethod()]
+        [Test()]
         public void IsAttachable_RejectsBelowMinimumEvenWithAWorkingExecutable() {
-            Assert.IsFalse(PyRevitAttachments.IsAttachable(BelowMinimumWithExecutable()));
+            Assert.That(PyRevitAttachments.IsAttachable(BelowMinimumWithExecutable()), Is.False);
         }
 
-        [TestMethod()]
+        [Test()]
         public void IsAttachable_RejectsSupportedYearWithNoExecutableOnDisk() {
-            Assert.IsFalse(PyRevitAttachments.IsAttachable(SupportedWithoutExecutable()));
+            Assert.That(PyRevitAttachments.IsAttachable(SupportedWithoutExecutable()), Is.False);
         }
 
-        [TestMethod()]
+        [Test()]
         public void IsAttachable_AcceptsSupportedYearWithExecutableOnDisk() {
-            Assert.IsTrue(PyRevitAttachments.IsAttachable(SupportedWithExecutable()));
+            Assert.That(PyRevitAttachments.IsAttachable(SupportedWithExecutable()), Is.True);
         }
 
         /// <summary>
         /// A bulk reattachment must not apply a looser rule than a direct attach, so
         /// the two have to agree about every product in a known set.
         /// </summary>
-        [TestMethod()]
+        [Test()]
         public void IsAttachable_AgreesWithTheFilterUsedForBulkAttach() {
             var products = new[] {
                 BelowMinimumWithExecutable(),
@@ -233,8 +227,7 @@ namespace pyRevitLabs.PyRevit.Tests {
 
             foreach (var product in products) {
                 var expected = PyRevitAttachments.IsAttachable(product);
-                Assert.AreEqual(expected, filtered.Contains(product),
-                                "Revit " + product.ProductYear + ": the bulk filter and the per-product rule disagree");
+                Assert.That(filtered.Contains(product), Is.EqualTo(expected), "Revit " + product.ProductYear + ": the bulk filter and the per-product rule disagree");
             }
         }
 
@@ -243,66 +236,61 @@ namespace pyRevitLabs.PyRevit.Tests {
         /// and does not merge them, so one year can come back twice. A stale entry must
         /// not veto the year when a good install of the same year also exists.
         /// </summary>
-        [TestMethod()]
+        [Test()]
         public void SelectProductForAttach_PrefersTheInstallThatWorksOverAStaleOneOfTheSameYear() {
             var staleLocalized = Supported2025WithoutExecutable();
             var good = SupportedWithExecutable();
 
             var selected = PyRevitAttachments.SelectProductForAttach(SupportedYear, new[] { staleLocalized, good });
 
-            Assert.AreSame(good, selected,
-                           "A broken 2025 entry must not block attaching to a working 2025 install");
+            Assert.That(selected, Is.SameAs(good), "A broken 2025 entry must not block attaching to a working 2025 install");
         }
 
-        [TestMethod()]
+        [Test()]
         public void SelectProductForAttach_FallsBackToAStaleEntrySoTheReasonIsStillReported() {
             var stale = Supported2025WithoutExecutable();
 
             var selected = PyRevitAttachments.SelectProductForAttach(SupportedYear, new[] { stale });
 
-            Assert.AreSame(stale, selected,
-                           "With only a stale entry the year must still be reported rather than silently accepted");
+            Assert.That(selected, Is.SameAs(stale), "With only a stale entry the year must still be reported rather than silently accepted");
         }
 
-        [TestMethod()]
+        [Test()]
         public void SelectProductForAttach_ReturnsNullForAYearThatIsNotInstalled() {
-            Assert.IsNull(PyRevitAttachments.SelectProductForAttach(
+            Assert.That(PyRevitAttachments.SelectProductForAttach(
                               SupportedYear,
-                              new[] { BelowMinimumWithExecutable() }),
-                          "Attaching ahead of an install must keep working");
+                              new[] { BelowMinimumWithExecutable() }), Is.Null, "Attaching ahead of an install must keep working");
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_DropsBelowMinimumProductFromAKnownSet() {
             var belowMinimum = BelowMinimumWithExecutable();
 
             var attachable = PyRevitAttachments.GetAttachableProducts(new[] { belowMinimum });
 
-            Assert.AreEqual(0, attachable.Count,
-                            "A below-minimum product with a perfectly good executable is still not attachable");
+            Assert.That(attachable.Count, Is.EqualTo(0), "A below-minimum product with a perfectly good executable is still not attachable");
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_KeepsSupportedProductFromAKnownSet() {
             var supported = SupportedWithExecutable();
 
             var attachable = PyRevitAttachments.GetAttachableProducts(new[] { supported });
 
-            Assert.AreEqual(1, attachable.Count);
-            Assert.AreEqual(SupportedYear, attachable[0].ProductYear);
+            Assert.That(attachable.Count, Is.EqualTo(1));
+            Assert.That(attachable[0].ProductYear, Is.EqualTo(SupportedYear));
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_DropsSupportedProductWithNoExecutableOnDisk() {
             var missing = SupportedWithoutExecutable();
 
             var attachable = PyRevitAttachments.GetAttachableProducts(new[] { missing });
 
-            Assert.AreEqual(0, attachable.Count,
-                            "A registry entry whose Revit.exe is gone must not get a manifest written for it");
+            Assert.That(attachable.Count, Is.EqualTo(0), "A registry entry whose Revit.exe is gone must not get a manifest written for it");
         }
 
-        [TestMethod()]
+        [Test()]
         public void GetAttachableProducts_KeepsOnlyTheSupportedOnesFromAMixedSet() {
             var attachable = PyRevitAttachments.GetAttachableProducts(new[] {
                 BelowMinimumWithExecutable(),
@@ -310,8 +298,8 @@ namespace pyRevitLabs.PyRevit.Tests {
                 SupportedWithoutExecutable()
             });
 
-            Assert.AreEqual(1, attachable.Count);
-            Assert.AreEqual(SupportedYear, attachable[0].ProductYear);
+            Assert.That(attachable.Count, Is.EqualTo(1));
+            Assert.That(attachable[0].ProductYear, Is.EqualTo(SupportedYear));
         }
     }
 }

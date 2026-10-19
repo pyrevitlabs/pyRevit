@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Configurations.Ini;
@@ -9,10 +9,11 @@ using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.PyRevit.Integration.Tests {
     /// <summary>Tests seeding the machine-wide configuration from the active configuration.</summary>
-    [TestClass]
-    [DoNotParallelize]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class PyRevitConfigsSeedTests {
         private const string ConfigContent = "[core]\r\nuserlocale = en_us\r\n";
 
@@ -21,7 +22,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         private string _previousProgramDataPathOverride;
         private string _previousConfigScopeOverride;
 
-        [TestInitialize]
+        [SetUp]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitConfigsSeed_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
@@ -31,7 +32,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             ClearConfigState();
         }
 
-        [TestCleanup]
+        [TearDown]
         public void Cleanup() {
             ClearConfigState();
             Environment.SetEnvironmentVariable(
@@ -49,32 +50,32 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             FixtureDirectory.Delete(_tempRoot);
         }
 
-        [TestMethod]
+        [Test]
         public void TrySeedConfig_SameWritablePath_ReturnsTrueAndPreservesConfig() {
             SetScope(PyRevitInstallScope.ConfigScopeAllUsers);
             SetConfigRoots(_tempRoot, _tempRoot);
             string configFile = CreateConfig(_tempRoot, ConfigContent);
 
-            Assert.AreEqual(Path.GetFullPath(configFile), Path.GetFullPath(PyRevitConsts.ConfigFilePath));
-            Assert.AreEqual(Path.GetFullPath(configFile), Path.GetFullPath(PyRevitConsts.AdminConfigFilePath));
-            Assert.IsTrue(PyRevitConfigs.TrySeedConfig());
-            Assert.AreEqual(ConfigContent, File.ReadAllText(configFile));
-            Assert.IsFalse(IsReadOnly(configFile));
+            Assert.That(Path.GetFullPath(PyRevitConsts.ConfigFilePath), Is.EqualTo(Path.GetFullPath(configFile)));
+            Assert.That(Path.GetFullPath(PyRevitConsts.AdminConfigFilePath), Is.EqualTo(Path.GetFullPath(configFile)));
+            Assert.That(PyRevitConfigs.TrySeedConfig(), Is.True);
+            Assert.That(File.ReadAllText(configFile), Is.EqualTo(ConfigContent));
+            Assert.That(IsReadOnly(configFile), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void TrySeedConfig_SameWritablePathWithLock_ReturnsTrueAndSetsReadOnly() {
             SetScope(PyRevitInstallScope.ConfigScopeAllUsers);
             SetConfigRoots(_tempRoot, _tempRoot);
             string configFile = CreateConfig(_tempRoot, ConfigContent);
 
-            Assert.IsFalse(IsReadOnly(configFile));
-            Assert.IsTrue(PyRevitConfigs.TrySeedConfig(lockSeedConfig: true));
-            Assert.IsTrue(IsReadOnly(configFile));
-            Assert.AreEqual(ConfigContent, File.ReadAllText(configFile));
+            Assert.That(IsReadOnly(configFile), Is.False);
+            Assert.That(PyRevitConfigs.TrySeedConfig(lockSeedConfig: true), Is.True);
+            Assert.That(IsReadOnly(configFile), Is.True);
+            Assert.That(File.ReadAllText(configFile), Is.EqualTo(ConfigContent));
         }
 
-        [TestMethod]
+        [Test]
         public void TrySeedConfig_DifferentPath_CreatesTargetDirectoryAndCopiesConfig() {
             SetScope(PyRevitInstallScope.ConfigScopePerUser);
             string userRoot = Path.Combine(_tempRoot, "AppDataPyRevit");
@@ -83,14 +84,14 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             string configFile = CreateConfig(userRoot, ConfigContent);
             string machineConfigFile = Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
 
-            Assert.IsFalse(Directory.Exists(machineRoot));
-            Assert.IsTrue(PyRevitConfigs.TrySeedConfig());
-            Assert.IsTrue(File.Exists(machineConfigFile));
-            Assert.AreEqual(ConfigContent, File.ReadAllText(machineConfigFile));
-            Assert.IsFalse(IsReadOnly(machineConfigFile));
+            Assert.That(Directory.Exists(machineRoot), Is.False);
+            Assert.That(PyRevitConfigs.TrySeedConfig(), Is.True);
+            Assert.That(File.Exists(machineConfigFile), Is.True);
+            Assert.That(File.ReadAllText(machineConfigFile), Is.EqualTo(ConfigContent));
+            Assert.That(IsReadOnly(machineConfigFile), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void TrySeedConfig_DifferentPathWithLock_CopiesAndSetsReadOnly() {
             SetScope(PyRevitInstallScope.ConfigScopePerUser);
             string userRoot = Path.Combine(_tempRoot, "AppDataPyRevit");
@@ -99,9 +100,9 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             string configFile = CreateConfig(userRoot, ConfigContent);
             string machineConfigFile = Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
 
-            Assert.IsTrue(PyRevitConfigs.TrySeedConfig(lockSeedConfig: true));
-            Assert.AreEqual(ConfigContent, File.ReadAllText(machineConfigFile));
-            Assert.IsTrue(IsReadOnly(machineConfigFile));
+            Assert.That(PyRevitConfigs.TrySeedConfig(lockSeedConfig: true), Is.True);
+            Assert.That(File.ReadAllText(machineConfigFile), Is.EqualTo(ConfigContent));
+            Assert.That(IsReadOnly(machineConfigFile), Is.True);
         }
 
         private void SetConfigRoots(string userRoot, string machineRoot) {

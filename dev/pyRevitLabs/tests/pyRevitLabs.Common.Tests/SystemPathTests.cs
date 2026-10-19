@@ -1,182 +1,177 @@
 using System;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-using CollectionAssert = Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert;
-using StringAssert = Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert;
+using NUnit.Framework;
 using Microsoft.Win32;
 
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
-    [TestClass]
-    [DoNotParallelize]
-    [TestCategory("HostFree")]
-    [TestCategory("Unit")]
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class SystemPathTests {
         private const string TestDir = @"C:\Program Files\pyRevit-Master\bin";
 
-        [TestMethod]
+        [Test]
         public void TokenizeDropsEmptyAndPaddedTokens() {
             var tokens = SystemPath.Tokenize(";C:\\a;;  C:\\b  ;;");
-            Assert.AreEqual(2, tokens.Count);
-            Assert.AreEqual("C:\\a", tokens[0]);
-            Assert.AreEqual("C:\\b", tokens[1]);
+            Assert.That(tokens.Count, Is.EqualTo(2));
+            Assert.That(tokens[0], Is.EqualTo("C:\\a"));
+            Assert.That(tokens[1], Is.EqualTo("C:\\b"));
         }
 
-        [TestMethod]
+        [Test]
         public void TokenizeHandlesNullAndEmpty() {
-            Assert.AreEqual(0, SystemPath.Tokenize(null).Count);
-            Assert.AreEqual(0, SystemPath.Tokenize(string.Empty).Count);
+            Assert.That(SystemPath.Tokenize(null).Count, Is.EqualTo(0));
+            Assert.That(SystemPath.Tokenize(string.Empty).Count, Is.EqualTo(0));
         }
 
-        [TestMethod]
+        [Test]
         public void NormalizeTokenStripsTrailingSeparatorButKeepsDriveRoot() {
-            Assert.AreEqual(@"C:\a\b", SystemPath.NormalizeToken(@"C:\a\b\"));
-            Assert.AreEqual(@"C:\a\b", SystemPath.NormalizeToken(@"  C:\a\b  "));
-            Assert.AreEqual(@"C:\", SystemPath.NormalizeToken(@"C:\"));
-            Assert.AreEqual(string.Empty, SystemPath.NormalizeToken(null));
+            Assert.That(SystemPath.NormalizeToken(@"C:\a\b\"), Is.EqualTo(@"C:\a\b"));
+            Assert.That(SystemPath.NormalizeToken(@"  C:\a\b  "), Is.EqualTo(@"C:\a\b"));
+            Assert.That(SystemPath.NormalizeToken(@"C:\"), Is.EqualTo(@"C:\"));
+            Assert.That(SystemPath.NormalizeToken(null), Is.EqualTo(string.Empty));
         }
 
-        [TestMethod]
+        [Test]
         public void HasEntryIgnoresCaseAndTrailingSeparator() {
-            Assert.IsTrue(SystemPath.HasEntry(@"C:\a;" + TestDir, TestDir));
-            Assert.IsTrue(SystemPath.HasEntry(@"C:\a;" + TestDir + ";", TestDir));
-            Assert.IsTrue(SystemPath.HasEntry(@"C:\a;" + TestDir.ToUpperInvariant(), TestDir));
-            Assert.IsTrue(SystemPath.HasEntry(@"C:\a;" + TestDir + @"\", TestDir));
+            Assert.That(SystemPath.HasEntry(@"C:\a;" + TestDir, TestDir), Is.True);
+            Assert.That(SystemPath.HasEntry(@"C:\a;" + TestDir + ";", TestDir), Is.True);
+            Assert.That(SystemPath.HasEntry(@"C:\a;" + TestDir.ToUpperInvariant(), TestDir), Is.True);
+            Assert.That(SystemPath.HasEntry(@"C:\a;" + TestDir + @"\", TestDir), Is.True);
         }
 
-        [TestMethod]
+        [Test]
         public void HasEntryRejectsSubstringOfAnotherToken() {
-            Assert.IsFalse(SystemPath.HasEntry(@"C:\a;" + TestDir + @"-old", TestDir));
-            Assert.IsFalse(SystemPath.HasEntry(TestDir.Substring(0, TestDir.Length - 4), TestDir));
+            Assert.That(SystemPath.HasEntry(@"C:\a;" + TestDir + @"-old", TestDir), Is.False);
+            Assert.That(SystemPath.HasEntry(TestDir.Substring(0, TestDir.Length - 4), TestDir), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void HasEntryIsFalseWhenAbsentAndForEmptyEntry() {
-            Assert.IsFalse(SystemPath.HasEntry(@"C:\a;C:\b", TestDir));
-            Assert.IsFalse(SystemPath.HasEntry(null, TestDir));
-            Assert.IsFalse(SystemPath.HasEntry(TestDir, string.Empty));
+            Assert.That(SystemPath.HasEntry(@"C:\a;C:\b", TestDir), Is.False);
+            Assert.That(SystemPath.HasEntry(null, TestDir), Is.False);
+            Assert.That(SystemPath.HasEntry(TestDir, string.Empty), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void CountEntryReportsEveryOccurrence() {
-            Assert.AreEqual(3, SystemPath.CountEntry(
-                TestDir + ";C:\\a;" + TestDir.ToUpperInvariant() + ";" + TestDir, TestDir));
-            Assert.AreEqual(0, SystemPath.CountEntry(@"C:\a", TestDir));
+            Assert.That(SystemPath.CountEntry(
+                TestDir + ";C:\\a;" + TestDir.ToUpperInvariant() + ";" + TestDir, TestDir), Is.EqualTo(3));
+            Assert.That(SystemPath.CountEntry(@"C:\a", TestDir), Is.EqualTo(0));
         }
 
-        [TestMethod]
+        [Test]
         public void AddEntryAppendsWhenAbsentAndPreservesOrder() {
             var result = SystemPath.AddEntry(@"C:\a;C:\b", TestDir);
-            Assert.AreEqual(@"C:\a;C:\b;" + TestDir, result);
+            Assert.That(result, Is.EqualTo(@"C:\a;C:\b;" + TestDir));
         }
 
-        [TestMethod]
+        [Test]
         public void AddEntryIsIdempotent() {
             var current = @"C:\a;" + TestDir;
-            Assert.AreEqual(current, SystemPath.AddEntry(current, TestDir));
+            Assert.That(SystemPath.AddEntry(current, TestDir), Is.EqualTo(current));
         }
 
-        [TestMethod]
+        [Test]
         public void AddEntryDoesNotNormalizeExistingDuplicates() {
             var current = TestDir + ";" + TestDir;
-            Assert.AreEqual(current, SystemPath.AddEntry(current, TestDir));
+            Assert.That(SystemPath.AddEntry(current, TestDir), Is.EqualTo(current));
         }
 
-        [TestMethod]
+        [Test]
         public void AddEntryNeverProducesLeadingSeparator() {
-            Assert.AreEqual(TestDir, SystemPath.AddEntry(null, TestDir));
-            Assert.AreEqual(TestDir, SystemPath.AddEntry(string.Empty, TestDir));
-            Assert.AreEqual(TestDir, SystemPath.AddEntry(";", TestDir));
+            Assert.That(SystemPath.AddEntry(null, TestDir), Is.EqualTo(TestDir));
+            Assert.That(SystemPath.AddEntry(string.Empty, TestDir), Is.EqualTo(TestDir));
+            Assert.That(SystemPath.AddEntry(";", TestDir), Is.EqualTo(TestDir));
         }
 
-        [TestMethod]
+        [Test]
         public void AddEntryPreservesExistingTextByteForByte() {
             var current = @"C:\a; C:\b ;%USERPROFILE%\c;";
-            Assert.AreEqual(@"C:\a; C:\b ;%USERPROFILE%\c;" + TestDir,
-                SystemPath.AddEntry(current, TestDir));
+            Assert.That(SystemPath.AddEntry(current, TestDir), Is.EqualTo(@"C:\a; C:\b ;%USERPROFILE%\c;" + TestDir));
         }
 
-        [TestMethod]
+        [Test]
         public void AddEntryNeverIntroducesASeamOfSeparators() {
             foreach (var current in new[] { @"C:\a", @"C:\a;", @"C:\a; ", @"C:\a;;", @"C:\a; ;" })
-                Assert.AreEqual(@"C:\a;" + TestDir, SystemPath.AddEntry(current, TestDir),
-                    "unexpected result for input \"{0}\"", current);
+                Assert.That(SystemPath.AddEntry(current, TestDir), Is.EqualTo(@"C:\a;" + TestDir), string.Format("unexpected result for input \"{0}\"", current));
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveEntryDropsEveryOccurrence() {
             var current = TestDir + ";C:\\a;" + TestDir.ToUpperInvariant() + ";" + TestDir;
-            Assert.AreEqual("C:\\a", SystemPath.RemoveEntry(current, TestDir));
+            Assert.That(SystemPath.RemoveEntry(current, TestDir), Is.EqualTo("C:\\a"));
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveEntryKeepsOtherEntriesIntact() {
             var current = @"C:\a;C:\b";
-            Assert.AreEqual(current, SystemPath.RemoveEntry(current, TestDir));
+            Assert.That(SystemPath.RemoveEntry(current, TestDir), Is.EqualTo(current));
         }
 
-        [TestMethod]
+        [Test]
         public void GetDuplicateEntriesReportsEachDuplicateOnce() {
             var current = TestDir + ";C:\\a;" + TestDir + ";C:\\b;" + TestDir;
             var duplicates = SystemPath.GetDuplicateEntries(current);
-            Assert.AreEqual(1, duplicates.Count);
-            Assert.AreEqual(TestDir, duplicates[0]);
+            Assert.That(duplicates.Count, Is.EqualTo(1));
+            Assert.That(duplicates[0], Is.EqualTo(TestDir));
         }
 
-        [TestMethod]
+        [Test]
         public void GetDuplicateEntriesIsEmptyForCleanPath() {
-            Assert.AreEqual(0, SystemPath.GetDuplicateEntries(@"C:\a;C:\b").Count);
-            Assert.AreEqual(0, SystemPath.GetDuplicateEntries(null).Count);
+            Assert.That(SystemPath.GetDuplicateEntries(@"C:\a;C:\b").Count, Is.EqualTo(0));
+            Assert.That(SystemPath.GetDuplicateEntries(null).Count, Is.EqualTo(0));
         }
 
-        [TestMethod]
+        [Test]
         public void TryParseScopeAcceptsUserAndMachine() {
-            Assert.IsTrue(SystemPath.TryParseScope("user", out var userScope));
-            Assert.AreEqual(EnvironmentVariableTarget.User, userScope);
+            Assert.That(SystemPath.TryParseScope("user", out var userScope), Is.True);
+            Assert.That(userScope, Is.EqualTo(EnvironmentVariableTarget.User));
 
-            Assert.IsTrue(SystemPath.TryParseScope("MACHINE", out var machineScope));
-            Assert.AreEqual(EnvironmentVariableTarget.Machine, machineScope);
+            Assert.That(SystemPath.TryParseScope("MACHINE", out var machineScope), Is.True);
+            Assert.That(machineScope, Is.EqualTo(EnvironmentVariableTarget.Machine));
         }
 
-        [TestMethod]
+        [Test]
         public void TryParseScopeRejectsUnknownScope() {
-            Assert.IsFalse(SystemPath.TryParseScope("session", out _));
-            Assert.IsFalse(SystemPath.TryParseScope(null, out _));
+            Assert.That(SystemPath.TryParseScope("session", out _), Is.False);
+            Assert.That(SystemPath.TryParseScope(null, out _), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void ProcessScopeHasNoRegistryBacking() {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
+            Assert.Throws<ArgumentOutOfRangeException>(
                 () => SystemPath.GetPathEntries(EnvironmentVariableTarget.Process));
         }
 
-        [TestMethod]
+        [Test]
         public void DeniedKeyRaisesUnauthorizedAccessInsteadOfReturningEmpty() {
-            var denied = Assert.ThrowsException<UnauthorizedAccessException>(
+            var denied = Assert.Throws<UnauthorizedAccessException>(
                 () => SystemPath.RequireEnvironmentKey(
                     null, EnvironmentVariableTarget.Machine, writable: true));
-            StringAssert.Contains(denied.Message, "elevation may be required");
+            Assert.That(denied.Message, Does.Contain("elevation may be required"));
         }
 
-        [TestMethod]
+        [Test]
         public void DeniedReadKeyIsNamedWithoutTheElevationHint() {
-            var denied = Assert.ThrowsException<UnauthorizedAccessException>(
+            var denied = Assert.Throws<UnauthorizedAccessException>(
                 () => SystemPath.RequireEnvironmentKey(
                     null, EnvironmentVariableTarget.User, writable: false));
-            StringAssert.Contains(denied.Message, "User");
-            Assert.IsFalse(denied.Message.Contains("elevation"));
+            Assert.That(denied.Message, Does.Contain("User"));
+            Assert.That(denied.Message.Contains("elevation"), Is.False);
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void OpenKeyIsReturnedWhenItExists() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPathGuard\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey)) {
-                    Assert.AreSame(key,
-                        SystemPath.RequireEnvironmentKey(key, EnvironmentVariableTarget.User, true));
+                    Assert.That(SystemPath.RequireEnvironmentKey(key, EnvironmentVariableTarget.User, true), Is.SameAs(key));
                 }
             }
             finally {
@@ -184,17 +179,16 @@ namespace pyRevitLabs.Common.Tests {
             }
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void RawValueWriteKeepsExpandStringKindAndUnexpandedText() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey)) {
                     SystemPath.WriteRawPathValue(key, @"%USERPROFILE%\bin;" + TestDir);
 
-                    Assert.AreEqual(RegistryValueKind.ExpandString, key.GetValueKind("Path"));
-                    Assert.AreEqual(@"%USERPROFILE%\bin;" + TestDir,
-                        SystemPath.ReadRawPathValue(key));
+                    Assert.That(key.GetValueKind("Path"), Is.EqualTo(RegistryValueKind.ExpandString));
+                    Assert.That(SystemPath.ReadRawPathValue(key), Is.EqualTo(@"%USERPROFILE%\bin;" + TestDir));
                 }
             }
             finally {
@@ -202,8 +196,8 @@ namespace pyRevitLabs.Common.Tests {
             }
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void RawValueWriteDoesNotDowngradeExistingStringKind() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
@@ -211,7 +205,7 @@ namespace pyRevitLabs.Common.Tests {
                     key.SetValue("Path", @"C:\a", RegistryValueKind.String);
                     SystemPath.WriteRawPathValue(key, @"C:\a;" + TestDir);
 
-                    Assert.AreEqual(RegistryValueKind.String, key.GetValueKind("Path"));
+                    Assert.That(key.GetValueKind("Path"), Is.EqualTo(RegistryValueKind.String));
                 }
             }
             finally {
@@ -219,13 +213,13 @@ namespace pyRevitLabs.Common.Tests {
             }
         }
 
-        [TestMethod]
-        [TestCategory("Integration")]
+        [Test]
+        [Category("Integration")]
         public void RawValueReadOfMissingValueIsNull() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
                 using (var key = Registry.CurrentUser.CreateSubKey(subKey))
-                    Assert.IsNull(SystemPath.ReadRawPathValue(key));
+                    Assert.That(SystemPath.ReadRawPathValue(key), Is.Null);
             }
             finally {
                 Registry.CurrentUser.DeleteSubKeyTree(subKey, throwOnMissingSubKey: false);

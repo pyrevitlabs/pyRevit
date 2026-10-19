@@ -4,7 +4,9 @@ The Labs configuration facade, script-file classification, deployed version look
 
 Owner: the owning module maintainers; unassigned failures and quarantines belong to the change author. Quarantines require an issue and review within 14 days.
 
-NUnit and MSTest cases target `net48` and `net8.0-windows`; each keeps its existing framework. MSTest files alias assertion types explicitly to avoid NUnit global-using ambiguity. Tests are discovered from source globs; add literal Environment and Level categories to every test class. Revit API use requires the Revit category and local host setup. No test outputs deploy into a clone.
+NUnit cases target `net48` and `net8.0-windows`. Tests are discovered from source globs; add literal Environment and Level categories to every test class. Revit API use requires the Revit category and local host setup. No test outputs deploy into a clone.
+
+Converted fixtures use `FixtureLifeCycle(LifeCycle.InstancePerTestCase)` to keep objects isolated between cases.
 
 Run the full CI selection from the repository root:
 
