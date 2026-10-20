@@ -174,11 +174,22 @@ class ElementSelection:
 
     @property
     def linked_elements(self):
-        """list[DB.Element]: selected elements that live in linked documents."""
+        """list[DB.Element]: selected elements that live in linked documents.
+
+        Entries whose link instance was deleted or whose link was unloaded
+        since selection, or whose element no longer exists, are skipped.
+        """
         linked_elements = []
         for link_ref in self._link_refs:
-            link_doc = DOCS.doc.GetElement(link_ref.ElementId).GetLinkDocument()
-            linked_elements.append(link_doc.GetElement(link_ref.LinkedElementId))
+            link_instance = DOCS.doc.GetElement(link_ref.ElementId)
+            if not isinstance(link_instance, DB.RevitLinkInstance):
+                continue
+            link_doc = link_instance.GetLinkDocument()
+            if link_doc is None:
+                continue
+            linked_element = link_doc.GetElement(link_ref.LinkedElementId)
+            if linked_element is not None:
+                linked_elements.append(linked_element)
         return linked_elements
 
     @property
