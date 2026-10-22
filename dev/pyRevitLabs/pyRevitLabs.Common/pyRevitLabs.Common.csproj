@@ -21,6 +21,12 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.11.0"/>
 
+        <!-- Referenced for its files only: the deployment target copies the stack
+             out of the package, so no WebView2 binaries are vendored in dev/libs.
+             The reference itself must not flow into consumers. -->
+        <PackageReference Include="Microsoft.Web.WebView2" Version="$(PyRevitWebView2Version)"
+                          GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
+
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6"/>
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1"/>
 
@@ -89,32 +95,35 @@
       The WebView2 stack is deployed to a dedicated folder on .NET (Revit 2025
       and newer) so that it can be loaded into an isolated load context and
       never bind against the WebView2 core the host process already carries.
-      The .NET Framework deployment keeps the in-process layout.
+      The .NET Framework deployment keeps the in-process layout. Both take the
+      files from the pinned NuGet package instead of the vendored dev/libs.
     -->
     <Target Name="Deploy-pyRevit-deps" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
-        <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">
-            <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Core.dll"/>
-            <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.WinForms.dll"/>
-            <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Wpf.dll"/>
-            <webview2Native Include="$(PyRevitDevLibsDir)\WebView2Loader.dll"/>
+        <PropertyGroup>
+            <PyRevitWebView2LibDir Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(PkgMicrosoft_Web_WebView2)\lib\net462</PyRevitWebView2LibDir>
+            <PyRevitWebView2LibDir Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0</PyRevitWebView2LibDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <webview2Dlls Include="$(PyRevitWebView2LibDir)\Microsoft.Web.WebView2.Core.dll"/>
+            <webview2Dlls Include="$(PyRevitWebView2LibDir)\Microsoft.Web.WebView2.WinForms.dll"/>
+            <webview2Dlls Include="$(PyRevitWebView2LibDir)\Microsoft.Web.WebView2.Wpf.dll"/>
+            <webview2Native Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll"/>
             <dlls Include="$(PyRevitDevLibsDir)\*.dll" Exclude="@(webview2Dlls);@(webview2Native)"/>
             <exes Include="$(PyRevitDevLibsDir)\*.exe"/>
             <!-- Copies an earlier build left in the binary folder, where the
                  loader would sweep them into the host process again. -->
-            <staleWebView2Copies Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.Core.dll"/>
-            <staleWebView2Copies Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.WinForms.dll"/>
-            <staleWebView2Copies Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.Wpf.dll"/>
-            <staleWebView2Copies Include="$(PyRevitBinDir)\WebView2Loader.dll"/>
+            <staleWebView2Copies Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.Core.dll"/>
+            <staleWebView2Copies Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.WinForms.dll"/>
+            <staleWebView2Copies Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.Wpf.dll"/>
+            <staleWebView2Copies Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="$(PyRevitBinDir)\WebView2Loader.dll"/>
         </ItemGroup>
-        <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NetCoreApp'">
-            <dlls Include="$(PyRevitDevLibsDir)\*.dll"/>
-            <exes Include="$(PyRevitDevLibsDir)\*.exe"/>
-        </ItemGroup>
-        <Copy SourceFiles="@(dlls)" DestinationFolder="$(PyRevitBinDir)"/>
-        <Copy SourceFiles="@(exes)" DestinationFolder="$(PyRevitBinDir)"/>
-        <Copy SourceFiles="@(webview2Dlls);@(webview2Native)" DestinationFolder="$(PyRevitBinDir)\isolated"/>
-        <Delete Files="@(staleWebView2Copies)" ContinueOnError="true" />
-        <Warning Condition="'@(staleWebView2Copies->Exists())' != ''"
+        <Copy SourceFiles="@(dlls);@(exes)" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"
+              SourceFiles="@(webview2Dlls);@(webview2Native)" DestinationFolder="$(PyRevitBinDir)\isolated"/>
+        <Copy Condition="'$(TargetFrameworkIdentifier)' != '.NetCoreApp'"
+              SourceFiles="@(webview2Dlls);@(webview2Native)" DestinationFolder="$(PyRevitBinDir)"/>
+        <Delete Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Files="@(staleWebView2Copies)" ContinueOnError="true" />
+        <Warning Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp' and '@(staleWebView2Copies->Exists())' != ''"
                  Text="Stale WebView2 assemblies are still in $(PyRevitBinDir): @(staleWebView2Copies->Exists(), ', '). The loader keeps them out of the host process, but they must not be in the binary folder." />
     </Target>
 </Project>

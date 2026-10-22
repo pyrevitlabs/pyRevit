@@ -107,31 +107,23 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             Directory.CreateDirectory(IsolatedDirectory);
             Directory.CreateDirectory(HostDirectory);
 
-            var devLibs = Path.Combine(RepositoryRoot, "dev", "libs", "netcore");
-            foreach (var fileName in WebView2AssemblyFileNames) {
-                var source = Path.Combine(devLibs, fileName);
-                if (!File.Exists(source))
-                    throw new FileNotFoundException(
-                        "The WebView2 assembly the repository ships is missing.", source);
+            var deployed = Path.Combine(RepositoryRoot, "bin", "netcore", "isolated");
+            foreach (var fileName in WebView2AssemblyFileNames)
+                CopyFromDeployment(deployed, fileName, "The deployed WebView2 stack is missing.");
 
-                File.Copy(source, Path.Combine(IsolatedDirectory, fileName), true);
-            }
+            CopyFromDeployment(deployed, NativeLoaderFileName, "The deployed WebView2 stack is missing.");
+            CopyFromDeployment(
+                deployed, RendererAssemblyFileName,
+                "The isolated WebView2 renderer was not deployed.");
+        }
 
-            var nativeLoader = Path.Combine(devLibs, NativeLoaderFileName);
-            if (!File.Exists(nativeLoader))
+        private void CopyFromDeployment(string sourceDirectory, string fileName, string message) {
+            var source = Path.Combine(sourceDirectory, fileName);
+            if (!File.Exists(source))
                 throw new FileNotFoundException(
-                    "The native WebView2 loader the repository ships is missing.", nativeLoader);
+                    message + " Build the solution before running the renderer tests.", source);
 
-            File.Copy(nativeLoader, Path.Combine(IsolatedDirectory, NativeLoaderFileName), true);
-
-            var renderer = Path.Combine(
-                RepositoryRoot, "bin", "netcore", "isolated", RendererAssemblyFileName);
-            if (!File.Exists(renderer))
-                throw new FileNotFoundException(
-                    "The isolated WebView2 renderer was not built. Build the solution before running "
-                    + "the renderer tests.", renderer);
-
-            File.Copy(renderer, Path.Combine(IsolatedDirectory, RendererAssemblyFileName), true);
+            File.Copy(source, Path.Combine(IsolatedDirectory, fileName), true);
         }
     }
 }
