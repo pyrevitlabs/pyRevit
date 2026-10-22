@@ -480,13 +480,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>Full current document including the html wrapper.</summary>
         public string GetFullHtml() {
+            EnsureDocumentReadyBlocking();
             if (_plainTextOutput != null)
                 return ScriptConsoleConfigs.DOCTYPE
                        + "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" /></head>"
                        + "<body><pre>"
                        + System.Net.WebUtility.HtmlEncode(_plainTextOutput.Text)
                        + "</pre></body></html>";
-            EnsureDocumentReadyBlocking();
             var html = DecodeJsonString(_renderer.EvalScript("document.documentElement.outerHTML"));
             return ScriptConsoleConfigs.DOCTYPE + (html ?? string.Empty);
         }
