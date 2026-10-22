@@ -62,7 +62,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
         }
 
         /// <summary>
-        /// Builds the fake deployment out of the binaries the repository ships
+        /// Builds the fake deployment out of the staged WebView2 package files
         /// and the renderer the build produces.
         /// </summary>
         internal static IsolatedRendererFixture Create() {
@@ -102,22 +102,35 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             get { return RepositoryPaths.Root; }
         }
 
+        /// <summary>
+        /// The WebView2 stack the test project stages next to its output. It comes
+        /// from the same package the deployment copies, so running the renderer
+        /// tests alone does not require the product deployment to have run first.
+        /// </summary>
+        internal static string StagedWebView2Directory {
+            get {
+                return Path.Combine(
+                    Path.GetDirectoryName(typeof(IsolatedRendererFixture).Assembly.Location),
+                    "webview2-fixture");
+            }
+        }
+
         private void Populate() {
             Directory.CreateDirectory(EngineDirectory);
             Directory.CreateDirectory(IsolatedDirectory);
             Directory.CreateDirectory(HostDirectory);
 
-            var deployed = Path.Combine(RepositoryRoot, "bin", "netcore", "isolated");
             foreach (var fileName in WebView2AssemblyFileNames)
-                CopyFromDeployment(deployed, fileName, "The deployed WebView2 stack is missing.");
+                CopyRequired(StagedWebView2Directory, fileName, "The staged WebView2 stack is missing.");
 
-            CopyFromDeployment(deployed, NativeLoaderFileName, "The deployed WebView2 stack is missing.");
-            CopyFromDeployment(
-                deployed, RendererAssemblyFileName,
+            CopyRequired(StagedWebView2Directory, NativeLoaderFileName, "The staged WebView2 stack is missing.");
+            CopyRequired(
+                Path.Combine(RepositoryRoot, "bin", "netcore", "isolated"),
+                RendererAssemblyFileName,
                 "The isolated WebView2 renderer was not deployed.");
         }
 
-        private void CopyFromDeployment(string sourceDirectory, string fileName, string message) {
+        private void CopyRequired(string sourceDirectory, string fileName, string message) {
             var source = Path.Combine(sourceDirectory, fileName);
             if (!File.Exists(source))
                 throw new FileNotFoundException(

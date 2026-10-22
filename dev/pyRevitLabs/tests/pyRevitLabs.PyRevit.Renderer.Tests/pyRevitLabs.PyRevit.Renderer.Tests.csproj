@@ -20,7 +20,24 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
         <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
         <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+        <PackageReference Include="Microsoft.Web.WebView2" Version="$(PyRevitWebView2Version)"
+                          GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
     </ItemGroup>
+
+    <!--
+      The fixture needs the same WebView2 stack the deployment ships. Stage it
+      next to the test assembly so running this project alone does not depend on
+      the product deployment having run first.
+    -->
+    <Target Name="StageWebView2Fixture" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
+        <ItemGroup>
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.Core.dll" />
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.Wpf.dll" />
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.WinForms.dll" />
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll" />
+        </ItemGroup>
+        <Copy SourceFiles="@(WebView2FixtureFile)" DestinationFolder="$(OutDir)webview2-fixture" SkipUnchangedFiles="true" />
+    </Target>
 
     <ItemGroup>
         <ProjectReference Include="..\..\PyRevit.Renderer\pyRevitLabs.PyRevit.Renderer.csproj" />
