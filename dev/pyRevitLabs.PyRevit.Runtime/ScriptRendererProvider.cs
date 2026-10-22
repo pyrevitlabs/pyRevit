@@ -183,16 +183,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return IsolatedRendererLayout.ResolveIsolatedDirectory(GetRuntimeAssemblyDirectory());
         }
 
-        /// <summary>
-        /// The folder the host process binaries live in, which is where the
-        /// isolated renderer folder sits. The runtime assembly is deployed to
-        /// an engine folder below it, so the search walks up until it finds
-        /// the engine folder marker.
-        /// </summary>
-        private static string GetPyRevitBinDirectory() {
-            return IsolatedRendererLayout.ResolveBinDirectory(GetRuntimeAssemblyDirectory());
-        }
-
         private static string GetRuntimeAssemblyDirectory() {
             return Path.GetDirectoryName(typeof(ScriptRendererProvider).Assembly.Location);
         }
