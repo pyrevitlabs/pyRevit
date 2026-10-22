@@ -217,6 +217,7 @@ public static class TestCertificateStore {
             $ErrorActionPreference = 'Stop'
             $ProgressPreference = 'SilentlyContinue'
             $subject = '{{escaped}}'
+            $simpleSubject = $subject -replace '^CN=', ''
             $threshold = (Get-Date).AddDays({{renewBeforeDays}})
             function Test-LocalCertificate($candidate, $expectedSubject, $renewalThreshold) {
                 if ($candidate.Subject -ne $expectedSubject -or $candidate.Issuer -ne $expectedSubject -or
@@ -251,12 +252,18 @@ public static class TestCertificateStore {
                     if ($privateKey) { $privateKey.Dispose() }
                 }
             }
-            $cert = Get-ChildItem Cert:\CurrentUser\My |
+            $trusted = @(Get-ChildItem Cert:\CurrentUser\Root |
+                Where-Object { $_.Subject -eq $subject } |
+                ForEach-Object { $_.Thumbprint })
+            $candidates = @(Get-ChildItem Cert:\CurrentUser\My |
                 Where-Object { Test-LocalCertificate $_ $subject $threshold } |
-                Sort-Object NotAfter -Descending |
-                Select-Object -First 1
+                Sort-Object NotAfter -Descending)
+            $cert = $candidates | Where-Object { $trusted -contains $_.Thumbprint } | Select-Object -First 1
             if (-not $cert) {
-                $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $subject `
+                $cert = $candidates | Select-Object -First 1
+            }
+            if (-not $cert) {
+                $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject $simpleSubject `
                     -KeyUsage DigitalSignature -TextExtension @('2.5.29.19={critical}{text}ca=false') `
                     -KeyExportPolicy NonExportable -KeyAlgorithm RSA -KeyLength 3072 -HashAlgorithm SHA256 `
                     -NotAfter (Get-Date).AddDays({{lifetimeDays}}) -CertStoreLocation Cert:\CurrentUser\My
@@ -333,7 +340,7 @@ public static class TestCertificateStore {
         }
 
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var startInfo = new ProcessStartInfo("powershell.exe") {
+        var startInfo = new ProcessStartInfo(ResolvePowerShellExecutable()) {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -347,7 +354,7 @@ public static class TestCertificateStore {
         timeout.CancelAfter(PowerShellTimeout);
 
         using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Could not start powershell.exe.");
+            ?? throw new InvalidOperationException("Could not start the certificate PowerShell host.");
         var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
         try {
@@ -396,10 +403,51 @@ public static class TestCertificateStore {
         }
     }
 
+    /// <summary>
+    /// The PowerShell host that runs the certificate scripts.
+    /// </summary>
+    /// <remarks>
+    /// The <c>Cert:</c> drive comes from the <c>Microsoft.PowerShell.Security</c> module, and a Windows install
+    /// does not always carry it for Windows PowerShell 5.1: where it is missing, 5.1 has no <c>Cert:</c> drive at
+    /// all and the script dies on "Cannot find drive. A drive with the name 'Cert' does not exist". PowerShell 7
+    /// ships the provider itself, so it is preferred; 5.1 stays the fallback for machines without it.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">No usable PowerShell host is on the path.</exception>
+    private static string ResolvePowerShellExecutable() {
+        foreach (var candidate in new[] { "pwsh.exe", "powershell.exe" }) {
+            var resolved = FindExecutableOnPath(candidate);
+            if (resolved != null) {
+                return resolved;
+            }
+        }
+
+        throw new InvalidOperationException(
+            "Neither pwsh.exe nor powershell.exe is on PATH, so the certificate scripts cannot run.");
+    }
+
+    private static string? FindExecutableOnPath(string fileName) {
+        var pathVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        foreach (var directory in pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)) {
+            string candidate;
+            try {
+                candidate = Path.Combine(directory.Trim(), fileName);
+            }
+            catch (ArgumentException) {
+                continue;
+            }
+
+            if (File.Exists(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Runs a certificate script and returns its output, with no rollback of its own.</summary>
     private static async Task<string> ExecutePowerShellAsync(string script, CancellationToken cancellationToken) {
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var startInfo = new ProcessStartInfo("powershell.exe") {
+        var startInfo = new ProcessStartInfo(ResolvePowerShellExecutable()) {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -410,7 +458,7 @@ public static class TestCertificateStore {
         startInfo.ArgumentList.Add(encoded);
 
         using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Could not start powershell.exe.");
+            ?? throw new InvalidOperationException("Could not start the certificate PowerShell host.");
         var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         await process.WaitForExitAsync(cancellationToken);
         if (process.ExitCode != 0) {
