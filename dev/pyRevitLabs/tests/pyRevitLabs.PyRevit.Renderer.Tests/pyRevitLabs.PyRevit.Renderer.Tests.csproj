@@ -24,7 +24,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\PyRevit.Renderer\pyRevitLabs.PyRevit.Renderer.csproj" />
-        <ProjectReference Include="..\..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
+        <ProjectReference Include="..\..\PyRevit.WebView2\pyRevitLabs.PyRevit.WebView2.csproj"
+                          ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -36,6 +37,16 @@
     <ItemGroup>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\WebView2LoadContext.cs" Link="Sources\WebView2LoadContext.cs" />
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\ScriptRendererProvider.cs" Link="Sources\ScriptRendererProvider.cs" />
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\IsolatedRendererLayout.cs" Link="Sources\IsolatedRendererLayout.cs" />
+    </ItemGroup>
+
+    <!-- The loader cannot be loaded outside a Revit host either, so the load
+         policy it applies is asserted against its source. -->
+    <ItemGroup>
+        <Compile Include="..\..\..\pyRevitLoader\Source\AssemblyLoadPolicy.cs" Link="Sources\AssemblyLoadPolicy.cs" />
+        <None Include="..\..\..\pyRevitLoader\Source\PyRevitLoaderApplication.cs"
+              Link="Sources\PyRevitLoaderApplication.cs"
+              CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

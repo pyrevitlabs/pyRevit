@@ -128,7 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static string GetIsolatedDirectory() {
-            return Path.Combine(GetPyRevitBinDirectory(), "isolated");
+            return IsolatedRendererLayout.ResolveIsolatedDirectory(GetRuntimeAssemblyDirectory());
         }
 
         /// <summary>
@@ -138,26 +138,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// the engine folder marker.
         /// </summary>
         private static string GetPyRevitBinDirectory() {
-            var assemblyDirectory = Path.GetDirectoryName(
-                typeof(ScriptRendererProvider).Assembly.Location);
-            var directory = assemblyDirectory;
-            while (!string.IsNullOrEmpty(directory)) {
-                if (Directory.Exists(Path.Combine(directory, "engines")))
-                    return directory;
+            return IsolatedRendererLayout.ResolveBinDirectory(GetRuntimeAssemblyDirectory());
+        }
 
-                var parent = Path.GetDirectoryName(directory);
-                if (string.Equals(parent, directory, StringComparison.OrdinalIgnoreCase))
-                    break;
-                directory = parent;
-            }
-
-            var fallback = Path.GetDirectoryName(Path.GetDirectoryName(assemblyDirectory));
-            if (string.IsNullOrEmpty(fallback)) {
-                throw new DirectoryNotFoundException(
-                    "Could not locate the pyRevit binary folder from the runtime assembly location.");
-            }
-
-            return fallback;
+        private static string GetRuntimeAssemblyDirectory() {
+            return Path.GetDirectoryName(typeof(ScriptRendererProvider).Assembly.Location);
         }
 #endif
 
