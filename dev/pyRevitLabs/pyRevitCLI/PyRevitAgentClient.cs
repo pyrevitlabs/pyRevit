@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
@@ -143,6 +144,7 @@ namespace pyRevitCLI {
         /// its value. Only when no process id matches is a number in [2000, 2100) read as a Revit
         /// year; any other number is a process id that matched nothing. Windows can hand out
         /// process ids in the year range, so the year rule must never shadow an exact pid match.
+        /// Years compare in canonical form, so " 2024 " or "02024" select Revit 2024.
         /// </remarks>
         /// <exception cref="AgentClientException"><c>invalid_params</c> when the selector is not a number.</exception>
         internal static List<AgentInstance> Match(IReadOnlyList<AgentInstance> instances, string selector) {
@@ -154,7 +156,8 @@ namespace pyRevitCLI {
             var byProcessId = instances.Where(instance => instance.ProcessId == number).ToList();
             if (byProcessId.Count > 0 || number < 2000 || number >= 2100)
                 return byProcessId;
-            return instances.Where(instance => instance.RevitVersion == selector).ToList();
+            var year = number.ToString(CultureInfo.InvariantCulture);
+            return instances.Where(instance => instance.RevitVersion == year).ToList();
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

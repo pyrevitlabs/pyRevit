@@ -90,6 +90,12 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void APaddedYearSelectsLikeTheCanonicalYear() {
+        Assert.Equal(9004, Assert.Single(PyRevitAgentClient.Match(Sessions, " 2025 ")).ProcessId);
+        Assert.Equal(9004, Assert.Single(PyRevitAgentClient.Match(Sessions, "02025")).ProcessId);
+    }
+
+    [Fact]
     public void AProcessIdOutsideTheYearRangeSelectsOnlyByProcessId() {
         Assert.Equal("2024", Assert.Single(PyRevitAgentClient.Match(Sessions, "9000")).RevitVersion);
         Assert.Empty(PyRevitAgentClient.Match(Sessions, "9008"));
