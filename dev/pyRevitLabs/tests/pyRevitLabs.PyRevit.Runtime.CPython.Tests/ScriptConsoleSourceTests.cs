@@ -15,7 +15,7 @@ public class ScriptConsoleSourceTests {
     public void Flush_ShowsWindowBeforeChoosingFallback() {
         var body = CSharpSource.MemberBody(Source, "private void FlushPendingEntries()");
         var ensureReady = body.IndexOf("EnsureDocumentReady();", StringComparison.Ordinal);
-        var fallback = body.IndexOf("if (_webView.RuntimeMissing)", StringComparison.Ordinal);
+        var fallback = body.IndexOf("if (_renderer.RuntimeMissing)", StringComparison.Ordinal);
         Assert.True(ensureReady >= 0 && fallback > ensureReady);
     }
 
@@ -39,9 +39,9 @@ public class ScriptConsoleSourceTests {
     public void Freeze_PairsWithUnfreezeWithoutRequiringWebView() {
         var freeze = CSharpSource.MemberBody(Source, "public void Freeze()");
         Assert.Contains("_frozen = true;", freeze);
-        Assert.DoesNotContain("if (_webView.RuntimeMissing)", freeze);
+        Assert.DoesNotContain("if (_renderer.RuntimeMissing)", freeze);
         var unfreeze = CSharpSource.MemberBody(Source, "public void Unfreeze()");
-        Assert.True(CSharpSource.IsInBlockOf(unfreeze, "if (_webView.RuntimeMissing)", "_pendingHtml.Append(snapshot);"));
+        Assert.True(CSharpSource.IsInBlockOf(unfreeze, "if (_renderer.RuntimeMissing)", "_pendingHtml.Append(snapshot);"));
         Assert.Contains("_frozenPendingHtml.Clear();", unfreeze);
         Assert.Contains("_frozen = false;", unfreeze);
         Assert.Contains("QueueFlush();", unfreeze);
