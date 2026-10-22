@@ -22,6 +22,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// of PresentationFramework would make the renderer control derive from a
     /// different Control type than the host window, and adding it to the visual
     /// tree would throw.
+    ///
+    /// Invariant: an isolated assembly that is missing from the isolated
+    /// folder fails the load instead of falling back. Falling back would bind
+    /// pyRevit's newer WebView2 wrapper against the core the host process
+    /// carries, which is the crash this isolation exists to prevent, so a
+    /// broken deployment must be loud rather than silently unsafe.
     /// </summary>
     internal sealed class WebView2LoadContext : AssemblyLoadContext {
         private static readonly string[] IsolatedAssemblyNames = {
@@ -47,8 +53,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return null;
 
             var path = Path.Combine(_assemblyDirectory, assemblyName.Name + ".dll");
-            if (!File.Exists(path))
-                return null;
+            if (!File.Exists(path)) {
+                throw new FileNotFoundException(
+                    "The isolated assembly '" + assemblyName.Name + "' was not found in '"
+                    + _assemblyDirectory + "'. Falling back to the default load context would bind "
+                    + "it against the WebView2 core the host process carries, so the load fails "
+                    + "instead. The pyRevit installation is incomplete.",
+                    path);
+            }
 
             return LoadFromAssemblyPath(path);
         }
@@ -64,8 +76,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 path = Path.Combine(
                     _assemblyDirectory,
                     Path.GetFileNameWithoutExtension(unmanagedDllName) + ".dll");
-                if (!File.Exists(path))
-                    return IntPtr.Zero;
+            }
+
+            if (!File.Exists(path)) {
+                if (IsWebView2Loader(unmanagedDllName)) {
+                    throw new DllNotFoundException(
+                        "The native WebView2 loader '" + unmanagedDllName + "' was not found in '"
+                        + _assemblyDirectory + "'. The pyRevit installation is incomplete.");
+                }
+
+                return IntPtr.Zero;
             }
 
             return LoadUnmanagedDllFromPath(path);
@@ -81,6 +101,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             return false;
+        }
+
+        private static bool IsWebView2Loader(string unmanagedDllName) {
+            if (string.IsNullOrEmpty(unmanagedDllName))
+                return false;
+
+            var name = Path.GetFileNameWithoutExtension(unmanagedDllName);
+            return string.Equals(name, "WebView2Loader", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
