@@ -317,6 +317,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                     "environment ready (runtime {0}); creating controller",
                     environment.BrowserVersionString);
                 await _control.EnsureCoreWebView2Async(environment);
+                LogLoadContexts();
                 ScriptRendererLog.Debug(
                     "controller created: core={0} size={1}x{2}",
                     _control.CoreWebView2 != null, _control.ActualWidth, _control.ActualHeight);
@@ -346,6 +347,30 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                     "WebView2 initialization failed; this output window will not render. {0}", ex);
             }
         }
+
+#if !NETFRAMEWORK
+        /// <summary>
+        /// Records the load context of the WebView2 assemblies so that the
+        /// isolation from the host process is observable in the runtime log.
+        /// </summary>
+        private static void LogLoadContexts() {
+            LogLoadContext("Microsoft.Web.WebView2.Core", typeof(CoreWebView2Environment).Assembly);
+            LogLoadContext("Microsoft.Web.WebView2.Wpf", typeof(WebView2Control).Assembly);
+            LogLoadContext("pyRevitLabs.PyRevit.WebView2", typeof(WebView2ScriptRenderer).Assembly);
+        }
+
+        private static void LogLoadContext(string label, System.Reflection.Assembly assembly) {
+            var context = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(assembly);
+            ScriptRendererLog.Debug(
+                "{0} version {1} loaded into load context '{2}'",
+                label,
+                assembly.GetName().Version,
+                context == null ? "<none>" : context.Name);
+        }
+#else
+        private static void LogLoadContexts() {
+        }
+#endif
 
         private void RunFirstNavigation(Func<string> firstNavigationProvider) {
             if (firstNavigationProvider == null || _everNavigated || !_coreReady || _disposed)

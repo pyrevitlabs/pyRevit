@@ -6,6 +6,8 @@ using System.Windows.Threading;
 using PyRevitLabs.PyRevit.Renderer;
 #if NETFRAMEWORK
 using PyRevitLabs.PyRevit.WebView2;
+#else
+using System.Runtime.Loader;
 #endif
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -61,12 +63,42 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             var assembly = context.LoadFromAssemblyPath(assemblyPath);
             var rendererType = assembly.GetType(IsolatedRendererTypeName, throwOnError: true);
-            return (IScriptRenderer)Activator.CreateInstance(
+            var renderer = (IScriptRenderer)Activator.CreateInstance(
                 rendererType,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 null,
                 new object[] { dispatcher, GetProfileFolder() },
                 null);
+            LogLoadContexts(context, assembly);
+            return renderer;
+        }
+
+        /// <summary>
+        /// Records the load context of the renderer and of the WebView2
+        /// assemblies it pulled in, so that the isolation from the host process
+        /// is observable in the runtime log.
+        /// </summary>
+        private static void LogLoadContexts(WebView2LoadContext context, Assembly rendererAssembly) {
+            ScriptRendererLog.Debug(
+                "renderer assembly {0}{1}",
+                rendererAssembly.GetName().Name,
+                DescribeLoadContext(rendererAssembly));
+
+            foreach (var assembly in context.Assemblies) {
+                var name = assembly.GetName().Name;
+                if (name == null || !name.StartsWith("Microsoft.Web.WebView2", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                ScriptRendererLog.Debug(
+                    "renderer dependency {0}{1}", name, DescribeLoadContext(assembly));
+            }
+        }
+
+        private static string DescribeLoadContext(Assembly assembly) {
+            var context = AssemblyLoadContext.GetLoadContext(assembly);
+            return context == null
+                ? string.Empty
+                : string.Format(" loaded into load context '{0}'", context.Name);
         }
 
         /// <summary>
