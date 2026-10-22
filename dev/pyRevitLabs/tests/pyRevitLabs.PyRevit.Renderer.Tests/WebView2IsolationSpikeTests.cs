@@ -219,7 +219,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
 
             StaTestRunner.Run(() => {
                 var dispatcher = Dispatcher.CurrentDispatcher;
-                var options = Activator.CreateInstance(optionsType);
+                var options = CreateEnvironmentOptions(optionsType);
                 var creation = (Task)createAsync.Invoke(
                     null, new object[] { null, userDataFolder, options });
 
@@ -287,6 +287,27 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             Assert.IsNotNull(method, "The load context must override the native library probing.");
 
             return (IntPtr)method.Invoke(_context, new object[] { libraryFileName });
+        }
+
+        /// <summary>
+        /// Builds the environment options the way the renderer does. The
+        /// shipped core exposes only constructors whose parameters are all
+        /// optional, and <see cref="Activator"/> ignores optional parameters,
+        /// so the shortest constructor is invoked with defaults spelled out.
+        /// </summary>
+        private static object CreateEnvironmentOptions(Type optionsType) {
+            var constructor = optionsType
+                .GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                .OrderBy(candidate => candidate.GetParameters().Length)
+                .First();
+            var arguments = constructor
+                .GetParameters()
+                .Select(parameter => parameter.ParameterType.IsValueType
+                    ? Activator.CreateInstance(parameter.ParameterType)
+                    : null)
+                .ToArray();
+
+            return constructor.Invoke(arguments);
         }
 
         private static bool IsBrowserRuntimeInstalled(Assembly core) {
