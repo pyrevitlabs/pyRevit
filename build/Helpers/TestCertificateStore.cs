@@ -252,13 +252,19 @@ public static class TestCertificateStore {
                     if ($privateKey) { $privateKey.Dispose() }
                 }
             }
-            $trusted = @(Get-ChildItem Cert:\CurrentUser\Root |
+            $rootTrusted = @(Get-ChildItem Cert:\CurrentUser\Root |
+                Where-Object { $_.Subject -eq $subject } |
+                ForEach-Object { $_.Thumbprint })
+            $publisherTrusted = @(Get-ChildItem Cert:\CurrentUser\TrustedPublisher |
                 Where-Object { $_.Subject -eq $subject } |
                 ForEach-Object { $_.Thumbprint })
             $candidates = @(Get-ChildItem Cert:\CurrentUser\My |
                 Where-Object { Test-LocalCertificate $_ $subject $threshold } |
                 Sort-Object NotAfter -Descending)
-            $cert = $candidates | Where-Object { $trusted -contains $_.Thumbprint } | Select-Object -First 1
+            $cert = $candidates | Where-Object { $rootTrusted -contains $_.Thumbprint -and $publisherTrusted -contains $_.Thumbprint } | Select-Object -First 1
+            if (-not $cert) {
+                $cert = $candidates | Where-Object { $rootTrusted -contains $_.Thumbprint } | Select-Object -First 1
+            }
             if (-not $cert) {
                 $cert = $candidates | Select-Object -First 1
             }
@@ -271,10 +277,20 @@ public static class TestCertificateStore {
             if (-not (Test-LocalCertificate $cert $subject $threshold)) {
                 throw 'The local test certificate does not meet the required code-signing profile.'
             }
-            Get-ChildItem Cert:\CurrentUser\My |
-                Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint } |
-                ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
             {{trustBlock}}
+            $trustedForSigning = $false
+            if (@(Get-ChildItem Cert:\CurrentUser\Root |
+                Where-Object { $_.Thumbprint -eq $cert.Thumbprint }).Count -gt 0) {
+                if (@(Get-ChildItem Cert:\CurrentUser\TrustedPublisher |
+                    Where-Object { $_.Thumbprint -eq $cert.Thumbprint }).Count -gt 0) {
+                    $trustedForSigning = $true
+                }
+            }
+            if ($trustedForSigning) {
+                Get-ChildItem Cert:\CurrentUser\My |
+                    Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint } |
+                    ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
+            }
             $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($cert.RawData)
             Write-Output ('{{FingerprintMarker}}' + (($hash | ForEach-Object { $_.ToString('X2') }) -join ''))
             """;
@@ -411,38 +427,14 @@ public static class TestCertificateStore {
     /// does not always carry it for Windows PowerShell 5.1: where it is missing, 5.1 has no <c>Cert:</c> drive at
     /// all and the script dies on "Cannot find drive. A drive with the name 'Cert' does not exist". PowerShell 7
     /// ships the provider itself, so it is preferred; 5.1 stays the fallback for machines without it.
+    ///
+    /// <c>Remove-Item -DeleteKey</c> was removed in PowerShell 6 and reintroduced in 7.1, so a 7.0 host cannot
+    /// delete the private key with the rest of the certificate. The minimum keeps such a host from being selected
+    /// while still allowing the 5.1 fallback, which supports the switch.
     /// </remarks>
-    /// <exception cref="InvalidOperationException">No usable PowerShell host is on the path.</exception>
-    private static string ResolvePowerShellExecutable() {
-        foreach (var candidate in new[] { "pwsh.exe", "powershell.exe" }) {
-            var resolved = FindExecutableOnPath(candidate);
-            if (resolved != null) {
-                return resolved;
-            }
-        }
-
-        throw new InvalidOperationException(
-            "Neither pwsh.exe nor powershell.exe is on PATH, so the certificate scripts cannot run.");
-    }
-
-    private static string? FindExecutableOnPath(string fileName) {
-        var pathVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        foreach (var directory in pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)) {
-            string candidate;
-            try {
-                candidate = Path.Combine(directory.Trim(), fileName);
-            }
-            catch (ArgumentException) {
-                continue;
-            }
-
-            if (File.Exists(candidate)) {
-                return candidate;
-            }
-        }
-
-        return null;
-    }
+    /// <exception cref="FileNotFoundException">No usable PowerShell host is on the path.</exception>
+    private static string ResolvePowerShellExecutable() =>
+        ToolResolutionHelper.ResolvePowerShellExecutable(minimumPwshVersion: new Version(7, 1));
 
     /// <summary>Runs a certificate script and returns its output, with no rollback of its own.</summary>
     private static async Task<string> ExecutePowerShellAsync(string script, CancellationToken cancellationToken) {

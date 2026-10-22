@@ -81,6 +81,37 @@ public sealed class TestCertificateStoreTests {
     }
 
     [TestMethod]
+    public void BuildEnsureScript_prefers_a_certificate_trusted_in_both_stores()
+    {
+        var script = TestCertificateStore.BuildEnsureScript("CN=x", 1, 0);
+
+        var trustedInBoth = script.IndexOf(
+            "$rootTrusted -contains $_.Thumbprint -and $publisherTrusted -contains $_.Thumbprint",
+            StringComparison.Ordinal);
+        var trustedInRootOnly = script.IndexOf(
+            "$cert = $candidates | Where-Object { $rootTrusted -contains $_.Thumbprint } | Select-Object -First 1",
+            StringComparison.Ordinal);
+
+        Assert.IsTrue(trustedInBoth >= 0, script);
+        Assert.IsTrue(trustedInRootOnly > trustedInBoth, script);
+    }
+
+    [TestMethod]
+    public void BuildEnsureScript_deletes_superseded_certificates_only_after_the_selected_one_is_trusted()
+    {
+        var script = TestCertificateStore.BuildEnsureScript("CN=x", 1, 0, trustInRootStore: true);
+
+        var trustWrite = script.IndexOf("foreach ($name in 'Root', 'TrustedPublisher')", StringComparison.Ordinal);
+        var trustCheck = script.IndexOf("$trustedForSigning = $false", StringComparison.Ordinal);
+        var delete = script.IndexOf("Remove-Item $_.PSPath -DeleteKey", StringComparison.Ordinal);
+
+        Assert.IsTrue(trustWrite >= 0, script);
+        Assert.IsTrue(trustCheck > trustWrite, script);
+        Assert.IsTrue(delete > trustCheck, script);
+        StringAssert.Contains(script, "if ($trustedForSigning) {");
+    }
+
+    [TestMethod]
     public void BuildEnsureScript_marks_the_fingerprint_line() {
         var script = TestCertificateStore.BuildEnsureScript("CN=x", 1, 0);
 

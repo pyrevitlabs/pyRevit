@@ -58,7 +58,7 @@ public static class ToolResolutionHelper
             configuredExe);
     }
 
-    public static string ResolvePowerShellExecutable()
+    public static string ResolvePowerShellExecutable(Version? minimumPwshVersion = null)
     {
         var candidates = new[]
         {
@@ -71,14 +71,30 @@ public static class ToolResolutionHelper
 
         foreach (var candidate in candidates)
         {
-            if (!string.IsNullOrWhiteSpace(candidate) && File.Exists(candidate))
+            if (string.IsNullOrWhiteSpace(candidate) || !File.Exists(candidate))
             {
-                return candidate;
+                continue;
             }
+
+            if (minimumPwshVersion is not null
+                && IsPwsh(candidate)
+                && !MeetsMinimumVersion(candidate, minimumPwshVersion))
+            {
+                continue;
+            }
+
+            return candidate;
         }
 
         throw new FileNotFoundException("PowerShell was not found. Install PowerShell 7 (pwsh) or ensure Windows PowerShell is available.");
     }
+
+    private static bool IsPwsh(string executable) =>
+        string.Equals(Path.GetFileNameWithoutExtension(executable), "pwsh", StringComparison.OrdinalIgnoreCase);
+
+    private static bool MeetsMinimumVersion(string executable, Version minimum) =>
+        Version.TryParse(FileVersionInfo.GetVersionInfo(executable).FileVersion, out var version)
+        && version >= minimum;
 
     public static string? ResolveMsBuildExecutable()
     {
