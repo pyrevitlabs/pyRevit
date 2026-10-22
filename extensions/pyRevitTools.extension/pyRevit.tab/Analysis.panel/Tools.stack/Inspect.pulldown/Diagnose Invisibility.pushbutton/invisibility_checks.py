@@ -68,15 +68,19 @@ class Finding(object):
         informational (bool): context that may matter but is not a confirmed
             cause (e.g. an applied view template).
         fix (dict | None): fix descriptor for ``invisibility_fixes``.
+        speculative (bool): a possible cause that could not be confirmed.
+            Its fix stays available per element but is never applied in
+            bulk, since it may change settings that are hidden on purpose.
     """
 
-    __slots__ = ("code", "message", "informational", "fix")
+    __slots__ = ("code", "message", "informational", "fix", "speculative")
 
-    def __init__(self, code, message, informational=False, fix=None):
+    def __init__(self, code, message, informational=False, fix=None, speculative=False):
         self.code = code
         self.message = message
         self.informational = informational
         self.fix = fix
+        self.speculative = speculative
 
     def __repr__(self):
         return "<Finding {}>".format(self.code)
@@ -373,60 +377,166 @@ def _check_design_option(ctx):
     return []
 
 
-def _check_categories(ctx):
-    """Element category, or any of its subcategories, hidden in the view.
+_IGNORED_STYLE_CATEGORIES = frozenset((int(DB.BuiltInCategory.OST_InvisibleLines),))
 
-    Which subcategory an arbitrary element's geometry uses cannot be known
-    without element-type-specific introspection, so every hidden subcategory
-    of the element's category is reported as a potential contributor.
+
+def _drawn_style_category_ids(element, view):
+    """Return the (sub)category ids the element draws with in ``view``.
+
+    Reads the element's geometry as the view presents it (detail level,
+    symbolic lines such as structural stick symbols) and maps each piece to
+    its graphics style category, or to the element's own category when the
+    piece has no style. Invisible lines are ignored.
+
+    Returns:
+        (set[int] | None): category id values, or None when the view yields
+        no styled geometry (e.g. annotations or empty geometry), in which
+        case the caller cannot tell which subcategories matter.
     """
+    category = element.Category
+    if category is None:
+        return None
+    options = DB.Options()
+    options.View = view
+    try:
+        geometry = element.get_Geometry(options)
+    except Exception:
+        return None
+    if geometry is None:
+        return None
+    doc = element.Document
+    own_category = id_value(category.Id)
+    used = set()
+    pending = [geometry]
+    while pending:
+        for item in pending.pop():
+            if isinstance(item, DB.GeometryInstance):
+                pending.append(item.GetInstanceGeometry())
+                continue
+            if isinstance(item, DB.GeometryElement):
+                pending.append(item)
+                continue
+            if isinstance(item, DB.Solid) and item.Faces.Size == 0:
+                continue
+            style_id = item.GraphicsStyleId
+            style = doc.GetElement(style_id) if _is_valid_id(style_id) else None
+            style_category = style.GraphicsStyleCategory if style else None
+            if style_category is None:
+                used.add(own_category)
+            elif id_value(style_category.Id) not in _IGNORED_STYLE_CATEGORIES:
+                used.add(id_value(style_category.Id))
+    return used or None
+
+
+def _hidden_in_view(view, category_id_value):
+    try:
+        return view.GetCategoryHidden(DB.ElementId(category_id_value))
+    except Exception:
+        return False
+
+
+def _drawn_subcategory_findings(ctx):
+    """Confirmed subcategory causes from the geometry the element draws here.
+
+    Returns:
+        (list[Finding] | None): one finding per hidden (sub)category the
+        element draws with, when everything it draws is hidden; an empty list
+        when something it draws is visible; None when the drawn geometry
+        cannot be read.
+    """
+    drawn = _drawn_style_category_ids(ctx.element, ctx.view)
+    if drawn is None:
+        return None
+    if not all(_hidden_in_view(ctx.view, c) for c in drawn):
+        return []
     findings = []
+    for category_id_value in sorted(drawn):
+        sub_category = DB.Category.GetCategory(ctx.doc, DB.ElementId(category_id_value))
+        findings.append(
+            Finding(
+                "subcategory_hidden",
+                t(
+                    "reason_subcategory_drawn_hidden",
+                    "Subcategory '{}' is hidden in this view, and everything"
+                    " the element draws here uses hidden subcategories",
+                ).format(sub_category.Name if sub_category else category_id_value),
+                fix={"action": "unhide_category", "category_id": category_id_value},
+            )
+        )
+    return findings
+
+
+def _check_drawn_subcategories(ctx):
+    """Confirmed subcategory causes only; safe to run on collector-visible elements.
+
+    Note:
+        Element collectors keep an element whose category is visible even
+        when every subcategory it draws with is hidden (e.g. a column drawn
+        only as "Stick Symbols" in a structural plan), so this runs like the
+        clip checks, regardless of the collector's verdict.
+    """
+    category = ctx.element.Category
+    if category is None or _hidden_in_view(ctx.view, id_value(category.Id)):
+        return []
+    return _drawn_subcategory_findings(ctx) or []
+
+
+def _check_categories(ctx):
+    """Element category, or the subcategories it draws with, hidden in the view.
+
+    A hidden subcategory is a confirmed cause only when everything the element
+    draws in this view uses hidden (sub)categories; if any drawn piece uses a
+    visible one, hiding the others is not why the element is missing. When
+    the drawn geometry cannot be read, every hidden subcategory of the
+    element's category is reported as a speculative cause.
+    """
     try:
         category = ctx.element.Category
     except Exception:
         category = None
     if not category:
-        return findings
-    try:
-        if ctx.view.GetCategoryHidden(category.Id):
-            findings.append(
-                Finding(
-                    "category_hidden",
-                    t(
-                        "reason_category_hidden",
-                        "Category '{}' is hidden in this view",
-                    ).format(category.Name),
-                    fix={
-                        "action": "unhide_category",
-                        "category_id": id_value(category.Id),
-                    },
-                )
+        return []
+    if _hidden_in_view(ctx.view, id_value(category.Id)):
+        return [
+            Finding(
+                "category_hidden",
+                t(
+                    "reason_category_hidden",
+                    "Category '{}' is hidden in this view",
+                ).format(category.Name),
+                fix={
+                    "action": "unhide_category",
+                    "category_id": id_value(category.Id),
+                },
             )
-    except Exception:
-        pass
+        ]
+    confirmed = _drawn_subcategory_findings(ctx)
+    if confirmed is not None:
+        return confirmed
+
+    findings = []
     try:
         subcategories = list(category.SubCategories)
     except Exception:
         subcategories = []
     for subcategory in subcategories:
-        try:
-            if ctx.view.GetCategoryHidden(subcategory.Id):
-                findings.append(
-                    Finding(
-                        "subcategory_hidden",
-                        t(
-                            "reason_subcategory_hidden",
-                            "Subcategory '{}' of '{}' is hidden in this view"
-                            " (element may belong to it)",
-                        ).format(subcategory.Name, category.Name),
-                        fix={
-                            "action": "unhide_category",
-                            "category_id": id_value(subcategory.Id),
-                        },
-                    )
-                )
-        except Exception:
-            pass
+        if not _hidden_in_view(ctx.view, id_value(subcategory.Id)):
+            continue
+        findings.append(
+            Finding(
+                "subcategory_hidden",
+                t(
+                    "reason_subcategory_hidden",
+                    "Subcategory '{}' of '{}' is hidden in this view"
+                    " (element may belong to it)",
+                ).format(subcategory.Name, category.Name),
+                fix={
+                    "action": "unhide_category",
+                    "category_id": id_value(subcategory.Id),
+                },
+                speculative=True,
+            )
+        )
     return findings
 
 
@@ -901,9 +1011,9 @@ def diagnose(element, view, visible_ids=None):
         specific cause could be pinned down.
 
     Note:
-        When the view's collector reports the element, only the geometric
-        clip checks run, because collectors do not apply crop and cut-plane
-        clipping. Any clip finding then overrides the collector's verdict.
+        When the view's collector reports the element, only the checks the
+        collector is blind to run: crop and cut-plane clipping, and confirmed
+        hidden subcategories. Any such finding overrides the collector.
     """
     ctx = _CheckContext(element, view)
     if visible_ids is None:
@@ -914,9 +1024,10 @@ def diagnose(element, view, visible_ids=None):
         clip_findings.extend(check(ctx))
 
     if ctx.element_id in visible_ids:
-        if not clip_findings:
+        blind_findings = clip_findings + _check_drawn_subcategories(ctx)
+        if not blind_findings:
             return []
-        return clip_findings + _check_view_template(ctx)
+        return blind_findings + _check_view_template(ctx)
 
     findings = []
     for check in _SETTING_CHECKS:

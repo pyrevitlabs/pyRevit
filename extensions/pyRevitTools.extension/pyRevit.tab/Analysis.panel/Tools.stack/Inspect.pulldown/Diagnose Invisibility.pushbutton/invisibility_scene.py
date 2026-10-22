@@ -11,6 +11,8 @@ Invariant:
     far from the internal origin.
 """
 
+import array
+import base64
 import json
 import re
 
@@ -19,10 +21,11 @@ from pyrevit import DB
 from invisibility_checks import id_value, local_extents, resolve_view_range_elevation, t
 
 
-MAX_SCENE_VERTICES = 150000
-MAX_ELEMENT_VERTICES = 40000
+MAX_SCENE_VERTICES = 60000
+MAX_ELEMENT_VERTICES = 20000
+_BOX_POINT_COUNT = 8 + 2 * 12
+_PACKED_TOKEN = re.compile(r"@@PACKED(\d+)@@")
 _MIN_PLANE_HALF_SIZE_FT = 10.0
-_ARRAY_TOKEN = re.compile(r'"(@@ARRAY\d+@@)"')
 
 
 class _BudgetExceeded(Exception):
@@ -46,7 +49,12 @@ class _IntArray(object):
 
 
 class _MeshBuilder(object):
-    """Accumulates triangles and edge segments in scene-relative coordinates."""
+    """Accumulates triangles and edge segments in scene-relative coordinates.
+
+    Invariant:
+        ``budget`` caps ``point_count``, which counts mesh vertices and edge
+        endpoints alike, so curve-heavy elements cannot bypass the limits.
+    """
 
     def __init__(self, origin, budget):
         self.origin = origin
@@ -59,9 +67,16 @@ class _MeshBuilder(object):
     def vertex_count(self):
         return len(self.positions) // 3
 
-    def _push_vertex(self, point):
-        if self.vertex_count >= self.budget:
+    @property
+    def point_count(self):
+        return self.vertex_count + len(self.edges) // 3
+
+    def _reserve(self, count):
+        if self.point_count + count > self.budget:
             raise _BudgetExceeded()
+
+    def _push_vertex(self, point):
+        self._reserve(1)
         self.positions.extend(
             (
                 point.X - self.origin.X,
@@ -87,6 +102,7 @@ class _MeshBuilder(object):
 
     def add_polyline(self, points):
         points = list(points)
+        self._reserve(2 * max(len(points) - 1, 0))
         for start, end in zip(points, points[1:]):
             self.edges.extend(
                 (
@@ -339,7 +355,12 @@ def _plan_overlays(view, scene_bbox, origin):
 
 
 def _section_overlays(view, scene_bbox, origin):
-    """Cut plane, optional far clip plane and crop outline of a section."""
+    """Cut plane, far clip plane and crop outline of a section or elevation.
+
+    The far plane appears only when far clipping is on. The crop outline
+    appears only when the crop region is active: as a box when the far plane
+    bounds it, otherwise as a rectangle on the cut plane.
+    """
     overlays = {"planes": [], "boxes": []}
     crop = view.CropBox
     transform = crop.Transform
@@ -370,16 +391,28 @@ def _section_overlays(view, scene_bbox, origin):
                 origin,
             )
         )
-        overlays["boxes"].append(
-            _wire_box(
-                "crop",
-                t("overlay_crop", "Crop region"),
-                crop.Min,
-                crop.Max,
-                transform,
-                origin,
+    if view.CropBoxActive:
+        label = t("overlay_crop", "Crop region")
+        if far_clipped:
+            overlays["boxes"].append(
+                _wire_box("crop", label, crop.Min, crop.Max, transform, origin)
             )
-        )
+        else:
+            ring = [
+                transform.OfPoint(DB.XYZ(x, y, crop.Max.Z))
+                for x, y in (
+                    (crop.Min.X, crop.Min.Y),
+                    (crop.Max.X, crop.Min.Y),
+                    (crop.Max.X, crop.Max.Y),
+                    (crop.Min.X, crop.Max.Y),
+                )
+            ]
+            segments = []
+            for index in range(4):
+                segments.extend((ring[index], ring[(index + 1) % 4]))
+            overlays["boxes"].append(
+                {"kind": "crop", "label": label, "lines": _flat(segments, origin)}
+            )
     return overlays
 
 
@@ -447,20 +480,21 @@ def build_scene(view, element_states, label_for):
         if bbox is None:
             continue
         builder = _MeshBuilder(origin, min(MAX_ELEMENT_VERTICES, remaining))
-        approx = False
-        try:
-            geometry = _element_geometry(element)
-            if geometry is not None:
-                _walk_geometry(geometry, builder)
-        except _BudgetExceeded:
-            approx = True
-        except Exception:
-            approx = True
+        approx = remaining <= _BOX_POINT_COUNT
+        if not approx:
+            try:
+                geometry = _element_geometry(element)
+                if geometry is not None:
+                    _walk_geometry(geometry, builder)
+            except _BudgetExceeded:
+                approx = True
+            except Exception:
+                approx = True
         if approx or (not builder.indices and not builder.edges):
             approx = True
-            builder = _MeshBuilder(origin, 8)
+            builder = _MeshBuilder(origin, _BOX_POINT_COUNT)
             builder.add_box(bbox)
-        remaining = max(remaining - builder.vertex_count, 8)
+        remaining = max(remaining - builder.point_count, 0)
         meshes.append(
             {
                 "id": id_value(element.Id),
@@ -497,29 +531,29 @@ def build_scene(view, element_states, label_for):
 
 
 def scene_to_json(scene):
-    """Serialize a scene, writing large float arrays at fixed precision.
+    """Serialize a scene with large arrays packed as base64 binary.
 
-    The stdlib encoder is slow on IronPython for hundreds of thousands of
-    floats and writes them at full precision; this splices pre-joined
-    arrays into the encoded skeleton instead.
+    Float arrays become little-endian Float32 and index arrays Uint32, each
+    base64-encoded into a string that ``viewer3d.js`` decodes into typed
+    arrays. Formatting hundreds of thousands of numbers as JSON text takes
+    over a minute on IronPython, and even ``json.dumps`` escaping megabytes
+    of base64 takes seconds, so packed strings are spliced into the encoded
+    skeleton by token; base64 never needs JSON escaping.
     """
-    chunks = []
+    packed = []
 
-    def strip(value):
+    def pack(value):
         if isinstance(value, (_FloatArray, _IntArray)):
-            token = "@@ARRAY{}@@".format(len(chunks))
-            if isinstance(value, _FloatArray):
-                body = ",".join(["%.3f" % v for v in value.values])
-            else:
-                body = ",".join([str(v) for v in value.values])
-            chunks.append((token, "[" + body + "]"))
-            return token
+            typecode = "f" if isinstance(value, _FloatArray) else "I"
+            packed.append(
+                base64.b64encode(array.array(typecode, value.values).tostring())
+            )
+            return "@@PACKED{}@@".format(len(packed) - 1)
         if isinstance(value, dict):
-            return dict((k, strip(v)) for k, v in value.items())
+            return dict((k, pack(v)) for k, v in value.items())
         if isinstance(value, (list, tuple)):
-            return [strip(v) for v in value]
+            return [pack(v) for v in value]
         return value
 
-    encoded = json.dumps(strip(scene))
-    bodies = dict(chunks)
-    return _ARRAY_TOKEN.sub(lambda match: bodies[match.group(1)], encoded)
+    skeleton = json.dumps(pack(scene))
+    return _PACKED_TOKEN.sub(lambda match: packed[int(match.group(1))], skeleton)

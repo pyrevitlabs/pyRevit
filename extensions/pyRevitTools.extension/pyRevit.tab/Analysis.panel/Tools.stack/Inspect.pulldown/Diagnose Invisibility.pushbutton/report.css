@@ -218,6 +218,10 @@
   text-align: center;
 }
 .dvi-finding.info .dvi-code { background: var(--dvi-sunken); color: var(--dvi-muted); }
+.dvi-finding.speculative .dvi-code { background: transparent; border: 1px dashed var(--dvi-bad); }
+.dvi-finding.speculative .dvi-message { color: var(--dvi-muted); font-style: italic; }
+.dvi-toggle-count { color: var(--dvi-muted); }
+.dvi-btn.ghost.active { background: #f5a524; border-color: #b77700; color: #3a2600; }
 .dvi-message { flex: 1; }
 .dvi-error { color: var(--dvi-bad); margin: 6px 0 0; }
 .dvi-empty { margin: 0; padding: 0 12px 12px; color: var(--dvi-muted); }

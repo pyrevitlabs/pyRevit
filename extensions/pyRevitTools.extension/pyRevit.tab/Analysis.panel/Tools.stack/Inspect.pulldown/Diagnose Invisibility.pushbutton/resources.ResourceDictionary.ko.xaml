@@ -116,5 +116,10 @@
     <sys:String x:Key="reason_above_cut_plane">요소가 절단 평면보다 완전히 위에 있습니다(요소 최소 Z {:.3f} ft &gt; 절단 {:.3f} ft). 절단 평면과 상단 사이에서는 평면도에 창, 케이스워크, 일반 모델 및 절단할 수 없는 카테고리만 표시됩니다. '{}'은(는) 절단 가능합니다</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">절단 평면을 요소 위로 올리기</sys:String>
     <sys:String x:Key="code_above_cut_plane">절단 위</sys:String>
+    <sys:String x:Key="reason_subcategory_drawn_hidden">이 뷰에서 하위 카테고리 '{}'이(가) 숨겨져 있으며, 요소가 여기서 그리는 모든 것이 숨겨진 하위 카테고리를 사용합니다</sys:String>
+    <sys:String x:Key="ui_show_context_hint">숨겨진 요소를 설명할 수 있지만 확인된 원인은 아닌 메모(적용된 뷰 템플릿, 뷰 분야 등)도 표시합니다. 표시하면 Markdown 복사에도 포함됩니다.</sys:String>
+    <sys:String x:Key="ui_speculative_hint">가능한 원인일 뿐입니다. Revit이 이 요소가 여기서 사용하는 하위 카테고리를 확인할 수 없습니다. 모두 수정에 포함되지 않습니다.</sys:String>
+    <sys:String x:Key="ui_ghost">Revit에 고스트 표시</sys:String>
+    <sys:String x:Key="ui_ghost_hint">요소가 숨겨져 있어도 Revit 뷰에 형상을 그리고 진단한 뷰를 해당 요소로 확대합니다. 다시 클릭하면 제거됩니다.</sys:String>
 
 </ResourceDictionary>

@@ -170,6 +170,14 @@ void main() { outColor = uColor; }`;
     return { program, uniforms, aPos: gl.getAttribLocation(program, "aPos"), aNormal: gl.getAttribLocation(program, "aNormal") };
   }
 
+  function decodeArray(value, Type) {
+    if (typeof value !== "string") return Type.from(value || []);
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Type(bytes.buffer);
+  }
+
   function expandTriangles(positions, indices) {
     const triCount = indices.length / 3;
     const pos = new Float32Array(triCount * 9);
@@ -312,15 +320,16 @@ void main() { outColor = uColor; }`;
           triCount: 0,
           edgeCount: 0,
         };
-        if (mesh.indices && mesh.indices.length) {
-          const { pos, nrm } = expandTriangles(mesh.positions, mesh.indices);
+        const indices = decodeArray(mesh.indices, Uint32Array);
+        if (indices.length) {
+          const { pos, nrm } = expandTriangles(decodeArray(mesh.positions, Float32Array), indices);
           entry.triangles = pos;
           entry.triCount = pos.length / 9;
           entry.triVao = this._vao(this.meshProgram, this._buffer(pos), this._buffer(nrm));
           boundsOf(pos, entry.bounds);
         }
-        if (mesh.edges && mesh.edges.length) {
-          const edges = new Float32Array(mesh.edges);
+        const edges = decodeArray(mesh.edges, Float32Array);
+        if (edges.length) {
           entry.edgeCount = edges.length / 3;
           entry.edgeVao = this._vao(this.flatProgram, this._buffer(edges));
           boundsOf(edges, entry.bounds);
@@ -339,7 +348,7 @@ void main() { outColor = uColor; }`;
       this.planes = [];
       this.overallBounds = boundsOf([...this.bounds.min, ...this.bounds.max], emptyBounds());
       for (const box of this.scene.boxes || []) {
-        const lines = new Float32Array(box.lines);
+        const lines = decodeArray(box.lines, Float32Array);
         boundsOf(lines, this.overallBounds);
         this.boxes.push({
           kind: box.kind,
@@ -351,7 +360,7 @@ void main() { outColor = uColor; }`;
         });
       }
       for (const plane of this.scene.planes || []) {
-        const c = plane.corners;
+        const c = decodeArray(plane.corners, Float32Array);
         const fill = new Float32Array([
           c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8],
           c[0], c[1], c[2], c[6], c[7], c[8], c[9], c[10], c[11],

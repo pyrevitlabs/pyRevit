@@ -72,6 +72,7 @@ class WebViewBridge(object):
         self._output = output
         self.channel = channel
         self._handlers = {}
+        self._close_callbacks = []
         self._core = None
         self._window = None
         self._on_message_delegate = None
@@ -85,6 +86,15 @@ class WebViewBridge(object):
     def on(self, action, handler):
         """Register ``handler(payload, request_id)`` for messages with ``action``."""
         self._handlers[action] = handler
+
+    def on_closed(self, callback):
+        """Register ``callback()`` to run once the output window closes.
+
+        Note:
+            Runs on the UI thread outside Revit API context; schedule API work
+            through ``events.execute_in_revit_context``.
+        """
+        self._close_callbacks.append(callback)
 
     def attach(self):
         """Subscribe to the output window's WebView2 messages.
@@ -157,6 +167,12 @@ class WebViewBridge(object):
 
     def _on_window_closed(self, sender, args):
         self.detach()
+        callbacks, self._close_callbacks = self._close_callbacks, []
+        for callback in callbacks:
+            try:
+                callback()
+            except Exception as ex:
+                logger.debug("Bridge close callback failed: %s", ex)
 
     def _on_message(self, sender, args):
         try:

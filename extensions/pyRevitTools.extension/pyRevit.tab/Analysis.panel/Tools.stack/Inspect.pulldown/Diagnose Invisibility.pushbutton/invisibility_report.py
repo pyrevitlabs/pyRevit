@@ -19,10 +19,12 @@ import uuid
 
 from pyrevit import DB, HOST_APP, script
 from pyrevit.framework import List
+from pyrevit.revit import events
 
 import invisibility_fixes as fixes
 import invisibility_scene as scene
 from invisibility_bridge import WebViewBridge
+from invisibility_ghost import GhostPreview
 from invisibility_checks import collect_visible_ids, diagnose, id_value, t
 
 logger = script.get_logger()
@@ -43,6 +45,23 @@ _UI_STRINGS = {
     "search": ("ui_search", "Filter by name, category or id"),
     "showVisible": ("ui_show_visible", "Show visible elements"),
     "showContext": ("ui_show_context", "Show context notes"),
+    "showContextHint": (
+        "ui_show_context_hint",
+        "Also list notes that may explain a hidden element but are not"
+        " confirmed causes, such as an applied view template or a view"
+        " discipline. Included in Copy as Markdown when shown.",
+    ),
+    "speculativeHint": (
+        "ui_speculative_hint",
+        "Possible cause only: Revit could not tell which subcategories this"
+        " element draws with here. Not included in Fix all.",
+    ),
+    "ghost": ("ui_ghost", "Ghost in Revit"),
+    "ghostHint": (
+        "ui_ghost_hint",
+        "Draw this element's geometry in Revit's views, even while it is"
+        " hidden, and zoom the diagnosed view to it. Click again to remove.",
+    ),
     "copyMarkdown": ("ui_copy_markdown", "Copy as Markdown"),
     "copied": ("ui_copied", "Report copied to clipboard"),
     "recheck": ("ui_recheck", "Re-check"),
@@ -156,6 +175,7 @@ class DiagnosisSession(object):
         self.channel = "invisibility-{}".format(uuid.uuid4().hex)
         self.root_id = "invisibility-app-{}".format(uuid.uuid4().hex[:8])
         self.bridge = WebViewBridge(output, self.channel)
+        self.ghost = GhostPreview(doc)
 
     def _elements(self):
         resolved = []
@@ -214,6 +234,7 @@ class DiagnosisSession(object):
                     "code": finding.code,
                     "message": finding.message,
                     "informational": finding.informational,
+                    "speculative": finding.speculative,
                     "fix": None,
                 }
                 if finding.fix:
@@ -274,8 +295,10 @@ class DiagnosisSession(object):
                 ("fix_all", self._on_fix_all),
                 ("recheck", self._on_recheck),
                 ("scene", self._on_scene),
+                ("ghost", self._on_ghost),
             ):
                 self.bridge.on(action, handler)
+            self.bridge.on_closed(self._close_ghosts)
         self.output.set_title(t("report_title", "Visibility Diagnosis"))
         self.output.add_style(_read_asset(_STYLESHEET))
         for asset in _ASSETS:
@@ -332,7 +355,12 @@ class DiagnosisSession(object):
         self._reply(request_id, True, fixes.describe(view, fix)["label"])
 
     def _on_fix_all(self, payload, request_id):
-        """Apply every distinct non-navigation fix in a view as one undo step."""
+        """Apply every distinct confirmed fix in a view as one undo step.
+
+        Skips informational, speculative and navigation findings. The
+        transaction group is always closed, so fixes that succeeded stay
+        committed even when a later one fails.
+        """
         view = self._view(payload["viewId"])
         uidoc = self._uidoc()
         visible_ids = collect_visible_ids(view)
@@ -344,6 +372,7 @@ class DiagnosisSession(object):
                 if (
                     not fix
                     or finding.informational
+                    or finding.speculative
                     or fix.get("action") in fixes.NAVIGATION_ACTIONS
                 ):
                     continue
@@ -357,18 +386,32 @@ class DiagnosisSession(object):
         )
         group.Start()
         errors = []
-        for element, fix in pending:
-            try:
-                fixes.apply(uidoc, view, element, fix)
-            except fixes.FixError as ex:
-                errors.append(str(ex))
-        group.Assimilate()
+        try:
+            for element, fix in pending:
+                try:
+                    fixes.apply(uidoc, view, element, fix)
+                except Exception as ex:
+                    errors.append(str(ex))
+        finally:
+            if group.HasStarted() and not group.HasEnded():
+                group.Assimilate()
         self._push_views()
         self._reply(request_id, not errors, "; ".join(errors) or label)
 
     def _on_recheck(self, payload, request_id):
         self._push_views()
         self._reply(request_id, True)
+
+    def _on_ghost(self, payload, request_id):
+        shown = self.ghost.toggle(
+            self._uidoc(),
+            self._view(payload["viewId"]),
+            self._element(payload["elementId"]),
+        )
+        self._reply(request_id, True, "on" if shown else "off")
+
+    def _close_ghosts(self):
+        events.execute_in_revit_context(_close_ghost_preview, self.ghost)
 
     def _on_scene(self, payload, request_id):
         view = self._view(payload["viewId"])
@@ -383,6 +426,11 @@ class DiagnosisSession(object):
         else:
             self.bridge.send("scene", raw_payload=scene.scene_to_json(data))
         self._reply(request_id, True)
+
+
+def _close_ghost_preview(ghost):
+    """Unregister a report's ghost preview; runs through an ExternalEvent."""
+    ghost.close()
 
 
 def show_report(output, elements, views):

@@ -335,21 +335,27 @@ def apply(uidoc, view, element, fix):
 
     Raises:
         FixError: the action is unknown, its target vanished, or Revit
-            rejected the change. Revit API exceptions are wrapped.
+            rejected the change. Every other exception, including those from
+            resolving the descriptor, is wrapped, so callers only handle this.
     """
     action = fix.get("action")
     doc = view.Document
-    if action == "open_view":
-        target = doc.GetElement(_element_id(fix["view_id"]))
-        if target is None:
-            raise FixError(t("fix_error_missing", "The target no longer exists"))
-        open_view(uidoc, target)
-        return
-    handler = _MODEL_ACTIONS.get(action)
-    if handler is None:
-        raise FixError("Unknown action '{}'".format(action))
-    owner = settings_owner(view, fix)
-    label = describe(view, fix)["label"]
+    try:
+        if action == "open_view":
+            target = doc.GetElement(_element_id(fix["view_id"]))
+            if target is None:
+                raise FixError(t("fix_error_missing", "The target no longer exists"))
+            open_view(uidoc, target)
+            return
+        handler = _MODEL_ACTIONS.get(action)
+        if handler is None:
+            raise FixError("Unknown action '{}'".format(action))
+        owner = settings_owner(view, fix)
+        label = describe(view, fix)["label"]
+    except FixError:
+        raise
+    except Exception as ex:
+        raise FixError(str(ex))
     transaction = DB.Transaction(
         doc, "{}: {}".format(t("report_title", "Visibility Diagnosis"), label)
     )

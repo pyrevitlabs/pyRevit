@@ -116,5 +116,10 @@
     <sys:String x:Key="reason_above_cut_plane">O elemento está totalmente acima do plano de corte (Z mín. do elemento {:.3f} ft &gt; corte {:.3f} ft). Entre o plano de corte e o topo, as vistas de planta só mostram janelas, marcenaria, modelos genéricos e categorias não cortáveis; '{}' é cortável</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Elevar o plano de corte acima do elemento</sys:String>
     <sys:String x:Key="code_above_cut_plane">Acima do corte</sys:String>
+    <sys:String x:Key="reason_subcategory_drawn_hidden">A subcategoria '{}' está oculta nesta vista, e tudo o que o elemento desenha aqui usa subcategorias ocultas</sys:String>
+    <sys:String x:Key="ui_show_context_hint">Listar também notas que podem explicar um elemento oculto mas não são causas confirmadas, como um modelo de vista aplicado ou a disciplina da vista. Incluídas em Copiar como Markdown quando exibidas.</sys:String>
+    <sys:String x:Key="ui_speculative_hint">Apenas causa possível: o Revit não conseguiu determinar quais subcategorias este elemento usa aqui. Não incluída em Corrigir tudo.</sys:String>
+    <sys:String x:Key="ui_ghost">Fantasma no Revit</sys:String>
+    <sys:String x:Key="ui_ghost_hint">Desenhar a geometria deste elemento nas vistas do Revit, mesmo oculto, e aproximar a vista diagnosticada. Clique novamente para remover.</sys:String>
 
 </ResourceDictionary>

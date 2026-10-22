@@ -63,6 +63,7 @@
       this.requests = new Map();
       this.requestSeq = 0;
       this.viewers = new Map();
+      this.ghosted = new Set();
       this.sceneOpen = new Set();
       this.sceneLoading = new Set();
       this.sceneStale = new Set();
@@ -99,6 +100,7 @@
         this.renderView(payload);
         this.renderHeader();
         this.renderMatrix();
+        this.applyFilters();
         this.syncViewer(payload);
         this.refreshScene(payload.id);
       } else if (event === "scene") {
@@ -262,16 +264,51 @@
             this.showVisible = e.target.checked;
             this.applyFilters();
           }),
-          toggle(this.s.showContext, this.showContext, (e) => {
-            this.showContext = e.target.checked;
-            this.root.classList.toggle("show-context", this.showContext);
-          })
+          this.contextToggle()
         )
       );
       this.renderChips();
     }
 
+    /**
+     * Toggle for informational findings (applied view template, view
+     * discipline). They can explain hidden elements but are not confirmed
+     * causes, so they stay collapsed by default; when shown they are also
+     * included in "Copy as Markdown".
+     */
+    contextToggle() {
+      this.contextCountNode = h("span", { class: "dvi-toggle-count" });
+      return h(
+        "label",
+        { class: "dvi-toggle", title: this.s.showContextHint },
+        h("input", {
+          type: "checkbox",
+          checked: this.showContext,
+          onchange: (e) => {
+            this.showContext = e.target.checked;
+            this.root.classList.toggle("show-context", this.showContext);
+          },
+        }),
+        this.s.showContext,
+        this.contextCountNode
+      );
+    }
+
+    contextCount() {
+      let count = 0;
+      for (const view of this.views) {
+        for (const element of view.elements) {
+          if (!element.visible) count += element.findings.filter((f) => f.informational).length;
+        }
+      }
+      return count;
+    }
+
     renderChips() {
+      if (this.contextCountNode) {
+        const count = this.contextCount();
+        this.contextCountNode.textContent = count ? ` (${count})` : "";
+      }
       if (!this.chipsNode) return;
       const { codes } = this.counts();
       for (const code of [...this.activeCodes]) if (!codes.has(code)) this.activeCodes.delete(code);
@@ -399,7 +436,7 @@
       for (const element of view.elements) {
         for (const finding of causes(element)) {
           const fix = finding.fix;
-          if (!fix || fix.navigation) continue;
+          if (!fix || fix.navigation || finding.speculative) continue;
           seen.add(JSON.stringify(fix.descriptor) + (["unhide_element", "expand_section_box", "extend_view_range", "raise_cut_plane"].includes(fix.descriptor.action) ? element.id : ""));
         }
       }
@@ -505,6 +542,18 @@
             ? h(
                 "button",
                 {
+                  class: `dvi-btn small ghost${this.ghosted.has(element.id) ? " active" : ""}`,
+                  title: this.s.ghostHint,
+                  dataset: { ghost: element.id },
+                  onclick: (e) => this.toggleGhost(e.currentTarget, view, element),
+                },
+                this.s.ghost
+              )
+            : null,
+          bridge
+            ? h(
+                "button",
+                {
                   class: "dvi-btn small",
                   onclick: (e) => this.run(e.currentTarget, "zoom", { elementIds: [element.id] }),
                 },
@@ -525,7 +574,10 @@
       const findings = element.findings.map((finding) =>
         h(
           "li",
-          { class: `dvi-finding ${finding.informational ? "info" : "cause"}` },
+          {
+            class: `dvi-finding ${finding.informational ? "info" : "cause"}${finding.speculative ? " speculative" : ""}`,
+            title: finding.speculative ? this.s.speculativeHint : null,
+          },
           h("span", { class: `dvi-code code-${finding.code}` }, this.data.codes[finding.code] || finding.code),
           h("span", { class: "dvi-message" }, finding.message),
           finding.fix && bridge ? this.fixButton(view, element, finding.fix) : null
@@ -543,6 +595,26 @@
         element.error ? h("p", { class: "dvi-error" }, element.error) : null,
         findings.length ? h("ul", { class: "dvi-findings" }, findings) : null
       );
+    }
+
+    /**
+     * Toggle the DirectContext3D ghost of an element in Revit's views. The
+     * ghost is per element, so every card of that element follows the state.
+     */
+    toggleGhost(button, view, element) {
+      button.disabled = true;
+      this.request("ghost", { viewId: view.id, elementId: element.id })
+        .then((state) => {
+          if (state === "on") this.ghosted.add(element.id);
+          else this.ghosted.delete(element.id);
+          for (const node of this.root.querySelectorAll(`.dvi-btn.ghost[data-ghost="${element.id}"]`)) {
+            node.classList.toggle("active", this.ghosted.has(element.id));
+          }
+        })
+        .catch((error) => this.toast(String(error.message || error), "error"))
+        .finally(() => {
+          if (button.isConnected) button.disabled = false;
+        });
     }
 
     fixButton(view, element, fix) {

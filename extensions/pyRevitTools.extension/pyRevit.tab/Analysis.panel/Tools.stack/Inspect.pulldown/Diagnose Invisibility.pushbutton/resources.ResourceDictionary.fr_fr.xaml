@@ -116,5 +116,10 @@
     <sys:String x:Key="reason_above_cut_plane">L'élément est entièrement au-dessus du plan de coupe (Z min de l'élément {:.3f} ft &gt; coupe {:.3f} ft). Entre le plan de coupe et le haut, les vues en plan n'affichent que les fenêtres, le mobilier intégré, les modèles génériques et les catégories non coupables ; '{}' est coupable</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Remonter le plan de coupe au-dessus de l'élément</sys:String>
     <sys:String x:Key="code_above_cut_plane">Au-dessus coupe</sys:String>
+    <sys:String x:Key="reason_subcategory_drawn_hidden">La sous-catégorie '{}' est masquée dans cette vue, et tout ce que l'élément dessine ici utilise des sous-catégories masquées</sys:String>
+    <sys:String x:Key="ui_show_context_hint">Afficher aussi les notes qui peuvent expliquer un élément masqué sans être des causes confirmées, comme un gabarit de vue appliqué ou la discipline de la vue. Incluses dans « Copier en Markdown » lorsqu'elles sont affichées.</sys:String>
+    <sys:String x:Key="ui_speculative_hint">Cause possible seulement : Revit n'a pas pu déterminer quelles sous-catégories cet élément utilise ici. Non incluse dans « Tout corriger ».</sys:String>
+    <sys:String x:Key="ui_ghost">Fantôme dans Revit</sys:String>
+    <sys:String x:Key="ui_ghost_hint">Dessiner la géométrie de cet élément dans les vues Revit, même s'il est masqué, et zoomer la vue diagnostiquée dessus. Cliquer à nouveau pour retirer.</sys:String>
 
 </ResourceDictionary>

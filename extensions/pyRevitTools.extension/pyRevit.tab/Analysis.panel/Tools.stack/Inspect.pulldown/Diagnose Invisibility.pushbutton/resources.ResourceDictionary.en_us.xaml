@@ -116,5 +116,10 @@
     <sys:String x:Key="reason_above_cut_plane">Element is entirely above the cut plane (element min Z {:.3f} ft &gt; cut {:.3f} ft). Between the cut plane and the top, plan views only draw windows, casework, generic models and non-cuttable categories; '{}' is cuttable</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Raise cut plane above element</sys:String>
     <sys:String x:Key="code_above_cut_plane">Above cut</sys:String>
+    <sys:String x:Key="reason_subcategory_drawn_hidden">Subcategory '{}' is hidden in this view, and everything the element draws here uses hidden subcategories</sys:String>
+    <sys:String x:Key="ui_show_context_hint">Also list notes that may explain a hidden element but are not confirmed causes, such as an applied view template or a view discipline. Included in Copy as Markdown when shown.</sys:String>
+    <sys:String x:Key="ui_speculative_hint">Possible cause only: Revit could not tell which subcategories this element draws with here. Not included in Fix all.</sys:String>
+    <sys:String x:Key="ui_ghost">Ghost in Revit</sys:String>
+    <sys:String x:Key="ui_ghost_hint">Draw this element's geometry in Revit's views, even while it is hidden, and zoom the diagnosed view to it. Click again to remove.</sys:String>
 
 </ResourceDictionary>

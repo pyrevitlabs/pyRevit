@@ -116,5 +116,10 @@
     <sys:String x:Key="reason_above_cut_plane">Element liegt vollständig über der Schnittebene (Element min. Z {:.3f} ft &gt; Schnitt {:.3f} ft). Zwischen Schnittebene und Oberkante zeigen Grundrisse nur Fenster, Möbelsysteme/Einbauten, allgemeine Modelle und nicht schneidbare Kategorien; '{}' ist schneidbar</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Schnittebene über Element anheben</sys:String>
     <sys:String x:Key="code_above_cut_plane">Über Schnitt</sys:String>
+    <sys:String x:Key="reason_subcategory_drawn_hidden">Unterkategorie '{}' ist in dieser Ansicht ausgeblendet, und alles, was das Element hier zeichnet, verwendet ausgeblendete Unterkategorien</sys:String>
+    <sys:String x:Key="ui_show_context_hint">Zusätzlich Hinweise anzeigen, die ein ausgeblendetes Element erklären können, aber keine bestätigten Ursachen sind, etwa eine angewendete Ansichtsvorlage oder die Disziplin der Ansicht. Wenn angezeigt, auch in „Als Markdown kopieren“ enthalten.</sys:String>
+    <sys:String x:Key="ui_speculative_hint">Nur mögliche Ursache: Revit konnte nicht ermitteln, mit welchen Unterkategorien dieses Element hier zeichnet. Nicht in „Alle beheben“ enthalten.</sys:String>
+    <sys:String x:Key="ui_ghost">In Revit einblenden</sys:String>
+    <sys:String x:Key="ui_ghost_hint">Die Geometrie dieses Elements in den Revit-Ansichten zeichnen, auch wenn es ausgeblendet ist, und die diagnostizierte Ansicht darauf zoomen. Erneut klicken zum Entfernen.</sys:String>
 
 </ResourceDictionary>
