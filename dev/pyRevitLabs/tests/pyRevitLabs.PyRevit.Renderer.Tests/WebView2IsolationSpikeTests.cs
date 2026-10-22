@@ -194,6 +194,13 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             });
         }
 
+        /// <summary>
+        /// WebView2 creates its environment only on a single-threaded-apartment
+        /// thread whose dispatcher is pumping, so the creation runs on an STA
+        /// thread with a frame instead of blocking the test thread on the task:
+        /// blocking would starve the callbacks the environment start depends
+        /// on and fail on machines where the runtime is actually available.
+        /// </summary>
         [TestMethod]
         public void IsolatedRenderer_StartsTheBrowserWhenTheEvergreenRuntimeIsAvailable() {
             var core = LoadIsolated(IsolatedRendererFixture.CoreAssemblyFileName);
@@ -210,20 +217,38 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
 
             var userDataFolder = Path.Combine(
                 Path.GetTempPath(), "pyrevit-renderer-spike-browser");
-            var options = Activator.CreateInstance(optionsType);
-            var creation = (Task)createAsync.Invoke(
-                null, new object[] { null, userDataFolder, options });
 
-            try {
+            StaTestRunner.Run(() => {
+                var dispatcher = Dispatcher.CurrentDispatcher;
+                var options = Activator.CreateInstance(optionsType);
+                var creation = (Task)createAsync.Invoke(
+                    null, new object[] { null, userDataFolder, options });
+
+                var frame = new DispatcherFrame();
+                var timeout = new DispatcherTimer(
+                    TimeSpan.FromSeconds(60),
+                    DispatcherPriority.Background,
+                    (sender, args) => frame.Continue = false,
+                    dispatcher);
+                timeout.Start();
+
+                creation.ContinueWith(
+                    completed => dispatcher.BeginInvoke(new Action(() => frame.Continue = false)),
+                    TaskScheduler.Default);
+
+                Dispatcher.PushFrame(frame);
+                timeout.Stop();
+
                 Assert.IsTrue(
-                    creation.Wait(TimeSpan.FromSeconds(60)),
+                    creation.IsCompleted,
                     "The browser environment did not come up in time.");
-            }
-            catch (AggregateException ex) {
-                Assert.Fail("The browser environment failed to start: " + ex.GetBaseException().Message);
-            }
-
-            Assert.IsFalse(creation.IsFaulted, "The browser environment failed to start.");
+                Assert.IsFalse(
+                    creation.IsFaulted,
+                    "The browser environment failed to start: "
+                    + (creation.Exception == null
+                        ? "unknown error"
+                        : creation.Exception.GetBaseException().Message));
+            });
         }
 
         private Assembly LoadIsolated(string fileName) {

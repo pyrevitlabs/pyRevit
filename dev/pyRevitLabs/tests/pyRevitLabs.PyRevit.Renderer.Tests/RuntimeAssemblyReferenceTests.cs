@@ -67,6 +67,47 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             }
         }
 
+        /// <summary>
+        /// Every .NET runtime version must bind the one shared assembly that
+        /// owns the load context. A per-year runtime that compiled the owner
+        /// into itself would give a host process several contexts, which is the
+        /// duplication the owner exists to prevent.
+        /// </summary>
+        [TestMethod]
+        public void NetCoreRuntime_ReferencesTheSharedLoadContextOwner() {
+            foreach (var version in NetCoreRuntimeVersions) {
+                var references = GetReferencedAssemblyNames(RequireRuntimeAssembly("netcore", version));
+
+                Assert.IsTrue(
+                    references.Contains("pyRevitLabs.PyRevit.Runtime.Shared"),
+                    "The .NET runtime " + version + " must bind the shared assembly that owns the "
+                    + "isolated load context.");
+            }
+        }
+
+        /// <summary>
+        /// Pins that the deployed shared assembly is the one that carries the
+        /// owner, so an installation whose shared assembly predates the fix
+        /// fails here instead of silently creating a context per runtime version.
+        /// </summary>
+        [TestMethod]
+        public void NetCoreSharedAssembly_DefinesTheProcessWideLoadContext() {
+            using var stream = File.OpenRead(RequireSharedAssembly("netcore"));
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+            var typeNames = reader.TypeDefinitions
+                .Select(handle => reader.GetString(reader.GetTypeDefinition(handle).Name))
+                .ToList();
+
+            Assert.IsTrue(
+                typeNames.Contains("IsolatedWebView2Context"),
+                "The deployed shared assembly does not own the isolated load context. "
+                + "Rebuild and redeploy before running the renderer tests.");
+            Assert.IsTrue(
+                typeNames.Contains("WebView2LoadContext"),
+                "The deployed shared assembly does not define the isolated load context.");
+        }
+
         [TestMethod]
         public void NetFxRuntime_ReferencesTheWebView2Renderer() {
             foreach (var version in NetFxRuntimeVersions) {
