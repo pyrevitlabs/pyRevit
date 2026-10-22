@@ -32,7 +32,7 @@
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="System.Management" Version="10.0.5"/>
     </ItemGroup>
 
-    <Target Name="DeployDependencies" AfterTargets="AfterBuild">
+    <Target Name="DeployDependencies" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
             <LibGit2SharpNative Include="$(OutDir)\lib\win32\x64\*.dll"/>
         </ItemGroup>
@@ -67,7 +67,7 @@
     </Target>
 
     <Target Name="DeployDependencies2" AfterTargets="AfterBuild"
-    Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(SkipPyRevitDeploy)' != 'true'">
         <Copy SourceFiles="$(OutDir)\System.Reflection.Metadata.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\System.Collections.Immutable.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\System.Text.Encoding.CodePages.dll" DestinationFolder="$(PyRevitBinDir)"/>
@@ -78,7 +78,7 @@
     </Target>
 
     <Target Name="DeployRoslynSatellitesNetCore" AfterTargets="AfterBuild"
-        Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">
+        Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp' and '$(SkipPyRevitDeploy)' != 'true'">
         <Copy SourceFiles="$(OutDir)\System.Reflection.Metadata.dll" DestinationFolder="$(PyRevitBinDir)"
             Condition="Exists('$(OutDir)\System.Reflection.Metadata.dll')" />
         <Copy SourceFiles="$(OutDir)\System.Collections.Immutable.dll" DestinationFolder="$(PyRevitBinDir)"
@@ -91,7 +91,7 @@
       never bind against the WebView2 core the host process already carries.
       The .NET Framework deployment keeps the in-process layout.
     -->
-    <Target Name="Deploy-pyRevit-deps" AfterTargets="AfterBuild">
+    <Target Name="Deploy-pyRevit-deps" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">
             <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Core.dll"/>
             <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.WinForms.dll"/>

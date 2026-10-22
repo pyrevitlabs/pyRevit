@@ -27,7 +27,7 @@
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
 
-  <Target Name="DeployDependencies" AfterTargets="Deploy">
+  <Target Name="DeployDependencies" AfterTargets="Deploy" Condition="'$(SkipPyRevitDeploy)' != 'true'">
     <Copy SourceFiles="$(OutDir)\Nett.dll" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="$(OutDir)\INIFileParser.dll" DestinationFolder="$(PyRevitBinDir)" Condition="Exists('$(OutDir)\INIFileParser.dll')" />
   </Target>

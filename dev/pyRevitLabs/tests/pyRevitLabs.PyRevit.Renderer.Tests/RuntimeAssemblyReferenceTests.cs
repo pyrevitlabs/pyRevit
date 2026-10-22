@@ -12,7 +12,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// Guards the metadata references of the deployed runtime assemblies.
     ///
     /// A metadata reference is enough to make the default load context bind
-    /// the WebView2 stack, no matter where the file sits on disk. The .NET
+    /// the WebView2 stack, no matter where the file sits on disk. The shared
+    /// runtime assembly, which owns the isolated load context, and the .NET
     /// runtime must therefore carry no reference to any WebView2 assembly at
     /// all, while the .NET Framework runtime keeps the one to the renderer it
     /// runs in process.
@@ -24,6 +25,20 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     public class RuntimeAssemblyReferenceTests {
         private static readonly string[] NetCoreRuntimeVersions = { "2025", "2026", "2027" };
         private static readonly string[] NetFxRuntimeVersions = { "2021", "2022", "2023", "2024" };
+
+        [TestMethod]
+        public void NetCoreSharedAssembly_HasNoWebView2Reference() {
+            var references = GetReferencedAssemblyNames(RequireSharedAssembly("netcore"));
+
+            var webView2 = references
+                .Where(name => name.StartsWith("Microsoft.Web.WebView2", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            Assert.AreEqual(
+                0, webView2.Count,
+                "The shared runtime assembly owns the isolated load context, so it must not "
+                + "reference the WebView2 stack: " + string.Join(", ", webView2));
+        }
 
         [TestMethod]
         public void NetCoreRuntime_HasNoWebView2Reference() {
@@ -71,6 +86,17 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             return reader.AssemblyReferences
                 .Select(handle => reader.GetString(reader.GetAssemblyReference(handle).Name))
                 .ToList();
+        }
+
+        private static string RequireSharedAssembly(string netFolder) {
+            var path = Path.Combine(
+                RepositoryPaths.Root, "bin", netFolder, "pyRevitLabs.PyRevit.Runtime.Shared.dll");
+            if (!File.Exists(path))
+                Assert.Inconclusive(
+                    "'" + path + "' was not deployed. Build the solution before running "
+                    + "the renderer tests.");
+
+            return path;
         }
 
         private static string RequireRuntimeAssembly(string netFolder, string revitVersion) {

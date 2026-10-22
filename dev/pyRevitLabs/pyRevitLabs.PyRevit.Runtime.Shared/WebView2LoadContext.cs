@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
-namespace PyRevitLabs.PyRevit.Runtime {
+namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// <summary>
     /// Load context that keeps pyRevit's WebView2 stack out of the host
     /// process default load context.
@@ -28,8 +28,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// pyRevit's newer WebView2 wrapper against the core the host process
     /// carries, which is the crash this isolation exists to prevent, so a
     /// broken deployment must be loud rather than silently unsafe.
+    ///
+    /// Important: this type lives in the shared runtime assembly and not in
+    /// the per-year runtime assemblies. Every runtime version is deployed to
+    /// the same engine folder and loaded into the same host process, so a
+    /// context held by a per-year runtime would give the process one WebView2
+    /// stack per runtime version. The process-wide instance is owned by
+    /// <see cref="IsolatedWebView2Context"/>.
     /// </summary>
-    internal sealed class WebView2LoadContext : AssemblyLoadContext {
+    public sealed class WebView2LoadContext : AssemblyLoadContext {
+        /// <summary>
+        /// Name of the load context, as it appears in the runtime log.
+        /// </summary>
+        public const string ContextName = "pyRevit.WebView2";
+
         private static readonly string[] IsolatedAssemblyNames = {
             "Microsoft.Web.WebView2.Core",
             "Microsoft.Web.WebView2.Wpf",
@@ -40,7 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly string _assemblyDirectory;
 
         public WebView2LoadContext(string assemblyDirectory)
-            : base("pyRevit.WebView2", isCollectible: false) {
+            : base(ContextName, isCollectible: false) {
             _assemblyDirectory = assemblyDirectory;
         }
 

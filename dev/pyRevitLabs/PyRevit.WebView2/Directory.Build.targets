@@ -12,7 +12,8 @@
             <PyRevitRendererDeployDir Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">$(PyRevitBinDir)\isolated</PyRevitRendererDeployDir>
             <PyRevitRendererDeployDir Condition="'$(TargetFrameworkIdentifier)' != '.NetCoreApp'">$(PyRevitBinDir)</PyRevitRendererDeployDir>
         </PropertyGroup>
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitRendererDeployDir)" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitRendererDeployDir)"
+              Condition="'$(SkipPyRevitDeploy)' != 'true'" />
         <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitRendererDeployDir)'))" />
     </Target>
 </Project>

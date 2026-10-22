@@ -8,6 +8,7 @@ using PyRevitLabs.PyRevit.Renderer;
 using PyRevitLabs.PyRevit.WebView2;
 #else
 using System.Runtime.Loader;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 #endif
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -25,9 +26,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private const string IsolatedRendererAssemblyFileName = "pyRevitLabs.PyRevit.WebView2.dll";
         private const string IsolatedRendererTypeName =
             "PyRevitLabs.PyRevit.WebView2.WebView2ScriptRenderer";
-
-        private static readonly object IsolatedContextLock = new object();
-        private static WebView2LoadContext _isolatedContext;
 #endif
 
         /// <summary>
@@ -115,16 +113,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
-        /// The isolated load context, created on first use and kept for the
-        /// lifetime of the process: the WebView2 browser process and its
-        /// profile outlive any single output window.
+        /// The isolated load context of the process.
+        ///
+        /// The context is owned by the shared runtime assembly, which every
+        /// runtime version binds to the same instance of, so a host process
+        /// that loaded several runtime versions still holds one WebView2
+        /// context and one copy of the WebView2 stack. It is created on first
+        /// use and kept for the lifetime of the process: the WebView2 browser
+        /// process and its profile outlive any single output window.
         /// </summary>
         private static WebView2LoadContext GetIsolatedContext() {
-            lock (IsolatedContextLock) {
-                if (_isolatedContext == null)
-                    _isolatedContext = new WebView2LoadContext(GetIsolatedDirectory());
-                return _isolatedContext;
-            }
+            return IsolatedWebView2Context.GetOrCreate(GetIsolatedDirectory());
         }
 
         private static string GetIsolatedDirectory() {

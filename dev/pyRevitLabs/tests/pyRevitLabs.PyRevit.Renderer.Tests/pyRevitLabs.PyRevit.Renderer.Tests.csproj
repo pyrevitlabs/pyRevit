@@ -33,9 +33,12 @@
     </ItemGroup>
 
     <!-- pyRevitLabs.PyRevit.Runtime cannot be loaded outside a Revit host, so the
-         load-context contract is asserted against its sources. -->
+         load-context contract is asserted against its sources. The load context
+         itself lives in the shared runtime assembly, which is deployed as a
+         single file and loaded once per process. -->
     <ItemGroup>
-        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\WebView2LoadContext.cs" Link="Sources\WebView2LoadContext.cs" />
+        <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime.Shared\WebView2LoadContext.cs" Link="Sources\WebView2LoadContext.cs" />
+        <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime.Shared\IsolatedWebView2Context.cs" Link="Sources\IsolatedWebView2Context.cs" />
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\ScriptRendererProvider.cs" Link="Sources\ScriptRendererProvider.cs" />
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\IsolatedRendererLayout.cs" Link="Sources\IsolatedRendererLayout.cs" />
     </ItemGroup>

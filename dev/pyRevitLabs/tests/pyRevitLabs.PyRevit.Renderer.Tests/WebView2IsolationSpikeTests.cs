@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using PyRevitLabs.PyRevit.Renderer;
 using PyRevitLabs.PyRevit.Runtime;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 
 namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// <summary>
