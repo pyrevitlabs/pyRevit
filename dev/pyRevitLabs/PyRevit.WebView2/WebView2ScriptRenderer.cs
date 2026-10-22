@@ -27,6 +27,11 @@ namespace PyRevitLabs.PyRevit.WebView2 {
         private static readonly object EnvironmentLock = new object();
         private static Task<CoreWebView2Environment> _sharedEnvironment;
         private static int _runtimeMissingPromptShown;
+        private static Exception _loaderFolderError;
+
+        static WebView2ScriptRenderer() {
+            PinLoaderFolder();
+        }
 
         private readonly WebView2Control _control;
         private readonly Dispatcher _dispatcher;
@@ -221,13 +226,16 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                 return;
             _initStarted = true;
 
-            if (!IsRuntimeAvailable()) {
+            var runtimeState = _loaderFolderError != null ? RuntimeState.Broken : ProbeRuntime();
+            if (runtimeState != RuntimeState.Available) {
                 _runtimeMissing = true;
                 BrowserVersion = string.Empty;
                 _readyTcs.TrySetResult(false);
-                _dispatcher.BeginInvoke(
-                    new Action(ShowRuntimeMissingDialog),
-                    DispatcherPriority.ApplicationIdle);
+                if (runtimeState == RuntimeState.Missing) {
+                    _dispatcher.BeginInvoke(
+                        new Action(ShowRuntimeMissingDialog),
+                        DispatcherPriority.ApplicationIdle);
+                }
                 return;
             }
 
@@ -424,13 +432,74 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                 );
         }
 
-        private static bool IsRuntimeAvailable() {
+        /// <summary>
+        /// Pins the native loader to the folder this renderer was loaded from.
+        ///
+        /// The core probes for <c>WebView2Loader.dll</c> itself before falling
+        /// back to the managed resolution path, so the load-context override
+        /// alone cannot guarantee which copy wins when the host process or the
+        /// host search path offers another one. A copy from a different WebView2
+        /// version is what breaks the environment at startup, which is why the
+        /// folder is stated rather than probed.
+        ///
+        /// Important: the core ignores this setting once it has loaded the
+        /// loader, so it runs from the type initializer, before any environment
+        /// API is reachable.
+        /// </summary>
+        private static void PinLoaderFolder() {
+            try {
+                var folder = Path.GetDirectoryName(typeof(WebView2ScriptRenderer).Assembly.Location);
+                if (string.IsNullOrEmpty(folder))
+                    throw new InvalidOperationException(
+                        "The renderer assembly has no location, so the folder holding the native "
+                        + "WebView2 loader is unknown.");
+
+                CoreWebView2Environment.SetLoaderDllFolderPath(folder);
+            }
+            catch (Exception ex) {
+                ScriptRendererLog.Error(
+                    "could not pin the WebView2 loader folder: {0}", ex.Message);
+                if (LoaderFolderIsIsolated)
+                    _loaderFolderError = ex;
+            }
+        }
+
+        /// <summary>
+        /// True when the renderer owns its WebView2 core, which makes the
+        /// loader pin mandatory: without it the core can pick up a loader from
+        /// a different version and the environment start fails. On the .NET
+        /// Framework the host shares its core with pyRevit and may already have
+        /// loaded the loader, so the pin is best effort and a failure leaves
+        /// the previous resolution in place.
+        /// </summary>
+        private static bool LoaderFolderIsIsolated {
+            get {
+#if NETFRAMEWORK
+                return false;
+#else
+                return true;
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Distinguishes an absent Evergreen runtime, which the user can fix by
+        /// installing it, from a broken deployment, which the user cannot.
+        /// Treating the second as the first sends people to install a runtime
+        /// they already have while the real fault stays hidden.
+        /// </summary>
+        private static RuntimeState ProbeRuntime() {
             try {
                 CoreWebView2Environment.GetAvailableBrowserVersionString();
-                return true;
+                return RuntimeState.Available;
             }
-            catch {
-                return false;
+            catch (WebView2RuntimeNotFoundException) {
+                return RuntimeState.Missing;
+            }
+            catch (Exception ex) {
+                ScriptRendererLog.Error(
+                    "the WebView2 stack could not start: {0}: {1}", ex.GetType().Name, ex.Message);
+                return RuntimeState.Broken;
             }
         }
 
@@ -515,6 +584,12 @@ namespace PyRevitLabs.PyRevit.WebView2 {
             }
             catch {
             }
+        }
+
+        private enum RuntimeState {
+            Available,
+            Missing,
+            Broken,
         }
     }
 }
