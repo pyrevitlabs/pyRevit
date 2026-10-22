@@ -49,8 +49,18 @@
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
         <Reference Include="pyRevitLabs.Emojis" HintPath="$(PyRevitBinDir)\pyRevitLabs.Emojis.dll" />
         <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
+        <Reference Include="pyRevitLabs.PyRevit.Renderer" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.Renderer.dll" Private="false" />
         <Reference Include="pyRevitLabs.PyRevit.Runtime.Shared" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.Runtime.Shared.dll" />
         <Reference Include="pyRevitLabs.TargetApps.Revit" HintPath="$(PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
+    </ItemGroup>
+
+    <!--
+      Only the .NET Framework runtime links the WebView2 renderer directly.
+      On Revit 2025 and newer it is loaded into an isolated load context by
+      path, so no metadata reference may exist there.
+    -->
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.PyRevit.WebView2" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.WebView2.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
