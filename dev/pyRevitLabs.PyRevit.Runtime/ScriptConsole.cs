@@ -437,7 +437,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>Engine identity of the renderer, e.g. "WebView2/Chromium".</summary>
         public string RendererEngine {
-            get { return _renderer.RuntimeMissing ? "WebView2 (runtime missing)" : "WebView2/Chromium"; }
+            get {
+                switch (_renderer.Failure) {
+                    case RendererFailure.RuntimeMissing:
+                        return "WebView2 (runtime missing)";
+                    case RendererFailure.BrokenDeployment:
+                        return "WebView2 (failed to start)";
+                    default:
+                        return "WebView2/Chromium";
+                }
+            }
         }
 
         /// <summary>
@@ -570,7 +579,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
             _renderer.EnsureReady(ProvideInitialPageUri);
-            if (_renderer.RuntimeMissing && _plainTextOutput == null) {
+            if (_renderer.Failure != RendererFailure.None && _plainTextOutput == null) {
                 var grid = Content as Grid;
                 if (grid == null)
                     return;
@@ -580,15 +589,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     TextWrapping = TextWrapping.Wrap,
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     Margin = new Thickness(12),
-                    Text = "WebView2 Runtime not found.\n"
-                        + "Script output is displayed as plain text. Install the Microsoft Edge "
-                        + "WebView2 Evergreen Runtime, then reopen this window:\n"
-                        + ScriptRendererConsts.RuntimeDownloadUrl + "\n\n"
+                    Text = BuildPlainTextFallbackNotice()
                 };
                 Grid.SetRow(_plainTextOutput, grid.RowDefinitions.IndexOf(_rendererRow));
                 _renderer.Control.Visibility = Visibility.Collapsed;
                 grid.Children.Add(_plainTextOutput);
             }
+        }
+
+        /// <summary>
+        /// What the plain-text fallback tells the user. A broken deployment is
+        /// not fixed by installing the Evergreen runtime, so it must not offer
+        /// the download.
+        /// </summary>
+        private string BuildPlainTextFallbackNotice() {
+            if (_renderer.Failure == RendererFailure.BrokenDeployment) {
+                return "The WebView2 components of this pyRevit installation failed to start.\n"
+                    + "Script output is displayed as plain text. Reinstall pyRevit to restore the "
+                    + "output window.\n\n";
+            }
+
+            return "WebView2 Runtime not found.\n"
+                + "Script output is displayed as plain text. Install the Microsoft Edge "
+                + "WebView2 Evergreen Runtime, then reopen this window:\n"
+                + ScriptRendererConsts.RuntimeDownloadUrl + "\n\n";
         }
 
         private string ProvideInitialPageUri() {
@@ -640,7 +664,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_frozen)
                 return;
             EnsureDocumentReadyBlocking();
-            _frozenBodyHtml = _renderer.RuntimeMissing
+            _frozenBodyHtml = _renderer.Failure != RendererFailure.None
                 ? string.Empty
                 : DecodeJsonString(_renderer.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
             _frozen = true;
@@ -660,7 +684,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 snapshot = _frozenBodyHtml ?? string.Empty;
             }
-            if (_renderer.RuntimeMissing) {
+            if (_renderer.Failure != RendererFailure.None) {
                 lock (_pendingLock) {
                     _pendingHtml.Append(snapshot);
                 }
@@ -671,7 +695,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _frozenBodyHtml = null;
             _frozen = false;
             UpdateInlineWaitAnimation(false);
-            if (_renderer.RuntimeMissing)
+            if (_renderer.Failure != RendererFailure.None)
                 QueueFlush();
         }
 
@@ -809,7 +833,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             EnsureDocumentReady();
 
-            if (_renderer.RuntimeMissing) {
+            if (_renderer.Failure != RendererFailure.None) {
                 var plainText = ToPlainText(payload);
                 if (plainText.Length == 0)
                     return;
@@ -858,8 +882,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             _outputLossReported = true;
             ScriptRendererLog.Error(
-                "discarding output for this window: runtimeMissing={0} initFailed={1}",
-                _renderer.RuntimeMissing, _renderer.InitializationFailed);
+                "discarding output for this window: failure={0} initFailed={1}",
+                _renderer.Failure, _renderer.InitializationFailed);
         }
 
         private void WebView_DocumentReady(object sender, EventArgs e) {

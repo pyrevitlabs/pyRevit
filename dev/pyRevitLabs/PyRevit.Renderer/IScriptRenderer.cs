@@ -20,8 +20,14 @@ namespace PyRevitLabs.PyRevit.Renderer {
         /// <summary>Version of the browser backing the renderer; empty until initialized.</summary>
         string BrowserVersion { get; }
 
-        /// <summary>True when the browser runtime is not installed on this machine.</summary>
-        bool RuntimeMissing { get; }
+        /// <summary>
+        /// Why the renderer cannot show a browser view, or
+        /// <see cref="RendererFailure.None"/> while it can. When it is not
+        /// <see cref="RendererFailure.None"/> the owner keeps the window usable
+        /// as plain text and reports the matching cause instead of a generic
+        /// failure.
+        /// </summary>
+        RendererFailure Failure { get; }
 
         /// <summary>True when the renderer could not be brought up; it will never render.</summary>
         bool InitializationFailed { get; }

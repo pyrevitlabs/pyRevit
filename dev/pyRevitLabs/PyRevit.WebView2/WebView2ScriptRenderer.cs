@@ -40,7 +40,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
         private readonly TaskCompletionSource<bool> _readyTcs =
             new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private volatile bool _coreReady;
-        private volatile bool _runtimeMissing;
+        private volatile RendererFailure _failure = RendererFailure.None;
         private volatile bool _initFailed;
         private volatile bool _initStarted;
         private volatile bool _everNavigated;
@@ -74,7 +74,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
         public string BrowserVersion { get; private set; } = string.Empty;
 
         /// <inheritdoc />
-        public bool RuntimeMissing { get { return _runtimeMissing; } }
+        public RendererFailure Failure { get { return _failure; } }
 
         /// <inheritdoc />
         public bool InitializationFailed { get { return _initFailed; } }
@@ -84,7 +84,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
 
         /// <inheritdoc />
         public bool IsDocumentReady {
-            get { return _coreReady && !_runtimeMissing && _everNavigated && _lastNavigationCompleted; }
+            get { return _coreReady && _failure == RendererFailure.None && _everNavigated && _lastNavigationCompleted; }
         }
 
         /// <inheritdoc />
@@ -109,7 +109,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
 
         /// <inheritdoc />
         public void WaitUntilReady(int timeoutMilliseconds = 30000) {
-            if (_disposed || _runtimeMissing || _initFailed || IsDocumentReady)
+            if (_disposed || _failure != RendererFailure.None || _initFailed || IsDocumentReady)
                 return;
 
             if (!_dispatcher.CheckAccess()) {
@@ -124,7 +124,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
             if (!_coreReady)
                 PumpUntil(_readyTcs.Task, timeoutMilliseconds);
 
-            if (_disposed || _runtimeMissing || _initFailed)
+            if (_disposed || _failure != RendererFailure.None || _initFailed)
                 return;
 
             var navigation = _navigationTcs;
@@ -214,7 +214,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
         /// window that does not exist yet, leaving the view black.
         /// </summary>
         private void BeginInitialize(Func<string> firstNavigationProvider) {
-            if (_disposed || _runtimeMissing || _initFailed)
+            if (_disposed || _failure != RendererFailure.None || _initFailed)
                 return;
 
             if (_coreReady) {
@@ -228,7 +228,9 @@ namespace PyRevitLabs.PyRevit.WebView2 {
 
             var runtimeState = _loaderFolderError != null ? RuntimeState.Broken : ProbeRuntime();
             if (runtimeState != RuntimeState.Available) {
-                _runtimeMissing = true;
+                _failure = runtimeState == RuntimeState.Missing
+                    ? RendererFailure.RuntimeMissing
+                    : RendererFailure.BrokenDeployment;
                 BrowserVersion = string.Empty;
                 _readyTcs.TrySetResult(false);
                 if (runtimeState == RuntimeState.Missing) {
