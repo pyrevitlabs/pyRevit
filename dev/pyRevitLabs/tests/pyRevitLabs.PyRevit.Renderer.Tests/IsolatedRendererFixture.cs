@@ -97,15 +97,11 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             }
         }
 
-        /// <summary>Path of the repository root, found from the test output folder.</summary>
-        internal static string RepositoryRoot {
-            get { return RepositoryPaths.Root; }
-        }
-
         /// <summary>
-        /// The WebView2 stack the test project stages next to its output. It comes
-        /// from the same package the deployment copies, so running the renderer
-        /// tests alone does not require the product deployment to have run first.
+        /// The WebView2 stack and renderer the test project stages next to its
+        /// output. They come from the same package and project the deployment
+        /// consumes, so running the renderer tests alone does not require the
+        /// product deployment to have run first.
         /// </summary>
         internal static string StagedWebView2Directory {
             get {
@@ -125,9 +121,9 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
 
             CopyRequired(StagedWebView2Directory, NativeLoaderFileName, "The staged WebView2 stack is missing.");
             CopyRequired(
-                Path.Combine(RepositoryRoot, "bin", "netcore", "isolated"),
+                StagedWebView2Directory,
                 RendererAssemblyFileName,
-                "The isolated WebView2 renderer was not deployed.");
+                "The staged WebView2 renderer is missing.");
         }
 
         private void CopyRequired(string sourceDirectory, string fileName, string message) {

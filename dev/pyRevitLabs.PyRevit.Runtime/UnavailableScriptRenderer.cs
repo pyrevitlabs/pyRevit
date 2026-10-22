@@ -40,7 +40,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public bool InitializationFailed {
-            get { return false; }
+            get { return true; }
         }
 
         public bool IsDocumentReady {

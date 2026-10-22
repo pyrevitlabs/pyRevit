@@ -250,11 +250,57 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             });
         }
 
+        /// <summary>
+        /// The environment test above proves the runtime can start a browser.
+        /// This one proves the shipped renderer does it and reaches a navigable
+        /// document, which is the path the output window actually takes.
+        /// </summary>
+        [TestMethod]
+        public void IsolatedRenderer_InitializesTheDocumentWhenTheEvergreenRuntimeIsAvailable() {
+            StaTestRunner.Run(() => {
+                var window = new Window {
+                    Width = 320,
+                    Height = 240,
+                    ShowInTaskbar = false,
+                    WindowStyle = WindowStyle.None,
+                    WindowStartupLocation = WindowStartupLocation.Manual,
+                    Left = -10000,
+                    Top = -10000,
+                };
+
+                try {
+                    using (var renderer = CreateIsolatedRenderer()) {
+                        window.Content = renderer.Control;
+                        window.Show();
+
+                        renderer.EnsureReady(() => "about:blank");
+                        renderer.WaitUntilReady(60000);
+
+                        if (renderer.Failure == RendererFailure.RuntimeMissing)
+                            Assert.Inconclusive(
+                                "The WebView2 Evergreen runtime is not installed on this machine.");
+
+                        Assert.IsFalse(
+                            renderer.InitializationFailed,
+                            "The shipped renderer must initialize when the runtime is installed.");
+                        Assert.AreEqual(RendererFailure.None, renderer.Failure);
+                        Assert.IsTrue(renderer.IsCoreReady, "The WebView2 core did not come up in time.");
+                        Assert.IsTrue(
+                            renderer.IsDocumentReady,
+                            "The renderer did not finish its first navigation in time.");
+                        Assert.IsFalse(string.IsNullOrEmpty(renderer.BrowserVersion));
+                    }
+                }
+                finally {
+                    window.Close();
+                }
+            });
+        }
+
         private Assembly LoadIsolated(string fileName) {
             var path = Path.Combine(_fixture.IsolatedDirectory, fileName);
             return _context.LoadFromAssemblyPath(path);
         }
-
         private Assembly LoadHostCore(string path) {
             var loaded = AssemblyLoadContext.Default.Assemblies
                 .FirstOrDefault(a => a.GetName().Name == IsolatedRendererFixture.CoreAssemblyName);

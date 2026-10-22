@@ -60,6 +60,9 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
                     Assert.IsFalse(renderer.IsCoreReady);
                     Assert.IsFalse(renderer.IsDocumentReady);
                     Assert.IsTrue(
+                        renderer.InitializationFailed,
+                        "The stand-in must report that it never initialized, so output is not silently dropped.");
+                    Assert.IsTrue(
                         renderer.ReadyTask.IsCompleted,
                         "The stand-in must not leave the owner waiting for a renderer.");
                 }

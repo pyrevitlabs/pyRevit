@@ -25,16 +25,22 @@
     </ItemGroup>
 
     <!--
-      The fixture needs the same WebView2 stack the deployment ships. Stage it
-      next to the test assembly so running this project alone does not depend on
-      the product deployment having run first.
+      The fixture needs the same WebView2 stack and renderer the deployment
+      ships. Stage them next to the test assembly so running this project alone
+      does not depend on the product deployment having run first.
     -->
     <Target Name="StageWebView2Fixture" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
+        <MSBuild Projects="..\..\PyRevit.WebView2\pyRevitLabs.PyRevit.WebView2.csproj"
+                 Targets="GetTargetPath"
+                 Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)">
+            <Output TaskParameter="TargetOutputs" ItemName="RendererFixtureAssembly" />
+        </MSBuild>
         <ItemGroup>
             <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.Core.dll" />
             <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.Wpf.dll" />
             <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.WinForms.dll" />
             <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll" />
+            <WebView2FixtureFile Include="@(RendererFixtureAssembly)" />
         </ItemGroup>
         <Copy SourceFiles="@(WebView2FixtureFile)" DestinationFolder="$(OutDir)webview2-fixture" SkipUnchangedFiles="true" />
     </Target>

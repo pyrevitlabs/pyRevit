@@ -129,7 +129,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             var invocation = exception as TargetInvocationException;
-            return invocation != null && IsRendererUnavailable(invocation.InnerException);
+            if (invocation != null)
+                return IsRendererUnavailable(invocation.InnerException);
+
+            var typeInitialization = exception as TypeInitializationException;
+            return typeInitialization != null
+                   && IsRendererUnavailable(typeInitialization.InnerException);
         }
 
         /// <summary>
