@@ -118,6 +118,10 @@ namespace PyRevitLoader
             // this is to ensure pyRevit is loaded on its own assemblies
             foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
             {
+#if !NETFRAMEWORK
+                if (IsIsolatedRendererAssembly(engineDll))
+                    continue;
+#endif
                 try
                 {
                     Assembly.LoadFrom(engineDll);
@@ -129,6 +133,25 @@ namespace PyRevitLoader
                 }
             }
         }
+
+#if !NETFRAMEWORK
+        /// <summary>
+        /// The WebView2 stack must never enter the host process default load
+        /// context on .NET: the host already carries its own WebView2 core, and
+        /// loading pyRevit's newer wrapper there makes the two bind against
+        /// each other, which takes the host down. The renderer loads them into
+        /// an isolated load context instead, from the isolated folder.
+        /// </summary>
+        private static bool IsIsolatedRendererAssembly(string assemblyPath)
+        {
+            var fileName = Path.GetFileName(assemblyPath);
+            return fileName.Equals("Microsoft.Web.WebView2.Core.dll", StringComparison.OrdinalIgnoreCase)
+                || fileName.Equals("Microsoft.Web.WebView2.Wpf.dll", StringComparison.OrdinalIgnoreCase)
+                || fileName.Equals("Microsoft.Web.WebView2.WinForms.dll", StringComparison.OrdinalIgnoreCase)
+                || fileName.Equals("pyRevitLabs.PyRevit.WebView2.dll", StringComparison.OrdinalIgnoreCase)
+                || fileName.Equals("WebView2Loader.dll", StringComparison.OrdinalIgnoreCase);
+        }
+#endif
 
         // Reload entry invoked by the Python session manager via reflection
         // (GetMethod("LoadSession")). Must stay the only static method named LoadSession

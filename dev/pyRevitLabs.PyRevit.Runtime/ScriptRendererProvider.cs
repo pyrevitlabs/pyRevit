@@ -1,25 +1,120 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows.Threading;
 using PyRevitLabs.PyRevit.Renderer;
+#if NETFRAMEWORK
 using PyRevitLabs.PyRevit.WebView2;
+#endif
 
 namespace PyRevitLabs.PyRevit.Runtime {
     /// <summary>
     /// Creates the renderer behind a script output window.
     ///
-    /// The renderer is hosted in its own assembly so that it can later be
-    /// moved out of the host process default load context without the
-    /// runtime having to give up its renderer abstraction.
+    /// On Revit 2021 to 2024 the renderer runs in the host process default
+    /// load context, which is the only option on the .NET Framework. On Revit
+    /// 2025 and newer the renderer is loaded into a dedicated load context so
+    /// that the WebView2 stack pyRevit ships never binds against the one the
+    /// host process already loaded.
     /// </summary>
     internal static class ScriptRendererProvider {
+#if !NETFRAMEWORK
+        private const string IsolatedRendererAssemblyFileName = "pyRevitLabs.PyRevit.WebView2.dll";
+        private const string IsolatedRendererTypeName =
+            "PyRevitLabs.PyRevit.WebView2.WebView2ScriptRenderer";
+
+        private static readonly object IsolatedContextLock = new object();
+        private static WebView2LoadContext _isolatedContext;
+#endif
+
         /// <summary>
         /// Creates the renderer on <paramref name="dispatcher"/>.
         /// </summary>
         internal static IScriptRenderer Create(Dispatcher dispatcher) {
+#if !NETFRAMEWORK
+            return CreateIsolated(dispatcher);
+#else
             return new WebView2ScriptRenderer(dispatcher, GetProfileFolder());
+#endif
         }
+
+#if !NETFRAMEWORK
+        /// <summary>
+        /// Loads the renderer implementation into the isolated load context and
+        /// hands back the contract view of it.
+        ///
+        /// The implementation is reached by reflection on purpose: a metadata
+        /// reference would let the default load context demand-load it, which
+        /// is exactly the binding this isolation exists to prevent.
+        /// </summary>
+        private static IScriptRenderer CreateIsolated(Dispatcher dispatcher) {
+            var context = GetIsolatedContext();
+            var assemblyPath = Path.Combine(
+                context.AssemblyDirectory, IsolatedRendererAssemblyFileName);
+            if (!File.Exists(assemblyPath)) {
+                throw new FileNotFoundException(
+                    "The isolated WebView2 renderer assembly was not found. "
+                    + "The pyRevit installation is incomplete.",
+                    assemblyPath);
+            }
+
+            var assembly = context.LoadFromAssemblyPath(assemblyPath);
+            var rendererType = assembly.GetType(IsolatedRendererTypeName, throwOnError: true);
+            return (IScriptRenderer)Activator.CreateInstance(
+                rendererType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new object[] { dispatcher, GetProfileFolder() },
+                null);
+        }
+
+        /// <summary>
+        /// The isolated load context, created on first use and kept for the
+        /// lifetime of the process: the WebView2 browser process and its
+        /// profile outlive any single output window.
+        /// </summary>
+        private static WebView2LoadContext GetIsolatedContext() {
+            lock (IsolatedContextLock) {
+                if (_isolatedContext == null)
+                    _isolatedContext = new WebView2LoadContext(GetIsolatedDirectory());
+                return _isolatedContext;
+            }
+        }
+
+        private static string GetIsolatedDirectory() {
+            return Path.Combine(GetPyRevitBinDirectory(), "isolated");
+        }
+
+        /// <summary>
+        /// The folder the host process binaries live in, which is where the
+        /// isolated renderer folder sits. The runtime assembly is deployed to
+        /// an engine folder below it, so the search walks up until it finds
+        /// the engine folder marker.
+        /// </summary>
+        private static string GetPyRevitBinDirectory() {
+            var assemblyDirectory = Path.GetDirectoryName(
+                typeof(ScriptRendererProvider).Assembly.Location);
+            var directory = assemblyDirectory;
+            while (!string.IsNullOrEmpty(directory)) {
+                if (Directory.Exists(Path.Combine(directory, "engines")))
+                    return directory;
+
+                var parent = Path.GetDirectoryName(directory);
+                if (string.Equals(parent, directory, StringComparison.OrdinalIgnoreCase))
+                    break;
+                directory = parent;
+            }
+
+            var fallback = Path.GetDirectoryName(Path.GetDirectoryName(assemblyDirectory));
+            if (string.IsNullOrEmpty(fallback)) {
+                throw new DirectoryNotFoundException(
+                    "Could not locate the pyRevit binary folder from the runtime assembly location.");
+            }
+
+            return fallback;
+        }
+#endif
 
         /// <summary>
         /// Name of the browser profile folder for this host. Every Revit

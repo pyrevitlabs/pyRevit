@@ -28,6 +28,16 @@
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
         <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
         <Reference Include="pyRevitLabs.Python.Net" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll" Private="false" />
+    </ItemGroup>
+
+    <!--
+      The WebView2 stack must not be referenced from the runtime on Revit 2025
+      and newer: the host process already carries its own WebView2 core, and a
+      metadata reference here would make the default load context bind
+      pyRevit's newer wrapper against the host's older core. The renderer is
+      loaded into an isolated load context instead, by path.
+    -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
         <Reference Include="Microsoft.Web.WebView2.Core" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Core.dll" Private="false" />
         <Reference Include="Microsoft.Web.WebView2.WinForms" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.WinForms.dll" Private="false" />
         <Reference Include="Microsoft.Web.WebView2.Wpf" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Wpf.dll" Private="false" />
@@ -59,7 +69,7 @@
       On Revit 2025 and newer it is loaded into an isolated load context by
       path, so no metadata reference may exist there.
     -->
-    <ItemGroup>
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
         <Reference Include="pyRevitLabs.PyRevit.WebView2" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.WebView2.dll" Private="false" />
     </ItemGroup>
 

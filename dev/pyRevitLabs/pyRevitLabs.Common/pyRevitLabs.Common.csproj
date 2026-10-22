@@ -85,12 +85,27 @@
             Condition="Exists('$(OutDir)\System.Collections.Immutable.dll')" />
     </Target>
 
+    <!--
+      The WebView2 stack is deployed to a dedicated folder on .NET (Revit 2025
+      and newer) so that it can be loaded into an isolated load context and
+      never bind against the WebView2 core the host process already carries.
+      The .NET Framework deployment keeps the in-process layout.
+    -->
     <Target Name="Deploy-pyRevit-deps" AfterTargets="AfterBuild">
-        <ItemGroup>
+        <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">
+            <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Core.dll"/>
+            <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.WinForms.dll"/>
+            <webview2Dlls Include="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Wpf.dll"/>
+            <webview2Native Include="$(PyRevitDevLibsDir)\WebView2Loader.dll"/>
+            <dlls Include="$(PyRevitDevLibsDir)\*.dll" Exclude="@(webview2Dlls);@(webview2Native)"/>
+            <exes Include="$(PyRevitDevLibsDir)\*.exe"/>
+        </ItemGroup>
+        <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NetCoreApp'">
             <dlls Include="$(PyRevitDevLibsDir)\*.dll"/>
             <exes Include="$(PyRevitDevLibsDir)\*.exe"/>
         </ItemGroup>
         <Copy SourceFiles="@(dlls)" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="@(exes)" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="@(webview2Dlls);@(webview2Native)" DestinationFolder="$(PyRevitBinDir)\isolated"/>
     </Target>
 </Project>
