@@ -99,6 +99,12 @@
             <webview2Native Include="$(PyRevitDevLibsDir)\WebView2Loader.dll"/>
             <dlls Include="$(PyRevitDevLibsDir)\*.dll" Exclude="@(webview2Dlls);@(webview2Native)"/>
             <exes Include="$(PyRevitDevLibsDir)\*.exe"/>
+            <!-- Copies an earlier build left in the binary folder, where the
+                 loader would sweep them into the host process again. -->
+            <staleWebView2Copies Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.Core.dll"/>
+            <staleWebView2Copies Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.WinForms.dll"/>
+            <staleWebView2Copies Include="$(PyRevitBinDir)\Microsoft.Web.WebView2.Wpf.dll"/>
+            <staleWebView2Copies Include="$(PyRevitBinDir)\WebView2Loader.dll"/>
         </ItemGroup>
         <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NetCoreApp'">
             <dlls Include="$(PyRevitDevLibsDir)\*.dll"/>
@@ -107,5 +113,8 @@
         <Copy SourceFiles="@(dlls)" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="@(exes)" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="@(webview2Dlls);@(webview2Native)" DestinationFolder="$(PyRevitBinDir)\isolated"/>
+        <Delete Files="@(staleWebView2Copies)" ContinueOnError="true" />
+        <Warning Condition="'@(staleWebView2Copies->Exists())' != ''"
+                 Text="Stale WebView2 assemblies are still in $(PyRevitBinDir): @(staleWebView2Copies->Exists(), ', '). The loader keeps them out of the host process, but they must not be in the binary folder." />
     </Target>
 </Project>

@@ -13,6 +13,7 @@
     <ItemGroup Condition="'$(UseRunner)' == 'true'">
         <Compile Include="..\Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs"/>
         <Compile Include="..\Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs"/>
+        <Compile Include="..\Source\AssemblyLoadPolicy.cs" Link="Source\AssemblyLoadPolicy.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
         <Compile Include="..\Source\ErrorReporter.cs" Link="Source\ErrorReporter.cs"/>
     </ItemGroup>
