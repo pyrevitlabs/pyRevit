@@ -47,8 +47,9 @@ public static class TestCertificateStore {
     /// </remarks>
     /// <returns>The SHA-256 fingerprint of the certificate to sign with.</returns>
     public static async Task<string> EnsureLocalCertificateAsync(CancellationToken cancellationToken) {
-        var script = BuildEnsureScript(LocalSubject(Environment.MachineName), LocalLifetimeDays, LocalRenewBeforeDays);
-        return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken, trustStoreChanges: false));
+        var subject = LocalSubject(Environment.MachineName);
+        var script = BuildEnsureScript(subject, LocalLifetimeDays, LocalRenewBeforeDays);
+        return ParseFingerprint(await RunPowerShellAsync(subject, script, cancellationToken, trustStoreChanges: false));
     }
 
     /// <summary>
@@ -62,12 +63,13 @@ public static class TestCertificateStore {
     /// </remarks>
     /// <returns>The SHA-256 fingerprint of the trusted certificate.</returns>
     public static async Task<string> TrustLocalCertificateAsync(CancellationToken cancellationToken) {
+        var subject = LocalSubject(Environment.MachineName);
         var script = BuildEnsureScript(
-            LocalSubject(Environment.MachineName),
+            subject,
             LocalLifetimeDays,
             LocalRenewBeforeDays,
             trustInRootStore: true);
-        return ParseFingerprint(await RunPowerShellAsync(script, cancellationToken, trustStoreChanges: true));
+        return ParseFingerprint(await RunPowerShellAsync(subject, script, cancellationToken, trustStoreChanges: true));
     }
 
     /// <summary>
@@ -128,8 +130,10 @@ public static class TestCertificateStore {
 
     /// <summary>Deletes the developer certificate and its private key from <c>My</c>, <c>Root</c> and <c>TrustedPublisher</c>.</summary>
     public static async Task RemoveLocalCertificateAsync(CancellationToken cancellationToken) {
+        var subject = LocalSubject(Environment.MachineName);
         await RunPowerShellAsync(
-            BuildRemoveScript(LocalSubject(Environment.MachineName)),
+            subject,
+            BuildRemoveScript(subject),
             cancellationToken,
             trustStoreChanges: true);
     }
@@ -200,11 +204,19 @@ public static class TestCertificateStore {
                     $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
                     $store.Open('ReadWrite')
                     try {
-                        foreach ($stale in @($store.Certificates | Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint })) {
-                            $store.Remove($stale)
-                        }
                         if (-not $store.Certificates.Find('FindByThumbprint', $cert.Thumbprint, $false).Count) {
                             $store.Add((New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(,$cert.RawData)))
+                        }
+                    } finally {
+                        $store.Close()
+                    }
+                }
+                foreach ($name in 'Root', 'TrustedPublisher') {
+                    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($name, 'CurrentUser')
+                    $store.Open('ReadWrite')
+                    try {
+                        foreach ($stale in @($store.Certificates | Where-Object { $_.Subject -eq $subject -and $_.Thumbprint -ne $cert.Thumbprint })) {
+                            $store.Remove($stale)
                         }
                     } finally {
                         $store.Close()
@@ -310,24 +322,39 @@ public static class TestCertificateStore {
     }
 
     /// <summary>
-    /// Deletes an untrusted developer certificate from <c>My</c> so an interrupted run leaves no private key behind.
+    /// Deletes certificates created by this run that never reached both trust stores, so a declined or interrupted
+    /// trust step leaves no private key behind.
     /// </summary>
     /// <remarks>
-    /// Skips anything already present in <c>Root</c>: that developer answered the confirmation, and taking the key away
-    /// would break a working setup. Only <c>My</c> is written, so this never prompts either.
+    /// Only certificates absent from <paramref name="preservedThumbprints"/> are candidates: anything that existed
+    /// before the run belongs to the developer, and taking it away would break a working setup. A new certificate that
+    /// did reach both stores is kept because it is already usable for signing. Only <c>My</c> is written, so this never
+    /// prompts.
     /// </remarks>
-    internal static string BuildRollbackScript(string subject) {
+    internal static string BuildRollbackScript(string subject) => BuildRollbackScript(subject, []);
+
+    internal static string BuildRollbackScript(string subject, IReadOnlyCollection<string> preservedThumbprints) {
         var escaped = EscapeSingleQuoted(subject);
+        var preserved = preservedThumbprints.Count == 0
+            ? "@()"
+            : $"@('{string.Join("', '", preservedThumbprints)}')";
         return $$"""
             $ErrorActionPreference = 'Stop'
             $subject = '{{escaped}}'
-            $trusted = @(Get-ChildItem Cert:\CurrentUser\Root |
-                Where-Object { $_.Subject -eq $subject }).Count -gt 0
-            if (-not $trusted) {
-                Get-ChildItem Cert:\CurrentUser\My |
-                    Where-Object { $_.Subject -eq $subject } |
-                    ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
-            }
+            $preserved = {{preserved}}
+            $root = @(Get-ChildItem Cert:\CurrentUser\Root |
+                Where-Object { $_.Subject -eq $subject } |
+                ForEach-Object { $_.Thumbprint })
+            $publisher = @(Get-ChildItem Cert:\CurrentUser\TrustedPublisher |
+                Where-Object { $_.Subject -eq $subject } |
+                ForEach-Object { $_.Thumbprint })
+            Get-ChildItem Cert:\CurrentUser\My |
+                Where-Object {
+                    $_.Subject -eq $subject -and
+                    $preserved -notcontains $_.Thumbprint -and
+                    -not ($root -contains $_.Thumbprint -and $publisher -contains $_.Thumbprint)
+                } |
+                ForEach-Object { Remove-Item $_.PSPath -DeleteKey }
             """;
     }
 
@@ -348,6 +375,7 @@ public static class TestCertificateStore {
     private static string EscapeSingleQuoted(string value) => value.Replace("'", "''");
 
     private static async Task<string> RunPowerShellAsync(
+        string subject,
         string script,
         CancellationToken cancellationToken,
         bool trustStoreChanges) {
@@ -355,6 +383,7 @@ public static class TestCertificateStore {
             throw new PlatformNotSupportedException("Test certificates are only supported on Windows.");
         }
 
+        var preservedThumbprints = GetSameSubjectThumbprints(subject);
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
         var startInfo = new ProcessStartInfo(ResolvePowerShellExecutable()) {
             RedirectStandardOutput = true,
@@ -377,13 +406,12 @@ public static class TestCertificateStore {
             await process.WaitForExitAsync(timeout.Token);
         }
         catch (OperationCanceledException) {
-            process.Kill(entireProcessTree: true);
-            await process.WaitForExitAsync(CancellationToken.None);
+            await KillAndWaitAsync(process);
             if (cancellationToken.IsCancellationRequested) {
                 throw;
             }
 
-            await RollBackCertificateAsync(cancellationToken);
+            await RollBackCertificateAsync(subject, preservedThumbprints, cancellationToken);
             throw new TimeoutException(
                 $"Certificate script did not finish within {PowerShellTimeout.TotalSeconds:0} seconds"
                 + (trustStoreChanges
@@ -392,7 +420,7 @@ public static class TestCertificateStore {
         }
 
         if (process.ExitCode != 0) {
-            await RollBackCertificateAsync(cancellationToken);
+            await RollBackCertificateAsync(subject, preservedThumbprints, cancellationToken);
             throw new InvalidOperationException($"Certificate script failed: {await stderr}");
         }
 
@@ -400,23 +428,42 @@ public static class TestCertificateStore {
     }
 
     /// <summary>
-    /// Removes an untrusted developer certificate after a failed or interrupted script, so no private key is left in
-    /// <c>My</c> for a trust step the developer never completed.
+    /// Removes the certificate this run created if the trust step failed or was interrupted, so no private key is left
+    /// in <c>My</c> for a certificate the developer never trusted.
     /// </summary>
     /// <remarks>
     /// Best effort by design: the original failure is what the caller needs to see, so nothing here can mask it. A
-    /// failed rollback only leaves the key for <c>ci local --remove-cert</c> to clear. It goes through
+    /// failed rollback only leaves the key for <c>ci local --remove-cert</c> to clear. The host is resolved before the
+    /// rollback clock starts, because resolving it may probe several PowerShell installations. It goes through
     /// <see cref="ExecutePowerShellAsync"/> rather than <see cref="RunPowerShellAsync"/>, which would recurse back
     /// into this rollback on its own failure.
     /// </remarks>
-    private static async Task RollBackCertificateAsync(CancellationToken cancellationToken) {
+    private static async Task RollBackCertificateAsync(
+        string subject,
+        IReadOnlyCollection<string> preservedThumbprints,
+        CancellationToken cancellationToken) {
         try {
+            var executable = ResolvePowerShellExecutable();
             using var rollback = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             rollback.CancelAfter(RollbackTimeout);
-            await ExecutePowerShellAsync(BuildRollbackScript(LocalSubject(Environment.MachineName)), rollback.Token);
+            await ExecutePowerShellAsync(
+                BuildRollbackScript(subject, preservedThumbprints),
+                executable,
+                rollback.Token);
         }
         catch (Exception) {
         }
+    }
+
+    /// <summary>Thumbprints of the same-subject certificates already in <c>My</c> before a script runs.</summary>
+    private static string[] GetSameSubjectThumbprints(string subject) {
+        using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+        store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+        return store.Certificates
+            .Find(X509FindType.FindBySubjectDistinguishedName, subject, validOnly: false)
+            .Cast<X509Certificate2>()
+            .Select(certificate => certificate.Thumbprint)
+            .ToArray();
     }
 
     /// <summary>
@@ -437,9 +484,12 @@ public static class TestCertificateStore {
         ToolResolutionHelper.ResolvePowerShellExecutable(minimumPwshVersion: new Version(7, 1));
 
     /// <summary>Runs a certificate script and returns its output, with no rollback of its own.</summary>
-    private static async Task<string> ExecutePowerShellAsync(string script, CancellationToken cancellationToken) {
+    private static async Task<string> ExecutePowerShellAsync(
+        string script,
+        string executable,
+        CancellationToken cancellationToken) {
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var startInfo = new ProcessStartInfo(ResolvePowerShellExecutable()) {
+        var startInfo = new ProcessStartInfo(executable) {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -452,12 +502,32 @@ public static class TestCertificateStore {
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Could not start the certificate PowerShell host.");
         var stdout = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        await process.WaitForExitAsync(cancellationToken);
+        var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        try {
+            await process.WaitForExitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) {
+            await KillAndWaitAsync(process);
+            throw;
+        }
+
         if (process.ExitCode != 0) {
-            throw new InvalidOperationException(
-                $"Certificate script failed: {await process.StandardError.ReadToEndAsync(CancellationToken.None)}");
+            throw new InvalidOperationException($"Certificate script failed: {await stderr}");
         }
 
         return await stdout;
+    }
+
+    /// <summary>Kills a certificate host and waits for the tree to exit, ignoring a process that already finished.</summary>
+    private static async Task KillAndWaitAsync(Process process) {
+        try {
+            if (!process.HasExited) {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch (InvalidOperationException) {
+        }
+
+        await process.WaitForExitAsync(CancellationToken.None);
     }
 }

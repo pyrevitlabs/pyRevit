@@ -97,17 +97,21 @@ public sealed class TestCertificateStoreTests {
     }
 
     [TestMethod]
-    public void BuildEnsureScript_deletes_superseded_certificates_only_after_the_selected_one_is_trusted()
+    public void BuildEnsureScript_deletes_superseded_certificates_only_after_the_selected_one_is_added()
     {
         var script = TestCertificateStore.BuildEnsureScript("CN=x", 1, 0, trustInRootStore: true);
 
-        var trustWrite = script.IndexOf("foreach ($name in 'Root', 'TrustedPublisher')", StringComparison.Ordinal);
+        var add = script.IndexOf("$store.Add(", StringComparison.Ordinal);
+        var staleTrustDelete = script.IndexOf("$store.Remove($stale)", StringComparison.Ordinal);
         var trustCheck = script.IndexOf("$trustedForSigning = $false", StringComparison.Ordinal);
-        var delete = script.IndexOf("Remove-Item $_.PSPath -DeleteKey", StringComparison.Ordinal);
+        var keyDelete = script.IndexOf("Remove-Item $_.PSPath -DeleteKey", StringComparison.Ordinal);
 
-        Assert.IsTrue(trustWrite >= 0, script);
-        Assert.IsTrue(trustCheck > trustWrite, script);
-        Assert.IsTrue(delete > trustCheck, script);
+        Assert.IsTrue(add >= 0, script);
+        Assert.IsTrue(
+            staleTrustDelete > add,
+            "Stale trust entries must be removed only after the selected certificate was added to both stores.");
+        Assert.IsTrue(trustCheck > staleTrustDelete, script);
+        Assert.IsTrue(keyDelete > trustCheck, script);
         StringAssert.Contains(script, "if ($trustedForSigning) {");
     }
 
@@ -134,14 +138,23 @@ public sealed class TestCertificateStoreTests {
     }
 
     [TestMethod]
-    public void BuildRollbackScript_only_deletes_an_untrusted_certificate() {
-        // A killed trust step used to leave the private key behind, so the next run hit the same prompt again.
-        var script = TestCertificateStore.BuildRollbackScript("CN=pyRevit Local Dev (BOX)");
+    public void BuildRollbackScript_only_deletes_certificates_created_by_this_run() {
+        var script = TestCertificateStore.BuildRollbackScript(
+            "CN=pyRevit Local Dev (BOX)",
+            ["ABCDEF0123456789ABCDEF0123456789ABCDEF01"]);
 
         StringAssert.Contains(script, "$subject = 'CN=pyRevit Local Dev (BOX)'");
-        StringAssert.Contains(script, "if (-not $trusted) {");
-        StringAssert.Contains(script, "Cert:\\CurrentUser\\Root");
+        StringAssert.Contains(script, "$preserved = @('ABCDEF0123456789ABCDEF0123456789ABCDEF01')");
+        StringAssert.Contains(script, "$preserved -notcontains $_.Thumbprint");
+        StringAssert.Contains(script, "$root -contains $_.Thumbprint -and $publisher -contains $_.Thumbprint");
         StringAssert.Contains(script, "Remove-Item $_.PSPath -DeleteKey");
+    }
+
+    [TestMethod]
+    public void BuildRollbackScript_handles_an_empty_snapshot() {
+        var script = TestCertificateStore.BuildRollbackScript("CN=x");
+
+        StringAssert.Contains(script, "$preserved = @()");
     }
 
     [TestMethod]
