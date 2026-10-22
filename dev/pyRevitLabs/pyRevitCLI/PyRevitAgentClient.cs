@@ -105,11 +105,13 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Picks the target host. <paramref name="selector"/> is a Revit year (e.g. 2024) or a
-        /// Revit process id. Without a selector, exactly one running host is required.
+        /// Picks the target host. <paramref name="selector"/> is a Revit process id or a Revit
+        /// year (e.g. 2024); an exact process id match wins over a year, see <see cref="Match"/>.
+        /// Without a selector, exactly one running host is required.
         /// </summary>
         /// <exception cref="AgentClientException">
-        /// <c>no_revit</c> when nothing matches, <c>ambiguous_revit</c> when several hosts match.
+        /// <c>invalid_params</c> when the selector is not a number, <c>no_revit</c> when nothing
+        /// matches, <c>ambiguous_revit</c> when several hosts match.
         /// </exception>
         public static AgentInstance Resolve(string selector) {
             var instances = GetInstances();
@@ -119,18 +121,9 @@ namespace pyRevitCLI {
                     "No running Revit with the pyRevit agent host was found. Start Revit with "
                     + "'[agent] enabled = true' (pyrevit configs agent enable).");
 
-            var matches = instances;
-            if (!string.IsNullOrWhiteSpace(selector)) {
-                if (!int.TryParse(selector, out var number))
-                    throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
-                matches = instances
-                    .Where(instance => number >= 2000 && number < 2100
-                        ? instance.RevitVersion == selector
-                        : instance.ProcessId == number)
-                    .ToList();
-                if (matches.Count == 0)
-                    throw new AgentClientException("no_revit", "No running Revit matches '" + selector + "'.");
-            }
+            var matches = Match(instances, selector);
+            if (matches.Count == 0)
+                throw new AgentClientException("no_revit", "No running Revit matches '" + selector + "'.");
 
             if (matches.Count > 1)
                 throw new AgentClientException(
@@ -139,6 +132,29 @@ namespace pyRevitCLI {
                     + string.Join(", ", matches.Select(m => $"{m.RevitVersion} (pid {m.ProcessId})")));
 
             return matches[0];
+        }
+
+        /// <summary>
+        /// Filters <paramref name="instances"/> by a Revit selector without checking liveness.
+        /// A blank selector keeps every instance.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a selector equal to an instance's process id selects by process id, whatever
+        /// its value. Only when no process id matches is a number in [2000, 2100) read as a Revit
+        /// year; any other number is a process id that matched nothing. Windows can hand out
+        /// process ids in the year range, so the year rule must never shadow an exact pid match.
+        /// </remarks>
+        /// <exception cref="AgentClientException"><c>invalid_params</c> when the selector is not a number.</exception>
+        internal static List<AgentInstance> Match(IReadOnlyList<AgentInstance> instances, string selector) {
+            if (string.IsNullOrWhiteSpace(selector))
+                return instances.ToList();
+            if (!int.TryParse(selector, out var number))
+                throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
+
+            var byProcessId = instances.Where(instance => instance.ProcessId == number).ToList();
+            if (byProcessId.Count > 0 || number < 2000 || number >= 2100)
+                return byProcessId;
+            return instances.Where(instance => instance.RevitVersion == selector).ToList();
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
