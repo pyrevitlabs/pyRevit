@@ -52,8 +52,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         private static IScriptRenderer CreateIsolated(Dispatcher dispatcher) {
             var context = GetIsolatedContext();
+            return CreateIsolated(context, context.AssemblyDirectory, dispatcher);
+        }
+
+        /// <summary>
+        /// Creates the renderer out of an explicit isolated folder.
+        ///
+        /// The folder is a parameter so that the isolation contract can be
+        /// exercised against a deployed layout outside a Revit host, where
+        /// the assembly location of the runtime does not describe the
+        /// installation being tested.
+        /// </summary>
+        internal static IScriptRenderer CreateIsolated(
+            WebView2LoadContext context, string isolatedDirectory, Dispatcher dispatcher) {
             var assemblyPath = Path.Combine(
-                context.AssemblyDirectory, IsolatedRendererAssemblyFileName);
+                isolatedDirectory, IsolatedRendererAssemblyFileName);
             if (!File.Exists(assemblyPath)) {
                 throw new FileNotFoundException(
                     "The isolated WebView2 renderer assembly was not found. "
