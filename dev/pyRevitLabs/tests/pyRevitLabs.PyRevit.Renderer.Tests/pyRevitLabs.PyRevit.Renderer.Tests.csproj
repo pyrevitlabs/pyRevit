@@ -40,6 +40,7 @@
         <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime.Shared\WebView2LoadContext.cs" Link="Sources\WebView2LoadContext.cs" />
         <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime.Shared\IsolatedWebView2Context.cs" Link="Sources\IsolatedWebView2Context.cs" />
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\ScriptRendererProvider.cs" Link="Sources\ScriptRendererProvider.cs" />
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\UnavailableScriptRenderer.cs" Link="Sources\UnavailableScriptRenderer.cs" />
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\IsolatedRendererLayout.cs" Link="Sources\IsolatedRendererLayout.cs" />
     </ItemGroup>
 

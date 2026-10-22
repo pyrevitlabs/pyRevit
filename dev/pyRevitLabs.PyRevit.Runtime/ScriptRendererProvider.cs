@@ -30,10 +30,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>
         /// Creates the renderer on <paramref name="dispatcher"/>.
+        ///
+        /// The window must survive a renderer that cannot be located: the
+        /// installation may be half updated, and an exception here would abort
+        /// the script that opened the window. Such a window reports a broken
+        /// deployment and keeps working as plain text.
         /// </summary>
         internal static IScriptRenderer Create(Dispatcher dispatcher) {
 #if !NETFRAMEWORK
-            return CreateIsolated(dispatcher);
+            try {
+                var context = GetIsolatedContext();
+                return CreateIsolated(context, context.AssemblyDirectory, dispatcher);
+            }
+            catch (Exception ex) when (IsRendererUnavailable(ex)) {
+                ScriptRendererLog.Error(
+                    "the isolated WebView2 renderer could not be located: {0}: {1}",
+                    ex.GetType().Name,
+                    ex.Message);
+                return new UnavailableScriptRenderer();
+            }
 #else
             return new WebView2ScriptRenderer(dispatcher, GetProfileFolder());
 #endif
@@ -41,27 +56,34 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 #if !NETFRAMEWORK
         /// <summary>
-        /// Loads the renderer implementation into the isolated load context and
-        /// hands back the contract view of it.
-        ///
-        /// The implementation is reached by reflection on purpose: a metadata
-        /// reference would let the default load context demand-load it, which
-        /// is exactly the binding this isolation exists to prevent.
-        /// </summary>
-        private static IScriptRenderer CreateIsolated(Dispatcher dispatcher) {
-            var context = GetIsolatedContext();
-            return CreateIsolated(context, context.AssemblyDirectory, dispatcher);
-        }
-
-        /// <summary>
         /// Creates the renderer out of an explicit isolated folder.
         ///
         /// The folder is a parameter so that the isolation contract can be
         /// exercised against a deployed layout outside a Revit host, where
         /// the assembly location of the runtime does not describe the
         /// installation being tested.
+        ///
+        /// A renderer that cannot be loaded yields a stand-in that reports a
+        /// broken deployment. The window and the running script outlive the
+        /// renderer, and a half-updated installation is exactly when the
+        /// isolated folder and the runtime disagree.
         /// </summary>
         internal static IScriptRenderer CreateIsolated(
+            WebView2LoadContext context, string isolatedDirectory, Dispatcher dispatcher) {
+            try {
+                return LoadIsolatedRenderer(context, isolatedDirectory, dispatcher);
+            }
+            catch (Exception ex) when (IsRendererUnavailable(ex)) {
+                ScriptRendererLog.Error(
+                    "the isolated WebView2 renderer in '{0}' could not be loaded: {1}: {2}",
+                    isolatedDirectory,
+                    ex.GetType().Name,
+                    ex.Message);
+                return new UnavailableScriptRenderer();
+            }
+        }
+
+        private static IScriptRenderer LoadIsolatedRenderer(
             WebView2LoadContext context, string isolatedDirectory, Dispatcher dispatcher) {
             var assemblyPath = Path.Combine(
                 isolatedDirectory, IsolatedRendererAssemblyFileName);
@@ -82,6 +104,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 null);
             LogLoadContexts(context, assembly);
             return renderer;
+        }
+
+        /// <summary>
+        /// Failures that mean the deployment cannot provide a working renderer,
+        /// rather than a defect inside one. Only these degrade to the stand-in;
+        /// anything else keeps propagating, because a renderer bug must stay
+        /// visible instead of turning into a quiet plain-text window.
+        /// </summary>
+        private static bool IsRendererUnavailable(Exception exception) {
+            if (exception == null)
+                return false;
+
+            if (exception is TypeLoadException
+                || exception is MissingMethodException
+                || exception is MissingFieldException
+                || exception is FileNotFoundException
+                || exception is DirectoryNotFoundException
+                || exception is FileLoadException
+                || exception is BadImageFormatException
+                || exception is DllNotFoundException
+                || exception is EntryPointNotFoundException) {
+                return true;
+            }
+
+            var invocation = exception as TargetInvocationException;
+            return invocation != null && IsRendererUnavailable(invocation.InnerException);
         }
 
         /// <summary>
