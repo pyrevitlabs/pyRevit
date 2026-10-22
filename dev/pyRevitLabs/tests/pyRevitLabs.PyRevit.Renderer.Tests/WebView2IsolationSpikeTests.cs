@@ -204,8 +204,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
         [TestMethod]
         public void IsolatedRenderer_StartsTheBrowserWhenTheEvergreenRuntimeIsAvailable() {
             var core = LoadIsolated(IsolatedRendererFixture.CoreAssemblyFileName);
-            var version = TryGetBrowserVersion(core);
-            if (version == null)
+            if (!IsBrowserRuntimeInstalled(core))
                 Assert.Inconclusive(
                     "The WebView2 Evergreen runtime is not installed on this machine.");
 
@@ -290,22 +289,26 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             return (IntPtr)method.Invoke(_context, new object[] { libraryFileName });
         }
 
-        private static string TryGetBrowserVersion(Assembly core) {
+        private static bool IsBrowserRuntimeInstalled(Assembly core) {
             var environmentType = core.GetType(CoreTypeName, throwOnError: true);
             var method = environmentType.GetMethod(
                 "GetAvailableBrowserVersionString",
                 BindingFlags.Public | BindingFlags.Static,
                 null,
-                Type.EmptyTypes,
+                new[] { typeof(string) },
                 null);
-            if (method == null)
-                return null;
+            Assert.IsNotNull(
+                method,
+                "The core must expose the browser version probe. Its signature changed, so "
+                + "the browser-start test can no longer tell a missing runtime from a broken one.");
 
             try {
-                return method.Invoke(null, null) as string;
+                return method.Invoke(null, new object[] { null }) is string;
             }
-            catch (TargetInvocationException) {
-                return null;
+            catch (TargetInvocationException ex) when (
+                ex.InnerException != null
+                && ex.InnerException.GetType().Name == "WebView2RuntimeNotFoundException") {
+                return false;
             }
         }
     }

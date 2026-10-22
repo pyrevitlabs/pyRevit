@@ -92,12 +92,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
         /// </summary>
         [TestMethod]
         public void NetCoreSharedAssembly_DefinesTheProcessWideLoadContext() {
-            using var stream = File.OpenRead(RequireSharedAssembly("netcore"));
-            using var peReader = new PEReader(stream);
-            var reader = peReader.GetMetadataReader();
-            var typeNames = reader.TypeDefinitions
-                .Select(handle => reader.GetString(reader.GetTypeDefinition(handle).Name))
-                .ToList();
+            var typeNames = GetDefinedTypeNames(RequireSharedAssembly("netcore"));
 
             Assert.IsTrue(
                 typeNames.Contains("IsolatedWebView2Context"),
@@ -106,6 +101,41 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             Assert.IsTrue(
                 typeNames.Contains("WebView2LoadContext"),
                 "The deployed shared assembly does not define the isolated load context.");
+        }
+
+        /// <summary>
+        /// A per-year runtime that defined the context itself would create one
+        /// context per runtime version in a process that loads several of them,
+        /// even if it also referenced the shared assembly. Together with the
+        /// reference check and the shared-assembly check this pins that the
+        /// owner exists in exactly one place.
+        /// </summary>
+        [TestMethod]
+        public void NetCoreRuntime_DoesNotDefineTheLoadContext() {
+            foreach (var version in NetCoreRuntimeVersions) {
+                var typeNames = GetDefinedTypeNames(RequireRuntimeAssembly("netcore", version));
+
+                CollectionAssert.DoesNotContain(
+                    typeNames,
+                    "WebView2LoadContext",
+                    "The .NET runtime " + version + " defines the load context itself, which "
+                    + "gives one context per runtime version.");
+                CollectionAssert.DoesNotContain(
+                    typeNames,
+                    "IsolatedWebView2Context",
+                    "The .NET runtime " + version + " owns the load context itself, which "
+                    + "gives one context per runtime version.");
+            }
+        }
+
+        private static List<string> GetDefinedTypeNames(string assemblyPath) {
+            using var stream = File.OpenRead(assemblyPath);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+
+            return reader.TypeDefinitions
+                .Select(handle => reader.GetString(reader.GetTypeDefinition(handle).Name))
+                .ToList();
         }
 
         [TestMethod]
