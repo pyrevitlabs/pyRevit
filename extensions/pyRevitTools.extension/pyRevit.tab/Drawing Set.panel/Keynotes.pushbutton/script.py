@@ -5595,24 +5595,7 @@ try:
             "pyRevit; a stale cached command assembly can also cause this."
         )
 
-    _existing = envvars.get_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR)
-    _needs_new = True
-    if _existing:
-        try:
-            if _existing.IsLoaded:
-                # Restore before activating: Activate()
-                # (SetForegroundWindow) does not un-minimize, and setting
-                # WindowState afterwards restores without re-activating.
-                _existing.WindowState = framework.Windows.WindowState.Normal
-                _existing.Activate()
-                _needs_new = False
-        except Exception:
-            # stale handle from a closed window or reloaded pyRevit
-            pass
-
-    if _needs_new:
-        if not _safe_mode:
-            envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
+    if not forms.activate_open_window(KEYNOTEMGR_WINDOW_ENVVAR):
         _new_window = KeynoteManagerWindow(
             xaml_file_name="KeynoteManagerWindow.xaml",
             reset_config=__shiftclick__,  # pylint: disable=undefined-variable
