@@ -1758,9 +1758,12 @@ class SelectFromList(TemplateUserInputWindow):
             return
 
         if isinstance(ctx, dict):
+            seen_ids = set()
             for group_items in ctx.values():
                 for item in group_items:
-                    yield item
+                    if id(item) not in seen_ids:
+                        seen_ids.add(id(item))
+                        yield item
         elif isinstance(ctx, (list, tuple, set)):
             for item in ctx:
                 yield item
@@ -2836,6 +2839,14 @@ class SheetOption(TemplateListItem):
         return self.item.SheetNumber
 
 
+def _get_view_type_label(view):
+    view_type_el = view.Document.GetElement(view.GetTypeId())
+    family_name = getattr(view_type_el, "FamilyName", None)
+    if family_name:
+        return family_name
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", str(view.ViewType))
+
+
 class ViewOption(TemplateListItem):
     """View wrapper for :func:`select_views`."""
 
@@ -2845,7 +2856,10 @@ class ViewOption(TemplateListItem):
     @property
     def name(self):
         """View name."""
-        return "{} ({})".format(revit.query.get_name(self.item), self.item.ViewType)
+        return "{} ({})".format(
+            revit.query.get_name(self.item),
+            _get_view_type_label(self.item),
+        )
 
 
 class LevelOption(TemplateListItem):
@@ -3050,8 +3064,13 @@ def select_views(
     filterfunc=None,
     doc=None,
     use_selection=False,
+    group_by_view_type=True,
 ):
     """Standard form for selecting views.
+
+    Views are grouped by view type and the type can be selected from a
+    drop down box at the top of window. Type names are localized using
+    Revit's own labels.
 
     Args:
         title (str, optional): list window title
@@ -3065,6 +3084,9 @@ def select_views(
             source document for views; defaults to active document
         use_selection (bool, optional):
             ask if user wants to use currently selected views.
+        group_by_view_type (bool, optional):
+            show a view type drop down with an "All Views" entry first.
+            Defaults to True
 
     Returns:
         (list[DB.View]): list of selected views
@@ -3096,8 +3118,33 @@ def select_views(
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
 
+    view_ops = sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name)
+
+    if group_by_view_type:
+        ops_by_type = {}
+        for view_op in view_ops:
+            type_label = _get_view_type_label(view_op.item)
+            ops_by_type.setdefault(type_label, []).append(view_op)
+
+        all_ops = OrderedDict()
+        all_ops["All Views"] = view_ops
+        for type_label in sorted(ops_by_type):
+            all_ops[type_label] = ops_by_type[type_label]
+
+        return SelectFromList.show(
+            all_ops,
+            title=title,
+            group_selector_title="View Type:",
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True,
+            default_group="All Views",
+            sort_groups="unsorted",
+        )
+
     selected_views = SelectFromList.show(
-        sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name),
+        view_ops,
         title=title,
         button_name=button_name,
         width=width,
