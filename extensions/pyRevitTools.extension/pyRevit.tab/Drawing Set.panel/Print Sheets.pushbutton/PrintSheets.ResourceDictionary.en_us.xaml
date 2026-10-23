@@ -22,6 +22,11 @@
     <system:String x:Key="EditFormats">Edit Formats</system:String>
     <system:String x:Key="Printer">Printer</system:String>
     <system:String x:Key="PageSettings">Page Settings</system:String>
+    <system:String x:Key="OutputFolder">Output Folder</system:String>
+    <system:String x:Key="Browse">Browse</system:String>
+    <system:String x:Key="OutputFolderTooltip">Where PDF and DWG files are saved. Supports {date}, {time}, {model} and {sheet_index}. Leave empty for Desktop\pyRevit Print Folder. External PDF printers may use their own save location.</system:String>
+    <system:String x:Key="Subfolder">Subfolder</system:String>
+    <system:String x:Key="SubfolderTooltip">Use {date}, {time}, {model} and {sheet_index}. Use \ for nested folders. Leave empty to save directly into the output folder.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">Incompatible with printer</system:String>
     
     <system:String x:Key="ListOfSheets">List of the sheets in selected sheet index</system:String>

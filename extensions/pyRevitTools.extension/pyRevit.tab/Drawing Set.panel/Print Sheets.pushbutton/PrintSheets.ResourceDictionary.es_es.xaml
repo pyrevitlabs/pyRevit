@@ -22,6 +22,11 @@
     <system:String x:Key="EditFormats">Editar Formatos</system:String>
     <system:String x:Key="Printer">Impresora</system:String>
     <system:String x:Key="PageSettings">Configuración de Página</system:String>
+    <system:String x:Key="OutputFolder">Carpeta de Salida</system:String>
+    <system:String x:Key="Browse">Examinar</system:String>
+    <system:String x:Key="OutputFolderTooltip">Dónde se guardan los archivos PDF y DWG. Admite {date}, {time}, {model} y {sheet_index}. Déjelo vacío para usar Desktop\pyRevit Print Folder. Las impresoras PDF externas pueden usar su propia ubicación.</system:String>
+    <system:String x:Key="Subfolder">Subcarpeta</system:String>
+    <system:String x:Key="SubfolderTooltip">Use {date}, {time}, {model} y {sheet_index}. Use \ para carpetas anidadas. Déjelo vacío para guardar directamente en la carpeta de salida.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">Incompatible con la impresora</system:String>
     
     <system:String x:Key="ListOfSheets">Lista de las hojas en el índice de hojas seleccionado</system:String>
