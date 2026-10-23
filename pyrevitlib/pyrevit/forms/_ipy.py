@@ -987,9 +987,11 @@ def activate_open_window(envvar):
         envvar (str): pyRevit environment variable holding the window.
 
     Returns:
-        (bool): True when the stored window is still open, even if Windows
-            refused to bring it to the foreground. False otherwise; a stale
-            (closed) reference is cleared.
+        (bool): True when a window already exists, meaning the caller must
+            not open another. It does not promise the window is now in front:
+            Windows may refuse the foreground request, and a hidden window
+            stays hidden. False otherwise; a stale (closed) reference is
+            cleared.
 
     Examples:
         ```python
