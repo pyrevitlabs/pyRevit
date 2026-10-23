@@ -1734,9 +1734,12 @@ class SelectFromList(TemplateUserInputWindow):
             return
 
         if isinstance(ctx, dict):
+            seen_ids = set()
             for group_items in ctx.values():
                 for item in group_items:
-                    yield item
+                    if id(item) not in seen_ids:
+                        seen_ids.add(id(item))
+                        yield item
         elif isinstance(ctx, (list, tuple, set)):
             for item in ctx:
                 yield item
