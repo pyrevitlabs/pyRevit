@@ -31,6 +31,7 @@ if not IRONPY:
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
+from pyrevit.coreutils import envvars
 
 _perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
@@ -496,8 +497,14 @@ class _WPFMixin(object):
         Elements that declare their own Foreground are left untouched, and so
         are theme-brush backgrounds, which already pair with the theme
         foreground. Translucent backgrounds are left untouched because their
-        effective color depends on the surface below them. Safe to call again
-        to re-evaluate after a theme change.
+        effective color depends on the surface below them. Contrast is supplied
+        by a style setter so disabled-state triggers remain authoritative,
+        including when IsEnabled changes after the window opens. Safe to call
+        again after a theme change; unchanged brushes reuse the managed style.
+        Previously managed elements that stop qualifying regain their original
+        style, unless a local Foreground has been authored. Detached elements
+        are dropped from tracking on the next pass, and a failed element does
+        not prevent the remaining controls from updating.
         """
         res = self.Resources
         try:
@@ -518,38 +525,56 @@ class _WPFMixin(object):
         if not candidates:
             return
 
-        managed = getattr(self, "_contrast_managed", None)
-        if managed is None:
-            managed = set()
-            self._contrast_managed = managed
+        previous_managed = getattr(self, "_contrast_managed", {})
+        managed = {}
+        self._contrast_managed = managed
 
         for element in _walk_logical_tree(self):
-            fore_prop = _foreground_property(element)
-            back_prop = _background_property(element)
-            if fore_prop is None or back_prop is None:
+            try:
+                if element in previous_managed:
+                    managed[element] = previous_managed[element]
+                fore_prop = _foreground_property(element)
+                back_prop = _background_property(element)
+                if fore_prop is None or back_prop is None:
+                    continue
+                if (
+                    element.ReadLocalValue(fore_prop)
+                    != framework.Windows.DependencyProperty.UnsetValue
+                ):
+                    continue
+                brush = (
+                    element.GetValue(back_prop)
+                    if _is_authored_value(element, back_prop)
+                    else None
+                )
+                if (
+                    not isinstance(brush, Media.SolidColorBrush)
+                    or brush.Color.A != 0xFF
+                    or _argb(brush.Color) in theme_argbs
+                ):
+                    contrast_style = managed.get(element)
+                    if contrast_style is not None:
+                        if element.Style is contrast_style:
+                            element.Style = contrast_style.BasedOn
+                        del managed[element]
+                    continue
+                background = brush.Color
+                best = max(
+                    candidates,
+                    key=lambda candidate: _contrast_ratio(background, candidate.Color),
+                )
+                base_style = element.Style
+                if element in managed and base_style is managed[element]:
+                    if base_style.Setters[0].Value is best:
+                        continue
+                    base_style = base_style.BasedOn
+                contrast_style = framework.Windows.Style(element.GetType(), base_style)
+                contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
+                element.Style = contrast_style
+                managed[element] = contrast_style
+            except Exception as contrast_error:
+                mlogger.debug("Could not apply contrast foreground: %s", contrast_error)
                 continue
-            if not _is_authored_value(element, back_prop):
-                continue
-            brush = element.GetValue(back_prop)
-            if not isinstance(brush, Media.SolidColorBrush):
-                continue
-            background = brush.Color
-            if background.A != 0xFF:
-                continue
-            if _argb(background) in theme_argbs:
-                continue
-            if (
-                element.ReadLocalValue(fore_prop)
-                != framework.Windows.DependencyProperty.UnsetValue
-                and element not in managed
-            ):
-                continue
-            best = max(
-                candidates,
-                key=lambda candidate: _contrast_ratio(background, candidate.Color),
-            )
-            element.SetValue(fore_prop, best)
-            managed.add(element)
 
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
@@ -968,6 +993,55 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
     def conceal(self):
         """Conceal window."""
         return WindowToggler(self)
+
+
+def activate_open_window(envvar):
+    """Bring a modeless window left open by an earlier run to the front.
+
+    Single-instance guard for modeless tools: the tool stores its window
+    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
+    this on every run before creating a new one. A minimized window is
+    restored before activation; a hidden one is left hidden.
+
+    Openness is judged by the window's native handle, which WPF releases on
+    close, not by ``IsLoaded``, which stays True after ``Close()``. Callers
+    therefore need not clear ``envvar`` in their ``Closed`` handler.
+
+    Args:
+        envvar (str): pyRevit environment variable holding the window.
+
+    Returns:
+        (bool): True when a window already exists, meaning the caller must
+            not open another. It does not promise the window is now in front:
+            Windows may refuse the foreground request, and a hidden window
+            stays hidden. False otherwise; a stale (closed) reference is
+            cleared.
+
+    Examples:
+        ```python
+        from pyrevit import forms, script
+
+        if not forms.activate_open_window("MYTOOL_WINDOW"):
+            window = MyToolWindow("MyTool.xaml")
+            script.set_envvar("MYTOOL_WINDOW", window)
+            window.show()
+        ```
+    """
+    window = envvars.get_pyrevit_env_var(envvar)
+    if window is None:
+        return False
+    try:
+        is_open = Interop.WindowInteropHelper(window).Handle != framework.IntPtr.Zero
+    except Exception:
+        is_open = False
+    if not is_open:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if window.IsVisible:
+        if window.WindowState == framework.Windows.WindowState.Minimized:
+            window.WindowState = framework.Windows.WindowState.Normal
+        window.Activate()
+    return True
 
 
 class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
@@ -1734,9 +1808,12 @@ class SelectFromList(TemplateUserInputWindow):
             return
 
         if isinstance(ctx, dict):
+            seen_ids = set()
             for group_items in ctx.values():
                 for item in group_items:
-                    yield item
+                    if id(item) not in seen_ids:
+                        seen_ids.add(id(item))
+                        yield item
         elif isinstance(ctx, (list, tuple, set)):
             for item in ctx:
                 yield item
@@ -1855,6 +1932,9 @@ class SelectFromList(TemplateUserInputWindow):
         if not self.in_check:
             try:
                 self.in_check = True
+                item = sender.DataContext
+                if isinstance(item, TemplateListItem):
+                    item.checked = True
                 self._set_states(state=True, selected=True)
             finally:
                 self.in_check = False
@@ -1864,6 +1944,9 @@ class SelectFromList(TemplateUserInputWindow):
         if not self.in_uncheck:
             try:
                 self.in_uncheck = True
+                item = sender.DataContext
+                if isinstance(item, TemplateListItem):
+                    item.checked = False
                 self._set_states(state=False, selected=True)
             finally:
                 self.in_uncheck = False
@@ -2812,6 +2895,14 @@ class SheetOption(TemplateListItem):
         return self.item.SheetNumber
 
 
+def _get_view_type_label(view):
+    view_type_el = view.Document.GetElement(view.GetTypeId())
+    family_name = getattr(view_type_el, "FamilyName", None)
+    if family_name:
+        return family_name
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", str(view.ViewType))
+
+
 class ViewOption(TemplateListItem):
     """View wrapper for :func:`select_views`."""
 
@@ -2821,7 +2912,10 @@ class ViewOption(TemplateListItem):
     @property
     def name(self):
         """View name."""
-        return "{} ({})".format(revit.query.get_name(self.item), self.item.ViewType)
+        return "{} ({})".format(
+            revit.query.get_name(self.item),
+            _get_view_type_label(self.item),
+        )
 
 
 class LevelOption(TemplateListItem):
@@ -3026,8 +3120,13 @@ def select_views(
     filterfunc=None,
     doc=None,
     use_selection=False,
+    group_by_view_type=True,
 ):
     """Standard form for selecting views.
+
+    Views are grouped by view type and the type can be selected from a
+    drop down box at the top of window. Type names are localized using
+    Revit's own labels.
 
     Args:
         title (str, optional): list window title
@@ -3041,6 +3140,9 @@ def select_views(
             source document for views; defaults to active document
         use_selection (bool, optional):
             ask if user wants to use currently selected views.
+        group_by_view_type (bool, optional):
+            show a view type drop down with an "All Views" entry first.
+            Defaults to True
 
     Returns:
         (list[DB.View]): list of selected views
@@ -3072,8 +3174,33 @@ def select_views(
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
 
+    view_ops = sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name)
+
+    if group_by_view_type:
+        ops_by_type = {}
+        for view_op in view_ops:
+            type_label = _get_view_type_label(view_op.item)
+            ops_by_type.setdefault(type_label, []).append(view_op)
+
+        all_ops = OrderedDict()
+        all_ops["All Views"] = view_ops
+        for type_label in sorted(ops_by_type):
+            all_ops[type_label] = ops_by_type[type_label]
+
+        return SelectFromList.show(
+            all_ops,
+            title=title,
+            group_selector_title="View Type:",
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True,
+            default_group="All Views",
+            sort_groups="unsorted",
+        )
+
     selected_views = SelectFromList.show(
-        sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name),
+        view_ops,
         title=title,
         button_name=button_name,
         width=width,

@@ -52,6 +52,12 @@ tooltip:
     
     Funciona tanto em vistas de planta/forro quanto em vistas de corte/elevação.
 author: Mohamed Asli
-engine:
-  clean: true
-context: doc-project
+context:
+  all:
+    - doc-project
+  any:
+    - active-floor-plan
+    - active-rcp-plan
+    - active-structural-plan
+    - active-elevation-view
+    - active-section-view

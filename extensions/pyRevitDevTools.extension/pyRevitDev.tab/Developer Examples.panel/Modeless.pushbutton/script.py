@@ -2,7 +2,6 @@ from pyrevit import revit, DB
 from pyrevit import forms, script, EXEC_PARAMS
 from pyrevit.revit.events import execute_in_revit_context, handle, stop_events
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.framework import Windows
 
 get_elementid_value = get_elementid_value_func()
 
@@ -184,9 +183,7 @@ class ExampleUI(forms.WPFWindow):
         self.output.print_md("This is output from the modeless dialog!")
         self.output.log_info("This is a log message from the modeless dialog.")
         self.output.log_warning("This is a warning from the modeless dialog.")
-        self.output_stream.write(
-            "This is output_stream from the modeless dialog."
-        )
+        self.output_stream.write("This is output_stream from the modeless dialog.")
         print("This is print from the modeless dialog.\n")
 
         try:
@@ -230,23 +227,7 @@ class ExampleUI(forms.WPFWindow):
 
 
 if __name__ == "__main__":
-    ui = None
-    if not EXEC_PARAMS.config_mode:
-        ui = script.get_envvar(WINDOW_ENV_KEY)
-        if ui is not None:
-            try:
-                if ui.IsLoaded:
-                    if ui.WindowState == Windows.WindowState.Minimized:
-                        ui.WindowState = Windows.WindowState.Normal
-                    ui.Activate()
-                else:
-                    script.set_envvar(WINDOW_ENV_KEY, None)
-                    ui = None
-            except Exception:
-                script.set_envvar(WINDOW_ENV_KEY, None)
-                ui = None
-
-    if ui is None:
+    if EXEC_PARAMS.config_mode or not forms.activate_open_window(WINDOW_ENV_KEY):
         ui = ExampleUI()
         ui.show(modal=False)
         if not EXEC_PARAMS.config_mode:

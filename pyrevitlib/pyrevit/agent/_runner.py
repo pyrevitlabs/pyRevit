@@ -265,7 +265,11 @@ def run(context):
             if not failed and "result" in namespace:
                 try:
                     context.SetResult(
-                        json.dumps(namespace["result"], default=_to_jsonable)
+                        json.dumps(
+                            namespace["result"],
+                            default=_to_jsonable,
+                            ensure_ascii=False,
+                        )
                     )
                 except Exception as ex:
                     failed = True

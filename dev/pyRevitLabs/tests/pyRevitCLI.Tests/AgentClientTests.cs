@@ -70,6 +70,47 @@ public class AgentClientTests : IDisposable {
         Assert.Equal("invalid_params", Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve("latest")).Code);
     }
 
+    private static readonly AgentInstance[] Sessions = {
+        new AgentInstance { ProcessId = 2024, RevitVersion = "2026" },
+        new AgentInstance { ProcessId = 9000, RevitVersion = "2024" },
+        new AgentInstance { ProcessId = 9004, RevitVersion = "2025" },
+    };
+
+    [Fact]
+    public void AProcessIdInTheYearRangeWinsOverTheYear() {
+        var match = Assert.Single(PyRevitAgentClient.Match(Sessions, "2024"));
+
+        Assert.Equal(2024, match.ProcessId);
+    }
+
+    [Fact]
+    public void AYearSelectsWhenNoProcessIdMatches() {
+        Assert.Equal(9004, Assert.Single(PyRevitAgentClient.Match(Sessions, "2025")).ProcessId);
+        Assert.Equal(2024, Assert.Single(PyRevitAgentClient.Match(Sessions, "2026")).ProcessId);
+    }
+
+    [Fact]
+    public void APaddedYearSelectsLikeTheCanonicalYear() {
+        Assert.Equal(9004, Assert.Single(PyRevitAgentClient.Match(Sessions, " 2025 ")).ProcessId);
+        Assert.Equal(9004, Assert.Single(PyRevitAgentClient.Match(Sessions, "02025")).ProcessId);
+    }
+
+    [Fact]
+    public void AProcessIdOutsideTheYearRangeSelectsOnlyByProcessId() {
+        Assert.Equal("2024", Assert.Single(PyRevitAgentClient.Match(Sessions, "9000")).RevitVersion);
+        Assert.Empty(PyRevitAgentClient.Match(Sessions, "9008"));
+    }
+
+    [Fact]
+    public void AYearThatMatchesNoSessionMatchesNothing() {
+        Assert.Empty(PyRevitAgentClient.Match(Sessions, "2077"));
+    }
+
+    [Fact]
+    public void ABlankSelectorKeepsEverySession() {
+        Assert.Equal(3, PyRevitAgentClient.Match(Sessions, " ").Count);
+    }
+
     [Fact]
     public void SeveralHostsWithoutASelectorAreAmbiguousAndNamed() {
         host.Register("2091", Environment.ProcessId, DateTime.UtcNow);
