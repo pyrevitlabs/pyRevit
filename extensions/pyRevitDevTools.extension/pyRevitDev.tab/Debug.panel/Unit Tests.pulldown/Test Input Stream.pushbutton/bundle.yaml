@@ -1,3 +1,4 @@
 context: zero-doc
 engine:
   full_frame: true
+inherit_icon: false
