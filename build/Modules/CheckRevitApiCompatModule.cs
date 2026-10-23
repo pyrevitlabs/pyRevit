@@ -30,7 +30,7 @@ public sealed class CheckRevitApiCompatModule : Module
             throw new InvalidOperationException(mismatch);
         }
 
-        await context.Shell.Command.ExecuteCommandLineTool(
+        var result = await context.Shell.Command.ExecuteCommandLineTool(
             new GenericCommandLineToolOptions(ToolResolutionHelper.ResolvePythonExecutable())
             {
                 Arguments = [PyRevitPaths.RevitApiCompatScript, "--baseline"],
@@ -38,7 +38,15 @@ public sealed class CheckRevitApiCompatModule : Module
             new CommandExecutionOptions
             {
                 WorkingDirectory = PyRevitPaths.Root,
+                ThrowOnNonZeroExitCode = false,
             },
             cancellationToken: cancellationToken);
+
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"Revit API compatibility lint failed with exit code {result.ExitCode}:"
+                + Environment.NewLine + result.StandardOutput + result.StandardError);
+        }
     }
 }

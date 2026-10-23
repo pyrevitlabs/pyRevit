@@ -1410,14 +1410,13 @@ class FileAnalyzer:
         return False
 
     def _is_own_attribute(self, attr, receiver):
-        """True when attr is declared by a local class the access belongs to.
+        """True when attr is declared by the local class the receiver is.
 
-        That is the class whose body encloses the access, or the class an
-        instance variable was constructed from; a class declaring a name
-        elsewhere in the module does not hide uses of it on other receivers.
+        That is an instance variable constructed from a class of the module
+        that declares attr (``self`` is exempt before this is asked). A class
+        declaring a name does not hide uses of it on any other receiver, not
+        even inside that class.
         """
-        if any(s.is_class and attr in s.own_attributes for s in self._scope_stack):
-            return True
         if not isinstance(receiver, ast.Name):
             return False
         value = self._resolve_binding(receiver.id)

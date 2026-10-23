@@ -203,17 +203,29 @@ class MatchingTests(_TempTree):
             ],
         )
 
-    def test_own_class_attributes_are_not_api_inside_the_class(self):
-        """Attributes a class defines are not Revit API uses within that class."""
+    def test_own_class_attributes_are_not_api_on_self(self):
+        """Attributes a class defines are not Revit API uses on its own self."""
         source = """
         class Wrapper(object):
             def GetDataType(self):
                 return 1
 
-            def same(self, other):
-                return other.GetDataType()
+            def same(self):
+                return self.GetDataType()
         """
         self.assertEqual([], self.codes(source))
+
+    def test_own_class_attribute_does_not_hide_other_receivers_in_the_class(self):
+        """Inside the class, an unrelated receiver is still checked."""
+        source = """
+        class Wrapper(object):
+            def GetDataType(self):
+                return 1
+
+            def other_object(self, definition):
+                return definition.GetDataType()
+        """
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
 
     def test_own_class_attributes_are_not_api_on_its_instances(self):
         """An instance built from the module's own class keeps its attributes."""
