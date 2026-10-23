@@ -16,7 +16,7 @@ from pyrevit import HOST_APP
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.coreutils import applocales, distinct_rgb_colors, unique_name
-from pyrevit.framework import Drawing, Forms, List, Media, System, Windows, Input
+from pyrevit.framework import Drawing, Forms, List, Media, System, Input
 from pyrevit.revit import create, events, query
 
 from legend.table import LegendLayout, LegendRow, create_legend_view, draw_legend_table
@@ -586,6 +586,7 @@ class ColorSplasherWindow(forms.WPFWindow):
     def __init__(self):
         forms.WPFWindow.__init__(self, XAML_FILE)
         self._values = []
+        self._scheme_form = None
         self._chk_line_color.IsChecked = config.get_option("apply_line_color", False)
         self._chk_foreground_pattern.IsChecked = config.get_option(
             "apply_foreground_pattern_color", True
@@ -606,7 +607,11 @@ class ColorSplasherWindow(forms.WPFWindow):
         return self._parameters.SelectedItem
 
     def reload_categories(self):
-        """Repopulate categories from the active view, clearing the selection."""
+        """Repopulate categories from the active view, clearing the selection.
+
+        Closes the Save / Load dialog, which is bound to the view it opened for.
+        """
+        self._close_scheme_form()
         self._categories.ItemsSource = (
             get_used_categories(active_view) if active_view else []
         )
@@ -824,7 +829,17 @@ class ColorSplasherWindow(forms.WPFWindow):
                 title_key="ColorSplasher.SaveLoadDialog.NoValuesDetected",
             )
             return
-        FormSaveLoadScheme(self, active_view).Show()
+        self._close_scheme_form()
+        self._scheme_form = FormSaveLoadScheme(self, active_view)
+        self._scheme_form.FormClosed += self.scheme_form_closed
+        self._scheme_form.Show()
+
+    def scheme_form_closed(self, sender, args):
+        self._scheme_form = None
+
+    def _close_scheme_form(self):
+        if self._scheme_form is not None:
+            self._scheme_form.Close()
 
     def scheme_entries(self):
         """Return the window's colors as (value_name, (red, green, blue)) in list order."""
@@ -880,6 +895,7 @@ class ColorSplasherWindow(forms.WPFWindow):
         global splasher_window
         try:
             events.stop_events()
+            self._close_scheme_form()
             config.set_option("apply_line_color", self._chk_line_color.IsChecked)
             config.set_option(
                 "apply_foreground_pattern_color", self._chk_foreground_pattern.IsChecked
@@ -893,7 +909,6 @@ class ColorSplasherWindow(forms.WPFWindow):
             logger.exception("Error while closing Color Splasher.")
         finally:
             splasher_window = None
-            script.set_envvar(WINDOW_ENV_KEY, None)
 
 
 class FormSaveLoadScheme(Forms.Form):
@@ -1082,28 +1097,6 @@ class FormSaveLoadScheme(Forms.Form):
         self.Close()
 
 
-def activate_open_window():
-    """Bring a window left open by an earlier run to the front.
-
-    Returns:
-        bool: True when an open window was found; stale references are cleared.
-    """
-    window = script.get_envvar(WINDOW_ENV_KEY)
-    if window is None:
-        return False
-    try:
-        is_open = window.IsLoaded
-    except Exception:
-        is_open = False
-    if not is_open:
-        script.set_envvar(WINDOW_ENV_KEY, None)
-        return False
-    if window.WindowState == Windows.WindowState.Minimized:
-        window.WindowState = Windows.WindowState.Normal
-    window.Activate()
-    return True
-
-
 def launch_color_splasher():
     global splasher_window
     xaml_path = script.get_bundle_file(XAML_FILE)
@@ -1135,5 +1128,5 @@ def launch_color_splasher():
 
 
 if __name__ == "__main__":
-    if not activate_open_window():
+    if not forms.activate_open_window(WINDOW_ENV_KEY):
         launch_color_splasher()
