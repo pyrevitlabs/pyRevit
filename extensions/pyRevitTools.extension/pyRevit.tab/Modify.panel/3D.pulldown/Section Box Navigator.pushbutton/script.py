@@ -80,7 +80,9 @@ def initialize_globals():
     doc = revit.doc
     active_view = revit.active_view
 
-    length_unit, length_unit_label, _, length_unit_symbol_label = units.get_unit_info(DB.SpecTypeId.Length, doc)
+    length_unit, length_unit_label, _, length_unit_symbol_label = units.get_unit_info(
+        DB.SpecTypeId.Length, doc
+    )
 
     level_nudge_value = DB.UnitUtils.Convert(
         config_level_nudge_value, DB.UnitTypeId.Feet, length_unit
@@ -110,14 +112,10 @@ def on_view_or_doc_changed(sender, args):
                 initialize_globals()
             except Exception:
                 if sb_form:
-                    sb_form.Dispatcher.Invoke(
-                        System.Action(sb_form._on_no_document)
-                    )
+                    sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
                 return
             if sb_form:
-                sb_form.Dispatcher.Invoke(
-                    System.Action(sb_form._on_document_available)
-                )
+                sb_form.Dispatcher.Invoke(System.Action(sb_form._on_document_available))
                 sb_form.Dispatcher.Invoke(
                     System.Action(sb_form.update_grids_and_levels)
                 )
@@ -635,11 +633,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtExpandActionsStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get("default_subtle")
+                    self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get(
+                        "default_subtle"
+                    )
                     return
 
                 self.txtExpandActionsStatus.Text = "..."
-                self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get("default_text")
+                self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get(
+                    "default_text"
+                )
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:

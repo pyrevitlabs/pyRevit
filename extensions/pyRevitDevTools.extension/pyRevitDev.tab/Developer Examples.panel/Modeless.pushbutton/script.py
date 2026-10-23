@@ -183,9 +183,7 @@ class ExampleUI(forms.WPFWindow):
         self.output.print_md("This is output from the modeless dialog!")
         self.output.log_info("This is a log message from the modeless dialog.")
         self.output.log_warning("This is a warning from the modeless dialog.")
-        self.output_stream.write(
-            "This is output_stream from the modeless dialog."
-        )
+        self.output_stream.write("This is output_stream from the modeless dialog.")
         print("This is print from the modeless dialog.\n")
 
         try:
