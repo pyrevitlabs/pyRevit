@@ -267,15 +267,27 @@ class ExtensionPackage:
         All config parameters will be saved in user config file.
         Section key is the extension folder name (e.g. extension_test.extension)
         so it matches the install path and the C# loader.
+
+        Missing state options are initialized even when credential storage has
+        already created the section. Existing settings and credentials are
+        preserved; changes are saved only when defaults are added.
         """
-        try:
-            return user_config.get_section(self.config_section_name)
-        except Exception:
-            cfg_section = user_config.add_section(self.config_section_name)
+        section_name = self.config_section_name
+        if user_config.has_section(section_name):
+            cfg_section = user_config.get_section(section_name)
+        else:
+            cfg_section = user_config.add_section(section_name)
+
+        defaults_added = False
+        if not cfg_section.has_option("disabled"):
             cfg_section.disabled = not self.default_enabled
+            defaults_added = True
+        if not cfg_section.has_option("private_repo"):
             cfg_section.private_repo = self.builtin
+            defaults_added = True
+        if defaults_added:
             user_config.save_changes()
-            return cfg_section
+        return cfg_section
 
     @property
     def is_enabled(self):
