@@ -1882,6 +1882,9 @@ class SelectFromList(TemplateUserInputWindow):
         if not self.in_check:
             try:
                 self.in_check = True
+                item = sender.DataContext
+                if isinstance(item, TemplateListItem):
+                    item.checked = True
                 self._set_states(state=True, selected=True)
             finally:
                 self.in_check = False
@@ -1891,6 +1894,9 @@ class SelectFromList(TemplateUserInputWindow):
         if not self.in_uncheck:
             try:
                 self.in_uncheck = True
+                item = sender.DataContext
+                if isinstance(item, TemplateListItem):
+                    item.checked = False
                 self._set_states(state=False, selected=True)
             finally:
                 self.in_uncheck = False
