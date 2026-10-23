@@ -63,9 +63,11 @@ def _resolve_bundle_dir():
         fallback = op.dirname(op.abspath(__file__))
     except Exception:
         fallback = ""
-    logger.warning("KeynoteManager | command path unavailable at module "
-                   "load; bundle assets resolved from %s",
-                   fallback or "<cwd>")
+    logger.warning(
+        "KeynoteManager | command path unavailable at module "
+        "load; bundle assets resolved from %s",
+        fallback or "<cwd>",
+    )
     return fallback
 
 
@@ -309,7 +311,8 @@ def describe_lock_error(ex, operation=None):
         return (
             "You do not have permission to access the keynote file.",
             "Ask the file owner or your IT team to check your {}.".format(permission)
-            + "\n\n" + text,
+            + "\n\n"
+            + text,
         )
     holder = _RESTRICTING_LOCK_RE.search(text)
     if holder:
@@ -361,7 +364,9 @@ def alert_db_error(ex, fallback=None, operation=None):
         if access_denied:
             title = READ_ALERT_TITLE if operation == "read" else PERMISSION_ALERT_TITLE
         else:
-            title = READ_ALERT_TITLE if READ_TIMEOUT_MARKER in text else LOCK_ALERT_TITLE
+            title = (
+                READ_ALERT_TITLE if READ_TIMEOUT_MARKER in text else LOCK_ALERT_TITLE
+            )
         forms.alert(
             friendly[0],
             sub_msg=friendly[1],
@@ -532,8 +537,9 @@ class RevitActionHandler(UI.IExternalEventHandler):
     def Execute(self, app):
         """Called by Revit on the main thread when the event fires."""
         while self._queue:
-            (action, callback, window, callback_on_error,
-             on_finished) = self._queue.pop(0)
+            (action, callback, window, callback_on_error, on_finished) = (
+                self._queue.pop(0)
+            )
             succeeded = True
             try:
                 try:
@@ -552,13 +558,11 @@ class RevitActionHandler(UI.IExternalEventHandler):
                         else:
                             forms.alert(str(ex))
                     except Exception as disp_ex:
-                        logger.debug("Failed to display error in window | %s"
-                                     % disp_ex)
+                        logger.debug("Failed to display error in window | %s" % disp_ex)
                 if callback and (succeeded or callback_on_error):
                     try:
                         if window and window.IsLoaded:
-                            window.Dispatcher.Invoke(
-                                System.Action(ui_guard(callback)))
+                            window.Dispatcher.Invoke(System.Action(ui_guard(callback)))
                         else:
                             ui_guard(callback)()
                     except Exception as cbex:
@@ -571,7 +575,8 @@ class RevitActionHandler(UI.IExternalEventHandler):
                     try:
                         if window and window.IsLoaded:
                             window.Dispatcher.Invoke(
-                                System.Action(ui_guard(on_finished)))
+                                System.Action(ui_guard(on_finished))
+                            )
                         else:
                             ui_guard(on_finished)()
                     except Exception as finex:
@@ -1003,8 +1008,13 @@ class PastePreviewWindow(forms.WPFWindow):
     """
 
     # Conflicts first: they are the only rows needing a decision.
-    _STATUS_RANK = {"Conflict": 0, "New": 1, "Missing parent": 2,
-                    "Locked": 3, "Identical": 4}
+    _STATUS_RANK = {
+        "Conflict": 0,
+        "New": 1,
+        "Missing parent": 2,
+        "Locked": 3,
+        "Identical": 4,
+    }
 
     # (resource key, English fallback, brush).  Every string here is
     # resolved through the merged ResourceDictionary, which is OPTIONAL:
@@ -1015,8 +1025,7 @@ class PastePreviewWindow(forms.WPFWindow):
         "Conflict": ("ResultReplace", "Replace text", "ConflictBrush"),
         "Identical": ("ResultIdentical", "Already there", "MutedBrush"),
         "Locked": ("ResultLocked", "Locked by {0}", "MutedBrush"),
-        "Missing parent": ("ResultNoParent", "No parent group",
-                           "MutedBrush"),
+        "Missing parent": ("ResultNoParent", "No parent group", "MutedBrush"),
     }
 
     def _text(self, key, default):
@@ -1034,8 +1043,8 @@ class PastePreviewWindow(forms.WPFWindow):
         # order below is by status, which would break insertion
         self._order = dict((r["key"], i) for i, r in enumerate(rows))
         self._rows = sorted(
-            rows,
-            key=lambda r: (self._STATUS_RANK.get(r["status"], 9), r["key"]))
+            rows, key=lambda r: (self._STATUS_RANK.get(r["status"], 9), r["key"])
+        )
         self._boxes = []
         self._by_key = {}
         self._children = defaultdict(list)
@@ -1047,23 +1056,25 @@ class PastePreviewWindow(forms.WPFWindow):
 
         # composed here rather than by the caller, so both halves are
         # translatable and the placeholders can be reordered per language
-        source_name = source_doc or self._text("UnknownSource",
-                                               "another project")
+        source_name = source_doc or self._text("UnknownSource", "another project")
         if same_file:
-            source_name += " " + self._text("SameFileNote",
-                                            "(same keynote file)")
+            source_name += " " + self._text("SameFileNote", "(same keynote file)")
         self.headerText.Text = (
-            self._text("HeaderInto",
-                       "{0} record(s) from “{1}” into “{2}”.")
-            .format(len(self._rows), source_name, target_name)
+            self._text("HeaderInto", "{0} record(s) from “{1}” into “{2}”.").format(
+                len(self._rows), source_name, target_name
+            )
             + "\n"
-            + self._text("HeaderNote",
-                         "Ticked rows are written to the target keynote "
-                         "file; everything else is left exactly as it is."))
+            + self._text(
+                "HeaderNote",
+                "Ticked rows are written to the target keynote "
+                "file; everything else is left exactly as it is.",
+            )
+        )
         self.footerNote.Text = self._text(
             "FooterNote",
             "Taking a conflicting row replaces the target's TEXT only — "
-            "its place in the tree is kept.")
+            "its place in the tree is kept.",
+        )
         self._build_rows()
         self._update_summary()
 
@@ -1078,13 +1089,17 @@ class PastePreviewWindow(forms.WPFWindow):
     def _make_row(self, row):
         grid = Windows.Controls.Grid()
         grid.Margin = Windows.Thickness(4, 2, 4, 2)
-        for width, star in ((26, False), (150, False), (1, True),
-                            (1, True), (120, False)):
+        for width, star in (
+            (26, False),
+            (150, False),
+            (1, True),
+            (1, True),
+            (120, False),
+        ):
             coldef = Windows.Controls.ColumnDefinition()
             coldef.Width = Windows.GridLength(
-                width,
-                Windows.GridUnitType.Star if star
-                else Windows.GridUnitType.Pixel)
+                width, Windows.GridUnitType.Star if star else Windows.GridUnitType.Pixel
+            )
             grid.ColumnDefinitions.Add(coldef)
 
         status = row["status"]
@@ -1093,7 +1108,7 @@ class PastePreviewWindow(forms.WPFWindow):
         box.IsEnabled = status in ("New", "Conflict")
         # New rows are additive and safe; a conflict overwrites text that
         # someone in the target project wrote, so it starts unticked.
-        box.IsChecked = (status == "New")
+        box.IsChecked = status == "New"
         box.Tag = row
         box.Checked += self._on_row_toggled
         box.Unchecked += self._on_row_toggled
@@ -1110,11 +1125,11 @@ class PastePreviewWindow(forms.WPFWindow):
         self._cell(grid, 3, row["target_text"])
 
         res_key, res_default, brush = self._RESULT.get(
-            status, (None, status, "MutedBrush"))
+            status, (None, status, "MutedBrush")
+        )
         text = self._text(res_key, res_default) if res_key else res_default
         if status == "Locked":
-            owner = row.get("owner") or self._text("UnknownUser",
-                                                   "another user")
+            owner = row.get("owner") or self._text("UnknownUser", "another user")
             try:
                 text = text.format(owner)
             except Exception:
@@ -1138,7 +1153,8 @@ class PastePreviewWindow(forms.WPFWindow):
         if brush_key:
             try:
                 block.SetResourceReference(
-                    Windows.Controls.TextBlock.ForegroundProperty, brush_key)
+                    Windows.Controls.TextBlock.ForegroundProperty, brush_key
+                )
             except Exception:
                 pass
         Windows.Controls.Grid.SetColumn(block, column)
@@ -1178,7 +1194,7 @@ class PastePreviewWindow(forms.WPFWindow):
         while row is not None and row.get("parent_needs_add"):
             parent_key = row["parent"]
             if parent_key in seen:
-                return                      # defensive: cyclic parentage
+                return  # defensive: cyclic parentage
             seen.add(parent_key)
             box = self._by_key.get(parent_key)
             if box is None or not box.IsEnabled:
@@ -1197,14 +1213,13 @@ class PastePreviewWindow(forms.WPFWindow):
             stack.extend(self._children.get(child_key, []))
 
     def _update_summary(self):
-        adds = sum(1 for b in self._boxes
-                   if b.IsChecked and b.Tag["status"] == "New")
-        overs = sum(1 for b in self._boxes
-                    if b.IsChecked and b.Tag["status"] == "Conflict")
+        adds = sum(1 for b in self._boxes if b.IsChecked and b.Tag["status"] == "New")
+        overs = sum(
+            1 for b in self._boxes if b.IsChecked and b.Tag["status"] == "Conflict"
+        )
         self.summaryText.Text = self._text(
-            "SummaryCounts",
-            "{0} to add · {1} to replace · {2} left alone").format(
-                adds, overs, len(self._rows) - adds - overs)
+            "SummaryCounts", "{0} to add · {1} to replace · {2} left alone"
+        ).format(adds, overs, len(self._rows) - adds - overs)
         self.pasteBtn.IsEnabled = bool(adds or overs)
 
     def _set_all(self, predicate):
@@ -1235,7 +1250,7 @@ class PastePreviewWindow(forms.WPFWindow):
 
     def _finish(self, result):
         try:
-            self.DialogResult = result   # closes a modal dialog
+            self.DialogResult = result  # closes a modal dialog
         except Exception:
             self.Close()
 
@@ -1257,8 +1272,11 @@ class PastePreviewWindow(forms.WPFWindow):
         kept = []
         for row in approved:
             if row.get("parent_needs_add") and row["parent"] not in writable:
-                logger.warning("paste: %s dropped — its group %s is not "
-                               "being written", row["key"], row["parent"])
+                logger.warning(
+                    "paste: %s dropped — its group %s is not being written",
+                    row["key"],
+                    row["parent"],
+                )
                 continue
             kept.append(row)
 
@@ -1293,8 +1311,8 @@ class _DocBinding(object):
 
     def __init__(self, doc):
         self.doc = doc
-        self.kfile = None      # key into KeynoteManagerWindow._files
-        self.error = None      # why this project shows no tree, or None
+        self.kfile = None  # key into KeynoteManagerWindow._files
+        self.error = None  # why this project shows no tree, or None
         self.failed_kfile = None
         self.needs_update = False
         self.used_keysdict = defaultdict(list)
@@ -1312,8 +1330,7 @@ class _DocBinding(object):
     def title(self):
         """Short project name for the title bar and multi-project prompts."""
         try:
-            return op.splitext(op.basename(self.doc.PathName))[0] \
-                or self.doc.Title
+            return op.splitext(op.basename(self.doc.PathName))[0] or self.doc.Title
         except Exception:
             try:
                 return self.doc.Title
@@ -1335,8 +1352,8 @@ class _DocBinding(object):
 class KeynoteManagerWindow(forms.WPFWindow):
     """Keynote manager with unified tree and hierarchy controls.
 
-    The window opens at the XAML defaults (800x750, minimum 760x480). 
-    stored geometry takes precedence only when all four values exist 
+    The window opens at the XAML defaults (800x750, minimum 760x480).
+    stored geometry takes precedence only when all four values exist
     and the saved rectangle is visible on-screen;otherwise
     , retain the XAML defaults and center the window.
     """
@@ -1586,7 +1603,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             )
             if len(self._sel_keys) > 1:
                 self.statusRight.Text += " \u00b7 {} selected".format(
-                    len(self._sel_keys))
+                    len(self._sel_keys)
+                )
         except Exception:
             self.statusRight.Text = ""
 
@@ -1662,7 +1680,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._set_selection([rec.key], anchor=rec.key)
             return
         low, high = sorted((order[anchor], order[rec.key]))
-        self._set_selection([r.key for r in rows[low:high + 1]], anchor=anchor)
+        self._set_selection([r.key for r in rows[low : high + 1]], anchor=anchor)
 
     @property
     def selected_keynotes(self):
@@ -1674,8 +1692,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not self._sel_keys:
             focus = self.selected_keynote
             return [focus] if focus else []
-        return [r for r in self._flat_display_rows(filtered=False)
-                if r.key in self._sel_keys]
+        return [
+            r
+            for r in self._flat_display_rows(filtered=False)
+            if r.key in self._sel_keys
+        ]
 
     def _prune_nested(self, recs):
         """Keep only the topmost row of each selected branch.
@@ -1732,10 +1753,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if rec is None:
                 return
             seen.add(key)
-            rows.append({"key": rec.key,
-                         "text": rec.text,
-                         "parent_key": rec.parent_key,
-                         "is_category": rec.is_category})
+            rows.append(
+                {
+                    "key": rec.key,
+                    "text": rec.text,
+                    "parent_key": rec.parent_key,
+                    "is_category": rec.is_category,
+                }
+            )
             for child in natsorted(kids.get(key, []), key=lambda x: x.key):
                 _walk(child.key)
 
@@ -1771,8 +1796,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             "items": rows,
         }
         knote_count = sum(1 for r in rows if not r["is_category"])
-        self._hint("Copied {} — {} keynote(s), {} group(s)".format(
-            ", ".join(root_keys), knote_count, len(rows) - knote_count))
+        self._hint(
+            "Copied {} — {} keynote(s), {} group(s)".format(
+                ", ".join(root_keys), knote_count, len(rows) - knote_count
+            )
+        )
 
     def _classify_paste(self, items, target_parent):
         """Work out what each incoming row would do.  READ ONLY.
@@ -1781,8 +1809,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         this must not touch the target file.
         """
         existing = {}
-        for rec in (kdb.get_categories(self._conn)
-                    + kdb.get_keynotes(self._conn)):
+        for rec in kdb.get_categories(self._conn) + kdb.get_keynotes(self._conn):
             existing[rec.key] = rec
         locks = {}
         try:
@@ -1797,15 +1824,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
         for item in items:
             key = item["key"]
             if item["is_category"]:
-                parent = ""                      # groups are roots
+                parent = ""  # groups are roots
             elif item["parent_key"] in incoming:
-                parent = item["parent_key"]      # copied with its parent
+                parent = item["parent_key"]  # copied with its parent
             elif target_parent:
-                parent = target_parent           # re-home onto the selection
+                parent = target_parent  # re-home onto the selection
             elif item["parent_key"] in existing:
-                parent = item["parent_key"]      # same group already here
+                parent = item["parent_key"]  # same group already here
             else:
-                parent = None                    # nowhere to put it
+                parent = None  # nowhere to put it
 
             old = existing.get(key)
             if key in locks:
@@ -1814,25 +1841,30 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 status = "Missing parent"
             elif old is None:
                 status = "New"
-            elif (kdb.normalize_keynote_text(old.text)
-                  == kdb.normalize_keynote_text(item["text"])):
+            elif kdb.normalize_keynote_text(old.text) == kdb.normalize_keynote_text(
+                item["text"]
+            ):
                 status = "Identical"
             else:
                 status = "Conflict"
 
-            rows.append({"key": key,
-                         "text": item["text"],
-                         "parent": parent,
-                         "is_category": item["is_category"],
-                         "target_text": old.text if old else "",
-                         "owner": locks.get(key, ""),
-                         # True when this row's parent does not exist in the
-                         # target yet, so the row is only writable if the
-                         # parent is pasted too
-                         "parent_needs_add": bool(parent
-                                                  and parent in incoming
-                                                  and parent not in existing),
-                         "status": status})
+            rows.append(
+                {
+                    "key": key,
+                    "text": item["text"],
+                    "parent": parent,
+                    "is_category": item["is_category"],
+                    "target_text": old.text if old else "",
+                    "owner": locks.get(key, ""),
+                    # True when this row's parent does not exist in the
+                    # target yet, so the row is only writable if the
+                    # parent is pasted too
+                    "parent_needs_add": bool(
+                        parent and parent in incoming and parent not in existing
+                    ),
+                    "status": status,
+                }
+            )
         return rows
 
     def paste_keynote(self, sender, args):
@@ -1846,8 +1878,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         sel = self.selected_keynote
         try:
-            rows = self._classify_paste(self._clipboard["items"],
-                                        sel.key if sel else None)
+            rows = self._classify_paste(
+                self._clipboard["items"], sel.key if sel else None
+            )
         except System.TimeoutException as toutex:
             alert_db_error(toutex)
             return
@@ -1858,10 +1891,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
 
         approved = PastePreviewWindow(
-            self, rows,
+            self,
+            rows,
             self._clipboard.get("source_doc"),
             self._binding.title if self._binding else "",
-            same_file=(self._clipboard.get("source_kfile") == self._kfile)
+            same_file=(self._clipboard.get("source_kfile") == self._kfile),
         ).show()
         if not approved:
             return
@@ -1897,8 +1931,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return None
         for b in self._bindings:
             try:
-                if b.doc is not None and b.doc.IsValidObject \
-                        and b.doc.Equals(doc):
+                if b.doc is not None and b.doc.IsValidObject and b.doc.Equals(doc):
                     return b
             except Exception:
                 continue
@@ -1925,13 +1958,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return False
         except Exception as ex:
             logger.debug("keynote file resolve failed | %s", ex)
-            binding.error = ("Could not resolve this project's keynote "
-                             "file.\n%s" % ex)
+            binding.error = "Could not resolve this project's keynote file.\n%s" % ex
             return False
 
         if not kfile:
-            binding.error = ("This project has no keynote file set.\n"
-                             "Use Change Keynote File to pick one.")
+            binding.error = (
+                "This project has no keynote file set.\n"
+                "Use Change Keynote File to pick one."
+            )
             return False
 
         entry = self._files.get(kfile)
@@ -1952,8 +1986,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             binding.failed_kfile = kfile
             return False
 
-        self._files[kfile] = {"conn": conn, "ext": kfile_ext,
-                              "handler": handler, "shadowed": False}
+        self._files[kfile] = {
+            "conn": conn,
+            "ext": kfile_ext,
+            "handler": handler,
+            "shadowed": False,
+        }
         self._shadow_once(kfile)
         binding.kfile = kfile
         return True
@@ -2081,8 +2119,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._update_full_tree()
             self._update_status_bar()
 
-        self._revit_run(_query, callback=_apply, callback_on_error=False,
-                        needs_active_doc=False)
+        self._revit_run(
+            _query, callback=_apply, callback_on_error=False, needs_active_doc=False
+        )
 
     def _retarget(self, doc):
         """Point the panel at `doc`, connecting its keynote file if needed."""
@@ -2124,8 +2163,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if doc is None:
             return
         try:
-            if self._doc is not None and self._doc.IsValidObject \
-                    and self._doc.Equals(doc):
+            if (
+                self._doc is not None
+                and self._doc.IsValidObject
+                and self._doc.Equals(doc)
+            ):
                 self._pending_doc = None
                 return
         except Exception:
@@ -2174,8 +2216,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if b is None:
             return
         if b.needs_update:
-            logger.warning("KeynoteManager | %s closed with keynote changes "
-                           "that were never synced to it", b.title)
+            logger.warning(
+                "KeynoteManager | %s closed with keynote changes "
+                "that were never synced to it",
+                b.title,
+            )
         try:
             self._bindings.remove(b)
         except ValueError:
@@ -2217,12 +2262,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(ui_guard(on_finished)),
-                Windows.Threading.DispatcherPriority.Background)
+                Windows.Threading.DispatcherPriority.Background,
+            )
         except Exception as finex:
             logger.debug("on_finished dispatch failed | %s", finex)
 
-    def _revit_run(self, action, callback=None, callback_on_error=True,
-                   on_finished=None, needs_active_doc=True):
+    def _revit_run(
+        self,
+        action,
+        callback=None,
+        callback_on_error=True,
+        on_finished=None,
+        needs_active_doc=True,
+    ):
         """Queue an action to execute on Revit's main thread.
         Optional callback runs on the WPF thread after the action.
 
@@ -2459,7 +2511,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         while stack:
             node = stack.pop()
             if node._children:
-                keys.add(node.key)   # a leaf can never be expanded
+                keys.add(node.key)  # a leaf can never be expanded
                 stack.extend(node._children)
         return keys
 
@@ -2656,7 +2708,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if len(keys) > MAX_SAVED_EXPANDED:
                 logger.warning(
                     "Expansion state capped at %d of %d groups | %s",
-                    MAX_SAVED_EXPANDED, len(keys), kfile)
+                    MAX_SAVED_EXPANDED,
+                    len(keys),
+                    kfile,
+                )
             ex[kfile] = keys[:MAX_SAVED_EXPANDED]
         else:
             ex.pop(kfile, None)
@@ -2730,8 +2785,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _determine_kfile(self):
         """Resolve the keynote file for the document this window owns."""
         # resolve against the OWNING document, never whatever is active now
-        (self._kfile, self._kfile_ext,
-         self._kfile_handler) = self._resolve_kfile_for(self._doc)
+        (self._kfile, self._kfile_ext, self._kfile_handler) = self._resolve_kfile_for(
+            self._doc
+        )
 
     def _resolve_adc_keynote(self, kfile_ext):
         """Resolve a cloud keynote path to a local file via ADC.
@@ -2799,8 +2855,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as probex:
             raise KeynoteSetupError(
                 "The keynote file's folder does not allow creating lock "
-                "files (offline or locked by a sync client?):\n{}\n\n{}"
-                .format(op.dirname(kfile), probex))
+                "files (offline or locked by a sync client?):\n{}\n\n{}".format(
+                    op.dirname(kfile), probex
+                )
+            )
 
     def _open_kfile(self, kfile):
         """Connect to `kfile` with no prompting.  Raises KeynoteSetupError.
@@ -2829,7 +2887,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             raise KeynoteSetupError(
                 "Cannot connect to this project's keynote file.\n%s\n\n"
                 "It may need conversion to the new format — open the "
-                "project and use Change Keynote File." % ex)
+                "project and use Change Keynote File." % ex
+            )
 
     def _shadow_once(self, kfile):
         """Back the keynote file up once per file per session."""
@@ -2837,8 +2896,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not entry or entry.get("shadowed"):
             return
         try:
-            shadow = script.get_data_file(
-                "kshadow_" + op.basename(kfile), "txt")
+            shadow = script.get_data_file("kshadow_" + op.basename(kfile), "txt")
             shutil.copy(kfile, shadow)
             entry["shadowed"] = True
             logger.debug("Keynote shadow backup: %s", shadow)
@@ -2937,8 +2995,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 self._conn = kdb.connect(self._kfile)
             except System.TimeoutException as toutex:
-                if (WRITE_LOCK_TIMEOUT_MARKER in toutex.Message
-                        and self._offer_write_lock_release(self._kfile)):
+                if (
+                    WRITE_LOCK_TIMEOUT_MARKER in toutex.Message
+                    and self._offer_write_lock_release(self._kfile)
+                ):
                     continue
                 logger.debug("keynote file connect timed out | %s", toutex.Message)
                 friendly = describe_lock_error(toutex)
@@ -3189,8 +3249,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 logger.debug("View filter unavailable | %s", ex)
                 kdb.RKeynoteFilters.ViewOnly.set_keys([])
 
-        cache_usable = (self._cache
-                        and self._cache_filtered == bool(keynote_filter))
+        cache_usable = self._cache and self._cache_filtered == bool(keynote_filter)
         if (fast_filter and keynote_filter) or (reuse_cache and cache_usable):
             tree = list(self._cache)
             fresh_read = False
@@ -3277,7 +3336,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             ]:
                 btn.IsEnabled = False
             self.caseBtn.IsEnabled = bool(self._sel_keys) and any(
-                not r.locked for r in self.selected_keynotes)
+                not r.locked for r in self.selected_keynotes
+            )
             return
 
         is_cat = sel.is_category  # top-level group (no parent_key)
@@ -3584,8 +3644,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 # not reacting, which costs a whole test cycle to diagnose.
                 self._uiapp = None
                 self._follow_error = str(_subex) or "ViewActivated refused"
-                logger.error("KeynoteManager | cannot follow the active "
-                             "document | %s", _subex)
+                logger.error(
+                    "KeynoteManager | cannot follow the active document | %s", _subex
+                )
         else:
             self._follow_error = "safe mode"
         self._update_status_bar()
@@ -3875,8 +3936,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         keyboard.  Alt is included because Alt+Click is now the gesture
         that arms it.
         """
-        return (KeynoteManagerWindow._modifier_down("Shift")
-                or KeynoteManagerWindow._modifier_down("Alt"))
+        return KeynoteManagerWindow._modifier_down(
+            "Shift"
+        ) or KeynoteManagerWindow._modifier_down("Alt")
 
     @staticmethod
     def _treeviewitem_from_source(source):
@@ -3977,9 +4039,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
         try:
             self.Dispatcher.BeginInvoke(
-                System.Action(
-                    ui_guard(lambda: self._place_when_clear(pending))
-                ),
+                System.Action(ui_guard(lambda: self._place_when_clear(pending))),
                 Windows.Threading.DispatcherPriority.Background,
             )
         except Exception as ex:
@@ -4005,8 +4065,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if tvi is None:
             return
         rec = getattr(tvi, "DataContext", None)
-        inside = (rec is not None and hasattr(rec, "key")
-                  and len(self._sel_keys) > 1 and rec.key in self._sel_keys)
+        inside = (
+            rec is not None
+            and hasattr(rec, "key")
+            and len(self._sel_keys) > 1
+            and rec.key in self._sel_keys
+        )
         self._suspend_sel_reset = inside
         try:
             tvi.IsSelected = True
@@ -4038,17 +4102,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     # Subscribed only for the life of the drag: these fire
                     # continuously and have nothing to say otherwise.
                     self.keynotes_tv.GiveFeedback += self._drag_give_feedback
-                    self.keynotes_tv.QueryContinueDrag += \
-                        self._drag_query_continue
+                    self.keynotes_tv.QueryContinueDrag += self._drag_query_continue
                     try:
                         effect = Windows.DragDrop.DoDragDrop(
                             self.keynotes_tv, data, Windows.DragDropEffects.Move
                         )
                     finally:
-                        self.keynotes_tv.GiveFeedback -= \
-                            self._drag_give_feedback
-                        self.keynotes_tv.QueryContinueDrag -= \
-                            self._drag_query_continue
+                        self.keynotes_tv.GiveFeedback -= self._drag_give_feedback
+                        self.keynotes_tv.QueryContinueDrag -= self._drag_query_continue
                 except Exception as ex:
                     logger.debug("Drag failed | %s" % ex)
                 finally:
@@ -4071,12 +4132,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             pos = Windows.Forms.Cursor.Position
             origin = self.PointToScreen(Windows.Point(0, 0))
             corner = self.PointToScreen(
-                Windows.Point(self.ActualWidth, self.ActualHeight))
+                Windows.Point(self.ActualWidth, self.ActualHeight)
+            )
         except Exception as ex:
             logger.debug("drag hit-test failed | %s" % ex)
             return False
-        return not (origin.X <= pos.X <= corner.X
-                    and origin.Y <= pos.Y <= corner.Y)
+        return not (origin.X <= pos.X <= corner.X and origin.Y <= pos.Y <= corner.Y)
 
     def _drag_query_continue(self, sender, args):
         """Track where the drag is and whether the user bailed out.
@@ -4129,11 +4190,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self._drag_cancelled or not self._drag_left_window:
             return
         if effect != getattr(Windows.DragDropEffects, "None"):
-            return          # the tree handled it: that was a reparent
+            return  # the tree handled it: that was a reparent
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(ui_guard(lambda: self._place_when_clear(rec))),
-                Windows.Threading.DispatcherPriority.Background)
+                Windows.Threading.DispatcherPriority.Background,
+            )
         except Exception as ex:
             logger.debug("drag placement dispatch failed | %s" % ex)
             self._place_when_clear(rec)
@@ -4326,7 +4388,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 ).show()
                 if new_kn:
                     kdb.EXPANSION.expand(
-                        getattr(new_kn, "parent_key", None) or parent_key)
+                        getattr(new_kn, "parent_key", None) or parent_key
+                    )
                 self._needs_update = True
             except Exception as ex:
                 alert_db_error(ex)
@@ -4347,7 +4410,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 ).show()
                 if new_kn:
                     kdb.EXPANSION.expand(
-                        getattr(new_kn, "parent_key", None) or sel.parent_key)
+                        getattr(new_kn, "parent_key", None) or sel.parent_key
+                    )
                 self._needs_update = True
             except Exception as ex:
                 alert_db_error(ex)
@@ -4410,8 +4474,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         for rec in recs:
             if rec.locked:
-                blocked[rec.key] = ("locked by %s"
-                                    % (rec.owner or "another user"))
+                blocked[rec.key] = "locked by %s" % (rec.owner or "another user")
             elif rec.used:
                 blocked[rec.key] = "in use in the model"
         for key in blocked:
@@ -4426,11 +4489,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             for rec in recs:
                 if rec.key not in deletable:
                     continue
-                staying = [c for c in children_of.get(rec.key, [])
-                           if c not in deletable]
+                staying = [
+                    c for c in children_of.get(rec.key, []) if c not in deletable
+                ]
                 if staying:
-                    blocked[rec.key] = ("%d row(s) under it are staying"
-                                        % len(staying))
+                    blocked[rec.key] = "%d row(s) under it are staying" % len(staying)
                     deletable.discard(rec.key)
                     changed = True
 
@@ -4443,35 +4506,41 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         going = [r for r in recs if r.key in deletable]
         if not going:
-            forms.alert("Nothing could be deleted.\n\n  "
-                        + _blocked_lines(12))
+            forms.alert("Nothing could be deleted.\n\n  " + _blocked_lines(12))
             return
 
         shown = [r.key for r in going[:12]]
-        msg = "Delete these {} rows?\n\n  {}".format(
-            len(going), "\n  ".join(shown))
+        msg = "Delete these {} rows?\n\n  {}".format(len(going), "\n  ".join(shown))
         if len(going) > 12:
             msg += "\n  ... and {} more".format(len(going) - 12)
         if blocked:
-            msg += ("\n\nSkipping {} row(s):\n\n  ".format(len(blocked))
-                    + _blocked_lines(8))
+            msg += "\n\nSkipping {} row(s):\n\n  ".format(
+                len(blocked)
+            ) + _blocked_lines(8)
         unverified = [r.key for r in going if self._usage_unknown_note(r.key)]
         if unverified:
             # same caveat _confirm_delete makes for a single row: an
             # unverified usage map reports everything as unused, so the
             # rec.used guard above can pass vacuously
-            msg += ("\n\nUsage could not be verified for {} of these. Any "
-                    "tag still pointing at a deleted key would keep that key "
-                    "with no matching row in the keynote file."
-                    .format(len(unverified)))
+            msg += (
+                "\n\nUsage could not be verified for {} of these. Any "
+                "tag still pointing at a deleted key would keep that key "
+                "with no matching row in the keynote file.".format(len(unverified))
+            )
         if not forms.alert(msg, yes=True, no=True):
             return
 
         # `going` keeps tree order (parents first); reversing a pre-order
         # walk puts every child ahead of its parent at any depth
-        rows = [{"key": r.key, "text": r.text, "parent": r.parent_key,
-                 "is_category": r.is_category}
-                for r in reversed(going)]
+        rows = [
+            {
+                "key": r.key,
+                "text": r.text,
+                "parent": r.parent_key,
+                "is_category": r.is_category,
+            }
+            for r in reversed(going)
+        ]
         try:
             removed = kdb.delete_records(self._conn, rows)
         except System.TimeoutException as toutex:
@@ -4484,8 +4553,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._needs_update = True
         self._set_selection([])
         if blocked:
-            self._hint("Deleted {} rows, skipped {}".format(removed,
-                                                            len(blocked)))
+            self._hint("Deleted {} rows, skipped {}".format(removed, len(blocked)))
         else:
             self._hint("Deleted {} rows".format(removed))
 
@@ -4676,8 +4744,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         if not updates:
             if locked_count:
-                self._hint("Nothing to change - %d row(s) locked by another "
-                           "user" % locked_count)
+                self._hint(
+                    "Nothing to change - %d row(s) locked by another "
+                    "user" % locked_count
+                )
             return
 
         try:
@@ -4692,8 +4762,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._update_full_tree()
         if locked_count:
-            self._hint("Changed %d row(s), skipped %d locked by another user"
-                       % (len(updates), locked_count))
+            self._hint(
+                "Changed %d row(s), skipped %d locked by another user"
+                % (len(updates), locked_count)
+            )
         else:
             self._hint("Changed %d row(s)" % len(updates))
 
@@ -5198,8 +5270,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self._binding is not None:
             self._needs_update = self._binding.needs_update
         if failures:
-            raise Exception("Some projects were not updated:\n\n"
-                            + "\n".join(failures))
+            raise Exception("Some projects were not updated:\n\n" + "\n".join(failures))
 
     def _sync_model_keynotes(self):
         """Reload the bound project's keynote table."""
@@ -5292,16 +5363,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 return
 
             if len(dirty) == 1:
-                _msg = ("Keynote file has been modified.\n"
-                        "Sync changes to the Revit model before "
-                        "closing?")
+                _msg = (
+                    "Keynote file has been modified.\n"
+                    "Sync changes to the Revit model before "
+                    "closing?"
+                )
             else:
                 # a shared keynote file leaves every open project that
                 # uses it stale, not just the one that was edited
-                _msg = ("Keynote files have been modified.\n"
-                        "Sync changes to these open projects before "
-                        "closing?\n\n  "
-                        + "\n  ".join(b.title for b in dirty))
+                _msg = (
+                    "Keynote files have been modified.\n"
+                    "Sync changes to these open projects before "
+                    "closing?\n\n  " + "\n  ".join(b.title for b in dirty)
+                )
 
             # Owned by THIS window rather than by Revit.  forms.alert builds
             # a Revit TaskDialog, which is modal to Revit's main window but
@@ -5311,9 +5385,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             # window while it is up, so the re-entrant Close that
             # _close_prompt_open existed to absorb cannot happen at all.
             res = Windows.MessageBox.Show(
-                self, _msg, "Keynote Manager",
+                self,
+                _msg,
+                "Keynote Manager",
                 Windows.MessageBoxButton.YesNo,
-                Windows.MessageBoxImage.Question)
+                Windows.MessageBoxImage.Question,
+            )
 
             if res == Windows.MessageBoxResult.Yes:
                 args.Cancel = True
@@ -5518,24 +5595,7 @@ try:
             "pyRevit; a stale cached command assembly can also cause this."
         )
 
-    _existing = envvars.get_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR)
-    _needs_new = True
-    if _existing:
-        try:
-            if _existing.IsLoaded:
-                # Restore before activating: Activate()
-                # (SetForegroundWindow) does not un-minimize, and setting
-                # WindowState afterwards restores without re-activating.
-                _existing.WindowState = framework.Windows.WindowState.Normal
-                _existing.Activate()
-                _needs_new = False
-        except Exception:
-            # stale handle from a closed window or reloaded pyRevit
-            pass
-
-    if _needs_new:
-        if not _safe_mode:
-            envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
+    if not forms.activate_open_window(KEYNOTEMGR_WINDOW_ENVVAR):
         _new_window = KeynoteManagerWindow(
             xaml_file_name="KeynoteManagerWindow.xaml",
             reset_config=__shiftclick__,  # pylint: disable=undefined-variable
