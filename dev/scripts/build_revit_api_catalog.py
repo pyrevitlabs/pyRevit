@@ -64,7 +64,7 @@ BCL_PACKAGES = {
     "Microsoft.WindowsDesktop.App": "microsoft.windowsdesktop.app.ref",
 }
 BCL_MAJOR = 8
-SURFACE_CACHE_FORMAT = 3
+SURFACE_CACHE_FORMAT = 4
 REVIT_NAMESPACE_PREFIX = "Autodesk.Revit."
 
 _ELEMENT_TYPE_NAMES = {
@@ -87,6 +87,10 @@ _ELEMENT_TYPE_NAMES = {
     0x19: "System.UIntPtr",
     0x1C: "System.Object",
 }
+
+
+class CatalogBuildError(Exception):
+    """A regeneration input is missing or unreadable."""
 
 
 def _stable_versions_per_year(package_id, years):
@@ -229,12 +233,16 @@ def _obsolete_message(blob):
     return blob[start : start + length].decode("utf-8", "replace").strip()
 
 
-def _add_member(members, obsolete, name, kind, static, obsolete_key, overload=None):
+def _add_member(
+    members, obsolete, name, kind, static, obsolete_key, overload=None, undecoded=False
+):
     """Record one member (or one overload of a method) of a type.
 
     Invariant:
         A method counts as obsolete only when every overload is; the
         ``has_current_overload`` marker clears it after all are seen.
+        ``undecoded_overload`` marks a method with an overload whose signature
+        could not be read, so no overload fact is derived for it.
     """
     entry = members.setdefault(name, {"kind": kind, "static": static, "obsolete": None})
     if obsolete_key in obsolete and entry["obsolete"] is None:
@@ -243,6 +251,8 @@ def _add_member(members, obsolete, name, kind, static, obsolete_key, overload=No
         entry["has_current_overload"] = True
     if overload is not None:
         entry.setdefault("overloads", []).append(overload)
+    if undecoded:
+        entry["undecoded_overload"] = True
 
 
 def read_surface(dll_bytes):
@@ -257,6 +267,8 @@ def read_surface(dll_bytes):
     import dnfile
 
     md = dnfile.dnPE(data=dll_bytes).net.mdtables
+    if not md.TypeDef:
+        return {}
 
     def table_name(coded):
         """Metadata table name a coded index points into."""
@@ -317,7 +329,16 @@ def read_surface(dll_bytes):
                 continue
             if typeref_names.get(klass.row_index) != "System.ObsoleteAttribute":
                 continue
-            message = _obsolete_message(bytes(row.Value.value))
+            blob = getattr(row.Value, "value", None)
+            if blob is None:
+                print(
+                    "  skipped an unreadable [Obsolete] blob on {} #{}".format(
+                        table_name(row.Parent), row.Parent.row_index
+                    ),
+                    file=sys.stderr,
+                )
+                continue
+            message = _obsolete_message(bytes(blob))
             obsolete[(table_name(row.Parent), row.Parent.row_index)] = message
 
     accessors = {}
@@ -371,8 +392,14 @@ def read_surface(dll_bytes):
                 params = _SignatureReader(
                     bytes(method.Signature.value), resolve_token
                 ).method_params()
-            except (ValueError, IndexError):
-                params = []
+            except (ValueError, IndexError, AttributeError) as err:
+                print(
+                    "  undecodable signature of {}.{}: {}".format(
+                        name, method_name, err
+                    ),
+                    file=sys.stderr,
+                )
+                params = None
             _add_member(
                 members,
                 obsolete,
@@ -381,6 +408,7 @@ def read_surface(dll_bytes):
                 bool(method.Flags.mdStatic),
                 ("MethodDef", method_index.row_index),
                 params,
+                undecoded=params is None,
             )
         for field_index in row.FieldList or []:
             field = field_index.row
@@ -483,6 +511,10 @@ def _load_bcl_names(cache_dir):
         stable = [
             v for v in versions if "-" not in v and v.split(".")[0] == str(BCL_MAJOR)
         ]
+        if not stable:
+            raise CatalogBuildError(
+                "NuGet has no stable {}.x release of {}".format(BCL_MAJOR, package_id)
+            )
         version = max(stable, key=lambda v: tuple(int(p) for p in v.split(".")))
         sources[label] = version
         cached = cache_dir / "{}.{}.names.json".format(package_id, version)
@@ -639,8 +671,12 @@ def _overload_param_types(per_year, member_years):
 
     Only types whose availability is narrower than the member's own years are
     kept: those mark overloads removed (or added) while the name survived.
-    Overloads are read from each year's latest update.
+    Overloads are read from each year's latest update. A member with an
+    overload whose signature could not be read yields no facts: that overload
+    may be the one that carries the type.
     """
+    if any(info.get("undecoded_overload") for info in per_year.values()):
+        return {}
     availability = {}
     for year, info in per_year.items():
         for params in info.get("overloads") or []:
@@ -734,6 +770,8 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
                     y for y, info in per_year.items() if info["obsolete"] is None
                 )
                 for year, info in per_year.items():
+                    if info.get("undecoded_overload"):
+                        index["undecoded"] = True
                     for params in info.get("overloads") or []:
                         for param in params:
                             base = param.rstrip("[],")
@@ -767,7 +805,7 @@ def build_catalog(samples, package_versions, bcl_names=frozenset(), bcl_sources=
         params = {
             param: _ranges(param_years)
             for param, param_years in sorted(index.get("params", {}).items())
-            if param_years != full | partial
+            if param_years != full | partial and not index.get("undecoded")
         }
         if params:
             entry["overload_params"] = params
@@ -853,7 +891,11 @@ def main():
             samples[year].append(_load_surface(versions, args.cache_dir))
 
     print(".NET {} reference packs:".format(BCL_MAJOR), file=sys.stderr)
-    bcl_names, bcl_sources = _load_bcl_names(args.cache_dir)
+    try:
+        bcl_names, bcl_sources = _load_bcl_names(args.cache_dir)
+    except CatalogBuildError as err:
+        print("error: {}".format(err), file=sys.stderr)
+        return 2
     catalog = build_catalog(samples, package_versions, bcl_names, bcl_sources)
     buffer = io.StringIO()
     json.dump(catalog, buffer, indent=1, sort_keys=True, ensure_ascii=False)

@@ -63,6 +63,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.14'
+
       - name: Run CI pipeline
         working-directory: build
         env:
@@ -80,16 +85,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
-
-      - name: Revit API compatibility lint
-        shell: pwsh
-        working-directory: ${{ github.workspace }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          python -m unittest discover -s dev/scripts -p 'test_check_revit_api_compat.py'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python dev/scripts/check_revit_api_compat.py --baseline --format github
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Capture build versions
         id: versionmeta

@@ -7,6 +7,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+from unittest import mock
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -74,7 +75,9 @@ GENERATED = {
 }
 
 OVERRIDES = {
-    "instance_members": {"IntegerValue": {"receiver_exempt": "(?i)workset"}},
+    "instance_members": {
+        "IntegerValue": {"receiver_exempt": "(?i)(workset|field)(_?id)?$"}
+    },
     "namespaces": {
         "System.Web.Script.Serialization": {"avail": [[2021, 2024]], "code": "DOTNET"}
     },
@@ -185,17 +188,57 @@ class MatchingTests(_TempTree):
             [c for c, _ in self.codes("def f(sheet):\n    sheet.Id.IntegerValue\n")],
         )
 
-    def test_own_class_attributes_are_not_api(self):
-        """Attributes the module defines itself are not Revit API uses."""
+    def test_receiver_exemption_needs_the_name_to_end_in_the_keyword(self):
+        """A receiver merely containing "field" is still an ElementId."""
+        self.assertEqual(
+            [], self.codes("def f(field_id):\n    field_id.IntegerValue\n")
+        )
+        self.assertEqual(
+            ["API-MISSING"],
+            [
+                c
+                for c, _ in self.codes(
+                    "def f(field_element):\n    field_element.Id.IntegerValue\n"
+                )
+            ],
+        )
+
+    def test_own_class_attributes_are_not_api_inside_the_class(self):
+        """Attributes a class defines are not Revit API uses within that class."""
         source = """
         class Wrapper(object):
             def GetDataType(self):
                 return 1
 
-        def f(w):
+            def same(self, other):
+                return other.GetDataType()
+        """
+        self.assertEqual([], self.codes(source))
+
+    def test_own_class_attributes_are_not_api_on_its_instances(self):
+        """An instance built from the module's own class keeps its attributes."""
+        source = """
+        class Wrapper(object):
+            def GetDataType(self):
+                return 1
+
+        def f():
+            w = Wrapper()
             return w.GetDataType()
         """
         self.assertEqual([], self.codes(source))
+
+    def test_own_class_attribute_does_not_hide_other_receivers(self):
+        """A class declaring a name does not hide its use on a Revit object."""
+        source = """
+        class Wrapper(object):
+            def GetDataType(self):
+                return 1
+
+        def f(definition):
+            return definition.GetDataType()
+        """
+        self.assertEqual(["API-MISSING"], [c for c, _ in self.codes(source)])
 
     def test_getattr_with_literal_name_and_no_default_counts_as_access(self):
         """A getattr with a literal name and no default is a plain access."""
@@ -625,6 +668,139 @@ class CliTests(_TempTree):
         _, out, _ = self.run_main(str(target.parent), "--format", "github")
         self.assertTrue(out.startswith("::error file="))
 
+    def test_old_python_is_refused(self):
+        """An interpreter older than the analysis floor exits 2 without linting."""
+        target = self.write("dirty/a.py", "DB.DisplayUnitType\n")
+        with mock.patch.object(checker.sys, "version_info", (3, 9, 0)):
+            code, _, err = self.run_main(str(target.parent))
+        self.assertEqual(2, code)
+        self.assertIn("3.10", err)
+
+    def test_update_baseline_needs_a_baseline_file(self):
+        """--update-baseline alone is a usage error."""
+        target = self.write("dirty/a.py", "x = 1\n")
+        code, _, err = self.run_main(str(target.parent), "--update-baseline")
+        self.assertEqual(2, code)
+        self.assertIn("--baseline", err)
+
+    def test_revit_years_restrict_the_universe(self):
+        """--revit-years limits which years an unconstrained script must support."""
+        target = self.write("dirty/a.py", "DB.DisplayUnitType\n")
+        self.assertEqual(1, self.run_main(str(target.parent))[0])
+        self.assertEqual(
+            0, self.run_main(str(target.parent), "--revit-years", "2021")[0]
+        )
+        self.assertEqual(
+            2, self.run_main(str(target.parent), "--revit-years", "1999")[0]
+        )
+
+    def test_revit_years_parser(self):
+        """YEAR and YEAR-YEAR parse; malformed or empty ranges are rejected."""
+        self.assertEqual(frozenset({2024}), checker._parse_year_range("2024"))
+        self.assertEqual(
+            frozenset({2023, 2024, 2025}), checker._parse_year_range(" 2023-2025 ")
+        )
+        for text in ("24", "2025-2023", "2023-", "abc"):
+            with self.assertRaises(checker.argparse.ArgumentTypeError, msg=text):
+                checker._parse_year_range(text)
+
+    def test_exclude_skips_matching_files(self):
+        """--exclude drops files matching the glob before linting."""
+        target = self.write("dirty/skip_me.py", "DB.DisplayUnitType\n")
+        self.assertEqual(1, self.run_main(str(target.parent))[0])
+        code, _, err = self.run_main(str(target.parent), "--exclude", "*/skip_me.py")
+        self.assertEqual(2, code)
+        self.assertIn("scanned 0 files", err)
+
+    def test_errors_only_hides_warnings(self):
+        """--errors-only leaves warnings out of the report."""
+        self.write("warn/Ext.extension/bundle.yaml", "max_revit_version: 2024\n")
+        target = self.write(
+            "warn/Ext.extension/lib/a.py", "x = DB.BuiltInParameterGroup\n"
+        )
+        _, out, _ = self.run_main(str(target.parent))
+        self.assertIn("API-DEPRECATED", out)
+        _, out, _ = self.run_main(str(target.parent), "--errors-only")
+        self.assertNotIn("API-DEPRECATED", out)
+
+    def test_remote_extensions_are_cloned_and_failures_reported(self):
+        """--extensions all lints each clone and reports the ones that fail."""
+        listing = self.root / "extensions.json"
+        listing.write_text(
+            json.dumps(
+                {
+                    "extensions": [
+                        {"name": "Good", "url": "https://example.test/good.git"},
+                        {"name": "Gone", "url": "https://example.test/gone.git"},
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def fake_clone(url, destination, ref=None):
+            """Materialize a clone for one URL and fail for the other."""
+            if "gone" in url:
+                raise OSError("repository not found")
+            destination.mkdir(parents=True)
+            (destination / "a.py").write_text("DB.DisplayUnitType\n", encoding="utf-8")
+
+        keep = self.root / "kept"
+        with (
+            mock.patch.object(checker, "EXTENSIONS_CATALOG_PATH", listing),
+            mock.patch.object(checker, "clone_repo", fake_clone),
+        ):
+            code, out, err = self.run_main(
+                "--extensions", "all", "--keep-clones", str(keep), "--format", "json"
+            )
+        self.assertEqual(2, code, err)
+        self.assertIn("incomplete", err)
+        payload = json.loads(out)
+        self.assertEqual(["Good"], [t["name"] for t in payload["targets"]])
+        self.assertEqual(["Gone"], [f["name"] for f in payload["clone_failures"]])
+        self.assertIn("repository not found", payload["clone_failures"][0]["error"])
+        self.assertTrue((keep / "01-Good.extension" / "a.py").is_file())
+
+
+class CatalogTests(_TempTree):
+    """Catalog loading and lookups."""
+
+    def test_obsolete_years_stay_inside_availability(self):
+        """A deprecation year the API is already gone in is not reported."""
+        entry = {"avail": [[2021, 2023]], "obsolete_years": [[2022, 2025]]}
+        self.assertEqual(frozenset({2022, 2023}), self.catalog.obsolete_years(entry))
+
+    def test_obsolete_without_since_is_rejected_at_load(self):
+        """A curated obsolete block without 'since' fails load, not the lint."""
+        broken = {
+            "instance_members": {"Thing": {"obsolete": {"message": "gone"}}},
+        }
+        with self.assertRaises(ValueError):
+            checker.Catalog(GENERATED, broken)
+        generated = self.root / "catalog.json"
+        overrides = self.root / "overrides.json"
+        generated.write_text(json.dumps(GENERATED), encoding="utf-8")
+        overrides.write_text(json.dumps(broken), encoding="utf-8")
+        with self.assertRaises(ValueError):
+            checker.Catalog.load(generated, overrides)
+
+    def test_overrides_are_not_shared_between_catalogs(self):
+        """Editing one catalog's namespaces leaves the source overrides alone."""
+        catalog = checker.Catalog(GENERATED, OVERRIDES)
+        catalog.namespaces.clear()
+        catalog.cpython_unavailable_modules.clear()
+        self.assertIn("System.Web.Script.Serialization", OVERRIDES["namespaces"])
+        self.assertIn("wpf", OVERRIDES["engine"]["cpython_unavailable_modules"])
+
+    def test_parse_message_does_not_depend_on_the_interpreter(self):
+        """The unparseable-file message omits the interpreter's own wording."""
+        findings = self.lint("def broken(:\n")
+        self.assertEqual(
+            "not analyzed: does not parse as Python 3; "
+            "run check_py3_compat.py for the language axis",
+            findings[0].message,
+        )
+
 
 class BuilderTests(unittest.TestCase):
     """The catalog diff, without downloading or reading assemblies."""
@@ -651,6 +827,51 @@ class BuilderTests(unittest.TestCase):
         )
         self.assertEqual(
             ["System.Int32", "Autodesk.Revit.DB.ForgeTypeId"], reader.method_params()
+        )
+
+    def test_signature_reader_skips_the_vararg_sentinel(self):
+        """The sentinel before extra varargs is a marker; ParamCount covers all."""
+        blob = bytes([0x05, 0x02, 0x01, 0x08, 0x41, 0x08])
+        reader = builder._SignatureReader(blob, lambda tag, index: "?")
+        self.assertEqual(["System.Int32", "System.Int32"], reader.method_params())
+
+    def test_undecodable_overload_yields_no_overload_facts(self):
+        """A method with an unreadable signature never claims a removed overload."""
+        group = "Autodesk.Revit.DB.BuiltInParameterGroup"
+
+        def surface(overloads, undecoded=False):
+            """One year's surface with a BindingMap.Insert."""
+            insert = {
+                "kind": "method",
+                "static": False,
+                "obsolete": None,
+                "overloads": overloads,
+            }
+            if undecoded:
+                insert["undecoded_overload"] = True
+            return {
+                "Autodesk.Revit.DB.BindingMap": {
+                    "kind": "class",
+                    "obsolete": None,
+                    "members": {"Insert": insert},
+                }
+            }
+
+        readable = builder.build_catalog(
+            {2021: [surface([[group]])], 2022: [surface([[]])]}, {}
+        )
+        self.assertIn(
+            "overload_params",
+            readable["types"]["Autodesk.Revit.DB.BindingMap"]["members"]["Insert"],
+        )
+        unreadable = builder.build_catalog(
+            {2021: [surface([[group]])], 2022: [surface([[]], undecoded=True)]}, {}
+        )
+        self.assertEqual(
+            {}, unreadable["types"].get("Autodesk.Revit.DB.BindingMap", {})
+        )
+        self.assertNotIn(
+            "overload_params", unreadable["instance_members"].get("Insert", {})
         )
 
     def test_build_catalog_diff(self):
@@ -743,6 +964,12 @@ class BuilderTests(unittest.TestCase):
         stairs = catalog["types"].get("Autodesk.Revit.DB.StairsEditScope", {})
         self.assertNotIn("IsPermitted", stairs.get("members", {}))
         self.assertNotIn("IsPermitted", catalog["instance_members"])
+        self.assertEqual(
+            "Autodesk.Revit.DB.EditScope",
+            catalog["bases"]["Autodesk.Revit.DB.StairsEditScope"],
+        )
+        base = catalog["types"]["Autodesk.Revit.DB.EditScope"]
+        self.assertEqual([[2022, 2022]], base["members"]["IsPermitted"]["avail"])
 
     def test_api_added_in_an_update_is_partial(self):
         """An API only the later update of a year has is partial that year."""
@@ -877,11 +1104,13 @@ class ReviewRegressionTests(_TempTree):
                 return DB.ColorFillScheme
 
         def b():
-            supported = HOST_APP.is_newer_than(2021)
+            supported = HOST_APP.is_older_than(2023)
             if supported:
                 return DB.ColorFillScheme
         """
-        self.assertEqual([], self.codes(source))
+        findings = self.lint(source)
+        self.assertEqual(["API-MISSING"], [f.code for f in findings])
+        self.assertEqual([9], [f.line for f in findings])
 
     def test_probe_variable_does_not_leak_into_another_function(self):
         """A parameter named like another function's probe is not a probe."""
@@ -1111,11 +1340,8 @@ class ShippedCatalogTests(unittest.TestCase):
             "pyrevitlib/pyrevit/compat.py",
         ):
             path = checker.REPO_ROOT / relative
-            findings = [
-                f
-                for f in checker.check_file(path, self.catalog, bundles)
-                if f.severity == checker.ERROR
-            ]
+            self.assertTrue(path.is_file(), relative)
+            findings = checker.check_file(path, self.catalog, bundles)
             self.assertEqual([], [str(f) for f in findings], relative)
 
 

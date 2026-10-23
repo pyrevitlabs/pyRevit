@@ -52,6 +52,9 @@ public static class PyRevitPaths
     public static string UsagePatterns => Path.Combine(DevPath, "pyRevitLabs", "pyRevitCLI", "Resources", "UsagePatterns.txt");
 
     public static string VersionFile => Path.Combine(Root, "pyrevitlib", "pyrevit", "version");
+    public static string DirectoryBuildTargets => Path.Combine(DevPath, "Directory.Build.targets");
+    public static string RevitApiCompatScript => Path.Combine(DevPath, "scripts", "check_revit_api_compat.py");
+    public static string RevitApiCatalog => Path.Combine(DevPath, "scripts", "revit_api_catalog", "catalog.json");
     public static string AgentSkillsPath => Path.Combine(Root, "pyrevitlib", "pyrevit", "agent", "skills");
     public static string InstallVersionFile => Path.Combine(ReleasePath, "version");
     public static string ProductsTemplateFile => Path.Combine(ReleasePath, "pyrevit-products.json");

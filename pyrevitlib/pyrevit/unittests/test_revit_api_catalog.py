@@ -10,6 +10,8 @@ update-release drift that no offline step can see. Run it from the pyRevit
 DevTools "Revit API Catalog Tests" button in each Revit version you have.
 
 The lint itself runs in CI without Revit; this suite only validates its data.
+It is opt-in: the "Run All Tests" button leaves it out, because it resolves
+hundreds of types against whichever Revit build is installed.
 
 Note:
     Years that only some update releases have an entry in (``partial``) are
@@ -29,6 +31,7 @@ CATALOG_PATH = os.path.join(
     HOME_DIR, "dev", "scripts", "revit_api_catalog", "catalog.json"
 )
 MAX_REPORTED = 40
+REVIT_NAMESPACES = ("Autodesk.Revit.DB", "Autodesk.Revit.UI")
 
 
 def _ranges_to_years(ranges):
@@ -83,7 +86,12 @@ class RevitApiCatalogTests(unittest.TestCase):
             raise unittest.SkipTest("catalog not found: {}".format(CATALOG_PATH))
         with io.open(CATALOG_PATH, encoding="utf-8") as handle:
             cls.catalog = json.load(handle)
-        cls.year = int(HOST_APP.version)
+        try:
+            cls.year = int(HOST_APP.version)
+        except (TypeError, ValueError):
+            raise unittest.SkipTest(
+                "cannot read the Revit year from {!r}".format(HOST_APP.version)
+            )
         cls.label = "Revit {}".format(HOST_APP.subversion or cls.year)
         if cls.year not in cls.catalog["years"]:
             raise unittest.SkipTest(
@@ -93,13 +101,31 @@ class RevitApiCatalogTests(unittest.TestCase):
             )
 
     def _live_types(self):
-        """Map each cataloged type to its live class, or None if absent."""
+        """Map each cataloged type to its live class, or None if absent.
+
+        Only a missing name counts as absent. A Revit namespace that cannot be
+        imported, or any other error while resolving, fails the test as an
+        environment problem instead of blaming the catalog.
+        """
+        for namespace in REVIT_NAMESPACES:
+            try:
+                __import__(namespace, fromlist=["*"])
+            except ImportError as err:
+                self.fail("cannot import {}: {!r}".format(namespace, err))
         live = {}
+        unresolved = []
         for type_name in self.catalog["types"]:
             try:
                 live[type_name] = _resolve(type_name)
             except (AttributeError, ImportError):
                 live[type_name] = None
+            except Exception as err:
+                unresolved.append("{}: {!r}".format(type_name, err))
+        self.assertFalse(
+            unresolved,
+            "could not inspect these types (not a catalog mismatch):\n"
+            + _mismatch_report(unresolved),
+        )
         return live
 
     def test_types_exist_when_cataloged(self):

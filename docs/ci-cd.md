@@ -270,7 +270,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
 | `python -m unittest discover -s dev/scripts -p 'test_standalone_*.py'` | Host-free CPython suites for `pyrevitlib` modules (also run in CI, and as `pipenv run test-standalone`). They live in `dev/scripts` because every test in `pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs a Revit host, so a suite that gates CI cannot live beside the code it covers. Same reason for the load-by-path at the top of each file. |
-| `python dev/scripts/check_revit_api_compat.py --baseline --format github` | Revit API version-compatibility lint of `pyRevitTools.extension` and `pyrevitlib` (also run in CI after its unit tests, and as `pipenv run check-revit-api`). Fails only on findings missing from the committed baseline. See [Revit API compatibility lint](revit-api-compat.md). |
+| `python dev/scripts/check_revit_api_compat.py --baseline` | Revit API version-compatibility lint of `pyRevitTools.extension` and `pyrevitlib`. Run by `dotnet run -- ci` (`CheckRevitApiCompatModule`), and as `pipenv run check-revit-api`. Fails only on findings missing from the committed baseline. CI pins Python 3.14 for it. See [Revit API compatibility lint](revit-api-compat.md). |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |
 | `dotnet run -- notify` | Post WIP/release URL to linked issues |

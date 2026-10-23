@@ -1,6 +1,5 @@
 {
- "schema_version": 1,
- "about": "Hand-curated additions to catalog.json, deep-merged by check_revit_api_compat.py at load time; edit freely, no regeneration needed. 'types'/'instance_members' entries may add: fix (replaces the generic hint), tier ('warning' demotes an error), match (false disables an instance name), receiver_exempt (regex on the receiver's source text that skips an ambiguous instance name), avail/obsolete (to assert facts the assemblies cannot express), code (finding code), sources. 'namespaces' match any name under them. Keep every entry backed by a source.",
+ "about": "Hand-curated additions to catalog.json, deep-merged by check_revit_api_compat.py at load time; edit freely, no regeneration needed. 'types'/'instance_members' entries may add: fix (replaces the generic hint), tier ('warning' demotes an error), match (false disables an instance name; true re-enables a name the catalog marks bcl, so deleting a 'match: true' drops its coverage), receiver_exempt (regex searched in the receiver's last identifier, ignoring a trailing .Id, that skips an ambiguous instance name; anchor it with $), avail/obsolete (to assert facts the assemblies cannot express), code (finding code), sources. 'namespaces' match any name under them. Keep every entry backed by a source.",
  "types": {
   "Autodesk.Revit.DB.ElementId": {
    "members": {
@@ -66,11 +65,8 @@
    }
   },
   "System.AppDomain": {
-   "kind": "class",
    "members": {
     "CreateDomain": {
-     "kind": "method",
-     "static": true,
      "avail": [
       [
        2021,
@@ -86,10 +82,8 @@
    }
   },
   "System.Threading.Thread": {
-   "kind": "class",
    "members": {
     "Abort": {
-     "kind": "method",
      "avail": [
       [
        2021,
@@ -105,11 +99,8 @@
    }
   },
   "System.Reflection.Assembly": {
-   "kind": "class",
    "members": {
     "ReflectionOnlyLoad": {
-     "kind": "method",
-     "static": true,
      "avail": [
       [
        2021,
@@ -123,8 +114,6 @@
      ]
     },
     "ReflectionOnlyLoadFrom": {
-     "kind": "method",
-     "static": true,
      "avail": [
       [
        2021,
@@ -140,7 +129,6 @@
    }
   },
   "System.Runtime.Serialization.Formatters.Binary.BinaryFormatter": {
-   "kind": "class",
    "code": "DOTNET",
    "avail": [
     [
@@ -158,7 +146,6 @@
    ]
   },
   "System.Net.WebClient": {
-   "kind": "class",
    "code": "DOTNET",
    "obsolete": {
     "since": 2025,
@@ -184,7 +171,7 @@
      2025
     ]
    ],
-   "receiver_exempt": "(?i)workset|field",
+   "receiver_exempt": "(?i)(workset|field)(_?id)?$",
    "fix": "for ElementIds read with `pyrevit.compat.get_elementid_value_func()`; WorksetId/ScheduleFieldId keep IntegerValue (suppress with `# compat-ignore: WorksetId`)",
    "about": "ElementId.IntegerValue was removed in 2026; WorksetId and ScheduleFieldId still expose IntegerValue, so receivers that look like those are skipped.",
    "sources": [
@@ -199,7 +186,7 @@
     ]
    ],
    "tier": "warning",
-   "receiver_exempt": "(?i)sequence|numbering|setting",
+   "receiver_exempt": "(?i)(sequence|numbering|settings?)$",
    "fix": "for a Revision use `pyrevit.revit.db.ensure.revision_has_numbertype()` (Revision.NumberType is gone in 2023+); RevisionNumberingSequence.NumberType is fine",
    "about": "Revision.NumberType exists 2021-2022 only; RevisionNumberingSequence.NumberType exists 2022+. The name alone cannot tell them apart, so this is a warning."
   },

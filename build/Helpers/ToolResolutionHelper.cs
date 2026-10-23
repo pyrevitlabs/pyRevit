@@ -58,6 +58,18 @@ public static class ToolResolutionHelper
             configuredExe);
     }
 
+    /// <summary>
+    /// Finds a Python launcher on PATH; the caller enforces the version the script it runs needs.
+    /// </summary>
+    public static string ResolvePythonExecutable()
+    {
+        var python = new[] { "python", "python3", "py" }
+            .Select(ResolveOnPath)
+            .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate));
+        return python ?? throw new FileNotFoundException(
+            "Python 3.10 or newer is required for the Revit API compatibility lint but was not found on PATH.");
+    }
+
     public static string ResolvePowerShellExecutable()
     {
         var candidates = new[]

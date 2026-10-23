@@ -7,9 +7,19 @@ does not stay put: members are added, deprecated, and removed (for example
 is a static checker that finds uses of such APIs that are not protected for
 every Revit year the code can run in.
 
-It is plain CPython 3.9+ with no dependencies. It parses code with `ast`
+It is plain CPython 3.10+ with no dependencies. It parses code with `ast`
 and never imports or runs it, so it works without Revit, in CI, and on any
-third-party extension.
+third-party extension. Older interpreters exit with code `2`: the findings
+are matched against the baseline by message, so the analysis must read every
+file the same way on every interpreter, and `match` statements only parse
+from 3.10.
+
+The build runs it as part of `dotnet run -- ci` (`CheckRevitApiCompatModule`),
+after version stamping, so a local build gates on it too and CI needs no extra
+step. The module also fails when `catalog.json` does not cover exactly the
+Revit years `dev/Directory.Build.targets` builds for. Its tests live in
+`dev/scripts/test_standalone_revit_api_compat.py`, which CI runs with the
+other standalone suites.
 
 ## Running it
 
@@ -111,6 +121,21 @@ skipped as well. `overrides.json` can re-enable a name, demote it to a
 warning, or exempt receivers by pattern. For instance, `workset.Id.IntegerValue`
 is exempt because `WorksetId.IntegerValue` still exists.
 
+An instance entry has three states for `match`: absent leaves the catalog's
+verdict alone, `false` disables the name, and `true` re-enables a name the
+catalog marks as shared with .NET (`bcl`). `ParameterType` relies on `true`,
+since `System.Reflection.ParameterInfo` has it too but scripts almost always
+mean `Definition.ParameterType`. Removing a `match: true` silently drops that
+coverage.
+
+`receiver_exempt` is a regular expression searched in the receiver's last
+identifier, ignoring a trailing `.Id`: `workset.Id` is tested as `workset`.
+Anchor it with `$`, so `field_element` is not exempted by `field`.
+
+Attributes a local class defines are not Revit API uses inside that class or on
+variables built from it (`w = Wrapper(); w.GetDataType()`). A class declaring
+the name does not hide its use on any other receiver.
+
 ## Suppressing a finding
 
 Put a justified pragma on the line, or anywhere in the statement's header
@@ -176,7 +201,7 @@ new Revit release (or an update that deprecates API) ships:
 ```bash
 pip install dnfile
 python dev/scripts/build_revit_api_catalog.py
-python -m unittest discover -s dev/scripts -p test_check_revit_api_compat.py
+python -m unittest discover -s dev/scripts -p test_standalone_revit_api_compat.py
 python dev/scripts/check_revit_api_compat.py --baseline
 ```
 
@@ -189,8 +214,8 @@ a surprising change there fails loudly.
 ### Verifying in Revit
 
 The DevTools button **Unit Tests > Revit API Catalog Tests**
-(`pyrevitlib/pyrevit/unittests/test_revit_api_catalog.py`, also part of
-**Run All Tests**) checks, inside the running Revit, that every cataloged
+(`pyrevitlib/pyrevit/unittests/test_revit_api_catalog.py`; **Run All Tests**
+leaves it out because it resolves hundreds of types) checks, inside the running Revit, that every cataloged
 type and member exists exactly when the catalog says it does. `partial`
 years are not checked, because the answer depends on the installed update.
 Failures name the running update (e.g. `Revit 2024.2`). Run it in each Revit

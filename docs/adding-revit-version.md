@@ -296,7 +296,8 @@ Use preprocessor directives to handle API differences:
 
 The Python-side counterpart is the [Revit API compatibility lint](revit-api-compat.md).
 Once the new year's `Nice3point.Revit.Api.RevitAPI` package is on NuGet, regenerate
-its catalog so CI knows the new year's additions and removals:
+its catalog so CI knows the new year's additions and removals (the build fails
+until the catalog's years match the `REVIT<year>` constants):
 
 ```bash
 pip install dnfile

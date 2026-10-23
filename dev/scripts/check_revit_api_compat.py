@@ -2,7 +2,7 @@ r"""Static checker for Revit API version compatibility of pyRevit scripts.
 
 Flags uses of Revit API types and members that do not exist (or are
 deprecated) in some Revit year a script can run in, unless the use is
-protected. Run with any CPython 3.9+; it has no dependencies and never
+protected. Run with any CPython 3.10+; it has no dependencies and never
 imports or executes the code it reads:
 
     pipenv run check-revit-api [paths ...]
@@ -73,6 +73,7 @@ Python 2 vs 3 language portability is a separate axis, covered by
 
 import argparse
 import ast
+import copy
 import fnmatch
 import io
 import json
@@ -89,6 +90,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[1]
+MIN_PYTHON = (3, 10)
 CATALOG_PATH = SCRIPT_DIR / "revit_api_catalog" / "catalog.json"
 OVERRIDES_PATH = SCRIPT_DIR / "revit_api_catalog" / "overrides.json"
 BASELINE_PATH = SCRIPT_DIR / "revit_api_catalog" / "baseline.json"
@@ -219,11 +221,25 @@ class Catalog:
         self.bases = dict(generated.get("bases", {}))
         self.bcl_members = frozenset(generated.get("bcl_members", []))
         self._member_unions = {}
-        self.namespaces = overrides.get("namespaces", {})
-        self.cpython_unavailable_modules = overrides.get("engine", {}).get(
-            "cpython_unavailable_modules", {}
+        self.namespaces = copy.deepcopy(overrides.get("namespaces", {}))
+        self.cpython_unavailable_modules = copy.deepcopy(
+            overrides.get("engine", {}).get("cpython_unavailable_modules", {})
         )
-        self.packages = generated.get("packages", {})
+        self._validate()
+
+    def _validate(self):
+        """Reject entries the lookups cannot read; raises ValueError."""
+        entries = [("instance member", n, e) for n, e in self.instance_members.items()]
+        for type_name, type_entry in self.types.items():
+            entries.append(("type", type_name, type_entry))
+            for member, entry in type_entry.get("members", {}).items():
+                entries.append(("member", "{}.{}".format(type_name, member), entry))
+        for kind, name, entry in entries:
+            obsolete = entry.get("obsolete")
+            if obsolete and "since" not in obsolete:
+                raise ValueError(
+                    "{} {}: 'obsolete' needs a 'since' year".format(kind, name)
+                )
 
     @classmethod
     def load(cls, catalog_path=CATALOG_PATH, overrides_path=OVERRIDES_PATH):
@@ -232,7 +248,10 @@ class Catalog:
         overrides = {}
         if overrides_path and Path(overrides_path).exists():
             overrides = json.loads(Path(overrides_path).read_text(encoding="utf-8"))
-        return cls(generated, overrides)
+        try:
+            return cls(generated, overrides)
+        except (KeyError, TypeError, AttributeError) as err:
+            raise ValueError("malformed catalog data: {!r}".format(err)) from err
 
     def avail(self, entry):
         """Years an entry exists in."""
@@ -267,7 +286,7 @@ class Catalog:
     def obsolete_years(self, entry):
         """Years an entry exists in while marked [Obsolete]."""
         if "obsolete_years" in entry:
-            return _years_from_ranges(entry["obsolete_years"]) & self.universe
+            return _years_from_ranges(entry["obsolete_years"]) & self.avail(entry)
         obsolete = entry.get("obsolete")
         if not obsolete:
             return frozenset()
@@ -568,17 +587,37 @@ class _Scope:
     that are not a plain ``name = value``); ``params`` are parameter names.
     """
 
-    __slots__ = ("parent", "is_class", "assigns", "params")
+    __slots__ = ("parent", "is_class", "assigns", "params", "own_attributes")
 
     def __init__(self, parent, is_class=False):
         self.parent = parent
         self.is_class = is_class
         self.assigns = {}
         self.params = set()
+        self.own_attributes = set()
 
     def bind(self, name, value=None):
         """Record one binding of name."""
         self.assigns.setdefault(name, []).append(value)
+
+
+def _class_attributes(class_def):
+    """Names a class declares: members, class variables and ``self.x`` stores."""
+    names = set()
+    for item in class_def.body:
+        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.add(item.name)
+        elif isinstance(item, ast.Assign):
+            names.update(t.id for t in item.targets if isinstance(t, ast.Name))
+    for node in ast.walk(class_def):
+        if (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Store)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+        ):
+            names.add(node.attr)
+    return names
 
 
 def _year_literal(node):
@@ -617,6 +656,13 @@ def _terminal_name(node):
     if isinstance(node, ast.Call):
         return _terminal_name(node.func)
     return None
+
+
+def _receiver_identifier(node):
+    """The name a receiver is known by: its last identifier, ignoring ``.Id``."""
+    while isinstance(node, ast.Attribute) and node.attr == "Id":
+        node = node.value
+    return _terminal_name(node) or ""
 
 
 def _is_version_value(node):
@@ -669,7 +715,7 @@ class FileAnalyzer:
         self.aliases = dict(DEFAULT_ALIASES)
         self.star_namespaces = []
         self.local_names = set()
-        self.own_attributes = set()
+        self._class_scopes = {}
         self._resolving = set()
         self._collectors = []
         self._failing_years = {}
@@ -709,24 +755,10 @@ class FileAnalyzer:
                 node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
             ):
                 self.local_names.add(node.name)
-                if isinstance(node, ast.ClassDef):
-                    for item in node.body:
-                        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                            self.own_attributes.add(item.name)
-                        elif isinstance(item, ast.Assign):
-                            for target in item.targets:
-                                if isinstance(target, ast.Name):
-                                    self.own_attributes.add(target.id)
             elif isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         self.local_names.add(target.id)
-                    elif (
-                        isinstance(target, ast.Attribute)
-                        and isinstance(target.value, ast.Name)
-                        and target.value.id == "self"
-                    ):
-                        self.own_attributes.add(target.attr)
             elif isinstance(node, ast.arg):
                 self.local_names.add(node.arg)
 
@@ -755,7 +787,9 @@ class FileAnalyzer:
             elif isinstance(child, ast.ClassDef):
                 scope.bind(child.name)
                 inner = _Scope(scope, is_class=True)
+                inner.own_attributes = _class_attributes(child)
                 self._scopes[child] = inner
+                self._class_scopes.setdefault(child.name, []).append(inner)
                 self._fill_scope(child, inner)
             elif (
                 isinstance(child, ast.Assign)
@@ -1375,9 +1409,30 @@ class FileAnalyzer:
             self._check_instance(node, attr, ctx)
         return False
 
+    def _is_own_attribute(self, attr, receiver):
+        """True when attr is declared by a local class the access belongs to.
+
+        That is the class whose body encloses the access, or the class an
+        instance variable was constructed from; a class declaring a name
+        elsewhere in the module does not hide uses of it on other receivers.
+        """
+        if any(s.is_class and attr in s.own_attributes for s in self._scope_stack):
+            return True
+        if not isinstance(receiver, ast.Name):
+            return False
+        value = self._resolve_binding(receiver.id)
+        if isinstance(value, ast.Call) and isinstance(value.func, ast.Name):
+            return any(
+                attr in scope.own_attributes
+                for scope in self._class_scopes.get(value.func.id, [])
+            )
+        return False
+
     def _check_instance(self, node, attr, ctx, receiver=None):
         """Check a bare attribute access against the instance-member index."""
-        if attr in self.own_attributes:
+        if receiver is None and isinstance(node, ast.Attribute):
+            receiver = node.value
+        if self._is_own_attribute(attr, receiver):
             return
         if ctx.guarded:
             self._collect_instance(attr, ctx)
@@ -1387,13 +1442,11 @@ class FileAnalyzer:
             return
         if entry.get("bcl") and entry.get("match") is not True:
             return
-        if receiver is None and isinstance(node, ast.Attribute):
-            receiver = node.value
         if receiver is not None:
             if _terminal_name(receiver) == "self":
                 return
             exempt = entry.get("receiver_exempt")
-            if exempt and re.search(exempt, ast.unparse(receiver)):
+            if exempt and re.search(exempt, _receiver_identifier(receiver)):
                 return
         self._evaluate(
             node,
@@ -1826,11 +1879,8 @@ def check_file(path, catalog, bundles):
                 1,
                 "PARSE",
                 ERROR if cpython else WARNING,
-                "not analyzed: does not parse as Python 3 ({}){}".format(
-                    err.msg,
-                    ""
-                    if cpython
-                    else "; run check_py3_compat.py for the language axis",
+                "not analyzed: does not parse as Python 3{}".format(
+                    "" if cpython else "; run check_py3_compat.py for the language axis"
                 ),
             )
         ]
@@ -2093,6 +2143,14 @@ def main(argv=None):
         "--keep-clones", type=Path, help="clone into this directory and keep it"
     )
     args = parser.parse_args(argv)
+
+    if sys.version_info < MIN_PYTHON:
+        print(
+            "error: needs CPython {}.{}+ to parse the code it reads the same way "
+            "everywhere".format(*MIN_PYTHON),
+            file=sys.stderr,
+        )
+        return 2
 
     try:
         catalog = Catalog.load(args.catalog, args.overrides)
