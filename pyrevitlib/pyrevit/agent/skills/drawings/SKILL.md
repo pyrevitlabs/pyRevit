@@ -59,7 +59,7 @@ them, then have the user export from Revit after the run ends.
 
 ## Before you report done
 
-- [ ] `capture_view(view="A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
+- [ ] `capture_view(view="A101", title="Check sheet A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
 - [ ] Tag and dimension counts match the element counts you intended.
 - [ ] Each view is on one sheet only; duplicates were made where a view is needed twice.
 - [ ] You told the user which sheets are ready to export from Revit.

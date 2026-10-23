@@ -113,6 +113,15 @@ namespace pyRevitCLI {
                 : skill.Name;
         }
 
+        /// <summary>
+        /// The server's instructions: <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the
+        /// list of skills.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: the template keeps <c>{skills}</c> last and everything before it within 4,096
+        /// characters, because Claude Code keeps only that many characters of a server's
+        /// instructions. A list cut short there loses nothing that <c>list_skills</c> can't return.
+        /// </remarks>
         public static string Instructions(List<AgentSkill> skills) {
             var list = string.Join("\n", skills.Select(skill => $"- {Summary(skill)} ({skill.Source}, sha256:{skill.Hash})"));
             var shipped = ShippedSkillsDir;

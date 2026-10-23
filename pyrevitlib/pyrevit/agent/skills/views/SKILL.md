@@ -22,9 +22,9 @@ from pyrevit.revit import ui
 | Open a view, zoom it | `ui.request_view_change`, `ui.zoom_to_elements` in `run_query` | none |
 | Create a view, or change its settings permanently | pyrevitlib view functions in `run_modify` | yes, under policy ask |
 
-Don't create a view only to look at something: `capture_view(view="3d", elements=[...], direction="southwest")` renders a temporary 3D view of model categories, framed on those elements, and leaves nothing behind.
+Don't create a view only to look at something: `capture_view(view="3d", elements=[...], direction="southwest", title="Look at the stair")` renders a temporary 3D view of model categories, framed on those elements, and leaves nothing behind.
 
-To see what you just showed the user, call `show_elements` and then `capture_view(mode="viewport")`: it renders the active view exactly as zoomed and panned, with the temporary isolate, without depending on the Revit window. Use `mode="screen"` only when you need the selection highlight, and expect `view_obscured` if another window covers Revit.
+To see what you just showed the user, call `show_elements` and then `capture_view(mode="viewport", title="Check what the user sees")`: it renders the active view exactly as zoomed and panned, with the temporary isolate, without depending on the Revit window. Use `mode="screen"` only when you need the selection highlight, and expect `view_obscured` if another window covers Revit.
 
 ## Finding views
 
@@ -58,12 +58,12 @@ Run these in `run_modify`, inside `with revit.Transaction("..."):`. Names are ma
 
 - `ui.request_view_change(view)` asks Revit to make the view active **after the script finishes**. Zoom it in the next call. Don't set `revit.active_view` inside an agent run: every run is inside a transaction group, where changing the active view directly can fail.
 - `ui.zoom_to_elements(elements)` zooms the active view to elements; `ui.zoom_fit()` fits everything visible.
-- Or use `show_elements(ids, zoom=true)` on the active view.
+- Or use `show_elements(ids, zoom=true, title="Show the new walls")` on the active view.
 
 ## Before you report done
 
 - [ ] Every new view has the name, type (`view.ViewType`) and level (`view.GenLevel`) that were asked for.
-- [ ] `capture_view(view="<its name>")` shows the content. An empty or tiny image means the crop or section box is wrong, or the view is on the wrong level.
+- [ ] `capture_view(view="<its name>", title="Check the new view")` shows the content. An empty or tiny image means the crop or section box is wrong, or the view is on the wrong level.
 - [ ] Counts you report (hidden categories, framed elements) come from the model, not from a loop wrapped in `try/except: pass`, which reports success when every call failed.
 
 ## Raw API, when pyrevitlib doesn't cover it

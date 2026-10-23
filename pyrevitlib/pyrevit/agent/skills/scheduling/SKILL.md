@@ -81,5 +81,5 @@ the user export it from Revit after the run ends.
 
 - [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
 - [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
-- [ ] `capture_view(view="Door Schedule")` shows how it looks.
+- [ ] `capture_view(view="Door Schedule", title="Check the door schedule")` shows how it looks.
 - [ ] You told the user the schedule's name and that it is ready to export from Revit.

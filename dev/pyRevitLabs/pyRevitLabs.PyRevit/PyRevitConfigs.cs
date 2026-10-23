@@ -375,6 +375,27 @@ namespace pyRevitLabs.PyRevit {
                 state);
         }
 
+        /// <summary>
+        /// Whether agent requests that read or change the model need a session the user started
+        /// in Revit. The host reads it only when pyRevit loads, so a change applies after the next
+        /// reload.
+        /// </summary>
+        public static bool GetAgentRequireSession() {
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRequireSessionKey,
+                PyRevitConsts.ConfigsAgentRequireSessionDefault);
+        }
+
+        public static void SetAgentRequireSession(bool state) {
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRequireSessionKey,
+                state);
+        }
+
         // telemetry
         public static bool GetTelemetryStatus() {
             IConfigurationService cfg = GetConfigFile();

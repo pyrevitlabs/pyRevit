@@ -4,6 +4,18 @@ namespace pyRevitCLI.Tests;
 
 public class AgentSkillsTests {
     private const string Core = PyRevitAgentSkills.CoreSkill;
+    private const int CharactersClaudeCodeKeeps = 4096;
+
+    [Fact]
+    public void TheGuidanceAndTheCoreSkillFitInTheInstructionsClaudeCodeKeeps() {
+        var template = File.ReadAllText(Path.Combine(PyRevitAgentSkills.ShippedSkillsDir, "INSTRUCTIONS.md"));
+        var instructions = PyRevitAgentSkills.Instructions(PyRevitAgentSkills.Load());
+        var coreSkill = instructions.IndexOf("- " + Core + ":", StringComparison.Ordinal);
+
+        Assert.Equal(template.TrimEnd().Length - "{skills}".Length, template.IndexOf("{skills}", StringComparison.Ordinal));
+        Assert.InRange(coreSkill, 0, CharactersClaudeCodeKeeps);
+        Assert.InRange(instructions.IndexOf('\n', coreSkill), coreSkill, CharactersClaudeCodeKeeps);
+    }
 
     [Fact]
     public void TheShippedSkillsFolderHoldsTheInstructionsAndTheCoreSkill() {

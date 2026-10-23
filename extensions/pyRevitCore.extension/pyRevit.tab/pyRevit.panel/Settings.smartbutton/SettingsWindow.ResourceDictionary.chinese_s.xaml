@@ -400,6 +400,7 @@
     <system:String x:Key="Agent.Description">允许 Claude Code、Codex、Cursor、VS Code 和 OpenCode 等 MCP 编程智能体在 Revit 中运行 Python，以读取和修改当前打开的模型。智能体通过只有您的 Windows 用户才能打开的本地命名管道连接；与 Routes 服务器不同，它不会通过网络对外开放。默认情况下，每次修改模型的智能体运行都需要您在 Revit 中批准。这只能防止智能体出错，无法防范恶意脚本，因此请只连接您信任的智能体。</system:String>
     <system:String x:Key="Agent.Privacy">智能体读取的所有内容（图元名称、参数值、结果）都会发送给智能体的模型提供商。</system:String>
     <system:String x:Key="Agent.Check">智能体主机（测试版）</system:String>
+    <system:String x:Key="Agent.RequireSession">需要会话：只有在智能体面板中启动会话后，智能体才能读取或更改模型（推荐）</system:String>
     <system:String x:Key="Agent.Policy">模型修改</system:String>
     <system:String x:Key="Agent.Policy.Ask">每次修改前在 Revit 中请求我的批准</system:String>
     <system:String x:Key="Agent.Policy.Auto">自动：不询问直接应用修改（每次修改仍是一个撤消步骤）</system:String>

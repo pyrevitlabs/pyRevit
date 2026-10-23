@@ -54,6 +54,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return item.Completion.Task.GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Queues <paramref name="work"/> for the main thread and returns without waiting.
+        /// </summary>
+        /// <remarks>
+        /// For callers on the main thread itself, such as the agent panel, which must not block
+        /// the thread the work needs. The work runs in order with requests from the pipe and must
+        /// handle its own errors; nothing observes them.
+        /// </remarks>
+        /// <returns>False when Revit refused the ExternalEvent, so the work will never run.</returns>
+        public bool Post(Action<UIApplication> work) {
+            var item = new AgentWorkItem(app => {
+                work(app);
+                return null;
+            });
+            lock (queueLock)
+                queue.Enqueue(item);
+
+            var response = externalEvent.Raise();
+            if (response == ExternalEventRequest.Denied || response == ExternalEventRequest.TimedOut)
+                return !TryRemove(item);
+            return true;
+        }
+
         public void Execute(UIApplication app) {
             AgentWorkItem item;
             while (TryDequeue(out item)) {
@@ -126,16 +149,5 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             public TaskCompletionSource<JToken> Completion { get; } =
                 new TaskCompletionSource<JToken>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
-    }
-
-    /// <summary>
-    /// A failure reported to the agent with a stable machine-readable <see cref="Code"/>.
-    /// </summary>
-    public sealed class AgentException : Exception {
-        public AgentException(string code, string message) : base(message) {
-            Code = code;
-        }
-
-        public string Code { get; }
     }
 }
