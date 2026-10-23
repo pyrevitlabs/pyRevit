@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33627.172
@@ -68,6 +68,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "tests\pyRevitLabs.PyRevit.Runtime.Agent.Tests\pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj", "{35C11A0D-1966-4C7D-AB51-D0AA0C1734F4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitCLI.Tests", "tests\pyRevitCLI.Tests\pyRevitCLI.Tests.csproj", "{EC828475-4355-4F79-9206-E56CE41F1BE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Common.Tests", "tests\pyRevitLabs.Common.Tests\pyRevitLabs.Common.Tests.csproj", "{721149FE-0D57-49DC-88D5-5221161E0495}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Emojis.Tests", "tests\pyRevitLabs.Emojis.Tests\pyRevitLabs.Emojis.Tests.csproj", "{67735706-B95A-4612-AA65-FFB509432472}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Tests", "tests\pyRevitLabs.PyRevit.Tests\pyRevitLabs.PyRevit.Tests.csproj", "{38104020-5C1C-4E98-BDF2-81A945B45E20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -331,6 +337,24 @@ Global
 		{EC828475-4355-4F79-9206-E56CE41F1BE8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EC828475-4355-4F79-9206-E56CE41F1BE8}.Release|x86.ActiveCfg = Release|Any CPU
 		{EC828475-4355-4F79-9206-E56CE41F1BE8}.Release|x86.Build.0 = Release|Any CPU
+		{721149FE-0D57-49DC-88D5-5221161E0495}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{721149FE-0D57-49DC-88D5-5221161E0495}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{721149FE-0D57-49DC-88D5-5221161E0495}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{721149FE-0D57-49DC-88D5-5221161E0495}.Release|x64.ActiveCfg = Release|Any CPU
+		{721149FE-0D57-49DC-88D5-5221161E0495}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{721149FE-0D57-49DC-88D5-5221161E0495}.Release|x86.ActiveCfg = Release|Any CPU
+		{67735706-B95A-4612-AA65-FFB509432472}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{67735706-B95A-4612-AA65-FFB509432472}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67735706-B95A-4612-AA65-FFB509432472}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{67735706-B95A-4612-AA65-FFB509432472}.Release|x64.ActiveCfg = Release|Any CPU
+		{67735706-B95A-4612-AA65-FFB509432472}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67735706-B95A-4612-AA65-FFB509432472}.Release|x86.ActiveCfg = Release|Any CPU
+		{38104020-5C1C-4E98-BDF2-81A945B45E20}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{38104020-5C1C-4E98-BDF2-81A945B45E20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38104020-5C1C-4E98-BDF2-81A945B45E20}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{38104020-5C1C-4E98-BDF2-81A945B45E20}.Release|x64.ActiveCfg = Release|Any CPU
+		{38104020-5C1C-4E98-BDF2-81A945B45E20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38104020-5C1C-4E98-BDF2-81A945B45E20}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -343,6 +367,9 @@ Global
 		{6D2C1B4A-3F57-4E8B-9C10-5A7E2D48B931} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{35C11A0D-1966-4C7D-AB51-D0AA0C1734F4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{EC828475-4355-4F79-9206-E56CE41F1BE8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{721149FE-0D57-49DC-88D5-5221161E0495} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{67735706-B95A-4612-AA65-FFB509432472} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{38104020-5C1C-4E98-BDF2-81A945B45E20} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29169547-9C0C-4620-A37C-77CB6B30F4F0}

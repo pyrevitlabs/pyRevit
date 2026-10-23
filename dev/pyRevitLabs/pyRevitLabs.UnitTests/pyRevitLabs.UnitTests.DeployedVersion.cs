@@ -9,6 +9,8 @@ using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class DeployedVersionTests {
         private const string VersionFileContent = "9.9.9.99999+9999";
         private const string BuiltAssemblyName = "pyRevitLabs.PyRevit.dll";

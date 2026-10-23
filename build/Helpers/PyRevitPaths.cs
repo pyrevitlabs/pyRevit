@@ -3,8 +3,7 @@ namespace Build.Helpers;
 /// <summary>
 /// Repository paths and constants used by the build pipeline.
 /// </summary>
-public static class PyRevitPaths
-{
+public static class PyRevitPaths {
     public static string Root { get; private set; } = FindRepositoryRoot();
 
     public static string DevPath => Path.Combine(Root, "dev");
@@ -21,13 +20,6 @@ public static class PyRevitPaths
     public static string Loader342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitLoader.342", "pyRevitLoader.342.csproj");
     public static string Runner2712Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.2712PR", "pyRevitRunner.2712PR.csproj");
     public static string Runner342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.342", "pyRevitRunner.342.csproj");
-    public static string ExtensionParserTestProject => Path.Combine(DevPath, "pyRevitLoader", "pyRevitExtensionParserTester", "pyRevitExtensionParserTest.csproj");
-    public static string ConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Tests", "pyRevitLabs.Configurations.Tests.csproj");
-    public static string IniConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Ini.Tests", "pyRevitLabs.Configurations.Ini.Tests.csproj");
-    public static string CPythonRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests.csproj");
-    public static string CliTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitCLI.Tests", "pyRevitCLI.Tests.csproj");
-    public static string AgentRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj");
-    public static string PyRevitUnitTestProject => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests.csproj");
 
     public static string IronPython2Solution => Path.Combine(DevPath, "modules", "pyRevitLabs.IronPython2.sln");
     public static string IronPython2LibProject => Path.Combine(DevPath, "modules", "pyRevitLabs.ironpython2", "Src", "IronPython", "IronPython.csproj");
@@ -129,21 +121,16 @@ public static class PyRevitPaths
     public static string IsccPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Inno Setup 6", "ISCC.exe");
 
-    public static void Initialize(string? rootOverride = null)
-    {
-        if (!string.IsNullOrWhiteSpace(rootOverride))
-        {
+    public static void Initialize(string? rootOverride = null) {
+        if (!string.IsNullOrWhiteSpace(rootOverride)) {
             Root = Path.GetFullPath(rootOverride);
         }
     }
 
-    private static string FindRepositoryRoot()
-    {
+    private static string FindRepositoryRoot() {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current is not null)
-        {
-            if (File.Exists(Path.Combine(current.FullName, "pyRevitfile")))
-            {
+        while (current is not null) {
+            if (File.Exists(Path.Combine(current.FullName, "pyRevitfile"))) {
                 return current.FullName;
             }
 

@@ -7,6 +7,10 @@ pipe, which can't answer while a command runs; their pyrevitlib side is tested
 in-process instead.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import json
 import os
 import os.path as op

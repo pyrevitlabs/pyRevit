@@ -57,7 +57,7 @@ pipenv run check-docstrings           # Lint docstrings with ruff
 
 ## Testing
 
-Follow the repository testing policy in `docs/testing.md`. Every test that uses the Revit API or requires installed/running Revit runs locally outside CI; all other first-party automated tests must be discovered and run in CI. Require effective `Level` and `Environment` tags, allowing class/module defaults. Keep C# test projects beside their owning modules where practical, with shared discovery rather than class-name allowlists. Measure and ratchet coverage per module. The policy distinguishes these rules from enforcement still awaiting rollout.
+Follow the repository testing policy in `docs/testing.md`. Every test that uses the Revit API or requires installed/running Revit runs locally outside CI; all other first-party automated tests must be discovered and run in CI. Require effective `Level` and `Environment` tags, allowing class/module defaults. Keep C# test projects beside their owning modules where practical, with shared discovery rather than class-name allowlists. Measure and ratchet coverage per module. Run `python dev/tests/run_tests.py` from the repository root for shared discovery, reports, and coverage gates; use `--list` to inspect classification without executing fixtures.
 
 To test in Revit:
 
@@ -89,7 +89,7 @@ pyrevit attach dev default --installed
 ## Code style
 
 - Python: Google docstring convention. `ruff format` runs automatically on commit via a pre-commit hook for any staged Python file in the repo, except paths excluded by the hook (notably `site-packages/`, `pyrevitlib/rpw/`, and `dev/modules/`); it will reformat and fail the commit for review if it changes anything — install it once with `pipenv run pre-commit install`. Also run `pipenv run ruff check --fix <path>` to lint before finishing; that part isn't hook-enforced.
-- C#: matches each area's existing brace convention (see `.editorconfig`: same-line/K&R everywhere except the `pyRevitAssemblyBuilder`/`pyRevitExtensionParser`/`pyRevitExtensionParserTester` trio under `dev/pyRevitLoader/`, which use Allman). `dotnet format` runs automatically on commit via the same pre-commit hook for any staged `.cs` file (vendored `dev/modules/` excluded) and will reformat and fail the commit for review if it changes anything.
+- C#: matches each area's existing brace convention (see `.editorconfig`: same-line/K&R everywhere except `pyRevitAssemblyBuilder`, `pyRevitExtensionParser`, and `tests` under `dev/pyRevitLoader/`, which use Allman). `dotnet format` runs automatically on commit via the same pre-commit hook for any staged `.cs` file (vendored `dev/modules/` excluded) and will reformat and fail the commit for review if it changes anything.
 
 ## Commenting guidelines
 

@@ -6,6 +6,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 
 /// <summary>Guards output fallback invariants without loading the Revit-hosted WPF assembly.</summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class ScriptConsoleSourceTests {
     private static readonly string Source = File.ReadAllText(
         Path.Combine(AppContext.BaseDirectory, "Sources", "ScriptConsole.cs"));
