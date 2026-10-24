@@ -102,9 +102,13 @@ def _catches_base_exception(handler_type):
 
 def _source_lines(source):
     """Split physical source lines without treating string contents as newlines."""
-    lines = re.split(r"(?<=\n)|(?<=\r)(?!\n)", source)
-    if lines[-1] == "":
-        lines.pop()
+    lines = []
+    start = 0
+    for match in re.finditer(r"\r\n|\r|\n", source):
+        lines.append(source[start : match.end()])
+        start = match.end()
+    if start < len(source):
+        lines.append(source[start:])
     return lines
 
 

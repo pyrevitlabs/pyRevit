@@ -100,6 +100,73 @@ class AgentRunnerLinesTests(unittest.TestCase):
             sys.settrace(previous_trace)
         self.fail("The script did not raise ValueError")
 
+    def test_source_lines_matches_reference_splitter(self):
+        """Match a character-based reference for every physical newline style."""
+
+        def reference_split(source):
+            lines = []
+            start = 0
+            index = 0
+            while index < len(source):
+                character = source[index]
+                index += 1
+                if character not in ("\r", "\n"):
+                    continue
+                if character == "\r" and source[index : index + 1] == "\n":
+                    index += 1
+                lines.append(source[start:index])
+                start = index
+            if start < len(source):
+                lines.append(source[start:])
+            return lines
+
+        for source in (
+            "",
+            "first\nsecond",
+            "first\nsecond\n",
+            "first\r\nsecond",
+            "first\r\nsecond\r\n",
+            "first\rsecond",
+            "first\rsecond\r",
+            "first\r\nsecond\rthird\nfourth",
+            "first\r\nsecond\rthird\nfourth\r\n",
+            "\n\r\n\r",
+            "markers = '\x0c\x1c\x1d\x1e\x85\u2028\u2029'",
+            "markers = '\x0c\x1c\x1d\x1e\x85\u2028\u2029'\nresult = markers\n",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(
+                    reference_split(source), self.runner._source_lines(source)
+                )
+
+    def test_source_line_count_matches_ast_locations(self):
+        """Count the same physical lines as the parser in sample scripts."""
+        samples = (
+            SAMPLE,
+            SAMPLE.replace("        pass", "        raise ValueError('inside with')"),
+            SAMPLE + "try:\n    pass\nexcept:\n    pass\n",
+            "try:\n    raise ValueError()\nexcept (\n    BaseException,\n"
+            "    SystemExit\n) as error:\n    raise\n",
+            "markers = '\x0c\x1c\x1d\x1e\x85\u2028\u2029'\n"
+            "try:\n    pass\nexcept BaseException:\n    pass\n",
+        )
+        for sample in samples:
+            for newline in ("\n", "\r\n", "\r"):
+                for trailing_newline in (False, True):
+                    source = sample.rstrip("\n").replace("\n", newline)
+                    if trailing_newline:
+                        source += newline
+                    with self.subTest(source=source):
+                        tree = ast.parse(source)
+                        last_line = max(
+                            node.lineno
+                            for node in ast.walk(tree)
+                            if hasattr(node, "lineno")
+                        )
+                        self.assertEqual(
+                            last_line, len(self.runner._source_lines(source))
+                        )
+
     def test_decorated_function_after_with(self):
         """Keep the original call and raise lines after a completed with block."""
         self.assertEqual(
