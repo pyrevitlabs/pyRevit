@@ -54,7 +54,7 @@ from pyrevit.compat import get_elementid_value_func
 - `DB` and `UI` come from `pyrevit`, never `import Autodesk.Revit.DB` or `clr.AddReference("RevitAPI")`.
 - Standard library first, then `pyrevit`, then bundle-local modules, separated by blank lines.
 - .NET types come from `pyrevit.framework`, not from `System` directly: `from pyrevit.framework import List, Dictionary, ObservableCollection, Forms, Drawing, Media, Path, File`. The module already loads the right assemblies for the running Revit (.NET Framework vs .NET 8/10) and engine, so the import works everywhere instead of only where you tested it. It re-exports the common `System`, `System.Collections.Generic`, `System.IO`, `System.Windows` and `System.Windows.Forms` types. Check there before writing `from System... import`, e.g. `from pyrevit.framework import List` instead of `from System.Collections.Generic import List`.
-- Within the `pyrevit` imports, group by role on separate lines and label each group with a trailing comment: `helpers` (what the script uses to talk to the user), `constants` (host and environment facts), `wrappers` (what it uses to talk to Revit). This is the one place trailing comments are wanted. Reading the block tells you at a glance what a script touches, and keeps `from pyrevit import ...` from turning into one long unsorted line.
+- Within the `pyrevit` imports, group by role on separate lines: `helpers` (what the script uses to talk to the user), `constants` (host and environment facts), `wrappers` (what it uses to talk to Revit). Reading the block tells you at a glance what a script touches, and keeps `from pyrevit import ...` from turning into one long unsorted line.
 
 ## Use the library before writing raw API
 
