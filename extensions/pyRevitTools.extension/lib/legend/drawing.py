@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Shared drawing helpers for the Filter Legend tool."""
+"""Low-level drawing primitives for legend views.
+
+Every helper measures what Revit actually rendered instead of assuming a
+font size, so layouts stay aligned whatever TextNoteType a project uses.
+``legend.table`` composes these into whole legend tables.
+"""
 
 from pyrevit import DB
 from pyrevit.framework import List
@@ -47,13 +52,14 @@ def create_text_note(
     return note
 
 
-def create_swatch_region(doc, view, x, y, width, height):
+def create_swatch_region(doc, view, x, y, width, height, region_type_id=None):
     """Create a small rectangular FilledRegion used as a color swatch.
 
-    Uses the first available FilledRegionType in the document purely as a
-    boundary/host element -- its actual visual appearance is overridden
-    per-instance afterwards via View.SetElementOverrides, so the specific
-    type picked here does not matter.
+    Without ``region_type_id`` the first FilledRegionType in the document
+    is used purely as a boundary/host element -- callers are expected to
+    override its appearance per-instance via View.SetElementOverrides.
+    Pass a type explicitly when the overrides may leave the type's own
+    pattern visible (e.g. line-color-only overrides).
 
     Args:
         doc: Document
@@ -62,6 +68,8 @@ def create_swatch_region(doc, view, x, y, width, height):
         y: bottom-left Y coordinate in feet
         width: swatch width in feet (> 0)
         height: swatch height in feet (> 0)
+        region_type_id: ElementId of the FilledRegionType to use, or None
+            for the first one in the document
 
     Returns:
         FilledRegion: the created element
@@ -69,7 +77,7 @@ def create_swatch_region(doc, view, x, y, width, height):
     Raises:
         ValueError: if no FilledRegionType exists in the project
     """
-    frt_id = (
+    frt_id = region_type_id or (
         DB.FilteredElementCollector(doc).OfClass(DB.FilledRegionType).FirstElementId()
     )
     if frt_id is None or frt_id == DB.ElementId.InvalidElementId:
@@ -140,9 +148,10 @@ def text_note_horizontal_extent(note, view):
 
 
 def autofit_column_widths(doc, view, notes_by_column, base_offsets, min_gap=0.0):
-    """Widen any column whose rendered text overflows its configured
-    width, shifting every column after it right to compensate.
+    """Widen overflowing columns, shifting every later column right.
 
+    A column overflows when its widest rendered note exceeds its
+    configured width.
     Must be called after *every* row (header + data) has been created --
     only then is the widest note in each column known. Moves notes in
     place via ElementTransformUtils rather than deleting/recreating
@@ -195,9 +204,9 @@ def autofit_column_widths(doc, view, notes_by_column, base_offsets, min_gap=0.0)
 
 
 def clear_legend_view(doc, view, managed_ids=None):
-    """Delete a previously-generated legend's own elements so it can be
-    redrawn from scratch, without touching any annotation the user may
-    have added to the legend by hand.
+    """Delete a previously generated legend's own elements before a redraw.
+
+    Annotations the user added to the legend by hand are left alone.
 
     Args:
         doc: Document
@@ -212,9 +221,7 @@ def clear_legend_view(doc, view, managed_ids=None):
     Must be called inside an open transaction.
     """
     if managed_ids is not None:
-        to_delete = [
-            eid for eid in managed_ids if doc.GetElement(eid) is not None
-        ]
+        to_delete = [eid for eid in managed_ids if doc.GetElement(eid) is not None]
     else:
         to_delete = []
         for cls in (DB.TextNote, DB.FilledRegion):
@@ -240,9 +247,11 @@ def create_legend_row(
     swatch_col_width=None,
     swatch_height=None,
     min_row_height=0.0,
+    region_type_id=None,
 ):
-    """Create one row of left-aligned TextNotes, optionally with a color
-    swatch, and report how far the next row's top should be offset.
+    """Create one row of left-aligned TextNotes, optionally with a swatch.
+
+    Also reports how far the next row's top should be offset.
 
     All text columns are placed with their top at `y_top`. The row's
     real height is then measured from the first note's bounding box
@@ -266,6 +275,8 @@ def create_legend_row(
         min_row_height: minimum vertical advance regardless of measured
             text/swatch height (pass the user's configured row height
             here so short text/small fonts don't collapse row spacing)
+        region_type_id: FilledRegionType for the swatch, see
+            create_swatch_region
 
     Returns:
         tuple: (notes, swatch_or_None, row_height) -- row_height is how
@@ -292,7 +303,13 @@ def create_legend_row(
         swatch_h = swatch_height if swatch_height is not None else row_height
         center_y = (top_y + bottom_y) / 2.0
         swatch = create_swatch_region(
-            doc, view, 0.0, center_y - swatch_h / 2.0, swatch_col_width, swatch_h
+            doc,
+            view,
+            0.0,
+            center_y - swatch_h / 2.0,
+            swatch_col_width,
+            swatch_h,
+            region_type_id=region_type_id,
         )
         row_height = max(row_height, swatch_h)
 
