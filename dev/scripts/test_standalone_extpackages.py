@@ -1,4 +1,4 @@
-"""Exercise extension config initialization without a Revit host."""
+"""Exercise extension load-state resolution without a Revit host."""
 
 import importlib.util
 import json
@@ -83,8 +83,8 @@ def _load_extpackages():
     return extpackages, configparser
 
 
-class ExtensionPackageConfigTests(unittest.TestCase):
-    """Protect package state when another subsystem creates its section first."""
+class ExtensionPackageLoadStateTests(unittest.TestCase):
+    """Load state resolves the manifest default when no choice is stored."""
 
     @classmethod
     def setUpClass(cls):
@@ -114,86 +114,81 @@ class ExtensionPackageConfigTests(unittest.TestCase):
             {"name": "Example", "url": "https://example.com/example.git"}
         )
 
-    def test_new_section_persists_defaults(self):
-        """Keep the non-credential installation path unchanged."""
+    def _assert_nothing_written(self, before):
+        self.assertEqual([], self.saved)
+        self.assertEqual(before, self.backend.sections)
+
+    def _credential_only_section(self):
+        config = self.sections.add_section("Example.extension")
+        config.credential = "sealed-test-credential"
+        return json.loads(json.dumps(self.backend.sections))
+
+    def test_absent_section_uses_manifest_default(self):
+        """No section at all: the manifest default decides and nothing is created."""
+        self.assertTrue(self.package.is_enabled)
+        self.package.default_enabled = False
+        self.assertFalse(self.package.is_enabled)
+
+        self._assert_nothing_written({})
+
+    def test_credential_only_section_honours_opt_out_manifest(self):
+        """A section created by storing a credential is not an explicit enable."""
+        before = self._credential_only_section()
+        self.package.default_enabled = False
+
+        self.assertFalse(self.package.is_enabled)
+        self._assert_nothing_written(before)
+
+    def test_credential_only_section_honours_default_manifest(self):
+        """Reading the load state must not raise when the key is absent."""
+        before = self._credential_only_section()
+
+        self.assertTrue(self.package.is_enabled)
+        self._assert_nothing_written(before)
+
+    def test_explicit_disable_wins_over_manifest(self):
+        """An explicit disabled=true is honoured regardless of the manifest."""
+        self.sections.add_section("Example.extension").disabled = True
+        before = json.loads(json.dumps(self.backend.sections))
+
+        self.assertFalse(self.package.is_enabled)
+        self._assert_nothing_written(before)
+
+    def test_explicit_enable_wins_over_manifest(self):
+        """An explicit disabled=false is honoured regardless of the manifest."""
+        self.sections.add_section("Example.extension").disabled = False
+        before = json.loads(json.dumps(self.backend.sections))
+        self.package.default_enabled = False
+
+        self.assertTrue(self.package.is_enabled)
+        self._assert_nothing_written(before)
+
+    def test_config_access_seeds_nothing(self):
+        """The write path creates the section but persists no defaults."""
+        self.package.default_enabled = False
+        self.package.builtin = True
+
         config = self.package.config
 
-        self.assertFalse(config.disabled)
-        self.assertFalse(config.private_repo)
-        self.assertEqual(1, len(self.saved))
-        self.assertEqual("false", self.saved[-1]["Example.extension"]["disabled"])
-
-    def test_credential_created_section_persists_missing_defaults(self):
-        """Token-first installation must persist load state without losing auth."""
-        config = self.sections.add_section("Example.extension")
-        config.credential = "sealed-test-credential"
-        config.private_repo = True
-
-        self.assertTrue(self.package.is_enabled)
-
-        self.assertFalse(config.disabled)
-        self.assertTrue(config.private_repo)
-        self.assertEqual("sealed-test-credential", config.credential)
-        self.assertEqual(1, len(self.saved))
-        self.assertEqual("false", self.saved[-1]["Example.extension"]["disabled"])
-        self.assertEqual(
-            '"sealed-test-credential"',
-            self.saved[-1]["Example.extension"]["credential"],
-        )
-
-    def test_credential_only_section_initializes_both_defaults(self):
-        """Honor manifest defaults even when credentials precede package state."""
-        config = self.sections.add_section("Example.extension")
-        config.credential = "sealed-test-credential"
-        self.package.default_enabled = False
-        self.package.builtin = True
-
-        self.assertFalse(self.package.is_enabled)
-
-        self.assertTrue(config.disabled)
-        self.assertTrue(config.private_repo)
-        self.assertEqual("sealed-test-credential", config.credential)
-
-    def test_partial_section_preserves_disabled_state(self):
-        """Repairing unrelated defaults must not re-enable a disabled package."""
-        config = self.sections.add_section("Example.extension")
-        config.disabled = True
-
-        self.assertFalse(self.package.is_enabled)
-
-        self.assertTrue(config.disabled)
-        self.assertFalse(config.private_repo)
-        self.assertEqual(1, len(self.saved))
-
-    def test_complete_section_is_not_overwritten_or_saved(self):
-        """Explicit user choices take precedence over changed manifest defaults."""
-        config = self.sections.add_section("Example.extension")
-        config.disabled = False
-        config.private_repo = False
-        self.package.default_enabled = False
-        self.package.builtin = True
-
-        self.assertTrue(self.package.is_enabled)
-        self.assertFalse(self.package.config.private_repo)
+        self.assertFalse(config.has_option("disabled"))
+        self.assertFalse(config.has_option("private_repo"))
         self.assertEqual([], self.saved)
 
-    def test_repeated_access_does_not_save_again(self):
-        """Normal package reads must not repeatedly write the configuration."""
-        self.package.config
-        self.package.config
+    def test_toggle_from_manifest_default_stores_explicit_choice(self):
+        """Toggling an opt-out package with no stored choice enables it."""
+        before = self._credential_only_section()
+        self.package.default_enabled = False
 
+        self.package.toggle_package()
+
+        section = self.backend.sections["Example.extension"]
+        self.assertEqual("false", section["disabled"])
+        self.assertEqual(
+            before["Example.extension"]["credential"], section["credential"]
+        )
+        self.assertNotIn("private_repo", section)
+        self.assertTrue(self.package.is_enabled)
         self.assertEqual(1, len(self.saved))
-
-    def test_config_read_errors_are_not_treated_as_missing_sections(self):
-        """A backend failure must not reset existing package state."""
-        self.sections.add_section("Example.extension")
-        with patch.object(
-            self.extpackages.user_config,
-            "get_section",
-            side_effect=RuntimeError("Config read failed"),
-        ):
-            with self.assertRaisesRegex(RuntimeError, "Config read failed"):
-                self.package.config
 
 
 if __name__ == "__main__":

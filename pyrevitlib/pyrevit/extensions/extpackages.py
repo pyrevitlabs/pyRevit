@@ -264,39 +264,36 @@ class ExtensionPackage:
     def config(self):
         """Returns a valid config manager for this extension.
 
-        All config parameters will be saved in user config file.
+        This is the write path: the section is created if absent. Nothing is
+        seeded into it and nothing is saved; callers that change it save it.
         Section key is the extension folder name (e.g. extension_test.extension)
         so it matches the install path and the C# loader.
 
-        Missing state options are initialized even when credential storage has
-        already created the section. Existing settings and credentials are
-        preserved; changes are saved only when defaults are added.
+        Use ``is_enabled`` to read the load state, which does not create the
+        section.
         """
         section_name = self.config_section_name
         if user_config.has_section(section_name):
-            cfg_section = user_config.get_section(section_name)
-        else:
-            cfg_section = user_config.add_section(section_name)
-
-        defaults_added = False
-        if not cfg_section.has_option("disabled"):
-            cfg_section.disabled = not self.default_enabled
-            defaults_added = True
-        if not cfg_section.has_option("private_repo"):
-            cfg_section.private_repo = self.builtin
-            defaults_added = True
-        if defaults_added:
-            user_config.save_changes()
-        return cfg_section
+            return user_config.get_section(section_name)
+        return user_config.add_section(section_name)
 
     @property
     def is_enabled(self):
         """Checks the default and user configured load state of the extension.
 
+        An explicit ``disabled`` option wins. When it is absent (no section, or
+        a section created by storing a credential), the manifest's
+        ``default_enabled`` decides, matching the C# loader. Writes nothing.
+
         Returns:
             (bool): True if package should be loaded
         """
-        return not self.config.disabled
+        default_disabled = not self.default_enabled
+        section_name = self.config_section_name
+        if not user_config.has_section(section_name):
+            return not default_disabled
+        section = user_config.get_section(section_name)
+        return not section.get_option("disabled", default_disabled)
 
     @property
     def user_has_access(self):
@@ -332,7 +329,7 @@ class ExtensionPackage:
 
         A disabled package won't be loaded in the next session.
         """
-        self.config.disabled = not self.config.disabled
+        self.config.disabled = self.is_enabled
         user_config.save_changes()
 
 
