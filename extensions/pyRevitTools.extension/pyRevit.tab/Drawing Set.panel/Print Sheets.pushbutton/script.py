@@ -268,7 +268,7 @@ class PrintUtils:
     @staticmethod
     def pdf_opts(hcb=True, hsb=True, hrp=True, hvt=True, mcl=True, print_params=None):
         """Build PDF export options and map compatible print settings."""
-        opts = DB.PDFExportOptions()
+        opts = DB.PDFExportOptions()  # compat-ignore: callers gate on IS_REVIT_2022_OR_NEWER
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
         opts.HideReferencePlane = hrp
