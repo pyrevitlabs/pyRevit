@@ -292,6 +292,22 @@ Use preprocessor directives to handle API differences:
 #endif
 ```
 
+### Python scripts: refresh the API catalog
+
+The Python-side counterpart is the [Revit API compatibility lint](revit-api-compat.md).
+Once the new year's `Nice3point.Revit.Api.RevitAPI` package is on NuGet, regenerate
+its catalog so CI knows the new year's additions and removals (the build fails
+until the catalog's years match the `REVIT<year>` constants):
+
+```bash
+pip install dnfile
+python dev/scripts/build_revit_api_catalog.py
+python dev/scripts/check_revit_api_compat.py --baseline
+```
+
+Then run **Revit API Catalog Tests** from DevTools in the new Revit to confirm the
+catalog against the live API.
+
 ### Adding new version constants
 
 If needed, add new `_OR_GREATER` constants in `dev/Directory.Build.targets`:

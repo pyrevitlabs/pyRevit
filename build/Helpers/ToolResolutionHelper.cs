@@ -58,6 +58,47 @@ public static class ToolResolutionHelper
             configuredExe);
     }
 
+    /// <summary>
+    /// Finds the first Python launcher on PATH that is at least version 3.10.
+    /// </summary>
+    public static string ResolvePythonExecutable()
+    {
+        var python = new[] { "python", "python3", "py" }
+            .Select(ResolveOnPath)
+            .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate) && IsPython310OrNewer(candidate));
+        return python ?? throw new FileNotFoundException(
+            "Python 3.10 or newer is required for the Revit API compatibility lint but was not found on PATH.");
+    }
+
+    private static bool IsPython310OrNewer(string executable)
+    {
+        var startInfo = new ProcessStartInfo(executable)
+        {
+            Arguments = "-c \"import sys; print(int(sys.version_info >= (3, 10)))\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        try
+        {
+            using var process = Process.Start(startInfo);
+            if (process is null)
+            {
+                return false;
+            }
+
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+            return process.ExitCode == 0 && output == "1";
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+    }
+
     public static string ResolvePowerShellExecutable()
     {
         var candidates = new[]

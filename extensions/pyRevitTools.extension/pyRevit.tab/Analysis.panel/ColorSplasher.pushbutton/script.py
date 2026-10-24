@@ -365,6 +365,8 @@ def ensure_color_fill_scheme(category):
 
     Rooms, spaces and areas may not show element overrides without one.
     """
+    if not HOST_APP.is_newer_than(2021):
+        return
     category_id = category.category.Id
     if active_view.GetColorFillSchemeId(category_id) != DB.ElementId.InvalidElementId:
         return
