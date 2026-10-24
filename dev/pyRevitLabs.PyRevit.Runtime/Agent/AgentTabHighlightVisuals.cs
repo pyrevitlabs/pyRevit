@@ -21,8 +21,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private readonly Dispatcher dispatcher;
-        private readonly Dictionary<long, TabItem[]> tabs = new Dictionary<long, TabItem[]>();
-        private readonly Dictionary<long, List<TabValues>> values = new Dictionary<long, List<TabValues>>();
+        private readonly Dictionary<long, Func<IEnumerable<TabItem>>> tabs = new Dictionary<long, Func<IEnumerable<TabItem>>>();
+        private readonly Dictionary<long, Dictionary<TabItem, TabValues>> values = new Dictionary<long, Dictionary<TabItem, TabValues>>();
         internal Action Refresh;
         internal Action<Exception> VisualFailure;
 
@@ -33,7 +33,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         internal void Register(UIApplication application, Document document, long key) {
             dispatcher.VerifyAccess();
-            tabs[key] = DocumentTabLocator.FindTabs(application, document).ToArray();
+            tabs[key] = () => DocumentTabLocator.FindTabs(application, document);
         }
 
         internal void Schedule(int milliseconds, Action callback) {
@@ -48,20 +48,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             timer.Start();
         }
 
-        /// <summary>Installs an overlay on every native-identity match; an absent tab is not an error.</summary>
+        /// <summary>Refreshes native-identity matches, restores departed tabs and overlays every current tab.</summary>
+        /// <param name="documentKey">The registered native document identity.</param>
+        /// <param name="tooltip">The label applied to every current document tab.</param>
+        /// <returns>Whether the document currently has any matching tabs.</returns>
         public bool Apply(long documentKey, string tooltip) {
             dispatcher.VerifyAccess();
-            if (!tabs.TryGetValue(documentKey, out var documentTabs) || documentTabs.Length == 0)
+            if (!tabs.TryGetValue(documentKey, out var findTabs))
                 return false;
+            var documentTabs = new HashSet<TabItem>(findTabs());
             if (!values.TryGetValue(documentKey, out var documentValues)) {
-                documentValues = new List<TabValues>();
+                documentValues = new Dictionary<TabItem, TabValues>();
                 values.Add(documentKey, documentValues);
-                foreach (var tab in documentTabs) {
-                    var entry = new TabValues {
+            }
+            foreach (var tab in documentValues.Keys.Where(tab => !documentTabs.Contains(tab)).ToArray()) {
+                Restore(documentValues[tab]);
+                documentValues.Remove(tab);
+            }
+            foreach (var tab in documentTabs) {
+                if (!documentValues.TryGetValue(tab, out var entry)) {
+                    entry = new TabValues {
                         Style = Capture(tab, FrameworkElement.StyleProperty),
                         Tooltip = Capture(tab, FrameworkElement.ToolTipProperty)
                     };
-                    documentValues.Add(entry);
+                    documentValues.Add(tab, entry);
                     var style = new Style(tab.GetType(), tab.Style);
                     style.Setters.Add(new Setter(TabItem.BackgroundProperty, PyRevitConsts.PyRevitAccentBrush));
                     style.Setters.Add(new Setter(TabItem.ForegroundProperty, Brushes.Black));
@@ -73,9 +83,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                     entry.Style.Apply(style);
                 }
-            }
-            foreach (var entry in documentValues)
                 entry.Tooltip.Apply(tooltip);
+            }
+            if (documentTabs.Count == 0)
+                return false;
             dispatcher.Invoke(DispatcherPriority.Render, new Action(() => { }));
             return true;
         }
@@ -99,15 +110,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (!values.TryGetValue(documentKey, out var documentValues))
                 return;
             Exception failure = null;
-            foreach (var entry in documentValues) {
-                try { entry.Style.Restore(); }
-                catch (Exception exception) { failure = exception; }
-                try { entry.Tooltip.Restore(); }
+            foreach (var entry in documentValues.Values) {
+                try { Restore(entry); }
                 catch (Exception exception) { failure = exception; }
             }
             if (failure != null)
                 throw failure;
             values.Remove(documentKey);
+        }
+
+        private static void Restore(TabValues entry) {
+            try { entry.Style.Restore(); }
+            finally { entry.Tooltip.Restore(); }
         }
 
         /// <summary>Releases tab references after the last lease and visibility delay end.</summary>

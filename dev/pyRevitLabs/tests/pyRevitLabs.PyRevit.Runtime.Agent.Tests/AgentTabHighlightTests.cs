@@ -6,12 +6,23 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
     /// <summary>Exercises the Revit-free lease, timing, failure and property ownership contracts.</summary>
     public sealed class AgentTabHighlightTests {
+        private sealed class Tab {
+            internal readonly object Original = new object();
+            internal object Value;
+
+            internal Tab() {
+                Value = Original;
+            }
+        }
+
         private sealed class Harness : IAgentTabHighlightVisuals {
             internal long Now;
             internal readonly List<(long Due, Action Callback)> Scheduled = new List<(long, Action)>();
             internal readonly Dictionary<long, string> Values = new Dictionary<long, string>();
             internal readonly Dictionary<long, object> Installed = new Dictionary<long, object>();
             internal readonly List<long> Restored = new List<long>();
+            internal readonly Dictionary<long, List<Tab>> Tabs = new Dictionary<long, List<Tab>>();
+            private readonly Dictionary<long, Dictionary<Tab, AgentTabHighlightValue>> tabValues = new Dictionary<long, Dictionary<Tab, AgentTabHighlightValue>>();
             internal bool HasTabs = true;
             internal bool Fail;
             internal int Logs;
@@ -26,6 +37,27 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
             public bool Apply(long key, string tooltip) {
                 if (!HasTabs)
                     return false;
+                if (Tabs.TryGetValue(key, out var currentTabs)) {
+                    if (!tabValues.TryGetValue(key, out var paintedTabs)) {
+                        paintedTabs = new Dictionary<Tab, AgentTabHighlightValue>();
+                        tabValues.Add(key, paintedTabs);
+                    }
+                    foreach (var tab in paintedTabs.Keys.Except(currentTabs).ToArray()) {
+                        paintedTabs[tab].Restore();
+                        paintedTabs.Remove(tab);
+                    }
+                    foreach (var tab in currentTabs) {
+                        if (!paintedTabs.TryGetValue(tab, out var property)) {
+                            var original = tab.Value;
+                            property = new AgentTabHighlightValue(() => tab.Value,
+                                value => tab.Value = value, () => tab.Value = original);
+                            paintedTabs.Add(tab, property);
+                        }
+                        property.Apply(tooltip);
+                    }
+                    if (currentTabs.Count == 0)
+                        return false;
+                }
                 Values[key] = tooltip;
                 Installed[key] = new object();
                 if (Fail)
@@ -35,6 +67,11 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             /// <summary>Removes the fake visual properties owned by the target.</summary>
             public void Restore(long key) {
+                if (tabValues.TryGetValue(key, out var paintedTabs)) {
+                    foreach (var property in paintedTabs.Values)
+                        property.Restore();
+                    tabValues.Remove(key);
+                }
                 Values.Remove(key);
                 Installed.Remove(key);
                 Restored.Add(key);
@@ -139,6 +176,55 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
             harness.Coordinator.End(second);
             Assert.Equal("Agent: First (awaiting approval)", harness.Values[1]);
             Assert.Empty(harness.Restored);
+        }
+
+        /// <summary>Approval paints every current tab and restores a tab that left the document.</summary>
+        [Fact]
+        public void ApprovalRefreshReconcilesChangedTabs() {
+            var harness = new Harness();
+            var vanished = new Tab();
+            var retained = new Tab();
+            var added = new Tab();
+            harness.Tabs[1] = new List<Tab> { vanished, retained };
+            var lease = harness.Coordinator.Begin(1, "Run");
+            harness.Tabs[1] = new List<Tab> { retained, added };
+            harness.Coordinator.AwaitApproval(lease);
+            Assert.Same(vanished.Original, vanished.Value);
+            Assert.Equal("Agent: Run (awaiting approval)", retained.Value);
+            Assert.Equal("Agent: Run (awaiting approval)", added.Value);
+        }
+
+        /// <summary>Ending a lease restores both initial tabs and tabs painted during approval.</summary>
+        [Fact]
+        public void EndRestoresTabsAddedAfterBegin() {
+            var harness = new Harness();
+            var initial = new Tab();
+            var added = new Tab();
+            harness.Tabs[1] = new List<Tab> { initial };
+            var lease = harness.Coordinator.Begin(1, "Run");
+            harness.Tabs[1].Add(added);
+            harness.Coordinator.AwaitApproval(lease);
+            harness.Coordinator.End(lease);
+            harness.Advance(1500);
+            Assert.Same(initial.Original, initial.Value);
+            Assert.Same(added.Original, added.Value);
+            Assert.Empty(harness.Values);
+        }
+
+        /// <summary>A refresh discovers new tabs and preserves another owner's value on a departed tab.</summary>
+        [Fact]
+        public void RefreshReconcilesTabsWithoutRestoringOtherOwners() {
+            var harness = new Harness();
+            var vanished = new Tab();
+            var added = new Tab();
+            harness.Tabs[1] = new List<Tab> { vanished };
+            harness.Coordinator.Begin(1, "Run");
+            var otherOwner = new object();
+            vanished.Value = otherOwner;
+            harness.Tabs[1] = new List<Tab> { added };
+            harness.Coordinator.Refresh();
+            Assert.Same(otherOwner, vanished.Value);
+            Assert.Equal("Agent: Run", added.Value);
         }
 
         /// <summary>Restoration uses identity and leaves independently replaced property values intact.</summary>
