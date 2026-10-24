@@ -23,6 +23,7 @@ import os.path as op
 import sys
 import threading
 import time
+import tokenize
 import traceback
 
 try:
@@ -75,13 +76,16 @@ class _NarrowBroadHandlers(ast.NodeTransformer):
 
     def __init__(self):
         ast.NodeTransformer.__init__(self)
-        self.narrowed = 0
+        self.narrowed = []
 
     def visit_ExceptHandler(self, node):
         self.generic_visit(node)
         if _catches_base_exception(node.type):
-            node.type = ast.Name(id="Exception", ctx=ast.Load())
-            self.narrowed += 1
+            original_type = node.type
+            node.type = ast.copy_location(
+                ast.Name(id="Exception", ctx=ast.Load()), original_type or node
+            )
+            self.narrowed.append(node)
         return node
 
 
@@ -95,6 +99,45 @@ def _catches_base_exception(handler_type):
     return False
 
 
+def _narrow_source_handlers(source, handlers):
+    """Rewrite only handler headers without compiling an AST on IronPython.
+
+    IronPython loses source lines when compiling ASTs even when their locations
+    are populated. Keep the original source and its newline count instead,
+    including multiline exception tuples and Python 2 exception bindings.
+    """
+    positions = set((node.lineno, node.col_offset) for node in handlers)
+    lines = source.splitlines(True)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+    replacements = []
+    header_start = None
+    depth = 0
+    for token in tokenize.generate_tokens(StringIO(source).readline):
+        token_type, text, start, end, _ = token
+        if header_start is None:
+            if text == "except" and start in positions:
+                header_start = end
+                depth = 0
+            continue
+        if depth == 0 and text in (":", "as", ","):
+            first = offsets[header_start[0] - 1] + header_start[1]
+            last = offsets[start[0] - 1] + start[1]
+            newlines = source[first:last].count("\n")
+            replacement = " (Exception" + "\n" * newlines + ") "
+            replacements.append((first, last, replacement))
+            header_start = None
+        elif token_type == tokenize.OP:
+            if text in ("(", "[", "{"):
+                depth += 1
+            elif text in (")", "]", "}"):
+                depth -= 1
+    for first, last, replacement in reversed(replacements):
+        source = source[:first] + replacement + source[last:]
+    return source
+
+
 def _compile_source(source):
     """Compile the agent source with broad exception handlers narrowed.
 
@@ -106,16 +149,16 @@ def _compile_source(source):
         compiled that way can swallow its own timeout.
 
     Note:
-        IronPython reports every line as line 1 for code compiled from an AST,
-        so the source text is compiled whenever no handler needed narrowing.
+        Compile source text, not an AST: IronPython otherwise reports every
+        script frame as line 1, including unchanged nested function bodies.
     """
     try:
         narrower = _NarrowBroadHandlers()
-        tree = narrower.visit(ast.parse(source, SOURCE_NAME, "exec"))
+        narrower.visit(ast.parse(source, SOURCE_NAME, "exec"))
         if not narrower.narrowed:
             return compile(source, SOURCE_NAME, "exec"), None
-        ast.fix_missing_locations(tree)
-        return compile(tree, SOURCE_NAME, "exec"), None
+        narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
+        return compile(narrowed_source, SOURCE_NAME, "exec"), None
     except Exception as ex:
         return compile(source, SOURCE_NAME, "exec"), "{}: {}".format(
             type(ex).__name__, _safe_text(ex)
