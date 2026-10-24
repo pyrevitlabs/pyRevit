@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Compile Include="TestHelpers\TempFileTestBase.cs" />
+    <Compile Include="DynamoGraphSelectionTests.cs" />
     <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
     <Compile Include="MockLogger.cs" />
     <Compile Include="DarkIconTests.cs" />
