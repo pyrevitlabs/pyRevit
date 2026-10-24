@@ -225,7 +225,9 @@ Rules the host enforces:
   this; on CPython a watchdog thread is the backstop.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
-- The document can't be saved, closed or synchronized during a run.
+- Documents can't be saved or synchronized during a run.
+  Closing is blocked for documents open when the run started.
+  The script may close documents it creates or opens during the run.
 
 The MCP server's instructions teach agents these conventions, plus units (internal
 feet) and `ElementId.Value` on Revit 2024+.
@@ -414,7 +416,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
     - **any mode**, another document open at the start or opened from disk during the run changed: roll back every group.
-      The run fails with `other_document_modified`.
+      The run fails with `other_document_modified` if the script completed successfully and left no transaction open.
       Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
