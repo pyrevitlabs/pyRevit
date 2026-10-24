@@ -73,6 +73,7 @@ namespace pyRevitCLI {
         internal static string AgentDirOverride;
 
         internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
+        internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;
 
         public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
@@ -244,12 +245,16 @@ namespace pyRevitCLI {
         private static bool IsAlive(AgentInstance instance) {
             try {
                 using (var process = Process.GetProcessById(instance.ProcessId)) {
-                    if (process.HasExited || !string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
-                        return false;
+                    try {
+                        if (process.HasExited || !string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
+                            return false;
 
-                    if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)
-                        && process.StartTime.ToUniversalTime() - started.UtcDateTime <= TimeSpan.FromSeconds(2))
-                        return true;
+                        if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)
+                            && ProcessStartTimeReader(process).ToUniversalTime() - started.UtcDateTime <= TimeSpan.FromSeconds(2))
+                            return true;
+                    }
+                    catch (Exception) {
+                    }
 
                     return !string.IsNullOrWhiteSpace(instance.Pipe) && File.Exists(@"\\.\pipe\" + instance.Pipe);
                 }

@@ -79,6 +79,37 @@ public class AgentClientTests : IDisposable {
         Assert.Empty(host.Requests);
     }
 
+    /// <summary>Unavailable process metadata falls back to an existing pipe without connecting.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AccessDeniedReadingProcessMetadataKeepsARegistrationWithAnExistingPipe(bool denyStartTime) {
+        Assert.True(SpinWait.SpinUntil(() => File.Exists(@"\\.\pipe\" + host.PipeName), TimeSpan.FromSeconds(5)));
+        if (denyStartTime)
+            PyRevitAgentClient.ProcessStartTimeReader = process => throw new System.ComponentModel.Win32Exception(5);
+        else
+            PyRevitAgentClient.ProcessNameReader = process => throw new System.ComponentModel.Win32Exception(5);
+
+        Assert.Equal("2090", PyRevitAgentClient.Resolve(null).RevitVersion);
+        Assert.Empty(host.Requests);
+    }
+
+    /// <summary>Unavailable process metadata does not preserve a registration whose pipe is absent.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AccessDeniedReadingProcessMetadataRemovesARegistrationWithoutAPipe(bool denyStartTime) {
+        if (denyStartTime)
+            PyRevitAgentClient.ProcessStartTimeReader = process => throw new System.ComponentModel.Win32Exception(5);
+        else
+            PyRevitAgentClient.ProcessNameReader = process => throw new System.ComponentModel.Win32Exception(5);
+        host.Register("2089", Environment.ProcessId, DateTime.UtcNow, fileName: "denied.json",
+            pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+
+        Assert.DoesNotContain(PyRevitAgentClient.GetInstances(), instance => instance.RevitVersion == "2089");
+        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "denied.json")));
+    }
+
     /// <summary>A registration with an unreadable timestamp and no pipe cannot describe a live host.</summary>
     [Fact]
     public void RegistrationsWithoutAValidTimestampOrPipeAreSkippedAndRemoved() {

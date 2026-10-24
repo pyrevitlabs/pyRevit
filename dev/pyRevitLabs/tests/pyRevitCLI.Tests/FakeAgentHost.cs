@@ -18,6 +18,7 @@ internal sealed class FakeAgentHost : IDisposable {
     private readonly string previousAgentDir = PyRevitAgentClient.AgentDirOverride;
     private readonly int previousConnectTimeout = PyRevitAgentClient.ConnectTimeoutMs;
     private readonly Func<System.Diagnostics.Process, string> previousProcessNameReader = PyRevitAgentClient.ProcessNameReader;
+    private readonly Func<System.Diagnostics.Process, DateTime> previousProcessStartTimeReader = PyRevitAgentClient.ProcessStartTimeReader;
     private readonly Task serving;
 
     public FakeAgentHost(string revitVersion = "2090", bool register = true) {
@@ -126,6 +127,7 @@ internal sealed class FakeAgentHost : IDisposable {
         PyRevitAgentClient.AgentDirOverride = previousAgentDir;
         PyRevitAgentClient.ConnectTimeoutMs = previousConnectTimeout;
         PyRevitAgentClient.ProcessNameReader = previousProcessNameReader;
+        PyRevitAgentClient.ProcessStartTimeReader = previousProcessStartTimeReader;
         Directory.Delete(AgentDir, recursive: true);
     }
 }
