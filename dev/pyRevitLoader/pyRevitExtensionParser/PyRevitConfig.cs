@@ -262,8 +262,8 @@ namespace pyRevitExtensionParser
             return new ExtensionConfig
             {
                 Name = extensionName,
-                Disabled = _config.GetValueOrDefault(
-                    typeof(bool?), sectionName, ExtensionSection.DisabledKeyName) as bool?,
+                Disabled = service.GetSectionKeyValueOrDefault<bool?>(
+                    sectionName, ExtensionSection.DisabledKeyName),
                 PrivateRepo = section?.PrivateRepo ?? false,
                 Username = section?.Username,
                 Password = section?.Password
