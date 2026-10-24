@@ -72,13 +72,15 @@ namespace pyRevitCLI {
         /// </summary>
         internal static string AgentDirOverride;
 
+        internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
+
         public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
         /// <summary>
-        /// Registered hosts whose Revit process is still alive, newest first. Registration
-        /// files left behind by crashed Revit processes are skipped.
+        /// Registered hosts whose Revit process matches the registration, newest first.
+        /// Stale registration files are removed best-effort.
         /// </summary>
         public static List<AgentInstance> GetInstances() {
             var instances = new List<AgentInstance>();
@@ -95,8 +97,10 @@ namespace pyRevitCLI {
                         RevitBuild = data.Value<string>("revit_build"),
                         Started = data["started"]?.ToString(Formatting.None).Trim('"'),
                     };
-                    if (IsAlive(instance.ProcessId))
+                    if (IsAlive(instance))
                         instances.Add(instance);
+                    else
+                        File.Delete(file);
                 }
                 catch (Exception) {
                 }
@@ -237,10 +241,18 @@ namespace pyRevitCLI {
                 .ToList();
         }
 
-        private static bool IsAlive(int processId) {
+        private static bool IsAlive(AgentInstance instance) {
             try {
-                using (var process = Process.GetProcessById(processId))
-                    return !process.HasExited;
+                using (var process = Process.GetProcessById(instance.ProcessId)) {
+                    if (process.HasExited || !string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)
+                        && process.StartTime.ToUniversalTime() - started.UtcDateTime <= TimeSpan.FromSeconds(2))
+                        return true;
+
+                    return !string.IsNullOrWhiteSpace(instance.Pipe) && File.Exists(@"\\.\pipe\" + instance.Pipe);
+                }
             }
             catch (Exception) {
                 return false;

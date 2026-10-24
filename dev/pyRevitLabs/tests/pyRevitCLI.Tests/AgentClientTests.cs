@@ -24,14 +24,74 @@ public class AgentClientTests : IDisposable {
         Assert.Equal(new[] { "2092", "2091", "2090" }, versions);
     }
 
+    /// <summary>Dead process registrations are excluded and removed without rejecting corrupt files.</summary>
     [Fact]
     public void RegistrationsOfDeadProcessesAndCorruptFilesAreSkipped() {
-        host.Register("2085", 2147483000, DateTime.UtcNow);
+        host.Register("2085", 2147483000, DateTime.UtcNow, fileName: "dead.json");
         File.WriteAllText(Path.Combine(host.AgentDir, "instances", "garbage.json"), "{ not json");
 
         var versions = PyRevitAgentClient.GetInstances().Select(instance => instance.RevitVersion).ToList();
 
         Assert.Equal(new[] { "2090" }, versions);
+        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "dead.json")));
+    }
+
+    /// <summary>A reused PID belonging to a non-Revit process is excluded even with a recent timestamp.</summary>
+    [Fact]
+    public void RegistrationsOfNonRevitProcessesAreSkippedAndRemoved() {
+        PyRevitAgentClient.ProcessNameReader = process => process.ProcessName;
+        host.Register("2086", Environment.ProcessId, DateTime.UtcNow, fileName: "non-revit.json", pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+
+        Assert.Empty(PyRevitAgentClient.GetInstances());
+        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "non-revit.json")));
+    }
+
+    /// <summary>A Revit process started after an old registration cannot inherit its session.</summary>
+    [Fact]
+    public void RegistrationsPredatingTheRevitProcessAreSkippedAndRemoved() {
+        using var process = Process.GetCurrentProcess();
+        host.Register("2087", Environment.ProcessId, process.StartTime.ToUniversalTime().AddSeconds(-10),
+            fileName: "reused.json", pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+
+        Assert.Equal("2090", Assert.Single(PyRevitAgentClient.GetInstances()).RevitVersion);
+        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "reused.json")));
+    }
+
+    /// <summary>Timestamp precision differences within two seconds preserve a matching Revit registration.</summary>
+    [Fact]
+    public void RegistrationStartTimeAllowsASmallTolerance() {
+        using var process = Process.GetCurrentProcess();
+        PyRevitAgentClient.ProcessNameReader = registeredProcess => "rEvIt";
+        host.Register("2088", Environment.ProcessId, process.StartTime.ToUniversalTime().AddSeconds(-1),
+            fileName: "tolerated.json", pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+
+        Assert.Equal("2088", PyRevitAgentClient.Resolve("2088").RevitVersion);
+        Assert.True(File.Exists(Path.Combine(host.AgentDir, "instances", "tolerated.json")));
+    }
+
+    /// <summary>An existing host pipe preserves a Revit registration whose timestamp cannot establish liveness.</summary>
+    [Fact]
+    public void AnExistingPipeKeepsARevitRegistrationWithAnOldTimestamp() {
+        Assert.True(SpinWait.SpinUntil(() => File.Exists(@"\\.\pipe\" + host.PipeName), TimeSpan.FromSeconds(5)));
+        host.Register("2089", Environment.ProcessId, DateTime.UnixEpoch, fileName: "existing-pipe.json");
+
+        Assert.Equal("2089", PyRevitAgentClient.Resolve("2089").RevitVersion);
+        Assert.Empty(host.Requests);
+    }
+
+    /// <summary>A registration with an unreadable timestamp and no pipe cannot describe a live host.</summary>
+    [Fact]
+    public void RegistrationsWithoutAValidTimestampOrPipeAreSkippedAndRemoved() {
+        var path = Path.Combine(host.AgentDir, "instances", "invalid-started.json");
+        File.WriteAllText(path, new JObject {
+            ["pid"] = Environment.ProcessId,
+            ["pipe"] = "pyrevit-missing-" + Guid.NewGuid().ToString("N"),
+            ["revit_version"] = "2089",
+            ["started"] = "invalid",
+        }.ToString());
+
+        Assert.Equal("2090", Assert.Single(PyRevitAgentClient.GetInstances()).RevitVersion);
+        Assert.False(File.Exists(path));
     }
 
     [Fact]
@@ -48,6 +108,7 @@ public class AgentClientTests : IDisposable {
         Assert.Equal("no_revit", Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve(null)).Code);
     }
 
+    /// <summary>A live fake host registration resolves without requiring a real Revit process.</summary>
     [Fact]
     public void AnUnselectedSingleHostIsPicked() {
         Assert.Equal("2090", PyRevitAgentClient.Resolve(null).RevitVersion);
@@ -111,15 +172,22 @@ public class AgentClientTests : IDisposable {
         Assert.Equal(3, PyRevitAgentClient.Match(Sessions, " ").Count);
     }
 
+    /// <summary>Ambiguity reports only live registrations, excluding dead and reused process IDs.</summary>
     [Fact]
     public void SeveralHostsWithoutASelectorAreAmbiguousAndNamed() {
         host.Register("2091", Environment.ProcessId, DateTime.UtcNow);
+        host.Register("2085", 2147483000, DateTime.UtcNow);
+        using var process = Process.GetCurrentProcess();
+        host.Register("2086", Environment.ProcessId, process.StartTime.ToUniversalTime().AddMinutes(-1),
+            pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
 
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve(null));
 
         Assert.Equal("ambiguous_revit", error.Code);
         Assert.Contains("2090", error.Message);
         Assert.Contains("2091", error.Message);
+        Assert.DoesNotContain("2085", error.Message);
+        Assert.DoesNotContain("2086", error.Message);
     }
 
     [Fact]

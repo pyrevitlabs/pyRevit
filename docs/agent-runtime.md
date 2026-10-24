@@ -352,6 +352,9 @@ under the same account.
 
 Discovery: each host writes `%APPDATA%\pyRevit\agent\instances\<pid>.json` with the pipe
 name, the Revit version and the process id, and removes it when Revit exits.
+Discovery ignores stale registrations and attempts to delete them, including files left after a crash or process ID reuse.
+The recorded process must be named `Revit` (case-insensitive), and its start time must not exceed the registration timestamp by more than two seconds unless the recorded named pipe exists.
+Stale registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on
 
