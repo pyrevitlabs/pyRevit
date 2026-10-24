@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -74,14 +75,22 @@ namespace pyRevitCLI {
 
         internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
         internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;
+        internal static Func<string, bool> PipeExists = pipeName => File.Exists(@"\\.\pipe\" + pipeName);
+        internal static Action<int> DiscoveryDelay = Thread.Sleep;
+
+        private enum InstanceLiveness {
+            Live,
+            Stale,
+            Uncertain,
+        }
 
         public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
         /// <summary>
-        /// Registered hosts whose Revit process matches the registration, newest first.
-        /// Stale registration files are removed best-effort.
+        /// Registered hosts whose process metadata or named pipe establishes liveness, newest first.
+        /// Only certainly stale registration files are removed best-effort.
         /// </summary>
         public static List<AgentInstance> GetInstances() {
             var instances = new List<AgentInstance>();
@@ -98,9 +107,10 @@ namespace pyRevitCLI {
                         RevitBuild = data.Value<string>("revit_build"),
                         Started = data["started"]?.ToString(Formatting.None).Trim('"'),
                     };
-                    if (IsAlive(instance))
+                    var liveness = GetLiveness(instance);
+                    if (liveness == InstanceLiveness.Live || (liveness == InstanceLiveness.Uncertain && HasPipe(instance)))
                         instances.Add(instance);
-                    else
+                    else if (liveness == InstanceLiveness.Stale)
                         File.Delete(file);
                 }
                 catch (Exception) {
@@ -242,26 +252,59 @@ namespace pyRevitCLI {
                 .ToList();
         }
 
-        private static bool IsAlive(AgentInstance instance) {
+        private static InstanceLiveness GetLiveness(AgentInstance instance) {
             try {
                 using (var process = Process.GetProcessById(instance.ProcessId)) {
                     try {
-                        if (process.HasExited || !string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
-                            return false;
-
-                        if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)
-                            && ProcessStartTimeReader(process).ToUniversalTime() - started.UtcDateTime <= TimeSpan.FromSeconds(2))
-                            return true;
+                        if (process.HasExited)
+                            return InstanceLiveness.Stale;
                     }
                     catch (Exception) {
                     }
 
-                    return !string.IsNullOrWhiteSpace(instance.Pipe) && File.Exists(@"\\.\pipe\" + instance.Pipe);
+                    var hasRevitName = false;
+                    try {
+                        if (!string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
+                            return InstanceLiveness.Stale;
+                        hasRevitName = true;
+                    }
+                    catch (Exception) {
+                    }
+
+                    if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)) {
+                        try {
+                            if (ProcessStartTimeReader(process).ToUniversalTime() - started.UtcDateTime > TimeSpan.FromSeconds(2))
+                                return InstanceLiveness.Stale;
+                            if (hasRevitName)
+                                return InstanceLiveness.Live;
+                        }
+                        catch (Exception) {
+                        }
+                    }
+
+                    return InstanceLiveness.Uncertain;
                 }
             }
-            catch (Exception) {
-                return false;
+            catch (ArgumentException) {
+                return InstanceLiveness.Stale;
             }
+            catch (Exception) {
+                return InstanceLiveness.Uncertain;
+            }
+        }
+
+        private static bool HasPipe(AgentInstance instance) {
+            if (string.IsNullOrWhiteSpace(instance.Pipe))
+                return false;
+
+            for (var attempt = 0; attempt < 3; attempt++) {
+                if (attempt > 0)
+                    DiscoveryDelay(300);
+                if (PipeExists(instance.Pipe))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

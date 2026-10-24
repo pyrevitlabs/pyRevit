@@ -69,50 +69,77 @@ public class AgentClientTests : IDisposable {
         Assert.True(File.Exists(Path.Combine(host.AgentDir, "instances", "tolerated.json")));
     }
 
-    /// <summary>An existing host pipe preserves a Revit registration whose timestamp cannot establish liveness.</summary>
+    /// <summary>A readable start time proving PID reuse overrides an existing pipe.</summary>
     [Fact]
-    public void AnExistingPipeKeepsARevitRegistrationWithAnOldTimestamp() {
-        Assert.True(SpinWait.SpinUntil(() => File.Exists(@"\\.\pipe\" + host.PipeName), TimeSpan.FromSeconds(5)));
+    public void AnExistingPipeDoesNotKeepARegistrationPredatingTheRevitProcess() {
         host.Register("2089", Environment.ProcessId, DateTime.UnixEpoch, fileName: "existing-pipe.json");
+        PyRevitAgentClient.PipeExists = pipeName => throw new InvalidOperationException("Stale registrations must not probe pipes.");
 
-        Assert.Equal("2089", PyRevitAgentClient.Resolve("2089").RevitVersion);
+        Assert.Equal("2090", Assert.Single(PyRevitAgentClient.GetInstances()).RevitVersion);
+        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "existing-pipe.json")));
         Assert.Empty(host.Requests);
     }
 
-    /// <summary>Unavailable process metadata falls back to an existing pipe without connecting.</summary>
+    /// <summary>Unavailable process metadata permits discovery when a retry observes the pipe.</summary>
+    /// <param name="denyStartTime">Whether reading the process start time fails instead of reading its name.</param>
+    /// <param name="successfulProbe">The probe that first observes the pipe.</param>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void AccessDeniedReadingProcessMetadataKeepsARegistrationWithAnExistingPipe(bool denyStartTime) {
-        Assert.True(SpinWait.SpinUntil(() => File.Exists(@"\\.\pipe\" + host.PipeName), TimeSpan.FromSeconds(5)));
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(false, 3)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    [InlineData(true, 3)]
+    public void AccessDeniedReadingProcessMetadataKeepsARegistrationWithAnExistingPipe(bool denyStartTime, int successfulProbe) {
         if (denyStartTime)
             PyRevitAgentClient.ProcessStartTimeReader = process => throw new System.ComponentModel.Win32Exception(5);
         else
             PyRevitAgentClient.ProcessNameReader = process => throw new System.ComponentModel.Win32Exception(5);
+        var probes = 0;
+        var delays = new List<int>();
+        PyRevitAgentClient.PipeExists = pipeName => ++probes == successfulProbe;
+        PyRevitAgentClient.DiscoveryDelay = delays.Add;
 
+        Assert.Equal("2090", PyRevitAgentClient.Resolve(null).RevitVersion);
+        Assert.Equal(successfulProbe, probes);
+        Assert.Equal(Enumerable.Repeat(300, successfulProbe - 1), delays);
+        Assert.True(File.Exists(Path.Combine(host.AgentDir, "instances", "2090-" + Environment.ProcessId + ".json")));
+        Assert.Empty(host.Requests);
+    }
+
+    /// <summary>Unavailable process metadata retains a registration after all pipe probes fail.</summary>
+    /// <param name="denyStartTime">Whether reading the process start time fails instead of reading its name.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AccessDeniedReadingProcessMetadataExcludesButKeepsARegistrationWithoutAPipe(bool denyStartTime) {
+        if (denyStartTime)
+            PyRevitAgentClient.ProcessStartTimeReader = process => throw new System.ComponentModel.Win32Exception(5);
+        else
+            PyRevitAgentClient.ProcessNameReader = process => throw new System.ComponentModel.Win32Exception(5);
+        var probes = 0;
+        var delays = new List<int>();
+        PyRevitAgentClient.PipeExists = pipeName => {
+            probes++;
+            return false;
+        };
+        PyRevitAgentClient.DiscoveryDelay = delays.Add;
+
+        Assert.Empty(PyRevitAgentClient.GetInstances());
+        Assert.Equal(3, probes);
+        Assert.Equal(new[] { 300, 300 }, delays);
+        Assert.True(File.Exists(Path.Combine(host.AgentDir, "instances", "2090-" + Environment.ProcessId + ".json")));
+        PyRevitAgentClient.PipeExists = pipeName => true;
         Assert.Equal("2090", PyRevitAgentClient.Resolve(null).RevitVersion);
         Assert.Empty(host.Requests);
     }
 
-    /// <summary>Unavailable process metadata does not preserve a registration whose pipe is absent.</summary>
+    /// <summary>A registration with an invalid timestamp uses pipe retries and remains on disk.</summary>
+    /// <param name="pipeReturns">Whether the pipe reappears on the second probe.</param>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void AccessDeniedReadingProcessMetadataRemovesARegistrationWithoutAPipe(bool denyStartTime) {
-        if (denyStartTime)
-            PyRevitAgentClient.ProcessStartTimeReader = process => throw new System.ComponentModel.Win32Exception(5);
-        else
-            PyRevitAgentClient.ProcessNameReader = process => throw new System.ComponentModel.Win32Exception(5);
-        host.Register("2089", Environment.ProcessId, DateTime.UtcNow, fileName: "denied.json",
-            pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
-
-        Assert.DoesNotContain(PyRevitAgentClient.GetInstances(), instance => instance.RevitVersion == "2089");
-        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "denied.json")));
-    }
-
-    /// <summary>A registration with an unreadable timestamp and no pipe cannot describe a live host.</summary>
-    [Fact]
-    public void RegistrationsWithoutAValidTimestampOrPipeAreSkippedAndRemoved() {
+    public void RegistrationsWithoutAValidTimestampRetryThePipeAndKeepTheFile(bool pipeReturns) {
         var path = Path.Combine(host.AgentDir, "instances", "invalid-started.json");
         File.WriteAllText(path, new JObject {
             ["pid"] = Environment.ProcessId,
@@ -120,9 +147,30 @@ public class AgentClientTests : IDisposable {
             ["revit_version"] = "2089",
             ["started"] = "invalid",
         }.ToString());
+        var probes = 0;
+        var delays = new List<int>();
+        PyRevitAgentClient.PipeExists = pipeName => ++probes == 2 && pipeReturns;
+        PyRevitAgentClient.DiscoveryDelay = delays.Add;
+
+        var versions = PyRevitAgentClient.GetInstances().Select(instance => instance.RevitVersion).ToList();
+
+        Assert.Contains("2090", versions);
+        Assert.Equal(pipeReturns, versions.Contains("2089"));
+        Assert.Equal(pipeReturns ? 2 : 3, probes);
+        Assert.Equal(Enumerable.Repeat(300, pipeReturns ? 1 : 2), delays);
+        Assert.True(File.Exists(path));
+        Assert.Empty(host.Requests);
+    }
+
+    /// <summary>A readable start time proving PID reuse remains decisive when the process name is inaccessible.</summary>
+    [Fact]
+    public void AccessDeniedReadingProcessNameDoesNotKeepARegistrationPredatingTheProcess() {
+        PyRevitAgentClient.ProcessNameReader = process => throw new System.ComponentModel.Win32Exception(5);
+        host.Register("2089", Environment.ProcessId, DateTime.UnixEpoch, fileName: "reused-denied.json");
+        PyRevitAgentClient.PipeExists = pipeName => true;
 
         Assert.Equal("2090", Assert.Single(PyRevitAgentClient.GetInstances()).RevitVersion);
-        Assert.False(File.Exists(path));
+        Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "reused-denied.json")));
     }
 
     [Fact]
