@@ -73,7 +73,7 @@ Search before you write: `pyrevit.revit.db.query`, `create` and `update` hold hu
 ## Transactions
 
 - Always use the context manager. Never call `Start()` / `Commit()` by hand.
-- `revit.Transaction` rolls back and re-raises on exception.
+- `revit.Transaction` rolls back and re-raises exceptions from the `with` body. Exceptions from `Commit()` are caught, rolled back and logged instead; they do not reach an outer `try`/`except`.
 - Group related edits with `revit.TransactionGroup`.
 - Read-only work needs no transaction. Don't open one "just in case".
 - Keep transactions short. Gather first, then open one transaction and apply.
@@ -151,7 +151,7 @@ Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop
 ## For AI agents
 
 - Look a function up before writing it: search `pyrevitlib/pyrevit/revit/db/{query,create,update}.py`, or use the MCP `lookup_pyrevit_api` tool.
-- Prefer `find_*` helpers over `get_*` in unattended runs: they stop with the list of valid names instead of returning `None`.
+- Check each `find_*` helper's contract before relying on it in unattended runs. `find_level`, `find_type`, `find_family_symbol` and `find_view` raise `PyRevitException` on a miss and list the valid names; `find_plan_view` raises without a name list. `find_workset`, `find_first_legend` and `find_paper_size_by_name` do not raise, and `find_paper_sizes_by_dims` returns a list.
 - Don't use `pyrevit.forms` in unattended agent runs. There is no user to answer.
 - Match the surrounding file's style over this guide when they conflict, and keep pre-existing comments.
 - Before finishing: `pipenv run ruff check --fix <path>`, `pipenv run check-py3 <path>`, and test the button in Revit with a dev clone (see [Developer guide](dev-guide.md)).
