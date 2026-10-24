@@ -13,6 +13,8 @@ and parameter it was made for): add a field to the schema class and
 pass it through save_view_scheme.
 """
 
+from System import Int32
+
 from pyrevit.coreutils import extensible_storage
 
 
@@ -20,7 +22,7 @@ class _ColorSplasherSchemeSchema(extensible_storage.BaseSchema):
     guid = "adb65cfb-92cc-4610-b356-8511afdc2599"
     schema_name = "pyRevitColorSplasherScheme"
     vendor_id = "clsp"
-    array_fields = {"ValueNames": str, "Colors": int}
+    array_fields = {"ValueNames": str, "Colors": Int32}
 
 
 _storage = extensible_storage.ElementDataStorage(_ColorSplasherSchemeSchema)
