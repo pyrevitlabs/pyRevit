@@ -9,10 +9,18 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
         private sealed class Tab {
             internal readonly object Original = new object();
             internal object Value;
+            internal readonly object OriginalBackground = new object();
+            internal object Background;
 
             internal Tab() {
                 Value = Original;
+                Background = OriginalBackground;
             }
+        }
+
+        private sealed class TabValues {
+            internal AgentTabHighlightValue Tooltip;
+            internal AgentTabHighlightValue Background;
         }
 
         private sealed class Harness : IAgentTabHighlightVisuals {
@@ -22,7 +30,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
             internal readonly Dictionary<long, object> Installed = new Dictionary<long, object>();
             internal readonly List<long> Restored = new List<long>();
             internal readonly Dictionary<long, List<Tab>> Tabs = new Dictionary<long, List<Tab>>();
-            private readonly Dictionary<long, Dictionary<Tab, AgentTabHighlightValue>> tabValues = new Dictionary<long, Dictionary<Tab, AgentTabHighlightValue>>();
+            private readonly Dictionary<long, Dictionary<Tab, TabValues>> tabValues = new Dictionary<long, Dictionary<Tab, TabValues>>();
             internal bool HasTabs = true;
             internal bool Fail;
             internal int Logs;
@@ -39,21 +47,28 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
                     return false;
                 if (Tabs.TryGetValue(key, out var currentTabs)) {
                     if (!tabValues.TryGetValue(key, out var paintedTabs)) {
-                        paintedTabs = new Dictionary<Tab, AgentTabHighlightValue>();
+                        paintedTabs = new Dictionary<Tab, TabValues>();
                         tabValues.Add(key, paintedTabs);
                     }
                     foreach (var tab in paintedTabs.Keys.Except(currentTabs).ToArray()) {
-                        paintedTabs[tab].Restore();
+                        paintedTabs[tab].Tooltip.Restore();
+                        paintedTabs[tab].Background.Restore();
                         paintedTabs.Remove(tab);
                     }
                     foreach (var tab in currentTabs) {
-                        if (!paintedTabs.TryGetValue(tab, out var property)) {
+                        if (!paintedTabs.TryGetValue(tab, out var properties)) {
                             var original = tab.Value;
-                            property = new AgentTabHighlightValue(() => tab.Value,
-                                value => tab.Value = value, () => tab.Value = original);
-                            paintedTabs.Add(tab, property);
+                            var originalBackground = tab.Background;
+                            properties = new TabValues {
+                                Tooltip = new AgentTabHighlightValue(() => tab.Value,
+                                    value => tab.Value = value, () => tab.Value = original),
+                                Background = new AgentTabHighlightValue(() => tab.Background,
+                                    value => tab.Background = value, () => tab.Background = originalBackground)
+                            };
+                            paintedTabs.Add(tab, properties);
                         }
-                        property.Apply(tooltip);
+                        properties.Tooltip.Apply(tooltip);
+                        properties.Background.Apply(new object());
                     }
                     if (currentTabs.Count == 0)
                         return false;
@@ -68,8 +83,10 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
             /// <summary>Removes the fake visual properties owned by the target.</summary>
             public void Restore(long key) {
                 if (tabValues.TryGetValue(key, out var paintedTabs)) {
-                    foreach (var property in paintedTabs.Values)
-                        property.Restore();
+                    foreach (var properties in paintedTabs.Values) {
+                        properties.Tooltip.Restore();
+                        properties.Background.Restore();
+                    }
                     tabValues.Remove(key);
                 }
                 Values.Remove(key);
@@ -225,6 +242,48 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
             harness.Coordinator.Refresh();
             Assert.Same(otherOwner, vanished.Value);
             Assert.Equal("Agent: Run", added.Value);
+        }
+
+        /// <summary>Approval preserves a replaced tooltip while repainting and restoring the owned background.</summary>
+        [Fact]
+        public void ApprovalLeavesOtherOwnersTooltipAndRestoresOwnedBackground() {
+            var harness = new Harness();
+            var tab = new Tab();
+            harness.Tabs[1] = new List<Tab> { tab };
+            var lease = harness.Coordinator.Begin(1, "Run");
+            var initialBackground = tab.Background;
+            Assert.NotSame(tab.OriginalBackground, initialBackground);
+            var otherOwner = new object();
+            tab.Value = otherOwner;
+            harness.Coordinator.AwaitApproval(lease);
+            Assert.Same(otherOwner, tab.Value);
+            Assert.NotSame(initialBackground, tab.Background);
+            Assert.NotSame(tab.OriginalBackground, tab.Background);
+            harness.Coordinator.Refresh();
+            Assert.Same(otherOwner, tab.Value);
+            harness.Coordinator.End(lease);
+            harness.Advance(1500);
+            Assert.Same(otherOwner, tab.Value);
+            Assert.Same(tab.OriginalBackground, tab.Background);
+        }
+
+        /// <summary>A released property remains untouched even when its previous installed reference returns.</summary>
+        [Fact]
+        public void PropertyRepaintingPermanentlyReleasesOtherOwnersValue() {
+            var original = new object();
+            var current = original;
+            var installed = new string('x', 1);
+            var property = new AgentTabHighlightValue(() => current, value => current = value, () => current = original);
+            property.Apply(installed);
+            var otherOwner = new string('x', 1);
+            current = otherOwner;
+            property.Apply(new object());
+            Assert.Same(otherOwner, current);
+            current = installed;
+            property.Apply(new object());
+            Assert.Same(installed, current);
+            property.Restore();
+            Assert.Same(installed, current);
         }
 
         /// <summary>Restoration uses identity and leaves independently replaced property values intact.</summary>
