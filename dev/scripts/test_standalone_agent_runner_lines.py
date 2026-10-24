@@ -172,6 +172,51 @@ class AgentRunnerLinesTests(unittest.TestCase):
         exec(code, namespace)
         self.assertEqual(1, namespace["result"])
 
+    @unittest.skipIf(sys.version_info < (3, 11), "Requires exception groups")
+    def test_except_star_keeps_exception_group_and_lines(self):
+        """Preserve exception groups and source lines when narrowing star handlers."""
+        for header in (
+            "except* BaseException as error:",
+            "except \t* \tBaseException as error:",
+            "except* (\n    BaseException\n) as error:",
+        ):
+            with self.subTest(header=header):
+                source = (
+                    "import sys\n"
+                    "try:\n"
+                    "    raise ValueError('x')\n" + header + "\n"
+                    "    result = (type(error).__name__, len(error.exceptions), "
+                    "error.exceptions[0].__traceback__.tb_lineno, "
+                    "sys._getframe().f_lineno)\n"
+                )
+                narrower = self.runner._NarrowBroadHandlers()
+                narrower.visit(ast.parse(source))
+                self.assertEqual(1, len(narrower.narrowed))
+                self.assertEqual("Exception", narrower.narrowed[0].type.id)
+                rewritten = self.runner._narrow_source_handlers(
+                    source, narrower.narrowed
+                )
+                self.assertEqual(source.count("\n"), rewritten.count("\n"))
+                code, problem = self.runner._compile_source(source)
+                self.assertIsNone(problem)
+                namespace = {}
+                exec(code, namespace)
+                self.assertEqual(
+                    ("ExceptionGroup", 1, 3, len(source.splitlines())),
+                    namespace["result"],
+                )
+
+    @unittest.skipIf(sys.version_info < (3, 11), "Requires exception groups")
+    def test_spaced_except_star_source_keeps_star(self):
+        """Retain the star when whitespace separates it from the except keyword."""
+        source = "try:\n    pass\nexcept *BaseException:\n    pass\n"
+        narrower = self.runner._NarrowBroadHandlers()
+        narrower.visit(ast.parse(source))
+        self.assertEqual(
+            "try:\n    pass\nexcept * (Exception) :\n    pass\n",
+            self.runner._narrow_source_handlers(source, narrower.narrowed),
+        )
+
     def test_replacement_node_copies_location(self):
         """Copy start and available end positions from the replaced handler type."""
         for header in ("except:", "except BaseException:"):

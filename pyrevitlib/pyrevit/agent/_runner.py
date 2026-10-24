@@ -105,6 +105,7 @@ def _narrow_source_handlers(source, handlers):
     IronPython loses source lines when compiling ASTs even when their locations
     are populated. Keep the original source and its newline count instead,
     including multiline exception tuples and Python 2 exception bindings.
+    Preserve the star in exception group handlers while narrowing their types.
     """
     positions = set((node.lineno, node.col_offset) for node in handlers)
     lines = source.splitlines(True)
@@ -120,7 +121,13 @@ def _narrow_source_handlers(source, handlers):
             if text == "except" and start in positions:
                 header_start = end
                 depth = 0
+                type_started = False
             continue
+        if not type_started:
+            type_started = True
+            if text == "*":
+                header_start = end
+                continue
         if depth == 0 and text in (":", "as", ","):
             first = offsets[header_start[0] - 1] + header_start[1]
             last = offsets[start[0] - 1] + start[1]
