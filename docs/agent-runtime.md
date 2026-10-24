@@ -399,24 +399,23 @@ at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 Every run executes in one ExternalEvent callback on the Revit main thread:
 
 1. **Arm guards** (only while the run is active):
-    - `DocumentSynchronizingWithCentral` is cancelled, and so are `DocumentSaving`,
-      `DocumentSavingAs` and `DocumentClosing` for every document open when the run started.
-      `DocumentSaving` and `DocumentSavingAs` are also cancelled for a project or family the
-      script opens from a file (`DocumentOpened`); the script may still close it, and the
-      host closes it without saving when the run ends. A family from `EditFamily` or a new
-      document the script created has no file yet and may be saved and closed.
+    - `DocumentSynchronizingWithCentral`, `DocumentSaving` and `DocumentSavingAs` are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
+      `DocumentClosing` is cancelled only for documents open when the run started.
+      The script may close documents it creates or opens during the run, but cannot save them.
+      After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
       failing transaction, in every non-linked document. A failure in a family or a new
       document fails the run with `revit_failure` instead of raising a dialog.
     - `DocumentChanged` collects added, modified and deleted ids, per document.
-2. **`TransactionGroup.Start("Agent: <title>")`** on the active document and on every other
-   open, editable, non-linked document, and later on each project or family the script
-   opens from a file.
+2. **`TransactionGroup.Start("Agent: <title>")`** on the active document if it is writable, and on every other open, editable, non-linked document that has no transaction already open.
+   Documents the script creates or opens during the run get no rollback group.
+   Changes to documents opened from disk are discarded when they are closed without saving, not by rolling back a group.
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
-    - **any mode**, another open document changed: roll back every group. The run fails
-      with `other_document_modified`. Only the active document's group is ever assimilated.
+    - **any mode**, another document open at the start or opened from disk during the run changed: roll back every group.
+      The run fails with `other_document_modified`.
+      Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
     - **modify** with policy `readonly`: the policy is read before the script and again here,
