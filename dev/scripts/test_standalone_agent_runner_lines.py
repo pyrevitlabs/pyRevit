@@ -155,8 +155,8 @@ class AgentRunnerLinesTests(unittest.TestCase):
         )
         self.assertIn(("scope", 6), exception_frames)
 
-    def test_compiler_never_receives_ast(self):
-        """Avoid IronPython's line-one AST compiler path on every rewrite."""
+    def test_compiler_uses_source_for_valid_rewrite(self):
+        """Avoid IronPython's line-one AST compiler path on successful rewrites."""
         original_compile = builtins.compile
 
         def compile_source(source, *args, **kwargs):
@@ -269,6 +269,58 @@ class AgentRunnerLinesTests(unittest.TestCase):
             self.assertIsNone(problem)
             with self.assertRaises((SystemExit, self.runner.RunTimedOut)):
                 exec(code, {"RunTimedOut": self.runner.RunTimedOut})
+
+    def test_string_separators_keep_handler_offsets_and_lines(self):
+        """Match AST physical lines without splitting separators inside strings."""
+        for newline in ("\n", "\r\n", "\r"):
+            with self.subTest(newline=newline):
+                source = newline.join(
+                    (
+                        "markers = '\x0c\x1c\x1d\x1e\x85\u2028\u2029'",
+                        "def work():",
+                        "    try:",
+                        "        raise ValueError('original line')",
+                        "    except:",
+                        "        raise",
+                        "work()",
+                        "",
+                    )
+                )
+                tree = ast.parse(source)
+                handler = tree.body[1].body[0].handlers[0]
+                self.assertEqual((5, 4), (handler.lineno, handler.col_offset))
+                lines = self.runner._source_lines(source)
+                self.assertEqual(7, len(lines))
+                self.assertEqual(
+                    "except:" + newline,
+                    lines[handler.lineno - 1][handler.col_offset :],
+                )
+                self.assertEqual(
+                    [("<module>", 7), ("work", 4)],
+                    self._traceback_frames(source),
+                )
+                code, problem = self.runner._compile_source(
+                    source.replace("ValueError('original line')", "RunTimedOut()")
+                )
+                self.assertIsNone(problem)
+                with self.assertRaises(self.runner.RunTimedOut):
+                    exec(code, {"RunTimedOut": self.runner.RunTimedOut})
+
+    def test_invalid_header_rewrite_falls_back_to_narrowed_ast(self):
+        """Keep timeout exceptions uncaught even if replacement source is invalid."""
+        source = "try:\n    raise error\nexcept:\n    result = 'caught'\n"
+        with mock.patch.object(
+            self.runner, "_narrow_source_handlers", return_value="except ("
+        ):
+            code, problem = self.runner._compile_source(source)
+        self.assertIn("SyntaxError", problem)
+        self.assertIn("compiled the narrowed AST instead", problem)
+        self.assertIn("source line numbers may be unavailable", problem)
+        namespace = {"error": ValueError()}
+        exec(code, namespace)
+        self.assertEqual("caught", namespace["result"])
+        with self.assertRaises(self.runner.RunTimedOut):
+            exec(code, {"error": self.runner.RunTimedOut()})
 
     def test_python_two_binding_header(self):
         """Retain legacy exception bindings without needing a Python 2 host."""
