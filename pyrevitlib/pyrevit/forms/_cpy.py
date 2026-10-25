@@ -1,21 +1,31 @@
-"""CPython stub backend for pyrevit.forms.
-
-This module provides stub-only symbols. All stubs raise
-PyRevitCPythonNotSupported with a stable feature name string and do not
-load WPF/clr assemblies at import time.
-
-Stubbed symbols:
-WPFWindow, TemplateUserInputWindow, SelectFromList, CommandSwitchWindow,
-ProgressBar, ask_for_string, ask_for_unique_string, ask_for_one_item,
-ask_for_date, ask_for_number_slider, pick_file, pick_folder, show_balloon,
-activate_open_window.
-"""
+"""CPython forms exports, with stable errors for features awaiting migration."""
 
 from pyrevit import PyRevitCPythonNotSupported
+from .base import WPFWindow
+from .dialogs import (
+    TemplateUserInputWindow,
+    GetValueWindow,
+    ask_for_string,
+    ask_for_unique_string,
+    ask_for_date,
+    ask_for_number_slider,
+)
+from .native import (
+    alert,
+    alert_ifnot,
+    pick_file,
+    pick_folder,
+    save_file,
+    pick_excel_file,
+    save_excel_file,
+)
 
 __all__ = [
     "WPFWindow",
     "TemplateUserInputWindow",
+    "GetValueWindow",
+    "alert",
+    "alert_ifnot",
     "SelectFromList",
     "CommandSwitchWindow",
     "ProgressBar",
@@ -26,6 +36,9 @@ __all__ = [
     "ask_for_number_slider",
     "pick_file",
     "pick_folder",
+    "save_file",
+    "pick_excel_file",
+    "save_excel_file",
     "show_balloon",
     "activate_open_window",
 ]
@@ -49,23 +62,17 @@ class _NotSupportedBase(object):
         _raise_not_supported(feature_name)
 
 
-class WPFWindow(_NotSupportedBase):
-    _feature_name = "pyrevit.forms.WPFWindow"
-
-
-class TemplateUserInputWindow(WPFWindow):
-    _feature_name = "pyrevit.forms.TemplateUserInputWindow"
-
+class _UnsupportedWindow(_NotSupportedBase):
     @classmethod
     def show(cls, *args, **kwargs):
         cls._raise("show")
 
 
-class SelectFromList(TemplateUserInputWindow):
+class SelectFromList(_UnsupportedWindow):
     _feature_name = "pyrevit.forms.SelectFromList"
 
 
-class CommandSwitchWindow(TemplateUserInputWindow):
+class CommandSwitchWindow(_UnsupportedWindow):
     _feature_name = "pyrevit.forms.CommandSwitchWindow"
 
 
@@ -73,32 +80,8 @@ class ProgressBar(_NotSupportedBase):
     _feature_name = "pyrevit.forms.ProgressBar"
 
 
-def ask_for_string(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.ask_for_string")
-
-
-def ask_for_unique_string(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.ask_for_unique_string")
-
-
 def ask_for_one_item(*args, **kwargs):
     _raise_not_supported("pyrevit.forms.ask_for_one_item")
-
-
-def ask_for_date(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.ask_for_date")
-
-
-def ask_for_number_slider(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.ask_for_number_slider")
-
-
-def pick_file(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.pick_file")
-
-
-def pick_folder(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.pick_folder")
 
 
 def show_balloon(*args, **kwargs):

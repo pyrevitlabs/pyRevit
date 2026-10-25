@@ -11,10 +11,12 @@ if IRONPY:
 else:
     # pylint: disable=wildcard-import,unused-wildcard-import
     from ._cpy import *  # noqa: F401,F403
-    from . import _cpy as _backend
+    from . import _cpy as _cpy_exports
     from pyrevit import PyRevitCPythonNotSupported
 
-    __all__ = list(getattr(_backend, "__all__", []))
+    __all__ = list(getattr(_cpy_exports, "__all__", []))
 
     def __getattr__(name):
+        if name.startswith("_"):
+            raise AttributeError(name)
         raise PyRevitCPythonNotSupported("pyrevit.forms.{}".format(name))
