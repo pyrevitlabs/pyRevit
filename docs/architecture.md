@@ -158,3 +158,53 @@ duplicated assemblies into its assembly load context. A side effect is that `eng
 `python3` bundle yields a fresh engine object but not a fresh interpreter, so `sys.modules` entries
 imported before a Reload survive it. The contract is asserted by the tests in
 `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.CPython.Tests/`.
+
+### Forms across Python engines
+
+`pyrevit.forms` preserves the IronPython public namespace and exports the
+implemented CPython subset. Shared behavior lives in `forms/base.py` (window
+resources, theming and ownership), `forms/dialogs.py` (modal input logic), and
+`forms/native.py` (Revit task dialogs and native pickers). The remaining
+IronPython features stay in `_ipy.py` while they await migration. Only
+`forms/backends/` implements the engine-specific WPF operations.
+
+IronPython continues to populate its CLR-derived windows with
+`wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
+it creates no Python-derived CLR window types, avoiding type registration
+collisions on repeated commands. Its loader preserves XML namespace prefixes,
+prepends theme/localization dictionaries before parsing, resolves named controls,
+and attaches the built-in `Click` and `TextChanged` handlers after loading.
+Template names remain in their own namescopes.
+
+| API | IronPython | CPython |
+| --- | --- | --- |
+| `alert`, `alert_ifnot` | Supported | Supported |
+| `pick_file`, `pick_folder`, `save_file`, Excel picker wrappers | Supported | Supported |
+| `GetValueWindow` string/date/slider modes | Supported | Supported |
+| `ask_for_string`, `ask_for_unique_string`, `ask_for_date`, `ask_for_number_slider` | Supported | Supported |
+| `WPFWindow`, `TemplateUserInputWindow` | Existing behavior | Modal foundation; arbitrary custom XAML parity is not guaranteed |
+| Dropdown input, `ask_for_one_item`, `SelectFromList`, `CommandSwitchWindow` | Supported | Unsupported pending Python data-binding validation |
+| Modeless windows, progress/warning bars, dockable panels | Supported | Unsupported |
+| Other legacy forms exports | Existing behavior | Unsupported unless explicitly exported by `_cpy.__all__` |
+
+Unported CPython APIs continue to raise `PyRevitCPythonNotSupported` with the
+feature name. Standard form signatures and engine selection are unchanged.
+WebView forms and changing the default Python engine are separate workstreams
+under [the CPython migration RFC](https://github.com/pyrevitlabs/pyRevit/issues/3567).
+
+CPython forms must be created on the Revit STA UI thread. Modal callbacks execute
+within the dialog lifetime; they do not establish an independent Revit API
+context. Accept publishes the response before closing; Escape or window close
+returns `None`. Close and failed initialization release event callbacks and
+theme subscriptions. Callback exceptions close the dialog and propagate to its
+Python caller rather than escaping through the WPF Dispatcher.
+
+Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Tests/pyRevitLabs.PyRevit.Forms.Tests.csproj -c Release`
+for real WPF/pythonnet tests on .NET Framework 4.8, .NET 8 and .NET 10 using the
+shipped CPython interpreter. The fixture substitutes Revit dependencies; it does
+not validate Revit ownership or host events. Portable tests run with
+`python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'`.
+Inside Revit, both **Py3 Compat Tests** buttons exercise input parity without
+showing dialogs. **Engine Tests → Test CPython Forms** exercises actual modal
+interaction, native pickers, ownership and theme. Repeat after reload and on
+each supported engine/host generation before declaring in-Revit parity.
