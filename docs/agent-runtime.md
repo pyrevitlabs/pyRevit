@@ -208,6 +208,8 @@ Rules the host enforces:
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
   it is reported there but doesn't fail the run, and isn't rolled back.
 - A script error rolls back everything, and the traceback points at the script's own lines.
+  Decorated functions, context-manager yields and rewritten exception handlers retain
+  their original script line numbers, including on IronPython.
   When a Revit call throws, the message carries the underlying .NET exception and its
   inner exceptions (`[.NET: Autodesk.Revit.Exceptions.… <- …]`), not only the generic
   "A managed exception was thrown".
