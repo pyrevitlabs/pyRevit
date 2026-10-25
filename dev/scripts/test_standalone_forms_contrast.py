@@ -87,7 +87,7 @@ def _load_contrast_pass(test):
             "pyrevitlib",
             "pyrevit",
             "forms",
-            "_ipy.py",
+            "base.py",
         )
     )
     with io.open(source_path, encoding="utf-8") as source:

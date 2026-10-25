@@ -30,16 +30,16 @@ class TestClass(unittest.TestCase):
         except Exception as err:
             self.fail("pyrevit.forms import failed: {}".format(err))
 
-    def test_pyrevit_forms_ask_for_string_raises(self):
-        """ask_for_string raises PyRevitCPythonNotSupported under CPython."""
+    def test_pyrevit_forms_unported_dialog_raises(self):
+        """Unported data-bound dialogs retain the unsupported-feature contract."""
         from pyrevit import PyRevitCPythonNotSupported
         from pyrevit import forms
 
         try:
-            forms.ask_for_string("Test")
-            self.fail("Expected PyRevitCPythonNotSupported for ask_for_string")
+            forms.SelectFromList.show([])
+            self.fail("Expected PyRevitCPythonNotSupported for SelectFromList")
         except PyRevitCPythonNotSupported as err:
-            self.assertEqual("pyrevit.forms.ask_for_string", err.feature_name)
+            self.assertEqual("pyrevit.forms.SelectFromList.show", err.feature_name)
         except Exception as err:
             self.fail("Unexpected error type for stubbed API: {}".format(err))
 
