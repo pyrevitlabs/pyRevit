@@ -176,7 +176,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static string ParseChoice(JObject parameters, string name, IEnumerable<string> choices) {
-            var value = parameters.Value<string>(name);
+            var token = parameters[name];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.String)
+                throw new AgentException("invalid_params", $"'{name}' must be a string.");
+            var value = token.Value<string>();
             if (string.IsNullOrWhiteSpace(value))
                 return null;
             var normalized = value.Trim().ToLowerInvariant();
@@ -189,9 +194,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (token == null || token.Type == JTokenType.Null)
                 return null;
             var coordinates = token as JArray;
-            if (coordinates == null || coordinates.Count != 3 || coordinates.Any(value => value.Type != JTokenType.Float && value.Type != JTokenType.Integer))
+            if (coordinates == null || coordinates.Count != 3 || !coordinates.All(IsFiniteNumber))
                 throw new AgentException("invalid_params", $"'{name}' must be [x, y, z] in feet.");
             return new XYZ(coordinates[0].Value<double>(), coordinates[1].Value<double>(), coordinates[2].Value<double>());
+        }
+
+        private static bool IsFiniteNumber(JToken token) {
+            if (token.Type != JTokenType.Float && token.Type != JTokenType.Integer)
+                return false;
+            var number = token.Value<double>();
+            return !double.IsNaN(number) && !double.IsInfinity(number);
         }
 
         private static SectionPlane ParseSection(JToken token) {
@@ -207,15 +219,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'section.normal' must not be a zero vector.");
             normal = normal.Normalize();
 
-            var depth = plane.Value<double?>("depth");
-            if (depth.HasValue && depth.Value <= 0)
-                throw new AgentException("invalid_params", "'section.depth' must be greater than zero.");
-            var section = new SectionPlane { Origin = origin, Normal = normal, Depth = depth };
+            double? depth = null;
+            var depthToken = plane["depth"];
+            if (depthToken != null && depthToken.Type != JTokenType.Null) {
+                if (!IsFiniteNumber(depthToken) || depthToken.Value<double>() <= 0)
+                    throw new AgentException("invalid_params", "'section.depth' must be a number greater than zero.");
+                depth = depthToken.Value<double>();
+            }
+
             var isHorizontal = Math.Abs(normal.Z) < DirectionTolerance;
-            if (!isHorizontal && !(section.IsPlan && normal.Z < 0))
+            var isPlanDown = Math.Abs(normal.X) < DirectionTolerance && Math.Abs(normal.Y) < DirectionTolerance && normal.Z < 0;
+            if (!isHorizontal && !isPlanDown)
                 throw new AgentException("invalid_params",
                     "'section.normal' must be horizontal (section or elevation looking along it) or [0, 0, -1] (plan looking down).");
-            return section;
+            var snapped = isHorizontal ? new XYZ(normal.X, normal.Y, 0).Normalize() : XYZ.BasisZ.Negate();
+            return new SectionPlane { Origin = origin, Normal = snapped, Depth = depth };
         }
 
         public static JToken Capture(UIApplication app, Request request) {
@@ -541,14 +559,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         private static ViewPlan CreateTemporaryPlan(Document doc, Request request) {
             var plane = request.Section;
-            var levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(candidate => candidate.Elevation).ToList();
-            var level = levels.LastOrDefault(candidate => candidate.Elevation <= plane.Origin.Z + DirectionTolerance)
+            var levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(candidate => candidate.ProjectElevation).ToList();
+            var level = levels.LastOrDefault(candidate => candidate.ProjectElevation <= plane.Origin.Z + DirectionTolerance)
                 ?? levels.FirstOrDefault()
                 ?? throw new AgentException("view_not_supported", "The document has no level to host a plan view.");
 
             var model = ModelBox(doc, null, request.Elements);
             var depth = plane.Depth ?? Math.Max(MinSectionDepth, model == null ? 0 : plane.Origin.Z - model.Min.Z);
-            var cutOffset = plane.Origin.Z - level.Elevation;
+            var cutOffset = plane.Origin.Z - level.ProjectElevation;
 
             var view = ViewPlan.Create(doc, FindViewType(doc, ViewFamily.FloorPlan).Id, level.Id);
             var range = view.GetViewRange();
