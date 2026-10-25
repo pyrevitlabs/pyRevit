@@ -62,6 +62,59 @@ Statements in modeless and docked shells are marshalled through a Revit `Externa
 modeless or docked shell is open, and the statement runs in a valid API context, so model
 modifications behave the same as they would from a button.
 
+## Interrupting and closing the shell
+
+<kbd>Ctrl</kbd>+<kbd>C</kbd> with no selection interrupts the current Python statement and prints `KeyboardInterrupt`.
+With a selection, the shortcut copies the selected text.
+The console handles <kbd>Ctrl</kbd>+<kbd>C</kbd> locally during execution and when idle; the shortcut does not invoke Revit's Copy command.
+The direct keyboard shortcut requires the shell to have focus in the foreground.
+After a statement runs for about one second, a small **Running... Stop** window appears near the shell without taking focus.
+This window has its own STA thread and message dispatcher, remains responsive when Windows ghosts the busy Revit window, and has no owner relationship to that window.
+Click **Stop**, or focus the Stop window and press <kbd>Ctrl</kbd>+<kbd>C</kbd>, to request the same cancellation.
+The Stop window closes on cancellation, completion, errors, or shell disposal; short statements show no window.
+Its dispatcher thread is reused for that shell; disposal requests shutdown without waiting on Revit's UI thread, and background cleanup retries the two-second Stop worker join until it exits.
+Interrupts are checked at Python trace events, without processing nested Revit UI messages.
+A long single .NET or native call, such as `System.Threading.Thread.Sleep(8000)`, cannot be stopped until it returns; a Stop request takes effect at the next Python trace event.
+An interrupt belongs to its current statement; a delayed key event or a shortcut still held after that statement ends does not cancel the next statement.
+Input from a Stop window belongs to the statement that opened it; a queued click or close from an older window cannot cancel a following statement.
+Code that replaces or disables `sys.settrace` disables these trace checks.
+Each statement installs the shell's trace callback and resets `sys.settrace` to `None` when it finishes; user trace callbacks do not persist between statements.
+IronPython disables tracing when a trace callback raises an exception.
+A bare `except:` or `except BaseException:` can swallow `KeyboardInterrupt`; subsequent interrupts cannot stop that statement after its tracing has been disabled.
+Interruptible loops must allow `KeyboardInterrupt` to propagate.
+
+An interrupt also cancels a queued statement waiting for Revit API context.
+The cancelled statement does not run when Revit later processes the external event.
+Pressing <kbd>Enter</kbd> during completion cancels that completion request without aborting a thread.
+Running editor code while another statement is pending prints a busy message; the editor retains the code for another run.
+
+Closing a floating shell or editor cancels queued work and starts cleanup on a dedicated background thread; closing the window does not block Revit's UI thread.
+Cleanup logs the first ten-second join timeout for each console, dispatcher, and completion worker through .NET tracing and continues waiting on its background thread until all workers exit; a hung worker does not block Revit exit.
+The runtime is shut down only after all workers exit. A statement that disables tracing, swallows cancellation, or remains in a blocking managed/native call can outlive that deadline; its runtime is not shut down while a worker is still using it.
+Opening another floating shell creates a new runtime.
+Hiding a docked pane retains its console for the Revit session.
+
+## Regression tests
+
+`dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests` tests execution cancellation, external-event queue lifetime, and a real IronPython REPL's shutdown without Revit.
+The test project references the production shell assembly, including its internal execution and dispatch types; it does not compile separate copies of those sources.
+Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests/pyRevitLabs.PyRevit.Shell.Tests.csproj -p:IronPythonVersion=IPY2712PR` and repeat with `IPY342`.
+`ShellEnginesDirectory` selects an existing engine deployment for testing instead of building the shell project.
+The build pipeline runs both engine variants against its built assemblies after the runners and shell builds. The project is not part of the Labs solution build, which precedes engine staging.
+The suite requires the Windows Desktop runtime and cannot execute on macOS. It covers WPF dispatcher failures, disposal while a production host statement is running, completion requests after disposal, worker termination, and the runtime shutdown hook.
+
+The request queue (`ShellExternalEventDispatcher`) has no Revit API base types, fields, or method signatures.
+`ShellExternalEventHandler` owns that queue and implements the Revit `IExternalEventHandler` boundary; the standalone tests do not instantiate the handler or raise real Revit external events.
+
+| Test fixture | Production types exercised |
+|---|---|
+| `PythonExecutionTests` | `PythonExecution`, plus `ShellExternalEventDispatcher` and `ShellExternalEventRequest` for queued cancellation |
+| `ShellExternalEventDispatcherTests` | `ShellExternalEventDispatcher`, `ShellExternalEventRequest` |
+| `ShellDispatcherTests` | `ShellLauncher.RunOnDispatcher`, `ShellExternalEventRequest` |
+| `InteractiveCommandLineLifecycleTests` | `PythonExecution` with an IronPython REPL test host |
+| `PythonConsoleHostLifecycleTests` | `PythonConsoleHost`, `PythonConsole`, `PythonTextEditor`, `PythonConsoleCompletionWindow`, `PythonExecution`, `PythonStatementStopWindow` |
+
+
 ## Startup cost
 
 Registering the dockable pane does not load the shell:
