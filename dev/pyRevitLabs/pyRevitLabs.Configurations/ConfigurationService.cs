@@ -98,6 +98,16 @@ public sealed class ConfigurationService : IConfigurationService {
 
     /// <inheritdoc />
     public ExtensionSection? GetExtensionSection(string extensionName) {
+        lock (_syncLock) {
+            string? sectionName = ResolveExtensionSectionName(extensionName);
+            return sectionName is null
+                ? null
+                : (ExtensionSection)CreateSection(typeof(ExtensionSection), sectionName, _configuration);
+        }
+    }
+
+    /// <inheritdoc />
+    public string? ResolveExtensionSectionName(string extensionName) {
         if (string.IsNullOrWhiteSpace(extensionName))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(extensionName));
 
@@ -105,7 +115,7 @@ public sealed class ConfigurationService : IConfigurationService {
             foreach (string suffix in ExtensionSectionSuffixes) {
                 string sectionName = extensionName + suffix;
                 if (_configuration.HasSection(sectionName))
-                    return (ExtensionSection)CreateSection(typeof(ExtensionSection), sectionName, _configuration);
+                    return sectionName;
             }
         }
 

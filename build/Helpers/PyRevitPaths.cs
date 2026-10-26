@@ -28,6 +28,7 @@ public static class PyRevitPaths
     public static string CliTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitCLI.Tests", "pyRevitCLI.Tests.csproj");
     public static string AgentRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj");
     public static string RendererTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Renderer.Tests", "pyRevitLabs.PyRevit.Renderer.Tests.csproj");
+    public static string ShellTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Shell.Tests", "pyRevitLabs.PyRevit.Shell.Tests.csproj");
     public static string PyRevitUnitTestProject => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests.csproj");
 
     public static string IronPython2Solution => Path.Combine(DevPath, "modules", "pyRevitLabs.IronPython2.sln");
@@ -37,7 +38,15 @@ public static class PyRevitPaths
     public static string IronPython2WpfProject => Path.Combine(DevPath, "modules", "pyRevitLabs.ironpython2", "Src", "IronPython.Wpf", "IronPython.Wpf.csproj");
 
     public static string Engines2712NetFxPath => Path.Combine(BinPath, "netfx", "engines", "IPY2712PR");
-    public static string Engines2712NetCorePath => Path.Combine(BinPath, "netcore", "engines", "IPY2712PR");
+    /// <summary>
+    /// Gets the deployment directory shared by the .NET Core engines.
+    /// </summary>
+    public static string EnginesNetCorePath => Path.Combine(BinPath, "netcore", "engines");
+    public static string Engines2712NetCorePath => Path.Combine(EnginesNetCorePath, "IPY2712PR");
+    /// <summary>
+    /// Gets the IronPython 3.4.2 deployment directory for .NET Core.
+    /// </summary>
+    public static string Engines342NetCorePath => Path.Combine(EnginesNetCorePath, "IPY342");
 
     public static string RuntimeSolution => Path.Combine(DevPath, "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime.sln");
     public static string ShellProject => Path.Combine(DevPath, "pyRevitLabs.PyRevit.Shell", "pyRevitLabs.PyRevit.Shell.csproj");

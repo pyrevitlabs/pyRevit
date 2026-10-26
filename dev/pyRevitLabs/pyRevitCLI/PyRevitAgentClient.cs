@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -71,13 +73,24 @@ namespace pyRevitCLI {
         /// </summary>
         internal static string AgentDirOverride;
 
+        internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
+        internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;
+        internal static Func<string, bool> PipeExists = pipeName => File.Exists(@"\\.\pipe\" + pipeName);
+        internal static Action<int> DiscoveryDelay = Thread.Sleep;
+
+        private enum InstanceLiveness {
+            Live,
+            Stale,
+            Uncertain,
+        }
+
         public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
         /// <summary>
-        /// Registered hosts whose Revit process is still alive, newest first. Registration
-        /// files left behind by crashed Revit processes are skipped.
+        /// Registered hosts whose process metadata or named pipe establishes liveness, newest first.
+        /// Only certainly stale registration files are removed best-effort.
         /// </summary>
         public static List<AgentInstance> GetInstances() {
             var instances = new List<AgentInstance>();
@@ -94,8 +107,11 @@ namespace pyRevitCLI {
                         RevitBuild = data.Value<string>("revit_build"),
                         Started = data["started"]?.ToString(Formatting.None).Trim('"'),
                     };
-                    if (IsAlive(instance.ProcessId))
+                    var liveness = GetLiveness(instance);
+                    if (liveness == InstanceLiveness.Live || (liveness == InstanceLiveness.Uncertain && HasPipe(instance)))
                         instances.Add(instance);
+                    else if (liveness == InstanceLiveness.Stale)
+                        File.Delete(file);
                 }
                 catch (Exception) {
                 }
@@ -105,11 +121,13 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Picks the target host. <paramref name="selector"/> is a Revit year (e.g. 2024) or a
-        /// Revit process id. Without a selector, exactly one running host is required.
+        /// Picks the target host. <paramref name="selector"/> is a Revit process id or a Revit
+        /// year (e.g. 2024); an exact process id match wins over a year, see <see cref="Match"/>.
+        /// Without a selector, exactly one running host is required.
         /// </summary>
         /// <exception cref="AgentClientException">
-        /// <c>no_revit</c> when nothing matches, <c>ambiguous_revit</c> when several hosts match.
+        /// <c>invalid_params</c> when the selector is not a number, <c>no_revit</c> when nothing
+        /// matches, <c>ambiguous_revit</c> when several hosts match.
         /// </exception>
         public static AgentInstance Resolve(string selector) {
             var instances = GetInstances();
@@ -119,18 +137,9 @@ namespace pyRevitCLI {
                     "No running Revit with the pyRevit agent host was found. Start Revit with "
                     + "'[agent] enabled = true' (pyrevit configs agent enable).");
 
-            var matches = instances;
-            if (!string.IsNullOrWhiteSpace(selector)) {
-                if (!int.TryParse(selector, out var number))
-                    throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
-                matches = instances
-                    .Where(instance => number >= 2000 && number < 2100
-                        ? instance.RevitVersion == selector
-                        : instance.ProcessId == number)
-                    .ToList();
-                if (matches.Count == 0)
-                    throw new AgentClientException("no_revit", "No running Revit matches '" + selector + "'.");
-            }
+            var matches = Match(instances, selector);
+            if (matches.Count == 0)
+                throw new AgentClientException("no_revit", "No running Revit matches '" + selector + "'.");
 
             if (matches.Count > 1)
                 throw new AgentClientException(
@@ -139,6 +148,31 @@ namespace pyRevitCLI {
                     + string.Join(", ", matches.Select(m => $"{m.RevitVersion} (pid {m.ProcessId})")));
 
             return matches[0];
+        }
+
+        /// <summary>
+        /// Filters <paramref name="instances"/> by a Revit selector without checking liveness.
+        /// A blank selector keeps every instance.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a selector equal to an instance's process id selects by process id, whatever
+        /// its value. Only when no process id matches is a number in [2000, 2100) read as a Revit
+        /// year; any other number is a process id that matched nothing. Windows can hand out
+        /// process ids in the year range, so the year rule must never shadow an exact pid match.
+        /// Years compare in canonical form, so " 2024 " or "02024" select Revit 2024.
+        /// </remarks>
+        /// <exception cref="AgentClientException"><c>invalid_params</c> when the selector is not a number.</exception>
+        internal static List<AgentInstance> Match(IReadOnlyList<AgentInstance> instances, string selector) {
+            if (string.IsNullOrWhiteSpace(selector))
+                return instances.ToList();
+            if (!int.TryParse(selector, out var number))
+                throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
+
+            var byProcessId = instances.Where(instance => instance.ProcessId == number).ToList();
+            if (byProcessId.Count > 0 || number < 2000 || number >= 2100)
+                return byProcessId;
+            var year = number.ToString(CultureInfo.InvariantCulture);
+            return instances.Where(instance => instance.RevitVersion == year).ToList();
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -218,14 +252,59 @@ namespace pyRevitCLI {
                 .ToList();
         }
 
-        private static bool IsAlive(int processId) {
+        private static InstanceLiveness GetLiveness(AgentInstance instance) {
             try {
-                using (var process = Process.GetProcessById(processId))
-                    return !process.HasExited;
+                using (var process = Process.GetProcessById(instance.ProcessId)) {
+                    try {
+                        if (process.HasExited)
+                            return InstanceLiveness.Stale;
+                    }
+                    catch (Exception) {
+                    }
+
+                    var hasRevitName = false;
+                    try {
+                        if (!string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
+                            return InstanceLiveness.Stale;
+                        hasRevitName = true;
+                    }
+                    catch (Exception) {
+                    }
+
+                    if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)) {
+                        try {
+                            if (ProcessStartTimeReader(process).ToUniversalTime() - started.UtcDateTime > TimeSpan.FromSeconds(2))
+                                return InstanceLiveness.Stale;
+                            if (hasRevitName)
+                                return InstanceLiveness.Live;
+                        }
+                        catch (Exception) {
+                        }
+                    }
+
+                    return InstanceLiveness.Uncertain;
+                }
+            }
+            catch (ArgumentException) {
+                return InstanceLiveness.Stale;
             }
             catch (Exception) {
-                return false;
+                return InstanceLiveness.Uncertain;
             }
+        }
+
+        private static bool HasPipe(AgentInstance instance) {
+            if (string.IsNullOrWhiteSpace(instance.Pipe))
+                return false;
+
+            for (var attempt = 0; attempt < 3; attempt++) {
+                if (attempt > 0)
+                    DiscoveryDelay(300);
+                if (PipeExists(instance.Pipe))
+                    return true;
+            }
+
+            return false;
         }
     }
 }
