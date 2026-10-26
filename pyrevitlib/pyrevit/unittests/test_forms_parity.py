@@ -88,6 +88,10 @@ class ModalFormsParityTests(unittest.TestCase):
 
     def test_balloon_notification(self):
         """InfoCenter balloon notifications run through the active engine."""
+        try:
+            import Autodesk.Internal.InfoCenter
+        except ImportError:
+            self.skipTest("Revit InfoCenter is required")
         forms.show_balloon("CPython Forms", "Notification compatibility check")
 
     def test_string_accept_and_cancel(self):
