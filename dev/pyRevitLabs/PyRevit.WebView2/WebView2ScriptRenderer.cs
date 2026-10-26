@@ -1,63 +1,14 @@
 using System;
-using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
-using pyRevitLabs.NLog;
+using Microsoft.Web.WebView2.Core;
+using PyRevitLabs.PyRevit.Renderer;
+using WebView2Control = Microsoft.Web.WebView2.Wpf.WebView2;
 
-namespace PyRevitLabs.PyRevit.Runtime {
-    /// <summary>
-    /// Renderer lifecycle tracing. Records go through NLog to
-    /// <see cref="ScriptLoggerService"/> like every other runtime record, so they
-    /// persist to the pyRevit runtime log and surface in the console only when
-    /// the user has debug logging on.
-    ///
-    /// Bringing WebView2 up is asynchronous and spans several callbacks, so when
-    /// an output window comes up blank the only way to tell "never started" from
-    /// "started and threw" from "loaded but never flushed" is this trail.
-    ///
-    /// Invariant: emission is re-entrancy guarded. A visible record appends to an
-    /// output window, which schedules another flush, which logs again; without the
-    /// guard renderer logging feeds itself on the same thread.
-    /// </summary>
-    internal static class ScriptRendererLog {
-        private static readonly Logger Logger = LogManager.GetLogger("pyrevit.runtime.webview");
-
-        [ThreadStatic]
-        private static bool _emitting;
-
-        public static void Debug(string format, params object[] args) {
-            Emit(false, format, args);
-        }
-
-        public static void Error(string format, params object[] args) {
-            Emit(true, format, args);
-        }
-
-        private static void Emit(bool isError, string format, object[] args) {
-            if (_emitting)
-                return;
-
-            _emitting = true;
-            try {
-                var message = args == null || args.Length == 0
-                    ? format
-                    : string.Format(CultureInfo.InvariantCulture, format, args);
-                if (isError)
-                    Logger.Error(message);
-                else
-                    Logger.Debug(message);
-            }
-            catch {
-            }
-            finally {
-                _emitting = false;
-            }
-        }
-    }
-
+namespace PyRevitLabs.PyRevit.WebView2 {
     /// <summary>
     /// Chromium renderer behind a script output window. Owns WebView2 control
     /// lifecycle, environment/user-data-folder setup, runtime availability
@@ -71,88 +22,75 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// (<see cref="WaitUntilReady"/>, <see cref="EvalScript"/>) pumps, and only
     /// from user commands.
     /// </summary>
-    internal sealed class ScriptWebView : IDisposable {
-        internal const string RuntimeDownloadUrl = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+    public sealed class WebView2ScriptRenderer : IScriptRenderer {
         private static readonly object EnvironmentLock = new object();
-        private static Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> _sharedEnvironment;
+        private static Task<CoreWebView2Environment> _sharedEnvironment;
         private static int _runtimeMissingPromptShown;
+        private static Exception _loaderFolderError;
 
-        private readonly Microsoft.Web.WebView2.Wpf.WebView2 _control;
+        static WebView2ScriptRenderer() {
+            PinLoaderFolder();
+        }
+
+        private readonly WebView2Control _control;
         private readonly Dispatcher _dispatcher;
+        private readonly string _profileFolder;
         private TaskCompletionSource<bool> _navigationTcs;
         private readonly TaskCompletionSource<bool> _readyTcs =
             new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private volatile bool _coreReady;
-        private volatile bool _runtimeMissing;
+        private volatile RendererFailure _failure = RendererFailure.None;
         private volatile bool _initFailed;
         private volatile bool _initStarted;
         private volatile bool _everNavigated;
         private volatile bool _lastNavigationCompleted = true;
         private bool _disposed;
 
-        public ScriptWebView(Dispatcher ownerDispatcher) {
+        /// <summary>
+        /// Creates the renderer.
+        /// </summary>
+        /// <param name="ownerDispatcher">Dispatcher owning the renderer control.</param>
+        /// <param name="profileFolder">
+        /// Name of the per-host browser profile folder. Every Revit version gets
+        /// its own so that side-by-side hosts do not share a browser process.
+        /// </param>
+        public WebView2ScriptRenderer(Dispatcher ownerDispatcher, string profileFolder) {
             _dispatcher = ownerDispatcher ?? Dispatcher.CurrentDispatcher;
-            _control = new Microsoft.Web.WebView2.Wpf.WebView2();
+            _profileFolder = string.IsNullOrEmpty(profileFolder) ? "shared" : profileFolder;
+            _control = new WebView2Control();
         }
 
-        /// <summary>Raised for top-level navigations so the owner can enforce URL policy.</summary>
-        public event EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs> NavigationStartingRequested;
+        /// <inheritdoc />
+        public event EventHandler<RendererNavigationStartingEventArgs> NavigationStartingRequested;
 
-        /// <summary>
-        /// Raised on the owner dispatcher whenever the view becomes able to accept
-        /// content: after the core comes online and after each navigation settles.
-        /// Owners buffering output flush on this instead of polling.
-        /// </summary>
+        /// <inheritdoc />
         public event EventHandler DocumentReady;
 
-        public Microsoft.Web.WebView2.Wpf.WebView2 Control => _control;
+        /// <inheritdoc />
+        public FrameworkElement Control => _control;
 
-        public Microsoft.Web.WebView2.Core.CoreWebView2 Core => _control.CoreWebView2;
-
-        /// <summary>Version of the WebView2 Runtime backing this view; empty until initialized.</summary>
+        /// <inheritdoc />
         public string BrowserVersion { get; private set; } = string.Empty;
 
-        /// <summary>
-        /// True when runtime detection fails synchronously during initialization.
-        /// The owner can display plain text before the first buffered output is flushed.
-        /// </summary>
-        public bool RuntimeMissing { get { return _runtimeMissing; } }
+        /// <inheritdoc />
+        public RendererFailure Failure { get { return _failure; } }
 
-        /// <summary>True when the core could not be brought up; the view will never render.</summary>
+        /// <inheritdoc />
         public bool InitializationFailed { get { return _initFailed; } }
 
-        /// <summary>True once the core is up or has permanently failed; never faults.</summary>
+        /// <inheritdoc />
         public Task ReadyTask { get { return _readyTcs.Task; } }
 
-        /// <summary>Fast cross-thread check: core is up and the latest top-level navigation finished loading.</summary>
+        /// <inheritdoc />
         public bool IsDocumentReady {
-            get { return _coreReady && !_runtimeMissing && _everNavigated && _lastNavigationCompleted; }
+            get { return _coreReady && _failure == RendererFailure.None && _everNavigated && _lastNavigationCompleted; }
         }
 
-        public static bool IsRuntimeAvailable() {
-            try {
-                Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString();
-                return true;
-            }
-            catch {
-                return false;
-            }
-        }
+        /// <inheritdoc />
+        public bool IsCoreReady { get { return _coreReady; } }
 
-        /// <summary>
-        /// Start bringing the core online and run the first navigation. The
-        /// provider is invoked once, after the runtime is confirmed, and returns
-        /// the URI to load (or null to skip navigation).
-        ///
-        /// This never blocks. Bringing WebView2 up takes seconds, and pyRevit
-        /// calls this from Revit API callbacks during session load; pumping a
-        /// nested dispatcher frame there re-enters Revit's message loop while
-        /// Revit is still initializing and terminates the process. Callers that
-        /// genuinely need the document buffer their content and flush from
-        /// <see cref="DocumentReady"/>, or wait explicitly via
-        /// <see cref="WaitUntilReady"/> from a context where pumping is safe.
-        /// </summary>
-        public void EnsureReady(Func<string> firstNavigationProvider = null) {
+        /// <inheritdoc />
+        public void EnsureReady(Func<string> firstNavigationProvider) {
             if (_disposed)
                 return;
 
@@ -168,16 +106,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        /// <summary>
-        /// Block the calling thread until the document is readable — the core is
-        /// up and the initial navigation has settled — or initialization has
-        /// permanently failed. Keeps the owner dispatcher alive while waiting.
-        ///
-        /// Warning: only safe outside Revit API callbacks. The print path must
-        /// not use this; see <see cref="EnsureReady"/>.
-        /// </summary>
+        /// <inheritdoc />
         public void WaitUntilReady(int timeoutMilliseconds = 30000) {
-            if (_disposed || _runtimeMissing || _initFailed || IsDocumentReady)
+            if (_disposed || _failure != RendererFailure.None || _initFailed || IsDocumentReady)
                 return;
 
             if (!_dispatcher.CheckAccess()) {
@@ -192,7 +123,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (!_coreReady)
                 PumpUntil(_readyTcs.Task, timeoutMilliseconds);
 
-            if (_disposed || _runtimeMissing || _initFailed)
+            if (_disposed || _failure != RendererFailure.None || _initFailed)
                 return;
 
             var navigation = _navigationTcs;
@@ -200,7 +131,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 PumpUntil(navigation.Task, timeoutMilliseconds);
         }
 
-        /// <summary>Navigate the top-level document. Does not block; watch <see cref="DocumentReady"/>.</summary>
+        /// <inheritdoc />
         public void Navigate(string url) {
             if (_disposed || string.IsNullOrEmpty(url))
                 return;
@@ -215,11 +146,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             });
         }
 
-        /// <summary>
-        /// Submit a script for execution without waiting for a result. Calls
-        /// made from the owning thread reach the browser in submission order,
-        /// which keeps ordered content inserts consistent.
-        /// </summary>
+        /// <inheritdoc />
         public void PostScript(string javaScript) {
             if (_disposed || javaScript == null)
                 return;
@@ -229,7 +156,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _dispatcher.BeginInvoke(new Action(() => _control?.CoreWebView2?.ExecuteScriptAsync(javaScript)));
         }
 
-        /// <summary>Execute a script and block until its JSON-encoded result arrives.</summary>
+        /// <inheritdoc />
         public string EvalScript(string javaScript) {
             if (_disposed || javaScript == null)
                 return "null";
@@ -244,7 +171,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             });
         }
 
-        /// <summary>Show the Chromium print dialog for the current document.</summary>
+        /// <inheritdoc />
         public void ShowPrintUi() {
             if (_disposed)
                 return;
@@ -257,6 +184,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             });
         }
 
+        /// <inheritdoc />
         public void Dispose() {
             if (_disposed)
                 return;
@@ -285,7 +213,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// window that does not exist yet, leaving the view black.
         /// </summary>
         private void BeginInitialize(Func<string> firstNavigationProvider) {
-            if (_disposed || _runtimeMissing || _initFailed)
+            if (_disposed || _failure != RendererFailure.None || _initFailed)
                 return;
 
             if (_coreReady) {
@@ -297,13 +225,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             _initStarted = true;
 
-            if (!IsRuntimeAvailable()) {
-                _runtimeMissing = true;
+            var runtimeState = _loaderFolderError != null ? RuntimeState.Broken : ProbeRuntime();
+            if (runtimeState != RuntimeState.Available) {
+                _failure = runtimeState == RuntimeState.Missing
+                    ? RendererFailure.RuntimeMissing
+                    : RendererFailure.BrokenDeployment;
                 BrowserVersion = string.Empty;
                 _readyTcs.TrySetResult(false);
-                _dispatcher.BeginInvoke(
-                    new Action(ShowRuntimeMissingDialog),
-                    DispatcherPriority.ApplicationIdle);
+                if (runtimeState == RuntimeState.Missing) {
+                    _dispatcher.BeginInvoke(
+                        new Action(ShowRuntimeMissingDialog),
+                        DispatcherPriority.ApplicationIdle);
+                }
                 return;
             }
 
@@ -362,19 +295,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         private async Task InitializeCoreAsync(Func<string> firstNavigationProvider) {
             try {
-                Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> envTask;
+                Task<CoreWebView2Environment> envTask;
                 lock (EnvironmentLock) {
                     if (_sharedEnvironment == null) {
-                        var options = new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions {
+                        var options = new CoreWebView2EnvironmentOptions {
                             AdditionalBrowserArguments = BuildBrowserArguments()
                         };
-                        _sharedEnvironment = Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(
+                        _sharedEnvironment = CoreWebView2Environment.CreateAsync(
                             null, GetUserDataFolder(), options);
                     }
                     envTask = _sharedEnvironment;
                 }
 
-                Microsoft.Web.WebView2.Core.CoreWebView2Environment environment;
+                CoreWebView2Environment environment;
                 try {
                     environment = await envTask;
                 }
@@ -393,6 +326,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     "environment ready (runtime {0}); creating controller",
                     environment.BrowserVersionString);
                 await _control.EnsureCoreWebView2Async(environment);
+                LogLoadContexts();
                 ScriptRendererLog.Debug(
                     "controller created: core={0} size={1}x{2}",
                     _control.CoreWebView2 != null, _control.ActualWidth, _control.ActualHeight);
@@ -422,6 +356,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     "WebView2 initialization failed; this output window will not render. {0}", ex);
             }
         }
+
+#if !NETFRAMEWORK
+        /// <summary>
+        /// Records the load context of the WebView2 assemblies so that the
+        /// isolation from the host process is observable in the runtime log.
+        /// </summary>
+        private static void LogLoadContexts() {
+            LogLoadContext("Microsoft.Web.WebView2.Core", typeof(CoreWebView2Environment).Assembly);
+            LogLoadContext("Microsoft.Web.WebView2.Wpf", typeof(WebView2Control).Assembly);
+            LogLoadContext("pyRevitLabs.PyRevit.WebView2", typeof(WebView2ScriptRenderer).Assembly);
+        }
+
+        private static void LogLoadContext(string label, System.Reflection.Assembly assembly) {
+            var context = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(assembly);
+            ScriptRendererLog.Debug(
+                "{0} version {1} loaded into load context '{2}'",
+                label,
+                assembly.GetName().Version,
+                context == null ? "<none>" : context.Name);
+        }
+#else
+        private static void LogLoadContexts() {
+        }
+#endif
 
         private void RunFirstNavigation(Func<string> firstNavigationProvider) {
             if (firstNavigationProvider == null || _everNavigated || !_coreReady || _disposed)
@@ -461,29 +419,89 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
-        /// Per-Revit-version WebView2 profile folder. Sharing one folder across
-        /// Revit versions makes every host connect to whichever browser process
-        /// won the race, which can deadlock or fail-fast during startup when
-        /// several versions run side by side; the runtime assembly name carries
-        /// the Revit version, so each gets an isolated browser process.
+        /// Per-host WebView2 profile folder. Sharing one folder across Revit
+        /// versions makes every host connect to whichever browser process won
+        /// the race, which can deadlock or fail-fast during startup when
+        /// several versions run side by side.
         /// </summary>
-        private static string GetUserDataFolder() {
-            var versionFolder = "shared";
-            try {
-                var match = Regex.Match(
-                    Path.GetFileNameWithoutExtension(typeof(ScriptWebView).Assembly.Location),
-                    @"(\d{4})$");
-                if (match.Success)
-                    versionFolder = match.Groups[1].Value;
-            }
-            catch {
-            }
+        private string GetUserDataFolder() {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "pyRevit",
                 "WebView2",
-                versionFolder
+                _profileFolder
                 );
+        }
+
+        /// <summary>
+        /// Pins the native loader to the folder this renderer was loaded from.
+        ///
+        /// The core probes for <c>WebView2Loader.dll</c> itself before falling
+        /// back to the managed resolution path, so the load-context override
+        /// alone cannot guarantee which copy wins when the host process or the
+        /// host search path offers another one. A copy from a different WebView2
+        /// version is what breaks the environment at startup, which is why the
+        /// folder is stated rather than probed.
+        ///
+        /// Important: the core ignores this setting once it has loaded the
+        /// loader, so it runs from the type initializer, before any environment
+        /// API is reachable.
+        /// </summary>
+        private static void PinLoaderFolder() {
+            try {
+                var folder = Path.GetDirectoryName(typeof(WebView2ScriptRenderer).Assembly.Location);
+                if (string.IsNullOrEmpty(folder))
+                    throw new InvalidOperationException(
+                        "The renderer assembly has no location, so the folder holding the native "
+                        + "WebView2 loader is unknown.");
+
+                CoreWebView2Environment.SetLoaderDllFolderPath(folder);
+            }
+            catch (Exception ex) {
+                ScriptRendererLog.Error(
+                    "could not pin the WebView2 loader folder: {0}", ex.Message);
+                if (LoaderFolderIsIsolated)
+                    _loaderFolderError = ex;
+            }
+        }
+
+        /// <summary>
+        /// True when the renderer owns its WebView2 core, which makes the
+        /// loader pin mandatory: without it the core can pick up a loader from
+        /// a different version and the environment start fails. On the .NET
+        /// Framework the host shares its core with pyRevit and may already have
+        /// loaded the loader, so the pin is best effort and a failure leaves
+        /// the previous resolution in place.
+        /// </summary>
+        private static bool LoaderFolderIsIsolated {
+            get {
+#if NETFRAMEWORK
+                return false;
+#else
+                return true;
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Distinguishes an absent Evergreen runtime, which the user can fix by
+        /// installing it, from a broken deployment, which the user cannot.
+        /// Treating the second as the first sends people to install a runtime
+        /// they already have while the real fault stays hidden.
+        /// </summary>
+        private static RuntimeState ProbeRuntime() {
+            try {
+                CoreWebView2Environment.GetAvailableBrowserVersionString();
+                return RuntimeState.Available;
+            }
+            catch (WebView2RuntimeNotFoundException) {
+                return RuntimeState.Missing;
+            }
+            catch (Exception ex) {
+                ScriptRendererLog.Error(
+                    "the WebView2 stack could not start: {0}: {1}", ex.GetType().Name, ex.Message);
+                return RuntimeState.Broken;
+            }
         }
 
         /// <summary>
@@ -493,11 +511,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// handler, and clearing the flag here would strand the view as "not
         /// ready" whenever a cancelled navigation never reports completion.
         /// </summary>
-        private void OnNavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e) {
-            NavigationStartingRequested?.Invoke(this, e);
+        private void OnNavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e) {
+            var args = new RendererNavigationStartingEventArgs(e.Uri);
+            NavigationStartingRequested?.Invoke(this, args);
+            e.Cancel = args.Cancel;
         }
 
-        private void OnNavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e) {
+        private void OnNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) {
             ScriptRendererLog.Debug(
                 "navigation completed: success={0} status={1}", e.IsSuccess, e.WebErrorStatus);
             _lastNavigationCompleted = true;
@@ -559,7 +579,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     );
                 if (choice == System.Windows.MessageBoxResult.Yes)
                     System.Diagnostics.Process.Start(
-                        new System.Diagnostics.ProcessStartInfo(RuntimeDownloadUrl) {
+                        new System.Diagnostics.ProcessStartInfo(ScriptRendererConsts.RuntimeDownloadUrl) {
                             UseShellExecute = true
                         });
             }
@@ -567,5 +587,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        private enum RuntimeState {
+            Available,
+            Missing,
+            Broken,
+        }
     }
 }

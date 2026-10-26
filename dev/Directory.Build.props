@@ -22,6 +22,8 @@
     <Company>pyRevitLabs.io</Company>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)WebView2Version.props" />
+
   <ItemGroup Condition="'$(UseRevit)' == 'true'">
     <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
     <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
