@@ -126,7 +126,7 @@ class GetValueWindow(TemplateUserInputWindow):
             self.dropdownPrompt.Text = (
                 value_prompt if value_prompt else "Pick one value:"
             )
-            self.dropdown_cb.ItemsSource = self._context
+            self.dropdown_cb.ItemsSource = _backend.items_source(self._context)
             if value_default:
                 self.dropdown_cb.SelectedItem = value_default
         elif self.value_type == "date":
@@ -329,5 +329,42 @@ def ask_for_number_slider(
         max=max,
         min=min,
         interval=interval,
+        **kwargs
+    )  # fmt: skip
+
+
+def ask_for_one_item(items, default=None, prompt=None, title=None, **kwargs):
+    """Ask user to select an item from a list of items.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    'single-select' data types. kwargs can be used to pass on other arguments.
+
+    Args:
+        items (list[str]): list of items to choose from
+        default (str): default selected item
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        (str): selected item
+
+    Examples:
+        ```python
+        forms.ask_for_one_item(
+            ['test item 1', 'test item 2', 'test item 3'],
+            default='test item 2',
+            prompt='test prompt',
+            title='test title'
+        )
+        'test item 1'
+        ```
+    """
+    return GetValueWindow.show(
+        items,
+        value_type="dropdown",
+        default=default,
+        prompt=prompt,
+        title=title,
         **kwargs
     )  # fmt: skip

@@ -1,7 +1,15 @@
-"""CPython forms exports, with stable errors for features awaiting migration."""
+"""CPython forms share behavior with IronPython through the native WPF backend."""
 
 from pyrevit import PyRevitCPythonNotSupported
-from .base import WPFWindow
+from .base import (
+    WPFWindow,
+    WPF_VISIBLE,
+    WPF_COLLAPSED,
+    WPF_HIDDEN,
+    XAML_FILES_DIR,
+    is_dark_theme,
+    WindowToggler,
+)
 from .dialogs import (
     TemplateUserInputWindow,
     GetValueWindow,
@@ -9,84 +17,140 @@ from .dialogs import (
     ask_for_unique_string,
     ask_for_date,
     ask_for_number_slider,
+    ask_for_one_item,
 )
 from .native import (
     alert,
     alert_ifnot,
-    pick_file,
     pick_folder,
+    pick_file,
     save_file,
     pick_excel_file,
     save_excel_file,
+    ask_for_color,
 )
-
-__all__ = [
-    "WPFWindow",
-    "TemplateUserInputWindow",
-    "GetValueWindow",
-    "alert",
-    "alert_ifnot",
-    "SelectFromList",
-    "CommandSwitchWindow",
-    "ProgressBar",
-    "ask_for_string",
-    "ask_for_unique_string",
-    "ask_for_one_item",
-    "ask_for_date",
-    "ask_for_number_slider",
-    "pick_file",
-    "pick_folder",
-    "save_file",
-    "pick_excel_file",
-    "save_excel_file",
-    "show_balloon",
-    "activate_open_window",
-]
-
-
-def _raise_not_supported(feature_name):
-    raise PyRevitCPythonNotSupported(feature_name)
-
-
-class _NotSupportedBase(object):
-    _feature_name = None
-
-    def __init__(self, *args, **kwargs):
-        _raise_not_supported(self._feature_name)
-
-    @classmethod
-    def _raise(cls, suffix=None):
-        feature_name = cls._feature_name
-        if suffix:
-            feature_name = "{}.{}".format(feature_name, suffix)
-        _raise_not_supported(feature_name)
-
-
-class _UnsupportedWindow(_NotSupportedBase):
-    @classmethod
-    def show(cls, *args, **kwargs):
-        cls._raise("show")
-
-
-class SelectFromList(_UnsupportedWindow):
-    _feature_name = "pyrevit.forms.SelectFromList"
-
-
-class CommandSwitchWindow(_UnsupportedWindow):
-    _feature_name = "pyrevit.forms.CommandSwitchWindow"
-
-
-class ProgressBar(_NotSupportedBase):
-    _feature_name = "pyrevit.forms.ProgressBar"
-
-
-def ask_for_one_item(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.ask_for_one_item")
-
-
-def show_balloon(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.show_balloon")
+from .reactive import (
+    Reactive,
+    reactive,
+    TemplateListItem,
+    ParamDef,
+)
+from .listdialog import (
+    SelectFromList,
+)
+from .commanddialog import (
+    CommandSwitchWindow,
+)
+from .promptbars import (
+    TemplatePromptBar,
+    WarningBar,
+    ProgressBar,
+)
+from .search import (
+    SearchPrompt,
+)
+from .selection import (
+    RevisionOption,
+    SheetOption,
+    ViewOption,
+    LevelOption,
+    FamilyParamOption,
+    select_revisions,
+    select_sheets,
+    select_views,
+    select_levels,
+    select_viewtemplates,
+    select_schedules,
+    select_open_docs,
+    select_titleblocks,
+    select_swatch,
+    select_image,
+    select_parameters,
+    select_family_parameters,
+)
+from .checks import (
+    check_workshared,
+    check_selection,
+    check_familydoc,
+    check_modeldoc,
+    check_modelview,
+    check_viewtype,
+    check_graphicalview,
+    ask_to_use_selected,
+    inform_wip,
+)
+from .notify import (
+    result_item_result_clicked,
+    show_balloon,
+    toast,
+)
 
 
 def activate_open_window(*args, **kwargs):
-    _raise_not_supported("pyrevit.forms.activate_open_window")
+    raise PyRevitCPythonNotSupported("pyrevit.forms.activate_open_window")
+
+
+__all__ = [
+    "WPFWindow",
+    "WPF_VISIBLE",
+    "WPF_COLLAPSED",
+    "WPF_HIDDEN",
+    "XAML_FILES_DIR",
+    "is_dark_theme",
+    "WindowToggler",
+    "TemplateUserInputWindow",
+    "GetValueWindow",
+    "ask_for_string",
+    "ask_for_unique_string",
+    "ask_for_date",
+    "ask_for_number_slider",
+    "ask_for_one_item",
+    "alert",
+    "alert_ifnot",
+    "pick_folder",
+    "pick_file",
+    "save_file",
+    "pick_excel_file",
+    "save_excel_file",
+    "ask_for_color",
+    "Reactive",
+    "reactive",
+    "TemplateListItem",
+    "ParamDef",
+    "SelectFromList",
+    "CommandSwitchWindow",
+    "TemplatePromptBar",
+    "WarningBar",
+    "ProgressBar",
+    "SearchPrompt",
+    "RevisionOption",
+    "SheetOption",
+    "ViewOption",
+    "LevelOption",
+    "FamilyParamOption",
+    "select_revisions",
+    "select_sheets",
+    "select_views",
+    "select_levels",
+    "select_viewtemplates",
+    "select_schedules",
+    "select_open_docs",
+    "select_titleblocks",
+    "select_swatch",
+    "select_image",
+    "select_parameters",
+    "select_family_parameters",
+    "check_workshared",
+    "check_selection",
+    "check_familydoc",
+    "check_modeldoc",
+    "check_modelview",
+    "check_viewtype",
+    "check_graphicalview",
+    "ask_to_use_selected",
+    "inform_wip",
+    "result_item_result_clicked",
+    "show_balloon",
+    "toast",
+    "activate_open_window",
+]
