@@ -1,6 +1,8 @@
 #! python3
 """Exercise standard pyRevit forms manually using CPython."""
 
+import os.path as op
+
 from pyrevit import forms, script
 
 
@@ -131,4 +133,6 @@ print(
     )
 )
 
-print(forms.select_image(script.get_bundle_files("images/")))
+image_fixture = script.get_bundle_file("../icon.png")
+if op.isfile(image_fixture):
+    print(forms.select_image([image_fixture]))
