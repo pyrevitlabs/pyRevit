@@ -38,6 +38,14 @@ def _load_dialog():
     return scope["GetValueWindow"]
 
 
+def _load_usage_inventory():
+    script = Path(__file__).resolve().with_name("forms_usage.py")
+    spec = importlib.util.spec_from_file_location("forms_usage", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.inventory(FORMS.parents[2])
+
+
 class XamlPreparationTests(unittest.TestCase):
     """Keep namespace-sensitive WPF markup intact while deferring events."""
 
@@ -89,6 +97,12 @@ class XamlPreparationTests(unittest.TestCase):
         ]
         self.assertEqual(["theme.xaml", "locale.xaml", "custom.xaml"], sources)
         self.assertEqual(1, len(document.getElementsByTagName("Style")))
+
+    def test_bundled_xaml_handlers_are_deferred(self):
+        """Every bundled custom handler uses a CPython-deferred WPF event."""
+        audit = _load_usage_inventory()["xaml_events"]
+        self.assertEqual([], audit["unparsed"])
+        self.assertEqual([], audit["unsupported"])
 
     def test_template_names_remain_in_their_own_namescope(self):
         """Template names are not exposed as window fields."""
