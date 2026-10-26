@@ -9,6 +9,8 @@ from xml.dom import minidom
 
 
 _NON_EVENT_ATTRIBUTES = {"DisplayMemberPath"}
+_CPYTHON_MODAL_ONLY = {"WPFWindow"}
+_CPYTHON_UNSUPPORTED = {"activate_open_window"}
 
 
 def _deferred_events(root):
@@ -27,6 +29,28 @@ def _deferred_events(root):
         )
     )
     return set(ast.literal_eval(assignment.value))
+
+
+def _cpython_exports(root):
+    tree = ast.parse(
+        (root / "pyrevitlib" / "pyrevit" / "forms" / "_cpy.py").read_text(
+            encoding="utf-8"
+        )
+    )
+    assignment = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "__all__"
+            for target in node.targets
+        )
+    )
+    return set(ast.literal_eval(assignment.value)) | {
+        "settings_window",
+        "utils",
+        "toaster",
+    }
 
 
 def _xaml_event_audit(root):
@@ -120,12 +144,35 @@ def inventory(root):
                 name = direct.get(node.id)
             if name:
                 references[name].add(str(path.relative_to(root)))
+    references = {name: sorted(paths) for name, paths in sorted(references.items())}
+    exports = _cpython_exports(root)
+    modal_only = {
+        name: paths for name, paths in references.items() if name in _CPYTHON_MODAL_ONLY
+    }
+    supported = {
+        name: paths
+        for name, paths in references.items()
+        if name in exports
+        and name not in _CPYTHON_MODAL_ONLY
+        and name not in _CPYTHON_UNSUPPORTED
+    }
+    unsupported = {
+        name: paths
+        for name, paths in references.items()
+        if name not in exports or name in _CPYTHON_UNSUPPORTED
+    }
     return {
-        "references": {
-            name: sorted(paths) for name, paths in sorted(references.items())
-        },
+        "references": {name: paths for name, paths in references.items()},
         "skipped": skipped,
         "xaml_events": _xaml_event_audit(root),
+        "cpython": {
+            "supported_references": sum(len(paths) for paths in supported.values()),
+            "modal_only_references": sum(len(paths) for paths in modal_only.values()),
+            "unsupported_references": sum(len(paths) for paths in unsupported.values()),
+            "supported": supported,
+            "modal_only": modal_only,
+            "unsupported": unsupported,
+        },
     }
 
 
@@ -141,6 +188,17 @@ if __name__ == "__main__":
                 "xaml_event_handlers": report["xaml_events"]["handler_count"],
                 "unsupported_xaml_events": report["xaml_events"]["unsupported"],
                 "unparsed_xaml": report["xaml_events"]["unparsed"],
+                "cpython_supported_references": report["cpython"][
+                    "supported_references"
+                ],
+                "cpython_unsupported_references": report["cpython"][
+                    "unsupported_references"
+                ],
+                "cpython_modal_only_references": report["cpython"][
+                    "modal_only_references"
+                ],
+                "cpython_modal_only_apis": report["cpython"]["modal_only"],
+                "cpython_unsupported_apis": report["cpython"]["unsupported"],
             },
             indent=2,
         )

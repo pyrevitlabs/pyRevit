@@ -104,6 +104,26 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertEqual([], audit["unparsed"])
         self.assertEqual([], audit["unsupported"])
 
+    def test_inventory_reports_cpython_modal_and_unsupported_boundaries(self):
+        """Bundled forms usage stays within the documented CPython boundary."""
+        coverage = _load_usage_inventory()["cpython"]
+        self.assertEqual(355, coverage["supported_references"])
+        self.assertEqual(26, coverage["modal_only_references"])
+        self.assertEqual(15, coverage["unsupported_references"])
+        self.assertEqual({"WPFWindow"}, set(coverage["modal_only"]))
+        self.assertEqual(
+            {
+                "WPFPanel",
+                "activate_open_window",
+                "get_dockable_panel",
+                "is_registered_dockable_panel",
+                "open_dockable_panel",
+                "register_dockable_panel",
+                "toggle_dockable_panel",
+            },
+            set(coverage["unsupported"]),
+        )
+
     def test_template_names_remain_in_their_own_namescope(self):
         """Template names are not exposed as window fields."""
         _, names, _ = _load_xaml_helpers().prepare_xaml(
@@ -374,6 +394,16 @@ class NativeDialogTests(unittest.TestCase):
         """A negative result still exits when requested by the caller."""
         with self.assertRaises(SystemExit):
             self._alert(_Result.Cancel, exitscript=True)
+
+    def test_warning_delegates_to_the_warning_styled_alert(self):
+        """The legacy warning helper remains available through both engines."""
+        scope = {"alert": lambda message, *args, **kwargs: (message, kwargs)}
+        self._native_functions({"warning"}, scope)
+        self.assertEqual(("Message", {"warn_icon": True}), scope["warning"]("Message"))
+        self.assertEqual(
+            ("Message", {"warn_icon": False}),
+            scope["warning"]("Message", warn_icon=False),
+        )
 
 
 if __name__ == "__main__":

@@ -112,6 +112,7 @@ from .dialogs import (
 from .native import (
     alert,
     alert_ifnot,
+    warning,
     pick_excel_file,
     pick_file,
     pick_folder,
@@ -242,6 +243,7 @@ __all__ = [
     "activate_open_window",
     "alert",
     "alert_ifnot",
+    "warning",
     "ask_for_color",
     "ask_for_date",
     "ask_for_number_slider",
