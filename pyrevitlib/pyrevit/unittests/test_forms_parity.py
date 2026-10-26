@@ -466,9 +466,14 @@ class DocumentFormsParityTests(unittest.TestCase):
     def test_titleblocks(self):
         """The explicit no-titleblock option retains its invalid ElementId result."""
         from pyrevit import DB
+        from pyrevit.compat import get_elementid_value_func
 
         selected = self._select(lambda: forms.select_titleblocks(doc=self.doc))
-        self.assertEqual(DB.ElementId.InvalidElementId, selected)
+        get_elementid_value = get_elementid_value_func()
+        self.assertEqual(
+            get_elementid_value(DB.ElementId.InvalidElementId),
+            get_elementid_value(selected),
+        )
 
     def test_parameters(self):
         """Parameter selection returns a populated ParamDef rather than a native adapter."""
