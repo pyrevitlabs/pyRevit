@@ -53,7 +53,7 @@ class XamlPreparationTests(unittest.TestCase):
         """The real input markup keeps resources and element-to-element bindings."""
         helpers = _load_xaml_helpers()
         source = (FORMS / "GetValueWindow.xaml").read_text(encoding="utf-8")
-        markup, names, events = helpers.prepare_xaml(
+        markup, names, events, _ = helpers.prepare_xaml(
             source, ["file:///C:/forms/Theme.xaml"]
         )
         document = minidom.parseString(markup)
@@ -69,7 +69,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_event_without_name_receives_generated_name(self):
         """Unnamed controls remain reachable for deferred event attachment."""
-        markup, names, events = _load_xaml_helpers().prepare_xaml(
+        markup, names, events, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             '<Button Click="select"/></Window>',
             [],
@@ -81,7 +81,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_existing_resource_dictionary_keeps_entries_and_merge_order(self):
         """Authored resources retain precedence over injected resources."""
-        markup, _, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             "<Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries>"
             '<ResourceDictionary Source="custom.xaml"/>'
@@ -126,7 +126,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_template_names_remain_in_their_own_namescope(self):
         """Template names are not exposed as window fields."""
-        _, names, _ = _load_xaml_helpers().prepare_xaml(
+        _, names, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
             '<Window.Resources><ControlTemplate x:Key="t"><Border x:Name="inner"/>'
@@ -134,6 +134,46 @@ class XamlPreparationTests(unittest.TestCase):
             [],
         )
         self.assertEqual(["outer"], names)
+
+    def test_template_events_are_tagged_with_their_authored_element(self):
+        """Template handlers match only the element that declared them."""
+        markup, _, events, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<Window.Resources><DataTemplate x:Key="a"><CheckBox Checked="first"/>'
+            '</DataTemplate><DataTemplate x:Key="b"><CheckBox x:Uid="mine" '
+            'Checked="second" Unchecked="second"/></DataTemplate></Window.Resources>'
+            "</Window>",
+            [],
+        )
+        targets = [target for target, _, _ in events]
+        self.assertEqual(
+            [
+                "@template:CheckBox:_pyrevit_template_0",
+                "@template:CheckBox:mine",
+                "@template:CheckBox:mine",
+            ],
+            targets,
+        )
+        self.assertIn('Uid="_pyrevit_template_0"', markup)
+
+    def test_resource_names_record_their_owner_and_key(self):
+        """Names inside resource entries are resolved through the dictionary."""
+        _, names, events, resource_names = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<Window.Resources><ContextMenu x:Key="root"><MenuItem Click="copy"/>'
+            "</ContextMenu></Window.Resources><ListView><ListView.Resources>"
+            '<ResourceDictionary><ContextMenu x:Key="item"><MenuItem x:Name="copyItem"/>'
+            "</ContextMenu></ResourceDictionary></ListView.Resources></ListView>"
+            "</Window>",
+            [],
+        )
+        owner, key = resource_names["copyItem"]
+        self.assertEqual("item", key)
+        self.assertIn(owner, names)
+        self.assertNotIn(owner, resource_names)
+        self.assertEqual((None, "root"), resource_names[events[0][0]])
 
 
 class FormsExportsTests(unittest.TestCase):

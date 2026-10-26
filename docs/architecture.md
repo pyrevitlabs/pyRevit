@@ -173,8 +173,13 @@ IronPython continues to populate its CLR-derived windows with
 it creates no Python-derived CLR window types, avoiding type registration
 collisions on repeated commands. Its loader preserves XML namespace prefixes,
 prepends theme/localization dictionaries before parsing, resolves named controls,
-and attaches control events after loading. Template names remain in their own
-namescopes; routed events are handled at the root. CPython reactive models expose
+and attaches control events after loading. Names inside resource entries are
+resolved through their resource dictionary. Template names remain in their own
+namescopes; template event sources are tagged with a `Uid` and matched from
+root-level routed handlers, or get a direct handler when the tunnelling preview
+event first reaches them, so WPF's handled-event order is preserved. Direct
+(non-routed) events such as `MouseEnter` are not supported inside templates.
+CPython reactive models expose
 a managed `ExpandoObject` for two-way WPF binding while selector results retain
 the original Python or Revit object identity.
 

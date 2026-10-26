@@ -19,6 +19,7 @@ from System.Collections.Generic import IDictionary
 
 
 _controllers = weakref.WeakValueDictionary()
+_type_properties = {}
 
 
 class _Event(object):
@@ -57,47 +58,56 @@ class Reactive(object):
         self.PropertyChanged -= value
 
     def OnPropertyChanged(self, prop_name):
-        """Refresh native values and notify existing Python listeners."""
-        _refresh(self)
+        """Refresh native values and notify existing Python listeners.
+
+        Only ``prop_name`` is copied to the native model, matching WPF's
+        per-property notification; an empty name refreshes every property.
+        """
+        _refresh(self, [prop_name] if prop_name else None)
         args = ComponentModel.PropertyChangedEventArgs(prop_name)
         for handler in list(self.PropertyChanged.handlers):
             handler(self, args)
 
 
+def _properties_of(cls):
+    names = _type_properties.get(cls)
+    if names is None:
+        names = frozenset(
+            name for name in dir(cls) if isinstance(getattr(cls, name, None), property)
+        )
+        _type_properties[cls] = names
+    return names
+
+
 def _property_names(controller):
     names = set(controller.__dict__)
-    names.update(
-        name
-        for name in dir(type(controller))
-        if isinstance(getattr(type(controller), name, None), property)
-    )
+    names.update(_properties_of(type(controller)))
     wrapped = controller.__dict__.get("item")
     if wrapped is not None and hasattr(wrapped, "__dict__"):
         names.update(wrapped.__dict__)
-        names.update(
-            name
-            for name in dir(type(wrapped))
-            if isinstance(getattr(type(wrapped), name, None), property)
-        )
+        names.update(_properties_of(type(wrapped)))
     return [
         name for name in names if not name.startswith("_") and name != "PropertyChanged"
     ]
 
 
-def _refresh(controller):
+def _refresh(controller, names=None):
     state = controller.__dict__
     values = state.get("_binding_values")
     if values is None or state.get("_binding_updating"):
         return
     state["_binding_updating"] = True
     try:
-        for name in _property_names(controller):
+        for name in names or _property_names(controller):
             try:
                 value = getattr(controller, name)
-            except AttributeError:
+            except Exception:
                 continue
-            if not callable(value) and value is not controller:
-                values[name] = value
+            if callable(value) or value is controller:
+                continue
+            if values.ContainsKey(name) and values[name] == value:
+                continue
+            values[name] = value
     finally:
         state["_binding_updating"] = False
 

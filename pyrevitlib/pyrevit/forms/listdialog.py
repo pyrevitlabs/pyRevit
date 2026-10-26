@@ -362,17 +362,12 @@ class SelectFromList(TemplateUserInputWindow):
             if self.return_all:
                 return list(self._get_all_ctx())
             else:
+                selected = {
+                    id(_backend.unwrap_item(item))
+                    for item in self.list_lb.SelectedItems
+                }
                 return self._unwrap_options(
-                    [
-                        x
-                        for x in self._get_all_ctx()
-                        if x.state
-                        or x
-                        in [
-                            _backend.unwrap_item(item)
-                            for item in self.list_lb.SelectedItems
-                        ]
-                    ]
+                    [x for x in self._get_all_ctx() if x.state or id(x) in selected]
                 )
         else:
             return self._unwrap_options([self.list_lb.SelectedItem])[0]

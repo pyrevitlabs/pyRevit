@@ -28,7 +28,7 @@ class reactive(property):
             oldvalue = self.fget(ui_control)
             if oldvalue != newvalue:
                 setter(ui_control, newvalue)
-                Reactive.OnPropertyChanged(ui_control, setter.__name__)
+                ui_control.OnPropertyChanged(setter.__name__)
 
         return property(
             fget=self.fget, fset=newsetter, fdel=self.fdel, doc=self.__doc__
