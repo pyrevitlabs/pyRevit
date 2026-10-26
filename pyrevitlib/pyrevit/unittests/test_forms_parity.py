@@ -336,6 +336,41 @@ class ModalFormsParityTests(unittest.TestCase):
 
         _modal(Window, lambda: Window().show_dialog(), verify)
 
+    def test_custom_window_programmatic_events(self):
+        """Custom modal windows retain direct CLR event subscriptions."""
+
+        class Window(forms.WPFWindow):
+            events = []
+
+            def __init__(self):
+                forms.WPFWindow.__init__(
+                    self,
+                    '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+                    'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+                    '<StackPanel><Button x:Name="accept"/></StackPanel></Window>',
+                    literal_string=True,
+                )
+                self.clicks = 0
+                self.closes = 0
+                self.accept.Click += self.accept_clicked
+                self.Closed += self.closed
+
+            def accept_clicked(self, sender, args):
+                self.clicks += 1
+                self.events.append("click")
+                self.Close()
+
+            def closed(self, sender, args):
+                self.closes += 1
+                self.events.append("closed")
+
+        def verify(window):
+            _click(window.accept)
+            self.assertEqual(1, window.clicks)
+
+        _modal(Window, lambda: Window().ShowDialog(), verify)
+        self.assertEqual(["click", "closed"], Window.events)
+
 
 class DocumentFormsParityTests(unittest.TestCase):
     """Drive the public Revit selectors against an explicit disposable fixture."""
