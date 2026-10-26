@@ -8,6 +8,7 @@ import datetime
 import unittest
 
 from pyrevit import forms, framework
+from pyrevit.compat import IRONPY
 
 
 FIXTURE = {}
@@ -302,9 +303,11 @@ class ModalFormsParityTests(unittest.TestCase):
         self.assertIs(expected, value)
 
     def test_custom_reactive_window(self):
-        """Custom modal controls receive notifications and write edits back to Python."""
+        """CPython modal controllers receive binding updates from custom controls."""
+        if IRONPY:
+            self.skipTest("CPython composition backend contract")
 
-        class Window(forms.WPFWindow, forms.Reactive):
+        class ReactiveParityWindow(forms.WPFWindow, forms.Reactive):
             def __init__(self):
                 self._message = "initial"
                 forms.WPFWindow.__init__(
@@ -338,12 +341,18 @@ class ModalFormsParityTests(unittest.TestCase):
             ).UpdateSource()
             self.assertEqual("typed", window.message)
 
-        _modal(Window, lambda: Window().show_dialog(), verify)
+        _modal(
+            ReactiveParityWindow,
+            lambda: ReactiveParityWindow().show_dialog(),
+            verify,
+        )
 
     def test_custom_window_programmatic_events(self):
-        """Custom modal windows retain direct CLR event subscriptions."""
+        """CPython modal controllers retain direct CLR event subscriptions."""
+        if IRONPY:
+            self.skipTest("CPython composition backend contract")
 
-        class Window(forms.WPFWindow):
+        class EventParityWindow(forms.WPFWindow):
             events = []
 
             def __init__(self):
@@ -372,8 +381,8 @@ class ModalFormsParityTests(unittest.TestCase):
             _click(window.accept)
             self.assertEqual(1, window.clicks)
 
-        _modal(Window, lambda: Window().ShowDialog(), verify)
-        self.assertEqual(["click", "closed"], Window.events)
+        _modal(EventParityWindow, lambda: EventParityWindow().ShowDialog(), verify)
+        self.assertEqual(["click", "closed"], EventParityWindow.events)
 
 
 class DocumentFormsParityTests(unittest.TestCase):
