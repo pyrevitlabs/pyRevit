@@ -1,6 +1,7 @@
 """User notifications through Revit InfoCenter and Windows toast helpers."""
 
 from pyrevit.forms import toaster
+from pyrevit.api import AdWindows
 
 
 def result_item_result_clicked(sender, e, debug=False):
@@ -41,7 +42,6 @@ def show_balloon(
         ```
     """
     import Autodesk.Internal.InfoCenter
-    import Autodesk.Windows.ComponentManager
 
     result_item = Autodesk.Internal.InfoCenter.ResultItem()
     result_item.Category = header
@@ -53,7 +53,7 @@ def show_balloon(
     if timestamp:
         result_item.Timestamp = timestamp
     result_item.ResultClicked += click_result
-    balloon = Autodesk.Windows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
+    balloon = AdWindows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
         result_item
     )
     return balloon

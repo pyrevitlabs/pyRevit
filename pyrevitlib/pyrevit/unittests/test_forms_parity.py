@@ -85,6 +85,10 @@ def _visual_tree(root):
 class ModalFormsParityTests(unittest.TestCase):
     """Check values, actual control events and Python object identity."""
 
+    def test_balloon_notification(self):
+        """InfoCenter balloon notifications run through the active engine."""
+        forms.show_balloon("CPython Forms", "Notification compatibility check")
+
     def test_string_accept_and_cancel(self):
         """Public string input accepts edited text and cancellation returns None."""
 
