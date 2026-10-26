@@ -1,2 +1,2 @@
 title: Test CPython Forms
-tooltip: Exercise modal input dialogs and native pickers under CPython. Repeat after reload.
+tooltip: Run the rollback-only CPython forms acceptance suite against the active project.
