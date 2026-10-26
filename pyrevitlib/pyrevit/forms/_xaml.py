@@ -1,7 +1,7 @@
 """Prepare trusted dialog XAML for pythonnet without losing namespace prefixes.
 
-Only the built-in modal input events are adapted here. Templates retain their
-own namescopes; this is not a general replacement for DynamicXamlReader.
+Common control events are deferred until the native tree exists. Templates
+retain their own namescopes and use routed handlers on the root window.
 """
 
 from xml.dom import minidom
@@ -9,7 +9,37 @@ from xml.dom import minidom
 
 _WPF_NS = "http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 _XAML_NS = "http://schemas.microsoft.com/winfx/2006/xaml"
-_EVENTS = ("Click", "TextChanged")
+_EVENTS = (
+    "Click",
+    "TextChanged",
+    "Checked",
+    "Unchecked",
+    "SelectionChanged",
+    "MouseUp",
+    "MouseDown",
+    "MouseLeftButtonDown",
+    "MouseLeftButtonUp",
+    "MouseDoubleClick",
+    "PreviewMouseLeftButtonDown",
+    "PreviewKeyUp",
+    "MouseWheel",
+    "PreviewMouseWheel",
+    "PreviewKeyDown",
+    "KeyDown",
+    "KeyUp",
+    "Loaded",
+    "Closed",
+    "Closing",
+    "Activated",
+    "Deactivated",
+    "ContentRendered",
+    "RequestNavigate",
+    "ValueChanged",
+    "SizeChanged",
+    "IsVisibleChanged",
+    "GotFocus",
+    "LostFocus",
+)
 _TEMPLATES = ("ControlTemplate", "DataTemplate", "ItemsPanelTemplate", "Style")
 
 
@@ -68,22 +98,25 @@ def prepare_xaml(source, resource_sources):
     names = []
     events = []
 
-    def visit(node):
-        if node.localName in _TEMPLATES:
-            return
+    def visit(node, in_template=False):
+        in_template = in_template or node.localName in _TEMPLATES
         name = node.getAttributeNS(_XAML_NS, "Name") or node.getAttribute("Name")
-        if name:
-            names.append(name)
         for event in _EVENTS:
             if node.hasAttribute(event):
-                if not name:
-                    raise ValueError(
-                        "CPython XAML event {} requires x:Name".format(event)
-                    )
-                events.append((name, event, node.getAttribute(event)))
+                if in_template:
+                    target = "@template:" + node.localName
+                else:
+                    if not name:
+                        name = "_pyrevit_auto_{}".format(len(names))
+                        node.setAttributeNS(_XAML_NS, "x:Name", name)
+                        document.documentElement.setAttribute("xmlns:x", _XAML_NS)
+                    target = name
+                events.append((target, event, node.getAttribute(event)))
                 node.removeAttribute(event)
+        if name and not in_template:
+            names.append(name)
         for child in _children(node):
-            visit(child)
+            visit(child, in_template)
 
     visit(document.documentElement)
     _merge_resources(document, resource_sources)

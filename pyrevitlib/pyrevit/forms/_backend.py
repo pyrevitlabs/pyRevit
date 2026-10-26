@@ -5,7 +5,12 @@ from pyrevit.compat import IRONPY
 if IRONPY:
     from .backends._ipy import (
         Window,
+        Reactive,
+        list_source,
+        unwrap_item,
+        show_prompt,
         bind_event,
+        bind_control_event,
         dispose,
         initialize,
         items_source,
@@ -16,7 +21,12 @@ if IRONPY:
 else:
     from .backends._cpy import (
         Window,
+        Reactive,
+        list_source,
+        unwrap_item,
+        show_prompt,
         bind_event,
+        bind_control_event,
         dispose,
         initialize,
         items_source,
@@ -27,7 +37,12 @@ else:
 
 __all__ = [
     "Window",
+    "Reactive",
+    "list_source",
+    "unwrap_item",
+    "show_prompt",
     "bind_event",
+    "bind_control_event",
     "dispose",
     "initialize",
     "items_source",

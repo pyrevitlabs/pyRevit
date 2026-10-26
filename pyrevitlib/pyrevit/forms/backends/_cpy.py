@@ -2,11 +2,13 @@
 
 Important:
     Python controllers never become CLR-derived types. This avoids pythonnet
-    type-registration collisions on repeated commands and reloads. Arbitrary
-    custom XAML, data-bound Python models and modeless windows are not promised.
+    type-registration collisions on repeated commands and reloads. Reactive
+    models use managed binding adapters; persistent modeless windows remain
+    unsupported.
 """
 
 import io
+import importlib
 import os.path as op
 
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
@@ -15,6 +17,7 @@ from pyrevit.framework import System, Windows, Uri, UriKind
 from System.Windows.Markup import XamlReader, ParserContext
 
 from .._xaml import prepare_xaml
+from ._binding import Reactive, binding_source, unwrap_item
 
 
 class Window(object):
@@ -29,6 +32,8 @@ class Window(object):
     def __setattr__(self, name, value):
         window = self.__dict__.get("_window")
         if not name.startswith("_") and window is not None and hasattr(window, name):
+            if name == "DataContext":
+                value = binding_source(value)
             setattr(window, name, value)
         else:
             object.__setattr__(self, name, value)
@@ -75,6 +80,7 @@ def initialize(target):
         )
     target._window = Windows.Window()
     target._event_bindings = []
+    target._routed_bindings = []
     target._callback_error = None
 
 
@@ -92,19 +98,32 @@ def dispose(target):
 
 
 def items_source(values):
-    """Expose string items through a managed collection understood by WPF."""
-    return framework.to_clr_list(System.String, [str(value) for value in values])
+    """Expose Python values through a managed collection understood by WPF."""
+    return framework.to_clr_list(System.Object, values)
+
+
+def list_source(values):
+    """Bind list models without losing original Python object identity."""
+    return items_source([binding_source(value) for value in values])
+
+
+def show_prompt(target):
+    """Show an overlay whose enclosing command owns its complete lifetime."""
+    target._window.Show()
 
 
 def validate_input(value_type):
-    """Reject modes that depend on Python model binding until that tier lands."""
-    if value_type not in ("string", "date", "slider"):
+    """Reject unknown input modes before creating native controls."""
+    if value_type not in ("string", "date", "slider", "dropdown"):
         raise PyRevitCPythonNotSupported(
             "pyrevit.forms.GetValueWindow.{}".format(value_type)
         )
 
 
 def _release_events(target):
+    for control, event, handler in target._routed_bindings:
+        control.RemoveHandler(event, handler)
+    target._routed_bindings = []
     for control, event_name, handler in reversed(target._event_bindings):
         event = getattr(control, event_name)
         event -= handler
@@ -132,6 +151,41 @@ def _bind(target, control, event_name, handler):
 def bind_event(target, event_name, handler):
     """Retain native event callbacks until close, then detach them together."""
     _bind(target, unwrap(target), event_name, handler)
+
+
+def bind_control_event(target, control, event_name, handler):
+    """Keep dynamically created control callbacks within the window lifetime."""
+    _bind(target, control, event_name, handler)
+
+
+def _bind_template_event(target, tag, event_name, handler):
+    owner = next(
+        (
+            getattr(namespace, tag)
+            for namespace in (
+                framework.Controls,
+                framework.Controls.Primitives,
+                framework.Documents,
+            )
+            if hasattr(namespace, tag)
+        ),
+        None,
+    )
+    event = getattr(owner, event_name + "Event", None) if owner else None
+    if event is None:
+        raise PyRevitException(
+            "Unsupported template event: {}.{}".format(tag, event_name)
+        )
+    callback = _event_handler(target, handler)
+
+    def routed(sender, args):
+        if isinstance(args.OriginalSource, owner):
+            callback(args.OriginalSource, args)
+
+    namespace = importlib.import_module(str(event.HandlerType.Namespace))
+    delegate = getattr(namespace, str(event.HandlerType.Name))(routed)
+    target._window.AddHandler(event, delegate)
+    target._routed_bindings.append((target._window, event, delegate))
 
 
 def _read_source(source):
@@ -187,8 +241,16 @@ def load_component(target, source):
                 )
             object.__setattr__(target, name, control)
         for name, event_name, handler_name in events:
-            control = getattr(target, name)
-            _bind(target, control, event_name, getattr(target, handler_name))
+            if name.startswith("@template:"):
+                _bind_template_event(
+                    target,
+                    name.split(":", 1)[1],
+                    event_name,
+                    getattr(target, handler_name),
+                )
+            else:
+                control = getattr(target, name)
+                _bind(target, control, event_name, getattr(target, handler_name))
         native.Closed += target._on_closed
         target._event_bindings.append((native, "Closed", target._on_closed))
     except Exception:

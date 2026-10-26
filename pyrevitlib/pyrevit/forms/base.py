@@ -1,3 +1,4 @@
+# coding: utf-8
 """Shared WPF window resources, theming and lifecycle across Python engines."""
 
 import os
@@ -262,6 +263,18 @@ class _WPFMixin(object):
     """
 
     _live_refresh_root_colors = False
+
+    def add_PropertyChanged(self, value):
+        """Expose reactive event accessors before the CLR window in the MRO.
+
+        IronPython's generated interface dispatch must find these accessors on
+        the window side when a subclass also inherits the Reactive mixin.
+        """
+        self.PropertyChanged += value
+
+    def remove_PropertyChanged(self, value):
+        """Detach a reactive listener through the same CLR-visible accessor."""
+        self.PropertyChanged -= value
 
     # ------------------------------------------------------------------ resources
 
