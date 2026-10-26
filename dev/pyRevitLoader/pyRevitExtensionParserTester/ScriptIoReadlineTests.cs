@@ -63,7 +63,8 @@ namespace pyRevitExtensionParserTester
         {
             var io = new ScriptIoWithQueuedInput("first", "second");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(), Is.EqualTo("first"));
                 Assert.That(io.readline(), Is.EqualTo("second"));
             });
@@ -82,7 +83,8 @@ namespace pyRevitExtensionParserTester
         {
             var io = new ScriptIoWithQueuedInput("disconnect");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(), Is.EqualTo("disconnect"));
                 Assert.That(io.readline(), Is.Empty);
             });
@@ -97,7 +99,8 @@ namespace pyRevitExtensionParserTester
             string empty = io.readline();
             string last = io.readline();
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(first, Does.Not.Contain('\0'));
                 Assert.That(empty, Does.Not.Contain('\0'));
                 Assert.That(last, Does.Not.Contain('\0'));
@@ -125,7 +128,8 @@ namespace pyRevitExtensionParserTester
         {
             var io = new ScriptIoWithQueuedInput("abcdefghij");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(0), Is.Empty);
                 Assert.That(io.readline(), Is.EqualTo("abcdefghij"));
             });
@@ -144,7 +148,8 @@ namespace pyRevitExtensionParserTester
         {
             var io = new ScriptIoWithQueuedInput("abcdefghij", "next line");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(4), Is.EqualTo("abcd"));
                 Assert.That(io.readline(3), Is.EqualTo("efg"));
                 Assert.That(io.readline(), Is.EqualTo("hij"));
@@ -157,7 +162,8 @@ namespace pyRevitExtensionParserTester
         {
             var io = new ScriptIoWithQueuedInput("éé");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(1), Is.EqualTo("é"));
                 Assert.That(io.readline(), Is.EqualTo("é"));
             });
@@ -181,7 +187,8 @@ namespace pyRevitExtensionParserTester
             string longLine = new string('x', 5000);
             var io = new ScriptIoWithQueuedInput(longLine, "after");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(), Is.EqualTo(longLine));
                 Assert.That(io.readline(), Is.EqualTo("after"));
             });
@@ -193,7 +200,8 @@ namespace pyRevitExtensionParserTester
             string longLine = new string('y', 3000);
             var io = new ScriptIoWithQueuedInput(longLine, "after");
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(io.readline(10), Is.EqualTo(new string('y', 10)));
                 Assert.That(io.readline(10), Is.EqualTo(new string('y', 10)));
                 Assert.That(io.readline(), Is.EqualTo(new string('y', 2980)));
@@ -214,7 +222,8 @@ namespace pyRevitExtensionParserTester
 
             int read = io.Read(oneByte, 0, 1);
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(read, Is.EqualTo(1));
                 Assert.That(io.readline(), Is.EqualTo("éllo wörld"),
                     "the byte consumed by Read was lost from the line");
@@ -233,7 +242,8 @@ namespace pyRevitExtensionParserTester
 
             int read = io.Read(buffer, 0, 4);
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(read, Is.EqualTo(4));
                 Assert.That(Encoding.UTF8.GetString(buffer, 0, read), Is.EqualTo("abcd"));
                 Assert.That(io.readline(), Is.EqualTo("efghij"));
@@ -252,7 +262,8 @@ namespace pyRevitExtensionParserTester
 
             int read = io.Read(buffer, 0, 2);
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(read, Is.EqualTo(1));
                 Assert.That(Encoding.UTF8.GetString(buffer, 0, read), Is.EqualTo("a"));
                 Assert.That(io.readline(), Is.EqualTo("éb"));
@@ -271,7 +282,8 @@ namespace pyRevitExtensionParserTester
 
             int read = io.Read(oneByte, 0, 1);
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(read, Is.EqualTo(0));
                 Assert.That(io.readline(), Is.EqualTo("é"));
             });
@@ -283,6 +295,14 @@ namespace pyRevitExtensionParserTester
             var io = new ScriptIoWithQueuedInput("input()");
 
             Assert.That(io.read(), Is.EqualTo("input()"));
+        }
+
+        [Test]
+        public void Flush_LowercaseFileObjectAliasDoesNotThrow()
+        {
+            var io = new ScriptIoWithQueuedInput();
+
+            Assert.DoesNotThrow(() => io.flush());
         }
 
         /// <summary>
@@ -298,7 +318,8 @@ namespace pyRevitExtensionParserTester
 
             int firstRead = io.Read(buffer, 0, buffer.Length);
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(Encoding.UTF8.GetString(buffer, 0, firstRead), Is.EqualTo("first"));
                 Assert.That(io.readline(), Is.EqualTo("second"));
             });
@@ -306,7 +327,8 @@ namespace pyRevitExtensionParserTester
             int thirdLineByteCount = io.Read(buffer, 0, buffer.Length);
             string thirdLine = Encoding.UTF8.GetString(buffer, 0, thirdLineByteCount);
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(thirdLineByteCount, Is.EqualTo(5), "returns the bytes actually copied");
                 Assert.That(thirdLine, Is.EqualTo("third"),
                     "the handshake swallowed a line the user had already entered");
@@ -325,7 +347,8 @@ namespace pyRevitExtensionParserTester
 
             string first = io.readline();
 
-            Assert.Multiple(() => {
+            Assert.Multiple(() =>
+            {
                 Assert.That(first, Is.EqualTo("first"));
                 Assert.That(io.Read(buffer, 0, buffer.Length), Is.EqualTo(6));
                 Assert.That(Encoding.UTF8.GetString(buffer, 0, 6), Is.EqualTo("second"));
