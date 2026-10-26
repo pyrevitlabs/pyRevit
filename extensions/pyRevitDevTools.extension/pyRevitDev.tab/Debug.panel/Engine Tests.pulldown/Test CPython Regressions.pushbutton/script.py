@@ -31,15 +31,15 @@ class TestClass(unittest.TestCase):
             self.fail("pyrevit.forms import failed: {}".format(err))
 
     def test_pyrevit_forms_unported_dialog_raises(self):
-        """Unported data-bound dialogs retain the unsupported-feature contract."""
+        """Dockable panels retain the unsupported-feature contract."""
         from pyrevit import PyRevitCPythonNotSupported
         from pyrevit import forms
 
         try:
-            forms.SelectFromList.show([])
-            self.fail("Expected PyRevitCPythonNotSupported for SelectFromList")
+            getattr(forms, "WPFPanel")
+            self.fail("Expected PyRevitCPythonNotSupported for WPFPanel")
         except PyRevitCPythonNotSupported as err:
-            self.assertEqual("pyrevit.forms.SelectFromList.show", err.feature_name)
+            self.assertEqual("pyrevit.forms.WPFPanel", err.feature_name)
         except Exception as err:
             self.fail("Unexpected error type for stubbed API: {}".format(err))
 

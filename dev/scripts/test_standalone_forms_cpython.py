@@ -59,14 +59,17 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertIn("file:///C:/forms/Theme.xaml", markup)
         self.assertIn("{Binding ElementName=numberPicker", markup)
 
-    def test_event_without_name_fails_before_wpf_loading(self):
-        """Reject a handler that cannot be attached after parsing."""
-        with self.assertRaisesRegex(ValueError, "x:Name"):
-            _load_xaml_helpers().prepare_xaml(
-                '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
-                '<Button Click="select"/></Window>',
-                [],
-            )
+    def test_event_without_name_receives_generated_name(self):
+        """Unnamed controls remain reachable for deferred event attachment."""
+        markup, names, events = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
+            '<Button Click="select"/></Window>',
+            [],
+        )
+        self.assertEqual(1, len(events))
+        self.assertIn(events[0][0], names)
+        self.assertEqual(("Click", "select"), events[0][1:])
+        self.assertNotIn('Click="select"', markup)
 
     def test_existing_resource_dictionary_keeps_entries_and_merge_order(self):
         """Authored resources retain precedence over injected resources."""

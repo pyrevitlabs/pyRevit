@@ -5,10 +5,21 @@ are process-scoped. The production forms facade and modules are imported intact.
 """
 
 import datetime
+from io import open
 import os
 import sys
 import types
 import uuid
+
+if not hasattr(types, "SimpleNamespace"):
+
+    class SimpleNamespace(object):
+        def __init__(self, **values):
+            self.__dict__.update(values)
+
+    types.SimpleNamespace = SimpleNamespace
+
+sys.path.insert(0, fixture_root)
 
 import clr
 
@@ -29,6 +40,7 @@ from System.Windows import Controls, Documents, Input, Interop, Media, Threading
 from System.Windows import ResourceDictionary
 from System.Windows.Media import Imaging
 from System.Collections.Generic import List
+from System.Collections.ObjectModel import ObservableCollection
 
 
 def module(name, **values):
@@ -44,7 +56,7 @@ class Unsupported(Exception):
 
     def __init__(self, feature):
         self.feature_name = feature
-        super().__init__(feature)
+        Exception.__init__(self, feature)
 
 
 def to_clr_list(item_type, values):
@@ -82,10 +94,17 @@ host = module(
         command_path=fixture_root, command_name="Forms probe"
     ),
     BIN_DIR=fixture_root,
+    ROOT_BIN_DIR=fixture_root,
+    DOCS=types.SimpleNamespace(docs=[]),
     PyRevitException=RuntimeError,
     PyRevitCPythonNotSupported=Unsupported,
 )
-module("pyrevit.compat", IRONPY=False)
+module(
+    "pyrevit.compat",
+    IRONPY=bool(globals().get("ironpython_probe")),
+    safe_strtype=str,
+    get_elementid_value_func=lambda: lambda value: value.Value,
+)
 framework = module(
     "pyrevit.framework",
     System=System,
@@ -103,10 +122,22 @@ framework = module(
     StringReader=StringReader,
     Forms=System.Windows.Forms,
     CPDialogs=None,
+    ComponentModel=System.ComponentModel,
+    ObservableCollection=ObservableCollection,
     to_clr_list=to_clr_list,
     get_current_thread_id=lambda: System.Environment.CurrentManagedThreadId,
 )
-module("pyrevit.coreutils", __path__=[], new_uuid=lambda: str(uuid.uuid4()))
+module(
+    "pyrevit.coreutils",
+    __path__=[],
+    new_uuid=lambda: str(uuid.uuid4()),
+    fuzzy_search_ratio=lambda target_string, sfilter, regex: (
+        100 if sfilter.lower() in target_string.lower() else 0
+    ),
+)
+colors_module = module("pyrevit.coreutils.colors")
+with open(os.path.join(fixture_root, "colors.py"), encoding="utf-8") as source:
+    exec(compile(source.read(), "colors.py", "exec"), colors_module.__dict__)
 logger = types.SimpleNamespace(debug=lambda *args: None, warning=lambda *args: None)
 module("pyrevit.coreutils.logger", get_logger=lambda name: logger)
 module(
@@ -117,9 +148,23 @@ module(
 )
 module("pyrevit.labs", Common=types.SimpleNamespace())
 module("pyrevit.userconfig", user_config=types.SimpleNamespace(user_locale="en_us"))
-module("pyrevit.revit", ui=types.SimpleNamespace(resolve_icon_file=lambda *args: None))
-module("pyrevit.versionmgr")
+module(
+    "pyrevit.revit",
+    ui=types.SimpleNamespace(
+        resolve_icon_file=lambda *args: None,
+        get_window_rectangle=lambda: System.Drawing.Rectangle(0, 0, 1920, 1080),
+        get_mainwindow=lambda: None,
+    ),
+)
+host.HOST_APP.proc_screen_workarea = System.Drawing.Rectangle(0, 0, 1920, 1080)
+host.HOST_APP.proc_screen_scalefactor = 1.0
+sys.modules["pyrevit.coreutils"].SafeDict = dict
+module(
+    "pyrevit.versionmgr",
+    get_pyrevit_version=lambda: types.SimpleNamespace(get_formatted=lambda: "test"),
+)
 module("pyrevit.UI")
+module("pyrevit.DB")
 
 from pyrevit import forms
 from pyrevit.forms import _backend
@@ -258,16 +303,9 @@ for name in forms.__all__:
     assert getattr(forms, name) is not None
 
 try:
-    make_dialog(value_type="dropdown")
+    getattr(forms, "WPFPanel")
 except Unsupported as error:
-    assert error.feature_name == "pyrevit.forms.GetValueWindow.dropdown"
-else:
-    raise AssertionError("Unported input modes must retain actionable errors")
-
-try:
-    forms.SelectFromList.show([])
-except Unsupported as error:
-    assert error.feature_name == "pyrevit.forms.SelectFromList.show"
+    assert error.feature_name == "pyrevit.forms.WPFPanel"
 else:
     raise AssertionError("Unported dialogs must retain actionable errors")
 

@@ -49,6 +49,14 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        foreach (var engine in new[] { "IPY2712PR", "IPY342" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.IronPythonFormsTestProject,
+                configuration,
+                [$"-p:IronPythonVersion={engine}"],
+                cancellationToken);
+
         await RunTestsAsync(
             context,
             PyRevitPaths.AgentRuntimeTestProject,

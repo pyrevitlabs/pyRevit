@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <PermitDeploy>true</PermitDeploy>
+        <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY342</IronPythonVersion>
+        <FormsStdlibVersion Condition="'$(IronPythonVersion)' == 'IPY342'">342</FormsStdlibVersion>
+        <FormsStdlibVersion Condition="'$(IronPythonVersion)' == 'IPY2712PR'">2712pr</FormsStdlibVersion>
+        <FormsAssemblyPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</FormsAssemblyPrefix>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)IronPython.dll" Private="true"/>
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)IronPython.Modules.dll" Private="true"/>
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)IronPython.Wpf.dll" Private="true"/>
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)Microsoft.Scripting.dll" Private="true"/>
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)Microsoft.Dynamic.dll" Private="true"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="..\..\..\..\pyrevitlib\pyrevit\forms\**\*"
+                 Exclude="..\..\..\..\pyrevitlib\pyrevit\forms\**\__pycache__\**"
+                 LinkBase="forms" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="..\pyRevitLabs.PyRevit.Forms.Tests\FormsProbe.py" Link="FormsProbe.py" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="..\..\..\..\pyrevitlib\pyrevit\unittests\test_forms_parity.py" Link="test_forms_parity.py" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="..\..\..\..\pyrevitlib\pyrevit\coreutils\colors.py" Link="colors.py" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="..\..\..\libs\IronPython\python_$(FormsStdlibVersion)_lib.zip" Link="stdlib.zip" CopyToOutputDirectory="Always"/>
+        <Content Include="..\..\..\..\site-packages\pyevent.py" Link="pyevent.py" CopyToOutputDirectory="PreserveNewest"/>
+        <None Update="IronPythonProbe.py" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+</Project>
