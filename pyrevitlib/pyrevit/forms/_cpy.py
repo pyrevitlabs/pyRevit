@@ -22,6 +22,7 @@ from .dialogs import (
 from .native import (
     alert,
     alert_ifnot,
+    warning,
     pick_folder,
     pick_file,
     save_file,
@@ -107,6 +108,7 @@ __all__ = [
     "ask_for_one_item",
     "alert",
     "alert_ifnot",
+    "warning",
     "pick_folder",
     "pick_file",
     "save_file",

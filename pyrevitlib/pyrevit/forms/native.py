@@ -204,6 +204,21 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         return alert(msg, *args, **kwargs)
 
 
+def warning(msg, *args, **kwargs):
+    """Show a warning-styled task dialog.
+
+    Args:
+        msg (str): Message shown to the user.
+        *args: Positional arguments accepted by :func:`alert`.
+        **kwargs: Keyword arguments accepted by :func:`alert`.
+
+    Returns:
+        bool: The selected task-dialog response.
+    """
+    kwargs.setdefault("warn_icon", True)
+    return alert(msg, *args, **kwargs)
+
+
 def pick_folder(title=None, owner=None, init_dir=""):
     """Show standard windows pick folder dialog.
 
