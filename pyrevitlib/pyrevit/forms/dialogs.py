@@ -97,8 +97,8 @@ class GetValueWindow(TemplateUserInputWindow):
     """Collect a modal value; cancellation returns None.
 
     Note:
-        CPython currently supports string, date and slider inputs. Dropdown
-        input remains IronPython-only pending the data-binding compatibility tier.
+        CPython supports the string, dropdown, date and slider inputs; other
+        value types are rejected before any native control is created.
     """
 
     xaml_source = "GetValueWindow.xaml"

@@ -8,12 +8,11 @@ Important:
 """
 
 import io
-import importlib
 import os.path as op
 
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit import framework
-from pyrevit.framework import System, Windows, Uri, UriKind
+from pyrevit.framework import System, Windows, Media, Uri, UriKind
 from System.Windows.Markup import XamlReader, ParserContext
 
 from .._xaml import prepare_xaml
@@ -46,25 +45,32 @@ class Window(object):
     def ShowDialog(self):
         """Run the modal dialog and release Python event roots even on failure."""
         try:
-            if self._callback_error is not None:
-                raise self._callback_error
+            _raise_callback_error(self)
             result = self._window.ShowDialog()
-            if self._callback_error is not None:
-                raise self._callback_error
+            _raise_callback_error(self)
             return result
         finally:
             self._unsubscribe_theme_changed()
             _release_events(self)
 
     def Close(self):
-        """Close the native root and release callbacks even before it is shown."""
+        """Close the native root and release callbacks even before it is shown.
+
+        Raises:
+            Exception: A callback of a modeless prompt failed while it was
+                shown; the command that owns the prompt receives the error here.
+        """
         try:
-            self._window.Close()
+            if not self._closed:
+                self._window.Close()
         finally:
             self._unsubscribe_theme_changed()
             _release_events(self)
+        if self._modeless:
+            _raise_callback_error(self)
 
     def _on_closed(self, sender, args):
+        self._closed = True
         self._unsubscribe_theme_changed()
         _release_events(self)
 
@@ -82,6 +88,8 @@ def initialize(target):
     target._event_bindings = []
     target._routed_bindings = []
     target._callback_error = None
+    target._closed = False
+    target._modeless = False
 
 
 def unwrap(target):
@@ -109,6 +117,7 @@ def list_source(values):
 
 def show_prompt(target):
     """Show an overlay whose enclosing command owns its complete lifetime."""
+    target._modeless = True
     target._window.Show()
 
 
@@ -130,13 +139,29 @@ def _release_events(target):
     target._event_bindings = []
 
 
+def _raise_callback_error(target):
+    error = target._callback_error
+    if error is not None:
+        target._callback_error = None
+        raise error
+
+
+def _close_after_failure(target, window):
+    if not target._closed and target._window is window:
+        window.Close()
+
+
 def _event_handler(target, handler):
     def invoke(sender, args):
         try:
             handler(sender, args)
         except Exception as error:
-            target._callback_error = error
-            target.Close()
+            if target._callback_error is None:
+                target._callback_error = error
+            window = target._window
+            window.Dispatcher.BeginInvoke(
+                System.Action(lambda: _close_after_failure(target, window))
+            )
 
     return invoke
 
@@ -158,7 +183,17 @@ def bind_control_event(target, control, event_name, handler):
     _bind(target, control, event_name, handler)
 
 
-def _bind_template_event(target, tag, event_name, handler):
+def _routing_ancestors(source):
+    current = source
+    while current is not None:
+        yield current
+        if isinstance(current, (Media.Visual, Media.Media3D.Visual3D)):
+            current = Media.VisualTreeHelper.GetParent(current)
+        else:
+            current = Windows.LogicalTreeHelper.GetParent(current)
+
+
+def _bind_template_event(target, tag, uid, event_name, handler):
     owner = next(
         (
             getattr(namespace, tag)
@@ -178,14 +213,57 @@ def _bind_template_event(target, tag, event_name, handler):
         )
     callback = _event_handler(target, handler)
 
-    def routed(sender, args):
-        if isinstance(args.OriginalSource, owner):
-            callback(args.OriginalSource, args)
+    def sources(args):
+        return [
+            element
+            for element in _routing_ancestors(args.OriginalSource)
+            if isinstance(element, owner) and element.Uid == uid
+        ]
 
-    namespace = importlib.import_module(str(event.HandlerType.Namespace))
-    delegate = getattr(namespace, str(event.HandlerType.Name))(routed)
+    preview = getattr(owner, "Preview" + event_name + "Event", None)
+    if event.RoutingStrategy == Windows.RoutingStrategy.Bubble and preview:
+        direct = Windows.RoutedEventHandler(callback)
+        attached = []
+
+        def discover(sender, args):
+            for element in sources(args):
+                if not any(System.Object.ReferenceEquals(element, e) for e in attached):
+                    element.AddHandler(event, direct)
+                    attached.append(element)
+                    target._routed_bindings.append((element, event, direct))
+
+        delegate = Windows.RoutedEventHandler(discover)
+        target._window.AddHandler(preview, delegate, True)
+        target._routed_bindings.append((target._window, preview, delegate))
+        return
+
+    tunnels = event.RoutingStrategy == Windows.RoutingStrategy.Tunnel
+
+    def routed(sender, args):
+        matches = sources(args)
+        if tunnels:
+            matches.reverse()
+        for element in matches:
+            callback(element, args)
+            if args.Handled:
+                break
+
+    delegate = Windows.RoutedEventHandler(routed)
     target._window.AddHandler(event, delegate)
     target._routed_bindings.append((target._window, event, delegate))
+
+
+def _find_resource_name(native, name, owner_name, key):
+    owner = native if owner_name is None else native.FindName(owner_name)
+    resources = getattr(owner, "Resources", None)
+    if resources is None or not resources.Contains(key):
+        return None
+    resource = resources[key]
+    if not isinstance(resource, Windows.DependencyObject):
+        return None
+    if getattr(resource, "Name", None) == name:
+        return resource
+    return Windows.LogicalTreeHelper.FindLogicalNode(resource, name)
 
 
 def _read_source(source):
@@ -219,7 +297,7 @@ def load_component(target, source):
     previous = target._window
     resources = previous.Resources
     sources = [str(item.Source) for item in resources.MergedDictionaries]
-    markup, names, events = prepare_xaml(markup, sources)
+    markup, names, events, resource_names = prepare_xaml(markup, sources)
     native = _load_markup(markup, base_uri)
     if not isinstance(native, Windows.Window):
         raise PyRevitException("CPython WPFWindow requires a Window XAML root.")
@@ -231,10 +309,14 @@ def load_component(target, source):
         if native.ReadLocalValue(prop) == Windows.DependencyProperty.UnsetValue:
             setattr(native, name, getattr(previous, name))
     target._window = native
+    target._closed = False
     previous.Close()
     try:
         for name in names:
-            control = native.FindName(name)
+            if name in resource_names:
+                control = _find_resource_name(native, name, *resource_names[name])
+            else:
+                control = native.FindName(name)
             if control is None:
                 raise PyRevitException(
                     "CPython XAML name was not found: {}".format(name)
@@ -242,9 +324,11 @@ def load_component(target, source):
             object.__setattr__(target, name, control)
         for name, event_name, handler_name in events:
             if name.startswith("@template:"):
+                _, tag, uid = name.split(":", 2)
                 _bind_template_event(
                     target,
-                    name.split(":", 1)[1],
+                    tag,
+                    uid,
                     event_name,
                     getattr(target, handler_name),
                 )

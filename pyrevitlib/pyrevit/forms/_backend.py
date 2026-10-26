@@ -3,37 +3,9 @@
 from pyrevit.compat import IRONPY
 
 if IRONPY:
-    from .backends._ipy import (
-        Window,
-        Reactive,
-        list_source,
-        unwrap_item,
-        show_prompt,
-        bind_event,
-        bind_control_event,
-        dispose,
-        initialize,
-        items_source,
-        load_component,
-        unwrap,
-        validate_input,
-    )
+    from .backends import _ipy as _impl
 else:
-    from .backends._cpy import (
-        Window,
-        Reactive,
-        list_source,
-        unwrap_item,
-        show_prompt,
-        bind_event,
-        bind_control_event,
-        dispose,
-        initialize,
-        items_source,
-        load_component,
-        unwrap,
-        validate_input,
-    )
+    from .backends import _cpy as _impl
 
 __all__ = [
     "Window",
@@ -50,3 +22,5 @@ __all__ = [
     "unwrap",
     "validate_input",
 ]
+
+globals().update((name, getattr(_impl, name)) for name in __all__)

@@ -19,7 +19,7 @@ else:
     __all__ = list(getattr(_cpy_exports, "__all__", []))
 
     def __getattr__(name):
-        if name in ("settings_window", "utils", "toaster"):
+        if name == "settings_window":
             return _importlib.import_module("{}.{}".format(__name__, name))
         if name.startswith("_"):
             raise AttributeError(name)
