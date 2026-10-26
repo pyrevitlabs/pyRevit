@@ -183,7 +183,7 @@ the original Python or Revit object identity.
 | `alert`, `alert_ifnot` | Supported | Supported |
 | `pick_file`, `pick_folder`, `save_file`, Excel picker wrappers | Supported | Supported |
 | `GetValueWindow` string/date/slider/dropdown modes and input wrappers | Supported | Supported |
-| `WPFWindow`, `TemplateUserInputWindow` | Existing behavior | Modal foundation; arbitrary custom XAML parity is not guaranteed |
+| `WPFWindow`, `TemplateUserInputWindow` | Existing behavior | Modal custom XAML, deferred event handlers and direct CLR event subscriptions; individual tool workflows still require migration review |
 | `SelectFromList`, `CommandSwitchWindow`, `SearchPrompt` | Supported | Supported, including filtering, groups, checks and keyboard acceptance |
 | `Reactive`, `reactive`, `TemplateListItem` | Supported | Supported through managed binding adapters |
 | View/sheet/revision/schedule/template/level/document/parameter selectors | Supported | Supported |
@@ -229,8 +229,11 @@ dialogs are `alert` (102 files), `SelectFromList` (42) and `CommandSwitchWindow`
 (37); the shared list and command dialogs are exercised under both engines.
 Counts describe API references, not proof that every calling tool runs under
 CPython. In particular, 26 files use custom `WPFWindow` subclasses and need
-individual migration review; native CLR subclass assumptions and persistent
-modeless lifetimes remain outside this compatibility contract.
+individual migration review. The inventory also audits every bundled custom
+XAML handler declaration against the CPython deferred-event registry (330
+bindings at this revision); it does not execute each tool workflow. Native CLR
+subclass assumptions and persistent modeless lifetimes remain outside this
+compatibility contract.
 Conservatively excluding custom windows, dockable APIs, notifications, the
 color picker and family-parameter selectors leaves 346 of 396 references (87%)
 covered by the common supported APIs, including the tested settings module.
