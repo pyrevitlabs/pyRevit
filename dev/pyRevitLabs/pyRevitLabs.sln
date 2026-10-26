@@ -71,8 +71,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitCLI.Tests", "tests\p
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Forms.Tests", "tests\pyRevitLabs.PyRevit.Forms.Tests\pyRevitLabs.PyRevit.Forms.Tests.csproj", "{DFFFA622-3977-4142-89A9-0F475A968112}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Forms.IronPython.Tests", "tests\pyRevitLabs.PyRevit.Forms.IronPython.Tests\pyRevitLabs.PyRevit.Forms.IronPython.Tests.csproj", "{C111BA63-55EC-4636-817F-E138A153AACF}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -347,18 +345,6 @@ Global
 		{DFFFA622-3977-4142-89A9-0F475A968112}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DFFFA622-3977-4142-89A9-0F475A968112}.Release|x86.ActiveCfg = Release|Any CPU
 		{DFFFA622-3977-4142-89A9-0F475A968112}.Release|x86.Build.0 = Release|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Debug|x64.Build.0 = Debug|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Debug|x86.Build.0 = Debug|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Release|x64.ActiveCfg = Release|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Release|x64.Build.0 = Release|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Release|x86.ActiveCfg = Release|Any CPU
-		{C111BA63-55EC-4636-817F-E138A153AACF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -372,7 +358,6 @@ Global
 		{35C11A0D-1966-4C7D-AB51-D0AA0C1734F4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{EC828475-4355-4F79-9206-E56CE41F1BE8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{DFFFA622-3977-4142-89A9-0F475A968112} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
-		{C111BA63-55EC-4636-817F-E138A153AACF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29169547-9C0C-4620-A37C-77CB6B30F4F0}

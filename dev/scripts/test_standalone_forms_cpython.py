@@ -199,12 +199,15 @@ class _Result(enum.Enum):
 class NativeDialogTests(unittest.TestCase):
     """Task-dialog results must retain their public return and exit contracts."""
 
+    @staticmethod
+    def _native_functions(names, scope):
+        tree = ast.parse((FORMS / "native.py").read_text(encoding="utf-8"))
+        tree.body = [node for node in tree.body if getattr(node, "name", None) in names]
+        exec(compile(tree, "native.py", "exec"), scope)
+        return scope
+
     def test_folder_picker_unwraps_a_cpython_window_owner(self):
         """Native dialogs receive the managed root rather than its Python controller."""
-        tree = ast.parse((FORMS / "native.py").read_text(encoding="utf-8"))
-        tree.body = [
-            node for node in tree.body if getattr(node, "name", None) == "pick_folder"
-        ]
         native_owner = object()
         observed = []
         dialog = SimpleNamespace(
@@ -218,9 +221,82 @@ class NativeDialogTests(unittest.TestCase):
             ),
             "_backend": SimpleNamespace(unwrap=lambda owner: native_owner),
         }
-        exec(compile(tree, "native.py", "exec"), scope)
+        self._native_functions({"pick_folder"}, scope)
         self.assertEqual("chosen-folder", scope["pick_folder"](owner=object()))
         self.assertEqual([native_owner], observed)
+
+    def test_file_save_and_color_dialogs_keep_their_public_values(self):
+        """CPython uses the same native dialog properties and return values."""
+        open_dialog = SimpleNamespace(
+            ShowDialog=lambda: "ok",
+            FileName="single.txt",
+            FileNames=["one.txt", "two.txt"],
+        )
+        save_dialog = SimpleNamespace(FileName="")
+
+        def show_save_dialog():
+            save_dialog.FileName = "saved.txt"
+            return "ok"
+
+        save_dialog.ShowDialog = show_save_dialog
+        color = SimpleNamespace(A=255, R=1, G=2, B=3)
+
+        class ColorDialog(object):
+            def __init__(self):
+                self.default = None
+                self.selected = color
+
+            @property
+            def Color(self):
+                return self.selected
+
+            @Color.setter
+            def Color(self, value):
+                self.default = value
+
+            def ShowDialog(self):
+                return "ok"
+
+        color_dialog = ColorDialog()
+        created = []
+
+        def open_file_dialog():
+            created.append(open_dialog)
+            return open_dialog
+
+        def save_file_dialog():
+            created.append(save_dialog)
+            return save_dialog
+
+        def color_dialog_factory():
+            created.append(color_dialog)
+            return color_dialog
+
+        scope = {
+            "Forms": SimpleNamespace(
+                OpenFileDialog=open_file_dialog,
+                SaveFileDialog=save_file_dialog,
+                ColorDialog=color_dialog_factory,
+                DialogResult=SimpleNamespace(OK="ok"),
+            ),
+            "System": SimpleNamespace(
+                Drawing=SimpleNamespace(
+                    Color=SimpleNamespace(FromArgb=lambda *values: values)
+                )
+            ),
+            "coreutils": SimpleNamespace(dletter_to_unc=lambda value: "unc:" + value),
+        }
+        self._native_functions({"pick_file", "save_file", "ask_for_color"}, scope)
+        self.assertEqual(
+            ["unc:one.txt", "unc:two.txt"],
+            scope["pick_file"](multi_file=True, unc_paths=True, title="Open"),
+        )
+        self.assertEqual(
+            "unc:saved.txt",
+            scope["save_file"](default_name="unused.txt", unc_paths=True, title="Save"),
+        )
+        self.assertEqual("#FF010203", scope["ask_for_color"]("#FF000000"))
+        self.assertEqual((255, 0, 0, 0), color_dialog.default)
 
     def _alert(self, result, **kwargs):
         tree = ast.parse((FORMS / "native.py").read_text(encoding="utf-8"))

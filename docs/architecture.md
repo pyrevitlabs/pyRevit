@@ -163,28 +163,34 @@ imported before a Reload survive it. The contract is asserted by the tests in
 
 `pyrevit.forms` preserves the IronPython public namespace and exports the
 implemented CPython subset. Shared behavior lives in `forms/base.py` (window
-resources, theming and ownership), `forms/dialogs.py` (modal input logic), and
-`forms/native.py` (Revit task dialogs and native pickers). The remaining
-IronPython features stay in `_ipy.py` while they await migration. Only
-`forms/backends/` implements the engine-specific WPF operations.
+resources, theming and ownership), input/list/command dialogs, selectors,
+prompt bars and reactive models. `forms/native.py` contains Revit task dialogs
+and native pickers. Dockable panels remain in `_ipy.py`. Only `forms/backends/`
+implements the engine-specific WPF operations.
 
 IronPython continues to populate its CLR-derived windows with
 `wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
 it creates no Python-derived CLR window types, avoiding type registration
 collisions on repeated commands. Its loader preserves XML namespace prefixes,
 prepends theme/localization dictionaries before parsing, resolves named controls,
-and attaches the built-in `Click` and `TextChanged` handlers after loading.
-Template names remain in their own namescopes.
+and attaches control events after loading. Template names remain in their own
+namescopes; routed events are handled at the root. CPython reactive models expose
+a managed `ExpandoObject` for two-way WPF binding while selector results retain
+the original Python or Revit object identity.
 
 | API | IronPython | CPython |
 | --- | --- | --- |
 | `alert`, `alert_ifnot` | Supported | Supported |
 | `pick_file`, `pick_folder`, `save_file`, Excel picker wrappers | Supported | Supported |
-| `GetValueWindow` string/date/slider modes | Supported | Supported |
-| `ask_for_string`, `ask_for_unique_string`, `ask_for_date`, `ask_for_number_slider` | Supported | Supported |
+| `GetValueWindow` string/date/slider/dropdown modes and input wrappers | Supported | Supported |
 | `WPFWindow`, `TemplateUserInputWindow` | Existing behavior | Modal foundation; arbitrary custom XAML parity is not guaranteed |
-| Dropdown input, `ask_for_one_item`, `SelectFromList`, `CommandSwitchWindow` | Supported | Unsupported pending Python data-binding validation |
-| Modeless windows, progress/warning bars, dockable panels | Supported | Unsupported |
+| `SelectFromList`, `CommandSwitchWindow`, `SearchPrompt` | Supported | Supported, including filtering, groups, checks and keyboard acceptance |
+| `Reactive`, `reactive`, `TemplateListItem` | Supported | Supported through managed binding adapters |
+| View/sheet/revision/schedule/template/level/document/parameter selectors | Supported | Supported |
+| `settings_window` | Supported | Supported, including dynamically created control callbacks |
+| Progress/warning bars | Supported | Supported within a synchronous command scope |
+| Persistent modeless windows, dockable panels, `activate_open_window` | Supported | Unsupported |
+| Color picker, image/family-parameter selectors, notifications | Supported | Implemented; live coverage remains incomplete |
 | Other legacy forms exports | Existing behavior | Unsupported unless explicitly exported by `_cpy.__all__` |
 
 Unported CPython APIs continue to raise `PyRevitCPythonNotSupported` with the
@@ -204,7 +210,27 @@ for real WPF/pythonnet tests on .NET Framework 4.8, .NET 8 and .NET 10 using the
 shipped CPython interpreter. The fixture substitutes Revit dependencies; it does
 not validate Revit ownership or host events. Portable tests run with
 `python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'`.
-Inside Revit, both **Py3 Compat Tests** buttons exercise input parity without
-showing dialogs. **Engine Tests → Test CPython Forms** exercises actual modal
-interaction, native pickers, ownership and theme. Repeat after reload and on
-each supported engine/host generation before declaring in-Revit parity.
+The sibling `pyRevitLabs.PyRevit.Forms.IronPython.Tests` project drives the same
+interactive cases with the shipped IronPython 2.7 and 3 engines (select with
+`-p:IronPythonVersion=IPY2712PR` or `IPY342`). Both projects run in the
+build pipeline. Inside Revit, run `pyrevit.unittests.forms_acceptance.run(doc)`
+through pyRevit MCP with each engine and `dry_run=true`. The runner creates real
+selector fixtures and always rolls its transaction group back. On Revit 2026.5,
+21 cases passed without skips under CPython 3.12.3 (run `e8f87dad6fa1`) and
+IronPython 3.4.2 (run `0e5696878a67`). This covers actual modal control events,
+two-way binding, selection identity, settings and scoped overlays. Native picker
+acceptance, persistent modeless behavior and other Revit generations are not
+covered by those results. The manual **Engine Tests → Test CPython Forms** button
+remains available for picker, ownership and theme inspection.
+
+Run `python dev/scripts/forms_usage.py` to inventory bundled-tool references,
+excluding DevTools. The current inventory has no syntax skips. The most-used
+dialogs are `alert` (102 files), `SelectFromList` (42) and `CommandSwitchWindow`
+(37); the shared list and command dialogs are exercised under both engines.
+Counts describe API references, not proof that every calling tool runs under
+CPython. In particular, 26 files use custom `WPFWindow` subclasses and need
+individual migration review; native CLR subclass assumptions and persistent
+modeless lifetimes remain outside this compatibility contract.
+Conservatively excluding custom windows, dockable APIs, notifications, the
+color picker and family-parameter selectors leaves 346 of 396 references (87%)
+covered by the common supported APIs, including the tested settings module.
