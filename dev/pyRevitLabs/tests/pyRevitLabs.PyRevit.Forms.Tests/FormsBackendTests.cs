@@ -1,11 +1,12 @@
 using System.IO;
 using Python.Runtime;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PyRevitLabs.PyRevit.Forms.Tests;
 
 /// <summary>Exercise real WPF and the shipped pythonnet without starting Revit.</summary>
-public class FormsBackendTests {
+public class FormsBackendTests(ITestOutputHelper output) {
     /// <summary>Modal inputs retain names, callbacks, resources and results across repeated runs.</summary>
     [Fact]
     public void InputDialogsWorkOnAnStaThread() {
@@ -22,6 +23,11 @@ public class FormsBackendTests {
                 using var scope = Py.CreateScope();
                 scope.Set("fixture_root", AppContext.BaseDirectory);
                 scope.Exec(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "FormsProbe.py")));
+                scope.Exec(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "BindingProbe.py")));
+                output.WriteLine(scope.Get("binding_report").ToString());
+                scope.Exec(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "SelectionProbe.py")));
+                output.WriteLine(scope.Get("selection_report").ToString());
+                scope.Exec("import unittest\nimport test_forms_parity\nreport = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(test_forms_parity.ModalFormsParityTests))\nassert report.wasSuccessful(), str(report.failures) + str(report.errors)");
             }
             catch (Exception ex) {
                 failure = ex.ToString();
