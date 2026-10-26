@@ -381,8 +381,8 @@ class DocumentFormsParityTests(unittest.TestCase):
             self.skipTest("Run with the Revit acceptance fixture")
         self.doc = FIXTURE["doc"]
 
-    def _select(self, call):
-        return _modal(forms.SelectFromList, call, _select_first)
+    def _select(self, call, select_action=_select_first):
+        return _modal(forms.SelectFromList, call, select_action)
 
     def test_views(self):
         """View grouping preserves the original Revit element."""
@@ -468,7 +468,22 @@ class DocumentFormsParityTests(unittest.TestCase):
         from pyrevit import DB
         from pyrevit.compat import get_elementid_value_func
 
-        selected = self._select(lambda: forms.select_titleblocks(doc=self.doc))
+        no_titleblock = "No Title Block"
+
+        def select_no_titleblock(dialog):
+            options = dialog._get_active_ctx()
+            selected_index = next(
+                index
+                for index, option in enumerate(options)
+                if option.item == no_titleblock
+            )
+            dialog.list_lb.SelectedIndex = selected_index
+            _click(dialog.select_b)
+
+        selected = self._select(
+            lambda: forms.select_titleblocks(doc=self.doc, no_tb_option=no_titleblock),
+            select_no_titleblock,
+        )
         get_elementid_value = get_elementid_value_func()
         self.assertEqual(
             get_elementid_value(DB.ElementId.InvalidElementId),
