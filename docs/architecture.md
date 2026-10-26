@@ -234,6 +234,7 @@ XAML handler declaration against the CPython deferred-event registry (330
 bindings at this revision); it does not execute each tool workflow. Native CLR
 subclass assumptions and persistent modeless lifetimes remain outside this
 compatibility contract.
-Conservatively excluding custom windows, dockable APIs, notifications, the
-color picker and family-parameter selectors leaves 346 of 396 references (87%)
-covered by the common supported APIs, including the tested settings module.
+The automated CPython boundary reports 355 of 396 references (90%) as fully
+supported. A further 26 custom `WPFWindow` references are modal-only and need
+their individual workflows exercised. The remaining 15 references are
+modeless-window or dockable-panel APIs, which remain explicitly unsupported.
