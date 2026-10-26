@@ -20,6 +20,8 @@ layout:
   - Test CPython Debugger
   - Test CPython Regressions
   - Test CPython Revit Handle
+  - Test CPython Forms
+  - Test CPython Forms Manual
   - -----
   - Test CLR Engine Debugger
   - -----
