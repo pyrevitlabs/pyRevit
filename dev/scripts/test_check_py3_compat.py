@@ -8,6 +8,7 @@ from pathlib import Path
 try:
     from .check_py3_compat import (
         Finding,
+        _is_clr_interface_base,
         _is_engine_guarded,
         _is_generic_list_constructor,
         _is_tracked_extension_finding,
@@ -15,6 +16,7 @@ try:
 except ImportError:
     from check_py3_compat import (
         Finding,
+        _is_clr_interface_base,
         _is_engine_guarded,
         _is_generic_list_constructor,
         _is_tracked_extension_finding,
@@ -132,6 +134,26 @@ class NamespaceCompatibilityTests(unittest.TestCase):
                 "RequestHandler",
             ): "pyrevit.routes.server.handler",
             ("pyrevitlib/rpw/ui/selection.py", "SelectionFilter"): "rpw.ui.selection",
+            (
+                "pyrevitlib/pyrevit/revit/db/create.py",
+                "CopyUseDestination",
+            ): "pyrevit.revit.db.create",
+            (
+                "pyrevitlib/pyrevit/revit/dc3dserver.py",
+                "Server",
+            ): "pyrevit.revit.dc3dserver",
+            (
+                "pyrevitlib/pyrevit/revit/tmpgfx.py",
+                "Handler",
+            ): "pyrevit.revit.tmpgfx",
+            (
+                "pyrevitlib/pyrevit/forms/_ipy.py",
+                "_WPFPanelProvider",
+            ): "pyrevit.forms._ipy",
+            (
+                "pyrevitlib/pyrevit/forms/backends/_ipy.py",
+                "Reactive",
+            ): "pyrevit.forms.backends._ipy",
         }
 
         for (
@@ -154,6 +176,18 @@ class NamespaceCompatibilityTests(unittest.TestCase):
                 )
             )
             self.assertEqual(expected_namespace, namespace_assignment.value.value)
+
+    def test_clr_interface_base_is_detected(self):
+        """CLR interface implementations require deterministic type identity."""
+        interface_base = (
+            ast.parse("class Handler(UI.IExternalEventHandler): pass").body[0].bases[0]
+        )
+        self.assertTrue(_is_clr_interface_base(interface_base))
+
+    def test_non_interface_base_is_not_detected(self):
+        """Ordinary Python inheritance does not need a CLR namespace."""
+        base = ast.parse("class Handler(BaseHandler): pass").body[0].bases[0]
+        self.assertFalse(_is_clr_interface_base(base))
 
 
 if __name__ == "__main__":

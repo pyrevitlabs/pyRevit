@@ -498,6 +498,8 @@ class Buffer(object):
 class Server(dc3d.IDirectContext3DServer):
     """A generic DirectContext3dServer interface implementation."""
 
+    __namespace__ = "pyrevit.revit.dc3dserver"
+
     def __init__(
         self,
         guid=None,

@@ -66,6 +66,8 @@ class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 
             Register the handler on construction.  Defaults to ``True``.
     """
 
+    __namespace__ = "pyrevit.revit.tmpgfx"
+
     def __init__(
         self,
         guid=None,
