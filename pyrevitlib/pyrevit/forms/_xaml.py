@@ -67,10 +67,35 @@ _TEMPLATES = (
     "Style",
 )
 _NOT_ENTRY = object()
+_ATTRIBUTE_WHITESPACE = (
+    ("\n", "", "&#10;"),
+    ("\r", "", "&#13;"),
+    ("\t", "", "&#9;"),
+)
 
 
 def _children(element):
     return [node for node in element.childNodes if node.nodeType == node.ELEMENT_NODE]
+
+
+def _serialize(document):
+    """Write markup whose attribute line breaks survive WPF's XML parser.
+
+    Python 3.12's minidom writes newlines and tabs inside attribute values
+    literally, and XML attribute normalization then turns them into spaces.
+    They are swapped for private-use markers, then for character references.
+    """
+    for element in document.getElementsByTagName("*"):
+        for name, value in list(element.attributes.items()):
+            protected = value
+            for character, marker, _ in _ATTRIBUTE_WHITESPACE:
+                protected = protected.replace(character, marker)
+            if protected != value:
+                element.setAttribute(name, protected)
+    markup = document.toxml()
+    for _, marker, reference in _ATTRIBUTE_WHITESPACE:
+        markup = markup.replace(marker, reference)
+    return markup
 
 
 def _merge_resources(document, sources):
@@ -183,4 +208,4 @@ def prepare_xaml(source, resource_sources):
 
     visit(root)
     _merge_resources(document, resource_sources)
-    return document.toxml(), names, events, resource_names
+    return _serialize(document), names, events, resource_names

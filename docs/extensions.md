@@ -15,6 +15,7 @@ Extensions follow this hierarchy:
 MyExtension.extension/
   extension.json          # optional extension-level manifest
   startup.py               # optional, runs once when the extension loads
+  startup.cpython.py       # optional, runs under CPython after startup.py
   MyTab.tab/
     MyPanel.panel/
       MyButton.pushbutton/
@@ -114,11 +115,17 @@ An extension can opt its Python commands into CPython in `extension.json`:
 }
 ```
 
-Supported values are `cpython` and `ironpython`. The declaration applies only
-to Python scripts without a CPython shebang; `#! python3` or `#! cpython` on a
-script's first line always wins. An absent declaration preserves the legacy
-IronPython default, so extension authors can migrate incrementally. A
-declaration does not affect C#, VB, Ruby, Dynamo, or Grasshopper bundles.
+The bundle-style mapping `"engine": {"type": "cpython"}` is accepted too.
+Supported values are `cpython` and `ironpython`. The declaration is a default
+for Python scripts, including `startup.py`: a CPython shebang (`#! python3` or
+`#! cpython`) or a bundle's own `engine.type` in `bundle.yaml` always wins. An
+absent declaration preserves the legacy IronPython default, so extension
+authors can migrate incrementally. A declaration does not affect C#, VB, Ruby,
+Dynamo, or Grasshopper bundles.
+
+`startup.cpython.py` always runs under CPython, with or without a shebang, after
+`startup.py` when both exist. Use it to register CPython dockable panels while
+the rest of the extension still starts under IronPython.
 
 Engine behavior (clean/full-frame/persistent/mainthread) is configured separately via the `engine:` block in `bundle.yaml`. See [Script engines](architecture.md#how-pyrevit-commands-run) in the architecture overview for how a button click reaches the engine at runtime.
 

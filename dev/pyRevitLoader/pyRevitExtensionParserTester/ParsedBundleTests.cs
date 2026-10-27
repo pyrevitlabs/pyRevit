@@ -682,6 +682,75 @@ is_beta: true
             }
         }
 
+        [TestCase("{ \"engine\": \"CPython\" }", "cpython")]
+        [TestCase("{ \"engine\": { \"type\": \"cpython\", \"clean\": true } }", "cpython")]
+        [TestCase("{ \"engine\": \"IronPython\" }", "ironpython")]
+        [TestCase("{ \"engine\": { \"clean\": true } }", null)]
+        [TestCase("{ \"engine\": \"python3\" }", null)]
+        public void TestExtensionJsonDeclaresPythonEngine(string extensionJson, string? expected)
+        {
+            var extension = ParseExtensionWithEngine(extensionJson, null, out var extensionDir);
+            try
+            {
+                Assert.That(extension.DeclaredPythonEngine, Is.EqualTo(expected));
+            }
+            finally
+            {
+                Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        public void TestDeclaredCPythonEngineIsADefaultForPythonCommands()
+        {
+            var extension = ParseExtensionWithEngine("{ \"engine\": \"cpython\" }", null, out var extensionDir);
+            try
+            {
+                var command = extension.CollectCommandComponents().Single();
+                var engineCfgs = pyRevitAssemblyBuilder.AssemblyMaker.CommandGenerationUtilities.BuildEngineConfigs(
+                    command, command.ScriptPath, extension);
+
+                Assert.That(engineCfgs, Does.Contain("\"type\":\"CPython\""));
+                Assert.That(engineCfgs, Does.Not.Contain("type_explicit"));
+            }
+            finally
+            {
+                Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        public void TestBundleEngineTypeOverridesExtensionDeclaration()
+        {
+            var extension = ParseExtensionWithEngine(
+                "{ \"engine\": \"cpython\" }", "engine:\n  type: IronPython\n", out var extensionDir);
+            try
+            {
+                var command = extension.CollectCommandComponents().Single();
+                var engineCfgs = pyRevitAssemblyBuilder.AssemblyMaker.CommandGenerationUtilities.BuildEngineConfigs(
+                    command, command.ScriptPath, extension);
+
+                Assert.That(engineCfgs, Does.Contain("\"type\":\"IronPython\""));
+                Assert.That(engineCfgs, Does.Contain("\"type_explicit\":true"));
+            }
+            finally
+            {
+                Directory.Delete(extensionDir, true);
+            }
+        }
+
+        private static ParsedExtension ParseExtensionWithEngine(string extensionJson, string bundleYaml, out string extensionDir)
+        {
+            extensionDir = Path.Combine(Path.GetTempPath(), $"DeclaredEngine_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.tab", "Test.panel", "Cmd.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+            File.WriteAllText(Path.Combine(extensionDir, "extension.json"), extensionJson);
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "print('ok')\n");
+            if (bundleYaml != null)
+                File.WriteAllText(Path.Combine(bundleDir, "bundle.yaml"), bundleYaml);
+            return ParseInstalledExtensions(new[] { extensionDir }).First();
+        }
+
         [Test]
         public void TestNoButtonCommandsAreEmittedIntoGeneratedAssemblyCode()
         {

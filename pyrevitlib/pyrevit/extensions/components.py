@@ -523,10 +523,11 @@ class Extension(GenericUIContainer):
         GenericUIContainer._update_from_directory(self)
         manifest = self.get_manifest()
         self.script_engine = exts.get_declared_python_engine(manifest)
-        if manifest and exts.MDATA_ENGINE in manifest and self.script_engine is None:
+        declared_engine = exts.get_declared_engine_type(manifest)
+        if declared_engine is not None and self.script_engine is None:
             mlogger.warning(
                 "Ignoring unsupported extension Python engine declaration: %s",
-                manifest[exts.MDATA_ENGINE],
+                declared_engine,
             )
         self.pyrvt_version = versionmgr.get_pyrevit_version().get_formatted()
 
