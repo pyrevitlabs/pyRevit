@@ -348,11 +348,17 @@ assert not forms.activate_open_window("MODELESS_FORMS_PROBE")
 for name in forms.__all__:
     assert getattr(forms, name) is not None
 
-try:
-    getattr(forms, "WPFPanel")
-except Unsupported as error:
-    assert error.feature_name == "pyrevit.forms.WPFPanel"
-else:
-    raise AssertionError("Unported dialogs must retain actionable errors")
+
+class ProbePanel(forms.WPFPanel):
+    """Load a CPython dockable-page controller without a Revit pane host."""
+
+    panel_id = "0ac6ce8e-d7ba-4d8a-b5bb-c96ceeb98fb1"
+    panel_source = os.path.join(fixture_root, "PanelProbe.xaml")
+    panel_title = "Panel Probe"
+
+
+panel = ProbePanel()
+assert isinstance(_backend.unwrap(panel), Controls.Page)
+assert panel.label.Text == "Panel probe"
 
 print("CPython WPF forms probe passed")

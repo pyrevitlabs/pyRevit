@@ -78,6 +78,25 @@ class Window(object):
         _release_events(self)
 
 
+class Panel(object):
+    """Forward panel properties to a native WPF page owned by this controller."""
+
+    def __getattr__(self, name):
+        panel = self.__dict__.get("_panel")
+        if panel is None:
+            raise AttributeError(name)
+        return getattr(panel, name)
+
+    def __setattr__(self, name, value):
+        panel = self.__dict__.get("_panel")
+        if not name.startswith("_") and panel is not None and hasattr(panel, name):
+            if name == "DataContext":
+                value = binding_source(value)
+            setattr(panel, name, value)
+        else:
+            object.__setattr__(self, name, value)
+
+
 def initialize(target):
     """Create the temporary resource owner on the calling STA UI thread."""
     if (
@@ -95,17 +114,37 @@ def initialize(target):
     target._modeless = False
 
 
+def initialize_panel(target):
+    """Create a native page resource owner on the calling STA UI thread."""
+    if (
+        System.Threading.Thread.CurrentThread.GetApartmentState()
+        != System.Threading.ApartmentState.STA
+    ):
+        raise PyRevitException(
+            "CPython forms must be created on Revit's STA UI thread."
+        )
+    target._panel = framework.Controls.Page()
+    target._event_bindings = []
+    target._routed_bindings = []
+    target._callback_error = None
+
+
 def unwrap(target):
     """Return a native root for WPF APIs that cannot consume Python controllers."""
     if isinstance(target, Window):
         return target._window
+    if isinstance(target, Panel):
+        return target._panel
     return target
 
 
 def dispose(target):
     """Release callbacks and host subscriptions after failed initialization."""
-    if "_window" in target.__dict__:
+    if isinstance(target, Window) and "_window" in target.__dict__:
         target.Close()
+    if isinstance(target, Panel) and "_panel" in target.__dict__:
+        target._unsubscribe_theme_changed()
+        _release_events(target)
 
 
 def items_source(values):
@@ -178,6 +217,8 @@ def _event_handler(target, handler):
         except Exception as error:
             if target._callback_error is None:
                 target._callback_error = error
+            if not isinstance(target, Window):
+                return
             window = target._window
             window.Dispatcher.BeginInvoke(
                 System.Action(lambda: _close_after_failure(target, window))
@@ -312,15 +353,17 @@ def load_component(target, source):
     handlers already installed and do not subscribe to host-wide events.
     """
     markup, base_uri = _read_source(source)
-    if not isinstance(target, Window):
+    if not isinstance(target, (Window, Panel)):
         return _load_markup(markup, base_uri)
-    previous = target._window
+    previous = unwrap(target)
     resources = previous.Resources
     sources = [str(item.Source) for item in resources.MergedDictionaries]
     markup, names, events, resource_names = prepare_xaml(markup, sources)
     native = _load_markup(markup, base_uri)
-    if not isinstance(native, Windows.Window):
+    if isinstance(target, Window) and not isinstance(native, Windows.Window):
         raise PyRevitException("CPython WPFWindow requires a Window XAML root.")
+    if isinstance(target, Panel) and not isinstance(native, framework.Controls.Page):
+        raise PyRevitException("CPython WPFPanel requires a Page XAML root.")
     for key in resources.Keys:
         if not native.Resources.Contains(key):
             native.Resources[key] = resources[key]
@@ -328,9 +371,12 @@ def load_component(target, source):
         prop = getattr(framework.Controls.Control, name + "Property")
         if native.ReadLocalValue(prop) == Windows.DependencyProperty.UnsetValue:
             setattr(native, name, getattr(previous, name))
-    target._window = native
-    target._closed = False
-    previous.Close()
+    if isinstance(target, Window):
+        target._window = native
+        target._closed = False
+        previous.Close()
+    else:
+        target._panel = native
     try:
         for name in names:
             if name in resource_names:
@@ -355,8 +401,9 @@ def load_component(target, source):
             else:
                 control = getattr(target, name)
                 _bind(target, control, event_name, getattr(target, handler_name))
-        native.Closed += target._on_closed
-        target._event_bindings.append((native, "Closed", target._on_closed))
+        if isinstance(target, Window):
+            native.Closed += target._on_closed
+            target._event_bindings.append((native, "Closed", target._on_closed))
     except Exception:
         _release_events(target)
         raise

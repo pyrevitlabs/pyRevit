@@ -26,6 +26,7 @@
         <None Update="FormsProbe.py" CopyToOutputDirectory="PreserveNewest"/>
         <None Update="BindingProbe.py" CopyToOutputDirectory="PreserveNewest"/>
         <None Update="SelectionProbe.py" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="PanelProbe.xaml" CopyToOutputDirectory="PreserveNewest"/>
         <Content Include="..\..\..\..\pyrevitlib\pyrevit\unittests\test_forms_parity.py"
                  Link="test_forms_parity.py" CopyToOutputDirectory="PreserveNewest"/>
         <Content Include="..\..\..\..\pyrevitlib\pyrevit\coreutils\colors.py" Link="colors.py" CopyToOutputDirectory="PreserveNewest"/>

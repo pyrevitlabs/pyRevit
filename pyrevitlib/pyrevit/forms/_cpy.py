@@ -1,12 +1,19 @@
 """CPython forms share behavior with IronPython through the native WPF backend."""
 
+from pyrevit import PyRevitException, framework
+
+from . import _backend
+
 from .base import (
+    THEME_XAML_FILE,
     WPFWindow,
     WPF_VISIBLE,
     WPF_COLLAPSED,
     WPF_HIDDEN,
     XAML_FILES_DIR,
     is_dark_theme,
+    _resolve_xaml_source,
+    _WPFMixin,
     WindowToggler,
 )
 from .backends._cpy import activate_open_window
@@ -87,8 +94,63 @@ from .notify import (
 )
 
 
+class WPFPanel(_WPFMixin, _backend.Panel):
+    """CPython controller for a Revit dockable-page XAML root.
+
+    Registration remains an explicit Revit-host operation. This class owns the
+    page's XAML, resources, named controls and Python event callbacks.
+    """
+
+    panel_id = None
+    panel_source = None
+    panel_title = None
+    initial_state = None
+    editor_interaction = None
+    contextual_help = None
+    resolve_theme = False
+
+    _live_refresh_root_colors = True
+
+    def __init__(self):
+        """Initialize the page described by the panel class attributes."""
+        if not self.panel_id:
+            raise PyRevitException('"panel_id" class attribute is not set')
+        if not self.panel_source:
+            raise PyRevitException('"panel_source" class attribute is not set')
+        if not self.panel_title:
+            raise PyRevitException('"panel_title" class attribute is not set')
+        _backend.initialize_panel(self)
+        try:
+            self.load_xaml(self.panel_source)
+        except Exception:
+            _backend.dispose(self)
+            raise
+
+    def load_xaml(self, xaml_source, literal_string=False):
+        """Load page XAML and apply pyRevit form resources.
+
+        Args:
+            xaml_source (str): Path to XAML or raw XAML content.
+            literal_string (bool): Whether xaml_source is raw XAML content.
+        """
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
+        self.merge_resource_dict(THEME_XAML_FILE)
+        if literal_string:
+            _backend.load_component(self, framework.StringReader(xaml_source))
+        else:
+            xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
+            if pending_resource_merge:
+                self.merge_resource_dict(pending_resource_merge)
+            _backend.load_component(self, xaml_path)
+        self.apply_contrast_foregrounds()
+        self.thread_id = framework.get_current_thread_id()
+        if self.resolve_theme:
+            self._subscribe_theme_changed()
+
+
 __all__ = [
     "WPFWindow",
+    "WPFPanel",
     "WPF_VISIBLE",
     "WPF_COLLAPSED",
     "WPF_HIDDEN",
