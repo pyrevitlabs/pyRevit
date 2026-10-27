@@ -780,6 +780,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (string.IsNullOrEmpty(extension.StartupScript))
                 return;
 
+            ExecuteExtensionStartupScript(extension, extension.StartupScript);
+
+            var cpythonStartupScript = System.IO.Path.Combine(
+                extension.Directory,
+                "startup.cpython.py"
+            );
+            if (System.IO.File.Exists(cpythonStartupScript))
+                ExecuteExtensionStartupScript(extension, cpythonStartupScript);
+        }
+
+        private void ExecuteExtensionStartupScript(ParsedExtension extension, string startupScript)
+        {
             try
             {
                 // Validate cached types
@@ -792,7 +804,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var searchPaths = BuildSearchPaths(extension);
 
                 // Create ScriptData
-                var scriptData = CreateScriptData(extension);
+                var scriptData = CreateScriptData(extension, startupScript);
 
                 var sharedSessionEngine = (_uiManager?.RocketMode ?? false) && extension.RocketModeCompatible;
                 var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine);
@@ -805,7 +817,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 try
                 {
-                    _logger.Info($"Executing startup script for extension: {extension.Name}");
+                    _logger.Info($"Executing startup script for extension: {extension.Name} ({startupScript})");
 
                     var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
 
@@ -822,14 +834,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 catch (System.Reflection.TargetInvocationException tie)
                 {
                     var ex = tie.InnerException ?? tie;
-                    _logger.Error($"Startup script failed for extension: {extension.Name}: {ex.Message}");
+                    _logger.Error($"Startup script failed for extension: {extension.Name} ({startupScript}): {ex.Message}");
                     throw ex;
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error($"Startup script '{extension?.Name}' failed: {ex.Message}");
-                Trace.WriteLine($"Startup script '{extension?.Name}' failed: {ex}");
+                _logger.Error($"Startup script '{extension?.Name}' ({startupScript}) failed: {ex.Message}");
+                Trace.WriteLine($"Startup script '{extension?.Name}' ({startupScript}) failed: {ex}");
             }
         }
 
@@ -991,14 +1003,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="extension">The extension containing the startup script.</param>
         /// <returns>The created ScriptData object.</returns>
-        private object CreateScriptData(ParsedExtension extension)
+        private object CreateScriptData(ParsedExtension extension, string startupScript)
         {
             if (_scriptDataType == null)
                 throw new InvalidOperationException("ScriptData type not initialized");
 
             var scriptData = Activator.CreateInstance(_scriptDataType)
                 ?? throw new InvalidOperationException("Failed to create ScriptData instance");
-            SetMemberValue(_scriptDataType, scriptData, "ScriptPath", extension.StartupScript);
+            SetMemberValue(_scriptDataType, scriptData, "ScriptPath", startupScript);
             SetMemberValue(_scriptDataType, scriptData, "ConfigScriptPath", null);
             SetMemberValue(_scriptDataType, scriptData, "CommandUniqueId", string.Empty);
             SetMemberValue(_scriptDataType, scriptData, "CommandName", $"Starting {extension.Name}");
