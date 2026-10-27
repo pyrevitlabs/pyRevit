@@ -14,6 +14,8 @@ import uuid
 if not hasattr(types, "SimpleNamespace"):
 
     class SimpleNamespace(object):
+        """Provide the Python 3.3-compatible namespace used by test doubles."""
+
         def __init__(self, **values):
             self.__dict__.update(values)
 
@@ -134,6 +136,12 @@ module(
     fuzzy_search_ratio=lambda target_string, sfilter, regex: (
         100 if sfilter.lower() in target_string.lower() else 0
     ),
+)
+environment_values = {}
+module(
+    "pyrevit.coreutils.envvars",
+    get_pyrevit_env_var=lambda name: environment_values.get(name),
+    set_pyrevit_env_var=lambda name, value: environment_values.__setitem__(name, value),
 )
 colors_module = module("pyrevit.coreutils.colors")
 with open(os.path.join(fixture_root, "colors.py"), encoding="utf-8") as source:
@@ -290,14 +298,52 @@ else:
     raise AssertionError("Setup errors must propagate")
 assert not theme_changed.handlers
 
-dialog = make_dialog(value_type="string")
-try:
-    dialog.Show()
-except Unsupported as error:
-    assert error.feature_name == "pyrevit.forms.WPFWindow.Show"
-else:
-    raise AssertionError("Modeless use is outside the supported tier")
+
+class ModelessWindow(forms.WPFWindow):
+    """Exercise CPython modeless ownership and callback cleanup."""
+
+    def __init__(self):
+        forms.WPFWindow.__init__(
+            self,
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<StackPanel><Button x:Name="close_button"/></StackPanel></Window>',
+            literal_string=True,
+        )
+        self.was_closed = False
+        self.Closed += self.closed
+
+    def closed(self, sender, args):
+        """Record that the native window completed its lifecycle."""
+        self.was_closed = True
+
+
+dialog = ModelessWindow()
+dispatcher = Threading.Dispatcher.CurrentDispatcher
+frame = Threading.DispatcherFrame()
+timer = Threading.DispatcherTimer()
+timer.Interval = System.TimeSpan.FromMilliseconds(30)
+
+
+def close_modeless(sender, args):
+    """Close the test window and return the temporary dispatcher loop."""
+    timer.Stop()
+    dialog.Close()
+    frame.Continue = False
+
+
+timer.Tick += close_modeless
+dialog.Show()
+assert dialog.IsVisible
+environment_values["MODELESS_FORMS_PROBE"] = dialog
+assert forms.activate_open_window("MODELESS_FORMS_PROBE")
+timer.Start()
+Threading.Dispatcher.PushFrame(frame)
+timer.Tick -= close_modeless
+assert dialog.was_closed
+assert not dialog._event_bindings
 assert not theme_changed.handlers
+assert not forms.activate_open_window("MODELESS_FORMS_PROBE")
 
 for name in forms.__all__:
     assert getattr(forms, name) is not None
