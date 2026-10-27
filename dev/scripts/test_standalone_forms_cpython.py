@@ -103,11 +103,17 @@ class XamlPreparationTests(unittest.TestCase):
         audit = _load_usage_inventory()["xaml_events"]
         self.assertEqual([], audit["unparsed"])
         self.assertEqual([], audit["unsupported"])
+        self.assertEqual([], audit["template_direct"])
+
+    def test_bundled_scripts_adapt_child_data_contexts(self):
+        """Child controls receive models through forms.set_data_context."""
+        hazards = _load_usage_inventory()["cpython_hazards"]
+        self.assertEqual([], hazards["child_data_context"])
 
     def test_inventory_reports_full_cpython_forms_coverage(self):
         """Bundled forms usage resolves through the published CPython facade."""
         coverage = _load_usage_inventory()["cpython"]
-        self.assertEqual(396, coverage["supported_references"])
+        self.assertEqual(397, coverage["supported_references"])
         self.assertEqual(0, coverage["modal_only_references"])
         self.assertEqual(0, coverage["host_required_references"])
         self.assertEqual(0, coverage["unsupported_references"])
@@ -137,6 +143,78 @@ class XamlPreparationTests(unittest.TestCase):
         text_block = minidom.parseString(markup).getElementsByTagName("TextBlock")[0]
         self.assertEqual("Line1\nLine2\tEnd", text_block.getAttribute("Text"))
 
+    def test_prefixed_wpf_root_keeps_merged_resources_in_the_wpf_namespace(self):
+        """Generated resource nodes use the prefix the root binds to WPF."""
+        wpf = "http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<w:Window xmlns:w="{}"><w:Grid/></w:Window>'.format(wpf),
+            ["theme.xaml"],
+        )
+        document = minidom.parseString(markup)
+        dictionaries = document.getElementsByTagNameNS(wpf, "ResourceDictionary")
+        self.assertTrue(dictionaries)
+        sources = [node.getAttribute("Source") for node in dictionaries]
+        self.assertIn("theme.xaml", sources)
+        resources = document.getElementsByTagNameNS(wpf, "Window.Resources")
+        self.assertEqual(1, len(resources))
+
+    def test_static_palette_keys_resolve_dynamically(self):
+        """Host keys added after parsing are looked up when they exist."""
+        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
+            '<Border Background="{StaticResource pyRevitAccentBrush}" '
+            'BorderBrush="{StaticResource authored}"/></Window>',
+            [],
+            dynamic_keys={"pyRevitAccentBrush"},
+        )
+        self.assertIn('Background="{DynamicResource pyRevitAccentBrush}"', markup)
+        self.assertIn('BorderBrush="{StaticResource authored}"', markup)
+
+    def test_icon_font_characters_are_not_rewritten(self):
+        """Private-use characters stay text; only real line breaks are encoded."""
+        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
+            '<TextBlock Text="&#xE000;&#xE001;&#xE002;"/></Window>',
+            [],
+        )
+        text_block = minidom.parseString(markup).getElementsByTagName("TextBlock")[0]
+        self.assertEqual("", text_block.getAttribute("Text"))
+
+    def test_resolved_clr_events_outside_the_allowlist_are_deferred(self):
+        """Any attribute the backend reports as an event is detached for binding."""
+        markup, names, events, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
+            '<Button MouseMove="moved" Content="Go"/></Window>',
+            [],
+            is_event=lambda type_name, attribute: (
+                (type_name, attribute) == ("Button", "MouseMove")
+            ),
+        )
+        self.assertEqual([(names[0], "MouseMove", "moved")], events)
+        self.assertNotIn("MouseMove", markup)
+        self.assertIn('Content="Go"', markup)
+
+    def test_custom_template_elements_carry_their_namespace(self):
+        """Template targets outside WPF are not mistaken for WPF controls."""
+        _, _, events, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:local="clr-namespace:Tools"><Window.Resources>'
+            '<DataTemplate x:Key="t" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<local:Button Click="go"/></DataTemplate></Window.Resources></Window>',
+            [],
+        )
+        self.assertEqual(
+            [
+                (
+                    "@template:_pyrevit_template_0:{clr-namespace:Tools}Button",
+                    "Click",
+                    "go",
+                )
+            ],
+            events,
+        )
+
     def test_template_events_are_tagged_with_their_authored_element(self):
         """Template handlers match only the element that declared them."""
         markup, _, events, _ = _load_xaml_helpers().prepare_xaml(
@@ -151,9 +229,9 @@ class XamlPreparationTests(unittest.TestCase):
         targets = [target for target, _, _ in events]
         self.assertEqual(
             [
-                "@template:CheckBox:_pyrevit_template_0",
-                "@template:CheckBox:mine",
-                "@template:CheckBox:mine",
+                "@template:_pyrevit_template_0:CheckBox",
+                "@template:mine:CheckBox",
+                "@template:mine:CheckBox",
             ],
             targets,
         )
@@ -182,13 +260,19 @@ class FormsExportsTests(unittest.TestCase):
     """Keep accidental legacy exports compatible as well as the intended API."""
 
     def test_ironpython_public_names_match_the_pre_extraction_surface(self):
-        """IronPython exports the shared API plus every pre-split legacy name."""
+        """IronPython keeps every pre-split name; additions are listed explicitly."""
         fixture = Path(__file__).parent / "fixtures" / "forms_ironpython_exports.json"
-        expected = json.loads(fixture.read_text(encoding="utf-8"))
+        pre_split = json.loads(fixture.read_text(encoding="utf-8"))
+        intended_additions = {"warning", "set_data_context"}
         common = _literal_list(FORMS / "_common.py", "__all__")
         legacy = _literal_list(FORMS / "_ipy.py", "_LEGACY_EXPORTS")
         self.assertFalse(set(common) & set(legacy))
-        self.assertEqual(sorted(expected), sorted(common + legacy))
+        self.assertFalse(set(pre_split) & intended_additions)
+        self.assertEqual(
+            sorted(pre_split) + sorted(intended_additions),
+            sorted(set(common + legacy) - intended_additions)
+            + sorted(intended_additions),
+        )
         self.assertFalse(set(legacy) - _defined_names(FORMS / "_ipy.py"))
 
     def test_shared_names_are_defined_by_the_shared_module(self):

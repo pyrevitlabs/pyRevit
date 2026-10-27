@@ -2,7 +2,7 @@
 
 import os
 
-from pyrevit import forms
+from pyrevit import forms, script
 
 
 class CPythonDockablePanel(forms.WPFPanel):
@@ -31,10 +31,17 @@ def register():
     ``startup.cpython.py`` calls this during startup. The Open CPython Dockable
     Pane button calls it again as a fallback and reports when it had to.
 
+    Revit cannot unregister panes, so after a pyRevit reload the pane keeps the
+    page and callbacks registered at startup until Revit restarts.
+
     Returns:
         bool: True when this call registered the panel.
     """
     if forms.is_registered_dockable_panel(CPythonDockablePanel):
+        script.get_logger().debug(
+            "CPython dockable panel is already registered; restart Revit to "
+            "load changes to its XAML or code."
+        )
         return False
     forms.register_dockable_panel(CPythonDockablePanel, default_visible=False)
     return True

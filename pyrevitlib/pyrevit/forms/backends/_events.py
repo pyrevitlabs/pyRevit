@@ -11,12 +11,27 @@ instead.
 
 import traceback
 
+import clr
 from pyrevit import PyRevitException, framework
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.framework import System, Windows, Media
+from pyrevit.framework import Input, System, Windows, Media
 
 
 mlogger = get_logger(__name__)
+_event_attributes = {}
+
+_MOUSE_BUTTON_EVENTS = {
+    "MouseLeftButtonDown": ("MouseDown", "Left", None),
+    "MouseLeftButtonUp": ("MouseUp", "Left", None),
+    "MouseRightButtonDown": ("MouseDown", "Right", None),
+    "MouseRightButtonUp": ("MouseUp", "Right", None),
+    "PreviewMouseLeftButtonDown": ("PreviewMouseDown", "Left", None),
+    "PreviewMouseLeftButtonUp": ("PreviewMouseUp", "Left", None),
+    "PreviewMouseRightButtonDown": ("PreviewMouseDown", "Right", None),
+    "PreviewMouseRightButtonUp": ("PreviewMouseUp", "Right", None),
+    "MouseDoubleClick": ("MouseDown", "Left", 2),
+    "PreviewMouseDoubleClick": ("PreviewMouseDown", "Left", 2),
+}
 
 
 def initialize_events(target):
@@ -65,35 +80,61 @@ def bind(target, control, event_name, handler):
     target._event_bindings.append((control, event_name, callback))
 
 
+def is_event_attribute(tag, attribute):
+    """Return whether a XAML attribute on ``tag`` names a CLR event of that type."""
+    key = (tag, attribute)
+    if key not in _event_attributes:
+        owner = _control_type(tag)
+        _event_attributes[key] = (
+            owner is not None and clr.GetClrType(owner).GetEvent(attribute) is not None
+        )
+    return _event_attributes[key]
+
+
 def bind_template_event(target, root, tag, uid, event_name, handler):
     """Route an event declared inside a template to ``handler``.
 
     Template instances do not exist when the XAML loads, so their elements are
-    matched by ``tag`` type and ``Uid``. Bubbling events with a preview
-    counterpart get a direct handler on each matching element the first time
-    the tunnelling preview event reaches it, which preserves WPF's handler
-    order and ``Handled`` semantics. Other routed events are matched from a
-    handler on ``root``.
+    matched by ``Uid`` (and by type, for WPF controls). Bubbling events with a
+    preview counterpart get a direct handler on each matching element the
+    first time the tunnelling preview event reaches it, which preserves WPF's
+    handler order and ``Handled`` semantics. Other routed events are matched
+    from a handler on ``root``. Direct mouse-button events are rebuilt from
+    ``MouseDown``/``MouseUp`` filtered by button and click count. ``tag`` is
+    the element's WPF type name, or ``{namespace}Name`` for a type outside the
+    WPF namespace, which is then matched by ``Uid`` alone.
 
     Raises:
-        PyRevitException: ``tag`` names no known control with ``event_name``.
+        PyRevitException: The event is unknown, or is a direct routed event
+            such as ``Loaded`` or ``MouseEnter`` that never reaches an
+            ancestor, so it cannot be observed for template instances.
     """
     owner = _control_type(tag)
-    event = getattr(owner, event_name + "Event", None) if owner else None
+    mapped = _MOUSE_BUTTON_EVENTS.get(event_name)
+    routed_name, button, clicks = mapped if mapped else (event_name, None, None)
+    event = _routed_event(owner, routed_name)
     if event is None:
         raise PyRevitException(
             "Unsupported template event: {}.{}".format(tag, event_name)
         )
+    if event.RoutingStrategy == Windows.RoutingStrategy.Direct:
+        raise PyRevitException(
+            "{}.{} is a direct routed event; CPython forms cannot observe it "
+            "inside templates.".format(tag, event_name)
+        )
     callback = _guarded(target, handler)
+    if mapped:
+        callback = _mouse_button_filter(callback, button, clicks)
 
     def sources(args):
         return [
             element
             for element in _routing_ancestors(args.OriginalSource)
-            if isinstance(element, owner) and element.Uid == uid
+            if getattr(element, "Uid", None) == uid
+            and (owner is None or isinstance(element, owner))
         ]
 
-    preview = getattr(owner, "Preview" + event_name + "Event", None)
+    preview = _routed_event(owner, "Preview" + routed_name)
     if event.RoutingStrategy == Windows.RoutingStrategy.Bubble and preview:
         _attach_on_preview(target, root, event, preview, sources, callback)
         return
@@ -104,7 +145,7 @@ def _guarded(target, handler):
     def invoke(sender, args):
         try:
             handler(sender, args)
-        except Exception as error:
+        except BaseException as error:
             if target._callback_error is None:
                 target._callback_error = error
             target._on_callback_failure()
@@ -112,11 +153,27 @@ def _guarded(target, handler):
     return invoke
 
 
+def _mouse_button_filter(callback, button, clicks):
+    expected = getattr(Input.MouseButton, button)
+
+    def filtered(sender, args):
+        if args.ChangedButton != expected:
+            return
+        if clicks is not None and args.ClickCount != clicks:
+            return
+        callback(sender, args)
+
+    return filtered
+
+
 def _control_type(tag):
+    if tag.startswith("{"):
+        return None
     namespaces = (
         framework.Controls,
         framework.Controls.Primitives,
         framework.Documents,
+        framework.Windows,
     )
     return next(
         (
@@ -126,6 +183,17 @@ def _control_type(tag):
         ),
         None,
     )
+
+
+def _routed_event(owner, event_name):
+    if owner is not None:
+        return getattr(owner, event_name + "Event", None)
+    matches = [
+        event
+        for event in Windows.EventManager.GetRoutedEvents()
+        if event.Name == event_name
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 def _routing_ancestors(source):

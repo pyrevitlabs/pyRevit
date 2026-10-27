@@ -6,6 +6,8 @@ template instances keep, so routed handlers on the root window can match the
 authored element.
 """
 
+import re
+import uuid
 from xml.dom import minidom
 
 
@@ -67,11 +69,13 @@ _TEMPLATES = (
     "Style",
 )
 _NOT_ENTRY = object()
+_MARKER = "pyRevitAttr{}".format(uuid.uuid4().hex)
 _ATTRIBUTE_WHITESPACE = (
-    ("\n", "", "&#10;"),
-    ("\r", "", "&#13;"),
-    ("\t", "", "&#9;"),
+    ("\n", _MARKER + "LF", "&#10;"),
+    ("\r", _MARKER + "CR", "&#13;"),
+    ("\t", _MARKER + "TAB", "&#9;"),
 )
+_STATIC_RESOURCE = re.compile(r"^\{StaticResource\s+(?:ResourceKey=)?([^\s{}]+)\s*\}$")
 
 
 def _children(element):
@@ -83,7 +87,8 @@ def _serialize(document):
 
     Python 3.12's minidom writes newlines and tabs inside attribute values
     literally, and XML attribute normalization then turns them into spaces.
-    They are swapped for private-use markers, then for character references.
+    They are swapped for per-process ASCII markers, then for character
+    references, so no authored text can collide with a marker.
     """
     for element in document.getElementsByTagName("*"):
         for name, value in list(element.attributes.items()):
@@ -98,16 +103,35 @@ def _serialize(document):
     return markup
 
 
+def _wpf_prefix(root):
+    """Return the prefix that names WPF types under ``root``, declaring one if absent."""
+    if root.getAttribute("xmlns") == _WPF_NS:
+        return ""
+    for name, value in root.attributes.items():
+        if name.startswith("xmlns:") and value == _WPF_NS:
+            return name.split(":", 1)[1]
+    root.setAttribute("xmlns:pyrevitwpf", _WPF_NS)
+    return "pyrevitwpf"
+
+
 def _merge_resources(document, sources):
     if not sources:
         return
     root = document.documentElement
+    prefix = _wpf_prefix(root)
+
+    def wpf_element(local_name):
+        qualified = "{}:{}".format(prefix, local_name) if prefix else local_name
+        return document.createElementNS(_WPF_NS, qualified)
+
     resource_tag = root.localName + ".Resources"
     resources = next(
         (node for node in _children(root) if node.localName == resource_tag), None
     )
     if resources is None:
-        resources = document.createElementNS(_WPF_NS, resource_tag)
+        resources = document.createElementNS(
+            root.namespaceURI, root.tagName + ".Resources"
+        )
         root.insertBefore(resources, root.firstChild)
     dictionaries = [
         node for node in _children(resources) if node.localName == "ResourceDictionary"
@@ -115,7 +139,7 @@ def _merge_resources(document, sources):
     if dictionaries:
         dictionary = dictionaries[0]
     else:
-        dictionary = document.createElementNS(_WPF_NS, "ResourceDictionary")
+        dictionary = wpf_element("ResourceDictionary")
         for node in list(resources.childNodes):
             dictionary.appendChild(node)
         resources.appendChild(dictionary)
@@ -124,13 +148,31 @@ def _merge_resources(document, sources):
         (node for node in _children(dictionary) if node.localName == merge_tag), None
     )
     if merged is None:
-        merged = document.createElementNS(_WPF_NS, merge_tag)
+        merged = wpf_element(merge_tag)
         dictionary.insertBefore(merged, dictionary.firstChild)
     first_authored = merged.firstChild
     for source in sources:
-        entry = document.createElementNS(_WPF_NS, "ResourceDictionary")
+        entry = wpf_element("ResourceDictionary")
         entry.setAttribute("Source", source)
         merged.insertBefore(entry, first_authored)
+
+
+def _type_name(node):
+    """Return a WPF element's type name, or ``{namespace}Name`` for other types."""
+    if node.namespaceURI == _WPF_NS:
+        return node.localName
+    return "{{{}}}{}".format(node.namespaceURI, node.localName)
+
+
+def _use_dynamic_resources(node, dynamic_keys):
+    for attribute, value in list(node.attributes.items()):
+        if ":" in attribute:
+            continue
+        match = _STATIC_RESOURCE.match(value.strip())
+        if match and match.group(1) in dynamic_keys:
+            node.setAttribute(
+                attribute, "{{DynamicResource {}}}".format(match.group(1))
+            )
 
 
 def _ensure_name(document, node, names):
@@ -143,8 +185,19 @@ def _ensure_name(document, node, names):
     return name
 
 
-def prepare_xaml(source, resource_sources):
+def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
     """Defer supported named events and prepend the host resource dictionaries.
+
+    Args:
+        source (str): Authored XAML markup.
+        resource_sources (list[str]): Dictionary URIs merged ahead of the
+            authored resources.
+        is_event (callable, optional): ``is_event(type_name, attribute)``
+            returns whether an attribute names a CLR event of that type, so
+            events outside ``_EVENTS`` are deferred too.
+        dynamic_keys (collection, optional): Resource keys the host adds only
+            after parsing. ``{StaticResource key}`` for them becomes
+            ``{DynamicResource key}``, which resolves once they exist.
 
     Returns:
         tuple[str, list[str], list[tuple[str, str, str]], dict]: Markup,
@@ -170,7 +223,14 @@ def prepare_xaml(source, resource_sources):
             key = node.getAttributeNS(_XAML_NS, "Key") or node.getAttribute("x:Key")
             resource = (entry_owner, key) if key else None
         name = node.getAttributeNS(_XAML_NS, "Name") or node.getAttribute("Name")
-        for event in _EVENTS:
+        if dynamic_keys:
+            _use_dynamic_resources(node, dynamic_keys)
+        type_name = _type_name(node)
+        for event in list(node.attributes.keys()):
+            if ":" in event or "." in event:
+                continue
+            if event not in _EVENTS and not (is_event and is_event(type_name, event)):
+                continue
             if node.hasAttribute(event):
                 if in_template:
                     uid = (
@@ -181,7 +241,7 @@ def prepare_xaml(source, resource_sources):
                     if node.hasAttributeNS(_XAML_NS, "Uid"):
                         node.removeAttributeNS(_XAML_NS, "Uid")
                     node.setAttribute("Uid", uid)
-                    target = "@template:{}:{}".format(node.localName, uid)
+                    target = "@template:{}:{}".format(uid, type_name)
                 else:
                     name = _ensure_name(document, node, names)
                     target = name

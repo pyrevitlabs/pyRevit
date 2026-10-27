@@ -3,8 +3,8 @@
 Important:
     Python controllers never become CLR-derived types. This avoids pythonnet
     type-registration collisions on repeated commands and reloads. Reactive
-    models use managed binding adapters; persistent modeless windows remain
-    unsupported.
+    models use managed binding adapters, and modal, modeless and dockable roots
+    share the same callback lifetime rules.
 """
 
 import os.path as op
@@ -21,6 +21,7 @@ from ._events import (
     bind,
     bind_template_event,
     initialize_events,
+    is_event_attribute,
     raise_callback_error,
     release_events,
     report_callback_error,
@@ -93,6 +94,8 @@ class Window(object):
             window.Close()
 
     def _on_closed(self, sender, args):
+        if not System.Object.ReferenceEquals(sender, self._window):
+            return
         self._closed = True
         self._unsubscribe_theme_changed()
         release_events(self)
@@ -290,7 +293,10 @@ def load_component(target, source):
     previous = unwrap(target)
     resources = previous.Resources
     sources = [str(item.Source) for item in resources.MergedDictionaries]
-    markup, names, events, resource_names = prepare_xaml(markup, sources)
+    host_keys = [str(key) for key in resources.Keys if isinstance(key, str)]
+    markup, names, events, resource_names = prepare_xaml(
+        markup, sources, is_event=is_event_attribute, dynamic_keys=set(host_keys)
+    )
     native = _load_markup(markup, base_uri)
     if isinstance(target, Window) and not isinstance(native, Windows.Window):
         raise PyRevitException("CPython WPFWindow requires a Window XAML root.")
@@ -305,8 +311,8 @@ def load_component(target, source):
             setattr(native, name, getattr(previous, name))
     if isinstance(target, Window):
         target._window = native
-        target._closed = False
         previous.Close()
+        target._closed = False
     else:
         target._panel = native
     try:
@@ -322,7 +328,7 @@ def load_component(target, source):
             object.__setattr__(target, name, control)
         for name, event_name, handler_name in events:
             if name.startswith("@template:"):
-                _, tag, uid = name.split(":", 2)
+                _, uid, tag = name.split(":", 2)
                 bind_template_event(
                     target,
                     native,
