@@ -620,12 +620,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <remarks>
         /// With no <paramref name="viewId"/> the whole document is scanned, which a view that
-        /// doesn't exist yet needs; otherwise only what that view shows counts.
+        /// doesn't exist yet needs; otherwise only what that view shows counts. The document scan
+        /// skips view-specific elements such as detail lines in drafting views, whose coordinates
+        /// are not model coordinates and would stretch the frame away from the model.
         /// </remarks>
         private static BoundingBoxXYZ ModelBox(Document doc, ElementId viewId, List<ElementId> ids) {
             IEnumerable<Element> elements = ids != null && ids.Count > 0
                 ? ids.Select(doc.GetElement).Where(element => element != null)
-                : (viewId == null ? new FilteredElementCollector(doc) : new FilteredElementCollector(doc, viewId))
+                : (viewId == null
+                        ? new FilteredElementCollector(doc).WhereElementIsViewIndependent()
+                        : new FilteredElementCollector(doc, viewId))
                     .WhereElementIsNotElementType()
                     .Where(element => element.Category != null
                                       && element.Category.CategoryType == CategoryType.Model
