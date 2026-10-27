@@ -1,17 +1,27 @@
-"""Read and Write Excel Files."""
+"""Read and write Excel files on both Python engines."""
 
-# pylint: disable=import-error
-import xlrd
-import xlsxwriter
+from pyrevit.compat import PY3
 
 
-def _read_xlsheet(xlsheet, columns=[], datatype=None, headers=True):
+if PY3:
+    import openpyxl
+else:
+    import xlrd
+    import xlsxwriter
+
+
+def _read_xlsheet(xlsheet, columns=None, datatype=None, headers=True):
+    columns = columns or []
     xlsheetdata = []
-    xlsheetrows = list(xlsheet.get_rows())
+    xlsheetrows = (
+        list(xlsheet.iter_rows(values_only=True)) if PY3 else list(xlsheet.get_rows())
+    )
     skip = 1 if headers else 0
-    xlsheetheader = [x.value for x in xlsheetrows[0]] if headers else []
+    xlsheetheader = list(xlsheetrows[0]) if PY3 and headers else []
+    if not PY3 and headers:
+        xlsheetheader = [cell.value for cell in xlsheetrows[0]]
     for xlsheetrow in xlsheetrows[skip:]:
-        drow = list([x.value for x in xlsheetrow])
+        drow = list(xlsheetrow) if PY3 else [cell.value for cell in xlsheetrow]
         if columns:
             drow = dict([x for x in zip(columns, drow)])
         elif datatype:
@@ -20,7 +30,7 @@ def _read_xlsheet(xlsheet, columns=[], datatype=None, headers=True):
     return {"headers": xlsheetheader, "rows": xlsheetdata}
 
 
-def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
+def load(xlfile, sheets=None, columns=None, datatype=None, headers=True):
     """Read data from Excel file.
 
     Args:
@@ -38,15 +48,22 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
             Each worksheet is a dictionary with `headers` and `rows`.
     """
     xldata = {}
-    xlwb = xlrd.open_workbook(xlfile)
-    for xlsheet in xlwb.sheets():
+    sheets = sheets or []
+    xlwb = (
+        openpyxl.load_workbook(xlfile, data_only=True)
+        if PY3
+        else xlrd.open_workbook(xlfile)
+    )
+    worksheets = xlwb.worksheets if PY3 else xlwb.sheets()
+    for xlsheet in worksheets:
+        xlsheet_name = xlsheet.title if PY3 else xlsheet.name
         if sheets:
-            if xlsheet.name in sheets:
-                xldata[xlsheet.name] = _read_xlsheet(
+            if xlsheet_name in sheets:
+                xldata[xlsheet_name] = _read_xlsheet(
                     xlsheet, columns=columns, datatype=datatype, headers=headers
                 )
         else:
-            xldata[xlsheet.name] = _read_xlsheet(
+            xldata[xlsheet_name] = _read_xlsheet(
                 xlsheet, columns=columns, datatype=datatype, headers=headers
             )
     return xldata
@@ -61,10 +78,19 @@ def dump(xlfile, datadict):
         xlfile (str): full path of the target excel file
         datadict (dict[str, list]): dictionary of worksheets names and data
     """
-    xlwb = xlsxwriter.Workbook(xlfile)
-    # bold = xlwb.add_format({'bold': True})
+    xlwb = openpyxl.Workbook() if PY3 else xlsxwriter.Workbook(xlfile)
+    if PY3:
+        xlwb.remove(xlwb.active)
     for xlsheetname, xlsheetdata in datadict.items():
-        xlsheet = xlwb.add_worksheet(xlsheetname)
+        xlsheet = (
+            xlwb.create_sheet(xlsheetname) if PY3 else xlwb.add_worksheet(xlsheetname)
+        )
         for idx, data in enumerate(xlsheetdata):
-            xlsheet.write_row(idx, 0, data)
-    xlwb.close()
+            if PY3:
+                xlsheet.append(list(data))
+            else:
+                xlsheet.write_row(idx, 0, data)
+    if PY3:
+        xlwb.save(xlfile)
+    else:
+        xlwb.close()
