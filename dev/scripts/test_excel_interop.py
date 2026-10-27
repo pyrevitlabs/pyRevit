@@ -14,6 +14,7 @@ sys.path.insert(0, str(REPO_ROOT / "site-packages"))
 pyrevit = types.ModuleType("pyrevit")
 compat = types.ModuleType("pyrevit.compat")
 compat.PY3 = True
+compat.IRONPY = False
 pyrevit.compat = compat
 sys.modules["pyrevit"] = pyrevit
 sys.modules["pyrevit.compat"] = compat
@@ -46,6 +47,24 @@ class ExcelInteropTests(unittest.TestCase):
             loaded = xl.load(path, columns=["name", "count"], headers=False)
 
         self.assertEqual([{"name": "A", "count": 1}], loaded["Rows"]["rows"])
+
+    def test_empty_dump_still_writes_a_workbook(self):
+        """An export with no worksheets keeps one empty default sheet."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "empty.xlsx"
+            xl.dump(path, {})
+            loaded = xl.load(path)
+
+        self.assertEqual(1, len(loaded))
+        self.assertEqual({"headers": [], "rows": []}, list(loaded.values())[0])
+
+    def test_legacy_xls_workbooks_still_load(self):
+        """Legacy .xls files are read with xlrd because openpyxl rejects them."""
+        fixture = Path(__file__).parent / "fixtures" / "legacy_workbook.xls"
+        loaded = xl.load(fixture)
+
+        self.assertEqual(["Name", "Count"], loaded["Legacy"]["headers"])
+        self.assertEqual([["A", 1.0]], loaded["Legacy"]["rows"])
 
 
 if __name__ == "__main__":

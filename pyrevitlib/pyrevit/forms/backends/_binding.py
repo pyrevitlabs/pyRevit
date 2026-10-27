@@ -7,7 +7,7 @@ Weak controller references keep native event delegates from rooting closed forms
 import weakref
 
 import clr
-from pyrevit.framework import System, ComponentModel
+from pyrevit.framework import System, ComponentModel, to_clr_list
 
 try:
     clr.AddReference("System.Linq.Expressions")
@@ -20,6 +20,7 @@ from System.Collections.Generic import IDictionary
 
 _controllers = weakref.WeakValueDictionary()
 _type_properties = {}
+_MISSING = object()
 
 
 class _Event(object):
@@ -91,11 +92,34 @@ def _property_names(controller):
     ]
 
 
+def _bindable(value):
+    """Return a value WPF can bind: nested models and lists become managed too."""
+    if isinstance(value, Reactive):
+        return binding_source(value)
+    if isinstance(value, (list, tuple)):
+        return to_clr_list(System.Object, [_bindable(item) for item in value])
+    return value
+
+
+def _change_marker(value):
+    return tuple(value) if isinstance(value, (list, tuple)) else value
+
+
+def _unchanged(previous, marker):
+    if previous is marker:
+        return True
+    try:
+        return bool(previous == marker)
+    except Exception:
+        return False
+
+
 def _refresh(controller, names=None):
     state = controller.__dict__
     values = state.get("_binding_values")
     if values is None or state.get("_binding_updating"):
         return
+    markers = state.setdefault("_binding_markers", {})
     state["_binding_updating"] = True
     try:
         for name in names or _property_names(controller):
@@ -105,9 +129,12 @@ def _refresh(controller, names=None):
                 continue
             if callable(value) or value is controller:
                 continue
-            if values.ContainsKey(name) and values[name] == value:
+            marker = _change_marker(value)
+            previous = markers.get(name, _MISSING)
+            if previous is not _MISSING and _unchanged(previous, marker):
                 continue
-            values[name] = value
+            markers[name] = marker
+            values[name] = _bindable(value)
     finally:
         state["_binding_updating"] = False
 
@@ -137,7 +164,7 @@ def binding_source(controller):
             return
         target.__dict__["_binding_updating"] = True
         try:
-            setattr(target, name, target.__dict__["_binding_values"][name])
+            setattr(target, name, unwrap_item(target.__dict__["_binding_values"][name]))
         finally:
             target.__dict__["_binding_updating"] = False
         _refresh(target)
