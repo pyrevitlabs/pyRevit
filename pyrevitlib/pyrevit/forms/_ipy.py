@@ -495,6 +495,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
 class _WPFPanelProvider(UI.IDockablePaneProvider):
     """Internal panel provider for dockable panels."""
 
+    __namespace__ = "pyrevit.forms._ipy"
+
     def __init__(self, panel_type, default_visible=True):
         self._panel_type = panel_type
         self._default_visible = default_visible

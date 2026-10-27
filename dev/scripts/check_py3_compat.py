@@ -41,6 +41,8 @@ Checks:
                 Python 3 but were lists in Python 2 (wrap in list())
     CLR-LIST    `List[T](python_iterable)` relies on IronPython collection
                 coercion; build the list through the shared Add-based helper
+    CLR-NAMESPACE Python class implementing a CLR interface needs a stable
+                `__namespace__` so pythonnet can reuse its generated type
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
@@ -330,6 +332,17 @@ def _is_generic_list_constructor(node):
     )
 
 
+def _is_clr_interface_base(node):
+    """Return whether a class base syntactically names a CLR interface."""
+    if isinstance(node, ast.Name):
+        name = node.id
+    elif isinstance(node, ast.Attribute):
+        name = node.attr
+    else:
+        return False
+    return len(name) > 1 and name[0] == "I" and name[1].isupper()
+
+
 def check_file(path):
     """Return compatibility findings for one Python source file."""
     findings = []
@@ -488,6 +501,19 @@ def check_file(path):
                         "PY2-NEXT",
                         "iterator class {} defines next() but no __next__; "
                         "Python 3 uses __next__".format(node.name),
+                    )
+                )
+            if (
+                any(_is_clr_interface_base(base) for base in node.bases)
+                and "__namespace__" not in assigned_names
+            ):
+                findings.append(
+                    Finding(
+                        path,
+                        node.lineno,
+                        "CLR-NAMESPACE",
+                        "class {} implements a CLR interface without a stable "
+                        "__namespace__".format(node.name),
                     )
                 )
 
@@ -659,7 +685,7 @@ def _is_tracked_extension_finding(finding):
         finding.path.relative_to(REPO_ROOT / "extensions")
     except ValueError:
         return False
-    return finding.code == "CLR-LIST"
+    return finding.code in {"CLR-LIST", "CLR-NAMESPACE"}
 
 
 def main():
