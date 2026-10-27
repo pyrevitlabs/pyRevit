@@ -121,7 +121,9 @@ for Python scripts, including `startup.py`: a CPython shebang (`#! python3` or
 `#! cpython`) or a bundle's own `engine.type` in `bundle.yaml` always wins. An
 absent declaration preserves the legacy IronPython default, so extension
 authors can migrate incrementally. A declaration does not affect C#, VB, Ruby,
-Dynamo, or Grasshopper bundles.
+Dynamo, or Grasshopper bundles. Event hooks and smart-button `__selfinit__`
+still choose their engine from their own shebang; add `#! python3` to run them
+under CPython.
 
 `startup.cpython.py` always runs under CPython, with or without a shebang, after
 `startup.py` when both exist. Use it to register CPython dockable panels while

@@ -829,10 +829,10 @@ class GenericUICommand(GenericUIComponent):
     def is_cpython(self):
         if PY3:
             with open(self.script_file, "r", encoding="utf-8") as script_f:
-                first_line = script_f.readline().lower()
+                first_line = script_f.readline()
         else:
             with open(self.script_file, "r") as script_f:
-                first_line = script_f.readline().lower()
+                first_line = script_f.readline()
         return "python3" in first_line or "cpython" in first_line
 
     def has_config_script(self):
