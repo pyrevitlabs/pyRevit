@@ -210,7 +210,8 @@ def _try_load_public_api():
 
     Pre-loads WCF dependencies from ADC's bundled FOS/Client/SDK
     before importing, because API.Public.dll has a transitive
-    dependency on System.ServiceModel through the shared contracts."""
+    dependency on System.ServiceModel through the shared contracts.
+    """
     global API_PUBLIC
     dll = op.join(ADC_ROOT, "Autodesk.DesktopConnector.API.Public.dll")
     if not op.exists(dll):
@@ -412,7 +413,8 @@ def _find_workspace_roots():
     Known ADC workspace layouts:
       %USERPROFILE%\\ACCDocs\\{org}\\{project}\\...
       %USERPROFILE%\\DC\\ACCDocs\\{org}\\{project}\\...
-      %USERPROFILE%\\DC\\{org}\\{project}\\..."""
+      %USERPROFILE%\\DC\\{org}\\{project}\\...
+    """
     import os as _os
 
     roots = []
@@ -438,7 +440,8 @@ def _parse_cloud_path(cloud_path):
 
     Returns (drive_name, relative_path) or (None, None).
     drive_name = everything before ://
-    relative_path = everything after ://  (org/project/rest...)"""
+    relative_path = everything after ://  (org/project/rest...)
+    """
     sep = "://"
     idx = cloud_path.find(sep)
     if idx < 0:
@@ -452,7 +455,8 @@ def _resolve_path_from_filesystem(cloud_path):
     """Resolve a cloud path to a local file by searching ADC workspace
     directories on disk.  Bypasses the API entirely.
 
-    Returns the local file path if found, else None."""
+    Returns the local file path if found, else None.
+    """
     import os as _os
 
     drive_name, rel_path = _parse_cloud_path(cloud_path)
@@ -506,7 +510,8 @@ def _resolve_path_from_filesystem(cloud_path):
 
 def is_available():
     """Check if ADC service is available.
-    Falls back to process detection if API calls fail."""
+    Falls back to process detection if API calls fail.
+    """
     if API_PUBLIC:
         try:
             client = _get_pub_client()

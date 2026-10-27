@@ -328,8 +328,7 @@ def _get_execute_extevent():
 
 
 def execute_in_revit_context(func, *args, **kwargs):
-    """
-    Execute a function in Revit API context using ExternalEvent.
+    """Execute a function in Revit API context using ExternalEvent.
 
     Use this helper when calling Revit API from modeless dialogs,
     background threads, or any non-Revit context where direct API

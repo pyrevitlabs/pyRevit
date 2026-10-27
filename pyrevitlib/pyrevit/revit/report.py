@@ -17,7 +17,6 @@ def print_revision(rev, prefix="", print_id=True):
         prefix (str, optional): prefix to add to the output text. Defaults to empty string.
         print_id (bool, optional): whether to print the revision id. Defaults to True.
     """
-
     if revit_version > 2022:
         revision_sequence = doc.GetElement(rev.RevisionNumberingSequenceId)
         revision_number_type = revision_sequence.NumberType
