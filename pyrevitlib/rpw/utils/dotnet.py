@@ -32,3 +32,19 @@ clr.AddReference('System.Collections')     # List
 from System import Enum
 from System.Collections.Generic import List
 from System.Diagnostics import Process
+
+
+def to_clr_list(item_type, values):
+    """Build a generic CLR list without relying on Python collection coercion.
+
+    Args:
+        item_type (type): CLR type accepted by the target API.
+        values (iterable): Values to add to the returned list.
+
+    Returns:
+        System.Collections.Generic.List[item_type]: Values in input order.
+    """
+    result = List[item_type]()
+    for value in values:
+        result.Add(value)
+    return result

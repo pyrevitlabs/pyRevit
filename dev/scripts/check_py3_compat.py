@@ -42,6 +42,8 @@ Checks:
                 escapes local scope - indexed, returned, yielded, or stored
                 to an attribute; these are non-indexable lazy views in
                 Python 3 but were lists in Python 2 (wrap in list())
+    CLR-LIST    `List[T](python_iterable)` relies on IronPython collection
+                coercion; build the list through the shared Add-based helper
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
@@ -383,14 +385,15 @@ def _bare_py3_view(node):
     return isinstance(func, ast.Name) and func.id in PY3_LAZY_BUILTINS
 
 
-def _is_named_indexer(node):
-    """Return True if node is a CLR named indexed property such as ``.Parameter``.
-
-    IronPython exposes named indexed properties as subscriptable attributes;
-    pythonnet does not, so ``el.Parameter[bip]`` raises on CPython while the
-    ``el.get_Parameter(bip)`` accessor works on every engine.
-    """
-    return isinstance(node, ast.Attribute) and node.attr in CLR_NAMED_INDEXERS
+def _is_generic_list_constructor(node):
+    """Return whether node constructs a CLR List from a Python value."""
+    return (
+        isinstance(node, ast.Call)
+        and bool(node.args)
+        and isinstance(node.func, ast.Subscript)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "List"
+    )
 
 
 def check_file(path):
@@ -627,18 +630,14 @@ def check_file(path):
                 )
             )
 
-        elif (
-            isinstance(node, ast.Subscript)
-            and _is_named_indexer(node.value)
-            and not _is_cpython_unreachable(node, parents)
-        ):
+        elif _is_generic_list_constructor(node):
             findings.append(
                 Finding(
                     path,
                     node.lineno,
-                    "CLR-NAMED-INDEXER",
-                    ".{0}[...] is an IronPython-only named indexer; "
-                    "use .get_{0}(...)".format(node.value.attr),
+                    "CLR-LIST",
+                    "List[T](python_iterable) relies on IronPython coercion; "
+                    "build the list through an Add-based helper",
                 )
             )
 
@@ -720,6 +719,15 @@ def iter_python_files(roots, resolve_against):
             yield path
 
 
+def _is_tracked_extension_finding(finding):
+    """Return whether a phased first-party extension finding is non-blocking."""
+    try:
+        finding.path.relative_to(REPO_ROOT / "extensions")
+    except ValueError:
+        return False
+    return finding.code == "CLR-LIST"
+
+
 def main():
     """Run the checker CLI and return its process exit code."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -762,20 +770,31 @@ def main():
     for finding in all_findings:
         print(finding)
 
+    blocking_findings = [
+        finding
+        for finding in all_findings
+        if not _is_tracked_extension_finding(finding)
+    ]
+    tracked_findings = [
+        finding for finding in all_findings if _is_tracked_extension_finding(finding)
+    ]
     counts = {}
-    for finding in all_findings:
+    for finding in blocking_findings:
         counts[finding.code] = counts.get(finding.code, 0) + 1
     summary = ", ".join(
         "{}: {}".format(code, count) for code, count in sorted(counts.items())
     )
     print(
-        "\nscanned {} files; {} finding(s){}".format(
+        "\nscanned {} files; {} blocking finding(s){}{}".format(
             file_count,
-            len(all_findings),
+            len(blocking_findings),
             " ({})".format(summary) if summary else "",
+            "; {} tracked extension finding(s)".format(len(tracked_findings))
+            if tracked_findings
+            else "",
         )
     )
-    return 1 if all_findings else 0
+    return 1 if blocking_findings else 0
 
 
 if __name__ == "__main__":

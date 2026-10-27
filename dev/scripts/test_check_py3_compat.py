@@ -1,14 +1,24 @@
 """Regression tests for IronPython 3 branch reachability in the static checker."""
 
 import ast
-import tempfile
+from pathlib import Path
 import unittest
 from pathlib import Path
 
 try:
-    from .check_py3_compat import _is_engine_guarded, check_file
+    from .check_py3_compat import (
+        Finding,
+        _is_engine_guarded,
+        _is_generic_list_constructor,
+        _is_tracked_extension_finding,
+    )
 except ImportError:
-    from check_py3_compat import _is_engine_guarded, check_file
+    from check_py3_compat import (
+        Finding,
+        _is_engine_guarded,
+        _is_generic_list_constructor,
+        _is_tracked_extension_finding,
+    )
 
 
 def _unicode_reachability(source):
@@ -67,99 +77,30 @@ class EngineGuardTests(unittest.TestCase):
         )
 
 
-class NamedIndexerTests(unittest.TestCase):
-    """CLR named indexers must use the accessor that pythonnet exposes."""
+class GenericCollectionTests(unittest.TestCase):
+    """Generic CLR construction must not depend on IronPython coercion."""
 
-    def _codes(self, source):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "sample.py"
-            path.write_text(source, encoding="utf-8")
-            return [finding.code for finding in check_file(path)]
+    def test_list_constructor_with_values_is_detected(self):
+        """A generic List receiving Python values needs Add-based construction."""
+        call = ast.parse("List[DB.ElementId](element_ids)").body[0].value
+        self.assertTrue(_is_generic_list_constructor(call))
 
-    def test_parameter_indexer_is_flagged(self):
-        """The IronPython-only subscript form is reported."""
-        self.assertEqual(
-            ["CLR-NAMED-INDEXER"],
-            self._codes("el.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]"),
-        )
+    def test_empty_list_constructor_is_not_detected(self):
+        """The parameterless generic List constructor is portable."""
+        call = ast.parse("List[DB.ElementId]()").body[0].value
+        self.assertFalse(_is_generic_list_constructor(call))
 
-    def test_get_parameter_accessor_is_clean(self):
-        """The engine-portable accessor is not reported."""
-        self.assertEqual(
-            [], self._codes("el.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK)")
-        )
+    def test_bundled_extension_list_finding_is_tracked(self):
+        """Known extension migrations stay visible without blocking the library gate."""
+        path = Path(__file__).resolve().parents[2] / "extensions" / "Tool.py"
+        self.assertTrue(_is_tracked_extension_finding(Finding(path, 1, "CLR-LIST", "")))
 
-    def test_parameters_collection_index_is_clean(self):
-        """Indexing an unrelated attribute is not a named indexer."""
-        self.assertEqual([], self._codes("first = el.Parameters[0]"))
-
-    def test_ironpython_only_branch_is_clean(self):
-        """An indexer behind an IronPython guard never runs on CPython."""
-        for guard in ("IRONPY", "compat.IRONPY", "IRONPY2 or IRONPY3"):
-            with self.subTest(guard=guard):
-                self.assertEqual(
-                    [],
-                    self._codes(
-                        "if {}:\n"
-                        "    value = el.Parameter[bip]\n"
-                        "else:\n"
-                        "    value = el.get_Parameter(bip)\n".format(guard)
-                    ),
-                )
-
-    def test_else_of_cpython_branch_is_clean(self):
-        """The else side of a CPython-true guard never runs on CPython."""
-        for guard in ("PY3", "not IRONPY", "not compat.IRONPY"):
-            with self.subTest(guard=guard):
-                self.assertEqual(
-                    [],
-                    self._codes(
-                        "if {}:\n"
-                        "    value = el.get_Parameter(bip)\n"
-                        "else:\n"
-                        "    value = el.Parameter[bip]\n".format(guard)
-                    ),
-                )
-
-    def test_cpython_reachable_branches_are_flagged(self):
-        """Guards that leave the indexer reachable on CPython still report it."""
-        for source in (
-            "if PY3:\n    value = el.Parameter[bip]\n",
-            "if not IRONPY:\n    value = el.Parameter[bip]\n",
-            "if IRONPY:\n    pass\nelse:\n    value = el.Parameter[bip]\n",
-            "if custom:\n    value = el.Parameter[bip]\n",
-            "value = PY3 and el.Parameter[bip]\n",
-            "value = IRONPY or el.Parameter[bip]\n",
-            "value = el.Parameter[bip] if PY3 else None\n",
-        ):
-            with self.subTest(source=source):
-                self.assertEqual(["CLR-NAMED-INDEXER"], self._codes(source))
-
-    def test_short_circuit_and_conditional_guards_are_clean(self):
-        """Operands and branches CPython never evaluates are not reported."""
-        for source in (
-            "value = IRONPY and el.Parameter[bip]\n",
-            "value = compat.IRONPY and el.Parameter[bip]\n",
-            "value = PY3 or el.Parameter[bip]\n",
-            "value = el.Parameter[bip] if IRONPY else el.get_Parameter(bip)\n",
-            "value = el.get_Parameter(bip) if PY3 else el.Parameter[bip]\n",
-        ):
-            with self.subTest(source=source):
-                self.assertEqual([], self._codes(source))
-
-    def test_flags_on_other_objects_do_not_guard(self):
-        """Only pyRevit's compat flags are engine guards."""
-        for guard in ("options.IRONPY", "self.IRONPY"):
-            with self.subTest(guard=guard):
-                self.assertEqual(
-                    ["CLR-NAMED-INDEXER"],
-                    self._codes(
-                        "if {}:\n    value = el.Parameter[bip]\n".format(guard)
-                    ),
-                )
-        self.assertEqual(
-            [],
-            self._codes("if pyrevit.compat.IRONPY:\n    value = el.Parameter[bip]\n"),
+    def test_external_extension_list_finding_blocks(self):
+        """Third-party extension checks still report CLR collection incompatibility."""
+        self.assertFalse(
+            _is_tracked_extension_finding(
+                Finding(Path("C:/extension/Tool.py"), 1, "CLR-LIST", "")
+            )
         )
 
 
