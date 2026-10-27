@@ -506,6 +506,7 @@ def _is_under(module_file, root):
     try:
         if not op.isabs(module_file):
             return False
+        root = op.normcase(op.abspath(root)).rstrip("/\\") + op.sep
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
     except Exception:
         return False
@@ -514,8 +515,19 @@ def _is_under(module_file, root):
 def _unload_modules_under(folder):
     root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
     for name, module in list(sys.modules.items()):
-        if _is_under(getattr(module, "__file__", None), root):
+        module_file = getattr(module, "__file__", None)
+        if _is_under(module_file, root) and not _is_runtime_module(module_file):
             del sys.modules[name]
+
+
+def _is_runtime_module(module_file):
+    prefixes = (
+        getattr(sys, "prefix", None),
+        getattr(sys, "base_prefix", None),
+        getattr(sys, "exec_prefix", None),
+        getattr(sys, "base_exec_prefix", None),
+    )
+    return any(_is_under(module_file, prefix) for prefix in prefixes if prefix)
 
 
 def _leave_workspace(workspace, added_to_path):
