@@ -145,6 +145,8 @@ class ElementSelection:
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
+    __namespace__ = "pyrevit.revit.selection"
+
     def __init__(self, category_id):
         self.category_id = category_id
 

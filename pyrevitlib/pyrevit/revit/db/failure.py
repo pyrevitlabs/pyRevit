@@ -34,6 +34,8 @@ RESOLUTION_TYPES = [
 class FailureSwallower(DB.IFailuresPreprocessor):
     """Swallows all failures."""
 
+    __namespace__ = "pyrevit.revit.db.failure"
+
     def __init__(self, log_errors=True):
         self._logerror = log_errors
         self._failures_swallowed = []

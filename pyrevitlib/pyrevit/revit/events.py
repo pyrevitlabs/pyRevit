@@ -34,7 +34,7 @@ def _get_registered_handlers():
 class FuncAsEventHandler(UI.IExternalEventHandler):
     """Turns a function into an event handler."""
 
-    __namespace__ = EXEC_PARAMS.exec_id
+    __namespace__ = "pyrevit.revit.events"
 
     def __init__(self, handler_func, purge=True):
         self.name = "FuncAsEventHandler"
@@ -283,6 +283,8 @@ def stop_events():
 
 
 class _GenericExternalEventHandler(UI.IExternalEventHandler):
+    __namespace__ = "pyrevit.revit.events"
+
     def __init__(self):
         self._queue = deque()
 

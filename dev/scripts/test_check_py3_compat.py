@@ -103,5 +103,57 @@ class GenericCollectionTests(unittest.TestCase):
         )
 
 
+class NamespaceCompatibilityTests(unittest.TestCase):
+    """Revit interface classes keep stable identities across script reloads."""
+
+    def test_revit_interface_classes_have_stable_namespaces(self):
+        """Namespaced Python classes can reuse their generated CLR types."""
+        root = Path(__file__).resolve().parents[2]
+        expected_namespaces = {
+            (
+                "pyrevitlib/pyrevit/revit/events.py",
+                "FuncAsEventHandler",
+            ): "pyrevit.revit.events",
+            (
+                "pyrevitlib/pyrevit/revit/events.py",
+                "_GenericExternalEventHandler",
+            ): "pyrevit.revit.events",
+            (
+                "pyrevitlib/pyrevit/revit/selection.py",
+                "PickByCategorySelectionFilter",
+            ): "pyrevit.revit.selection",
+            (
+                "pyrevitlib/pyrevit/revit/db/failure.py",
+                "FailureSwallower",
+            ): "pyrevit.revit.db.failure",
+            (
+                "pyrevitlib/pyrevit/routes/server/handler.py",
+                "RequestHandler",
+            ): "pyrevit.routes.server.handler",
+            ("pyrevitlib/rpw/ui/selection.py", "SelectionFilter"): "rpw.ui.selection",
+        }
+
+        for (
+            relative_path,
+            class_name,
+        ), expected_namespace in expected_namespaces.items():
+            tree = ast.parse((root / relative_path).read_text(encoding="utf-8"))
+            class_node = next(
+                node
+                for node in tree.body
+                if isinstance(node, ast.ClassDef) and node.name == class_name
+            )
+            namespace_assignment = next(
+                node
+                for node in class_node.body
+                if isinstance(node, ast.Assign)
+                and any(
+                    isinstance(target, ast.Name) and target.id == "__namespace__"
+                    for target in node.targets
+                )
+            )
+            self.assertEqual(expected_namespace, namespace_assignment.value.value)
+
+
 if __name__ == "__main__":
     unittest.main()
