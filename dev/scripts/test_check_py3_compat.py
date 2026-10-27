@@ -2,6 +2,7 @@
 
 import ast
 from pathlib import Path
+import tempfile
 import textwrap
 import unittest
 
@@ -281,6 +282,26 @@ class NativeFormUseTests(unittest.TestCase):
         self.assertFalse(_may_run_under_cpython(script, "import clr"))
         self.assertTrue(_may_run_under_cpython(script, "#! python3"))
         self.assertTrue(_may_run_under_cpython(script, "#! cpython"))
+
+    def test_extension_and_bundle_engine_declarations_enable_the_check(self):
+        """Scripts made CPython by their extension or bundle are checked too."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            declared = root / "Declared.extension"
+            bundle = declared / "Tab.tab" / "Panel.panel" / "Tool.pushbutton"
+            bundle.mkdir(parents=True)
+            script = bundle / "script.py"
+            (declared / "extension.json").write_text('{"engine": {"type": "CPython"}}')
+            self.assertTrue(_may_run_under_cpython(script, "import clr"))
+
+            plain = root / "Plain.extension" / "Tool.pushbutton"
+            plain.mkdir(parents=True)
+            plain_script = plain / "script.py"
+            self.assertFalse(_may_run_under_cpython(plain_script, "import clr"))
+            (plain / "bundle.yaml").write_text(
+                "title: Tool\nengine:\n  type: cpython\n"
+            )
+            self.assertTrue(_may_run_under_cpython(plain_script, "import clr"))
 
     def test_extension_form_findings_are_tracked(self):
         """Bundled extensions migrate to the rule without blocking CI."""

@@ -50,6 +50,10 @@ Checks:
                 pyrevitlib and in scripts with a CPython shebang, since the
                 same code is correct under IronPython
 
+Findings in bundled extensions under ``extensions/`` are tracked, not blocking,
+while those extensions migrate; the run still fails if their count exceeds
+``TRACKED_EXTENSION_FINDINGS_LIMIT``.
+
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
 NameError/ImportError fallback (the name-shim and import-fallback patterns).
@@ -57,6 +61,8 @@ NameError/ImportError fallback (the name-shim and import-fallback patterns).
 
 import argparse
 import ast
+import json
+import re
 import sys
 import tokenize
 import warnings
@@ -401,8 +407,49 @@ def _is_self(node):
     return isinstance(node, ast.Name) and node.id == "self"
 
 
+_BUNDLE_CPYTHON_ENGINE = re.compile(
+    r"^engine:[ \t]*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+type:[ \t]*['\"]?cpython\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _extension_declares_cpython(path):
+    """Return whether the enclosing extension.json declares the CPython engine."""
+    for parent in path.parents:
+        if not parent.name.endswith(".extension"):
+            continue
+        manifest = parent / "extension.json"
+        if not manifest.is_file():
+            return False
+        try:
+            engine = json.loads(manifest.read_text(encoding="utf-8-sig")).get("engine")
+        except (OSError, ValueError, AttributeError):
+            return False
+        if isinstance(engine, dict):
+            engine = engine.get("type")
+        return isinstance(engine, str) and engine.strip().lower() == "cpython"
+    return False
+
+
+def _bundle_declares_cpython(path):
+    """Return whether the script's bundle.yaml sets ``engine: type: cpython``."""
+    bundle = path.parent / "bundle.yaml"
+    if not bundle.is_file():
+        return False
+    try:
+        return bool(
+            _BUNDLE_CPYTHON_ENGINE.search(bundle.read_text(encoding="utf-8-sig"))
+        )
+    except OSError:
+        return False
+
+
 def _may_run_under_cpython(path, source):
-    """Return whether a file is shared pyrevitlib code or a CPython script."""
+    """Return whether a file is pyrevitlib code or a script that runs under CPython.
+
+    A script runs under CPython through a CPython shebang, a bundle.yaml
+    ``engine: type: cpython`` or an extension.json ``engine`` declaration.
+    """
     try:
         path.relative_to(REPO_ROOT / "pyrevitlib")
         return True
@@ -410,9 +457,11 @@ def _may_run_under_cpython(path, source):
         pass
     lines = source.splitlines()
     first_line = lines[0].lower() if lines else ""
-    return first_line.startswith("#!") and (
+    if first_line.startswith("#!") and (
         "python3" in first_line or "cpython" in first_line
-    )
+    ):
+        return True
+    return _bundle_declares_cpython(path) or _extension_declares_cpython(path)
 
 
 def _class_body_nodes(class_node):
@@ -803,6 +852,9 @@ def iter_python_files(roots, resolve_against):
             yield path
 
 
+TRACKED_EXTENSION_FINDINGS_LIMIT = 55
+
+
 def _is_tracked_extension_finding(finding):
     """Return whether a phased first-party extension finding is non-blocking."""
     try:
@@ -878,6 +930,14 @@ def main():
             else "",
         )
     )
+    if len(tracked_findings) > TRACKED_EXTENSION_FINDINGS_LIMIT:
+        print(
+            "tracked extension findings rose to {} (limit {}); fix the new ones "
+            "rather than raising the limit".format(
+                len(tracked_findings), TRACKED_EXTENSION_FINDINGS_LIMIT
+            )
+        )
+        return 1
     return 1 if blocking_findings else 0
 
 
