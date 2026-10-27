@@ -106,11 +106,25 @@ The script engine is picked by the `script.*` file extension found in the bundle
 - `.dyn` — Dynamo graph.
 - `.gh` / `.ghx` — Grasshopper definition.
 
+An extension can opt its Python commands into CPython in `extension.json`:
+
+```json
+{
+  "engine": "cpython"
+}
+```
+
+Supported values are `cpython` and `ironpython`. The declaration applies only
+to Python scripts without a CPython shebang; `#! python3` or `#! cpython` on a
+script's first line always wins. An absent declaration preserves the legacy
+IronPython default, so extension authors can migrate incrementally. A
+declaration does not affect C#, VB, Ruby, Dynamo, or Grasshopper bundles.
+
 Engine behavior (clean/full-frame/persistent/mainthread) is configured separately via the `engine:` block in `bundle.yaml`. See [Script engines](architecture.md#how-pyrevit-commands-run) in the architecture overview for how a button click reaches the engine at runtime.
 
 ## Extension manifest
 
-`extension.json` at the extension root is optional; when present it can declare metadata (`name`, `description`, `author`, `url`, `image`, `dependencies`, ...) and a `templates` block used to substitute values into every `bundle.yaml` under the extension at load time. See `extensions/pyRevitDevHooks.extension/extension.json` for a real example.
+`extension.json` at the extension root is optional; when present it can declare metadata (`name`, `description`, `author`, `url`, `image`, `dependencies`, `engine`, ...) and a `templates` block used to substitute values into every `bundle.yaml` under the extension at load time. See `extensions/pyRevitDevHooks.extension/extension.json` for a real example.
 
 This is different from the entry an extension gets in `extensions/extensions.json` (the catalog pyRevit's "Extensions" button reads from) — see [Proposing an External Extension](custom_extension.md) for that schema.
 
