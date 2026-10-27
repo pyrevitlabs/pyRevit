@@ -4,3 +4,6 @@ layout:
   - -----
   - Test IronPython Forms Manual
   - Test CPython Forms Manual
+  - -----
+  - Open IronPython Dockable Pane
+  - Open CPython Dockable Pane
