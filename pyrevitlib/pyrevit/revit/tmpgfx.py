@@ -66,8 +66,6 @@ class Handler(UI.ITemporaryGraphicsHandler):
             Register the handler on construction.  Defaults to ``True``.
     """
 
-    __namespace__ = "pyrevit.revit.tmpgfx"
-
     def __init__(
         self,
         guid=None,

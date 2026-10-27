@@ -69,8 +69,6 @@ from pyrevit.framework import ComponentModel
 class Reactive(ComponentModel.INotifyPropertyChanged):
     """WPF property updator base mixin."""
 
-    __namespace__ = "pyrevit.forms.backends._ipy"
-
     PropertyChanged, _propertyChangedCaller = pyevent.make_event()
 
     def add_PropertyChanged(self, value):

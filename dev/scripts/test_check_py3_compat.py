@@ -139,22 +139,6 @@ class NamespaceCompatibilityTests(unittest.TestCase):
                 "pyrevitlib/pyrevit/revit/db/create.py",
                 "CopyUseDestination",
             ): "pyrevit.revit.db.create",
-            (
-                "pyrevitlib/pyrevit/revit/dc3dserver.py",
-                "Server",
-            ): "pyrevit.revit.dc3dserver",
-            (
-                "pyrevitlib/pyrevit/revit/tmpgfx.py",
-                "Handler",
-            ): "pyrevit.revit.tmpgfx",
-            (
-                "pyrevitlib/pyrevit/forms/_ipy.py",
-                "_WPFPanelProvider",
-            ): "pyrevit.forms._ipy",
-            (
-                "pyrevitlib/pyrevit/forms/backends/_ipy.py",
-                "Reactive",
-            ): "pyrevit.forms.backends._ipy",
         }
 
         for (
@@ -189,6 +173,15 @@ class NamespaceCompatibilityTests(unittest.TestCase):
         """Ordinary Python inheritance does not need a CLR namespace."""
         base = ast.parse("class Handler(BaseHandler): pass").body[0].bases[0]
         self.assertFalse(_is_clr_interface_base(base))
+
+    def test_non_callback_clr_interface_is_not_detected(self):
+        """Unsupported CLR interface implementations retain pythonnet defaults."""
+        interface_base = (
+            ast.parse("class Server(dc3d.IDirectContext3DServer): pass")
+            .body[0]
+            .bases[0]
+        )
+        self.assertFalse(_is_clr_interface_base(interface_base))
 
     def test_literal_namespace_is_stable(self):
         """A fixed string keeps a generated CLR name reusable on reload."""

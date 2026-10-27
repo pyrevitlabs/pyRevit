@@ -41,7 +41,7 @@ Checks:
                 Python 3 but were lists in Python 2 (wrap in list())
     CLR-LIST    `List[T](python_iterable)` relies on IronPython collection
                 coercion; build the list through the shared Add-based helper
-    CLR-NAMESPACE Python class implementing a CLR interface needs a stable
+    CLR-NAMESPACE Python class implementing a reload-sensitive CLR callback needs a stable
                 `__namespace__` so pythonnet can reuse its generated type
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
@@ -332,15 +332,24 @@ def _is_generic_list_constructor(node):
     )
 
 
+CLR_NAMESPACE_INTERFACES = {
+    "IExternalEventHandler",
+    "ISelectionFilter",
+    "IFailuresPreprocessor",
+    "IFamilyLoadOptions",
+    "IDuplicateTypeNamesHandler",
+}
+
+
 def _is_clr_interface_base(node):
-    """Return whether a class base syntactically names a CLR interface."""
+    """Return whether a class base needs a stable generated CLR type."""
     if isinstance(node, ast.Name):
         name = node.id
     elif isinstance(node, ast.Attribute):
         name = node.attr
     else:
         return False
-    return len(name) > 1 and name[0] == "I" and name[1].isupper()
+    return name in CLR_NAMESPACE_INTERFACES
 
 
 def _has_stable_clr_namespace(node):
