@@ -206,7 +206,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // All assemblies are now loaded, so cross-extension imports work.
             foreach (var (ext, _) in assembledExtensions)
             {
-                if (!string.IsNullOrEmpty(ext.StartupScript))
+                if (ext.StartupScripts.Count > 0)
                 {
                     _logger.Info($"Running startup tasks for {ext.Name}");
                     var startupStep = timeline.StartSpan($"{ext.Name} - StartupScript");
@@ -768,7 +768,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Runs an extension's startup script. Shares the session engine (see
+        /// Runs an extension's startup scripts (<see cref="ParsedExtension.StartupScripts"/>), the
+        /// primary script before <c>startup.cpython.py</c>. Shares the session engine (see
         /// <see cref="CreateScriptRuntimeConfigs"/>) when the extension is Rocket Mode compatible
         /// and Rocket Mode is on - the same author-declared, user-gated trust signal that already
         /// lets an extension's own commands share a cached engine across repeated invocations
@@ -777,17 +778,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         private void ExecuteExtensionStartupScript(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
         {
-            if (string.IsNullOrEmpty(extension.StartupScript))
-                return;
-
-            ExecuteExtensionStartupScript(extension, extension.StartupScript);
-
-            var cpythonStartupScript = System.IO.Path.Combine(
-                extension.Directory,
-                "startup.cpython.py"
-            );
-            if (System.IO.File.Exists(cpythonStartupScript))
-                ExecuteExtensionStartupScript(extension, cpythonStartupScript);
+            foreach (var startupScript in extension.StartupScripts)
+                ExecuteExtensionStartupScript(extension, startupScript);
         }
 
         private void ExecuteExtensionStartupScript(ParsedExtension extension, string startupScript)

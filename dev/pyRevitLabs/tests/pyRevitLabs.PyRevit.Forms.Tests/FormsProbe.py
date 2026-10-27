@@ -84,11 +84,13 @@ class _HostEvent:
 
 class _DockablePaneId:
     def __init__(self, pane_uuid):
+        self.Guid = pane_uuid
         self.value = str(pane_uuid)
 
 
 class _DockablePane:
     registered = {}
+    created = set()
 
     def __init__(self):
         self.is_visible = False
@@ -96,6 +98,10 @@ class _DockablePane:
     @staticmethod
     def PaneIsRegistered(pane_id):
         return pane_id.value in _DockablePane.registered
+
+    @staticmethod
+    def PaneExists(pane_id):
+        return pane_id.value in _DockablePane.created
 
     def Show(self):
         self.is_visible = True
@@ -116,9 +122,14 @@ class _DockablePaneProvider:
 class _UiApplication:
     def __init__(self):
         self.ThemeChanged = theme_changed
+        self.Idling = _HostEvent()
 
     def RegisterDockablePane(self, pane_id, title, provider):
         _DockablePane.registered[pane_id.value] = (title, provider, _DockablePane())
+
+    def raise_idling(self):
+        for handler in list(self.Idling.handlers):
+            handler(self, None)
 
     def GetDockablePane(self, pane_id):
         return _DockablePane.registered[pane_id.value][2]
@@ -414,6 +425,21 @@ assert provider.framework_element is _backend.unwrap(registered_panel)
 assert not provider.visible_by_default
 pane = forms.get_dockable_panel(ProbePanel)
 assert pane is forms.get_dockable_panel(ProbePanel.panel_id)
+uiapp = host.HOST_APP.uiapp
+forms.open_dockable_panel(ProbePanel)
+forms.open_dockable_panel(ProbePanel)
+assert not pane.is_visible
+assert len(uiapp.Idling.handlers) == 1
+forms.close_dockable_panel(ProbePanel)
+assert not uiapp.Idling.handlers
+forms.open_dockable_panel(ProbePanel)
+uiapp.raise_idling()
+assert not pane.is_visible
+_DockablePane.created.update(_DockablePane.registered)
+uiapp.raise_idling()
+assert pane.is_visible
+assert not uiapp.Idling.handlers
+pane.Hide()
 forms.open_dockable_panel(ProbePanel)
 assert pane.is_visible
 forms.close_dockable_panel(ProbePanel.panel_id)

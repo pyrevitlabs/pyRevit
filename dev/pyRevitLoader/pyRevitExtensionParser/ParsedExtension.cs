@@ -232,6 +232,9 @@ namespace pyRevitExtensionParser
         // Cached startup script path to avoid repeated file system checks
         private string _startupScript;
         private bool _startupScriptInitialized;
+        private IReadOnlyList<string> _startupScripts;
+
+        private const string CPythonStartupFileName = "startup.cpython.py";
 
         /// <summary>
         /// Gets the path to the startup script if it exists
@@ -246,6 +249,24 @@ namespace pyRevitExtensionParser
                     _startupScriptInitialized = true;
                 }
                 return _startupScript;
+            }
+        }
+
+        /// <summary>
+        /// Gets every startup script in execution order: <see cref="StartupScript"/>, then
+        /// <c>startup.cpython.py</c>, which runs under CPython alongside or instead of it.
+        /// </summary>
+        /// <remarks>
+        /// An extension may ship only <c>startup.cpython.py</c>, so callers must check this
+        /// list rather than <see cref="StartupScript"/> to decide whether startup work exists.
+        /// </remarks>
+        public IReadOnlyList<string> StartupScripts
+        {
+            get
+            {
+                if (_startupScripts == null)
+                    _startupScripts = FindStartupScripts();
+                return _startupScripts;
             }
         }
 
@@ -498,6 +519,20 @@ namespace pyRevitExtensionParser
             }
 
             return null;
+        }
+
+        private IReadOnlyList<string> FindStartupScripts()
+        {
+            var scripts = new List<string>();
+            if (StartupScript != null)
+                scripts.Add(StartupScript);
+            if (!string.IsNullOrEmpty(Directory))
+            {
+                var cpythonStartupScript = Path.Combine(Directory, CPythonStartupFileName);
+                if (File.Exists(cpythonStartupScript))
+                    scripts.Add(cpythonStartupScript);
+            }
+            return scripts;
         }
 
     }
