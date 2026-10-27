@@ -368,8 +368,10 @@ def create_ipyengine_configs(
         clean (bool, optional): Engine should be clean. Defaults to False.
         full_frame (bool, optional): Engine shoul be full frame. Defaults to False.
         persistent (bool, optional): Engine should persist. Defaults to False.
-        engine_type (str, optional): Explicit extension-level engine declaration.
-            Defaults to None, which preserves per-script shebang selection.
+        engine_type (str, optional): The extension-level Python engine
+            declaration. ``"cpython"`` becomes a default the script's shebang
+            cannot lose to; any other value preserves per-script selection,
+            matching the C# command generator.
 
     Returns:
         (str): Configuration
@@ -379,9 +381,8 @@ def create_ipyengine_configs(
         exts.MDATA_ENGINE_FULLFRAME: full_frame,
         exts.MDATA_ENGINE_PERSISTENT: persistent,
     }
-    if engine_type:
-        engine_configs["type"] = engine_type
-        engine_configs["type_explicit"] = True
+    if engine_type == exts.PYTHON_ENGINE_CPYTHON:
+        engine_configs["type"] = "CPython"
     return json.dumps(engine_configs)
 
 

@@ -1014,6 +1014,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return scriptData;
         }
 
+        private static string StartupEngineType(ParsedExtension extension, string startupScript)
+        {
+            var isCPythonStartup = string.Equals(
+                System.IO.Path.GetFileName(startupScript),
+                ParsedExtension.CPythonStartupFileName,
+                StringComparison.OrdinalIgnoreCase);
+            return isCPythonStartup || extension.DeclaredPythonEngine == "cpython" ? "CPython" : null;
+        }
+
         /// <summary>
         /// Creates a ScriptRuntimeConfigs object for executing a startup script.
         /// </summary>
@@ -1037,15 +1046,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// seeds a new session UUID and therefore a new shared engine, so the value never outlives
         /// the load it describes. Scripts on a per-extension engine never see it.
         /// </remarks>
-        private static string StartupEngineType(ParsedExtension extension, string startupScript)
-        {
-            var isCPythonStartup = string.Equals(
-                System.IO.Path.GetFileName(startupScript),
-                ParsedExtension.CPythonStartupFileName,
-                StringComparison.OrdinalIgnoreCase);
-            return isCPythonStartup || extension.DeclaredPythonEngine == "cpython" ? "CPython" : null;
-        }
-
         private object CreateScriptRuntimeConfigs(
             List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null,
             string engineType = null)
