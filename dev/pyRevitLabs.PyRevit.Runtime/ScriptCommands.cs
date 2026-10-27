@@ -488,6 +488,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         return new ViewTypeCondition(ViewType.PanelSchedule);
                     case "active-column-schedule":
                         return new ViewTypeCondition(ViewType.ColumnSchedule);
+                    case "active-project-browser":
+                        return new ActiveBrowserCondition(ViewType.ProjectBrowser);
+                    case "active-system-browser":
+                        return new ActiveBrowserCondition(ViewType.SystemBrowser);
                 }
 
                 // check for custom tokens next
@@ -604,12 +608,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public ViewTypeCondition(ViewType viewType) => _viewTypes = new HashSet<ViewType> { viewType };
             public ViewTypeCondition(ViewType[] viewTypes) => _viewTypes = new HashSet<ViewType>(viewTypes);
 
+            protected virtual View GetActiveView(UIDocument uiDoc) => uiDoc.ActiveGraphicalView;
+
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 try {
                     // check active views
                     if (_viewTypes.Count > 0) {
                         if (HasDocument(uiApp))
-                            return _viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType);
+                            return _viewTypes.Contains(GetActiveView(uiApp.ActiveUIDocument).ViewType);
                     }
                     else
                         return true;
@@ -636,6 +642,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public override string ToString() {
                 return string.Join(";", _viewTypes);
             }
+        }
+
+        class ActiveBrowserCondition : ViewTypeCondition {
+            public ActiveBrowserCondition(ViewType browserType) : base(browserType) { }
+
+            protected override View GetActiveView(UIDocument uiDoc) => uiDoc.ActiveView;
         }
 
         abstract class CategoryCondition : Condition {

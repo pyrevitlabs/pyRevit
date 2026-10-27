@@ -107,7 +107,7 @@ Run unit tests:
 dotnet test tests/Build.Tests.csproj -c Release
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, and parser parity tests.
+The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
 
 ### Pipeline modes
 

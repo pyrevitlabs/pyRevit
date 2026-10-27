@@ -1,8 +1,10 @@
 // Copyright (c) 2010 Joe Moorhouse
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using Microsoft.Scripting.Hosting;
@@ -22,6 +24,8 @@ namespace PythonConsoleControl
         Thread thread;
         PythonTextEditor textEditor;
         PythonConsole pythonConsole;
+        int disposed;
+        readonly TaskCompletionSource<bool> cleanupCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public event ConsoleCreatedEventHandler ConsoleCreated;
 
@@ -40,6 +44,11 @@ namespace PythonConsoleControl
             get { return textEditor; }
         }
 
+        /// <summary>
+        /// Gets a task that completes when background cleanup finishes.
+        /// </summary>
+        internal Task CleanupCompleted => cleanupCompleted.Task;
+
         protected override Type Provider
         {
             get { return typeof(PythonContext); }
@@ -57,15 +66,40 @@ namespace PythonConsoleControl
 
         public void Dispose()
         {
-            if (pythonConsole != null)
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            pythonConsole?.Dispose();
+            textEditor.Dispose();
+            new Thread(() =>
             {
-                pythonConsole.Dispose();
-            }
-
-            if (thread != null)
-            {
-                thread.Join();
-            }
+                try
+                {
+                    var timeout = TimeSpan.FromSeconds(10);
+                    if (thread != null && !thread.Join(timeout))
+                    {
+                        Trace.TraceWarning("Python shell console worker did not exit within {0}.", timeout);
+                        thread.Join();
+                    }
+                    if (pythonConsole != null && !pythonConsole.WaitForExit(timeout))
+                    {
+                        Trace.TraceWarning("Python shell dispatcher cleanup did not finish within {0}.", timeout);
+                        while (!pythonConsole.WaitForExit(timeout)) { }
+                    }
+                    if (!textEditor.WaitForExit(timeout))
+                    {
+                        Trace.TraceWarning("Python shell completion worker did not exit within {0}.", timeout);
+                        while (!textEditor.WaitForExit(timeout)) { }
+                    }
+                    Runtime?.Shutdown();
+                }
+                catch (Exception exception)
+                {
+                    Trace.TraceError("Python shell cleanup failed: {0}", exception);
+                }
+                finally
+                {
+                    cleanupCompleted.TrySetResult(true);
+                }
+            }) { IsBackground = true, Name = "Python shell cleanup" }.Start();
         }
 
 
@@ -86,15 +120,20 @@ namespace PythonConsoleControl
         {
             SetOutput(new PythonOutputStream(textEditor));
             pythonConsole = new PythonConsole(textEditor, commandLine);
+            if (Volatile.Read(ref disposed) != 0) pythonConsole.Dispose();
             if (ConsoleCreated != null) ConsoleCreated(this, EventArgs.Empty);
             return pythonConsole;
         }
 
         public void WhenConsoleCreated(Action<PythonConsoleHost> action)
         {
+            if (Volatile.Read(ref disposed) != 0) return;
             if (pythonConsole != null)
             {
-                pythonConsole.WhenConsoleInitialized(() => action(this));
+                pythonConsole.WhenConsoleInitialized(() =>
+                {
+                    if (Volatile.Read(ref disposed) == 0) action(this);
+                });
             }
             else
             {
