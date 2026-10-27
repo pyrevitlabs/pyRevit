@@ -39,6 +39,21 @@ public sealed class VersionHelperTests
     }
 
     [TestMethod]
+    public void VersionStamping_cannot_rewrite_the_webview2_pin()
+    {
+        var pinFile = Path.Combine(PyRevitPaths.DevPath, "WebView2Version.props");
+
+        StringAssert.Contains(File.ReadAllText(pinFile), "<PyRevitWebView2Version>");
+
+        foreach (var file in PyRevitPaths.VersionFiles)
+        {
+            Assert.IsFalse(
+                File.ReadAllText(file).Contains("PyRevitWebView2Version", StringComparison.Ordinal),
+                $"{file} is stamped and would overwrite the pinned WebView2 version.");
+        }
+    }
+
+    [TestMethod]
     public void IsVersionTagBuild_detectsTagRefType()
     {
         var originalRefType = Environment.GetEnvironmentVariable("GITHUB_REF_TYPE");

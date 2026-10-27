@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0-windows</TargetFrameworks>
+        <UseWpf>true</UseWpf>
+
+        <Platforms>x64</Platforms>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+
+        <AssemblyName>pyRevitLabs.PyRevit.Renderer.Tests</AssemblyName>
+        <RootNamespace>PyRevitLabs.PyRevit.Renderer.Tests</RootNamespace>
+
+        <!-- Keep test assemblies out of the product bin, which is signed and
+             shipped wholesale by the installer. -->
+        <PermitDeploy>true</PermitDeploy>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+        <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+        <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+        <PackageReference Include="Microsoft.Web.WebView2" Version="$(PyRevitWebView2Version)"
+                          GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
+    </ItemGroup>
+
+    <!--
+      The fixture needs the same WebView2 stack and renderer the deployment
+      ships. Stage them next to the test assembly so running this project alone
+      does not depend on the product deployment having run first.
+    -->
+    <Target Name="StageWebView2Fixture" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
+        <MSBuild Projects="..\..\PyRevit.WebView2\pyRevitLabs.PyRevit.WebView2.csproj"
+                 Targets="GetTargetPath"
+                 Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)">
+            <Output TaskParameter="TargetOutputs" ItemName="RendererFixtureAssembly" />
+        </MSBuild>
+        <ItemGroup>
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.Core.dll" />
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.Wpf.dll" />
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\lib_manual\netcoreapp3.0\Microsoft.Web.WebView2.WinForms.dll" />
+            <WebView2FixtureFile Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll" />
+            <WebView2FixtureFile Include="@(RendererFixtureAssembly)" />
+        </ItemGroup>
+        <Copy SourceFiles="@(WebView2FixtureFile)" DestinationFolder="$(OutDir)webview2-fixture" SkipUnchangedFiles="true" />
+    </Target>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\PyRevit.Renderer\pyRevitLabs.PyRevit.Renderer.csproj" />
+        <ProjectReference Include="..\..\PyRevit.WebView2\pyRevitLabs.PyRevit.WebView2.csproj"
+                          ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="true" />
+    </ItemGroup>
+
+    <!-- pyRevitLabs.PyRevit.Runtime cannot be loaded outside a Revit host, so the
+         load-context contract is asserted against its sources. The load context
+         itself lives in the shared runtime assembly, which is deployed as a
+         single file and loaded once per process. -->
+    <ItemGroup>
+        <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime.Shared\WebView2LoadContext.cs" Link="Sources\WebView2LoadContext.cs" />
+        <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime.Shared\IsolatedWebView2Context.cs" Link="Sources\IsolatedWebView2Context.cs" />
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\ScriptRendererProvider.cs" Link="Sources\ScriptRendererProvider.cs" />
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\UnavailableScriptRenderer.cs" Link="Sources\UnavailableScriptRenderer.cs" />
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\IsolatedRendererLayout.cs" Link="Sources\IsolatedRendererLayout.cs" />
+    </ItemGroup>
+
+    <!-- The loader cannot be loaded outside a Revit host either, so the load
+         policy it applies is asserted against its source. -->
+    <ItemGroup>
+        <Compile Include="..\..\..\pyRevitLoader\Source\AssemblyLoadPolicy.cs" Link="Sources\AssemblyLoadPolicy.cs" />
+        <None Include="..\..\..\pyRevitLoader\Source\PyRevitLoaderApplication.cs"
+              Link="Sources\PyRevitLoaderApplication.cs"
+              CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

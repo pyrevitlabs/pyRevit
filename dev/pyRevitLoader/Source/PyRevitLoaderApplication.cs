@@ -118,6 +118,9 @@ namespace PyRevitLoader
             // this is to ensure pyRevit is loaded on its own assemblies
             foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
             {
+                var decision = AssemblyLoadPolicy.ShouldSkip(engineDll);
+                if (decision.Skip)
+                    continue;
                 try
                 {
                     Assembly.LoadFrom(engineDll);

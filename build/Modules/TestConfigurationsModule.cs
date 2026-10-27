@@ -12,8 +12,8 @@ namespace Build.Modules;
 [DependsOn<BuildRunnersModule>]
 [DependsOn<BuildShellModule>]
 /// <summary>
-/// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, and compatibility
-/// tests after their build outputs are available.
+/// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, renderer
+/// load-context, and compatibility tests after their build outputs are available.
 /// </summary>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
@@ -52,6 +52,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
         await RunTestsAsync(
             context,
             PyRevitPaths.CliTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.RendererTestProject,
             configuration,
             [],
             cancellationToken);
