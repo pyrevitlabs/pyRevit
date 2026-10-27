@@ -71,9 +71,7 @@ exceptions = _Exceptions()
 
 
 def _urlencode(params):
-    """
-    IronPython / CPython compatible urlencode helper.
-    """
+    """IronPython / CPython compatible urlencode helper."""
     if not params:
         return ""
 
@@ -223,8 +221,7 @@ class Response(object):
             raise RequestException("HTTP {} {}".format(self.status_code, self.reason))
 
     def iter_lines(self):
-        """
-        Minimal implementation for requests.Response.iter_lines().
+        """Minimal implementation for requests.Response.iter_lines().
 
         Intended for SSE-style responses:
 
@@ -234,7 +231,6 @@ class Response(object):
         Returns strings in IronPython/.NET rather than bytes.
         Your existing code already handles both.
         """
-
         try:
             if not self._response or not self._response.Content:
                 return
@@ -337,6 +333,7 @@ def _create_request(method, url, headers=None, data=None, json_data=None):
     return request
 
 
+# fmt: off
 def request(
     method,
     url,
@@ -348,7 +345,7 @@ def request(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     if verify is False:
@@ -434,7 +431,7 @@ def get(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     return request(
@@ -446,10 +443,8 @@ def get(
         timeout=timeout,
         verify=verify,
         allow_redirects=allow_redirects,
-        **kwargs
+        **kwargs  # fmt: skip
     )
-
-
 def post(
     url,
     headers=None,
@@ -460,7 +455,7 @@ def post(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     return request(
@@ -474,7 +469,7 @@ def post(
         timeout=timeout,
         verify=verify,
         allow_redirects=allow_redirects,
-        **kwargs
+        **kwargs  # fmt: skip
     )
 
 
@@ -488,7 +483,7 @@ def put(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     return request(
@@ -502,7 +497,7 @@ def put(
         timeout=timeout,
         verify=verify,
         allow_redirects=allow_redirects,
-        **kwargs
+        **kwargs  # fmt: skip
     )
 
 
@@ -516,7 +511,7 @@ def patch(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     return request(
@@ -530,7 +525,7 @@ def patch(
         timeout=timeout,
         verify=verify,
         allow_redirects=allow_redirects,
-        **kwargs
+        **kwargs  # fmt: skip
     )
 
 
@@ -541,7 +536,7 @@ def delete(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     return request(
@@ -552,7 +547,7 @@ def delete(
         timeout=timeout,
         verify=verify,
         allow_redirects=allow_redirects,
-        **kwargs
+        **kwargs  # fmt: skip
     )
 
 
@@ -563,7 +558,7 @@ def head(
     timeout=None,
     verify=None,
     allow_redirects=True,
-    **kwargs
+    **kwargs  # fmt: skip
 ):
 
     return request(
@@ -574,5 +569,6 @@ def head(
         timeout=timeout,
         verify=verify,
         allow_redirects=allow_redirects,
-        **kwargs
+        **kwargs  # fmt: skip
     )
+# fmt: on

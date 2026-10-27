@@ -1,5 +1,4 @@
-"""
-Interop helpers for Revit IFC export.
+"""Interop helpers for Revit IFC export.
 
 This module:
 - Loads the IFC.Net assembly to provide IFC schema types (e.g. Ifc4).
@@ -58,28 +57,26 @@ def _bool_str(value):
 
 
 def _tessellation_str(value):
-    """
-    Revit bug workaround: TessellationLevelOfDetail must be passed with a
+    """Revit bug workaround: TessellationLevelOfDetail must be passed with a
     comma as the decimal separator (e.g. '0,5' instead of '0.5').
     """
     return str(float(value)).replace(".", ",")
 
 
 def load_config(config_path):
-    """
-    Load a Revit IFC configuration JSON file.
+    """Load a Revit IFC configuration JSON file.
 
     Parameters
     ----------
     config_path : str
         Absolute path to the .json file exported by Revit's IFC exporter.
 
-    Returns
+    Returns:
     -------
     dict
         Parsed configuration dictionary.
 
-    Raises
+    Raises:
     ------
     IOError  : if the file does not exist.
     ValueError : if the file is not valid JSON.
@@ -96,8 +93,7 @@ def load_config(config_path):
 
 
 def build_export_options(config=None, overrides=None, filter_view_id=None):
-    """
-    Build an IFCExportOptions object from a config dict and/or keyword overrides.
+    """Build an IFCExportOptions object from a config dict and/or keyword overrides.
 
     Parameters
     ----------
@@ -109,7 +105,7 @@ def build_export_options(config=None, overrides=None, filter_view_id=None):
     filter_view_id : Autodesk.Revit.DB.ElementId, optional
         If provided, only elements visible in this view are exported.
 
-    Returns
+    Returns:
     -------
     Autodesk.Revit.DB.IFCExportOptions
     """
@@ -249,8 +245,7 @@ def build_export_options(config=None, overrides=None, filter_view_id=None):
 
 
 class IFCExporter(object):
-    """
-    High-level wrapper around Revit's Document.Export IFC pipeline.
+    """High-level wrapper around Revit's Document.Export IFC pipeline.
 
     Parameters
     ----------
@@ -269,8 +264,7 @@ class IFCExporter(object):
         overrides=None,
         filter_view_id=None,
     ):
-        """
-        Export the document to IFC.
+        """Export the document to IFC.
 
         Parameters
         ----------
@@ -285,12 +279,12 @@ class IFCExporter(object):
         filter_view_id : Autodesk.Revit.DB.ElementId, optional
             View to use for visibility-based filtering.
 
-        Returns
+        Returns:
         -------
         bool
             True if Revit reported success.
 
-        Raises
+        Raises:
         ------
         IOError   : if config_path is given but the file is missing.
         Exception : re-raises any Revit API error.

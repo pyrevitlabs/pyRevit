@@ -225,8 +225,10 @@ selector fixtures and always rolls its transaction group back. On Revit 2026.5,
 IronPython 3.4.2 (run `0e5696878a67`). This covers actual modal control events,
 two-way binding, selection identity, settings and scoped overlays. Native picker
 acceptance, persistent modeless behavior and other Revit generations are not
-covered by those results. The manual **Engine Tests → Test CPython Forms** button
-remains available for picker, ownership and theme inspection.
+covered by those results. The DevTools **Debug → Forms Tests** pulldown runs this
+suite under each engine (**Test IronPython Forms**, **Test CPython Forms**) and
+opens the forms by hand (**Test IronPython Forms Manual**, **Test CPython Forms
+Manual**) for picker, ownership and theme inspection.
 
 Run `python dev/scripts/forms_usage.py` to inventory bundled-tool references,
 excluding DevTools. The current inventory has no syntax skips. The most-used

@@ -1,5 +1,4 @@
-"""
-The main pyRevit test is the startup test which is done by launching Revit.
+"""The main pyRevit test is the startup test which is done by launching Revit.
 
 This module is created to provide a platform to perform complete tests on
 different components of pyRevit.
