@@ -64,18 +64,21 @@ class Window(object):
             release_events(self)
 
     def Close(self):
-        """Close the native root and release callbacks even before it is shown.
+        """Close the native root and release callbacks, even before it is shown.
+
+        A ``Closing`` handler that cancels the close leaves the window open
+        with every callback still attached, so it keeps working.
 
         Raises:
             Exception: A callback of a modeless prompt failed while it was
                 shown; the command that owns the prompt receives the error here.
         """
-        try:
-            if not self._closed:
-                self._window.Close()
-        finally:
-            self._unsubscribe_theme_changed()
-            release_events(self)
+        if not self._closed:
+            self._window.Close()
+        if not self._closed and self._window.IsLoaded:
+            return
+        self._unsubscribe_theme_changed()
+        release_events(self)
         if self._modeless:
             raise_callback_error(self)
 

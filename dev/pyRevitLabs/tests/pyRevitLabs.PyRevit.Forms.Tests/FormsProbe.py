@@ -412,6 +412,26 @@ assert not dialog._event_bindings
 assert not theme_changed.handlers
 assert not forms.activate_open_window("MODELESS_FORMS_PROBE")
 
+guarded = ModelessWindow()
+allow_close = []
+
+
+def keep_open(sender, args):
+    """Cancel closing until the probe allows it."""
+    args.Cancel = not allow_close
+
+
+_backend.bind_event(guarded, "Closing", keep_open)
+guarded.Show()
+guarded.Close()
+assert guarded.IsVisible
+assert guarded._event_bindings
+allow_close.append(True)
+guarded.Close()
+assert not guarded.IsVisible
+assert not guarded._event_bindings
+assert guarded.was_closed
+
 for name in forms.__all__:
     assert getattr(forms, name) is not None
 
@@ -469,6 +489,58 @@ forms.close_dockable_panel(ProbePanel.panel_id)
 assert not pane.is_visible
 forms.toggle_dockable_panel(ProbePanel, True)
 assert pane.is_visible
+
+from pyrevit.forms.backends._binding import binding_source, unwrap_item
+
+
+class ChildModel(forms.Reactive):
+    """Expose one bound property from a nested model."""
+
+    def __init__(self, message):
+        super(ChildModel, self).__init__()
+        self._message = message
+
+    @forms.reactive
+    def message(self):
+        """Text the parent's bindings read through the child."""
+        return self._message
+
+    @message.setter
+    def message(self, value):
+        self._message = value
+
+
+class ParentModel(forms.Reactive):
+    """Hold a nested model and a list of models behind one DataContext."""
+
+    def __init__(self):
+        super(ParentModel, self).__init__()
+        self.child = ChildModel("first")
+        self.children = [ChildModel("listed")]
+
+
+def read_path(model, path):
+    """Read a binding path through WPF rather than through Python."""
+    text = Controls.TextBlock()
+    text.DataContext = model
+    expression = text.SetBinding(
+        Controls.TextBlock.TextProperty, System.Windows.Data.Binding(path)
+    )
+    expression.UpdateTarget()
+    return text.Text
+
+
+parent_model = ParentModel()
+bound_parent = binding_source(parent_model)
+assert read_path(bound_parent, "child.message") == "first"
+assert read_path(bound_parent, "children[0].message") == "listed"
+parent_model.child.message = "second"
+assert read_path(bound_parent, "child.message") == "second"
+parent_values = System.Collections.Generic.IDictionary[System.String, System.Object](
+    bound_parent
+)
+assert unwrap_item(parent_values["child"]) is parent_model.child
+assert unwrap_item(list(parent_values["children"])[0]) is parent_model.children[0]
 
 logged_errors = []
 logger.error = lambda *args: logged_errors.append(args)
