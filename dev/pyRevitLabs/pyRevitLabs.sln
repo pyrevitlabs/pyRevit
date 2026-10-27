@@ -77,6 +77,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.WebView
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Renderer.Tests", "tests\pyRevitLabs.PyRevit.Renderer.Tests\pyRevitLabs.PyRevit.Renderer.Tests.csproj", "{EF76C24F-0FF8-4564-88CA-F9672B9F0991}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Forms.IronPython.Tests", "tests\pyRevitLabs.PyRevit.Forms.IronPython.Tests\pyRevitLabs.PyRevit.Forms.IronPython.Tests.csproj", "{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -387,6 +389,18 @@ Global
 		{EF76C24F-0FF8-4564-88CA-F9672B9F0991}.Release|Any CPU.Build.0 = Release|x64
 		{EF76C24F-0FF8-4564-88CA-F9672B9F0991}.Release|x86.ActiveCfg = Release|x64
 		{EF76C24F-0FF8-4564-88CA-F9672B9F0991}.Release|x86.Build.0 = Release|x64
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Debug|x64.Build.0 = Debug|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Debug|x86.Build.0 = Debug|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Release|x64.ActiveCfg = Release|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Release|x64.Build.0 = Release|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Release|x86.ActiveCfg = Release|Any CPU
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -401,6 +415,7 @@ Global
 		{EC828475-4355-4F79-9206-E56CE41F1BE8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{DFFFA622-3977-4142-89A9-0F475A968112} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{EF76C24F-0FF8-4564-88CA-F9672B9F0991} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{3A5D2516-EDB0-4BAD-8B12-1A4D57059CE4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29169547-9C0C-4620-A37C-77CB6B30F4F0}
