@@ -398,6 +398,11 @@ class AgentRunnerLinesTests(unittest.TestCase):
             "try:\n    pass\nexcept (Exception) , error:\n    pass\n", rewritten
         )
 
+    def test_workspace_cleanup_ignores_relative_module_paths(self):
+        """Do not unload standard-library modules reported with relative paths."""
+        module = types.SimpleNamespace(__file__="importlib\\__init__.py")
+        self.assertFalse(self.runner._is_under(module.__file__, REPO_ROOT))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -504,6 +504,8 @@ def _is_under(module_file, root):
     if not isinstance(module_file, str) or not module_file:
         return False
     try:
+        if not op.isabs(module_file):
+            return False
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
     except Exception:
         return False
