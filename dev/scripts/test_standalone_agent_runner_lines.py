@@ -403,6 +403,11 @@ class AgentRunnerLinesTests(unittest.TestCase):
         module = types.SimpleNamespace(__file__="importlib\\__init__.py")
         self.assertFalse(self.runner._is_under(module.__file__, REPO_ROOT))
 
+    def test_workspace_cleanup_preserves_runtime_modules(self):
+        """Do not unload interpreter libraries installed below the workspace."""
+        module_file = os.path.join(sys.prefix, "Lib", "io.py")
+        self.assertTrue(self.runner._is_runtime_module(module_file))
+
 
 if __name__ == "__main__":
     unittest.main()
