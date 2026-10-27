@@ -475,6 +475,7 @@ class Extension(GenericUIContainer):
     def __init__(self, cmp_path=None):
         self.pyrvt_version = None
         self.dir_hash_value = None
+        self.script_engine = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer.__init__(self, cmp_path=cmp_path)
 
@@ -520,6 +521,13 @@ class Extension(GenericUIContainer):
     def _update_from_directory(self):  # pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer._update_from_directory(self)
+        manifest = self.get_manifest()
+        self.script_engine = exts.get_declared_python_engine(manifest)
+        if manifest and exts.MDATA_ENGINE in manifest and self.script_engine is None:
+            mlogger.warning(
+                "Ignoring unsupported extension Python engine declaration: %s",
+                manifest[exts.MDATA_ENGINE],
+            )
         self.pyrvt_version = versionmgr.get_pyrevit_version().get_formatted()
 
         # extensions can store event hooks under
