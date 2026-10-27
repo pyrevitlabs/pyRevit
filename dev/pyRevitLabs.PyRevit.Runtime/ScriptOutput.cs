@@ -15,6 +15,7 @@ using pyRevitLabs.PyRevit;
 using PyDict = Python.Runtime.PyDict;
 using PyIterable = Python.Runtime.PyIterable;
 using PyObject = Python.Runtime.PyObject;
+using PyString = Python.Runtime.PyString;
 using PythonException = Python.Runtime.PythonException;
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -902,6 +903,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return rows;
 
             if (value is PyObject pythonValue) {
+                if (PyString.IsStringType(pythonValue))
+                    return rows;
                 try {
                     using (var pythonRows = new PyIterable(pythonValue)) {
                         foreach (PyObject row in pythonRows) {

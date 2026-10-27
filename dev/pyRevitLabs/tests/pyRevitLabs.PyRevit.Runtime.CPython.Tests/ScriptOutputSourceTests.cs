@@ -13,6 +13,7 @@ public class ScriptOutputSourceTests {
         var dictionary = CSharpSource.MemberBody(Source, "private static Dictionary<string, string> ToDictionary(object value)");
 
         Assert.Contains("PyObject", rows);
+        Assert.Contains("PyString.IsStringType(pythonValue)", rows);
         Assert.Contains("PyObject", list);
         Assert.Contains("PyDict", dictionary);
     }
@@ -21,7 +22,8 @@ public class ScriptOutputSourceTests {
     [Fact]
     public void PrintTable_ReportsEmptyRows() {
         var body = CSharpSource.MemberBody(Source, "public void print_table(");
-
-        Assert.Contains("print_md(", body);
+        Assert.True(
+            CSharpSource.IsInBlockOf(body, "if (rows.Count == 0)", "print_md("),
+            "print_table must warn inside its empty-table branch");
     }
 }
