@@ -95,6 +95,7 @@ from .notify import (
 
 
 _panel_providers = {}
+_pending_panel_shows = set()
 
 
 class WPFPanel(_WPFMixin, _backend.Panel):
@@ -225,11 +226,48 @@ def toggle_dockable_panel(panel_type_or_id, state):
         panel_type_or_id (type | str): WPFPanel subclass or its UUID.
         state (bool): True to show the panel, False to hide it.
     """
+    pane_id = _get_dockable_panel_id(panel_type_or_id)
+    pane_exists = getattr(UI.DockablePane, "PaneExists", None)
+    if state and pane_exists is not None and not pane_exists(pane_id):
+        _defer_dockable_panel_show(pane_id)
+        return
+
     pane = get_dockable_panel(panel_type_or_id)
     if state:
         pane.Show()
         return
     pane.Hide()
+
+
+def _get_dockable_panel_id(panel_type_or_id):
+    """Return the native identifier for a dockable panel reference."""
+    if isinstance(panel_type_or_id, str):
+        panel_id = panel_type_or_id
+    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
+        panel_id = panel_type_or_id.panel_id
+    else:
+        raise PyRevitException("Given type is not a forms.WPFPanel")
+    try:
+        return UI.DockablePaneId(coreutils.Guid.Parse(panel_id))
+    except framework.System.FormatException:
+        raise PyRevitException('Invalid dockable panel id "{}"'.format(panel_id))
+
+
+def _defer_dockable_panel_show(pane_id):
+    """Show a registered pane after Revit creates its native UI object."""
+    panel_key = str(pane_id)
+    if panel_key in _pending_panel_shows:
+        return
+    _pending_panel_shows.add(panel_key)
+
+    def show_when_created(sender, args):
+        if not UI.DockablePane.PaneExists(pane_id):
+            return
+        sender.Idling -= show_when_created
+        _pending_panel_shows.discard(panel_key)
+        sender.GetDockablePane(pane_id).Show()
+
+    HOST_APP.uiapp.Idling += show_when_created
 
 
 __all__ = [
