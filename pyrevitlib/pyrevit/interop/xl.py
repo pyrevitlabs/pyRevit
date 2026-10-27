@@ -18,20 +18,32 @@ else:
 
 
 def _uses_openpyxl(xlfile):
-    return not IRONPY and op.splitext(str(xlfile))[1].lower() != ".xls"
+    return not IRONPY and not _is_legacy_workbook(xlfile)
+
+
+def _is_legacy_workbook(xlfile):
+    return op.splitext(str(xlfile))[1].lower() == ".xls"
 
 
 def _open_legacy_workbook(xlfile):
-    """Open an ``.xls`` workbook with xlrd, which predates ``time.clock`` removal."""
+    """Open an ``.xls`` workbook with xlrd, which predates ``time.clock`` removal.
+
+    xlrd's module-level ``time`` reference gets a ``clock`` only for this call
+    and is restored afterwards, so other xlrd users are unaffected.
+    """
+    import time
+    import types
+
     import xlrd
     import xlrd.book
 
-    if not hasattr(xlrd.book.time, "clock"):
-        import time
-        import types
-
+    original = xlrd.book.time
+    if not hasattr(original, "clock"):
         xlrd.book.time = types.SimpleNamespace(clock=time.perf_counter, time=time.time)
-    return xlrd.open_workbook(str(xlfile))
+    try:
+        return xlrd.open_workbook(str(xlfile))
+    finally:
+        xlrd.book.time = original
 
 
 def _sheet_rows(xlsheet, openpyxl_sheet):
@@ -109,7 +121,15 @@ def dump(xlfile, datadict):
     Args:
         xlfile (str): full path of the target excel file
         datadict (dict[str, list]): dictionary of worksheets names and data
+
+    Raises:
+        ValueError: ``xlfile`` ends in ``.xls``; both engines write ``.xlsx``
+            content only, which Excel would reject under a legacy name.
     """
+    if _is_legacy_workbook(xlfile):
+        raise ValueError(
+            "Cannot write legacy .xls workbooks; save as .xlsx: {}".format(xlfile)
+        )
     if IRONPY:
         xlwb = xlsxwriter.Workbook(xlfile)
         for xlsheetname, xlsheetdata in datadict.items():

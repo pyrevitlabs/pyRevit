@@ -66,6 +66,22 @@ class ExcelInteropTests(unittest.TestCase):
         self.assertEqual(["Name", "Count"], loaded["Legacy"]["headers"])
         self.assertEqual([["A", 1.0]], loaded["Legacy"]["rows"])
 
+    def test_legacy_reader_shim_is_restored(self):
+        """Reading .xls does not leave xlrd's time module replaced."""
+        import xlrd.book
+
+        original = xlrd.book.time
+        xl.load(Path(__file__).parent / "fixtures" / "legacy_workbook.xls")
+        self.assertIs(original, xlrd.book.time)
+
+    def test_dump_refuses_legacy_xls_names(self):
+        """Writing OOXML content under an .xls name fails instead of corrupting."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "book.xls"
+            with self.assertRaises(ValueError):
+                xl.dump(path, {"Rows": [["A"]]})
+            self.assertFalse(path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
