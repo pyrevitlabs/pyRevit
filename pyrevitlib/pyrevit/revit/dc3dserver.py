@@ -38,7 +38,8 @@ class Mesh(object):
 
     @classmethod
     def from_solid(cls, doc, solid, color=None):
-        """Create a Mesh from a Revit Solid, optionally overriding per-face material colors.
+        """
+        Create a Mesh from a Revit Solid, optionally overriding per-face material colors.
 
         Triangulates each face of the solid and collects edge segments.
         Normals are derived per the mesh's DistributionOfNormals mode.

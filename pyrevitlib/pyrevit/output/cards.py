@@ -4,7 +4,8 @@
 
 
 def card_start_style(limit, value, alt):
-    """Generates an HTML div element with a specific background color based on the ratio of value to limit.
+    """
+    Generates an HTML div element with a specific background color based on the ratio of value to limit.
 
     Args:
         limit (float): The limit value used to calculate the ratio.
@@ -41,7 +42,8 @@ def card_start_style(limit, value, alt):
 
 
 def card_builder(limit, value, description):
-    """Builds an HTML card with the given limit, value, and description.
+    """
+    Builds an HTML card with the given limit, value, and description.
 
     Args:
         limit (int): The limit value to be displayed in the card.
@@ -51,6 +53,7 @@ def card_builder(limit, value, description):
     Returns:
         str: A string containing the HTML representation of the card.
     """
+
     alt = "{} {} (limit = {})".format(str(value), str(description), str(limit))
     card_end = '<b>{}</b><br /><a style="font-size: 0.70rem">{}</a></div>'.format(
         value, description
@@ -59,7 +62,8 @@ def card_builder(limit, value, description):
 
 
 def create_frame(title, *cards):
-    """Creates an HTML div frame containing multiple cards with a rounded border and a title on the top left corner.
+    """
+    Creates an HTML div frame containing multiple cards with a rounded border and a title on the top left corner.
 
     return card_start_style(limit, value, alt) + card_end
         cards (str): Multiple strings representing HTML card elements.

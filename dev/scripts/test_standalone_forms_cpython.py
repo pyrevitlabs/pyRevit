@@ -171,35 +171,60 @@ class FormsExportsTests(unittest.TestCase):
     """Keep accidental legacy exports compatible as well as the intended API."""
 
     def test_ironpython_public_names_match_the_pre_extraction_surface(self):
-        """An explicit export list must not drop previously importable names."""
+        """IronPython exports the shared API plus every pre-split legacy name."""
         fixture = Path(__file__).parent / "fixtures" / "forms_ironpython_exports.json"
         expected = json.loads(fixture.read_text(encoding="utf-8"))
-        tree = ast.parse((FORMS / "_ipy.py").read_text(encoding="utf-8"))
-        exports = next(
+        common = _literal_list(FORMS / "_common.py", "__all__")
+        legacy = _literal_list(FORMS / "_ipy.py", "_LEGACY_EXPORTS")
+        self.assertFalse(set(common) & set(legacy))
+        self.assertEqual(sorted(expected), sorted(common + legacy))
+        self.assertFalse(set(legacy) - _defined_names(FORMS / "_ipy.py"))
+
+    def test_shared_names_are_defined_by_the_shared_module(self):
+        """Every engine-neutral export resolves without engine-specific code."""
+        common = _literal_list(FORMS / "_common.py", "__all__")
+        self.assertFalse(set(common) - _defined_names(FORMS / "_common.py"))
+
+    def test_both_backends_implement_the_backend_contract(self):
+        """Feature modules can rely on every _backend name under either engine."""
+        contract = _literal_list(FORMS / "_backend.py", "__all__")
+        for backend in ("_ipy.py", "_cpy.py"):
+            with self.subTest(backend=backend):
+                defined = _defined_names(FORMS / "backends" / backend)
+                self.assertFalse(set(contract) - defined)
+
+
+def _literal_list(path, name):
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    return ast.literal_eval(
+        next(
             node.value
             for node in tree.body
             if isinstance(node, ast.Assign)
             and any(
-                isinstance(target, ast.Name) and target.id == "__all__"
+                isinstance(target, ast.Name) and target.id == name
                 for target in node.targets
             )
         )
-        self.assertEqual(expected, ast.literal_eval(exports))
-        defined = set()
-        for node in tree.body:
-            if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
-                defined.add(node.name)
-            elif isinstance(node, ast.Assign):
-                defined.update(
-                    target.id for target in node.targets if isinstance(target, ast.Name)
-                )
-            elif isinstance(node, ast.Import):
-                defined.update(
-                    item.asname or item.name.split(".")[0] for item in node.names
-                )
-            elif isinstance(node, ast.ImportFrom):
-                defined.update(item.asname or item.name for item in node.names)
-        self.assertFalse(set(expected) - defined)
+    )
+
+
+def _defined_names(path):
+    defined = set()
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+            defined.add(node.name)
+        elif isinstance(node, ast.Assign):
+            defined.update(
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            )
+        elif isinstance(node, ast.Import):
+            defined.update(
+                item.asname or item.name.split(".")[0] for item in node.names
+            )
+        elif isinstance(node, ast.ImportFrom):
+            defined.update(item.asname or item.name for item in node.names)
+    return defined
 
 
 class InputResponseTests(unittest.TestCase):

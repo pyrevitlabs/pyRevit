@@ -225,7 +225,12 @@ module(
     "pyrevit.versionmgr",
     get_pyrevit_version=lambda: types.SimpleNamespace(get_formatted=lambda: "test"),
 )
-module("pyrevit.UI", DockablePane=_DockablePane, DockablePaneId=_DockablePaneId)
+module(
+    "pyrevit.UI",
+    DockablePane=_DockablePane,
+    DockablePaneId=_DockablePaneId,
+    IDockablePaneProvider=object,
+)
 module("pyrevit.DB")
 module("pyrevit.runtime", __path__=[])
 module("pyrevit.runtime.types", DockablePaneProvider=_DockablePaneProvider)
@@ -420,7 +425,7 @@ assert not forms.is_registered_dockable_panel(ProbePanel)
 registered_panel = forms.register_dockable_panel(ProbePanel, default_visible=False)
 assert isinstance(registered_panel, ProbePanel)
 assert forms.is_registered_dockable_panel(ProbePanel)
-provider = forms._cpy._panel_providers[ProbePanel.panel_id]
+provider = forms.dockable._panel_providers[ProbePanel.panel_id]
 assert provider.framework_element is _backend.unwrap(registered_panel)
 assert not provider.visible_by_default
 pane = forms.get_dockable_panel(ProbePanel)

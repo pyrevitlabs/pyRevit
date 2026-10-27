@@ -27,6 +27,7 @@
                  Exclude="..\..\..\..\pyrevitlib\pyrevit\forms\**\__pycache__\**"
                  LinkBase="forms" CopyToOutputDirectory="PreserveNewest"/>
         <Content Include="..\pyRevitLabs.PyRevit.Forms.Tests\FormsProbe.py" Link="FormsProbe.py" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="..\pyRevitLabs.PyRevit.Forms.Tests\PanelProbe.xaml" Link="PanelProbe.xaml" CopyToOutputDirectory="PreserveNewest"/>
         <Content Include="..\..\..\..\pyrevitlib\pyrevit\unittests\test_forms_parity.py" Link="test_forms_parity.py" CopyToOutputDirectory="PreserveNewest"/>
         <Content Include="..\..\..\..\pyrevitlib\pyrevit\coreutils\colors.py" Link="colors.py" CopyToOutputDirectory="PreserveNewest"/>
         <Content Include="..\..\..\libs\IronPython\python_$(FormsStdlibVersion)_lib.zip" Link="stdlib.zip" CopyToOutputDirectory="Always"/>

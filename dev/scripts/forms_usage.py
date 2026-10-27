@@ -34,7 +34,7 @@ def _deferred_events(root):
 
 def _cpython_exports(root):
     tree = ast.parse(
-        (root / "pyrevitlib" / "pyrevit" / "forms" / "_cpy.py").read_text(
+        (root / "pyrevitlib" / "pyrevit" / "forms" / "_common.py").read_text(
             encoding="utf-8"
         )
     )

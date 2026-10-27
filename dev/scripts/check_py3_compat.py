@@ -43,6 +43,10 @@ Checks:
                 coercion; build the list through the shared Add-based helper
     CLR-NAMESPACE Python class implementing a reload-sensitive CLR callback needs a stable
                 `__namespace__` so pythonnet can reuse its generated type
+    FORM-NATIVE a pyRevit form hands `self` to WPF as the native window or page
+                (`.Owner = self`, `WindowInteropHelper(self)`,
+                `isinstance(self, Window)`); under CPython the form is a
+                Python controller wrapping the native root
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
@@ -367,6 +371,55 @@ def _has_stable_clr_namespace(node):
     return False
 
 
+FORM_BASES = {
+    "WPFWindow",
+    "WPFPanel",
+    "TemplateUserInputWindow",
+    "GetValueWindow",
+    "SelectFromList",
+    "CommandSwitchWindow",
+    "SearchPrompt",
+    "TemplatePromptBar",
+    "WarningBar",
+    "ProgressBar",
+}
+
+NATIVE_FORM_TYPES = {"Window", "Page"}
+
+
+def _base_name(node):
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
+def _is_self(node):
+    return isinstance(node, ast.Name) and node.id == "self"
+
+
+def _native_form_uses(class_node):
+    """Yield (node, usage) where a form class treats ``self`` as a WPF object."""
+    if not any(_base_name(base) in FORM_BASES for base in class_node.bases):
+        return
+    for node in ast.walk(class_node):
+        if isinstance(node, ast.Assign) and _is_self(node.value):
+            for target in node.targets:
+                if isinstance(target, ast.Attribute) and target.attr == "Owner":
+                    yield node, "`.Owner = self`"
+        elif isinstance(node, ast.Call) and node.args and _is_self(node.args[0]):
+            name = _base_name(node.func)
+            if name == "WindowInteropHelper":
+                yield node, "`WindowInteropHelper(self)`"
+            elif (
+                name == "isinstance"
+                and len(node.args) == 2
+                and _base_name(node.args[1]) in NATIVE_FORM_TYPES
+            ):
+                yield node, "`isinstance(self, {})`".format(_base_name(node.args[1]))
+
+
 def check_file(path):
     """Return compatibility findings for one Python source file."""
     findings = []
@@ -414,6 +467,20 @@ def check_file(path):
     clr_ref_exempt = any(
         path == REPO_ROOT.joinpath(*exempt.split("/")) for exempt in CLR_REF_EXEMPT
     )
+
+    for class_node in ast.walk(tree):
+        if not isinstance(class_node, ast.ClassDef):
+            continue
+        for node, usage in _native_form_uses(class_node):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "FORM-NATIVE",
+                    "{} treats a pyRevit form as its native WPF root; under "
+                    "CPython hand WPF the native root instead".format(usage),
+                )
+            )
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute):
@@ -708,7 +775,7 @@ def _is_tracked_extension_finding(finding):
         finding.path.relative_to(REPO_ROOT / "extensions")
     except ValueError:
         return False
-    return finding.code in {"CLR-LIST", "CLR-NAMESPACE"}
+    return finding.code in {"CLR-LIST", "CLR-NAMESPACE", "FORM-NATIVE"}
 
 
 def main():

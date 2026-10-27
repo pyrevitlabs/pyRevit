@@ -2,6 +2,7 @@
 
 import ast
 from pathlib import Path
+import textwrap
 import unittest
 
 try:
@@ -12,6 +13,7 @@ try:
         _is_generic_list_constructor,
         _has_stable_clr_namespace,
         _is_tracked_extension_finding,
+        _native_form_uses,
     )
 except ImportError:
     from check_py3_compat import (
@@ -21,7 +23,17 @@ except ImportError:
         _is_generic_list_constructor,
         _has_stable_clr_namespace,
         _is_tracked_extension_finding,
+        _native_form_uses,
     )
+
+
+def _form_usages(source):
+    return [
+        usage
+        for node in ast.walk(ast.parse(textwrap.dedent(source)))
+        if isinstance(node, ast.ClassDef)
+        for _, usage in _native_form_uses(node)
+    ]
 
 
 def _unicode_reachability(source):
@@ -196,6 +208,60 @@ class NamespaceCompatibilityTests(unittest.TestCase):
             "class Handler(UI.IExternalEventHandler):\n    __namespace__ = exec_id"
         ).body[0]
         self.assertFalse(_has_stable_clr_namespace(class_node))
+
+
+class NativeFormUseTests(unittest.TestCase):
+    """Forms handing themselves to WPF break when the form wraps a native root."""
+
+    def test_owner_assignment_from_a_form_is_detected(self):
+        """WPF requires a native Window as an owner, not the Python controller."""
+        usages = _form_usages(
+            """
+            class Tool(forms.WPFWindow):
+                def open(self, child):
+                    child.Owner = self
+            """
+        )
+        self.assertEqual(["`.Owner = self`"], usages)
+
+    def test_interop_and_type_checks_on_a_form_are_detected(self):
+        """Interop handles and type checks need the native root."""
+        usages = _form_usages(
+            """
+            class Pane(WPFPanel):
+                def handle(self):
+                    isinstance(self, Page)
+                    return WindowInteropHelper(self).Handle
+            """
+        )
+        self.assertEqual(
+            ["`isinstance(self, Page)`", "`WindowInteropHelper(self)`"], usages
+        )
+
+    def test_unwrapped_root_and_plain_classes_are_not_detected(self):
+        """Unwrapped roots and classes that are not forms stay clean."""
+        usages = _form_usages(
+            """
+            class Tool(forms.WPFWindow):
+                def open(self, child):
+                    child.Owner = _backend.unwrap(self)
+
+            class Helper(object):
+                def bind(self, child):
+                    child.Owner = self
+            """
+        )
+        self.assertEqual([], usages)
+
+    def test_extension_form_findings_are_tracked(self):
+        """Bundled extensions migrate to the rule without blocking CI."""
+        finding = Finding(
+            Path(__file__).resolve().parents[2] / "extensions" / "tool.py",
+            1,
+            "FORM-NATIVE",
+            "native form use",
+        )
+        self.assertTrue(_is_tracked_extension_finding(finding))
 
 
 if __name__ == "__main__":
