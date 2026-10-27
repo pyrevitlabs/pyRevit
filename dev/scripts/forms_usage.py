@@ -10,7 +10,7 @@ from xml.dom import minidom
 
 _NON_EVENT_ATTRIBUTES = {"DisplayMemberPath"}
 _CPYTHON_MODAL_ONLY = set()
-_CPYTHON_HOST_REQUIRED = {"WPFPanel"}
+_CPYTHON_HOST_REQUIRED = set()
 _CPYTHON_UNSUPPORTED = set()
 
 

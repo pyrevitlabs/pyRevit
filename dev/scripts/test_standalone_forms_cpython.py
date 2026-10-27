@@ -104,25 +104,16 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertEqual([], audit["unparsed"])
         self.assertEqual([], audit["unsupported"])
 
-    def test_inventory_reports_cpython_host_and_unsupported_boundaries(self):
-        """Bundled forms usage stays within the documented CPython boundary."""
+    def test_inventory_reports_full_cpython_forms_coverage(self):
+        """Bundled forms usage resolves through the published CPython facade."""
         coverage = _load_usage_inventory()["cpython"]
-        self.assertEqual(386, coverage["supported_references"])
+        self.assertEqual(396, coverage["supported_references"])
         self.assertEqual(0, coverage["modal_only_references"])
-        self.assertEqual(2, coverage["host_required_references"])
-        self.assertEqual(8, coverage["unsupported_references"])
+        self.assertEqual(0, coverage["host_required_references"])
+        self.assertEqual(0, coverage["unsupported_references"])
         self.assertEqual(set(), set(coverage["modal_only"]))
-        self.assertEqual({"WPFPanel"}, set(coverage["host_required"]))
-        self.assertEqual(
-            {
-                "get_dockable_panel",
-                "is_registered_dockable_panel",
-                "open_dockable_panel",
-                "register_dockable_panel",
-                "toggle_dockable_panel",
-            },
-            set(coverage["unsupported"]),
-        )
+        self.assertEqual(set(), set(coverage["host_required"]))
+        self.assertEqual(set(), set(coverage["unsupported"]))
 
     def test_template_names_remain_in_their_own_namescope(self):
         """Template names are not exposed as window fields."""
