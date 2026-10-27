@@ -228,9 +228,12 @@ def toggle_dockable_panel(panel_type_or_id, state):
     """
     pane_id = _get_dockable_panel_id(panel_type_or_id)
     pane_exists = getattr(UI.DockablePane, "PaneExists", None)
-    if state and pane_exists is not None and not pane_exists(pane_id):
-        _defer_dockable_panel_show(pane_id)
-        return
+    if state and pane_exists is not None:
+        if not UI.DockablePane.PaneIsRegistered(pane_id):
+            get_dockable_panel(panel_type_or_id)
+        if not pane_exists(pane_id):
+            _defer_dockable_panel_show(pane_id)
+            return
 
     pane = get_dockable_panel(panel_type_or_id)
     if state:
