@@ -359,24 +359,30 @@ def _get_runtime_asm():
         return _generate_runtime_asm()
 
 
-def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
-    """Return the configuration for ipython engine.
+def create_ipyengine_configs(
+    clean=False, full_frame=False, persistent=False, engine_type=None
+):
+    """Return Python command engine configuration.
 
     Args:
         clean (bool, optional): Engine should be clean. Defaults to False.
         full_frame (bool, optional): Engine shoul be full frame. Defaults to False.
         persistent (bool, optional): Engine should persist. Defaults to False.
+        engine_type (str, optional): Explicit extension-level engine declaration.
+            Defaults to None, which preserves per-script shebang selection.
 
     Returns:
         (str): Configuration
     """
-    return json.dumps(
-        {
-            exts.MDATA_ENGINE_CLEAN: clean,
-            exts.MDATA_ENGINE_FULLFRAME: full_frame,
-            exts.MDATA_ENGINE_PERSISTENT: persistent,
-        }
-    )
+    engine_configs = {
+        exts.MDATA_ENGINE_CLEAN: clean,
+        exts.MDATA_ENGINE_FULLFRAME: full_frame,
+        exts.MDATA_ENGINE_PERSISTENT: persistent,
+    }
+    if engine_type:
+        engine_configs["type"] = engine_type
+        engine_configs["type_explicit"] = True
+    return json.dumps(engine_configs)
 
 
 def create_ext_command_attrs():

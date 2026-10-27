@@ -70,6 +70,7 @@ def create_executor_type(extension, module_builder, cmd_component):
         clean=cmd_component.requires_clean_engine,
         full_frame=cmd_component.requires_fullframe_engine,
         persistent=cmd_component.requires_persistent_engine,
+        engine_type=None if cmd_component.is_cpython else extension.script_engine,
     )
 
     bundletypemaker.create_executor_type(

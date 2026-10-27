@@ -45,6 +45,9 @@ DYNAMO_LANG = "dynamobim"
 GRASSHOPPER_LANG = "grasshopper"
 # cpython hash-bang
 CPYTHON_HASHBANG = "#! python3"
+PYTHON_ENGINE_CPYTHON = "cpython"
+PYTHON_ENGINE_IRONPYTHON = "ironpython"
+PYTHON_ENGINES = {PYTHON_ENGINE_CPYTHON, PYTHON_ENGINE_IRONPYTHON}
 
 # supported script files
 PYTHON_SCRIPT_FILE_FORMAT = ".py"
@@ -178,6 +181,21 @@ SLIDEOUT_IDENTIFIER = ">>>"
 
 # bundle icon
 ICON_FILE_FORMAT = ".png"
+
+
+def get_declared_python_engine(metadata):
+    """Return a valid extension-level Python engine declaration, if any."""
+    if not isinstance(metadata, dict):
+        return None
+    declared_engine = metadata.get(MDATA_ENGINE)
+    if not hasattr(declared_engine, "strip"):
+        return None
+    normalized_engine = declared_engine.strip().lower()
+    if normalized_engine in PYTHON_ENGINES:
+        return normalized_engine
+    return None
+
+
 ICON_DARK_SUFFIX = ".dark"
 DEFAULT_ICON_FILE = "icon" + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = "on" + ICON_FILE_FORMAT
