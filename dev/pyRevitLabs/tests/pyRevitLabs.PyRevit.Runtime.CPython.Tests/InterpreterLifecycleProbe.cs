@@ -14,6 +14,7 @@ internal sealed class InterpreterLifecycleRecord {
     public required Exception? PythonDllReassignment { get; init; }
     public required Exception? Shutdown { get; init; }
     public required bool IsInitializedAfterShutdown { get; init; }
+    public required string? DerivedTypeRedefinition { get; init; }
 }
 
 /// <summary>
@@ -29,6 +30,36 @@ internal static class InterpreterLifecycleProbe {
     public const int ReattachCount = 3;
 
     private const string MarkerName = "pyrevit_reload_probe";
+
+    private const string RedefinitionProbe = """
+        import clr
+        import sys
+        from System import IDisposable
+
+        def define(extra):
+            class RedefinedProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.redefinition"
+
+                def Dispose(self):
+                    pass
+
+                if extra:
+                    @clr.clrmethod(int, [])
+                    def Extra(self):
+                        return 1
+
+            return clr.GetClrType(RedefinedProbe)
+
+        plain = define(False)
+        extended = define(True)
+        plain_again = define(False)
+        sys.pyrevit_redefinition = "|".join([
+            str(plain.Equals(plain_again)),
+            str(extended.Equals(plain)),
+            str(extended.GetMethod("Extra") is not None),
+            str(plain.GetMethod("Extra") is not None),
+        ])
+        """;
     private static readonly string MarkerRead = $"__import__('sys').{MarkerName}";
 
     private static readonly Lazy<InterpreterLifecycleRecord> _record = new(
@@ -45,6 +76,7 @@ internal static class InterpreterLifecycleProbe {
         bool broughtUp = PythonEngine.IsInitialized;
         Exec("import clr");
         Exec($"import sys; sys.{MarkerName} = 1");
+        string? redefinition = Run(RedefinitionProbe, "__import__('sys').pyrevit_redefinition");
 
         var reattachFailures = new List<Exception>();
         for (int cycle = 0; cycle < ReattachCount; cycle++) {
@@ -73,6 +105,7 @@ internal static class InterpreterLifecycleProbe {
             PythonDllReassignment = pythonDllReassignment,
             Shutdown = shutdown,
             IsInitializedAfterShutdown = isInitializedAfterShutdown,
+            DerivedTypeRedefinition = redefinition,
         };
     }
 
@@ -80,6 +113,18 @@ internal static class InterpreterLifecycleProbe {
         using Py.GILState gil = Py.GIL();
         using PyObject? value = PythonEngine.Eval(MarkerRead);
         return value is null ? null : Convert.ToInt32(value);
+    }
+
+    private static string? Run(string code, string result) {
+        try {
+            using Py.GILState gil = Py.GIL();
+            PythonEngine.Exec(code);
+            using PyObject? value = PythonEngine.Eval(result);
+            return value?.ToString();
+        }
+        catch (Exception ex) {
+            return "error: " + ex.Message;
+        }
     }
 
     private static void Exec(string code) {
