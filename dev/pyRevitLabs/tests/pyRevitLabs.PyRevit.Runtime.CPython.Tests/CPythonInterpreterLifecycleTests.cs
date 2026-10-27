@@ -27,6 +27,19 @@ public class CPythonInterpreterLifecycleTests {
     }
 
     /// <summary>
+    /// pythonnet caches the CLR type generated for a Python class that derives from a CLR type,
+    /// so repeated commands reuse it instead of colliding. A redefinition with the same shape must
+    /// reuse the cached type, while one that adds an explicit <c>clr.clrmethod</c> must get a fresh
+    /// type that exposes it rather than the stale cached one.
+    /// </summary>
+    [Fact]
+    public void RedefiningADerivedClass_ReusesItsTypeUnlessExplicitMembersChange() {
+        string? record = InterpreterLifecycleProbe.Record.DerivedTypeRedefinition;
+
+        Assert.Equal("True|False|True|False", record);
+    }
+
+    /// <summary>
     /// <c>CPythonEngine.Start</c> must only assign <c>Runtime.PythonDLL</c> while the runtime is
     /// down, because pythonnet rejects the assignment afterwards. Hoisting those initialize-only
     /// settings back out of the guard would make the first CPython command after a Reload fail with

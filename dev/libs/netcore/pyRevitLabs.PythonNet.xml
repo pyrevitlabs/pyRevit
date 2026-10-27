@@ -3002,6 +3002,12 @@
             object has overridden the method.
             </summary>
         </member>
+        <member name="M:Python.Runtime.ClassDerivedObject.ExplicitMemberSignature(Python.Runtime.BorrowedReference)">
+            <summary>
+            Describes the explicit CLR members a Python class declares, so a redefinition that
+            adds, removes or retypes them gets a new generated type instead of a cached one.
+            </summary>
+        </member>
         <member name="M:Python.Runtime.ClassDerivedObject.AddConstructor(System.Reflection.ConstructorInfo,System.Type,System.Reflection.Emit.TypeBuilder)">
             <summary>
             Add a constructor override that calls the python ctor after calling the base type constructor.
