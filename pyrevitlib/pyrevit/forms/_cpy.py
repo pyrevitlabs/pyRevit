@@ -1,6 +1,9 @@
 """CPython forms share behavior with IronPython through the native WPF backend."""
 
+import time
+
 from pyrevit import HOST_APP, UI, PyRevitException, coreutils, framework
+from pyrevit.coreutils.logger import get_logger
 
 from . import _backend
 
@@ -94,8 +97,11 @@ from .notify import (
 )
 
 
+mlogger = get_logger(__name__)
+
 _panel_providers = {}
-_pending_panel_shows = set()
+_PENDING_SHOWS_SLOT = "pyRevit.forms.pendingDockablePaneShows"
+_PENDING_SHOW_TIMEOUT_SECONDS = 60
 
 
 class WPFPanel(_WPFMixin, _backend.Panel):
@@ -154,8 +160,7 @@ class WPFPanel(_WPFMixin, _backend.Panel):
 
 def is_registered_dockable_panel(panel_type):
     """Return whether Revit has registered the panel type's stable pane identifier."""
-    panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
-    return UI.DockablePane.PaneIsRegistered(UI.DockablePaneId(panel_uuid))
+    return UI.DockablePane.PaneIsRegistered(_get_dockable_panel_id(panel_type))
 
 
 def register_dockable_panel(panel_type, default_visible=True):
@@ -170,12 +175,7 @@ def register_dockable_panel(panel_type, default_visible=True):
     """
     if not isinstance(panel_type, type) or not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
-    try:
-        panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
-    except framework.System.FormatException:
-        raise PyRevitException(
-            'Invalid dockable panel id "{}"'.format(panel_type.panel_id)
-        )
+    pane_id = _get_dockable_panel_id(panel_type)
     panel = panel_type()
     from pyrevit.runtime.types import DockablePaneProvider
 
@@ -186,7 +186,6 @@ def register_dockable_panel(panel_type, default_visible=True):
         provider.EditorInteraction = panel.editor_interaction
     if panel.contextual_help is not None:
         provider.ContextualHelp = panel.contextual_help
-    pane_id = UI.DockablePaneId(panel_uuid)
     HOST_APP.uiapp.RegisterDockablePane(pane_id, panel.panel_title, provider)
     _panel_providers[panel.panel_id] = provider
     return panel
@@ -194,23 +193,15 @@ def register_dockable_panel(panel_type, default_visible=True):
 
 def get_dockable_panel(panel_type_or_id):
     """Return Revit's dockable-pane handle for a registered panel type or UUID."""
-    if isinstance(panel_type_or_id, str):
-        panel_id = panel_type_or_id
-    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
-        panel_id = panel_type_or_id.panel_id
-    else:
-        raise PyRevitException("Given type is not a forms.WPFPanel")
-    try:
-        pane_id = UI.DockablePaneId(coreutils.Guid.Parse(panel_id))
-    except framework.System.FormatException:
-        raise PyRevitException('Invalid dockable panel id "{}"'.format(panel_id))
-    if not UI.DockablePane.PaneIsRegistered(pane_id):
-        raise PyRevitException('Panel with id "{}" is not registered'.format(panel_id))
+    pane_id = _get_registered_dockable_panel_id(panel_type_or_id)
     return HOST_APP.uiapp.GetDockablePane(pane_id)
 
 
 def open_dockable_panel(panel_type_or_id):
-    """Show a previously registered CPython dockable panel."""
+    """Show a previously registered CPython dockable panel.
+
+    See ``toggle_dockable_panel`` for when the pane becomes visible.
+    """
     toggle_dockable_panel(panel_type_or_id, True)
 
 
@@ -222,20 +213,27 @@ def close_dockable_panel(panel_type_or_id):
 def toggle_dockable_panel(panel_type_or_id, state):
     """Show or hide a previously registered CPython dockable panel.
 
+    Revit creates a pane's window some time after registration. Showing a
+    pane whose window does not exist yet returns immediately and shows it on
+    a later ``Idling`` event, or logs a warning and gives up after
+    ``_PENDING_SHOW_TIMEOUT_SECONDS``. Hiding cancels such a pending show.
+
     Args:
         panel_type_or_id (type | str): WPFPanel subclass or its UUID.
         state (bool): True to show the panel, False to hide it.
-    """
-    pane_id = _get_dockable_panel_id(panel_type_or_id)
-    pane_exists = getattr(UI.DockablePane, "PaneExists", None)
-    if state and pane_exists is not None:
-        if not UI.DockablePane.PaneIsRegistered(pane_id):
-            get_dockable_panel(panel_type_or_id)
-        if not pane_exists(pane_id):
-            _defer_dockable_panel_show(pane_id)
-            return
 
-    pane = get_dockable_panel(panel_type_or_id)
+    Raises:
+        PyRevitException: The reference is invalid or not registered.
+    """
+    pane_id = _get_registered_dockable_panel_id(panel_type_or_id)
+    if not state:
+        _cancel_dockable_panel_show(pane_id)
+    if not UI.DockablePane.PaneExists(pane_id):
+        if state:
+            _defer_dockable_panel_show(pane_id)
+        return
+
+    pane = HOST_APP.uiapp.GetDockablePane(pane_id)
     if state:
         pane.Show()
         return
@@ -256,21 +254,59 @@ def _get_dockable_panel_id(panel_type_or_id):
         raise PyRevitException('Invalid dockable panel id "{}"'.format(panel_id))
 
 
-def _defer_dockable_panel_show(pane_id):
-    """Show a registered pane after Revit creates its native UI object."""
-    panel_key = str(pane_id)
-    if panel_key in _pending_panel_shows:
+def _get_registered_dockable_panel_id(panel_type_or_id):
+    pane_id = _get_dockable_panel_id(panel_type_or_id)
+    if not UI.DockablePane.PaneIsRegistered(pane_id):
+        raise PyRevitException(
+            'Panel with id "{}" is not registered'.format(pane_id.Guid)
+        )
+    return pane_id
+
+
+def _pending_panel_shows():
+    """Return the process-wide pending shows, which outlive module reloads."""
+    system = framework.System
+    domain = system.AppDomain.CurrentDomain
+    pending = domain.GetData(_PENDING_SHOWS_SLOT)
+    if pending is None:
+        pending = system.Collections.Generic.Dictionary[system.String, system.Object]()
+        domain.SetData(_PENDING_SHOWS_SLOT, pending)
+    return pending
+
+
+def _cancel_dockable_panel_show(pane_id):
+    pending = _pending_panel_shows()
+    panel_key = pane_id.Guid.ToString()
+    if not pending.ContainsKey(panel_key):
         return
-    _pending_panel_shows.add(panel_key)
+    uiapp, handler = pending[panel_key]
+    pending.Remove(panel_key)
+    uiapp.Idling -= handler
+
+
+def _defer_dockable_panel_show(pane_id):
+    pending = _pending_panel_shows()
+    panel_key = pane_id.Guid.ToString()
+    if pending.ContainsKey(panel_key):
+        return
+    uiapp = HOST_APP.uiapp
+    deadline = time.monotonic() + _PENDING_SHOW_TIMEOUT_SECONDS
 
     def show_when_created(sender, args):
-        if not UI.DockablePane.PaneExists(pane_id):
+        if UI.DockablePane.PaneExists(pane_id):
+            _cancel_dockable_panel_show(pane_id)
+            uiapp.GetDockablePane(pane_id).Show()
             return
-        sender.Idling -= show_when_created
-        _pending_panel_shows.discard(panel_key)
-        sender.GetDockablePane(pane_id).Show()
+        if time.monotonic() > deadline:
+            _cancel_dockable_panel_show(pane_id)
+            mlogger.warning(
+                "Dockable panel %s was not created within %s seconds; not shown.",
+                panel_key,
+                _PENDING_SHOW_TIMEOUT_SECONDS,
+            )
 
-    HOST_APP.uiapp.Idling += show_when_created
+    pending[panel_key] = (uiapp, show_when_created)
+    uiapp.Idling += show_when_created
 
 
 __all__ = [
