@@ -12,11 +12,18 @@ import os.path as op
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit import framework
 from pyrevit.coreutils import envvars
-from pyrevit.framework import Interop, System, Windows, Media, Uri, UriKind
+from pyrevit.framework import Interop, System, Windows, Uri, UriKind
 from System.Windows.Markup import XamlReader, ParserContext
 
 from .._xaml import prepare_xaml
 from ._binding import Reactive, binding_source, unwrap_item
+from ._events import (
+    bind,
+    bind_template_event,
+    initialize_events,
+    raise_callback_error,
+    release_events,
+)
 
 
 class Window(object):
@@ -39,21 +46,21 @@ class Window(object):
 
     def Show(self):
         """Show the native window without creating a nested modal dispatcher."""
-        _raise_callback_error(self)
+        raise_callback_error(self)
         self._modeless = True
         self._window.Show()
-        _raise_callback_error(self)
+        raise_callback_error(self)
 
     def ShowDialog(self):
         """Run the modal dialog and release Python event roots even on failure."""
         try:
-            _raise_callback_error(self)
+            raise_callback_error(self)
             result = self._window.ShowDialog()
-            _raise_callback_error(self)
+            raise_callback_error(self)
             return result
         finally:
             self._unsubscribe_theme_changed()
-            _release_events(self)
+            release_events(self)
 
     def Close(self):
         """Close the native root and release callbacks even before it is shown.
@@ -67,14 +74,24 @@ class Window(object):
                 self._window.Close()
         finally:
             self._unsubscribe_theme_changed()
-            _release_events(self)
+            release_events(self)
         if self._modeless:
-            _raise_callback_error(self)
+            raise_callback_error(self)
+
+    def _on_callback_failure(self):
+        window = self._window
+        window.Dispatcher.BeginInvoke(
+            System.Action(lambda: self._close_after_failure(window))
+        )
+
+    def _close_after_failure(self, window):
+        if not self._closed and self._window is window:
+            window.Close()
 
     def _on_closed(self, sender, args):
         self._closed = True
         self._unsubscribe_theme_changed()
-        _release_events(self)
+        release_events(self)
 
 
 class Panel(object):
@@ -95,6 +112,9 @@ class Panel(object):
         else:
             object.__setattr__(self, name, value)
 
+    def _on_callback_failure(self):
+        pass
+
 
 def initialize(target):
     """Create the temporary resource owner on the calling STA UI thread."""
@@ -106,9 +126,7 @@ def initialize(target):
             "CPython forms must be created on Revit's STA UI thread."
         )
     target._window = Windows.Window()
-    target._event_bindings = []
-    target._routed_bindings = []
-    target._callback_error = None
+    initialize_events(target)
     target._closed = False
     target._modeless = False
 
@@ -123,9 +141,7 @@ def initialize_panel(target):
             "CPython forms must be created on Revit's STA UI thread."
         )
     target._panel = framework.Controls.Page()
-    target._event_bindings = []
-    target._routed_bindings = []
-    target._callback_error = None
+    initialize_events(target)
 
 
 def unwrap(target):
@@ -143,7 +159,7 @@ def dispose(target):
         target.Close()
     if isinstance(target, Panel) and "_panel" in target.__dict__:
         target._unsubscribe_theme_changed()
-        _release_events(target)
+        release_events(target)
 
 
 def items_source(values):
@@ -170,6 +186,24 @@ def validate_input(value_type):
         )
 
 
+def make_pane_provider(panel, default_visible):
+    """Build the Revit pane provider that hosts a CPython page's native root.
+
+    The provider is a managed type so Revit never calls back into a Python
+    implementation of ``IDockablePaneProvider``.
+    """
+    from pyrevit.runtime.types import DockablePaneProvider
+
+    provider = DockablePaneProvider(unwrap(panel), default_visible)
+    if panel.initial_state is not None:
+        provider.InitialState = panel.initial_state
+    if panel.editor_interaction is not None:
+        provider.EditorInteraction = panel.editor_interaction
+    if panel.contextual_help is not None:
+        provider.ContextualHelp = panel.contextual_help
+    return provider
+
+
 def activate_open_window(envvar):
     """Activate a still-open CPython modeless window stored in an environment variable."""
     window = envvars.get_pyrevit_env_var(envvar)
@@ -187,130 +221,14 @@ def activate_open_window(envvar):
     return True
 
 
-def _release_events(target):
-    for control, event, handler in target._routed_bindings:
-        control.RemoveHandler(event, handler)
-    target._routed_bindings = []
-    for control, event_name, handler in reversed(target._event_bindings):
-        event = getattr(control, event_name)
-        event -= handler
-    target._event_bindings = []
-
-
-def _raise_callback_error(target):
-    error = target._callback_error
-    if error is not None:
-        target._callback_error = None
-        raise error
-
-
-def _close_after_failure(target, window):
-    if not target._closed and target._window is window:
-        window.Close()
-
-
-def _event_handler(target, handler):
-    def invoke(sender, args):
-        try:
-            handler(sender, args)
-        except Exception as error:
-            if target._callback_error is None:
-                target._callback_error = error
-            if not isinstance(target, Window):
-                return
-            window = target._window
-            window.Dispatcher.BeginInvoke(
-                System.Action(lambda: _close_after_failure(target, window))
-            )
-
-    return invoke
-
-
-def _bind(target, control, event_name, handler):
-    callback = _event_handler(target, handler)
-    event = getattr(control, event_name)
-    event += callback
-    target._event_bindings.append((control, event_name, callback))
-
-
 def bind_event(target, event_name, handler):
     """Retain native event callbacks until close, then detach them together."""
-    _bind(target, unwrap(target), event_name, handler)
+    bind(target, unwrap(target), event_name, handler)
 
 
 def bind_control_event(target, control, event_name, handler):
     """Keep dynamically created control callbacks within the window lifetime."""
-    _bind(target, control, event_name, handler)
-
-
-def _routing_ancestors(source):
-    current = source
-    while current is not None:
-        yield current
-        if isinstance(current, (Media.Visual, Media.Media3D.Visual3D)):
-            current = Media.VisualTreeHelper.GetParent(current)
-        else:
-            current = Windows.LogicalTreeHelper.GetParent(current)
-
-
-def _bind_template_event(target, tag, uid, event_name, handler):
-    owner = next(
-        (
-            getattr(namespace, tag)
-            for namespace in (
-                framework.Controls,
-                framework.Controls.Primitives,
-                framework.Documents,
-            )
-            if hasattr(namespace, tag)
-        ),
-        None,
-    )
-    event = getattr(owner, event_name + "Event", None) if owner else None
-    if event is None:
-        raise PyRevitException(
-            "Unsupported template event: {}.{}".format(tag, event_name)
-        )
-    callback = _event_handler(target, handler)
-
-    def sources(args):
-        return [
-            element
-            for element in _routing_ancestors(args.OriginalSource)
-            if isinstance(element, owner) and element.Uid == uid
-        ]
-
-    preview = getattr(owner, "Preview" + event_name + "Event", None)
-    if event.RoutingStrategy == Windows.RoutingStrategy.Bubble and preview:
-        direct = Windows.RoutedEventHandler(callback)
-        attached = []
-
-        def discover(sender, args):
-            for element in sources(args):
-                if not any(System.Object.ReferenceEquals(element, e) for e in attached):
-                    element.AddHandler(event, direct)
-                    attached.append(element)
-                    target._routed_bindings.append((element, event, direct))
-
-        delegate = Windows.RoutedEventHandler(discover)
-        target._window.AddHandler(preview, delegate, True)
-        target._routed_bindings.append((target._window, preview, delegate))
-        return
-
-    tunnels = event.RoutingStrategy == Windows.RoutingStrategy.Tunnel
-
-    def routed(sender, args):
-        matches = sources(args)
-        if tunnels:
-            matches.reverse()
-        for element in matches:
-            callback(element, args)
-            if args.Handled:
-                break
-
-    delegate = Windows.RoutedEventHandler(routed)
-    target._window.AddHandler(event, delegate)
-    target._routed_bindings.append((target._window, event, delegate))
+    bind(target, control, event_name, handler)
 
 
 def _find_resource_name(native, name, owner_name, key):
@@ -390,8 +308,9 @@ def load_component(target, source):
         for name, event_name, handler_name in events:
             if name.startswith("@template:"):
                 _, tag, uid = name.split(":", 2)
-                _bind_template_event(
+                bind_template_event(
                     target,
+                    native,
                     tag,
                     uid,
                     event_name,
@@ -399,11 +318,11 @@ def load_component(target, source):
                 )
             else:
                 control = getattr(target, name)
-                _bind(target, control, event_name, getattr(target, handler_name))
+                bind(target, control, event_name, getattr(target, handler_name))
         if isinstance(target, Window):
             native.Closed += target._on_closed
             target._event_bindings.append((native, "Closed", target._on_closed))
     except Exception:
-        _release_events(target)
+        release_events(target)
         raise
     return native

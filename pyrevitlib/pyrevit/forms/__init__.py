@@ -1,6 +1,8 @@
 """pyrevit.forms facade.
 
-Imports the engine-specific forms backend for the active Python engine.
+Both engines export the engine-neutral API defined in ``_common``. IronPython
+adds its legacy names through ``_ipy``; CPython reports any other name as
+unsupported.
 """
 
 from pyrevit.compat import IRONPY
@@ -12,11 +14,9 @@ else:
     import importlib as _importlib
 
     # pylint: disable=wildcard-import,unused-wildcard-import
-    from ._cpy import *  # noqa: F401,F403
-    from . import _cpy as _cpy_exports
+    from ._common import *  # noqa: F401,F403
+    from ._common import __all__  # noqa: F401
     from pyrevit import PyRevitCPythonNotSupported
-
-    __all__ = list(getattr(_cpy_exports, "__all__", []))
 
     def __getattr__(name):
         if name == "settings_window":

@@ -161,13 +161,18 @@ imported before a Reload survive it. The contract is asserted by the tests in
 
 ### Forms across Python engines
 
-`pyrevit.forms` preserves the IronPython public namespace and exports the
-implemented CPython subset. Shared behavior lives in `forms/base.py` (window
-resources, theming and ownership), input/list/command dialogs, selectors,
-prompt bars and reactive models. `forms/native.py` contains Revit task dialogs
-and native pickers. Dockable-panel registration uses a managed provider so
-CPython does not have to create a Python-derived Revit interface type. Only
-`forms/backends/` implements the engine-specific WPF operations.
+`pyrevit.forms` exports one engine-neutral API, listed once in
+`forms/_common.py`. IronPython adds the legacy names it exported before the
+module split (`forms/_ipy.py`); CPython reports any other name as unsupported.
+Shared behavior lives in `forms/base.py` (window resources, theming and
+ownership), input/list/command dialogs, selectors, prompt bars, reactive models
+and `forms/dockable.py` (dockable panels). `forms/native.py` contains Revit task
+dialogs and native pickers. Only `forms/backends/` implements engine-specific
+WPF operations, behind the names in `forms/_backend.py`: for example the
+dockable pane provider, which is a Python `IDockablePaneProvider` under
+IronPython and a managed provider under CPython, so CPython never creates a
+Python-derived Revit interface type. The CPython backend keeps event binding in
+`backends/_events.py`.
 
 IronPython continues to populate its CLR-derived windows with
 `wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
@@ -197,7 +202,7 @@ the original Python or Revit object identity.
 | Progress/warning bars | Supported | Supported within a synchronous command scope |
 | Persistent modeless windows, dockable panels, `activate_open_window` | Supported | Supported through composed WPF roots and a managed Revit pane provider; requires a live Revit session |
 | Color picker, image/family-parameter selectors, notifications | Supported | Implemented; live coverage remains incomplete |
-| Other legacy forms exports | Existing behavior | Unsupported unless explicitly exported by `_cpy.__all__` |
+| Other legacy forms exports | Existing behavior | Unsupported unless listed in `_common.__all__` |
 
 Unported CPython APIs continue to raise `PyRevitCPythonNotSupported` with the
 feature name. Standard form signatures and engine selection are unchanged.

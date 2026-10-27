@@ -30,7 +30,8 @@ _COPY_PATTERN = re.compile(
 
 
 def count_unpinned_revit_links(revitlinks_elements):
-    """Returns the number of unpinned Revit links in the document.
+    """
+    Returns the number of unpinned Revit links in the document.
 
     Args:
         rvtlinks_elements (list): A list of Revit link elements.
@@ -46,7 +47,8 @@ def count_unpinned_revit_links(revitlinks_elements):
 
 
 def count_unplaced_rooms(rooms):
-    """Counts the number of unplaced rooms in a given list of rooms.
+    """
+    Counts the number of unplaced rooms in a given list of rooms.
     An unplaced room is defined as a room with no location (i.e., room.Location is None).
 
     Args:
@@ -59,7 +61,8 @@ def count_unplaced_rooms(rooms):
 
 
 def count_unbounded_rooms(rooms):
-    """Counts the number of unbounded rooms (rooms with an area of 0) in the given list of rooms.
+    """
+    Counts the number of unbounded rooms (rooms with an area of 0) in the given list of rooms.
 
     Args:
         rooms (list, optional): A list of room objects. Each room object should have an 'Area' attribute.
@@ -71,7 +74,8 @@ def count_unbounded_rooms(rooms):
 
 
 def count_analytical_model_activated(document):
-    """Returns the number of activated analytical models in the document.
+    """
+    Returns the number of activated analytical models in the document.
 
     Args:
     document (Document): A Revit document.
@@ -92,12 +96,11 @@ def count_analytical_model_activated(document):
 
 
 def count_copied_views(views_set):
-    """Returns the number of views in the given set that have a locale-specific
+    """
+    Returns the number of views in the given set that have a locale-specific
     Revit copy suffix in their name.
-
     Args:
         views_set (set): A set of views to check for copied views.
-
     Returns:
         int: The number of views whose name contains a known copy suffix.
     """
@@ -113,7 +116,8 @@ def count_copied_views(views_set):
 
 
 def count_unused_view_templates(views_list, document):
-    """Returns the count of unused view templates in the given list of views.
+    """
+    Returns the count of unused view templates in the given list of views.
 
     Args:
         views (list): A list of views to check for unused view templates.
@@ -135,13 +139,14 @@ def count_unused_view_templates(views_list, document):
 
 
 def count_unused_filters_in_views(view_list, filters):
-    """Counts the number of unused filters in the given list of views.
+    """
+    Counts the number of unused filters in the given list of views.
 
     Args:
         view_list (list): A list of Revit view objects to check for filter usage.
         filters (list): A list of filter objects to check against the views.
 
-    Returns:
+        Returns:
         int: The number of filters that are not used in any of the provided views.
     """
     used_filters_set = set()
@@ -162,7 +167,8 @@ def count_unused_filters_in_views(view_list, filters):
 
 
 def count_linked_dwg_files(document):
-    """Returns the number of linked DWG files in the document.
+    """
+    Returns the number of linked DWG files in the document.
 
     Args:
         document (DB.Document): The Revit document to search for linked DWG files.
@@ -181,7 +187,8 @@ def count_linked_dwg_files(document):
 
 
 def count_in_place_families(document):
-    """This function collects all the in-place families in the given document and returns their count.
+    """
+    This function collects all the in-place families in the given document and returns their count.
 
     Args:
     - document: The Revit document to search for in-place families in.
@@ -199,7 +206,8 @@ def count_in_place_families(document):
 
 
 def count_total_families(document):
-    """Counts the total number of unique family names in the given Revit document.
+    """
+    Counts the total number of unique family names in the given Revit document.
 
     Args:
         document: The Revit document to count families from.
@@ -218,7 +226,8 @@ def count_total_families(document):
 
 
 def count_textnote_types_with_changed_width_factor(text_notes_types):
-    """Counts the number of text note types that have a width factor different from the default value of 1.
+    """
+    Counts the number of text note types that have a width factor different from the default value of 1.
 
     Args:
         text_notes_types (list): A list of text note types to check.
@@ -239,7 +248,8 @@ def count_textnote_types_with_changed_width_factor(text_notes_types):
 
 
 def count_textnote_types_with_opaque_background(text_notes_types):
-    """Counts the number of text notes with an opaque background.
+    """
+    Counts the number of text notes with an opaque background.
 
     Args:
         text_notes_types (list): A list of text note elements.
@@ -260,7 +270,8 @@ def count_textnote_types_with_opaque_background(text_notes_types):
 
 
 def count_text_notes_with_all_caps(text_notes):
-    """Counts the number of text notes that have all capital letters.
+    """
+    Counts the number of text notes that have all capital letters.
 
     Args:
         text_notes (list): A list of text note objects.
@@ -279,7 +290,8 @@ def count_text_notes_with_all_caps(text_notes):
 
 
 def count_unnamed_reference_planes(reference_planes):
-    """Returns the count of unnamed reference planes in the given document.
+    """
+    Returns the count of unnamed reference planes in the given document.
 
     Args:
         document (DB.Document): The document to search for reference planes. Defaults to the active document.
@@ -301,7 +313,8 @@ def count_unnamed_reference_planes(reference_planes):
 
 
 def count_dimension_overrides(dimensions):
-    """Counts the number of dimension overrides in a list of dimensions.
+    """
+    Counts the number of dimension overrides in a list of dimensions.
     This function iterates through a list of dimensions and counts how many of them
     have a value override. It also checks for overrides in dimension segments if they exist.
 
@@ -325,7 +338,8 @@ def count_dimension_overrides(dimensions):
 
 
 def count_revision_clouds(document):
-    """Returns the number of revision clouds in the given document.
+    """
+    Returns the number of revision clouds in the given document.
 
     Args:
         document (DB.Document): The document to search for revision clouds in. Defaults to the active document.
@@ -342,7 +356,8 @@ def count_revision_clouds(document):
 
 
 def count_groups(doc):
-    """Counts the instances and types of model and detail groups in a Revit document, excluding array members.
+    """
+    Counts the instances and types of model and detail groups in a Revit document, excluding array members.
 
     Args:
         doc (DB.Document): The Revit document to process.
