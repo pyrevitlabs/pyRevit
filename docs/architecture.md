@@ -163,16 +163,23 @@ imported before a Reload survive it. The contract is asserted by the tests in
 
 `pyrevit.forms` exports one engine-neutral API, listed once in
 `forms/_common.py`. IronPython adds the legacy names it exported before the
-module split (`forms/_ipy.py`); CPython reports any other name as unsupported.
+module split (`forms/_ipy.py`). CPython reports any other public name as
+unsupported, except the `settings_window`, `utils` and `toaster` submodules,
+which stay importable.
 Shared behavior lives in `forms/base.py` (window resources, theming and
 ownership), input/list/command dialogs, selectors, prompt bars, reactive models
 and `forms/dockable.py` (dockable panels). `forms/native.py` contains Revit task
-dialogs and native pickers. Only `forms/backends/` implements engine-specific
-WPF operations, behind the names in `forms/_backend.py`: for example the
+dialogs and native pickers. Engine-specific WPF operations live in
+`forms/backends/`, behind the names in `forms/_backend.py`, plus the
+CPython-only XAML preparation in `forms/_xaml.py`: for example the
 dockable pane provider, which is a Python `IDockablePaneProvider` under
 IronPython and a managed provider under CPython, so CPython never creates a
 Python-derived Revit interface type. The CPython backend keeps event binding in
-`backends/_events.py`.
+`backends/_events.py`. A form adapts its own `DataContext`; a child control
+needs `forms.set_data_context(control, model)` so CPython bindings, including
+TwoWay ones, see a managed model. Direct routed events such as `Loaded` or
+`MouseEnter` cannot be observed inside templates under CPython and fail at load;
+mouse-button events there are rebuilt from `MouseDown`/`MouseUp`.
 
 IronPython continues to populate its CLR-derived windows with
 `wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
@@ -223,8 +230,9 @@ not validate Revit ownership or host events. Portable tests run with
 `python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'`.
 The sibling `pyRevitLabs.PyRevit.Forms.IronPython.Tests` project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
-`-p:IronPythonVersion=IPY2712PR` or `IPY342`). Both projects run in the
-build pipeline. Inside Revit, run `pyrevit.unittests.forms_acceptance.run(doc)`
+`-p:IronPythonVersion=IPY2712PR` or `IPY342`). The build pipeline does not run
+these two projects; run them manually before changing `pyrevit.forms`. Inside
+Revit, run `pyrevit.unittests.forms_acceptance.run(doc)`
 through pyRevit MCP with each engine and `dry_run=true`. The runner creates real
 selector fixtures and always rolls its transaction group back. On Revit 2026.5,
 23 cases passed without skips under CPython 3.12.3 (run `c94af430887c`); 21
