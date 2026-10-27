@@ -31,6 +31,7 @@ if not IRONPY:
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
+from pyrevit.coreutils import envvars
 
 _perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
@@ -994,6 +995,55 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         return WindowToggler(self)
 
 
+def activate_open_window(envvar):
+    """Bring a modeless window left open by an earlier run to the front.
+
+    Single-instance guard for modeless tools: the tool stores its window
+    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
+    this on every run before creating a new one. A minimized window is
+    restored before activation; a hidden one is left hidden.
+
+    Openness is judged by the window's native handle, which WPF releases on
+    close, not by ``IsLoaded``, which stays True after ``Close()``. Callers
+    therefore need not clear ``envvar`` in their ``Closed`` handler.
+
+    Args:
+        envvar (str): pyRevit environment variable holding the window.
+
+    Returns:
+        (bool): True when a window already exists, meaning the caller must
+            not open another. It does not promise the window is now in front:
+            Windows may refuse the foreground request, and a hidden window
+            stays hidden. False otherwise; a stale (closed) reference is
+            cleared.
+
+    Examples:
+        ```python
+        from pyrevit import forms, script
+
+        if not forms.activate_open_window("MYTOOL_WINDOW"):
+            window = MyToolWindow("MyTool.xaml")
+            script.set_envvar("MYTOOL_WINDOW", window)
+            window.show()
+        ```
+    """
+    window = envvars.get_pyrevit_env_var(envvar)
+    if window is None:
+        return False
+    try:
+        is_open = Interop.WindowInteropHelper(window).Handle != framework.IntPtr.Zero
+    except Exception:
+        is_open = False
+    if not is_open:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if window.IsVisible:
+        if window.WindowState == framework.Windows.WindowState.Minimized:
+            window.WindowState = framework.Windows.WindowState.Normal
+        window.Activate()
+    return True
+
+
 class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     r"""WPF panel base class for all pyRevit dockable panels.
 
@@ -1589,8 +1639,6 @@ class SelectFromList(TemplateUserInputWindow):
 
     """
 
-    in_check = False
-    in_uncheck = False
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
     resolve_theme = True
@@ -1877,23 +1925,17 @@ class SelectFromList(TemplateUserInputWindow):
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
-    def check_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as checked."""
-        if not self.in_check:
-            try:
-                self.in_check = True
-                self._set_states(state=True, selected=True)
-            finally:
-                self.in_check = False
+    def checkbox_clicked(self, sender, args):  # pylint: disable=W0613
+        """Apply user toggles without treating binding updates as user input.
 
-    def uncheck_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as unchecked."""
-        if not self.in_uncheck:
-            try:
-                self.in_uncheck = True
-                self._set_states(state=False, selected=True)
-            finally:
-                self.in_uncheck = False
+        Checked and Unchecked also fire when filtering rebuilds the item
+        containers. Only Click should propagate a toggle to selected rows.
+        """
+        state = bool(sender.IsChecked)
+        item = sender.DataContext
+        if isinstance(item, TemplateListItem):
+            item.checked = state
+        self._set_states(state=state, selected=True)
 
     def button_reset(self, sender, args):  # pylint: disable=W0613
         """Handle reset button click."""

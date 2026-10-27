@@ -91,6 +91,7 @@ nav:
     - Developer Guide: dev-guide.md
     - Architecture: architecture.md
     - Extensions: extensions.md
+    - Writing pyRevit-style code: pyrevit-style.md
     - Python config API: config-api.md
     - Revit API compatibility lint: revit-api-compat.md
     - Theming and dark mode: theming.md

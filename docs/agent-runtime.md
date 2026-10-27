@@ -208,6 +208,8 @@ Rules the host enforces:
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
   it is reported there but doesn't fail the run, and isn't rolled back.
 - A script error rolls back everything, and the traceback points at the script's own lines.
+  Decorated functions, context-manager yields and rewritten exception handlers retain
+  their original script line numbers, including on IronPython.
   When a Revit call throws, the message carries the underlying .NET exception and its
   inner exceptions (`[.NET: Autodesk.Revit.Exceptions.… <- …]`), not only the generic
   "A managed exception was thrown".
@@ -225,7 +227,9 @@ Rules the host enforces:
   this; on CPython a watchdog thread is the backstop.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
-- The document can't be saved, closed or synchronized during a run.
+- Documents can't be saved or synchronized during a run.
+  Closing is blocked for documents open when the run started.
+  The script may close documents it creates or opens during the run.
 
 The MCP server's instructions teach agents these conventions, plus units (internal
 feet) and `ElementId.Value` on Revit 2024+.
@@ -352,6 +356,13 @@ under the same account.
 
 Discovery: each host writes `%APPDATA%\pyRevit\agent\instances\<pid>.json` with the pipe
 name, the Revit version and the process id, and removes it when Revit exits.
+Discovery excludes registrations and attempts to delete their files only when the recorded process is missing, its readable name is not `Revit` (case-insensitive), or its readable start time exceeds the registration timestamp by more than two seconds.
+A matching process name and start time establish liveness without requiring an available pipe.
+If process metadata or the registration timestamp cannot establish liveness, discovery checks for the recorded named pipe without connecting, up to three times at 300 ms intervals.
+Any successful pipe check includes the registration in discovery.
+If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
+The host recreates its pipe between connections and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
+Excluded registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on
 
@@ -399,24 +410,23 @@ at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 Every run executes in one ExternalEvent callback on the Revit main thread:
 
 1. **Arm guards** (only while the run is active):
-    - `DocumentSynchronizingWithCentral` is cancelled, and so are `DocumentSaving`,
-      `DocumentSavingAs` and `DocumentClosing` for every document open when the run started.
-      `DocumentSaving` and `DocumentSavingAs` are also cancelled for a project or family the
-      script opens from a file (`DocumentOpened`); the script may still close it, and the
-      host closes it without saving when the run ends. A family from `EditFamily` or a new
-      document the script created has no file yet and may be saved and closed.
+    - `DocumentSynchronizingWithCentral`, `DocumentSaving` and `DocumentSavingAs` are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
+      `DocumentClosing` is cancelled only for documents open when the run started.
+      The script may close documents it creates or opens during the run, but cannot save them.
+      After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
       failing transaction, in every non-linked document. A failure in a family or a new
       document fails the run with `revit_failure` instead of raising a dialog.
     - `DocumentChanged` collects added, modified and deleted ids, per document.
-2. **`TransactionGroup.Start("Agent: <title>")`** on the active document and on every other
-   open, editable, non-linked document, and later on each project or family the script
-   opens from a file.
+2. **`TransactionGroup.Start("Agent: <title>")`** on the active document if it is writable, and on every other open, editable, non-linked document that has no transaction already open.
+   Documents the script creates or opens during the run get no rollback group.
+   Changes to documents opened from disk are discarded when they are closed without saving, not by rolling back a group.
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
-    - **any mode**, another open document changed: roll back every group. The run fails
-      with `other_document_modified`. Only the active document's group is ever assimilated.
+    - **any mode**, another document open at the start or opened from disk during the run changed: roll back every group.
+      The run fails with `other_document_modified` if the script completed successfully and left no transaction open.
+      Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
     - **modify** with policy `readonly`: the policy is read before the script and again here,

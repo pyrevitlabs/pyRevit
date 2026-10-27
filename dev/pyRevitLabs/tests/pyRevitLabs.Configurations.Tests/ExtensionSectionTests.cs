@@ -106,6 +106,38 @@ public class ExtensionSectionTests
         Assert.Throws<ArgumentException>(() => service.GetExtensionSection(name!));
     }
 
+    [Fact]
+    public void ResolveExtensionSectionName_PrefersExtensionOverLibrary()
+    {
+        var service = BuildService(config =>
+        {
+            config.SetValue("Shared.extension", "username", "someone");
+            config.SetValue("Shared.lib", "disabled", true);
+            config.SetValue("OnlyLib.lib", "disabled", true);
+        });
+
+        Assert.Equal("Shared.extension", service.ResolveExtensionSectionName("Shared"));
+        Assert.Equal("OnlyLib.lib", service.ResolveExtensionSectionName("OnlyLib"));
+        Assert.Null(service.ResolveExtensionSectionName("Missing"));
+    }
+
+    /// <summary>
+    /// The resolved section lets a caller see that <c>disabled</c> is not stored,
+    /// which <see cref="IConfigurationService.GetExtensionSection"/> hides behind
+    /// its declared default.
+    /// </summary>
+    [Fact]
+    public void ResolveExtensionSectionName_ExposesAbsentDisabledKey()
+    {
+        var service = BuildService(config =>
+            config.SetValue("Sparse.extension", "username", "someone"));
+
+        string? sectionName = service.ResolveExtensionSectionName("Sparse");
+
+        Assert.NotNull(sectionName);
+        Assert.False(service.Configuration.HasSectionKey(sectionName!, ExtensionSection.DisabledKeyName));
+    }
+
     /// <summary>
     /// Minimal in-memory <see cref="IConfiguration"/> holding typed values, so the
     /// section-materialization path can be exercised without the INI backend (and
