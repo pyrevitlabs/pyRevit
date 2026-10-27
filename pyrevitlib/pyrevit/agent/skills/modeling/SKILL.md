@@ -64,7 +64,7 @@ result = {"walls": len(walls)}
 
 A failed or rejected stage leaves the earlier ones intact, and each committed stage is one undo entry.
 
-**Check after each stage** with `capture_view(view="3d")`, or `capture_view(view="3d", elements=[...])` to frame part of the model, plus a plan. Read back a number too: a height, an area, a count.
+**Check after each stage** with `capture_view(view="3d", title="Check the walls")`, or `capture_view(view="3d", elements=[...], title="Check the roof")` to frame part of the model, plus a plan. Read back a number too: a height, an area, a count.
 
 ## Levels
 
@@ -144,4 +144,4 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 - [ ] Each stage's measured numbers match the plan: wall heights, floor and roof areas, element counts.
 - [ ] `failures` in the last runs hold no unexplained warnings or errors.
 - [ ] Roofs are native roofs, and any DirectShape was explained to the user.
-- [ ] `capture_view(view="3d")` and a plan show the model you meant to build.
+- [ ] `capture_view(view="3d", title="Check the finished model")` and a plan show the model you meant to build.

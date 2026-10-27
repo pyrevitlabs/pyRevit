@@ -448,6 +448,10 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_agent(self):
         self._agent_enabled_at_open = PyRevit.PyRevitConfigs.GetAgentEnabled()
         self.agent_cb.IsChecked = self._agent_enabled_at_open
+        self._agent_require_session_at_open = (
+            PyRevit.PyRevitConfigs.GetAgentRequireSession()
+        )
+        self.agent_require_session_cb.IsChecked = self._agent_require_session_at_open
         policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
@@ -1054,12 +1058,17 @@ class SettingsWindow(forms.WPFWindow):
     def _save_agent(self):
         request_reload = False
         enabled = bool(self.agent_cb.IsChecked)
-        if enabled != self._agent_enabled_at_open:
+        require_session = bool(self.agent_require_session_cb.IsChecked)
+        require_session_changed = require_session != self._agent_require_session_at_open
+        if enabled != self._agent_enabled_at_open or (
+            enabled and require_session_changed
+        ):
             request_reload = forms.alert(
                 self.get_locale_string("Agent.Changed"), yes=True, no=True
             )
 
         PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
+        PyRevit.PyRevitConfigs.SetAgentRequireSession(require_session)
         if self.agent_policy_readonly_rb.IsChecked:
             PyRevit.PyRevitConfigs.SetAgentPolicy("readonly")
         elif self.agent_policy_auto_rb.IsChecked:

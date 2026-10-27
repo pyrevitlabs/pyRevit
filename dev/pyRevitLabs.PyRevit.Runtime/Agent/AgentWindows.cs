@@ -6,8 +6,8 @@ using System.Text;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// Lists the visible top-level windows of the Revit process other than its main window,
-    /// to explain why Revit isn't idle.
+    /// Lists the visible top-level windows of the Revit process other than its main window and
+    /// the floating agent panel, to explain why Revit isn't idle.
     /// </summary>
     /// <remarks>
     /// Revit shows some modal dialogs while idle, outside any agent run, such as the
@@ -57,6 +57,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var className = new StringBuilder(256);
                     GetClassName(window, className, className.Capacity);
                     if (text.Length == 0 && className.ToString().StartsWith("Tooltip", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    if (text.ToString() == AgentPanel.Title)
                         return true;
                     found.Add(string.Format("'{0}' ({1})", text, className));
                     return found.Count < MaxWindows;

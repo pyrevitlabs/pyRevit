@@ -46,9 +46,13 @@ generic_model = os.path.join(family_templates, "English", "Metric Generic Model.
 
 Pick a family template by category and hosting before creating a family. A family's hosting cannot be changed later, so a light that must sit on a ceiling needs a ceiling-based template. Project templates sit in language folders under one root, and the default template can be in a different one (`English-Imperial` while the metric templates are in `English`).
 
-A guarded run can inspect template paths and make reversible changes to an existing document, but it cannot create a durable `.rfa` or `.rvt`: it blocks both `Save` and `SaveAs`. Have the user create and save a new family or project in Revit, then use a later run to work on that open document.
+A guarded run can inspect template paths and make reversible changes to an existing document, but it cannot create a durable `.rfa` or `.rvt`: it blocks both `Save` and `SaveAs`. Have the user create and save a new family or project in Revit, and start or move the agent session to it, before a later run works on it.
 
 ## Opening a document for the user
+
+Model tools work only in the document the agent session is on, and only the user can start or move a session, in the agent panel. To work in another model, ask the user to open it in Revit and start the session there, or move the session to it.
+
+A run can also open and show a file itself:
 
 ```python
 try:
@@ -58,8 +62,9 @@ except Exception as error:
 result = {"active": uiapp.ActiveUIDocument.Document.Title if uiapp.ActiveUIDocument else None}
 ```
 
-- **With no document open**, runs still execute with `doc` and `uidoc` set to `None`, and the decision is `no_document`. `OpenAndActivateDocument` returns normally there; open or create the project that way, then continue in the next run.
-- **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` afterwards, then `get_context`.
+- **The session stays on its document.** Once the new file is active, every request answers `wrong_document` until the user switches back or moves the session to the new file in the agent panel. Ask them to move it, then call `get_context`.
+- **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` in the result.
+- **With no document open, nothing runs while sessions are required**, because a session needs a document to start on: ask the user to open one. Only with `[agent] require_session` set to `no` do runs execute with `doc` and `uidoc` set to `None` and the decision `no_document`, and `OpenAndActivateDocument` returns normally there.
 - `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started, or a project or family you opened from a file, fails the run with `other_document_modified`, and it can't be saved.
 
 ## Before you report done

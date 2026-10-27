@@ -29,8 +29,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
-    /// <item>A run that changes any document other than the active one fails and rolls back,
-    /// whatever its mode and the policy.</item>
+    /// <item>A run that changes any document other than the active one is rolled back and
+    /// pauses the session, if one is open, whatever its mode, the policy or any other error; when
+    /// nothing else failed, it fails with <c>other_document_modified</c>.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
     /// document remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
@@ -38,8 +39,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// save and save-as operations while the run is active.</item>
     /// </list>
     /// The host attempts to write <c>script.py</c>, <c>request.json</c> and <c>response.json</c>
-    /// under <c>%APPDATA%\pyRevit\agent\runs\</c>. A failure to persist an outcome never
-    /// changes an already-final model decision.
+    /// under <c>%APPDATA%\pyRevit\agent\runs\</c>; both JSON records carry the session id and the
+    /// active document's title. A failure to persist an outcome never changes an already-final
+    /// model decision.
     /// </remarks>
     internal static class AgentRunService {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -49,7 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxOutputChars = 64 * 1024;
         private const int MaxChangeSamples = 50;
 
-        private static AgentPolicy ReadPolicy() {
+        internal static AgentPolicy ReadPolicy() {
             var policy = PyRevitConfigs.GetAgentPolicy();
             if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly)
                 return AgentPolicy.ReadOnly;
@@ -95,7 +97,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.AskUser:
                     guard.DisarmDialogCapture();
-                    if (AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures)) {
+                    bool approved;
+                    AgentHost.Activity.SetAwaitingApproval(true);
+                    try {
+                        approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
+                    }
+                    finally {
+                        AgentHost.Activity.SetAwaitingApproval(false);
+                    }
+                    if (approved) {
                         Commit(guard, uidoc.Document, request, runId);
                         return AgentRunVerdict.UserApproved;
                     }
@@ -112,7 +122,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
         }
 
+        /// <remarks>
+        /// The session is locked for the whole run, approval prompt included: the script can pause
+        /// or end it, but can't start, resume or stop requiring one.
+        /// </remarks>
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
+            using (AgentSessions.Tracker.BeginRun())
+                return ExecuteRun(app, request);
+        }
+
+        private static JToken ExecuteRun(UIApplication app, AgentRunRequest request) {
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
             if (doc == null && request.Mode == AgentRunMode.Modify)
@@ -124,8 +143,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
             var runDir = AgentPaths.CreateRunDir(runId);
+            var sessionId = AgentSessions.Tracker.SessionId;
+            var requestRecord = request.ToJson();
+            requestRecord["session_id"] = sessionId;
+            requestRecord["document"] = doc?.Title;
             File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
-            File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
+            File.WriteAllText(Path.Combine(runDir, "request.json"), requestRecord.ToString(Formatting.Indented), Utf8);
 
             var warnings = new JArray();
             var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
@@ -142,6 +165,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["run_dir"] = runDir,
                 ["mode"] = request.ModeName,
                 ["title"] = request.Title,
+                ["reason"] = request.Reason,
+                ["session_id"] = sessionId,
+                ["document"] = doc?.Title,
+                ["document_path"] = string.IsNullOrEmpty(doc?.PathName) ? null : doc.PathName,
             };
 
             var openAtStart = AgentDocuments.Snapshot(app.Application);
@@ -215,6 +242,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);
                 warnings.Add("Closing leftover documents failed: " + ex.Message);
+            }
+            if (guard.ChangedOtherOpenDocument) {
+                var changedTitles = guard.ChangedOtherOpenDocumentTitles;
+                if (AgentSessions.PauseForOtherDocument(changedTitles))
+                    warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
+                        + "), so the agent session is paused until the user resumes it in Revit.");
             }
             var finalOtherDocuments = guard.DescribeOtherDocuments();
             foreach (var failure in guard.CleanupFailures)

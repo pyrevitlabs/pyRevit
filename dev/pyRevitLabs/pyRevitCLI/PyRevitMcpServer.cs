@@ -35,12 +35,16 @@ namespace pyRevitCLI {
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
+        private const int MaxTitleLength = 120;
+        private const int MaxReasonLength = 300;
 
         private readonly string defaultRevit;
         private readonly object writeLock = new object();
         private readonly SemaphoreSlim revitGate = new SemaphoreSlim(1, 1);
+        private readonly Dictionary<int, int> generations = new Dictionary<int, int>();
         private readonly List<McpTool> tools;
         private TextWriter output;
+        private volatile string clientName;
 
         private PyRevitMcpServer(string defaultRevit) {
             this.defaultRevit = defaultRevit;
@@ -132,7 +136,13 @@ namespace pyRevitCLI {
             Task.WaitAll(inFlight.ToArray());
         }
 
-        private static JObject Initialize(JObject parameters) {
+        /// <remarks>
+        /// Remembers the client's name from <c>clientInfo</c>, so every request to Revit can say
+        /// which client sent it and the agent panel can show it. The name is only a label, so a
+        /// malformed <c>clientInfo</c> is ignored rather than refused.
+        /// </remarks>
+        private JObject Initialize(JObject parameters) {
+            clientName = ((parameters["clientInfo"] as JObject)?["name"] as JValue)?.Value as string;
             var requested = (parameters["protocolVersion"] as JValue)?.Value as string;
             return new JObject {
                 ["protocolVersion"] = SupportedProtocolVersions.Contains(requested) ? requested : LatestProtocolVersion,
@@ -170,7 +180,10 @@ namespace pyRevitCLI {
                         : ToolResult(payload.Type == JTokenType.String ? payload.ToString() : payload.ToString(Formatting.None), isError);
                 }
                 catch (AgentClientException ex) {
-                    result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
+                    var error = new JObject { ["error"] = ex.Code, ["message"] = ex.Message };
+                    if (ex.Details != null)
+                        error.Merge(ex.Details);
+                    result = ToolResult(error.ToString(Formatting.None), true);
                 }
                 catch (InvalidCastException) {
                     result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument type." }.ToString(Formatting.None), true);
@@ -243,8 +256,10 @@ namespace pyRevitCLI {
                 var entry = instance.ToJson();
                 revitGate.Wait();
                 try {
-                    PyRevitAgentClient.Call(instance, "ping");
+                    var pong = PyRevitAgentClient.Call(instance, "ping", WithClient(new JObject())) as JObject;
                     entry["responding"] = true;
+                    if (pong?["session"] is JObject session)
+                        entry["session"] = session;
                 }
                 catch (AgentClientException) {
                     entry["responding"] = false;
@@ -257,16 +272,46 @@ namespace pyRevitCLI {
             return new JObject { ["instances"] = instances, ["default_selector"] = defaultRevit };
         }
 
+        /// <remarks>
+        /// Every request but <c>get_context</c> carries the session <c>generation</c> from this
+        /// server's last <c>get_context</c> in that Revit. The host then refuses it with
+        /// <c>session_moved</c> once the session's document changed since, even after another
+        /// client read the context and ended the host's own wait. A <c>get_context</c> with
+        /// <c>keep_changes</c> is a check made for the agent, not the agent's read, so it leaves the
+        /// generation alone. <see cref="generations"/> is used only while
+        /// <see cref="revitGate"/> is held.
+        /// </remarks>
         private JToken CallRevit(JObject arguments, string method, JObject parameters) {
             var selector = arguments["revit"]?.ToString() ?? defaultRevit;
             var instance = PyRevitAgentClient.Resolve(selector);
             revitGate.Wait();
             try {
-                return PyRevitAgentClient.Call(instance, method, parameters);
+                var readsContext = method == "get_context";
+                if (!readsContext && generations.TryGetValue(instance.ProcessId, out var generation))
+                    parameters["generation"] = generation;
+                var result = PyRevitAgentClient.Call(instance, method, WithClient(parameters));
+                if (readsContext && parameters.Value<bool?>("keep_changes") != true)
+                    RememberGeneration(instance.ProcessId, result);
+                return result;
             }
             finally {
                 revitGate.Release();
             }
+        }
+
+        private void RememberGeneration(int processId, JToken context) {
+            var session = ((context as JObject)?["agent"] as JObject)?["session"] as JObject;
+            if (session?["generation"] is JValue generation && generation.Type == JTokenType.Integer)
+                generations[processId] = generation.Value<int>();
+            else
+                generations.Remove(processId);
+        }
+
+        private JObject WithClient(JObject parameters) {
+            var name = clientName;
+            if (!string.IsNullOrWhiteSpace(name))
+                parameters["client"] = name;
+            return parameters;
         }
 
         private JToken RunScript(JObject arguments, string mode) {
@@ -281,12 +326,12 @@ namespace pyRevitCLI {
                 throw new AgentClientException("invalid_params", "Only non-empty element links are supported.");
             var expected = link["document"] as JObject
                 ?? throw new AgentClientException("invalid_params", "The link has no document reference.");
-            return CallRevit(arguments, "show", new JObject {
+            return CallRevit(arguments, "show", WithTitle(arguments, new JObject {
                 ["action"] = arguments.Value<string>("action") ?? "select",
                 ["ids"] = ids,
                 ["zoom"] = arguments.Value<bool?>("zoom") ?? true,
                 ["document"] = expected,
-            });
+            }));
         }
 
         private static JObject RunParameters(JObject arguments, string mode) {
@@ -294,12 +339,11 @@ namespace pyRevitCLI {
             if (string.IsNullOrWhiteSpace(script))
                 throw new AgentClientException("invalid_params", "'script' is required.");
 
-            var parameters = new JObject {
+            var parameters = WithTitle(arguments, new JObject {
                 ["script"] = script,
                 ["mode"] = mode,
-                ["title"] = arguments.Value<string>("title") ?? (mode == "query" ? "Agent query" : "Agent change"),
                 ["inputs"] = arguments["inputs"] ?? new JObject(),
-            };
+            });
             if (arguments["engine"] != null)
                 parameters["engine"] = arguments["engine"];
             if (arguments["workspace"] != null)
@@ -309,13 +353,23 @@ namespace pyRevitCLI {
             return parameters;
         }
 
+        /// <remarks>
+        /// The <c>get_context</c> call that checks for a document passes <c>keep_changes</c>, so it
+        /// neither clears <c>since_last_call</c> nor ends the handshake after the user moved the
+        /// session. The run's own response then reports every change, and the host refuses the run
+        /// with <c>session_moved</c> until the agent reads the context itself. A refusal carries the
+        /// summary the check received.
+        /// </remarks>
         private JToken RunAutomation(JObject arguments) {
             var operation = PyRevitAutomationOperations.Resolve(
                 arguments.Value<string>("id"), arguments["inputs"]);
+            var reason = Reason(arguments);
+            JToken sinceLastCall = null;
             if (operation.Value<bool>("requires_document")) {
-                var context = CallRevit(arguments, "get_context", new JObject()) as JObject;
+                var context = CallRevit(arguments, "get_context", new JObject { ["keep_changes"] = true }) as JObject;
                 if (context?["document"] == null || context["document"].Type == JTokenType.Null)
                     throw new AgentClientException("no_active_document", $"'{operation.Value<string>("id")}' requires an active document.");
+                sinceLastCall = context["since_last_call"];
             }
             var parameters = new JObject {
                 ["script"] = operation.Value<string>("source"),
@@ -323,11 +377,59 @@ namespace pyRevitCLI {
                 ["title"] = operation.Value<string>("title"),
                 ["inputs"] = operation["inputs"],
             };
+            if (reason != null)
+                parameters["reason"] = reason;
             if (arguments["engine"] != null)
                 parameters["engine"] = arguments["engine"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
-            return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
+            JObject run;
+            try {
+                run = (JObject)CallRevit(arguments, "run", parameters);
+            }
+            catch (AgentClientException ex) when (sinceLastCall != null) {
+                throw new AgentClientException(ex.Code, ex.Message, new JObject { ["since_last_call"] = sinceLastCall });
+            }
+            var result = PyRevitMcpRunResults.Compact(run);
+            if (sinceLastCall != null && result["since_last_call"] == null)
+                result["since_last_call"] = sinceLastCall;
+            return result;
+        }
+
+        /// <summary>
+        /// Adds the agent's <c>title</c> and <c>reason</c> to a request for Revit, where the agent
+        /// panel shows them to the user.
+        /// </summary>
+        /// <exception cref="AgentClientException">
+        /// <c>invalid_params</c> when the title is missing, blank or too long, or the reason is
+        /// too long.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        /// A title or reason that isn't a string; the tool call reports it as <c>invalid_params</c>.
+        /// </exception>
+        private static JObject WithTitle(JObject arguments, JObject parameters) {
+            var title = Text(arguments, "title");
+            if (string.IsNullOrEmpty(title))
+                throw new AgentClientException("invalid_params",
+                    "'title' is required: say in a few words what this call is for. The user sees it in Revit's agent panel.");
+            if (title.Length > MaxTitleLength)
+                throw new AgentClientException("invalid_params", $"'title' must be at most {MaxTitleLength} characters.");
+            parameters["title"] = title;
+            var reason = Reason(arguments);
+            if (reason != null)
+                parameters["reason"] = reason;
+            return parameters;
+        }
+
+        private static string Reason(JObject arguments) {
+            var reason = Text(arguments, "reason");
+            if (reason != null && reason.Length > MaxReasonLength)
+                throw new AgentClientException("invalid_params", $"'reason' must be at most {MaxReasonLength} characters.");
+            return string.IsNullOrEmpty(reason) ? null : reason;
+        }
+
+        private static string Text(JObject arguments, string name) {
+            return arguments.Value<string>(name)?.Trim();
         }
 
         private static JToken GetRun(JObject arguments) {
@@ -427,6 +529,22 @@ namespace pyRevitCLI {
             };
         }
 
+        private static JObject TitleProperty(string description = null) {
+            return new JObject {
+                ["type"] = "string",
+                ["maxLength"] = MaxTitleLength,
+                ["description"] = description ?? "What this call is for, in a few words. The user sees it in Revit's agent panel.",
+            };
+        }
+
+        private static JObject ReasonProperty(string description = null) {
+            return new JObject {
+                ["type"] = "string",
+                ["maxLength"] = MaxReasonLength,
+                ["description"] = description ?? "Why you are doing this, when the title doesn't make it obvious. The user sees it in Revit's agent panel.",
+            };
+        }
+
         private static JObject RevitProperty() {
             return new JObject {
                 ["type"] = "string",
@@ -498,16 +616,25 @@ namespace pyRevitCLI {
                     arguments => new JValue(PyRevitAgentSkills.Read(arguments.Value<string>("name"), arguments.Value<string>("file")))),
 
                 new McpTool("list_revit_instances", readOnly: true, new string[0],
-                    () => ("List running Revit sessions that have the pyRevit agent host, with their version and process id.",
+                    () => ("List running Revit sessions that have the pyRevit agent host, with their version, process id and agent session state.",
                         new JObject()),
                     _ => ListInstances()),
 
+                new McpTool("request_session", readOnly: true, new string[0],
+                    () => ("Ask the user to start an agent session in Revit. Model tools answer session_inactive until the user starts one; "
+                        + "only the user can, in Revit. Tell the user what you asked for and that you are waiting.",
+                        new JObject {
+                            ["reason"] = ReasonProperty("What you want to do in the model, shown to the user in Revit."),
+                            ["revit"] = RevitProperty(),
+                        }),
+                    arguments => CallRevit(arguments, "request_session", new JObject { ["reason"] = Reason(arguments) })),
+
                 new McpTool("get_context", readOnly: true, new string[0],
-                    () => ("Snapshot of the target Revit: versions, engines, agent policy, open document, active view, selection and levels. Call this first.",
+                    () => ("Snapshot of the target Revit: versions, engines, agent policy and session, open document, active view, selection and levels. Call this first.",
                         new JObject { ["revit"] = RevitProperty() }),
                     arguments => CallRevit(arguments, "get_context", new JObject())),
 
-                new McpTool("inspect_elements", readOnly: true, new[] { "ids" },
+                new McpTool("inspect_elements", readOnly: true, new[] { "ids", "title" },
                     () => ("Describe elements by id: class, category, name, type, level, location, bounding box and (by default) every parameter with display and raw values.",
                         new JObject {
                             ["ids"] = new JObject {
@@ -516,12 +643,14 @@ namespace pyRevitCLI {
                                 ["description"] = "Element ids (at most 50).",
                             },
                             ["parameters"] = new JObject { ["type"] = "boolean", ["description"] = "Include parameters (default true)." },
+                            ["title"] = TitleProperty(),
+                            ["reason"] = ReasonProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => CallRevit(arguments, "inspect_elements", new JObject {
+                    arguments => CallRevit(arguments, "inspect_elements", WithTitle(arguments, new JObject {
                         ["ids"] = arguments["ids"],
                         ["parameters"] = arguments["parameters"] ?? true,
-                    })),
+                    }))),
 
                 new McpTool("lookup_pyrevit_api", readOnly: true, new[] { "query" },
                     () => ("Search pyrevitlib (pyrevit.revit: query, create, update, units, ui, Transaction) and rpw (rpw.db) before writing "
@@ -550,6 +679,7 @@ namespace pyRevitCLI {
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
                             ["engine"] = new JObject { ["type"] = "string", ["enum"] = new JArray("ironpython", "cpython") },
                             ["timeout_s"] = new JObject { ["type"] = "number", ["minimum"] = 0.001, ["maximum"] = 3600 },
+                            ["reason"] = ReasonProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     RunAutomation),
@@ -562,7 +692,7 @@ namespace pyRevitCLI {
                         }),
                     arguments => CallRevit(arguments, "lookup_api", new JObject { ["name"] = arguments["name"] })),
 
-                new McpTool("show_elements", readOnly: true, new string[0],
+                new McpTool("show_elements", readOnly: true, new[] { "title" },
                     () => ("Show elements to the user in the active view, without an approval prompt and without changing model elements: "
                         + "select them, temporarily isolate or hide them (Revit's temporary hide/isolate), or reset that mode. "
                         + "Target element ids and/or whole categories (resolved to the elements visible in the active view). "
@@ -584,26 +714,30 @@ namespace pyRevitCLI {
                                 ["description"] = "BuiltInCategory names such as OST_Windows or OST_Doors.",
                             },
                             ["zoom"] = new JObject { ["type"] = "boolean", ["description"] = "Also zoom the view to the elements." },
+                            ["title"] = TitleProperty(),
+                            ["reason"] = ReasonProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => CallRevit(arguments, "show", new JObject {
+                    arguments => CallRevit(arguments, "show", WithTitle(arguments, new JObject {
                         ["action"] = arguments["action"] ?? "select",
                         ["ids"] = arguments["ids"],
                         ["categories"] = arguments["categories"],
                         ["zoom"] = arguments["zoom"] ?? false,
-                    })),
+                    }))),
 
-                new McpTool("navigate_revit_link", readOnly: true, new[] { "link" },
+                new McpTool("navigate_revit_link", readOnly: true, new[] { "link", "title" },
                     () => ("Navigate an element link returned by inspect_elements. The active Revit document must still match the link; stale links return an actionable error. This selects or temporarily presents elements only.",
                         new JObject {
                             ["link"] = new JObject { ["type"] = "object", ["description"] = "An element link from inspect_elements." },
                             ["action"] = new JObject { ["type"] = "string", ["enum"] = new JArray("select", "isolate", "hide") },
                             ["zoom"] = new JObject { ["type"] = "boolean", ["description"] = "Zoom to the linked elements (default true)." },
+                            ["title"] = TitleProperty(),
+                            ["reason"] = ReasonProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     NavigateRevitLink),
 
-                new McpTool("capture_view", readOnly: true, new string[0],
+                new McpTool("capture_view", readOnly: true, new[] { "title" },
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
                         + "through Revit and works for any view by name or id. mode 'viewport' renders an open view through Revit "
                         + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
@@ -637,21 +771,24 @@ namespace pyRevitCLI {
                                 ["items"] = new JObject { ["type"] = "integer" },
                                 ["description"] = "view '3d' only: element ids to frame; default is the whole model.",
                             },
+                            ["title"] = TitleProperty(),
+                            ["reason"] = ReasonProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => CallRevit(arguments, "capture", new JObject {
+                    arguments => CallRevit(arguments, "capture", WithTitle(arguments, new JObject {
                         ["view"] = arguments["view"],
                         ["mode"] = arguments["mode"],
                         ["width"] = arguments["width"],
                         ["direction"] = arguments["direction"],
                         ["elements"] = arguments["elements"],
-                    })),
+                    }))),
 
-                new McpTool("run_query", readOnly: false, new[] { "script" },
+                new McpTool("run_query", readOnly: false, new[] { "script", "title" },
                     () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
                         new JObject {
                             ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Assign `result` to return data." },
-                            ["title"] = new JObject { ["type"] = "string", ["description"] = "Short label for the run record." },
+                            ["title"] = TitleProperty(),
+                            ["reason"] = ReasonProperty(),
                             ["inputs"] = InputsProperty(),
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
@@ -664,7 +801,8 @@ namespace pyRevitCLI {
                     () => ("Run a Python script that changes the model. With dry_run=true the change set is returned and everything is rolled back. Otherwise, under agent policy 'ask', Revit shows the user an approval prompt with the changed elements isolated; under policy 'auto' the change is committed directly. Kept changes become one undo entry named 'Agent: <title>'. Status 'rejected' means the user discarded the changes.",
                         new JObject {
                             ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Open transactions with DB.Transaction; assign `result` to return data." },
-                            ["title"] = new JObject { ["type"] = "string", ["description"] = "What the change does; shown to the user and used as the undo name." },
+                            ["title"] = TitleProperty("What the change does, in a few words. The user sees it in Revit's agent panel and approval prompt, and it becomes the undo name."),
+                            ["reason"] = ReasonProperty(),
                             ["dry_run"] = new JObject { ["type"] = "boolean", ["description"] = "Preview only: run, report the change set, roll back." },
                             ["inputs"] = InputsProperty(),
                             ["engine"] = EngineProperty(),
