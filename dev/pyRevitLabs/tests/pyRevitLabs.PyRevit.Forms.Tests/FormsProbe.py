@@ -82,6 +82,48 @@ class _HostEvent:
         return self
 
 
+class _DockablePaneId:
+    def __init__(self, pane_uuid):
+        self.value = str(pane_uuid)
+
+
+class _DockablePane:
+    registered = {}
+
+    def __init__(self):
+        self.is_visible = False
+
+    @staticmethod
+    def PaneIsRegistered(pane_id):
+        return pane_id.value in _DockablePane.registered
+
+    def Show(self):
+        self.is_visible = True
+
+    def Hide(self):
+        self.is_visible = False
+
+
+class _DockablePaneProvider:
+    def __init__(self, framework_element, visible_by_default):
+        self.framework_element = framework_element
+        self.visible_by_default = visible_by_default
+        self.InitialState = None
+        self.EditorInteraction = None
+        self.ContextualHelp = None
+
+
+class _UiApplication:
+    def __init__(self):
+        self.ThemeChanged = theme_changed
+
+    def RegisterDockablePane(self, pane_id, title, provider):
+        _DockablePane.registered[pane_id.value] = (title, provider, _DockablePane())
+
+    def GetDockablePane(self, pane_id):
+        return _DockablePane.registered[pane_id.value][2]
+
+
 theme_changed = _HostEvent()
 
 
@@ -90,7 +132,7 @@ host = module(
     __path__=[fixture_root],
     HOST_APP=types.SimpleNamespace(
         is_newer_than=lambda *args: True,
-        uiapp=types.SimpleNamespace(ThemeChanged=theme_changed),
+        uiapp=_UiApplication(),
     ),
     EXEC_PARAMS=types.SimpleNamespace(
         command_path=fixture_root, command_name="Forms probe"
@@ -132,6 +174,7 @@ framework = module(
 module(
     "pyrevit.coreutils",
     __path__=[],
+    Guid=System.Guid,
     new_uuid=lambda: str(uuid.uuid4()),
     fuzzy_search_ratio=lambda target_string, sfilter, regex: (
         100 if sfilter.lower() in target_string.lower() else 0
@@ -171,8 +214,10 @@ module(
     "pyrevit.versionmgr",
     get_pyrevit_version=lambda: types.SimpleNamespace(get_formatted=lambda: "test"),
 )
-module("pyrevit.UI")
+module("pyrevit.UI", DockablePane=_DockablePane, DockablePaneId=_DockablePaneId)
 module("pyrevit.DB")
+module("pyrevit.runtime", __path__=[])
+module("pyrevit.runtime.types", DockablePaneProvider=_DockablePaneProvider)
 
 from pyrevit import forms
 from pyrevit.forms import _backend
@@ -360,5 +405,20 @@ class ProbePanel(forms.WPFPanel):
 panel = ProbePanel()
 assert isinstance(_backend.unwrap(panel), Controls.Page)
 assert panel.label.Text == "Panel probe"
+assert not forms.is_registered_dockable_panel(ProbePanel)
+registered_panel = forms.register_dockable_panel(ProbePanel, default_visible=False)
+assert isinstance(registered_panel, ProbePanel)
+assert forms.is_registered_dockable_panel(ProbePanel)
+provider = forms._cpy._panel_providers[ProbePanel.panel_id]
+assert provider.framework_element is _backend.unwrap(registered_panel)
+assert not provider.visible_by_default
+pane = forms.get_dockable_panel(ProbePanel)
+assert pane is forms.get_dockable_panel(ProbePanel.panel_id)
+forms.open_dockable_panel(ProbePanel)
+assert pane.is_visible
+forms.close_dockable_panel(ProbePanel.panel_id)
+assert not pane.is_visible
+forms.toggle_dockable_panel(ProbePanel, True)
+assert pane.is_visible
 
 print("CPython WPF forms probe passed")

@@ -165,8 +165,9 @@ imported before a Reload survive it. The contract is asserted by the tests in
 implemented CPython subset. Shared behavior lives in `forms/base.py` (window
 resources, theming and ownership), input/list/command dialogs, selectors,
 prompt bars and reactive models. `forms/native.py` contains Revit task dialogs
-and native pickers. Dockable panels remain in `_ipy.py`. Only `forms/backends/`
-implements the engine-specific WPF operations.
+and native pickers. Dockable-panel registration uses a managed provider so
+CPython does not have to create a Python-derived Revit interface type. Only
+`forms/backends/` implements the engine-specific WPF operations.
 
 IronPython continues to populate its CLR-derived windows with
 `wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
@@ -194,7 +195,7 @@ the original Python or Revit object identity.
 | View/sheet/revision/schedule/template/level/document/parameter selectors | Supported | Supported |
 | `settings_window` | Supported | Supported, including dynamically created control callbacks |
 | Progress/warning bars | Supported | Supported within a synchronous command scope |
-| Persistent modeless windows, dockable panels, `activate_open_window` | Supported | Unsupported |
+| Persistent modeless windows, dockable panels, `activate_open_window` | Supported | Supported through composed WPF roots and a managed Revit pane provider; requires a live Revit session |
 | Color picker, image/family-parameter selectors, notifications | Supported | Implemented; live coverage remains incomplete |
 | Other legacy forms exports | Existing behavior | Unsupported unless explicitly exported by `_cpy.__all__` |
 
@@ -240,9 +241,9 @@ CPython. The 26 files using custom `WPFWindow` subclasses now use the composed
 modal or modeless controller, but still need individual workflow review. The
 inventory also audits every bundled custom
 XAML handler declaration against the CPython deferred-event registry (330
-bindings at this revision); it does not execute each tool workflow. Native CLR
-subclass assumptions and persistent dockable-panel lifetimes remain outside
-this compatibility contract. The automated CPython boundary reports 386 of 396
-references (97%) as fully supported. Two `WPFPanel` references can compose a
-CPython page but still require the managed Revit pane host; the remaining eight
-references are dockable-panel registration and control APIs.
+bindings at this revision); it does not execute each tool workflow. The
+published CPython surface now covers all 396 bundled references, including
+dockable-panel registration and control APIs. That count is an API-coverage
+guardrail, not evidence that all tool workflows are compatible: native CLR
+subclass assumptions, persistent pane lifetimes and callbacks requiring a Revit
+API context require live Revit validation.

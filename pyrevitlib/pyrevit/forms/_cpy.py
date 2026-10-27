@@ -1,6 +1,6 @@
 """CPython forms share behavior with IronPython through the native WPF backend."""
 
-from pyrevit import PyRevitException, framework
+from pyrevit import HOST_APP, UI, PyRevitException, coreutils, framework
 
 from . import _backend
 
@@ -94,6 +94,9 @@ from .notify import (
 )
 
 
+_panel_providers = {}
+
+
 class WPFPanel(_WPFMixin, _backend.Panel):
     """CPython controller for a Revit dockable-page XAML root.
 
@@ -146,6 +149,87 @@ class WPFPanel(_WPFMixin, _backend.Panel):
         self.thread_id = framework.get_current_thread_id()
         if self.resolve_theme:
             self._subscribe_theme_changed()
+
+
+def is_registered_dockable_panel(panel_type):
+    """Return whether Revit has registered the panel type's stable pane identifier."""
+    panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    return UI.DockablePane.PaneIsRegistered(UI.DockablePaneId(panel_uuid))
+
+
+def register_dockable_panel(panel_type, default_visible=True):
+    """Register a composed CPython page with Revit's managed pane provider.
+
+    Args:
+        panel_type (type): A WPFPanel subclass describing the Revit pane.
+        default_visible (bool): Whether Revit initially shows the pane.
+
+    Returns:
+        WPFPanel: The controller owning the registered native page.
+    """
+    if not isinstance(panel_type, type) or not issubclass(panel_type, WPFPanel):
+        raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
+    try:
+        panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    except framework.System.FormatException:
+        raise PyRevitException(
+            'Invalid dockable panel id "{}"'.format(panel_type.panel_id)
+        )
+    panel = panel_type()
+    from pyrevit.runtime.types import DockablePaneProvider
+
+    provider = DockablePaneProvider(_backend.unwrap(panel), default_visible)
+    if panel.initial_state is not None:
+        provider.InitialState = panel.initial_state
+    if panel.editor_interaction is not None:
+        provider.EditorInteraction = panel.editor_interaction
+    if panel.contextual_help is not None:
+        provider.ContextualHelp = panel.contextual_help
+    pane_id = UI.DockablePaneId(panel_uuid)
+    HOST_APP.uiapp.RegisterDockablePane(pane_id, panel.panel_title, provider)
+    _panel_providers[panel.panel_id] = provider
+    return panel
+
+
+def get_dockable_panel(panel_type_or_id):
+    """Return Revit's dockable-pane handle for a registered panel type or UUID."""
+    if isinstance(panel_type_or_id, str):
+        panel_id = panel_type_or_id
+    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
+        panel_id = panel_type_or_id.panel_id
+    else:
+        raise PyRevitException("Given type is not a forms.WPFPanel")
+    try:
+        pane_id = UI.DockablePaneId(coreutils.Guid.Parse(panel_id))
+    except framework.System.FormatException:
+        raise PyRevitException('Invalid dockable panel id "{}"'.format(panel_id))
+    if not UI.DockablePane.PaneIsRegistered(pane_id):
+        raise PyRevitException('Panel with id "{}" is not registered'.format(panel_id))
+    return HOST_APP.uiapp.GetDockablePane(pane_id)
+
+
+def open_dockable_panel(panel_type_or_id):
+    """Show a previously registered CPython dockable panel."""
+    toggle_dockable_panel(panel_type_or_id, True)
+
+
+def close_dockable_panel(panel_type_or_id):
+    """Hide a previously registered CPython dockable panel."""
+    toggle_dockable_panel(panel_type_or_id, False)
+
+
+def toggle_dockable_panel(panel_type_or_id, state):
+    """Show or hide a previously registered CPython dockable panel.
+
+    Args:
+        panel_type_or_id (type | str): WPFPanel subclass or its UUID.
+        state (bool): True to show the panel, False to hide it.
+    """
+    pane = get_dockable_panel(panel_type_or_id)
+    if state:
+        pane.Show()
+        return
+    pane.Hide()
 
 
 __all__ = [
@@ -213,4 +297,10 @@ __all__ = [
     "show_balloon",
     "toast",
     "activate_open_window",
+    "is_registered_dockable_panel",
+    "register_dockable_panel",
+    "get_dockable_panel",
+    "open_dockable_panel",
+    "close_dockable_panel",
+    "toggle_dockable_panel",
 ]
