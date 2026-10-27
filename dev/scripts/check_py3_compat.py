@@ -343,6 +343,21 @@ def _is_clr_interface_base(node):
     return len(name) > 1 and name[0] == "I" and name[1].isupper()
 
 
+def _has_stable_clr_namespace(node):
+    """Return whether an interface class declares a literal namespace."""
+    for item in node.body:
+        if not isinstance(item, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == "__namespace__"
+            for target in item.targets
+        ):
+            continue
+        if isinstance(item.value, ast.Constant) and isinstance(item.value.value, str):
+            return bool(item.value.value)
+    return False
+
+
 def check_file(path):
     """Return compatibility findings for one Python source file."""
     findings = []
@@ -503,17 +518,16 @@ def check_file(path):
                         "Python 3 uses __next__".format(node.name),
                     )
                 )
-            if (
-                any(_is_clr_interface_base(base) for base in node.bases)
-                and "__namespace__" not in assigned_names
-            ):
+            if any(
+                _is_clr_interface_base(base) for base in node.bases
+            ) and not _has_stable_clr_namespace(node):
                 findings.append(
                     Finding(
                         path,
                         node.lineno,
                         "CLR-NAMESPACE",
-                        "class {} implements a CLR interface without a stable "
-                        "__namespace__".format(node.name),
+                        "class {} implements a CLR interface without a literal, "
+                        "stable __namespace__".format(node.name),
                     )
                 )
 

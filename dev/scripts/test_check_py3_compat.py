@@ -10,6 +10,7 @@ try:
         _is_clr_interface_base,
         _is_engine_guarded,
         _is_generic_list_constructor,
+        _has_stable_clr_namespace,
         _is_tracked_extension_finding,
     )
 except ImportError:
@@ -18,6 +19,7 @@ except ImportError:
         _is_clr_interface_base,
         _is_engine_guarded,
         _is_generic_list_constructor,
+        _has_stable_clr_namespace,
         _is_tracked_extension_finding,
     )
 
@@ -187,6 +189,20 @@ class NamespaceCompatibilityTests(unittest.TestCase):
         """Ordinary Python inheritance does not need a CLR namespace."""
         base = ast.parse("class Handler(BaseHandler): pass").body[0].bases[0]
         self.assertFalse(_is_clr_interface_base(base))
+
+    def test_literal_namespace_is_stable(self):
+        """A fixed string keeps a generated CLR name reusable on reload."""
+        class_node = ast.parse(
+            'class Handler(UI.IExternalEventHandler):\n    __namespace__ = "test"'
+        ).body[0]
+        self.assertTrue(_has_stable_clr_namespace(class_node))
+
+    def test_runtime_namespace_is_not_stable(self):
+        """Execution-specific names recreate the type on every reload."""
+        class_node = ast.parse(
+            "class Handler(UI.IExternalEventHandler):\n    __namespace__ = exec_id"
+        ).body[0]
+        self.assertFalse(_has_stable_clr_namespace(class_node))
 
 
 if __name__ == "__main__":
