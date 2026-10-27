@@ -12,7 +12,8 @@ import os.path as op
 
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit import framework
-from pyrevit.framework import System, Windows, Media, Uri, UriKind
+from pyrevit.coreutils import envvars
+from pyrevit.framework import Interop, System, Windows, Media, Uri, UriKind
 from System.Windows.Markup import XamlReader, ParserContext
 
 from .._xaml import prepare_xaml
@@ -38,9 +39,11 @@ class Window(object):
             object.__setattr__(self, name, value)
 
     def Show(self):
-        """Reject modeless use until callback lifetime and API scheduling are supported."""
-        self.Close()
-        raise PyRevitCPythonNotSupported("pyrevit.forms.WPFWindow.Show")
+        """Show the native window without creating a nested modal dispatcher."""
+        _raise_callback_error(self)
+        self._modeless = True
+        self._window.Show()
+        _raise_callback_error(self)
 
     def ShowDialog(self):
         """Run the modal dialog and release Python event roots even on failure."""
@@ -127,6 +130,23 @@ def validate_input(value_type):
         raise PyRevitCPythonNotSupported(
             "pyrevit.forms.GetValueWindow.{}".format(value_type)
         )
+
+
+def activate_open_window(envvar):
+    """Activate a still-open CPython modeless window stored in an environment variable."""
+    window = envvars.get_pyrevit_env_var(envvar)
+    if not isinstance(window, Window) or window._closed:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    native = unwrap(window)
+    if Interop.WindowInteropHelper(native).Handle == System.IntPtr.Zero:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if native.IsVisible:
+        if native.WindowState == Windows.WindowState.Minimized:
+            native.WindowState = Windows.WindowState.Normal
+        native.Activate()
+    return True
 
 
 def _release_events(target):

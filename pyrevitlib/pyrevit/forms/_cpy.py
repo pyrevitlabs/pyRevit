@@ -1,6 +1,5 @@
 """CPython forms share behavior with IronPython through the native WPF backend."""
 
-from pyrevit import PyRevitCPythonNotSupported
 from .base import (
     WPFWindow,
     WPF_VISIBLE,
@@ -10,6 +9,7 @@ from .base import (
     is_dark_theme,
     WindowToggler,
 )
+from .backends._cpy import activate_open_window
 from .dialogs import (
     TemplateUserInputWindow,
     GetValueWindow,
@@ -85,10 +85,6 @@ from .notify import (
     show_balloon,
     toast,
 )
-
-
-def activate_open_window(*args, **kwargs):
-    raise PyRevitCPythonNotSupported("pyrevit.forms.activate_open_window")
 
 
 __all__ = [
