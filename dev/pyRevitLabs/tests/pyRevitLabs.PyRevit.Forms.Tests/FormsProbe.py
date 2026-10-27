@@ -562,4 +562,150 @@ assert len(logged_errors) == 2
 assert "panel callback failure" in logged_errors[0][1]
 assert panel._callback_error is None
 
+
+def exit_panel_callback(sender, args):
+    """Raise a BaseException from a callback no command owns."""
+    raise SystemExit("panel callback exit")
+
+
+_backend.bind_control_event(panel, panel.label, "MouseUp", exit_panel_callback)
+mouse_up = Input.MouseButtonEventArgs(
+    Input.Mouse.PrimaryDevice, 0, Input.MouseButton.Left
+)
+mouse_up.RoutedEvent = Input.Mouse.MouseUpEvent
+panel.label.RaiseEvent(mouse_up)
+assert len(logged_errors) == 3
+assert "panel callback exit" in logged_errors[2][1]
+
+constructed = []
+
+
+class CountingPanel(ProbePanel):
+    """Count page construction to prove duplicates are refused early."""
+
+    def __init__(self):
+        constructed.append(True)
+        ProbePanel.__init__(self)
+
+
+try:
+    forms.register_dockable_panel(CountingPanel)
+    raise AssertionError("duplicate dockable registration was accepted")
+except RuntimeError as error:
+    assert "already registered" in str(error)
+assert not constructed
+assert forms.is_registered_dockable_panel(registered_panel)
+
+edited = ChildModel("before")
+editor = Controls.TextBox()
+forms.set_data_context(editor, edited)
+editor.SetBinding(Controls.TextBox.TextProperty, System.Windows.Data.Binding("message"))
+expression = editor.GetBindingExpression(Controls.TextBox.TextProperty)
+expression.UpdateTarget()
+assert editor.Text == "before"
+editor.Text = "after"
+expression.UpdateSource()
+assert edited.message == "after"
+
+xaml_namespaces = (
+    'xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+    'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"'
+)
+
+
+class DirectTemplateEventWindow(forms.WPFWindow):
+    """Declare a direct routed event inside a template."""
+
+    def __init__(self):
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><Window.Resources><DataTemplate x:Key='row'>"
+            "<TextBlock Loaded='loaded'/></DataTemplate></Window.Resources>"
+            "<Grid/></Window>".format(xaml_namespaces),
+            literal_string=True,
+        )
+
+    def loaded(self, sender, args):
+        """Never reachable for template instances under CPython."""
+
+
+try:
+    DirectTemplateEventWindow()
+    raise AssertionError("direct template event loaded silently")
+except RuntimeError as error:
+    assert "direct routed event" in str(error)
+
+
+class TemplateClickWindow(forms.WPFWindow):
+    """Route a left-button press declared inside an item template."""
+
+    def __init__(self):
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><ItemsControl x:Name='rows'><ItemsControl.ItemTemplate>"
+            "<DataTemplate><Border Width='20' Height='20' Background='Red' "
+            "MouseLeftButtonDown='pressed'/></DataTemplate>"
+            "</ItemsControl.ItemTemplate></ItemsControl></Window>".format(
+                xaml_namespaces
+            ),
+            literal_string=True,
+        )
+        self.presses = []
+
+    def pressed(self, sender, args):
+        """Record which button reached the template element."""
+        self.presses.append(str(args.ChangedButton))
+
+
+clicks = TemplateClickWindow()
+clicks.rows.ItemsSource = forms._backend.items_source(["row"])
+clicks.Show()
+clicks.UpdateLayout()
+
+
+def find_border(element):
+    """Return the first Border instantiated from the item template."""
+    if isinstance(element, Controls.Border) and str(element.Uid).startswith(
+        "_pyrevit_template_"
+    ):
+        return element
+    for index in range(Media.VisualTreeHelper.GetChildrenCount(element)):
+        found = find_border(Media.VisualTreeHelper.GetChild(element, index))
+        if found is not None:
+            return found
+    return None
+
+
+template_border = find_border(_backend.unwrap(clicks))
+assert template_border is not None
+
+
+def press(button):
+    """Raise a real preview-then-bubble mouse press on the template element."""
+    for routed_event in (Input.Mouse.PreviewMouseDownEvent, Input.Mouse.MouseDownEvent):
+        args = Input.MouseButtonEventArgs(Input.Mouse.PrimaryDevice, 0, button)
+        args.RoutedEvent = routed_event
+        template_border.RaiseEvent(args)
+
+
+press(Input.MouseButton.Right)
+press(Input.MouseButton.Left)
+assert clicks.presses == ["Left"]
+clicks.Close()
+
+palette_window = forms.WPFWindow(
+    "<Window {}><Border x:Name='swatch' "
+    "Background='{{StaticResource pyRevitWindowBackgroundBrush}}'/></Window>".format(
+        xaml_namespaces
+    ),
+    literal_string=True,
+)
+assert palette_window.swatch.Background is not None
+palette_window.load_xaml(
+    "<Window {}><Grid/></Window>".format(xaml_namespaces), literal_string=True
+)
+palette_window.Show()
+palette_window.Close()
+assert not palette_window.IsVisible
+
 print("CPython WPF forms probe passed")

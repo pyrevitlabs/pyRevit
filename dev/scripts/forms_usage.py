@@ -12,6 +12,55 @@ _NON_EVENT_ATTRIBUTES = {"DisplayMemberPath"}
 _CPYTHON_MODAL_ONLY = set()
 _CPYTHON_HOST_REQUIRED = set()
 _CPYTHON_UNSUPPORTED = set()
+_TEMPLATES = {
+    "ControlTemplate",
+    "DataTemplate",
+    "HierarchicalDataTemplate",
+    "ItemsPanelTemplate",
+    "Style",
+}
+_TEMPLATE_DIRECT_EVENTS = {
+    "Loaded",
+    "Unloaded",
+    "SizeChanged",
+    "MouseEnter",
+    "MouseLeave",
+    "IsVisibleChanged",
+}
+
+
+def _in_template(node):
+    parent = node.parentNode
+    while parent is not None and parent.nodeType == parent.ELEMENT_NODE:
+        if parent.localName in _TEMPLATES:
+            return True
+        parent = parent.parentNode
+    return False
+
+
+def _child_data_context_assignments(root):
+    """Return bundled scripts that set a child control's DataContext directly.
+
+    Under CPython a Python model reaches WPF unadapted that way; scripts must
+    call ``forms.set_data_context`` instead.
+    """
+    found = []
+    for path in sorted((root / "extensions").rglob("*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+        except (SyntaxError, UnicodeError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign):
+                continue
+            for target in node.targets:
+                if (
+                    isinstance(target, ast.Attribute)
+                    and target.attr == "DataContext"
+                    and isinstance(target.value, ast.Attribute)
+                ):
+                    found.append("{}:{}".format(path.relative_to(root), node.lineno))
+    return found
 
 
 def _deferred_events(root):
@@ -58,6 +107,7 @@ def _xaml_event_audit(root):
     deferred = _deferred_events(root)
     supported = []
     unsupported = []
+    template_direct = []
     unparsed = []
     for path in sorted((root / "extensions").rglob("*.xaml")):
         if "pyRevitDevTools.extension" in path.parts:
@@ -87,6 +137,8 @@ def _xaml_event_audit(root):
                 ):
                     continue
                 record = (str(path.relative_to(root)), attribute.name, attribute.value)
+                if attribute.name in _TEMPLATE_DIRECT_EVENTS and _in_template(node):
+                    template_direct.append(record)
                 if attribute.name in deferred:
                     supported.append(record)
                 else:
@@ -95,6 +147,7 @@ def _xaml_event_audit(root):
         "handler_count": len(supported) + len(unsupported),
         "supported": supported,
         "unsupported": unsupported,
+        "template_direct": template_direct,
         "unparsed": unparsed,
     }
 
@@ -172,6 +225,9 @@ def inventory(root):
         "references": {name: paths for name, paths in references.items()},
         "skipped": skipped,
         "xaml_events": _xaml_event_audit(root),
+        "cpython_hazards": {
+            "child_data_context": _child_data_context_assignments(root),
+        },
         "cpython": {
             "supported_references": sum(len(paths) for paths in supported.values()),
             "modal_only_references": sum(len(paths) for paths in modal_only.values()),

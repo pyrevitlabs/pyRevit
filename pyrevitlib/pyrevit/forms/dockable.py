@@ -21,6 +21,7 @@ mlogger = get_logger(__name__)
 
 _PENDING_SHOWS_SLOT = "pyRevit.forms.pendingDockablePaneShowTokens"
 _PENDING_SHOW_TIMEOUT_SECONDS = 60
+_STRING_TYPES = (str, type(""))
 
 
 class WPFPanel(_WPFMixin, _backend.Panel):
@@ -40,7 +41,7 @@ class WPFPanel(_WPFMixin, _backend.Panel):
     Optional class attributes:
         initial_state (UI.DockablePaneState):
             initial docking position; Revit picks a default when None.
-        editor_interaction (UI.EditorInteractionType):
+        editor_interaction (UI.EditorInteraction):
             how the panel behaves while an editor is active.
         contextual_help (UI.ContextualHelp):
             F1 help associated with the pane.
@@ -66,7 +67,7 @@ class WPFPanel(_WPFMixin, _backend.Panel):
         # open from any command button
         forms.open_dockable_panel(MyPanel)
 
-        # retrieve the live instance from anywhere
+        # retrieve Revit's pane handle from anywhere
         dockable_pane = forms.get_dockable_panel(MyPanel)
         ```
     """
@@ -164,13 +165,26 @@ def register_dockable_panel(panel_type, default_visible=True):
 
     Returns:
         WPFPanel: The page instance Revit hosts in the pane.
+
+    Raises:
+        PyRevitException: The type is not a WPFPanel, or Revit already has a
+            pane with its id. Revit cannot unregister panes, so a pane
+            registered before a pyRevit reload stays until Revit restarts.
     """
     if not isinstance(panel_type, type) or not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
     pane_id = _get_dockable_panel_id(panel_type)
+    if UI.DockablePane.PaneIsRegistered(pane_id):
+        raise PyRevitException(
+            'Panel with id "{}" is already registered'.format(pane_id.Guid)
+        )
     panel = panel_type()
-    provider = _backend.make_pane_provider(panel, default_visible)
-    HOST_APP.uiapp.RegisterDockablePane(pane_id, panel.panel_title, provider)
+    try:
+        provider = _backend.make_pane_provider(panel, default_visible)
+        HOST_APP.uiapp.RegisterDockablePane(pane_id, panel.panel_title, provider)
+    except Exception:
+        _backend.dispose(panel)
+        raise
     return panel
 
 
@@ -231,7 +245,7 @@ def toggle_dockable_panel(panel_type_or_id, state):
 
 
 def _get_dockable_panel_id(panel_type_or_id):
-    if isinstance(panel_type_or_id, str):
+    if isinstance(panel_type_or_id, _STRING_TYPES):
         panel_id = panel_type_or_id
     elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
         panel_id = panel_type_or_id.panel_id

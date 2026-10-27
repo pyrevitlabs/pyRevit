@@ -18,6 +18,7 @@ __all__ = [
     "Panel",
     "Reactive",
     "list_source",
+    "binding_source",
     "unwrap_item",
     "show_prompt",
     "bind_event",

@@ -59,7 +59,6 @@
   "activate_open_window",
   "alert",
   "alert_ifnot",
-  "warning",
   "ask_for_color",
   "ask_for_date",
   "ask_for_number_slider",

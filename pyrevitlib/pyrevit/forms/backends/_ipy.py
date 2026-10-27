@@ -50,6 +50,11 @@ def list_source(values):
     return ObservableCollection[TemplateListItem](values)
 
 
+def binding_source(value):
+    """Keep IronPython models, which are already CLR notification objects."""
+    return value
+
+
 def unwrap_item(value):
     """Keep native IronPython list items unchanged."""
     return value

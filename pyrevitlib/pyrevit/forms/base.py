@@ -243,6 +243,21 @@ class WindowToggler(object):
         self._window.show_dialog()
 
 
+def set_data_context(control, model):
+    """Set a control's ``DataContext`` so both engines can bind to ``model``.
+
+    Forms adapt their own ``DataContext`` automatically. Under CPython a Python
+    model assigned straight to a child control's ``DataContext`` reaches WPF as
+    a plain object: bindings read it once and TwoWay edits are lost. Use this
+    helper for child controls instead.
+
+    Args:
+        control (object): A WPF element, or a pyRevit form.
+        model (object): A ``forms.Reactive`` model or any bindable value.
+    """
+    _backend.unwrap(control).DataContext = _backend.binding_source(model)
+
+
 class _WPFMixin(object):
     """Shared behaviour for WPFWindow and WPFPanel.
 

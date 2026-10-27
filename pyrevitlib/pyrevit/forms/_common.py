@@ -19,6 +19,7 @@ from .base import (
     XAML_FILES_DIR,
     is_dark_theme,
     WindowToggler,
+    set_data_context,
 )
 from .dialogs import (
     TemplateUserInputWindow,
@@ -117,6 +118,7 @@ __all__ = [
     "XAML_FILES_DIR",
     "is_dark_theme",
     "WindowToggler",
+    "set_data_context",
     "TemplateUserInputWindow",
     "GetValueWindow",
     "ask_for_string",
