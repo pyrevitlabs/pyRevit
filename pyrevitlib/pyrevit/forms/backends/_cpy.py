@@ -7,7 +7,6 @@ Important:
     unsupported.
 """
 
-import io
 import os.path as op
 
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
@@ -329,7 +328,7 @@ def _find_resource_name(native, name, owner_name, key):
 
 def _read_source(source):
     if isinstance(source, str):
-        with io.open(source, encoding="utf-8-sig") as stream:
+        with open(source, encoding="utf-8-sig") as stream:
             return stream.read(), Uri(op.abspath(source), UriKind.Absolute)
     return source.ReadToEnd(), None
 
