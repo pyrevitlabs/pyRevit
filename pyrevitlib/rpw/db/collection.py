@@ -9,7 +9,7 @@ from rpw.db.xyz import XYZ
 from rpw.db.element import Element
 from rpw.base import BaseObject
 from rpw.utils.coerce import to_elements, to_element_ids, to_element_id
-from rpw.utils.dotnet import List
+from rpw.utils.dotnet import to_clr_list
 from rpw.utils.logger import deprecate_warning
 
 
@@ -95,7 +95,7 @@ class ElementSet(BaseObject):
         """
         if as_list or not wrapped:
             elements = self._elements
-            return List[DB.Element](elements) if as_list else elements
+            return to_clr_list(DB.Element, elements) if as_list else elements
         else:
             return self._wrapped_elements
 
@@ -132,7 +132,7 @@ class ElementSet(BaseObject):
 
         """
         if as_list:
-            return List[DB.ElementId](self._element_id_set)
+            return to_clr_list(DB.ElementId, self._element_id_set)
         else:
             return list(self._element_id_set)
 
@@ -261,7 +261,7 @@ class ElementCollection(BaseObject):
 
         if as_list or not wrapped:
             elements = self._elements
-            return List[DB.Element](elements) if as_list else elements
+            return to_clr_list(DB.Element, elements) if as_list else elements
         else:
             return self._wrapped_elements
 
@@ -292,7 +292,7 @@ class ElementCollection(BaseObject):
 
         """
         if as_list:
-            return List[DB.ElementId](self._element_ids)
+            return to_clr_list(DB.ElementId, self._element_ids)
         else:
             return self._element_ids
 

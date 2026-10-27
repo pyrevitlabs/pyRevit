@@ -1,12 +1,23 @@
 """Regression tests for IronPython 3 branch reachability in the static checker."""
 
 import ast
+from pathlib import Path
 import unittest
 
 try:
-    from .check_py3_compat import _is_engine_guarded
+    from .check_py3_compat import (
+        Finding,
+        _is_engine_guarded,
+        _is_generic_list_constructor,
+        _is_tracked_extension_finding,
+    )
 except ImportError:
-    from check_py3_compat import _is_engine_guarded
+    from check_py3_compat import (
+        Finding,
+        _is_engine_guarded,
+        _is_generic_list_constructor,
+        _is_tracked_extension_finding,
+    )
 
 
 def _unicode_reachability(source):
@@ -62,6 +73,33 @@ class EngineGuardTests(unittest.TestCase):
             _unicode_reachability(
                 "@unittest.skipUnless(PY2, 'reason')\ndef test():\n    unicode(1)"
             ),
+        )
+
+
+class GenericCollectionTests(unittest.TestCase):
+    """Generic CLR construction must not depend on IronPython coercion."""
+
+    def test_list_constructor_with_values_is_detected(self):
+        """A generic List receiving Python values needs Add-based construction."""
+        call = ast.parse("List[DB.ElementId](element_ids)").body[0].value
+        self.assertTrue(_is_generic_list_constructor(call))
+
+    def test_empty_list_constructor_is_not_detected(self):
+        """The parameterless generic List constructor is portable."""
+        call = ast.parse("List[DB.ElementId]()").body[0].value
+        self.assertFalse(_is_generic_list_constructor(call))
+
+    def test_bundled_extension_list_finding_is_tracked(self):
+        """Known extension migrations stay visible without blocking the library gate."""
+        path = Path(__file__).resolve().parents[2] / "extensions" / "Tool.py"
+        self.assertTrue(_is_tracked_extension_finding(Finding(path, 1, "CLR-LIST", "")))
+
+    def test_external_extension_list_finding_blocks(self):
+        """Third-party extension checks still report CLR collection incompatibility."""
+        self.assertFalse(
+            _is_tracked_extension_finding(
+                Finding(Path("C:/extension/Tool.py"), 1, "CLR-LIST", "")
+            )
         )
 
 
