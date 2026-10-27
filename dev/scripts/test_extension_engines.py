@@ -12,6 +12,7 @@ EXTENSIONS = runpy.run_path(
     )
 )
 get_declared_python_engine = EXTENSIONS["get_declared_python_engine"]
+get_declared_engine_type = EXTENSIONS["get_declared_engine_type"]
 
 
 class ExtensionEngineTests(unittest.TestCase):
@@ -31,6 +32,18 @@ class ExtensionEngineTests(unittest.TestCase):
         """Only supported declarations supply an explicit runtime override."""
         self.assertIsNone(get_declared_python_engine({}))
         self.assertIsNone(get_declared_python_engine({"engine": "python3"}))
+
+    def test_bundle_style_mapping_declares_its_type(self):
+        """The mapping form the C# loader reads declares the same engine."""
+        self.assertEqual(
+            "cpython",
+            get_declared_python_engine({"engine": {"type": "CPython", "clean": True}}),
+        )
+
+    def test_mapping_without_type_declares_nothing(self):
+        """Engine behavior settings alone are not an unsupported declaration."""
+        self.assertIsNone(get_declared_engine_type({"engine": {"clean": True}}))
+        self.assertIsNone(get_declared_python_engine({"engine": {"clean": True}}))
 
 
 if __name__ == "__main__":

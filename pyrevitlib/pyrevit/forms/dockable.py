@@ -8,8 +8,6 @@ Note:
     This module must stay importable by IronPython 2.7.
 """
 
-import platform
-import sys
 import time
 
 from pyrevit import HOST_APP, UI, PyRevitException, coreutils, framework
@@ -21,10 +19,7 @@ from .base import THEME_XAML_FILE, _WPFMixin, _resolve_xaml_source
 
 mlogger = get_logger(__name__)
 
-_panel_providers = {}
-_PENDING_SHOWS_SLOT = "pyRevit.forms.pendingDockablePaneShows.{}{}".format(
-    platform.python_implementation(), sys.version_info[0]
-)
+_PENDING_SHOWS_SLOT = "pyRevit.forms.pendingDockablePaneShowTokens"
 _PENDING_SHOW_TIMEOUT_SECONDS = 60
 
 
@@ -176,7 +171,6 @@ def register_dockable_panel(panel_type, default_visible=True):
     panel = panel_type()
     provider = _backend.make_pane_provider(panel, default_visible)
     HOST_APP.uiapp.RegisterDockablePane(pane_id, panel.panel_title, provider)
-    _panel_providers[panel.panel_id] = provider
     return panel
 
 
@@ -208,11 +202,14 @@ def toggle_dockable_panel(panel_type_or_id, state):
 
     Revit creates a pane's window some time after registration. Showing a
     pane whose window does not exist yet returns immediately and shows it on
-    a later ``Idling`` event, or logs a warning and gives up after
-    ``_PENDING_SHOW_TIMEOUT_SECONDS``. Hiding cancels such a pending show.
+    a later ``Idling`` event. The wait has no limit while no document is open;
+    once one is, it gives up with a warning after
+    ``_PENDING_SHOW_TIMEOUT_SECONDS``. Hiding cancels a pending show, whichever
+    engine started it.
 
     Args:
-        panel_type_or_id (type | str): WPFPanel subclass or its UUID.
+        panel_type_or_id (type | WPFPanel | str): WPFPanel subclass or
+            instance, or its UUID.
         state (bool): True to show the panel, False to hide it.
 
     Raises:
@@ -238,6 +235,8 @@ def _get_dockable_panel_id(panel_type_or_id):
         panel_id = panel_type_or_id
     elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
         panel_id = panel_type_or_id.panel_id
+    elif isinstance(panel_type_or_id, WPFPanel):
+        panel_id = panel_type_or_id.panel_id
     else:
         raise PyRevitException("Given type is not a forms.WPFPanel")
     try:
@@ -256,7 +255,12 @@ def _get_registered_dockable_panel_id(panel_type_or_id):
 
 
 def _pending_panel_shows():
-    """Return this engine's pending shows, which outlive module reloads."""
+    """Return the pending shows shared by every engine in this Revit process.
+
+    Values are token strings, never engine objects, so each engine can see and
+    cancel a show another engine deferred. ``coreutils.envvars`` does not
+    fit: it stores an engine-specific Python dictionary.
+    """
     system = framework.System
     domain = system.AppDomain.CurrentDomain
     pending = domain.GetData(_PENDING_SHOWS_SLOT)
@@ -267,13 +271,7 @@ def _pending_panel_shows():
 
 
 def _cancel_dockable_panel_show(pane_id):
-    pending = _pending_panel_shows()
-    panel_key = pane_id.Guid.ToString()
-    if not pending.ContainsKey(panel_key):
-        return
-    uiapp, handler = pending[panel_key]
-    pending.Remove(panel_key)
-    uiapp.Idling -= handler
+    _pending_panel_shows().Remove(pane_id.Guid.ToString())
 
 
 def _defer_dockable_panel_show(pane_id):
@@ -281,21 +279,46 @@ def _defer_dockable_panel_show(pane_id):
     panel_key = pane_id.Guid.ToString()
     if pending.ContainsKey(panel_key):
         return
+    token = framework.System.Guid.NewGuid().ToString()
+    pending[panel_key] = token
     uiapp = HOST_APP.uiapp
-    deadline = time.time() + _PENDING_SHOW_TIMEOUT_SECONDS
+    waited = [0.0]
+    last_tick = [time.time()]
+
+    def is_current():
+        return pending.ContainsKey(panel_key) and pending[panel_key] == token
+
+    def stop():
+        uiapp.Idling -= show_when_created
+        if is_current():
+            pending.Remove(panel_key)
 
     def show_when_created(sender, args):
-        if UI.DockablePane.PaneExists(pane_id):
-            _cancel_dockable_panel_show(pane_id)
-            uiapp.GetDockablePane(pane_id).Show()
+        if not is_current():
+            uiapp.Idling -= show_when_created
             return
-        if time.time() > deadline:
-            _cancel_dockable_panel_show(pane_id)
+        if UI.DockablePane.PaneExists(pane_id):
+            stop()
+            _show_deferred_pane(uiapp, pane_id)
+            return
+        now = time.time()
+        if getattr(uiapp, "ActiveUIDocument", None) is not None:
+            waited[0] += now - last_tick[0]
+        last_tick[0] = now
+        if waited[0] >= _PENDING_SHOW_TIMEOUT_SECONDS:
+            stop()
             mlogger.warning(
-                "Dockable panel %s was not created within %s seconds; not shown.",
+                "Dockable panel %s was not created within %s seconds of a "
+                "document being open; not shown.",
                 panel_key,
                 _PENDING_SHOW_TIMEOUT_SECONDS,
             )
 
-    pending[panel_key] = (uiapp, show_when_created)
     uiapp.Idling += show_when_created
+
+
+def _show_deferred_pane(uiapp, pane_id):
+    try:
+        uiapp.GetDockablePane(pane_id).Show()
+    except Exception as error:
+        mlogger.error("Could not show dockable panel %s: %s", pane_id.Guid, error)

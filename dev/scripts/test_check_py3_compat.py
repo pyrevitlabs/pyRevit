@@ -13,6 +13,7 @@ try:
         _is_generic_list_constructor,
         _has_stable_clr_namespace,
         _is_tracked_extension_finding,
+        _may_run_under_cpython,
         _native_form_uses,
     )
 except ImportError:
@@ -23,6 +24,7 @@ except ImportError:
         _is_generic_list_constructor,
         _has_stable_clr_namespace,
         _is_tracked_extension_finding,
+        _may_run_under_cpython,
         _native_form_uses,
     )
 
@@ -252,6 +254,33 @@ class NativeFormUseTests(unittest.TestCase):
             """
         )
         self.assertEqual([], usages)
+
+    def test_nested_classes_are_checked_only_on_their_own(self):
+        """A nested helper's self is not the form, and nested forms report once."""
+        usages = _form_usages(
+            """
+            class Tool(forms.WPFWindow):
+                class Helper(object):
+                    def bind(self, child):
+                        child.Owner = self
+
+                class Inner(forms.WPFWindow):
+                    def open(self, child):
+                        child.Owner = self
+            """
+        )
+        self.assertEqual(["`.Owner = self`"], usages)
+
+    def test_only_code_that_can_run_under_cpython_is_checked(self):
+        """IronPython scripts may hand their CLR-derived form to WPF directly."""
+        root = Path(__file__).resolve().parents[2]
+        script = root / "extensions" / "Tool.pushbutton" / "script.py"
+        self.assertTrue(
+            _may_run_under_cpython(root / "pyrevitlib" / "pyrevit" / "x.py", "")
+        )
+        self.assertFalse(_may_run_under_cpython(script, "import clr"))
+        self.assertTrue(_may_run_under_cpython(script, "#! python3"))
+        self.assertTrue(_may_run_under_cpython(script, "#! cpython"))
 
     def test_extension_form_findings_are_tracked(self):
         """Bundled extensions migrate to the rule without blocking CI."""

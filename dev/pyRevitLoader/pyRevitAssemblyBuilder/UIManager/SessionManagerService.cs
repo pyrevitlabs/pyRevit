@@ -799,7 +799,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var scriptData = CreateScriptData(extension, startupScript);
 
                 var sharedSessionEngine = (_uiManager?.RocketMode ?? false) && extension.RocketModeCompatible;
-                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine);
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(
+                    searchPaths, sharedSessionEngine, engineType: StartupEngineType(extension, startupScript));
 
                 // Execute the script using cached method
                 if (scriptData == null || scriptRuntimeConfigs == null || _executeScriptMethod == null)
@@ -1036,8 +1037,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// seeds a new session UUID and therefore a new shared engine, so the value never outlives
         /// the load it describes. Scripts on a per-extension engine never see it.
         /// </remarks>
+        private static string StartupEngineType(ParsedExtension extension, string startupScript)
+        {
+            var isCPythonStartup = string.Equals(
+                System.IO.Path.GetFileName(startupScript),
+                ParsedExtension.CPythonStartupFileName,
+                StringComparison.OrdinalIgnoreCase);
+            return isCPythonStartup || extension.DeclaredPythonEngine == "cpython" ? "CPython" : null;
+        }
+
         private object CreateScriptRuntimeConfigs(
-            List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null)
+            List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null,
+            string engineType = null)
         {
             // Create temporary ExternalCommandData
 #if NETFRAMEWORK
@@ -1072,9 +1083,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
 
+            var engineTypeJson = engineType == null ? string.Empty : $", \"type\": \"{engineType}\"";
             var engineConfigsJson = sharedSessionEngine
-                ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true}"
-                : "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
+                ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true" + engineTypeJson + "}"
+                : "{\"clean\": true, \"full_frame\": true, \"persistent\": true" + engineTypeJson + "}";
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
             TrySetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
 

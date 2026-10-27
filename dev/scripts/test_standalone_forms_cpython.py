@@ -126,6 +126,17 @@ class XamlPreparationTests(unittest.TestCase):
         )
         self.assertEqual(["outer"], names)
 
+    def test_attribute_line_breaks_survive_reparsing(self):
+        """Encoded newlines and tabs in attributes are not normalized to spaces."""
+        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
+            '<TextBlock Text="Line1&#x0a;Line2&#x09;End"/></Window>',
+            [],
+        )
+        self.assertIn('Text="Line1&#10;Line2&#9;End"', markup)
+        text_block = minidom.parseString(markup).getElementsByTagName("TextBlock")[0]
+        self.assertEqual("Line1\nLine2\tEnd", text_block.getAttribute("Text"))
+
     def test_template_events_are_tagged_with_their_authored_element(self):
         """Template handlers match only the element that declared them."""
         markup, _, events, _ = _load_xaml_helpers().prepare_xaml(

@@ -98,7 +98,7 @@ registered_panel = facade.register_dockable_panel(
 assert isinstance(registered_panel, Controls.Page)
 assert registered_panel.label.Text == "Panel probe"
 assert facade.is_registered_dockable_panel(IronPythonProbePanel)
-provider = dockable._panel_providers[IronPythonProbePanel.panel_id]
+provider = _DockablePane.registered[IronPythonProbePanel.panel_id][1]
 pane_data = types.SimpleNamespace()
 provider.SetupDockablePane(pane_data)
 assert pane_data.FrameworkElement is registered_panel
@@ -110,7 +110,9 @@ facade.open_dockable_panel(IronPythonProbePanel)
 assert not pane.is_visible
 assert len(uiapp.Idling.handlers) == 1
 facade.close_dockable_panel(IronPythonProbePanel)
+uiapp.raise_idling()
 assert not uiapp.Idling.handlers
+assert facade.is_registered_dockable_panel(registered_panel)
 facade.open_dockable_panel(IronPythonProbePanel)
 _DockablePane.created.update(_DockablePane.registered)
 uiapp.raise_idling()

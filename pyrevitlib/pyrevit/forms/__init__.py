@@ -10,6 +10,7 @@ from pyrevit.compat import IRONPY
 if IRONPY:
     # pylint: disable=wildcard-import,unused-wildcard-import
     from ._ipy import *  # noqa: F401,F403
+    from ._ipy import __all__  # noqa: F401
 else:
     import importlib as _importlib
 

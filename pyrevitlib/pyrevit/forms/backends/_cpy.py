@@ -23,6 +23,7 @@ from ._events import (
     initialize_events,
     raise_callback_error,
     release_events,
+    report_callback_error,
 )
 
 
@@ -92,6 +93,8 @@ class Window(object):
         self._closed = True
         self._unsubscribe_theme_changed()
         release_events(self)
+        if self._modeless and not self._prompt:
+            report_callback_error(self)
 
 
 class Panel(object):
@@ -113,7 +116,7 @@ class Panel(object):
             object.__setattr__(self, name, value)
 
     def _on_callback_failure(self):
-        pass
+        report_callback_error(self)
 
 
 def initialize(target):
@@ -129,6 +132,7 @@ def initialize(target):
     initialize_events(target)
     target._closed = False
     target._modeless = False
+    target._prompt = False
 
 
 def initialize_panel(target):
@@ -175,6 +179,7 @@ def list_source(values):
 def show_prompt(target):
     """Show an overlay whose enclosing command owns its complete lifetime."""
     target._modeless = True
+    target._prompt = True
     target._window.Show()
 
 
@@ -205,13 +210,20 @@ def make_pane_provider(panel, default_visible):
 
 
 def activate_open_window(envvar):
-    """Activate a still-open CPython modeless window stored in an environment variable."""
+    """Activate a still-open CPython modeless window stored in an environment variable.
+
+    Openness is judged by the native window handle, not the controller's class,
+    so a window created before ``pyrevit.forms`` was re-imported still counts.
+    """
     window = envvars.get_pyrevit_env_var(envvar)
-    if not isinstance(window, Window) or window._closed:
-        envvars.set_pyrevit_env_var(envvar, None)
+    if window is None:
         return False
-    native = unwrap(window)
-    if Interop.WindowInteropHelper(native).Handle == System.IntPtr.Zero:
+    native = getattr(window, "_window", window)
+    try:
+        is_open = Interop.WindowInteropHelper(native).Handle != System.IntPtr.Zero
+    except Exception:
+        is_open = False
+    if not is_open:
         envvars.set_pyrevit_env_var(envvar, None)
         return False
     if native.IsVisible:

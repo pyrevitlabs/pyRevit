@@ -25,6 +25,16 @@ namespace pyRevitExtensionParser
         public bool RocketModeCompatible { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets the Python engine the extension declares in <c>extension.json</c>
+        /// (<c>"cpython"</c> or <c>"ironpython"</c>), or null when it declares none.
+        /// </summary>
+        /// <remarks>
+        /// It is a default for Python scripts only: a <c>#! python3</c> shebang or a bundle's
+        /// own <c>engine.type</c> still wins.
+        /// </remarks>
+        public string DeclaredPythonEngine { get; set; }
+
+        /// <summary>
         /// Layout directives that reference external components (from other extensions or native Revit).
         /// These must be applied after the full UI is built using the Revit ribbon API.
         /// </summary>
@@ -234,7 +244,10 @@ namespace pyRevitExtensionParser
         private bool _startupScriptInitialized;
         private IReadOnlyList<string> _startupScripts;
 
-        private const string CPythonStartupFileName = "startup.cpython.py";
+        /// <summary>
+        /// File name of the extension startup script that always runs under CPython.
+        /// </summary>
+        public const string CPythonStartupFileName = "startup.cpython.py";
 
         /// <summary>
         /// Gets the path to the startup script if it exists

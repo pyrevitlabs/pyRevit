@@ -123,6 +123,7 @@ class _UiApplication:
     def __init__(self):
         self.ThemeChanged = theme_changed
         self.Idling = _HostEvent()
+        self.ActiveUIDocument = None
 
     def RegisterDockablePane(self, pane_id, title, provider):
         _DockablePane.registered[pane_id.value] = (title, provider, _DockablePane())
@@ -398,6 +399,11 @@ dialog.Show()
 assert dialog.IsVisible
 environment_values["MODELESS_FORMS_PROBE"] = dialog
 assert forms.activate_open_window("MODELESS_FORMS_PROBE")
+environment_values["MODELESS_FORMS_PROBE"] = types.SimpleNamespace(
+    _window=_backend.unwrap(dialog)
+)
+assert forms.activate_open_window("MODELESS_FORMS_PROBE")
+environment_values["MODELESS_FORMS_PROBE"] = dialog
 timer.Start()
 Threading.Dispatcher.PushFrame(frame)
 timer.Tick -= close_modeless
@@ -425,7 +431,7 @@ assert not forms.is_registered_dockable_panel(ProbePanel)
 registered_panel = forms.register_dockable_panel(ProbePanel, default_visible=False)
 assert isinstance(registered_panel, ProbePanel)
 assert forms.is_registered_dockable_panel(ProbePanel)
-provider = forms.dockable._panel_providers[ProbePanel.panel_id]
+provider = _DockablePane.registered[ProbePanel.panel_id][1]
 assert provider.framework_element is _backend.unwrap(registered_panel)
 assert not provider.visible_by_default
 pane = forms.get_dockable_panel(ProbePanel)
@@ -436,7 +442,9 @@ forms.open_dockable_panel(ProbePanel)
 assert not pane.is_visible
 assert len(uiapp.Idling.handlers) == 1
 forms.close_dockable_panel(ProbePanel)
+uiapp.raise_idling()
 assert not uiapp.Idling.handlers
+assert not pane.is_visible
 forms.open_dockable_panel(ProbePanel)
 uiapp.raise_idling()
 assert not pane.is_visible
@@ -445,11 +453,41 @@ uiapp.raise_idling()
 assert pane.is_visible
 assert not uiapp.Idling.handlers
 pane.Hide()
+_DockablePane.created.clear()
+uiapp.ActiveUIDocument = object()
+forms.dockable._PENDING_SHOW_TIMEOUT_SECONDS = 0
+forms.open_dockable_panel(ProbePanel)
+uiapp.raise_idling()
+assert not uiapp.Idling.handlers
+assert not pane.is_visible
+forms.dockable._PENDING_SHOW_TIMEOUT_SECONDS = 60
+uiapp.ActiveUIDocument = None
+_DockablePane.created.update(_DockablePane.registered)
 forms.open_dockable_panel(ProbePanel)
 assert pane.is_visible
 forms.close_dockable_panel(ProbePanel.panel_id)
 assert not pane.is_visible
 forms.toggle_dockable_panel(ProbePanel, True)
 assert pane.is_visible
+
+logged_errors = []
+logger.error = lambda *args: logged_errors.append(args)
+
+
+def fail_panel_callback(sender, args):
+    """Raise from a dockable-page callback that no command owns."""
+    raise ValueError("panel callback failure")
+
+
+_backend.bind_control_event(panel, panel.label, "MouseDown", fail_panel_callback)
+mouse_down = Input.MouseButtonEventArgs(
+    Input.Mouse.PrimaryDevice, 0, Input.MouseButton.Left
+)
+mouse_down.RoutedEvent = Input.Mouse.MouseDownEvent
+panel.label.RaiseEvent(mouse_down)
+panel.label.RaiseEvent(mouse_down)
+assert len(logged_errors) == 2
+assert "panel callback failure" in logged_errors[0][1]
+assert panel._callback_error is None
 
 print("CPython WPF forms probe passed")

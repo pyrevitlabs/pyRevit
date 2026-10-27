@@ -4,11 +4,19 @@ Every callback a form attaches is recorded on the form so ``release_events``
 detaches all of them together. A callback that raises never escapes into the
 WPF dispatcher: the error is stored on the form, the form's
 ``_on_callback_failure`` hook runs, and ``raise_callback_error`` reports it to
-the command that owns the form.
+the command that owns the form. Forms no command owns, such as dockable
+pages and persistent modeless windows, log it through ``report_callback_error``
+instead.
 """
 
+import traceback
+
 from pyrevit import PyRevitException, framework
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import System, Windows, Media
+
+
+mlogger = get_logger(__name__)
 
 
 def initialize_events(target):
@@ -35,6 +43,18 @@ def raise_callback_error(target):
     if error is not None:
         target._callback_error = None
         raise error
+
+
+def report_callback_error(target):
+    """Log, once, the first callback error of a form that no command owns."""
+    error = target._callback_error
+    if error is None:
+        return
+    target._callback_error = None
+    mlogger.error(
+        "pyRevit form callback failed:\n%s",
+        "".join(traceback.format_exception(type(error), error, error.__traceback__)),
+    )
 
 
 def bind(target, control, event_name, handler):

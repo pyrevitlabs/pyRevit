@@ -183,12 +183,28 @@ SLIDEOUT_IDENTIFIER = ">>>"
 ICON_FILE_FORMAT = ".png"
 
 
-def get_declared_python_engine(metadata):
-    """Return a valid extension-level Python engine declaration, if any."""
+def get_declared_engine_type(metadata):
+    """Return the raw engine type an extension manifest declares, if any.
+
+    Accepts ``"engine": "cpython"`` and the bundle-style mapping
+    ``"engine": {"type": "cpython", ...}`` that the C# loader also reads. A
+    mapping without ``type`` only configures engine behavior and declares
+    nothing.
+    """
     if not isinstance(metadata, dict):
         return None
     declared_engine = metadata.get(MDATA_ENGINE)
+    if isinstance(declared_engine, dict):
+        declared_engine = declared_engine.get("type")
     if not hasattr(declared_engine, "strip"):
+        return None
+    return declared_engine
+
+
+def get_declared_python_engine(metadata):
+    """Return a valid extension-level Python engine declaration, if any."""
+    declared_engine = get_declared_engine_type(metadata)
+    if declared_engine is None:
         return None
     normalized_engine = declared_engine.strip().lower()
     if normalized_engine in PYTHON_ENGINES:

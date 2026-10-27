@@ -46,7 +46,9 @@ Checks:
     FORM-NATIVE a pyRevit form hands `self` to WPF as the native window or page
                 (`.Owner = self`, `WindowInteropHelper(self)`,
                 `isinstance(self, Window)`); under CPython the form is a
-                Python controller wrapping the native root
+                Python controller wrapping the native root. Checked only in
+                pyrevitlib and in scripts with a CPython shebang, since the
+                same code is correct under IronPython
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
@@ -399,11 +401,40 @@ def _is_self(node):
     return isinstance(node, ast.Name) and node.id == "self"
 
 
+def _may_run_under_cpython(path, source):
+    """Return whether a file is shared pyrevitlib code or a CPython script."""
+    try:
+        path.relative_to(REPO_ROOT / "pyrevitlib")
+        return True
+    except ValueError:
+        pass
+    lines = source.splitlines()
+    first_line = lines[0].lower() if lines else ""
+    return first_line.startswith("#!") and (
+        "python3" in first_line or "cpython" in first_line
+    )
+
+
+def _class_body_nodes(class_node):
+    """Yield a class's nodes without entering nested classes, checked on their own."""
+    pending = list(ast.iter_child_nodes(class_node))
+    while pending:
+        node = pending.pop()
+        if isinstance(node, ast.ClassDef):
+            continue
+        yield node
+        pending.extend(ast.iter_child_nodes(node))
+
+
 def _native_form_uses(class_node):
-    """Yield (node, usage) where a form class treats ``self`` as a WPF object."""
+    """Return (node, usage) pairs where a form class treats ``self`` as WPF."""
     if not any(_base_name(base) in FORM_BASES for base in class_node.bases):
-        return
-    for node in ast.walk(class_node):
+        return []
+    return sorted(_self_as_native(class_node), key=lambda use: use[0].lineno)
+
+
+def _self_as_native(class_node):
+    for node in _class_body_nodes(class_node):
         if isinstance(node, ast.Assign) and _is_self(node.value):
             for target in node.targets:
                 if isinstance(target, ast.Attribute) and target.attr == "Owner":
@@ -468,9 +499,12 @@ def check_file(path):
         path == REPO_ROOT.joinpath(*exempt.split("/")) for exempt in CLR_REF_EXEMPT
     )
 
-    for class_node in ast.walk(tree):
-        if not isinstance(class_node, ast.ClassDef):
-            continue
+    form_classes = (
+        [node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+        if _may_run_under_cpython(path, source)
+        else []
+    )
+    for class_node in form_classes:
         for node, usage in _native_form_uses(class_node):
             findings.append(
                 Finding(
