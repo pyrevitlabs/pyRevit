@@ -104,17 +104,17 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertEqual([], audit["unparsed"])
         self.assertEqual([], audit["unsupported"])
 
-    def test_inventory_reports_cpython_modal_and_unsupported_boundaries(self):
+    def test_inventory_reports_cpython_host_and_unsupported_boundaries(self):
         """Bundled forms usage stays within the documented CPython boundary."""
         coverage = _load_usage_inventory()["cpython"]
-        self.assertEqual(355, coverage["supported_references"])
-        self.assertEqual(26, coverage["modal_only_references"])
-        self.assertEqual(15, coverage["unsupported_references"])
-        self.assertEqual({"WPFWindow"}, set(coverage["modal_only"]))
+        self.assertEqual(386, coverage["supported_references"])
+        self.assertEqual(0, coverage["modal_only_references"])
+        self.assertEqual(2, coverage["host_required_references"])
+        self.assertEqual(8, coverage["unsupported_references"])
+        self.assertEqual(set(), set(coverage["modal_only"]))
+        self.assertEqual({"WPFPanel"}, set(coverage["host_required"]))
         self.assertEqual(
             {
-                "WPFPanel",
-                "activate_open_window",
                 "get_dockable_panel",
                 "is_registered_dockable_panel",
                 "open_dockable_panel",

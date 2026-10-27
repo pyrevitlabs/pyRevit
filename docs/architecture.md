@@ -221,11 +221,12 @@ interactive cases with the shipped IronPython 2.7 and 3 engines (select with
 build pipeline. Inside Revit, run `pyrevit.unittests.forms_acceptance.run(doc)`
 through pyRevit MCP with each engine and `dry_run=true`. The runner creates real
 selector fixtures and always rolls its transaction group back. On Revit 2026.5,
-21 cases passed without skips under CPython 3.12.3 (run `e8f87dad6fa1`) and
-IronPython 3.4.2 (run `0e5696878a67`). This covers actual modal control events,
-two-way binding, selection identity, settings and scoped overlays. Native picker
-acceptance, persistent modeless behavior and other Revit generations are not
-covered by those results. The DevTools **Debug → Forms Tests** pulldown runs this
+23 cases passed without skips under CPython 3.12.3 (run `c94af430887c`); 21
+shared cases passed under IronPython 3.4.2 (run `2530e1bffe3b`) with two
+CPython-composition probes skipped. This covers actual modal control events,
+two-way binding, selection identity, settings and scoped overlays. Native picker,
+persistent dockable-panel behavior and other Revit generations are not covered
+by those results. The DevTools **Debug → Forms Tests** pulldown runs this
 suite under each engine (**Test IronPython Forms**, **Test CPython Forms**) and
 opens the forms by hand (**Test IronPython Forms Manual**, **Test CPython Forms
 Manual**) for picker, ownership and theme inspection.
@@ -235,13 +236,13 @@ excluding DevTools. The current inventory has no syntax skips. The most-used
 dialogs are `alert` (102 files), `SelectFromList` (42) and `CommandSwitchWindow`
 (37); the shared list and command dialogs are exercised under both engines.
 Counts describe API references, not proof that every calling tool runs under
-CPython. In particular, 26 files use custom `WPFWindow` subclasses and need
-individual migration review. The inventory also audits every bundled custom
+CPython. The 26 files using custom `WPFWindow` subclasses now use the composed
+modal or modeless controller, but still need individual workflow review. The
+inventory also audits every bundled custom
 XAML handler declaration against the CPython deferred-event registry (330
 bindings at this revision); it does not execute each tool workflow. Native CLR
-subclass assumptions and persistent modeless lifetimes remain outside this
-compatibility contract.
-The automated CPython boundary reports 355 of 396 references (90%) as fully
-supported. A further 26 custom `WPFWindow` references are modal-only and need
-their individual workflows exercised. The remaining 15 references are
-modeless-window or dockable-panel APIs, which remain explicitly unsupported.
+subclass assumptions and persistent dockable-panel lifetimes remain outside
+this compatibility contract. The automated CPython boundary reports 386 of 396
+references (97%) as fully supported. Two `WPFPanel` references can compose a
+CPython page but still require the managed Revit pane host; the remaining eight
+references are dockable-panel registration and control APIs.

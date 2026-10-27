@@ -9,8 +9,9 @@ from xml.dom import minidom
 
 
 _NON_EVENT_ATTRIBUTES = {"DisplayMemberPath"}
-_CPYTHON_MODAL_ONLY = {"WPFWindow"}
-_CPYTHON_UNSUPPORTED = {"activate_open_window"}
+_CPYTHON_MODAL_ONLY = set()
+_CPYTHON_HOST_REQUIRED = {"WPFPanel"}
+_CPYTHON_UNSUPPORTED = set()
 
 
 def _deferred_events(root):
@@ -149,11 +150,17 @@ def inventory(root):
     modal_only = {
         name: paths for name, paths in references.items() if name in _CPYTHON_MODAL_ONLY
     }
+    host_required = {
+        name: paths
+        for name, paths in references.items()
+        if name in _CPYTHON_HOST_REQUIRED
+    }
     supported = {
         name: paths
         for name, paths in references.items()
         if name in exports
         and name not in _CPYTHON_MODAL_ONLY
+        and name not in _CPYTHON_HOST_REQUIRED
         and name not in _CPYTHON_UNSUPPORTED
     }
     unsupported = {
@@ -168,9 +175,13 @@ def inventory(root):
         "cpython": {
             "supported_references": sum(len(paths) for paths in supported.values()),
             "modal_only_references": sum(len(paths) for paths in modal_only.values()),
+            "host_required_references": sum(
+                len(paths) for paths in host_required.values()
+            ),
             "unsupported_references": sum(len(paths) for paths in unsupported.values()),
             "supported": supported,
             "modal_only": modal_only,
+            "host_required": host_required,
             "unsupported": unsupported,
         },
     }
@@ -194,10 +205,14 @@ if __name__ == "__main__":
                 "cpython_unsupported_references": report["cpython"][
                     "unsupported_references"
                 ],
+                "cpython_host_required_references": report["cpython"][
+                    "host_required_references"
+                ],
                 "cpython_modal_only_references": report["cpython"][
                     "modal_only_references"
                 ],
                 "cpython_modal_only_apis": report["cpython"]["modal_only"],
+                "cpython_host_required_apis": report["cpython"]["host_required"],
                 "cpython_unsupported_apis": report["cpython"]["unsupported"],
             },
             indent=2,

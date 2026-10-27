@@ -23,4 +23,7 @@ __all__ = [
     "validate_input",
 ]
 
+if not IRONPY:
+    __all__.extend(["Panel", "initialize_panel"])
+
 globals().update((name, getattr(_impl, name)) for name in __all__)
