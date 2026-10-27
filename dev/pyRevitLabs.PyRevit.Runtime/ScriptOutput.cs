@@ -12,6 +12,10 @@ using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.PyRevit;
+using PyDict = Python.Runtime.PyDict;
+using PyIterable = Python.Runtime.PyIterable;
+using PyObject = Python.Runtime.PyObject;
+using PythonException = Python.Runtime.PythonException;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     /// <summary>
@@ -588,8 +592,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void print_table(object table_data, object columns = null, object formats = null, string title = "", string last_line_style = "") {
             var rows = ToRows(table_data);
-            if (rows.Count == 0)
+            if (rows.Count == 0) {
+                print_md("### :warning: No table_data list");
                 return;
+            }
 
             if (!string.IsNullOrEmpty(last_line_style))
                 add_style(string.Format("tr:last-child {{ {0} }}", last_line_style));
@@ -895,6 +901,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (value == null || value is string)
                 return rows;
 
+            if (value is PyObject pythonValue) {
+                try {
+                    using (var pythonRows = new PyIterable(pythonValue)) {
+                        foreach (PyObject row in pythonRows) {
+                            try {
+                                rows.Add(ToList(row));
+                            }
+                            finally {
+                                row.Dispose();
+                            }
+                        }
+                    }
+                }
+                catch (PythonException) {
+                    return rows;
+                }
+                return rows;
+            }
+
             var enumerable = value as IEnumerable;
             if (enumerable == null)
                 return rows;
@@ -913,6 +938,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return items;
             }
 
+            if (value is PyObject pythonValue) {
+                try {
+                    if (pythonValue.AsManagedObject(typeof(string)) is string text) {
+                        items.Add(text);
+                        return items;
+                    }
+                }
+                catch (InvalidCastException) {
+                }
+
+                try {
+                    using (var pythonItems = new PyIterable(pythonValue)) {
+                        foreach (PyObject item in pythonItems) {
+                            try {
+                                items.Add(item.ToString());
+                            }
+                            finally {
+                                item.Dispose();
+                            }
+                        }
+                    }
+                    return items;
+                }
+                catch (PythonException) {
+                    items.Add(pythonValue.ToString());
+                    return items;
+                }
+            }
+
             var enumerable = value as IEnumerable;
             if (enumerable == null) {
                 items.Add(value.ToString());
@@ -928,6 +982,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var result = new Dictionary<string, string>();
             if (value == null)
                 return result;
+
+            if (value is PyObject pythonValue && PyDict.IsDictType(pythonValue)) {
+                using (var pythonDictionary = new PyDict(pythonValue)) {
+                    using (var entries = pythonDictionary.Items()) {
+                        foreach (PyObject entry in entries) {
+                            try {
+                                using (var key = entry.GetItem(0)) {
+                                    using (var entryValue = entry.GetItem(1)) {
+                                        result[key.ToString()] = entryValue.ToString();
+                                    }
+                                }
+                            }
+                            finally {
+                                entry.Dispose();
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
 
             var dictionary = value as IDictionary;
             if (dictionary != null) {
