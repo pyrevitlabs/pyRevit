@@ -1004,6 +1004,107 @@ class BindingParityTests(unittest.TestCase):
             window.list_lb.SelectedIndex = 0
             self.assertIs(items[0], window.list_lb.SelectedItem)
 
+    def test_integer_values_bind_to_double_targets(self):
+        """Python ints bind to double properties and two-way edits stay ints.
+
+        IronPython types a Python attribute by its current value, so WPF
+        converts an int for ``ProgressBar.Maximum`` and a TextBox edit of an
+        int property writes back an int. Used by Test Modeless (Sensors).
+        IronPython 2.7 binds Python attributes untyped, so WPF leaves int
+        sources unconverted there; IronPython 3 is the reference.
+        """
+        if IRONPY and sys.version_info[0] == 2:
+            self.skipTest("IronPython 2.7 does not convert int sources to double")
+
+        class Gauge(forms.Reactive):
+            def __init__(self):
+                super(Gauge, self).__init__()
+                self._progress = 3
+                self._limit = 1
+
+            @forms.reactive
+            def progress(self):
+                return self._progress
+
+            @progress.setter
+            def progress(self, value):
+                self._progress = value
+
+            @forms.reactive
+            def limit(self):
+                return self._limit
+
+            @limit.setter
+            def limit(self, value):
+                self._limit = value
+
+        gauge = Gauge()
+        plain = _Plain(progress=4, limit=8)
+        window = _XamlWindow(
+            '<StackPanel><ProgressBar x:Name="gauge_pb" Maximum="{Binding limit}"'
+            ' Value="{Binding progress}"/>'
+            '<TextBox x:Name="limit_tb" Text="{Binding limit,'
+            ' UpdateSourceTrigger=PropertyChanged}"/>'
+            '<ProgressBar x:Name="plain_pb" Maximum="{Binding limit}"'
+            ' Value="{Binding progress}"/></StackPanel>'
+        )
+        window.DataContext = gauge
+        forms.set_data_context(window.plain_pb, plain)
+        with _Shown(window):
+            gauge.limit = 500
+            gauge.progress = 30
+            _pump()
+            observed = [
+                window.gauge_pb.Maximum,
+                window.gauge_pb.Value,
+                window.plain_pb.Maximum,
+                window.plain_pb.Value,
+            ]
+            window.limit_tb.Text = "250"
+            _pump()
+            written = gauge.limit
+        self.assertEqual([500.0, 30.0, 8.0, 4.0], observed)
+        self.assertEqual(250, written)
+        self.assertIsInstance(written, int)
+
+    def test_list_data_context_count_and_multibinding(self):
+        """A Python list as a child DataContext exposes Count and feeds a MultiBinding.
+
+        IronPython lists are CLR lists: ``{Binding Count}`` resolves, and a
+        ``MultiBinding`` over ``.`` passes the list to a Python converter
+        without WPF failing to hash it. Used by Test XAML.
+        """
+
+        class Pick(framework.Windows.Data.IMultiValueConverter):
+            def Convert(self, values, target_types, parameter, culture):
+                return values[0][int(values[1]) - 1]
+
+            def ConvertBack(self, value, target_types, parameter, culture):
+                return None
+
+        rows = [_Row("a"), _Row("b"), _Row("c")]
+        window = _XamlWindow(
+            '<StackPanel x:Name="panel"><Slider x:Name="pick_sl" Minimum="1"'
+            ' Maximum="{Binding Count}" IsSnapToTickEnabled="True"/>'
+            '<Border x:Name="picked"><TextBlock x:Name="picked_tb"'
+            ' Text="{Binding name}"/></Border></StackPanel>'
+        )
+        picker = framework.Windows.Data.MultiBinding()
+        picker.Converter = Pick()
+        picker.Bindings.Add(framework.Windows.Data.Binding("."))
+        position = framework.Windows.Data.Binding("Value")
+        position.ElementName = "pick_sl"
+        picker.Bindings.Add(position)
+        window.picked.SetBinding(window.picked.DataContextProperty, picker)
+        forms.set_data_context(window.panel, rows)
+        with _Shown(window):
+            window.pick_sl.Value = 3
+            _pump()
+            observed = [window.pick_sl.Maximum, window.picked_tb.Text]
+            back = _backend.data_context_of(window.panel)
+        self.assertEqual([3.0, "c"], observed)
+        self.assertIs(rows, back)
+
     def test_worker_thread_updates_reactive_model(self):
         """A Reactive change made on a worker thread is safe and reads back on the UI thread.
 

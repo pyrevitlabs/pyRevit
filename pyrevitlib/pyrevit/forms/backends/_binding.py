@@ -1,6 +1,6 @@
 """Managed notification models for Python form controllers and list items.
 
-WPF reads native dynamic properties while Python retains the original objects.
+WPF reads typed managed properties while Python retains the original objects.
 Weak controller references keep native event delegates from rooting closed forms.
 
 Important:
@@ -15,13 +15,8 @@ import weakref
 import clr
 from pyrevit.framework import System, ComponentModel, to_clr_list
 
-try:
-    clr.AddReference("System.Linq.Expressions")
-except System.IO.FileNotFoundException:
-    clr.AddReference("System.Core")
-
-from System.Dynamic import ExpandoObject
-from System.Collections.Generic import IDictionary
+clr.AddReference("pyRevitLabs.PyRevit.Forms.Binding")
+from PyRevitLabs.PyRevit.Forms.Binding import BindingModel  # noqa: E402
 
 
 FORM_STATE = "_pyrevit_backend"
@@ -221,9 +216,9 @@ def binding_source(controller):
     if "_binding_model" in state:
         _refresh(controller, _own_names(controller))
         return state["_binding_model"]
-    model = ExpandoObject()
+    model = BindingModel()
     state["_binding_model"] = model
-    state["_binding_values"] = IDictionary[System.String, System.Object](model)
+    state["_binding_values"] = model
     _controllers[model] = controller
     _refresh(controller)
     reference = weakref.ref(controller)
@@ -250,14 +245,13 @@ def binding_source(controller):
         _refresh(target, sorted(notified))
         _refresh(target, _plain_names(target))
 
-    notifier = ComponentModel.INotifyPropertyChanged(model)
-    notifier.PropertyChanged += changed
+    model.PropertyChanged += changed
     return model
 
 
 def unwrap_item(value):
     """Recover the original Python item from a native selection or DataContext."""
-    if isinstance(value, ExpandoObject):
+    if isinstance(value, BindingModel):
         return _controllers.get(value, value)
     return value
 

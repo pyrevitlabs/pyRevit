@@ -308,9 +308,7 @@ assert read_path(bound_parent, "child.message") == "first"
 assert read_path(bound_parent, "children[0].message") == "listed"
 parent_model.child.message = "second"
 assert read_path(bound_parent, "child.message") == "second"
-parent_values = System.Collections.Generic.IDictionary[System.String, System.Object](
-    bound_parent
-)
+parent_values = bound_parent
 assert unwrap_item(parent_values["child"]) is parent_model.child
 assert unwrap_item(list(parent_values["children"])[0]) is parent_model.children[0]
 

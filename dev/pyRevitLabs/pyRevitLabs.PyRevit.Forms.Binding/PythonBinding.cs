@@ -105,7 +105,7 @@ def names(value):
         /// or <c>None</c> to use a <see cref="PythonObjectProxy"/>.
         /// </param>
         /// <param name="findModel">
-        /// Called with an <see cref="ExpandoObject"/> going back to Python; returns the Python
+        /// Called with a <see cref="BindingModel"/> or <see cref="ExpandoObject"/> going back to Python; returns the Python
         /// model it represents, or <c>None</c> to pass the managed object through.
         /// </param>
         /// <remarks>
@@ -237,9 +237,23 @@ def names(value):
             return PythonObjectProxy.For(value);
         }
 
+        /// <summary>
+        /// Returns the live list proxy WPF sees for <paramref name="items"/>, for a CLR
+        /// <see cref="object"/> target such as <c>DataContext</c> that would otherwise receive a
+        /// pythonnet object, so bindings to <c>Count</c> or an index work as on an IronPython list.
+        /// </summary>
+        /// <remarks>
+        /// The proxy goes back to Python as <paramref name="items"/> wherever a value is read
+        /// as <see cref="object"/>.
+        /// </remarks>
+        public static PythonListProxy ListSource(PyObject items) {
+            using (Py.GIL())
+                return PythonListProxy.For(items);
+        }
+
         /// <summary>Returns the Python model behind a managed binding model, or null.</summary>
         /// <remarks>Requires the GIL.</remarks>
-        internal static PyObject FindModel(ExpandoObject model) {
+        internal static PyObject FindModel(object model) {
             var hook = modelHook;
             if (hook == null)
                 return null;
@@ -315,6 +329,8 @@ def names(value):
                     return PyObject.FromManagedObject(null);
                 case IPythonValue python:
                     return python.Source;
+                case BindingModel model:
+                    return FindModel(model) ?? PyObject.FromManagedObject(model);
                 case ExpandoObject model:
                     return FindModel(model) ?? PyObject.FromManagedObject(model);
                 default:

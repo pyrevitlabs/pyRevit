@@ -101,10 +101,16 @@ def _is_root_property(controller_type, name):
     return _root_properties[key]
 
 
+def _data_context_source(model):
+    if isinstance(model, (list, tuple)) and not hasattr(model, "_fields"):
+        return PythonBinding.ListSource(model)
+    return binding_source(model)
+
+
 def _set_native(state, native, name, value):
     if name == "DataContext":
         state.data_context = value
-        value = binding_source(value)
+        value = _data_context_source(value)
     setattr(native, name, value)
 
 
@@ -298,11 +304,15 @@ def queue_resource(target, path):
 
 
 def set_data_context(control, model):
-    """Bind ``model`` to a form or a child control through a managed adapter."""
+    """Bind ``model`` to a form or a child control through a managed adapter.
+
+    A Python list or tuple becomes a live list proxy, so ``{Binding Count}``
+    and indexed paths resolve as on an IronPython list.
+    """
     if isinstance(control, _Root):
         control.DataContext = model
     else:
-        control.DataContext = binding_source(model)
+        control.DataContext = _data_context_source(model)
 
 
 def items_source(values):
