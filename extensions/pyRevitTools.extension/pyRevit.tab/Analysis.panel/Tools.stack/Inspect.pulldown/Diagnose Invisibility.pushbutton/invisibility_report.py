@@ -17,7 +17,7 @@ import json
 import os
 import uuid
 
-from pyrevit import DB, HOST_APP, script
+from pyrevit import DB, HOST_APP, forms, script
 from pyrevit.framework import List
 from pyrevit.revit import events
 
@@ -343,9 +343,41 @@ class DiagnosisSession(object):
         self._reply(request_id, True)
 
     def _on_fix(self, payload, request_id):
+        """Apply one fix, rebuilt from a fresh diagnosis of the element.
+
+        The page only selects which fix to run; its id arguments are never
+        trusted. Template-owned fixes ask for confirmation first.
+        """
         view = self._view(payload["viewId"])
         element = self._element(payload["elementId"])
-        fix = payload["fix"]
+        requested_key = _fix_key(id_value(element.Id), payload["fix"])
+        fix = next(
+            (
+                finding.fix
+                for finding in diagnose(element, view, collect_visible_ids(view))
+                if finding.fix
+                and _fix_key(id_value(element.Id), finding.fix) == requested_key
+            ),
+            None,
+        )
+        if fix is None:
+            self._reply(
+                request_id,
+                False,
+                t("fix_stale", "This fix no longer applies. Recheck the view."),
+            )
+            return
+        template_name = fixes.describe(view, fix)["template"]
+        if template_name and not forms.alert(
+            t(
+                "confirm_template_fix",
+                "This changes view template '{}' and every view using it.",
+            ).format(template_name),
+            yes=True,
+            no=True,
+        ):
+            self._reply(request_id, False, t("fix_cancelled", "Cancelled."))
+            return
         try:
             fixes.apply(self._uidoc(), view, element, fix)
         except fixes.FixError as ex:
@@ -381,6 +413,28 @@ class DiagnosisSession(object):
                     seen.add(key)
                     pending.append((element, fix))
         label = t("ui_fix_all", "Fix all ({0})").replace("{0}", str(len(pending)))
+        templates = sorted(
+            set(
+                name
+                for name in (
+                    fixes.describe(view, fix)["template"] for _, fix in pending
+                )
+                if name
+            )
+        )
+        message = (
+            t("confirm_fix_all", "Apply {0} fixes to '{1}'?")
+            .replace("{0}", str(len(pending)))
+            .replace("{1}", view.Name)
+        )
+        if templates:
+            message += "\n" + t(
+                "confirm_fix_all_templates",
+                "View templates changed for every view using them: {}",
+            ).format(", ".join(templates))
+        if pending and not forms.alert(message, yes=True, no=True):
+            self._reply(request_id, False, t("fix_cancelled", "Cancelled."))
+            return
         group = DB.TransactionGroup(
             self.doc, "{}: {}".format(t("report_title", "Visibility Diagnosis"), label)
         )
