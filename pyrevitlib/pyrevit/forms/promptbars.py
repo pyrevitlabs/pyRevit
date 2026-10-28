@@ -28,10 +28,13 @@ class TemplatePromptBar(WPFWindow):
     def __init__(self, height=32, **kwargs):
         """Initialize user prompt window."""
         WPFWindow.__init__(self, op.join(XAML_FILES_DIR, self.xaml_source))
-
-        self.user_height = height
-        self.update_window()
-        self._setup(**kwargs)
+        try:
+            self.user_height = height
+            self.update_window()
+            self._setup(**kwargs)
+        except Exception:
+            _backend.dispose(self)
+            raise
 
     def update_window(self):
         """Update the prompt bar to match Revit window."""

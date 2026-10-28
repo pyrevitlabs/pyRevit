@@ -12,6 +12,7 @@ from collections import OrderedDict
 from pyrevit import PyRevitException
 from pyrevit.framework import Input
 import os.path as op
+from . import _backend
 
 
 class SearchPrompt(WPFWindow):
@@ -51,30 +52,34 @@ class SearchPrompt(WPFWindow):
     def __init__(self, search_db, width, height, **kwargs):
         """Initialize search prompt window."""
         WPFWindow.__init__(self, op.join(XAML_FILES_DIR, "SearchPrompt.xaml"))
-        self.Width = width
-        self.MinWidth = self.Width
-        self.Height = height
+        try:
+            self.Width = width
+            self.MinWidth = self.Width
+            self.Height = height
 
-        self.search_tip = kwargs.get("search_tip", "")
+            self.search_tip = kwargs.get("search_tip", "")
 
-        if isinstance(search_db, list):
-            self._search_db = {}
-            self._search_db_keys = search_db
-        elif isinstance(search_db, dict):
-            self._search_db = search_db
-            self._search_db_keys = sorted(self._search_db.keys())
-        else:
-            raise PyRevitException("Unknown search database type")
+            if isinstance(search_db, list):
+                self._search_db = {}
+                self._search_db_keys = search_db
+            elif isinstance(search_db, dict):
+                self._search_db = search_db
+                self._search_db_keys = sorted(self._search_db.keys())
+            else:
+                raise PyRevitException("Unknown search database type")
 
-        self._search_res = None
-        self._switches = kwargs.get("switches", [])
-        self._setup_response()
+            self._search_res = None
+            self._switches = kwargs.get("switches", [])
+            self._setup_response()
 
-        self.search_tb.Focus()
-        self.hide_element(self.tab_icon)
-        self.hide_element(self.return_icon)
-        self.search_tb.Text = ""
-        self.set_search_results()
+            self.search_tb.Focus()
+            self.hide_element(self.tab_icon)
+            self.hide_element(self.return_icon)
+            self.search_tb.Text = ""
+            self.set_search_results()
+        except Exception:
+            _backend.dispose(self)
+            raise
 
     def _setup_response(self, response=None):
         switch_dict = dict.fromkeys(self._switches)

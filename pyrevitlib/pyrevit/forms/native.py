@@ -314,7 +314,7 @@ def pick_file(
         if multi_file:
             if unc_paths:
                 return [coreutils.dletter_to_unc(x) for x in of_dlg.FileNames]
-            return of_dlg.FileNames
+            return list(of_dlg.FileNames)
         else:
             if unc_paths:
                 return coreutils.dletter_to_unc(of_dlg.FileName)
