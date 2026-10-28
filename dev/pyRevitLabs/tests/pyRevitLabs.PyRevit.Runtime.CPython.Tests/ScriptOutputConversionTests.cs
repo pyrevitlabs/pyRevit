@@ -64,6 +64,15 @@ public class ScriptOutputConversionTests {
         Assert.Equal("x|2", Observed(ScriptOutputConversionProbe.SequenceCells));
     }
 
+    /// <summary>
+    /// pythonnet releases the GIL around CLR calls made from a script, so the conversions must take
+    /// it themselves; calling the CPython API without it crashes Revit.
+    /// </summary>
+    [Fact]
+    public void Conversions_TakeTheGilWhenTheCallerReleasedIt() {
+        Assert.Equal("a|1;b|/a||1/k=1", Observed(ScriptOutputConversionProbe.ReleasedGil));
+    }
+
     /// <summary>Table data that yields no rows prints a warning instead of an empty table.</summary>
     [Fact]
     public void EmptyTableData_PrintsWarning() {
