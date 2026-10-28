@@ -263,7 +263,7 @@ for cycle in range(3):
     assert _backend.unwrap(dialog).FindName("okayButton") == dialog.okayButton
     dialog.okayButton.RaiseEvent(Windows.RoutedEventArgs(Controls.Button.ClickEvent))
     assert dialog.response == "available"
-    assert not dialog._event_bindings
+    assert dialog._events.is_released
     assert not theme_changed.handlers
 
 dialog = make_dialog(value_type="date", default=datetime.datetime(2026, 10, 26))
@@ -294,7 +294,7 @@ timer.Start()
 dialog.ShowDialog()
 timer.Tick -= accept
 assert dialog.response == "modal"
-assert not dialog._event_bindings
+assert dialog._events.is_released
 assert not theme_changed.handlers
 
 dialog = make_dialog(value_type="string", default="escape")
@@ -317,7 +317,7 @@ timer.Start()
 dialog.ShowDialog()
 timer.Tick -= escape
 assert dialog.response is None
-assert not dialog._event_bindings
+assert dialog._events.is_released
 assert not theme_changed.handlers
 
 
@@ -341,7 +341,7 @@ else:
 finally:
     timer.Stop()
     timer.Tick -= accept
-assert not dialog._event_bindings
+assert dialog._events.is_released
 assert not theme_changed.handlers
 
 
@@ -408,7 +408,7 @@ timer.Start()
 Threading.Dispatcher.PushFrame(frame)
 timer.Tick -= close_modeless
 assert dialog.was_closed
-assert not dialog._event_bindings
+assert dialog._events.is_released
 assert not theme_changed.handlers
 assert not forms.activate_open_window("MODELESS_FORMS_PROBE")
 
@@ -425,11 +425,11 @@ _backend.bind_event(guarded, "Closing", keep_open)
 guarded.Show()
 guarded.Close()
 assert guarded.IsVisible
-assert guarded._event_bindings
+assert not guarded._events.is_released
 allow_close.append(True)
 guarded.Close()
 assert not guarded.IsVisible
-assert not guarded._event_bindings
+assert guarded._events.is_released
 assert guarded.was_closed
 
 for name in forms.__all__:
@@ -475,12 +475,13 @@ assert not uiapp.Idling.handlers
 pane.Hide()
 _DockablePane.created.clear()
 uiapp.ActiveUIDocument = object()
-forms.dockable._PENDING_SHOW_TIMEOUT_SECONDS = 0
+pane_show = sys.modules["pyrevit.forms._pane_show"]
+pane_show._PENDING_SHOW_TIMEOUT_SECONDS = 0
 forms.open_dockable_panel(ProbePanel)
 uiapp.raise_idling()
 assert not uiapp.Idling.handlers
 assert not pane.is_visible
-forms.dockable._PENDING_SHOW_TIMEOUT_SECONDS = 60
+pane_show._PENDING_SHOW_TIMEOUT_SECONDS = 60
 uiapp.ActiveUIDocument = None
 _DockablePane.created.update(_DockablePane.registered)
 forms.open_dockable_panel(ProbePanel)
@@ -560,7 +561,7 @@ panel.label.RaiseEvent(mouse_down)
 panel.label.RaiseEvent(mouse_down)
 assert len(logged_errors) == 2
 assert "panel callback failure" in logged_errors[0][1]
-assert panel._callback_error is None
+assert panel._events.error is None
 
 
 def exit_panel_callback(sender, args):
@@ -707,5 +708,66 @@ palette_window.load_xaml(
 palette_window.Show()
 palette_window.Close()
 assert not palette_window.IsVisible
+
+
+class ReplayWindow(forms.WPFWindow):
+    """Load initial check states in both attribute orders."""
+
+    def __init__(self):
+        self.seen = []
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><StackPanel>"
+            "<RadioButton x:Name='before' GroupName='a' IsChecked='True' "
+            "Checked='before_checked'/>"
+            "<RadioButton x:Name='after' GroupName='b' Checked='after_checked' "
+            "IsChecked='True'/>"
+            "</StackPanel></Window>".format(xaml_namespaces),
+            literal_string=True,
+        )
+        self.mode = "ready"
+
+    def before_checked(self, sender, args):
+        """Read state the subclass sets only after the base initializer."""
+        self.seen.append(("before", self.mode))
+
+    def after_checked(self, sender, args):
+        """Record the replay IronPython's loader would also deliver."""
+        self.seen.append(("after", getattr(self, "mode", None)))
+
+
+replayed = ReplayWindow()
+assert replayed.seen == [("after", None)], replayed.seen
+assert replayed._events.error is None
+replayed.before.IsChecked = False
+replayed.before.IsChecked = True
+assert replayed.seen[-1] == ("before", "ready")
+replayed.Close()
+
+
+class ClrNamespaceEventWindow(forms.WPFWindow):
+    """Defer an event outside the fallback list on a clr-namespace element."""
+
+    def __init__(self):
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {} xmlns:c='clr-namespace:System.Windows.Controls;"
+            "assembly=PresentationFramework'><c:Button x:Name='custom' "
+            "MouseMove='moved'/></Window>".format(xaml_namespaces),
+            literal_string=True,
+        )
+        self.moves = 0
+
+    def moved(self, sender, args):
+        """Count mouse moves raised on the custom-namespace element."""
+        self.moves += 1
+
+
+custom_events = ClrNamespaceEventWindow()
+move = Input.MouseEventArgs(Input.Mouse.PrimaryDevice, 0)
+move.RoutedEvent = Input.Mouse.MouseMoveEvent
+custom_events.custom.RaiseEvent(move)
+assert custom_events.moves == 1
+custom_events.Close()
 
 print("CPython WPF forms probe passed")

@@ -75,7 +75,7 @@ module(
         InfoCenter=module("Autodesk.Internal.InfoCenter"),
     ),
 )
-facade = importlib.import_module("pyrevit.forms._ipy")
+facade = importlib.import_module("pyrevit.forms._ipy_legacy")
 unresolved = [name for name in facade.__all__ if not hasattr(facade, name)]
 assert not unresolved, unresolved
 assert len(set(facade.__all__)) == len(facade.__all__)

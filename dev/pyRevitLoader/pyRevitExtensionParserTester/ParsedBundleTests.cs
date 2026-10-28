@@ -739,6 +739,81 @@ is_beta: true
             }
         }
 
+        [Test]
+        public void TestNoExtensionDeclarationLeavesEngineTypeUnset()
+        {
+            var extension = ParseExtensionWithEngine("{}", null, out var extensionDir);
+            try
+            {
+                var command = extension.CollectCommandComponents().Single();
+                var engineCfgs = pyRevitAssemblyBuilder.AssemblyMaker.CommandGenerationUtilities.BuildEngineConfigs(
+                    command, command.ScriptPath, extension);
+
+                Assert.That(extension.DeclaresCPython, Is.False);
+                Assert.That(engineCfgs, Does.Not.Contain("\"type\""));
+                Assert.That(engineCfgs, Does.Not.Contain("type_explicit"));
+            }
+            finally
+            {
+                Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        [NonParallelizable]
+        public void TestUnsupportedExtensionDeclarationWarnsAndIsIgnored()
+        {
+            var warnings = new WarningCapture();
+            ParsedExtension extension;
+            string extensionDir;
+            SetLogger(warnings);
+            try
+            {
+                extension = ParseExtensionWithEngine("{ \"engine\": \"python3\" }", null, out extensionDir);
+            }
+            finally
+            {
+                SetLogger(null);
+            }
+
+            try
+            {
+                var command = extension.CollectCommandComponents().Single();
+                var engineCfgs = pyRevitAssemblyBuilder.AssemblyMaker.CommandGenerationUtilities.BuildEngineConfigs(
+                    command, command.ScriptPath, extension);
+
+                Assert.That(warnings.Messages,
+                    Has.Some.Contains("Ignoring unsupported extension Python engine declaration: python3"));
+                Assert.That(extension.DeclaredPythonEngine, Is.Null);
+                Assert.That(extension.DeclaresCPython, Is.False);
+                Assert.That(engineCfgs, Does.Not.Contain("\"type\""));
+            }
+            finally
+            {
+                Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [TestCase(false, null, "{\"clean\":true,\"full_frame\":true,\"persistent\":true}")]
+        [TestCase(true, null, "{\"clean\":false,\"full_frame\":true,\"persistent\":true}")]
+        [TestCase(false, "CPython", "{\"clean\":true,\"full_frame\":true,\"persistent\":true,\"type\":\"CPython\"}")]
+        public void TestStartupEngineConfigs(bool sharedSessionEngine, string? engineType, string expected)
+        {
+            var configs = pyRevitAssemblyBuilder.SessionManager.SessionManagerService.BuildStartupEngineConfigs(
+                sharedSessionEngine, engineType);
+
+            Assert.That(configs, Is.EqualTo(expected));
+        }
+
+        private sealed class WarningCapture : IParserLogger
+        {
+            public List<string> Messages { get; } = new List<string>();
+            public void Debug(string message) { }
+            public void Info(string message) { }
+            public void Warning(string message) => Messages.Add(message);
+            public void Error(string message) { }
+        }
+
         private static ParsedExtension ParseExtensionWithEngine(string extensionJson, string bundleYaml, out string extensionDir)
         {
             extensionDir = Path.Combine(Path.GetTempPath(), $"DeclaredEngine_{System.Guid.NewGuid():N}.extension");

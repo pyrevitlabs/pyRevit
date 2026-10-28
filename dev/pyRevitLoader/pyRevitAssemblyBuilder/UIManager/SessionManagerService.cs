@@ -11,6 +11,8 @@ using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 using pyRevitLabs.Common;
+using pyRevitLabs.Json;
+using pyRevitLabs.Json.Linq;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -1014,13 +1016,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return scriptData;
         }
 
-        private static string StartupEngineType(ParsedExtension extension, string startupScript)
+        private static string? StartupEngineType(ParsedExtension extension, string startupScript)
         {
             var isCPythonStartup = string.Equals(
                 System.IO.Path.GetFileName(startupScript),
                 ParsedExtension.CPythonStartupFileName,
                 StringComparison.OrdinalIgnoreCase);
-            return isCPythonStartup || extension.DeclaredPythonEngine == "cpython" ? "CPython" : null;
+            return isCPythonStartup || extension.DeclaresCPython ? ParsedExtension.CPythonEngineType : null;
         }
 
         /// <summary>
@@ -1048,7 +1050,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </remarks>
         private object CreateScriptRuntimeConfigs(
             List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null,
-            string engineType = null)
+            string? engineType = null)
         {
             // Create temporary ExternalCommandData
 #if NETFRAMEWORK
@@ -1083,11 +1085,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
 
-            var engineTypeJson = engineType == null ? string.Empty : $", \"type\": \"{engineType}\"";
-            var engineConfigsJson = sharedSessionEngine
-                ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true" + engineTypeJson + "}"
-                : "{\"clean\": true, \"full_frame\": true, \"persistent\": true" + engineTypeJson + "}";
-            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
+            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs",
+                BuildStartupEngineConfigs(sharedSessionEngine, engineType));
             TrySetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
 
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
@@ -1105,6 +1104,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             return scriptRuntimeConfigs;
+        }
+
+        internal static string BuildStartupEngineConfigs(bool sharedSessionEngine, string? engineType)
+        {
+            var configs = new JObject
+            {
+                ["clean"] = !sharedSessionEngine,
+                ["full_frame"] = true,
+                ["persistent"] = true,
+            };
+            if (engineType != null)
+                configs["type"] = engineType;
+            return configs.ToString(Formatting.None);
         }
 
         private static void SetMemberValue(Type targetType, object? instance, string memberName, object? value)

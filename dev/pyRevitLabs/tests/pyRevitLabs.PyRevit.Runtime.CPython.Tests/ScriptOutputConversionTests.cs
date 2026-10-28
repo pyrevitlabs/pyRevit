@@ -3,7 +3,7 @@ namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 /// <summary>
 /// Pins how <c>ScriptOutput.print_table</c> and friends turn CPython arguments into table cells.
 /// Python objects reach C# as pythonnet wrappers rather than CLR enumerables, so these run the
-/// shipped conversion helpers against real pythonnet objects.
+/// shipped <c>PythonTableData</c> conversions against real pythonnet objects.
 /// </summary>
 public class ScriptOutputConversionTests {
     private static string Observed(string observation) =>
@@ -52,5 +52,35 @@ public class ScriptOutputConversionTests {
     [Fact]
     public void Dictionaries_ConvertEntries() {
         Assert.Equal("k=1", Observed(ScriptOutputConversionProbe.Dictionary));
+    }
+
+    /// <summary>
+    /// Objects iterable only through the <c>__len__</c>/<c>__getitem__</c> sequence protocol convert
+    /// item by item, as Python's <c>iter()</c> would, for both rows and cells.
+    /// </summary>
+    [Fact]
+    public void SequenceProtocolObjects_ConvertItemByItem() {
+        Assert.Equal("a|1;b|", Observed(ScriptOutputConversionProbe.SequenceRows));
+        Assert.Equal("x|2", Observed(ScriptOutputConversionProbe.SequenceCells));
+    }
+
+    /// <summary>Table data that yields no rows prints a warning instead of an empty table.</summary>
+    [Fact]
+    public void EmptyTableData_PrintsWarning() {
+        Assert.Equal("### :warning: No table_data list", Observed(ScriptOutputConversionProbe.EmptyTable));
+        Assert.Equal("<render>", Observed(ScriptOutputConversionProbe.FilledTable));
+    }
+
+    /// <summary>Both table printers take the empty-table decision from <c>PythonTableData</c>.</summary>
+    [Theory]
+    [InlineData("public void print_table(")]
+    [InlineData("public void print_html_table(")]
+    public void TablePrinters_UseEmptyTableWarning(string declaration) {
+        string source = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Sources", "ScriptOutput.cs"));
+        string body = CSharpSource.MemberBody(source, declaration);
+
+        Assert.True(CSharpSource.IsInBlockOf(body, "if (emptyTableWarning != null)", "return;"),
+            $"{declaration} must stop when PythonTableData.EmptyTableWarning reports no rows");
+        Assert.Contains("PythonTableData.EmptyTableWarning(rows)", body);
     }
 }

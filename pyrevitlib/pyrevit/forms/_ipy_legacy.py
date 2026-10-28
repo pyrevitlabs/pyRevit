@@ -23,7 +23,7 @@ from pyrevit.compat import IRONPY
 from pyrevit.compat import safe_strtype, get_elementid_value_func
 from pyrevit._perf import mark as _perfmark
 
-_perfmark("pyrevit.forms._ipy:entry")
+_perfmark("pyrevit.forms._ipy_legacy:entry")
 
 if not IRONPY:
     raise PyRevitCPythonNotSupported("pyrevit.forms")
@@ -33,7 +33,7 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
 from pyrevit.coreutils import envvars
 
-_perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
+_perfmark("pyrevit.forms._ipy_legacy:after coreutils+logger+colors")
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit.framework import Threading
@@ -45,33 +45,33 @@ from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
 from pyrevit.framework import Uri, UriKind, ResourceDictionary
 
-_perfmark("pyrevit.forms._ipy:after framework re-imports")
+_perfmark("pyrevit.forms._ipy_legacy:after framework re-imports")
 from pyrevit.api import AdWindows
 
-_perfmark("pyrevit.forms._ipy:after pyrevit.api.AdWindows")
+_perfmark("pyrevit.forms._ipy_legacy:after pyrevit.api.AdWindows")
 from pyrevit.labs import Common
 from pyrevit import revit, UI, DB
 
-_perfmark("pyrevit.forms._ipy:after `from pyrevit import revit, UI, DB`")
+_perfmark("pyrevit.forms._ipy_legacy:after `from pyrevit import revit, UI, DB`")
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
 
-_perfmark("pyrevit.forms._ipy:after forms.utils + forms.toaster")
+_perfmark("pyrevit.forms._ipy_legacy:after forms.utils + forms.toaster")
 from pyrevit import versionmgr
 
-_perfmark("pyrevit.forms._ipy:after pyrevit.versionmgr")
+_perfmark("pyrevit.forms._ipy_legacy:after pyrevit.versionmgr")
 from pyrevit.userconfig import user_config
 
-_perfmark("pyrevit.forms._ipy:after `from pyrevit.userconfig import user_config`")
+_perfmark("pyrevit.forms._ipy_legacy:after `from pyrevit.userconfig import user_config`")
 
 import pyevent
 
-_perfmark("pyrevit.forms._ipy:after pyevent")
+_perfmark("pyrevit.forms._ipy_legacy:after pyevent")
 
 import Autodesk.Windows.ComponentManager
 import Autodesk.Internal.InfoCenter
 
-_perfmark("pyrevit.forms._ipy:after Autodesk.Windows/Internal")
+_perfmark("pyrevit.forms._ipy_legacy:after Autodesk.Windows/Internal")
 
 
 from .base import (
@@ -85,70 +85,13 @@ from .base import (
 )
 from ._common import *  # noqa: F401,F403
 from ._common import __all__ as _COMMON_EXPORTS
+from ._legacy_exports import LEGACY_EXPORTS
 
-_LEGACY_EXPORTS = [
-    "AdWindows",
-    "Autodesk",
-    "BIN_DIR",
-    "CPDialogs",
-    "Common",
-    "ComponentModel",
-    "Controls",
-    "DB",
-    "DEFAULT_CMDSWITCHWND_WIDTH",
-    "DEFAULT_INPUTWINDOW_HEIGHT",
-    "DEFAULT_INPUTWINDOW_WIDTH",
-    "DEFAULT_RECOGNIZE_ACCESS_KEY",
-    "DEFAULT_SEARCHWND_HEIGHT",
-    "DEFAULT_SEARCHWND_WIDTH",
-    "DOCS",
-    "Documents",
-    "EXEC_PARAMS",
-    "Forms",
-    "HOST_APP",
-    "IRONPY",
-    "Input",
-    "Interop",
-    "Media",
-    "ObservableCollection",
-    "OrderedDict",
-    "PyRevitCPythonNotSupported",
-    "PyRevitException",
-    "ResourceDictionary",
-    "System",
-    "THEME_XAML_FILE",
-    "Threading",
-    "UI",
-    "Uri",
-    "UriKind",
-    "colors",
-    "coreutils",
-    "datetime",
-    "envvars",
-    "framework",
-    "get_elementid_value_func",
-    "get_logger",
-    "mlogger",
-    "op",
-    "os",
-    "pyevent",
-    "re",
-    "revit",
-    "safe_strtype",
-    "string",
-    "sys",
-    "threading",
-    "toaster",
-    "user_config",
-    "utils",
-    "versionmgr",
-    "webbrowser",
-    "wpf",
-]
+_LEGACY_EXPORTS = list(LEGACY_EXPORTS)
 
 __all__ = _COMMON_EXPORTS + _LEGACY_EXPORTS
 
 mlogger = get_logger(__name__)
 
 
-_perfmark("pyrevit.forms._ipy:exit (all class defs done)")
+_perfmark("pyrevit.forms._ipy_legacy:exit (all class defs done)")

@@ -45,6 +45,9 @@
         <None Include="..\..\..\pyRevitLabs.PyRevit.Runtime\ScriptOutput.cs"
               Link="Sources\ScriptOutput.cs"
               CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\..\pyRevitLabs.PyRevit.Runtime\PythonTableData.cs"
+              Link="Sources\PythonTableData.cs"
+              CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
     <!-- The tracked CPython engine pyRevit deploys, staged so the tests need no local Python

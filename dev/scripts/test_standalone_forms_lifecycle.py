@@ -2,12 +2,22 @@
 
 import ast
 import datetime
+import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
 
 FORMS = Path(__file__).resolve().parents[2] / "pyrevitlib" / "pyrevit" / "forms"
+
+
+def _load_shared():
+    spec = importlib.util.spec_from_file_location(
+        "forms_backend_shared", FORMS / "backends" / "_shared.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load(module, names, scope, class_name=None):
@@ -33,7 +43,7 @@ class PendingDockableShowTests(unittest.TestCase):
         """Load the pending-show helpers with a deterministic token source."""
         guids = iter(["first", "second", "third"])
         self.scope = _load(
-            "dockable.py",
+            "_pane_show.py",
             {
                 "_pending_entry",
                 "_pending_entry_token",
@@ -117,34 +127,52 @@ class _Proxy(object):
         self.item = item
 
 
+class _Selector(object):
+    def __init__(self, items_source):
+        self.ItemsSource = items_source
+
+
 class ResetCallbackTests(unittest.TestCase):
     """Reset callbacks see the listed items and their changes reach the list."""
 
     @staticmethod
-    def _dialog(items_source, unwrap, reset_func):
+    def _backend(engine):
+        shared = _load_shared()
+        scope = _load(
+            "backends/{}.py".format(engine),
+            {"items_of", "rebind_if_changed"},
+            {
+                "same_items": shared.same_items,
+                "unwrap_item": lambda value: value.item,
+                "list_source": lambda values: [_Proxy(v) for v in values],
+            },
+        )
+        return SimpleNamespace(**scope)
+
+    def _reset(self, engine, items_source, reset_func):
         scope = _load(
             "listdialog.py",
             {"button_reset"},
-            {
-                "_backend": SimpleNamespace(
-                    unwrap_item=unwrap,
-                    list_source=lambda values: [_Proxy(v) for v in values],
-                )
-            },
+            {"_backend": self._backend(engine)},
             class_name="SelectFromList",
         )
-        dialog = SimpleNamespace(
-            list_lb=SimpleNamespace(ItemsSource=items_source), reset_func=reset_func
-        )
+        dialog = SimpleNamespace(list_lb=_Selector(items_source), reset_func=reset_func)
         scope["button_reset"](dialog, None, None)
         return dialog
 
-    def test_native_items_receive_the_live_collection(self):
+    def test_ironpython_items_receive_the_live_collection(self):
         """IronPython callbacks mutate the bound ItemsSource itself."""
         live = ["a", "b"]
         observed = []
-        self._dialog(live, lambda value: value, observed.append)
+
+        def reset(values):
+            observed.append(values)
+            values.remove("b")
+
+        dialog = self._reset("_ipy", live, reset)
         self.assertIs(live, observed[0])
+        self.assertIs(live, dialog.list_lb.ItemsSource)
+        self.assertEqual(["a"], live)
 
     def test_proxied_items_are_unwrapped_and_rebound_after_changes(self):
         """CPython callbacks get Python items; list edits are rebound."""
@@ -155,17 +183,62 @@ class ResetCallbackTests(unittest.TestCase):
             observed.append(list(values))
             values.remove(second)
 
-        dialog = self._dialog(
-            [_Proxy(first), _Proxy(second)], lambda value: value.item, reset
-        )
+        dialog = self._reset("_cpy", [_Proxy(first), _Proxy(second)], reset)
         self.assertEqual([[first, second]], observed)
         self.assertEqual([first], [p.item for p in dialog.list_lb.ItemsSource])
 
     def test_proxied_items_keep_their_binding_when_unchanged(self):
         """Unchanged CPython lists keep the existing bound collection."""
         proxies = [_Proxy(object())]
-        dialog = self._dialog(proxies, lambda value: value.item, lambda values: None)
+        dialog = self._reset("_cpy", proxies, lambda values: None)
         self.assertIs(proxies, dialog.list_lb.ItemsSource)
+
+
+class SharedBackendTests(unittest.TestCase):
+    """Engine-neutral helpers behave the same for both backends."""
+
+    def setUp(self):
+        """Load the shared helpers without WPF."""
+        self.shared = _load_shared()
+
+    def test_same_items_compares_identity_and_order(self):
+        """Equal but distinct objects, or a reordering, count as a change."""
+        first, second = [1000], [1000]
+        self.assertTrue(self.shared.same_items([first, second], (first, second)))
+        self.assertFalse(self.shared.same_items([first, second], [second, first]))
+        self.assertFalse(self.shared.same_items([first], [[1000]]))
+        self.assertFalse(self.shared.same_items([first], [first, second]))
+
+    def test_disposing_disposes_only_on_failure(self):
+        """A failed construction disposes the form and re-raises the error."""
+        disposed = []
+        target = object()
+        with self.shared.Disposing(target, disposed.append) as entered:
+            self.assertIs(target, entered)
+        self.assertEqual([], disposed)
+        with self.assertRaises(ValueError):
+            with self.shared.Disposing(target, disposed.append):
+                raise ValueError("setup failed")
+        self.assertEqual([target], disposed)
+
+    def test_disposing_ignores_system_exit(self):
+        """Only errors dispose; exiting the script leaves the form alone."""
+        disposed = []
+        with self.assertRaises(SystemExit):
+            with self.shared.Disposing(object(), disposed.append):
+                raise SystemExit()
+        self.assertEqual([], disposed)
+
+    def test_pane_options_copy_only_set_values(self):
+        """Unset pane options keep Revit's defaults on the target."""
+        panel = SimpleNamespace(
+            initial_state="state", editor_interaction=None, contextual_help="help"
+        )
+        target = SimpleNamespace(EditorInteraction="default")
+        self.shared.apply_pane_options(panel, target)
+        self.assertEqual("state", target.InitialState)
+        self.assertEqual("default", target.EditorInteraction)
+        self.assertEqual("help", target.ContextualHelp)
 
 
 if __name__ == "__main__":

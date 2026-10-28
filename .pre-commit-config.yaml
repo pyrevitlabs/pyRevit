@@ -3,7 +3,7 @@ repos:
     rev: v0.16.2
     hooks:
       - id: ruff-format
-        exclude: ^(site-packages/|pyrevitlib/rpw/|dev/modules/|pyrevitlib/pyrevit/forms/_ipy\.py$)
+        exclude: ^(site-packages/|pyrevitlib/rpw/|dev/modules/|pyrevitlib/pyrevit/forms/_ipy_legacy\.py$)
   - repo: local
     hooks:
       - id: dotnet-format

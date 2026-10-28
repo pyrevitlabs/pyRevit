@@ -3,7 +3,7 @@
 import datetime
 import os.path as op
 
-from pyrevit import framework
+from pyrevit import PyRevitException, framework
 from pyrevit.framework import System
 from .base import (
     WPFWindow,
@@ -12,6 +12,9 @@ from .base import (
     DEFAULT_INPUTWINDOW_HEIGHT,
 )
 from . import _backend
+
+
+VALUE_TYPES = ("string", "dropdown", "date", "slider")
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -27,11 +30,11 @@ class TemplateUserInputWindow(WPFWindow):
 
     xaml_source = "BaseWindow.xaml"
     default_title_key = "pyRevit.DefaultWindowTitle"
+    _binding_exclude = True
 
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
-        _backend.validate_input(kwargs.get("value_type", "string"))
-        try:
+        with _backend.disposing(self):
             WPFWindow.__init__(
                 self, op.join(XAML_FILES_DIR, self.xaml_source), handle_esc=True
             )
@@ -62,9 +65,6 @@ class TemplateUserInputWindow(WPFWindow):
                 )
 
             self._setup(**kwargs)
-        except Exception:
-            _backend.dispose(self)
-            raise
 
     def _setup(self, **kwargs):
         """Private method to be overriden by subclasses for window setup."""
@@ -96,13 +96,24 @@ class TemplateUserInputWindow(WPFWindow):
 class GetValueWindow(TemplateUserInputWindow):
     """Collect a modal value; cancellation returns None.
 
-    Note:
-        CPython supports the string, dropdown, date and slider inputs; other
-        value types are rejected before any native control is created.
+    Raises:
+        PyRevitException: ``value_type`` is not one of ``VALUE_TYPES``. The
+            check runs before any native control is created, on both engines;
+            an unknown type used to open an empty dialog under IronPython.
     """
 
     xaml_source = "GetValueWindow.xaml"
     resolve_theme = True
+    _binding_exclude = True
+
+    def __init__(self, context, title, width, height, **kwargs):
+        """Reject an unknown ``value_type``, then build the dialog."""
+        value_type = kwargs.get("value_type", "string")
+        if value_type not in VALUE_TYPES:
+            raise PyRevitException(
+                "Unknown GetValueWindow value_type: {}".format(value_type)
+            )
+        TemplateUserInputWindow.__init__(self, context, title, width, height, **kwargs)
 
     def _setup(self, **kwargs):
         self.Width = 400

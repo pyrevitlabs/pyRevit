@@ -49,10 +49,12 @@ class SearchPrompt(WPFWindow):
         ```
     """
 
+    _binding_exclude = True
+
     def __init__(self, search_db, width, height, **kwargs):
         """Initialize search prompt window."""
         WPFWindow.__init__(self, op.join(XAML_FILES_DIR, "SearchPrompt.xaml"))
-        try:
+        with _backend.disposing(self):
             self.Width = width
             self.MinWidth = self.Width
             self.Height = height
@@ -77,9 +79,6 @@ class SearchPrompt(WPFWindow):
             self.hide_element(self.return_icon)
             self.search_tb.Text = ""
             self.set_search_results()
-        except Exception:
-            _backend.dispose(self)
-            raise
 
     def _setup_response(self, response=None):
         switch_dict = dict.fromkeys(self._switches)

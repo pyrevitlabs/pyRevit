@@ -1,23 +1,41 @@
 """Preserve IronPython's native WPF inheritance and DynamicXamlReader behavior."""
 
 from pyrevit import UI
-from pyrevit.coreutils import envvars
-from pyrevit.framework import Controls, Interop, System, Windows, wpf
+from pyrevit.framework import Controls, Windows, wpf
+
+from ._shared import Disposing, apply_pane_options, same_items
 
 Window = Windows.Window
 Panel = Controls.Page
 
 
 def initialize(target):
-    """Keep the CLR-created IronPython window instance as the XAML root."""
-
-
-def initialize_panel(target):
-    """Keep the CLR-created IronPython page instance as the XAML root."""
+    """Keep the CLR-created IronPython instance as the XAML root."""
 
 
 def dispose(target):
     """Preserve the existing IronPython exception and window lifecycle."""
+
+
+def disposing(target):
+    """Return a context manager that disposes ``target`` if its body raises."""
+    return Disposing(target, dispose)
+
+
+def on_release(target, detach):
+    """Run ``detach()`` when a window closes; pages have no close event."""
+    if isinstance(target, Windows.Window):
+        target.Closed += lambda sender, args: detach()
+
+
+def queue_resource(target, path):
+    """Never queue: IronPython merges dictionaries into the live root."""
+    return False
+
+
+def set_data_context(control, model):
+    """Assign the model directly; IronPython models are CLR notifiers."""
+    control.DataContext = model
 
 
 def bind_event(target, event_name, handler):
@@ -43,11 +61,39 @@ def items_source(values):
 
 
 def list_source(values):
-    """Keep the existing observable IronPython list model."""
+    """Return an observable snapshot of list models for an ``ItemsSource``."""
     from pyrevit.framework import ObservableCollection
     from ..reactive import TemplateListItem
 
     return ObservableCollection[TemplateListItem](values)
+
+
+def items_of(selector):
+    """Return the live ``ItemsSource``; in-place changes show immediately."""
+    return selector.ItemsSource
+
+
+def selected_items_of(selector):
+    """Return the selector's live ``SelectedItems``."""
+    return selector.SelectedItems
+
+
+def selected_item_of(selector):
+    """Return the selector's ``SelectedItem``."""
+    return selector.SelectedItem
+
+
+def data_context_of(element):
+    """Return the element's ``DataContext``."""
+    return element.DataContext
+
+
+def rebind_if_changed(control, items):
+    """Re-list ``items`` on ``control`` if they differ from what it lists."""
+    current = control.ItemsSource
+    if items is current or same_items(items, current or []):
+        return
+    control.ItemsSource = list_source(items)
 
 
 def binding_source(value):
@@ -55,18 +101,9 @@ def binding_source(value):
     return value
 
 
-def unwrap_item(value):
-    """Keep native IronPython list items unchanged."""
-    return value
-
-
 def show_prompt(target):
     """Show a command-scoped overlay using the original window implementation."""
     target.Show()
-
-
-def validate_input(value_type):
-    """Keep all existing IronPython input modes available."""
 
 
 def load_component(target, source):
@@ -87,61 +124,7 @@ class _PaneProvider(UI.IDockablePaneProvider):
     def SetupDockablePane(self, data):
         data.FrameworkElement = self._panel
         data.VisibleByDefault = self._default_visible
-        if self._panel.initial_state is not None:
-            data.InitialState = self._panel.initial_state
-        if self._panel.editor_interaction is not None:
-            data.EditorInteraction = self._panel.editor_interaction
-        if self._panel.contextual_help is not None:
-            data.ContextualHelp = self._panel.contextual_help
-
-
-def activate_open_window(envvar):
-    """Bring a modeless window left open by an earlier run to the front.
-
-    Single-instance guard for modeless tools: the tool stores its window
-    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
-    this on every run before creating a new one. A minimized window is
-    restored before activation; a hidden one is left hidden.
-
-    Openness is judged by the window's native handle, which WPF releases on
-    close, not by ``IsLoaded``, which stays True after ``Close()``. Callers
-    therefore need not clear ``envvar`` in their ``Closed`` handler.
-
-    Args:
-        envvar (str): pyRevit environment variable holding the window.
-
-    Returns:
-        (bool): True when a window already exists, meaning the caller must
-            not open another. It does not promise the window is now in front:
-            Windows may refuse the foreground request, and a hidden window
-            stays hidden. False otherwise; a stale (closed) reference is
-            cleared.
-
-    Examples:
-        ```python
-        from pyrevit import forms, script
-
-        if not forms.activate_open_window("MYTOOL_WINDOW"):
-            window = MyToolWindow("MyTool.xaml")
-            script.set_envvar("MYTOOL_WINDOW", window)
-            window.show()
-        ```
-    """
-    window = envvars.get_pyrevit_env_var(envvar)
-    if window is None:
-        return False
-    try:
-        is_open = Interop.WindowInteropHelper(window).Handle != System.IntPtr.Zero
-    except Exception:
-        is_open = False
-    if not is_open:
-        envvars.set_pyrevit_env_var(envvar, None)
-        return False
-    if window.IsVisible:
-        if window.WindowState == Windows.WindowState.Minimized:
-            window.WindowState = Windows.WindowState.Normal
-        window.Activate()
-    return True
+        apply_pane_options(self._panel, data)
 
 
 import pyevent

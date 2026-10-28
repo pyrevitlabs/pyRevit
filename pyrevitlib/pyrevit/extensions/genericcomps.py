@@ -833,7 +833,7 @@ class GenericUICommand(GenericUIComponent):
         else:
             with open(self.script_file, "r") as script_f:
                 first_line = script_f.readline()
-        return "python3" in first_line or "cpython" in first_line
+        return exts.first_line_selects_cpython(first_line)
 
     def has_config_script(self):
         return self.config_script_file != self.script_file
