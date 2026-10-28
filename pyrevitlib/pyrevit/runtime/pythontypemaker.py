@@ -2,6 +2,7 @@
 
 from pyrevit.coreutils import logger
 from pyrevit.userconfig import user_config
+import pyrevit.extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
 from pyrevit import runtime
@@ -53,6 +54,13 @@ def _does_need_clean_engine(extension, cmd_component):
     return use_clean_engine
 
 
+def _bundle_engine_type(cmd_component):
+    engine_meta = (cmd_component.meta or {}).get(exts.MDATA_ENGINE)
+    if isinstance(engine_meta, dict):
+        return exts.get_declared_engine_type({exts.MDATA_ENGINE: engine_meta})
+    return None
+
+
 def create_executor_type(extension, module_builder, cmd_component):
     """Create the dotnet type for the executor.
 
@@ -71,6 +79,7 @@ def create_executor_type(extension, module_builder, cmd_component):
         full_frame=cmd_component.requires_fullframe_engine,
         persistent=cmd_component.requires_persistent_engine,
         engine_type=extension.script_engine,
+        bundle_engine_type=_bundle_engine_type(cmd_component),
     )
 
     bundletypemaker.create_executor_type(

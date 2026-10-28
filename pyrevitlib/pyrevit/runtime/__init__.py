@@ -360,7 +360,11 @@ def _get_runtime_asm():
 
 
 def create_ipyengine_configs(
-    clean=False, full_frame=False, persistent=False, engine_type=None
+    clean=False,
+    full_frame=False,
+    persistent=False,
+    engine_type=None,
+    bundle_engine_type=None,
 ):
     """Return Python command engine configuration.
 
@@ -370,18 +374,26 @@ def create_ipyengine_configs(
         persistent (bool, optional): Engine should persist. Defaults to False.
         engine_type (str, optional): The extension-level Python engine
             declaration. ``"cpython"`` becomes a default the script's shebang
-            cannot lose to; any other value preserves per-script selection,
-            matching the C# command generator.
+            cannot lose to; any other value preserves per-script selection.
+        bundle_engine_type (str, optional): The bundle's own ``engine.type``.
+            A non-blank value is passed through verbatim and marked explicit.
 
     Returns:
         (str): Configuration
+
+    Invariant:
+        Precedence matches the C# command generator: the bundle's
+        ``engine.type`` wins over the extension declaration.
     """
     engine_configs = {
         exts.MDATA_ENGINE_CLEAN: clean,
         exts.MDATA_ENGINE_FULLFRAME: full_frame,
         exts.MDATA_ENGINE_PERSISTENT: persistent,
     }
-    if engine_type == exts.PYTHON_ENGINE_CPYTHON:
+    if bundle_engine_type and bundle_engine_type.strip():
+        engine_configs["type"] = bundle_engine_type
+        engine_configs["type_explicit"] = True
+    elif engine_type == exts.PYTHON_ENGINE_CPYTHON:
         engine_configs["type"] = "CPython"
     return json.dumps(engine_configs)
 
