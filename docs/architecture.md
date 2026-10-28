@@ -181,11 +181,20 @@ helpers, and `_backend.list_source` returns a managed snapshot to reassign
 rather than edit. The CPython controller keeps every callback in one
 `_EventRegistry` (`backends/_events.py`), which also runs release hooks such
 as the theme unsubscription. A form adapts its own `DataContext`; a child control
-needs `forms.set_data_context(control, model)` so CPython bindings, including
-TwoWay ones, see a managed model. Direct routed events such as `Loaded` or
-`MouseEnter` cannot be observed inside templates under CPython and fail at load;
-mouse-button events there are rebuilt from `MouseDown`/`MouseUp`. Reading a
-form's `DataContext` returns the Python model, which the form keeps alive.
+can take a model directly or through `forms.set_data_context(control, model)`,
+and CPython bindings, including TwoWay ones, see a managed model. Direct routed events such as `Loaded` or
+`MouseEnter` cannot be observed inside templates under CPython and fail at load,
+except inside a `ContextMenu` or `ToolTip`; elsewhere in templates mouse-button
+events are rebuilt from `MouseDown`/`MouseUp`. Reading a
+form's `DataContext` returns the Python model, which the form keeps alive. The
+controller keeps all backend state in one `_pyrevit_backend` attribute, so
+subclasses may use names such as `_events`, `_window` or `_closed`. A native
+root property assigned before the XAML loads, as `script.load_ui` windows may
+do, is applied after loading unless the XAML root sets it, as with
+`LoadComponent`. A controller is accepted wherever .NET expects a type its
+native root satisfies (`child.Owner = parent`,
+`WindowInteropHelper(window)`, `MessageBox.Show(window, ...)`); `object`
+targets such as `Tag` keep the Python object.
 
 IronPython continues to populate its CLR-derived windows with
 `wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
@@ -195,9 +204,12 @@ prepends theme/localization dictionaries before parsing, resolves named controls
 and attaches control events after loading. Because handlers attach after
 parsing, `Checked` and `SelectionChanged` are replayed once for controls that
 load checked or selected, but only where IronPython's attribute-ordered loader
-would have delivered them: when the event attribute precedes `IsChecked`
-(or `SelectedIndex`, `SelectedItem`, `SelectedValue`, `IsSelected`) on that
-element, or the element sets no such attribute. Other events raised during
+would have delivered them: when the state takes effect after the event
+attribute, or the element sets no state attribute. `IsChecked`, `SelectedIndex`,
+`SelectedItem`, `SelectedValue` and `IsSelected` take effect at their attribute
+position, but a selection also waits for its items: child items and property
+elements count as after every attribute, and an `ItemsSource` attribute at its
+own position. Other events raised during
 parsing, such as `TextChanged`, are not replayed. Event attributes are found
 by reflecting the element's type, including `clr-namespace` types from loaded
 assemblies; the fixed list in `forms/_xaml.py` is only the fallback for types
@@ -207,9 +219,47 @@ namescopes; template event sources are tagged with a `Uid` and matched from
 root-level routed handlers, or get a direct handler when the tunnelling preview
 event first reaches them, so WPF's handled-event order is preserved. Direct
 (non-routed) events such as `MouseEnter` are not supported inside templates.
+Template elements inside a `ContextMenu` or `ToolTip`, whose events never reach
+the window, are marked with the `PythonEvents.Hook` attached property instead;
+WPF hands each instance to the backend as it creates it, and the handlers attach
+to that instance directly, as IronPython attaches template handlers.
 CPython reactive models expose
 a managed `ExpandoObject` for two-way WPF binding while selector results retain
 the original Python or Revit object identity.
+
+Plain Python data reaches WPF under CPython the way it does under IronPython.
+Importing the CPython backend loads `pyRevitLabs.PyRevit.Forms.Binding` and
+registers pythonnet codecs (`forms/backends/_proxies.py`). A Python list, tuple
+or other iterable assigned to a non-generic `IEnumerable`, `IList` or
+`ICollection`, such as `ItemsSource`, becomes a `PythonListProxy`. That proxy
+reads sized sequences live, so `Items.Refresh()` shows edits to the Python list,
+and copies other iterables once. A plain class instance or namedtuple assigned to
+`object`, such as `DataContext`, `Tag` or a list item, becomes a
+`PythonObjectProxy`. Its property descriptors read and write attributes live and
+convert values to CLR `bool`, `int`/`long`, `double`, `string`, null or nested
+proxies, so triggers, sorting, filters, `DisplayMemberPath` and
+`SelectedValuePath` behave as under IronPython. A Reactive model assigned to
+`object` gets its `ExpandoObject` adapter, and a Python `int` becomes a CLR
+`Int32` (or `Int64` when larger) rather than a pythonnet `PyInt`, so values
+stored in that adapter match `SelectedValuePath` and trigger values. Every proxy, and every tracked
+adapter, goes back to Python as the original object: `ItemsSource`,
+`SelectedItem`, `Items[i]`, event arguments, filter predicates and
+`DataContext`. Proxies compare by Python identity, so unhashable objects work,
+and they take the GIL on each access.
+The codecs are process-wide once registered and claim only those four CLR
+targets, plus reference types a form's native root satisfies; Python lists
+passed as `object`, dicts and other builtins stay pythonnet objects. The bundled
+pythonnet also converts any Python value assigned to a `bool` or `bool?`
+property, field or delegate return by truthiness, and does so for a method
+argument when no overload accepts it otherwise, so `args.Handled = re.match(...)`
+works as under IronPython. A Python class that only implements .NET interfaces,
+such as an `IValueConverter`, needs no `__namespace__`: pythonnet generates its
+CLR type in a namespace named after its module and reuses it when a re-run
+command redefines the class. `pyrevit.framework.wpf` under CPython offers
+`LoadComponent` for plain CLR targets such as a new `DataTemplate`, and raises
+`PyRevitCPythonNotSupported` for Python-derived windows and controls. The bundled pythonnet clears its conversion caches when a
+codec is registered, so the late registration also covers types converted
+earlier in the session.
 
 | API | IronPython | CPython |
 | --- | --- | --- |
@@ -244,13 +294,18 @@ CPython forms must be created on the Revit STA UI thread. Modal callbacks execut
 within the dialog lifetime; they do not establish an independent Revit API
 context. Accept publishes the response before closing; Escape or window close
 returns `None`. Close and failed initialization release event callbacks and
-theme subscriptions. Callback exceptions close the dialog and propagate to its
-Python caller rather than escaping through the WPF Dispatcher.
+theme subscriptions. A callback exception surfaces as under IronPython whenever
+Python code is below the event: it leaves `RaiseEvent`, or `ShowDialog` (which
+WPF leaves open), and the window stays open. Input that reaches a callback with
+no Python code below it, such as a click on a modeless window or a dockable
+page after its command finished, logs the exception instead of letting it reach
+the WPF Dispatcher, where it could terminate Revit.
 
 Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Tests/pyRevitLabs.PyRevit.Forms.Tests.csproj -c Release`
 for real WPF/pythonnet tests on .NET Framework 4.8, .NET 8 and .NET 10 using the
 shipped CPython interpreter. The fixture substitutes Revit dependencies; it does
-not validate Revit ownership or host events. Portable tests run with
+not validate Revit ownership or host events. The proxies have their own real-WPF
+tests in `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests`. Portable tests run with
 `python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'`.
 The sibling `pyRevitLabs.PyRevit.Forms.IronPython.Tests` project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
