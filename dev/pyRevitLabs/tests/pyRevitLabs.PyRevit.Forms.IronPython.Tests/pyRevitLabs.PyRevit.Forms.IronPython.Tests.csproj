@@ -16,6 +16,11 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(IronPythonVersion)' == 'IPY342'">
+        <PackageReference Include="IronPython" Version="3.4.2"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(IronPythonVersion)' != 'IPY342'">
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)IronPython.dll" Private="true"/>
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)IronPython.Modules.dll" Private="true"/>
         <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(FormsAssemblyPrefix)IronPython.Wpf.dll" Private="true"/>
