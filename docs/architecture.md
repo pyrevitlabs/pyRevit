@@ -163,9 +163,8 @@ imported before a Reload survive it. The contract is asserted by the tests in
 
 `pyrevit.forms` exports one engine-neutral API, listed once in
 `forms/_common.py`. IronPython adds the legacy names it exported before the
-module split (`forms/_ipy.py`). CPython reports any other public name as
-unsupported, except the `settings_window`, `utils` and `toaster` submodules,
-which stay importable.
+module split (`forms/_ipy.py`). CPython imports any real `pyrevit.forms`
+submodule on first access and reports any other public name as unsupported.
 Shared behavior lives in `forms/base.py` (window resources, theming and
 ownership), input/list/command dialogs, selectors, prompt bars, reactive models
 and `forms/dockable.py` (dockable panels). `forms/native.py` contains Revit task
@@ -179,14 +178,18 @@ Python-derived Revit interface type. The CPython backend keeps event binding in
 needs `forms.set_data_context(control, model)` so CPython bindings, including
 TwoWay ones, see a managed model. Direct routed events such as `Loaded` or
 `MouseEnter` cannot be observed inside templates under CPython and fail at load;
-mouse-button events there are rebuilt from `MouseDown`/`MouseUp`.
+mouse-button events there are rebuilt from `MouseDown`/`MouseUp`. Reading a
+form's `DataContext` returns the Python model, which the form keeps alive.
 
 IronPython continues to populate its CLR-derived windows with
 `wpf.LoadComponent`. CPython owns a native WPF window through a Python controller;
 it creates no Python-derived CLR window types, avoiding type registration
 collisions on repeated commands. Its loader preserves XML namespace prefixes,
 prepends theme/localization dictionaries before parsing, resolves named controls,
-and attaches control events after loading. Names inside resource entries are
+and attaches control events after loading. Because handlers attach after
+parsing, `Checked` and `SelectionChanged` are replayed once for controls that
+load checked or selected; other events raised during parsing, such as
+`TextChanged`, are not. Names inside resource entries are
 resolved through their resource dictionary. Template names remain in their own
 namescopes; template event sources are tagged with a `Uid` and matched from
 root-level routed handlers, or get a direct handler when the tunnelling preview
@@ -212,7 +215,9 @@ the original Python or Revit object identity.
 | Other legacy forms exports | Existing behavior | Unsupported unless listed in `_common.__all__` |
 
 Unported CPython APIs continue to raise `PyRevitCPythonNotSupported` with the
-feature name. Standard form signatures and engine selection are unchanged.
+feature name. The error is also an `AttributeError`, so `hasattr` and
+`getattr` with a default work; `from pyrevit.forms import <name>` therefore
+reports Python's generic `ImportError` for an unported name. Standard form signatures and engine selection are unchanged.
 WebView forms and changing the default Python engine are separate workstreams
 under [the CPython migration RFC](https://github.com/pyrevitlabs/pyRevit/issues/3567).
 
@@ -255,7 +260,7 @@ modal or modeless controller, but still need individual workflow review. The
 inventory also audits every bundled custom
 XAML handler declaration against the CPython deferred-event registry (330
 bindings at this revision); it does not execute each tool workflow. The
-published CPython surface now covers all 396 bundled references, including
+published CPython surface now covers all 397 bundled references, including
 dockable-panel registration and control APIs. That count is an API-coverage
 guardrail, not evidence that all tool workflows are compatible: native CLR
 subclass assumptions, persistent pane lifetimes and callbacks requiring a Revit

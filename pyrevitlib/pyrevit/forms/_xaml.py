@@ -1,6 +1,8 @@
 """Prepare trusted dialog XAML for pythonnet without losing namespace prefixes.
 
-Common control events are deferred until the native tree exists. Templates
+Common control events are deferred until the native tree exists, so events
+the parser raises while applying initial state never reach them; the CPython
+backend replays only ``Checked`` and ``SelectionChanged`` afterwards. Templates
 retain their own namescopes; their event sources are tagged with ``Uid``, which
 template instances keep, so routed handlers on the root window can match the
 authored element.
@@ -204,8 +206,9 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
             control names, deferred (name, event, handler) registrations and
             {name: (owner name or None for the root, resource key)} for names
             declared inside resource entries, which WPF keeps out of the
-            window namescope. Namespace declarations and markup extensions
-            survive.
+            window namescope; an owner of a nested ``.Resources`` block is
+            itself listed when it sits inside a resource entry. Namespace
+            declarations and markup extensions survive.
 
     Raises:
         ValueError: An adapted event has no named target. Unsupported XAML
@@ -257,6 +260,8 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
                 visit(child, in_template, resource)
                 continue
             owner = None if node is root else _ensure_name(document, node, names)
+            if owner is not None and resource is not None:
+                resource_names.setdefault(owner, resource)
             for nested in _children(child):
                 entries = (
                     _children(nested)
