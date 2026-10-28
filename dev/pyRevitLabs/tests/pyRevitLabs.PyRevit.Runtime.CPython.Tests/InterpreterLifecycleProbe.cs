@@ -21,6 +21,21 @@ internal sealed class InterpreterLifecycleRecord {
     public required IReadOnlyDictionary<string, string> ScriptOutputConversions { get; init; }
 }
 
+/// <summary>Base of <see cref="IDerivedProbe"/>, whose members a Python implementer must also receive.</summary>
+public interface IBaseProbe {
+    string Base();
+}
+
+/// <summary>An interface whose members come partly from <see cref="IBaseProbe"/>, like Revit's server interfaces.</summary>
+public interface IDerivedProbe : IBaseProbe {
+    string Derived();
+}
+
+/// <summary>Calls a Python implementation through both interfaces, as Revit calls a registered server.</summary>
+public static class InheritedInterfaceCaller {
+    public static string Call(IDerivedProbe probe) => probe.Base() + "+" + probe.Derived();
+}
+
 /// <summary>CLR members that receive Python values where IronPython converts by truthiness.</summary>
 public sealed class TruthinessTarget {
     public bool Flag { get; set; }
@@ -163,12 +178,23 @@ internal static class InterpreterLifecycleProbe {
         first = define()
         second = define()
         built = type("BuiltProbe", (IComparable,), {"CompareTo": lambda self, other: 3})
+        clr.AddReference("pyRevitLabs.PyRevit.Runtime.CPython.Tests")
+        from PyRevitLabs.PyRevit.Runtime.CPython.Tests import IDerivedProbe, InheritedInterfaceCaller
+
+        class InheritedProbe(IDerivedProbe):
+            def Base(self):
+                return "base"
+
+            def Derived(self):
+                return "derived"
+
         sys.pyrevit_implicit = "|".join([
             str(clr.GetClrType(first).Equals(clr.GetClrType(second))),
             str(Comparer.Default.Compare(first(), 1)),
             str(Comparer.Default.Compare(second(), 1)),
             str(Comparer.Default.Compare(built(), 1)),
             str(clr.GetClrType(first).IsInterface),
+            InheritedInterfaceCaller.Call(InheritedProbe()),
         ])
         """;
     private const string TruthyBooleanProbe = """

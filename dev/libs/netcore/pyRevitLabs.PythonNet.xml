@@ -3435,6 +3435,13 @@
             Metatype initialization. This bootstraps the CLR metatype to life.
             </summary>
         </member>
+        <member name="M:Python.Runtime.MetaType.TryCreateInterfaceSubType(Python.Runtime.BorrowedReference,Python.Runtime.ClassBase,System.Collections.Generic.IList{System.Type},Python.Runtime.PyDict)">
+            <summary>
+            Generates the managed type for a class that only implements .NET interfaces and
+            declares no <c>__namespace__</c>. Unlike an explicit request, a failure here must not
+            break the class statement, so it falls back to a plain Python type as before.
+            </summary>
+        </member>
         <member name="M:Python.Runtime.MetaType.tp_new(Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference)">
             <summary>
             Metatype __new__ implementation. This is called to create a new

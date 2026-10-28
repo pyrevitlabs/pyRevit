@@ -57,13 +57,15 @@ public class CPythonInterpreterLifecycleTests {
     /// <summary>
     /// A Python class that only implements CLR interfaces needs no <c>__namespace__</c>, as under
     /// IronPython: pythonnet generates its CLR type, so CLR callers reach its Python methods, and
-    /// redefining it with the same shape, as a re-run command does, reuses that type.
+    /// redefining it with the same shape, as a re-run command does, reuses that type. Members an
+    /// interface inherits from its base interfaces are implemented too, as Revit's
+    /// <c>IDirectContext3DServer</c> requires for <c>IExternalServer.GetServerId</c>.
     /// </summary>
     [Fact]
     public void ImplementingAnInterface_WithoutANamespace_GeneratesAReusableType() {
         string? record = InterpreterLifecycleProbe.Record.ImplicitInterfaceTypes;
 
-        Assert.Equal("True|7|7|3|False", record);
+        Assert.Equal("True|7|7|3|False|base+derived", record);
     }
 
     /// <summary>
