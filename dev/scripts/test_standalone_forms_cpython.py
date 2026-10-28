@@ -9,8 +9,11 @@ import enum
 import importlib.util
 import json
 from pathlib import Path
-from types import SimpleNamespace
+import sys
+import tempfile
+from types import ModuleType, SimpleNamespace
 import unittest
+from unittest import mock
 from xml.dom import minidom
 
 
@@ -254,6 +257,217 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertIn(owner, names)
         self.assertNotIn(owner, resource_names)
         self.assertEqual((None, "root"), resource_names[events[0][0]])
+
+    def test_resource_owner_inside_a_resource_entry_is_resolved_through_it(self):
+        """A keyed resource owning its own Resources is found via its dictionary."""
+        _, names, _, resource_names = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<Window.Resources><ContextMenu x:Key="menu"><ContextMenu.Resources>'
+            '<SolidColorBrush x:Key="accent" x:Name="accentBrush"/>'
+            "</ContextMenu.Resources></ContextMenu></Window.Resources></Window>",
+            [],
+        )
+        owner, key = resource_names["accentBrush"]
+        self.assertEqual("accent", key)
+        self.assertIn(owner, names)
+        self.assertEqual((None, "menu"), resource_names[owner])
+
+
+class _NotSupported(Exception):
+    def __init__(self, feature_name):
+        super(_NotSupported, self).__init__()
+        self.feature_name = feature_name
+
+
+def _load_cpython_facade(package_dir):
+    (package_dir / "__init__.py").write_text(
+        (FORMS / "__init__.py").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (package_dir / "extra.py").write_text("VALUE = 1\n", encoding="utf-8")
+    pyrevit = ModuleType("pyrevit")
+    pyrevit.__path__ = []
+    pyrevit.PyRevitCPythonNotSupported = _NotSupported
+    compat = ModuleType("pyrevit.compat")
+    compat.IRONPY = False
+    common = ModuleType("pyrevit.forms._common")
+    common.__all__ = []
+    spec = importlib.util.spec_from_file_location(
+        "pyrevit.forms",
+        package_dir / "__init__.py",
+        submodule_search_locations=[str(package_dir)],
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.update(
+        {
+            "pyrevit": pyrevit,
+            "pyrevit.compat": compat,
+            "pyrevit.forms": module,
+            "pyrevit.forms._common": common,
+        }
+    )
+    spec.loader.exec_module(module)
+    return module
+
+
+class CPythonFacadeTests(unittest.TestCase):
+    """Resolve submodules lazily and report other names as unsupported."""
+
+    def setUp(self):
+        """Load the facade from a scratch package with stubbed pyrevit modules."""
+        patcher = mock.patch.dict(sys.modules)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.forms = _load_cpython_facade(Path(directory.name))
+
+    def test_submodules_import_on_first_access(self):
+        """A real submodule is imported rather than reported as unsupported."""
+        self.assertEqual(1, self.forms.extra.VALUE)
+
+    def test_unknown_names_are_unsupported_attribute_errors(self):
+        """Unknown names keep the not-supported contract and work with hasattr."""
+        with self.assertRaises(_NotSupported) as raised:
+            getattr(self.forms, "does_not_exist")
+        self.assertEqual("pyrevit.forms.does_not_exist", raised.exception.feature_name)
+        self.assertIsInstance(raised.exception, AttributeError)
+        self.assertFalse(hasattr(self.forms, "does_not_exist"))
+        self.assertIsNone(getattr(self.forms, "does_not_exist", None))
+        with self.assertRaises(AttributeError):
+            getattr(self.forms, "_private")
+
+
+class _Expando(object):
+    def __init__(self):
+        self.values = {}
+        self.handlers = []
+
+    def __getitem__(self, name):
+        return self.values[name]
+
+    def __setitem__(self, name, value):
+        self.values[name] = value
+        for handler in list(self.handlers):
+            handler(self, SimpleNamespace(PropertyName=name))
+
+    def edit(self, name, value):
+        self[name] = value
+
+
+class _Notifier(object):
+    def __init__(self, model):
+        self.model = model
+
+    @property
+    def PropertyChanged(self):
+        return self
+
+    @PropertyChanged.setter
+    def PropertyChanged(self, value):
+        pass
+
+    def __iadd__(self, handler):
+        self.model.handlers.append(handler)
+        return self
+
+
+def _load_binding():
+    system = SimpleNamespace(
+        IO=SimpleNamespace(FileNotFoundException=OSError),
+        String=str,
+        Object=object,
+    )
+    framework = ModuleType("pyrevit.framework")
+    framework.System = system
+    framework.ComponentModel = SimpleNamespace(
+        PropertyChangedEventArgs=lambda name: SimpleNamespace(PropertyName=name),
+        INotifyPropertyChanged=_Notifier,
+    )
+    framework.to_clr_list = lambda kind, values: list(values)
+    dynamic = ModuleType("System.Dynamic")
+    dynamic.ExpandoObject = _Expando
+    generic = ModuleType("System.Collections.Generic")
+    generic.IDictionary = {(str, object): lambda model: model}
+    clr = ModuleType("clr")
+    clr.AddReference = lambda name: None
+    stubs = {
+        "clr": clr,
+        "pyrevit.framework": framework,
+        "System": ModuleType("System"),
+        "System.Dynamic": dynamic,
+        "System.Collections": ModuleType("System.Collections"),
+        "System.Collections.Generic": generic,
+    }
+    with mock.patch.dict(sys.modules, stubs):
+        spec = importlib.util.spec_from_file_location(
+            "forms_binding", FORMS / "backends" / "_binding.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    return module
+
+
+class BindingRefreshTests(unittest.TestCase):
+    """Copy only the values a binding change can affect."""
+
+    def setUp(self):
+        """Build a model with a form base property and tracked getters."""
+        self.binding = _load_binding()
+        self.reads = []
+        reads = self.reads
+
+        def tracked(name):
+            def get(self):
+                reads.append(name)
+                return self.__dict__.get("_" + name, name)
+
+            def set(self, value):
+                self.__dict__["_" + name] = value
+                self.OnPropertyChanged("summary")
+
+            return property(get, set)
+
+        infrastructure = type(
+            "WPFWindow",
+            (object,),
+            {"__module__": "pyrevit.forms.base", "pyrevit_version": tracked("ver")},
+        )
+        self.Model = type(
+            "Model",
+            (infrastructure, self.binding.Reactive),
+            {"title": tracked("title"), "summary": tracked("summary")},
+        )
+
+    def test_form_infrastructure_and_named_controls_are_not_copied(self):
+        """Form base properties and XAML names never reach the binding model."""
+        model = self.Model()
+        model.__dict__["_xaml_names"] = frozenset(["okButton"])
+        model.okButton = object()
+        model.count = 1
+        native = self.binding.binding_source(model)
+        self.assertEqual({"title", "summary", "count"}, set(native.values))
+        self.assertNotIn("ver", self.reads)
+
+    def test_rebinding_copies_plain_attributes_without_reading_properties(self):
+        """A repeated binding_source call does not re-run property getters."""
+        model = self.Model()
+        model.count = 1
+        native = self.binding.binding_source(model)
+        del self.reads[:]
+        model.count = 2
+        self.assertIs(native, self.binding.binding_source(model))
+        self.assertEqual(2, native["count"])
+        self.assertEqual([], self.reads)
+
+    def test_two_way_edit_refreshes_only_written_and_notified_names(self):
+        """A WPF edit re-reads the edited property and what its setter notified."""
+        model = self.Model()
+        native = self.binding.binding_source(model)
+        del self.reads[:]
+        native.edit("title", "new")
+        self.assertEqual(["summary", "title"], self.reads)
+        self.assertEqual("new", model.title)
 
 
 class FormsExportsTests(unittest.TestCase):

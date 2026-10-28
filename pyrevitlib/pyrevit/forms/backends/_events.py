@@ -21,16 +21,16 @@ mlogger = get_logger(__name__)
 _event_attributes = {}
 
 _MOUSE_BUTTON_EVENTS = {
-    "MouseLeftButtonDown": ("MouseDown", "Left", None),
-    "MouseLeftButtonUp": ("MouseUp", "Left", None),
-    "MouseRightButtonDown": ("MouseDown", "Right", None),
-    "MouseRightButtonUp": ("MouseUp", "Right", None),
-    "PreviewMouseLeftButtonDown": ("PreviewMouseDown", "Left", None),
-    "PreviewMouseLeftButtonUp": ("PreviewMouseUp", "Left", None),
-    "PreviewMouseRightButtonDown": ("PreviewMouseDown", "Right", None),
-    "PreviewMouseRightButtonUp": ("PreviewMouseUp", "Right", None),
-    "MouseDoubleClick": ("MouseDown", "Left", 2),
-    "PreviewMouseDoubleClick": ("PreviewMouseDown", "Left", 2),
+    "MouseLeftButtonDown": ("MouseDown", ("Left",), None),
+    "MouseLeftButtonUp": ("MouseUp", ("Left",), None),
+    "MouseRightButtonDown": ("MouseDown", ("Right",), None),
+    "MouseRightButtonUp": ("MouseUp", ("Right",), None),
+    "PreviewMouseLeftButtonDown": ("PreviewMouseDown", ("Left",), None),
+    "PreviewMouseLeftButtonUp": ("PreviewMouseUp", ("Left",), None),
+    "PreviewMouseRightButtonDown": ("PreviewMouseDown", ("Right",), None),
+    "PreviewMouseRightButtonUp": ("PreviewMouseUp", ("Right",), None),
+    "MouseDoubleClick": ("MouseDown", ("Left", "Right"), 2),
+    "PreviewMouseDoubleClick": ("PreviewMouseDown", ("Left", "Right"), 2),
 }
 
 
@@ -38,11 +38,15 @@ def initialize_events(target):
     """Give a form the empty callback registries the other helpers rely on."""
     target._event_bindings = []
     target._routed_bindings = []
+    target._detachers = []
     target._callback_error = None
 
 
 def release_events(target):
     """Detach every callback recorded on the form."""
+    for detach in target._detachers:
+        detach()
+    target._detachers = []
     for control, event, handler in target._routed_bindings:
         control.RemoveHandler(event, handler)
     target._routed_bindings = []
@@ -73,11 +77,48 @@ def report_callback_error(target):
 
 
 def bind(target, control, event_name, handler):
-    """Attach a guarded callback to a CLR event and record it on the form."""
+    """Attach a guarded callback to a CLR event and record it on the form.
+
+    Returns:
+        callable: The guarded callback, for ``replay_initial_state``.
+    """
     callback = _guarded(target, handler)
     event = getattr(control, event_name)
     event += callback
     target._event_bindings.append((control, event_name, callback))
+    return callback
+
+
+def replay_initial_state(control, event_name, callback):
+    """Run ``callback`` once for state the XAML parser set before it attached.
+
+    Handlers are attached after ``XamlReader.Load``, so ``Checked`` for a
+    toggle that loads checked and ``SelectionChanged`` for a selector that
+    loads with a selection were raised before any handler existed. Only these
+    two events are replayed, judged from the loaded state rather than the
+    markup, so attribute order does not matter. ``TextChanged``,
+    ``ValueChanged`` and other events raised during parsing are not replayed.
+    """
+    primitives = framework.Controls.Primitives
+    if event_name == "Checked":
+        if isinstance(control, primitives.ToggleButton) and control.IsChecked is True:
+            args = Windows.RoutedEventArgs(
+                primitives.ToggleButton.CheckedEvent, control
+            )
+            callback(control, args)
+    elif event_name == "SelectionChanged":
+        if isinstance(control, primitives.Selector) and control.SelectedIndex >= 0:
+            selected = getattr(control, "SelectedItems", None)
+            added = System.Collections.ArrayList()
+            for item in selected if selected is not None else [control.SelectedItem]:
+                added.Add(item)
+            args = framework.Controls.SelectionChangedEventArgs(
+                primitives.Selector.SelectionChangedEvent,
+                System.Collections.ArrayList(),
+                added,
+            )
+            args.Source = control
+            callback(control, args)
 
 
 def is_event_attribute(tag, attribute):
@@ -100,7 +141,10 @@ def bind_template_event(target, root, tag, uid, event_name, handler):
     first time the tunnelling preview event reaches it, which preserves WPF's
     handler order and ``Handled`` semantics. Other routed events are matched
     from a handler on ``root``. Direct mouse-button events are rebuilt from
-    ``MouseDown``/``MouseUp`` filtered by button and click count. ``tag`` is
+    ``MouseDown``/``MouseUp`` filtered by button and click count; double
+    clicks accept the left or right button with ``ClickCount == 2``, as
+    ``Control.MouseDoubleClick`` does. An element that unloads drops its
+    direct handler and is rediscovered if it loads again. ``tag`` is
     the element's WPF type name, or ``{namespace}Name`` for a type outside the
     WPF namespace, which is then matched by ``Uid`` alone.
 
@@ -153,11 +197,11 @@ def _guarded(target, handler):
     return invoke
 
 
-def _mouse_button_filter(callback, button, clicks):
-    expected = getattr(Input.MouseButton, button)
+def _mouse_button_filter(callback, buttons, clicks):
+    expected = [getattr(Input.MouseButton, button) for button in buttons]
 
     def filtered(sender, args):
-        if args.ChangedButton != expected:
+        if args.ChangedButton not in expected:
             return
         if clicks is not None and args.ClickCount != clicks:
             return
@@ -206,20 +250,65 @@ def _routing_ancestors(source):
             current = Windows.LogicalTreeHelper.GetParent(current)
 
 
+def _identity(element):
+    return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(element)
+
+
 def _attach_on_preview(target, root, event, preview, sources, callback):
     direct = Windows.RoutedEventHandler(callback)
-    attached = []
+    attached = {}
+
+    def find(element):
+        for known in attached.get(_identity(element), ()):
+            if System.Object.ReferenceEquals(element, known):
+                return known
+        return None
+
+    def detach(element):
+        element.RemoveHandler(event, direct)
+        if isinstance(
+            element, (Windows.FrameworkElement, Windows.FrameworkContentElement)
+        ):
+            element.Unloaded -= unloaded
+
+    def forget(sender, args):
+        element = find(sender)
+        if element is None:
+            return
+        detach(element)
+        key = _identity(element)
+        bucket = [
+            known
+            for known in attached[key]
+            if not System.Object.ReferenceEquals(element, known)
+        ]
+        if bucket:
+            attached[key] = bucket
+        else:
+            del attached[key]
+
+    unloaded = Windows.RoutedEventHandler(forget)
 
     def discover(sender, args):
         for element in sources(args):
-            if not any(System.Object.ReferenceEquals(element, e) for e in attached):
+            if find(element) is None:
                 element.AddHandler(event, direct)
-                attached.append(element)
-                target._routed_bindings.append((element, event, direct))
+                if isinstance(
+                    element, (Windows.FrameworkElement, Windows.FrameworkContentElement)
+                ):
+                    element.Unloaded += unloaded
+                attached.setdefault(_identity(element), []).append(element)
+
+    def release():
+        for bucket in list(attached.values()):
+            for element in bucket:
+                detach(element)
+        attached.clear()
 
     delegate = Windows.RoutedEventHandler(discover)
     root.AddHandler(preview, delegate, True)
     target._routed_bindings.append((root, preview, delegate))
+    target._detachers.append(release)
 
 
 def _attach_at_root(target, root, event, sources, callback):

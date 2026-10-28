@@ -254,8 +254,17 @@ def set_data_context(control, model):
     Args:
         control (object): A WPF element, or a pyRevit form.
         model (object): A ``forms.Reactive`` model or any bindable value.
+
+    Warning:
+        Under CPython a child control does not keep ``model`` alive; hold a
+        reference to it, for example on the form, while it is bound. A form
+        keeps its own ``DataContext`` model alive.
     """
-    _backend.unwrap(control).DataContext = _backend.binding_source(model)
+    native = _backend.unwrap(control)
+    if native is not control:
+        control.DataContext = model
+        return
+    native.DataContext = _backend.binding_source(model)
 
 
 class _WPFMixin(object):
@@ -497,9 +506,16 @@ class _WPFMixin(object):
     def merge_resource_dict(self, xaml_source):
         """Merge a ResourceDictionary xaml file into this control's resources.
 
+        Under CPython, a dictionary merged before the XAML loads is queued and
+        merged into the loaded markup instead, so it is parsed only once.
+
         Args:
             xaml_source (str): absolute path to a ResourceDictionary xaml file.
         """
+        pending = getattr(self, "_pending_resources", None)
+        if pending is not None:
+            pending.append(xaml_source)
+            return
         lang_dictionary = ResourceDictionary()
         lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
         self.Resources.MergedDictionaries.Add(lang_dictionary)
@@ -768,7 +784,12 @@ class WPFWindow(_WPFMixin, _backend.Window):
                 Defaults to True.
             set_owner (bool, optional): Whether to set the window owner.
                 Defaults to True.
+
+        Note:
+            Safe to call on an instance whose ``__init__`` did not call
+            ``WPFWindow.__init__``, as ``script.load_ui`` allows.
         """
+        _backend.initialize(self)
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 

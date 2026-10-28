@@ -2,6 +2,12 @@
 
 WPF reads native dynamic properties while Python retains the original objects.
 Weak controller references keep native event delegates from rooting closed forms.
+
+Important:
+    The managed model never keeps its Python model alive. Whoever sets a model
+    as a ``DataContext`` must hold a strong reference for as long as the
+    binding is in use; the CPython ``Window`` and ``Panel`` controllers do
+    this for their own ``DataContext``.
 """
 
 import weakref
@@ -21,6 +27,9 @@ from System.Collections.Generic import IDictionary
 _controllers = weakref.WeakValueDictionary()
 _type_properties = {}
 _MISSING = object()
+_INFRASTRUCTURE_MODULES = frozenset(
+    ("pyrevit.forms.base", "pyrevit.forms.dockable", "pyrevit.forms.backends._cpy")
+)
 
 
 class _Event(object):
@@ -73,23 +82,49 @@ class Reactive(object):
 def _properties_of(cls):
     names = _type_properties.get(cls)
     if names is None:
-        names = frozenset(
-            name for name in dir(cls) if isinstance(getattr(cls, name, None), property)
-        )
+        found = set()
+        seen = set()
+        for klass in cls.__mro__:
+            for name, value in vars(klass).items():
+                if name in seen:
+                    continue
+                seen.add(name)
+                if (
+                    isinstance(value, property)
+                    and klass.__module__ not in _INFRASTRUCTURE_MODULES
+                ):
+                    found.add(name)
+        names = frozenset(found)
         _type_properties[cls] = names
     return names
 
 
-def _property_names(controller):
+def _public(controller, names):
+    excluded = controller.__dict__.get("_xaml_names", ())
+    return [
+        name
+        for name in names
+        if not name.startswith("_")
+        and name != "PropertyChanged"
+        and name not in excluded
+    ]
+
+
+def _plain_names(controller):
     names = set(controller.__dict__)
-    names.update(_properties_of(type(controller)))
     wrapped = controller.__dict__.get("item")
     if wrapped is not None and hasattr(wrapped, "__dict__"):
         names.update(wrapped.__dict__)
+    return _public(controller, names)
+
+
+def _property_names(controller):
+    names = set(_plain_names(controller))
+    names.update(_properties_of(type(controller)))
+    wrapped = controller.__dict__.get("item")
+    if wrapped is not None and hasattr(wrapped, "__dict__"):
         names.update(_properties_of(type(wrapped)))
-    return [
-        name for name in names if not name.startswith("_") and name != "PropertyChanged"
-    ]
+    return _public(controller, names)
 
 
 def _bindable(value):
@@ -117,7 +152,13 @@ def _unchanged(previous, marker):
 def _refresh(controller, names=None):
     state = controller.__dict__
     values = state.get("_binding_values")
-    if values is None or state.get("_binding_updating"):
+    if values is None:
+        return
+    if state.get("_binding_updating"):
+        if names is None:
+            state["_binding_pending_all"] = True
+        else:
+            state.setdefault("_binding_pending", set()).update(names)
         return
     markers = state.setdefault("_binding_markers", {})
     state["_binding_updating"] = True
@@ -140,12 +181,23 @@ def _refresh(controller, names=None):
 
 
 def binding_source(controller):
-    """Return a stable managed model with two-way property and item identity."""
+    """Return a stable managed model with two-way property and item identity.
+
+    The first call copies every bindable value. Later calls for the same model
+    only re-copy plain instance attributes, which cannot notify; properties
+    update through ``OnPropertyChanged``. Properties of the form base classes,
+    such as ``pyrevit_version``, ``logger`` and ``output``, and the form's
+    named XAML controls are never copied.
+
+    Warning:
+        The returned model holds its Python model weakly; keep a strong
+        reference to ``controller`` while the model is bound.
+    """
     if not isinstance(controller, Reactive):
         return controller
     state = controller.__dict__
     if "_binding_model" in state:
-        _refresh(controller)
+        _refresh(controller, _plain_names(controller))
         return state["_binding_model"]
     model = ExpandoObject()
     state["_binding_model"] = model
@@ -162,12 +214,18 @@ def binding_source(controller):
         prop = getattr(type(target), name, None)
         if isinstance(prop, property) and prop.fset is None:
             return
-        target.__dict__["_binding_updating"] = True
+        state = target.__dict__
+        state["_binding_updating"] = True
         try:
-            setattr(target, name, unwrap_item(target.__dict__["_binding_values"][name]))
+            setattr(target, name, unwrap_item(state["_binding_values"][name]))
         finally:
-            target.__dict__["_binding_updating"] = False
-        _refresh(target)
+            state["_binding_updating"] = False
+        notified = state.pop("_binding_pending", set())
+        notified.add(name)
+        if state.pop("_binding_pending_all", False):
+            _refresh(target)
+        else:
+            _refresh(target, sorted(notified))
 
     notifier = ComponentModel.INotifyPropertyChanged(model)
     notifier.PropertyChanged += changed
