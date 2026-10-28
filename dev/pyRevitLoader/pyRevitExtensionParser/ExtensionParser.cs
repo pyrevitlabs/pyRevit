@@ -548,7 +548,7 @@ namespace pyRevitExtensionParser
                         }
                     }
 
-                    declaredPythonEngine = ReadDeclaredPythonEngine(json["engine"]);
+                    declaredPythonEngine = ReadDeclaredPythonEngine(json["engine"], extensionJsonPath);
 
                     // Read rocket_mode_compatible setting
                     var rocketModeValue = json["rocket_mode_compatible"]?.ToString();
@@ -638,15 +638,19 @@ namespace pyRevitExtensionParser
 
         /// <summary>
         /// Reads the extension-level Python engine from <c>"engine": "cpython"</c> or the
-        /// bundle-style <c>"engine": {"type": "cpython"}</c>; unsupported values declare nothing.
+        /// bundle-style <c>"engine": {"type": "cpython"}</c>; unsupported values declare nothing
+        /// and are logged as a warning, matching the Python loader.
         /// </summary>
-        private static string ReadDeclaredPythonEngine(JToken engine)
+        private static string ReadDeclaredPythonEngine(JToken engine, string manifestPath)
         {
             var declared = engine is JObject engineObject ? engineObject["type"] : engine;
             if (declared == null || declared.Type != JTokenType.String)
                 return null;
             var normalized = declared.ToString().Trim().ToLowerInvariant();
-            return normalized == "cpython" || normalized == "ironpython" ? normalized : null;
+            if (normalized == "cpython" || normalized == "ironpython")
+                return normalized;
+            LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
+            return null;
         }
 
         /// <summary>
