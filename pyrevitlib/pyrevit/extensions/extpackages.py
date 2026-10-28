@@ -489,9 +489,11 @@ def get_ext_packages(authorized_only=True):
     for ext_dir in user_config.get_ext_root_dirs():
         # make a list of all availabe extension definition sources
         # default is under the extensions directory that ships with pyrevit
-        extpkg_def_files = {op.join(ext_dir, PLUGIN_EXT_DEF_FILE)}
+        extpkg_def_files = [op.join(ext_dir, PLUGIN_EXT_DEF_FILE)]
         # add other sources added by the user (using the cli)
-        extpkg_def_files.update(user_config.get_ext_sources())
+        for ext_source in user_config.get_ext_sources():
+            if ext_source not in extpkg_def_files:
+                extpkg_def_files.append(ext_source)
         for extpkg_def_file in extpkg_def_files:
             mlogger.debug("Looking for %s", extpkg_def_file)
             # check for external ext def file

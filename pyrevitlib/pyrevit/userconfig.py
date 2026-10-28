@@ -732,19 +732,28 @@ class PyRevitConfig(object):
     def get_ext_root_dirs(self):
         """Return a list of all extension directories.
 
+        Ordering is deterministic and engine-independent: the shipped
+        extensions directory first, then `get_thirdparty_ext_root_dirs` order.
+
         Returns:
             (list[str]): user extension directories.
 
         """
-        dir_list = set()
+        dir_list = []
         if op.exists(EXTENSIONS_DEFAULT_DIR):
-            dir_list.add(EXTENSIONS_DEFAULT_DIR)
-        dir_list.update(self.get_thirdparty_ext_root_dirs())
-        return list(dir_list)
+            dir_list.append(EXTENSIONS_DEFAULT_DIR)
+        for ext_dir in self.get_thirdparty_ext_root_dirs():
+            if ext_dir not in dir_list:
+                dir_list.append(ext_dir)
+        return dir_list
 
     def get_ext_sources(self):
-        """Return a list of extension definition source files."""
-        return list(set(self.environment.Sources or []))
+        """Return extension definition source files in config order, deduplicated."""
+        sources = []
+        for source in self.environment.Sources or []:
+            if source not in sources:
+                sources.append(source)
+        return sources
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file.
