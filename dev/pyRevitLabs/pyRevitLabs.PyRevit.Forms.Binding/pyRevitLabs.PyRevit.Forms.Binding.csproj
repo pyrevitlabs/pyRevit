@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Platforms>x64</Platforms>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+        <UseWPF>true</UseWPF>
+        <LangVersion>latest</LangVersion>
+        <RootNamespace>PyRevitLabs.PyRevit.Forms.Binding</RootNamespace>
+        <NoWarn>$(NoWarn);CS0612</NoWarn>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.PythonNet"
+                   HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll"
+                   Private="false"/>
+    </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Forms.Binding.Tests"/>
+    </ItemGroup>
+</Project>
