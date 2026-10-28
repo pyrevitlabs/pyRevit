@@ -24,6 +24,9 @@ from System.Dynamic import ExpandoObject
 from System.Collections.Generic import IDictionary
 
 
+FORM_STATE = "_pyrevit_backend"
+"""Instance attribute holding a CPython form's backend state; see ``_cpy._FormState``."""
+
 _controllers = weakref.WeakValueDictionary()
 _type_properties = {}
 _MISSING = object()
@@ -103,7 +106,7 @@ def _properties_of(cls):
 
 
 def _public(controller, names):
-    excluded = controller.__dict__.get("_xaml_names", ())
+    excluded = getattr(controller.__dict__.get(FORM_STATE), "xaml_names", ())
     return [
         name
         for name in names
@@ -257,3 +260,8 @@ def unwrap_item(value):
     if isinstance(value, ExpandoObject):
         return _controllers.get(value, value)
     return value
+
+
+def model_of(native):
+    """Return the live Python model behind a managed binding model, or None."""
+    return _controllers.get(native)

@@ -3,45 +3,109 @@
 Important:
     Python controllers never become CLR-derived types. This avoids pythonnet
     type-registration collisions on repeated commands and reloads. Reactive
-    models use managed binding adapters, and modal, modeless and dockable roots
-    share the same callback lifetime rules.
+    models use managed binding adapters, plain Python lists and objects reach
+    WPF through the live proxies registered by ``_proxies``, and modal,
+    modeless and dockable roots share the same callback lifetime rules. A
+    controller is accepted wherever .NET expects a type its native root
+    satisfies, such as ``Window.Owner`` (see ``PythonBinding.RegisterRoots``).
 """
 
 import os.path as op
 
+import clr
 from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.framework import System, Windows, Uri, UriKind
 from System.Windows.Markup import XamlReader, ParserContext
 
-from .._xaml import TemplateEvent, prepare_xaml
-from ._binding import Reactive, binding_source, unwrap_item
+from .._xaml import HookedEvent, TemplateEvent, prepare_xaml
+from . import _proxies  # noqa: F401
+from ._binding import FORM_STATE, Reactive, binding_source, unwrap_item
 from ._events import (
     _EventRegistry,
     bind_template_event,
+    hook_template_events,
     is_event_attribute,
     replay_initial_state,
 )
 from ._shared import Disposing, apply_pane_options, same_items
+from PyRevitLabs.PyRevit.Forms.Binding import PythonBinding
+
+_root_properties = {}
 
 
-def _forward_get(native, name):
-    if native is None:
-        raise AttributeError(name)
-    value = getattr(native, name)
+class _FormState(object):
+    """Lifecycle state the backend keeps for one controller.
+
+    Stored under the single instance attribute ``FORM_STATE`` so that
+    subclass attributes such as ``_events``, ``_window`` or ``_closed`` never
+    collide with it.
+
+    Attributes:
+        root: The native WPF root, or None before ``initialize``.
+        events (_EventRegistry): Every callback attached to native objects.
+        closed (bool): Whether the native window has closed.
+        pending_resources (list[str] | None): Dictionaries queued until the
+            next ``load_component``; None while no load is pending.
+        xaml_names (frozenset[str]): Named XAML controls, never bound.
+        data_context: The Python model assigned as ``DataContext``, kept
+            alive for its native binding adapter.
+        preload (dict): Native root properties assigned before a root
+            existed, applied by the next ``load_component`` unless the XAML
+            root sets them.
+    """
+
+    __slots__ = (
+        "root",
+        "events",
+        "closed",
+        "pending_resources",
+        "xaml_names",
+        "data_context",
+        "preload",
+    )
+
+    def __init__(self):
+        self.root = None
+        self.events = _EventRegistry()
+        self.closed = False
+        self.pending_resources = None
+        self.xaml_names = frozenset()
+        self.data_context = None
+        self.preload = {}
+
+
+def _state(target):
+    state = target.__dict__.get(FORM_STATE)
+    if state is None:
+        state = _FormState()
+        target.__dict__[FORM_STATE] = state
+    return state
+
+
+def _attached_state(target):
+    """Return the state of a controller from any import of this module, or None."""
+    if getattr(type(target), "_pyrevit_root_type", None) is None:
+        return None
+    return target.__dict__.get(FORM_STATE)
+
+
+def _is_root_property(controller_type, name):
+    root_type = controller_type._pyrevit_root_type
+    key = (root_type, name)
+    if key not in _root_properties:
+        clr_type = clr.GetClrType(root_type)
+        _root_properties[key] = any(
+            prop.Name == name for prop in clr_type.GetProperties()
+        )
+    return _root_properties[key]
+
+
+def _set_native(state, native, name, value):
     if name == "DataContext":
-        return unwrap_item(value)
-    return value
-
-
-def _forward_set(target, native, name, value):
-    if not name.startswith("_") and native is not None and hasattr(native, name):
-        if name == "DataContext":
-            object.__setattr__(target, "_data_context", value)
-            value = binding_source(value)
-        setattr(native, name, value)
-    else:
-        object.__setattr__(target, name, value)
+        state.data_context = value
+        value = binding_source(value)
+    setattr(native, name, value)
 
 
 def _require_sta():
@@ -59,161 +123,110 @@ class _Root(object):
 
     Assigning ``DataContext`` keeps the Python model alive as long as the
     controller, and reading it returns that Python model rather than its
-    native binding adapter.
+    native binding adapter. A native root property assigned before the root
+    exists, as ``script.load_ui`` windows may do, is applied once the XAML
+    loads unless the XAML root sets it, matching IronPython's
+    ``LoadComponent``.
 
     Invariant:
-        Only the controller writes its lifecycle state: the native root, the
-        callback registry (``_events``), the pending resource dictionaries and
-        the loaded XAML names. Backend functions call its methods.
+        Backend state lives only in ``_FormState`` under ``FORM_STATE``, and
+        backend logic only in module functions, so subclasses may use any
+        other attribute or method name.
     """
 
     _binding_exclude = True
-    _root_slot = None
-    _root_type = None
+    _pyrevit_root_type = None
 
     def __getattr__(self, name):
-        return _forward_get(self.__dict__.get(self._root_slot), name)
+        state = self.__dict__.get(FORM_STATE)
+        if state is not None:
+            if state.root is not None:
+                value = getattr(state.root, name)
+                return unwrap_item(value) if name == "DataContext" else value
+            if name in state.preload:
+                return state.preload[name]
+        raise AttributeError(name)
 
     def __setattr__(self, name, value):
-        _forward_set(self, self.__dict__.get(self._root_slot), name, value)
+        state = self.__dict__.get(FORM_STATE)
+        root = None if state is None else state.root
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+        elif root is not None and hasattr(root, name):
+            _set_native(state, root, name, value)
+        elif root is None and _is_root_property(type(self), name):
+            _state(self).preload[name] = value
+        else:
+            object.__setattr__(self, name, value)
 
-    def _root(self):
-        return self.__dict__.get(self._root_slot)
 
-    def _queue_resource(self, path):
-        pending = self.__dict__.get("_pending_resources")
-        if pending is None:
-            return False
-        pending.append(path)
-        return True
+def _release(state):
+    state.events.release()
 
-    def _take_pending_resources(self):
-        pending = self.__dict__.get("_pending_resources") or []
-        self._pending_resources = None
-        return pending
 
-    def _set_xaml_names(self, names):
-        self._xaml_names = frozenset(names)
-
-    def _attach_root_events(self, native):
-        """Bind the controller's own lifecycle handlers to a loaded root."""
-
-    def _release(self):
-        self._events.release()
+def _close(state):
+    window = state.root
+    if window is None:
+        return
+    if not state.closed:
+        window.Close()
+    if not state.closed and window.IsLoaded:
+        return
+    _release(state)
 
 
 class Window(_Root):
     """Own a native ``System.Windows.Window`` loaded from XAML."""
 
     _binding_exclude = True
-    _root_slot = "_window"
-    _root_type = Windows.Window
-
-    def _initialize(self):
-        if self.__dict__.get("_window") is None:
-            _require_sta()
-            self._window = Windows.Window()
-            self._events = _EventRegistry(self._on_callback_failure)
-            self._closed = False
-            self._modeless = False
-            self._prompt = False
-        self._pending_resources = []
-
-    def _adopt_root(self, native):
-        previous = self._window
-        self._window = native
-        previous.Close()
-        self._closed = False
-
-    def _attach_root_events(self, native):
-        self._events.bind(native, "Closed", self._on_closed, guarded=False)
+    _pyrevit_root_type = Windows.Window
 
     def Show(self):
         """Show the native window without creating a nested modal dispatcher."""
-        self._events.raise_error()
-        self._modeless = True
-        self._window.Show()
-        self._events.raise_error()
+        _state(self).root.Show()
 
     def ShowDialog(self):
-        """Run the modal dialog and release Python event roots even on failure."""
+        """Run the modal dialog and release its Python callbacks once it closes.
+
+        An error raised by a callback while the dialog runs leaves
+        ``ShowDialog`` as it does under IronPython; a window WPF leaves open
+        then keeps its callbacks until it closes.
+        """
+        state = _state(self)
+        window = state.root
         try:
-            self._events.raise_error()
-            result = self._window.ShowDialog()
-            self._events.raise_error()
-            return result
+            return window.ShowDialog()
         finally:
-            self._release()
+            if state.closed or not window.IsVisible:
+                _release(state)
 
     def Close(self):
         """Close the native root and release callbacks, even before it is shown.
 
         A ``Closing`` handler that cancels the close leaves the window open
         with every callback still attached, so it keeps working.
-
-        Raises:
-            Exception: A callback of a modeless prompt failed while it was
-                shown; the command that owns the prompt receives the error here.
         """
-        if not self._closed:
-            self._window.Close()
-        if not self._closed and self._window.IsLoaded:
-            return
-        self._release()
-        if self._modeless:
-            self._events.raise_error()
-
-    def _show_prompt(self):
-        self._modeless = True
-        self._prompt = True
-        self._window.Show()
-
-    def _dispose(self):
-        if "_window" in self.__dict__:
-            self.Close()
-
-    def _on_callback_failure(self):
-        window = self._window
-        window.Dispatcher.BeginInvoke(
-            System.Action(lambda: self._close_after_failure(window))
-        )
-
-    def _close_after_failure(self, window):
-        if not self._closed and self._window is window:
-            window.Close()
-
-    def _on_closed(self, sender, args):
-        if not System.Object.ReferenceEquals(sender, self._window):
-            return
-        self._closed = True
-        self._release()
-        if self._modeless and not self._prompt:
-            self._events.report_error()
+        _close(_state(self))
 
 
 class Panel(_Root):
     """Own a native ``System.Windows.Controls.Page`` hosted by a Revit pane."""
 
     _binding_exclude = True
-    _root_slot = "_panel"
-    _root_type = framework.Controls.Page
+    _pyrevit_root_type = framework.Controls.Page
 
-    def _initialize(self):
-        if self.__dict__.get("_panel") is None:
-            _require_sta()
-            self._panel = framework.Controls.Page()
-            self._events = _EventRegistry(self._on_callback_failure)
-        self._pending_resources = []
 
-    def _adopt_root(self, native):
-        self._panel = native
+def _root_type_of(controller_type):
+    root_type = getattr(controller_type, "_pyrevit_root_type", None)
+    return None if root_type is None else clr.GetClrType(root_type)
 
-    def _dispose(self):
-        if "_panel" in self.__dict__:
-            self._release()
 
-    def _on_callback_failure(self):
-        self._events.report_error()
+def _root_of(controller):
+    state = _attached_state(controller)
+    return None if state is None else state.root
+
+
+PythonBinding.RegisterRoots(_root_type_of, _root_of)
 
 
 def initialize(target):
@@ -223,20 +236,35 @@ def initialize(target):
     keep it and its callbacks. Every call starts an empty queue of resource
     dictionaries that ``load_component`` merges into the markup.
     """
-    target._initialize()
+    state = _state(target)
+    if state.root is None:
+        _require_sta()
+        state.root = type(target)._pyrevit_root_type()
+        state.closed = False
+    state.pending_resources = []
 
 
 def unwrap(target):
-    """Return a native root for WPF APIs that cannot consume Python controllers."""
-    if isinstance(target, _Root):
-        return target._root()
-    return target
+    """Return a native root for WPF APIs that cannot consume Python controllers.
+
+    Controllers created by an earlier import of this module, such as a
+    modeless window kept across a reload, are unwrapped too.
+    """
+    state = _attached_state(target)
+    if state is None or state.root is None:
+        return target
+    return state.root
 
 
 def dispose(target):
     """Release callbacks and host subscriptions after failed initialization."""
-    if isinstance(target, _Root):
-        target._dispose()
+    state = _attached_state(target)
+    if state is None:
+        return
+    if isinstance(state.root, Windows.Window):
+        _close(state)
+    else:
+        _release(state)
 
 
 def disposing(target):
@@ -247,10 +275,10 @@ def disposing(target):
 def on_release(target, detach):
     """Run ``detach()`` when the form releases its callbacks.
 
-    That happens when a window closes or finishes ``ShowDialog``, and when a
-    form is disposed after a failed construction.
+    That happens when a window closes, when ``ShowDialog`` returns with the
+    window closed, and when a form is disposed after a failed construction.
     """
-    target._events.on_release(detach)
+    _state(target).events.on_release(detach)
 
 
 def queue_resource(target, path):
@@ -260,7 +288,13 @@ def queue_resource(target, path):
         bool: False once the XAML has loaded; the caller then merges the
             dictionary into the live resources itself.
     """
-    return isinstance(target, _Root) and target._queue_resource(path)
+    if not isinstance(target, _Root):
+        return False
+    pending = _state(target).pending_resources
+    if pending is None:
+        return False
+    pending.append(path)
+    return True
 
 
 def set_data_context(control, model):
@@ -313,7 +347,7 @@ def rebind_if_changed(control, items):
 
 def show_prompt(target):
     """Show an overlay whose enclosing command owns its complete lifetime."""
-    target._show_prompt()
+    _state(target).root.Show()
 
 
 def make_pane_provider(panel, default_visible):
@@ -331,12 +365,12 @@ def make_pane_provider(panel, default_visible):
 
 def bind_event(target, event_name, handler):
     """Retain native event callbacks until close, then detach them together."""
-    target._events.bind(unwrap(target), event_name, handler)
+    _state(target).events.bind(unwrap(target), event_name, handler)
 
 
 def bind_control_event(target, control, event_name, handler):
     """Keep dynamically created control callbacks within the window lifetime."""
-    target._events.bind(control, event_name, handler)
+    _state(target).events.bind(control, event_name, handler)
 
 
 def _find_name(native, name, resource_names):
@@ -400,22 +434,43 @@ def _adopt_host_state(native, previous):
 
 
 def _require_root_type(target, native):
-    if not isinstance(native, target._root_type):
+    root_type = type(target)._pyrevit_root_type
+    if not isinstance(native, root_type):
         raise PyRevitException(
             "CPython forms require a {} XAML root for {}.".format(
-                target._root_type.__name__, type(target).__name__
+                root_type.__name__, type(target).__name__
             )
         )
 
 
-def _swap_root(target, native, previous):
+def _swap_root(target, state, native, previous):
     """Make ``native`` the controller's root, carrying over the host state."""
     _require_root_type(target, native)
     _adopt_host_state(native, previous)
-    target._adopt_root(native)
+    state.root = native
+    if isinstance(previous, Windows.Window):
+        previous.Close()
+        state.closed = False
 
 
-def _attach_xaml(target, native, prepared):
+def _apply_preload(state, native, root_properties):
+    """Apply root properties set before the root existed, unless XAML sets them."""
+    preload, state.preload = state.preload, {}
+    for name, value in preload.items():
+        if name not in root_properties:
+            _set_native(state, native, name, value)
+
+
+def _attach_closed(state, native):
+    def closed(sender, args):
+        if System.Object.ReferenceEquals(sender, state.root):
+            state.closed = True
+            _release(state)
+
+    state.events.bind(native, "Closed", closed, guarded=False)
+
+
+def _attach_xaml(target, state, native, prepared):
     """Expose named controls and attach deferred handlers.
 
     Returns:
@@ -427,10 +482,12 @@ def _attach_xaml(target, native, prepared):
         if control is None:
             raise PyRevitException("CPython XAML name was not found: {}".format(name))
         object.__setattr__(target, name, control)
-    target._set_xaml_names(prepared.names)
-    registry = target._events
+    state.xaml_names = frozenset(prepared.names)
+    registry = state.events
     replays = []
     for event in prepared.events:
+        if isinstance(event, HookedEvent):
+            continue
         handler = getattr(target, event.handler)
         if isinstance(event, TemplateEvent):
             bind_template_event(
@@ -441,8 +498,26 @@ def _attach_xaml(target, native, prepared):
         callback = registry.bind(control, event.event, handler)
         if event.replay:
             replays.append((control, event.event, callback))
-    target._attach_root_events(native)
+    if isinstance(native, Windows.Window):
+        _attach_closed(state, native)
     return replays
+
+
+def _hook_events(target, registry, events):
+    """Register handlers of popup template elements before their markup loads.
+
+    Returns:
+        list[callable]: Undo functions for a load that fails.
+    """
+    handlers = {}
+    for event in events:
+        if isinstance(event, HookedEvent):
+            handlers.setdefault(event.key, []).append(
+                (event.event, getattr(target, event.handler))
+            )
+    return [
+        hook_template_events(registry, key, pairs) for key, pairs in handlers.items()
+    ]
 
 
 def load_component(target, source):
@@ -455,6 +530,9 @@ def load_component(target, source):
     detach any event handlers already installed and do not subscribe to
     host-wide events.
 
+    Root properties assigned to the controller before its root existed are
+    applied after parsing unless the XAML root sets them.
+
     Note:
         Handlers attach after parsing, so events the parser raised are lost,
         except ``Checked`` and ``SelectionChanged`` where IronPython would
@@ -463,20 +541,29 @@ def load_component(target, source):
     markup, base_uri = _read_source(source)
     if not isinstance(target, _Root):
         return _load_markup(markup, base_uri)
-    previous = target._root()
+    state = _state(target)
+    previous = state.root
+    pending, state.pending_resources = state.pending_resources or [], None
     host_keys = [str(key) for key in previous.Resources.Keys if isinstance(key, str)]
     prepared = prepare_xaml(
         markup,
-        _resource_sources(previous, target._take_pending_resources()),
+        _resource_sources(previous, pending),
         is_event=is_event_attribute,
         dynamic_keys=set(host_keys),
     )
-    native = _load_markup(prepared.markup, base_uri)
-    _swap_root(target, native, previous)
+    undo_hooks = _hook_events(target, state.events, prepared.events)
     try:
-        replays = _attach_xaml(target, native, prepared)
+        native = _load_markup(prepared.markup, base_uri)
+        _swap_root(target, state, native, previous)
     except Exception:
-        target._release()
+        for undo in undo_hooks:
+            undo()
+        raise
+    _apply_preload(state, native, prepared.root_properties)
+    try:
+        replays = _attach_xaml(target, state, native, prepared)
+    except Exception:
+        _release(state)
         raise
     for control, event_name, callback in replays:
         replay_initial_state(control, event_name, callback)

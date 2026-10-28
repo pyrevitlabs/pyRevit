@@ -124,7 +124,7 @@ def activate_open_window(envvar):
     window = envvars.get_pyrevit_env_var(envvar)
     if window is None:
         return False
-    native = getattr(window, "_window", window)
+    native = _backend.unwrap(window)
     try:
         is_open = Interop.WindowInteropHelper(native).Handle != System.IntPtr.Zero
     except Exception:

@@ -1,14 +1,16 @@
 """Retain CPython callbacks on native WPF objects for the lifetime of a form.
 
 Every callback a form attaches is recorded in the form's ``_EventRegistry`` so
-``release`` detaches all of them together. A callback that raises never
-escapes into the WPF dispatcher: the registry stores the error and runs the
-form's failure hook, and the command that owns the form receives the error
-from ``raise_error``. Forms no command owns, such as dockable pages and
-persistent modeless windows, log it through ``report_error`` instead.
+``release`` detaches all of them together. A callback that raises behaves as
+under IronPython whenever Python code is waiting below it: the error leaves
+the event and reaches that code, for example the caller of ``RaiseEvent`` or
+``ShowDialog``. When no Python code is below it, as for input to a modeless
+window or a dockable page after its command has finished, the error is logged
+instead of reaching the WPF dispatcher, where it could terminate Revit.
 """
 
 import re
+import sys
 import traceback
 
 import clr
@@ -16,9 +18,13 @@ from pyrevit import PyRevitException, framework
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import Input, System, Windows, Media
 
+clr.AddReference("pyRevitLabs.PyRevit.Forms.Binding")
+from PyRevitLabs.PyRevit.Forms.Binding import PythonEvents  # noqa: E402
+
 
 mlogger = get_logger(__name__)
 _event_attributes = {}
+_DISPATCH_CODES = set()
 _CLR_NAMESPACE_TAG = re.compile(
     r"^\{clr-namespace:([^;}]*)(?:;assembly=([^}]+))?\}(.+)$"
 )
@@ -43,32 +49,23 @@ class _EventRegistry(object):
     Invariant:
         ``release`` detaches everything recorded so far and may run any
         number of times; a released registry keeps accepting new callbacks.
-        Only the first callback error is kept until it is raised or reported.
     """
 
-    def __init__(self, on_failure):
+    def __init__(self):
         self._events = []
         self._routed = []
         self._detachers = []
-        self._error = None
-        self._on_failure = on_failure
 
     @property
     def is_released(self):
         """Whether no callback or release hook is currently attached."""
         return not (self._events or self._routed or self._detachers)
 
-    @property
-    def error(self):
-        """The stored callback error, or None."""
-        return self._error
-
     def bind(self, control, event_name, handler, guarded=True):
         """Attach a callback to a CLR event and record it.
 
-        A guarded callback routes exceptions to the registry instead of the
-        WPF dispatcher; lifecycle handlers that must not close the form on
-        failure pass ``guarded=False``.
+        A guarded callback follows ``guard``; the backend's own lifecycle
+        handlers pass ``guarded=False``.
 
         Returns:
             callable: The attached callback, for ``replay_initial_state``.
@@ -105,37 +102,71 @@ class _EventRegistry(object):
             event -= handler
 
     def guard(self, handler):
-        """Wrap ``handler`` so an exception is stored rather than raised."""
+        """Wrap ``handler`` so its errors surface where IronPython raises them.
+
+        The error propagates when Python code is below the WPF event on this
+        thread, which then receives it as under IronPython. Otherwise the
+        event came from the dispatcher alone, and the error is logged rather
+        than left to the dispatcher.
+        """
 
         def invoke(sender, args):
             try:
                 handler(sender, args)
             except BaseException as error:
-                if self._error is None:
-                    self._error = error
-                self._on_failure()
+                if _has_python_caller(sys._getframe().f_back):
+                    raise
+                _report(error)
 
+        _DISPATCH_CODES.add(invoke.__code__)
         return invoke
 
-    def raise_error(self):
-        """Raise, once, the first stored callback error."""
-        error = self._error
-        if error is not None:
-            self._error = None
-            raise error
 
-    def report_error(self):
-        """Log, once, the first stored error of a form that no command owns."""
-        error = self._error
-        if error is None:
-            return
-        self._error = None
-        mlogger.error(
-            "pyRevit form callback failed:\n%s",
-            "".join(
-                traceback.format_exception(type(error), error, error.__traceback__)
-            ),
-        )
+def _has_python_caller(frame):
+    while frame is not None and frame.f_code in _DISPATCH_CODES:
+        frame = frame.f_back
+    return frame is not None
+
+
+def _report(error):
+    mlogger.error(
+        "pyRevit form callback failed:\n%s",
+        "".join(traceback.format_exception(type(error), error, error.__traceback__)),
+    )
+
+
+def hook_template_events(registry, key, handlers):
+    """Attach ``handlers`` directly to each element instance marked with ``key``.
+
+    ``key`` is a ``PythonEvents.Hook`` value from ``_xaml.HookedEvent``; WPF
+    hands over every instance it creates, including instances created while
+    the markup is parsed, so call this before loading it. Each handler is
+    guarded like any other form callback, and ``release`` stops delivery and
+    detaches them.
+
+    Args:
+        registry (_EventRegistry): The form's registry.
+        key (str): The element's hook key.
+        handlers (list[tuple[str, callable]]): (event name, handler) pairs.
+
+    Returns:
+        callable: Stops delivery without detaching handlers already attached,
+            for a load that failed before the form owns the markup.
+    """
+
+    def attach(element):
+        try:
+            for event_name, handler in handlers:
+                registry.bind(element, event_name, handler)
+        except Exception as error:
+            _report(error)
+
+    def detach():
+        PythonEvents.Detach(key)
+
+    PythonEvents.Attach(key, attach)
+    registry.on_release(detach)
+    return detach
 
 
 def replay_initial_state(control, event_name, callback):
@@ -250,6 +281,7 @@ def _mouse_button_filter(callback, buttons, clicks):
             return
         callback(sender, args)
 
+    _DISPATCH_CODES.add(filtered.__code__)
     return filtered
 
 
@@ -391,4 +423,5 @@ def _attach_at_root(registry, root, event, sources, callback):
             if args.Handled:
                 break
 
+    _DISPATCH_CODES.add(routed.__code__)
     registry.add_routed(root, event, Windows.RoutedEventHandler(routed))

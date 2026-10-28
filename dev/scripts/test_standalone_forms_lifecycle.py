@@ -241,5 +241,84 @@ class SharedBackendTests(unittest.TestCase):
         self.assertEqual("help", target.ContextualHelp)
 
 
+class XamlLocaleFallbackTests(unittest.TestCase):
+    """``base._resolve_xaml_source`` walks the five-step locale chain in order."""
+
+    def setUp(self):
+        """Load the resolver against a temporary command folder."""
+        import os
+        import shutil
+        import tempfile
+
+        self.folder = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.folder, True)
+        self.scope = _load(
+            "base.py",
+            {"_resolve_xaml_source"},
+            {
+                "os": os,
+                "op": os.path,
+                "user_config": SimpleNamespace(user_locale="de_de"),
+                "EXEC_PARAMS": SimpleNamespace(command_path=str(self.folder)),
+            },
+        )
+        self.resolve = self.scope["_resolve_xaml_source"]
+
+    def _touch(self, *names):
+        for name in names:
+            (self.folder / name).write_text("<Window/>", encoding="utf-8")
+
+    def _resolved(self):
+        path, resources = self.resolve("ui.xaml")
+        return (
+            Path(path).name,
+            Path(resources).name if resources is not None else None,
+        )
+
+    def test_full_localized_replacement_wins(self):
+        """A <name>.<locale>.xaml replaces everything else."""
+        self._touch(
+            "ui.xaml",
+            "ui.de_de.xaml",
+            "ui.en_us.xaml",
+            "ui.ResourceDictionary.de_de.xaml",
+        )
+        self.assertEqual(("ui.de_de.xaml", None), self._resolved())
+
+    def test_english_replacement_is_second(self):
+        """Without a localized file the English replacement is used."""
+        self._touch("ui.xaml", "ui.en_us.xaml", "ui.ResourceDictionary.de_de.xaml")
+        self.assertEqual(("ui.en_us.xaml", None), self._resolved())
+
+    def test_localized_resource_dictionary_is_third(self):
+        """The base file merges the localized strings next."""
+        self._touch(
+            "ui.xaml",
+            "ui.ResourceDictionary.de_de.xaml",
+            "ui.ResourceDictionary.en_us.xaml",
+        )
+        self.assertEqual(
+            ("ui.xaml", "ui.ResourceDictionary.de_de.xaml"), self._resolved()
+        )
+
+    def test_english_resource_dictionary_is_fourth(self):
+        """The English strings are merged when no localized ones exist."""
+        self._touch("ui.xaml", "ui.ResourceDictionary.en_us.xaml")
+        self.assertEqual(
+            ("ui.xaml", "ui.ResourceDictionary.en_us.xaml"), self._resolved()
+        )
+
+    def test_bare_file_is_last(self):
+        """Without any localization the bare file loads unmerged."""
+        self._touch("ui.xaml")
+        self.assertEqual(("ui.xaml", None), self._resolved())
+
+    def test_relative_name_resolves_against_command_folder(self):
+        """A bare file name is looked up in the command's bundle folder."""
+        self._touch("ui.xaml")
+        path, _ = self.resolve("ui.xaml")
+        self.assertEqual(self.folder / "ui.xaml", Path(path))
+
+
 if __name__ == "__main__":
     unittest.main()

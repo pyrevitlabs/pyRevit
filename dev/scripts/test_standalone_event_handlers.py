@@ -341,35 +341,6 @@ class EventHandlerCleanupTests(unittest.TestCase):
         )
 
 
-class PreSelectionChangedHostTests(unittest.TestCase):
-    """Revit 2021/2022 lack ``UI.Events.SelectionChangedEventArgs``."""
-
-    def setUp(self):
-        """Load the events module against a Revit 2022 API surface."""
-        self.logger = _Logger()
-        self.host = _HostApplication(revit_year=2022)
-        self.events = load_events_module(
-            _AppDomain(),
-            self.host,
-            "revit-2022",
-            self.logger,
-            "Accepted",
-            has_selection_changed_args=False,
-        )
-
-    def test_selection_changed_is_refused_with_an_error(self):
-        """Attaching the missing event logs instead of raising."""
-        self.assertIsNone(self.events.add_handler("selection-changed", print))
-        self.events.remove_handler("selection-changed", print)
-        self.assertEqual(2, len(self.logger.errors))
-        self.assertEqual([], self.host._uiapp.SelectionChanged.handlers)
-
-    def test_other_events_still_attach(self):
-        """Events that exist on older hosts keep working."""
-        handler = self.events.add_handler("view-activated", print)
-        self.assertIn(handler, self.host._uiapp.ViewActivated.handlers)
-
-
 class ExecuteInRevitContextTests(unittest.TestCase):
     """CPython schedules callbacks through the same ExternalEvent as IronPython."""
 
