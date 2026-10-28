@@ -56,55 +56,51 @@ def create_handler(handler_func, handler_args_type):
     return framework.EventHandler[handler_args_type](handler_func)
 
 
+_EVENT_SOURCES = {
+    "doc-changed": (DB.Events.DocumentChangedEventArgs, "app", "DocumentChanged"),
+    "doc-closed": (DB.Events.DocumentClosedEventArgs, "app", "DocumentClosed"),
+    "doc-opened": (DB.Events.DocumentOpenedEventArgs, "app", "DocumentOpened"),
+    "view-activated": (UI.Events.ViewActivatedEventArgs, "uiapp", "ViewActivated"),
+    "selection-changed": (
+        UI.Events.SelectionChangedEventArgs,
+        "uiapp",
+        "SelectionChanged",
+    ),
+}
+
+
+def _clr_event(event_name):
+    """Return the event source object and its CLR ``EventInfo``.
+
+    Handlers are added and removed through ``EventInfo`` so the delegate itself
+    is subscribed. Revit returns a new ``Application`` wrapper on every access,
+    and CPython's ``-=`` only finds handlers added through the same wrapper.
+    """
+    _, source_name, clr_event_name = _EVENT_SOURCES[event_name]
+    source = getattr(HOST_APP, source_name)
+    return source, source.GetType().GetEvent(clr_event_name)
+
+
 def add_handler(event_name, handler_func):
-    event_handler = None
-
-    if event_name == "doc-changed":
-        event_handler = create_handler(handler_func, DB.Events.DocumentChangedEventArgs)
-        HOST_APP.app.DocumentChanged += event_handler
-
-    elif event_name == "doc-closed":
-        event_handler = create_handler(handler_func, DB.Events.DocumentClosedEventArgs)
-        HOST_APP.app.DocumentClosed += event_handler
-
-    elif event_name == "doc-opened":
-        event_handler = create_handler(handler_func, DB.Events.DocumentOpenedEventArgs)
-        HOST_APP.app.DocumentOpened += event_handler
-
-    elif event_name == "view-activated":
-        event_handler = create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
-        HOST_APP.uiapp.ViewActivated += event_handler
-
-    elif event_name == "selection-changed":
-        if HOST_APP.is_older_than(2023):
-            mlogger.error("Not available in this Revit Version")
-            return
-        event_handler = create_handler(
-            handler_func, UI.Events.SelectionChangedEventArgs
-        )
-        HOST_APP.uiapp.SelectionChanged += event_handler
-
+    if event_name not in _EVENT_SOURCES:
+        return None
+    if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
+        mlogger.error("Not available in this Revit Version")
+        return None
+    event_handler = create_handler(handler_func, _EVENT_SOURCES[event_name][0])
+    source, clr_event = _clr_event(event_name)
+    clr_event.AddEventHandler(source, event_handler)
     return event_handler
 
 
 def remove_handler(event_name, event_handler):
-    if event_name == "doc-changed":
-        HOST_APP.app.DocumentChanged -= event_handler
-
-    elif event_name == "doc-closed":
-        HOST_APP.app.DocumentClosed -= event_handler
-
-    elif event_name == "doc-opened":
-        HOST_APP.app.DocumentOpened -= event_handler
-
-    elif event_name == "view-activated":
-        HOST_APP.uiapp.ViewActivated -= event_handler
-
-    elif event_name == "selection-changed":
-        if HOST_APP.is_older_than(2023):
-            mlogger.error("Not available in this Revit Version")
-            return
-        HOST_APP.uiapp.SelectionChanged -= event_handler
+    if event_name not in _EVENT_SOURCES:
+        return
+    if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
+        mlogger.error("Not available in this Revit Version")
+        return
+    source, clr_event = _clr_event(event_name)
+    clr_event.RemoveEventHandler(source, event_handler)
 
 
 def register_handler(event_name, handler_func, handler_group_id):
@@ -329,8 +325,7 @@ def _get_execute_extevent():
 
 
 def execute_in_revit_context(func, *args, **kwargs):
-    """
-    Execute a function in Revit API context using ExternalEvent.
+    """Execute a function in Revit API context using ExternalEvent.
 
     Use this helper when calling Revit API from modeless dialogs,
     background threads, or any non-Revit context where direct API
