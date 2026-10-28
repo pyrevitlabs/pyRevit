@@ -4,6 +4,7 @@ import os
 import os.path as op
 import json
 import codecs
+import re
 
 from pyrevit import PyRevitException, HOST_APP
 from pyrevit.compat import safe_strtype
@@ -499,8 +500,8 @@ class Extension(GenericUIContainer):
         pat += "|(\\" + exts.CONTENT_BUTTON_POSTFIX + ")"
         pat += "|(\\" + exts.COMBOBOX_POSTFIX + ")"
         # tnteresting directories
-        pat += "|(\\" + exts.COMP_LIBRARY_DIR_NAME + ")"
-        pat += "|(\\" + exts.COMP_HOOKS_DIR_NAME + ")"
+        pat += "|(" + re.escape(exts.COMP_LIBRARY_DIR_NAME) + ")"
+        pat += "|(" + re.escape(exts.COMP_HOOKS_DIR_NAME) + ")"
         # search for scripts, setting files (future support), and layout files
         patfile = "(\\" + exts.PYTHON_SCRIPT_FILE_FORMAT + ")"
         patfile += "|(\\" + exts.CSHARP_SCRIPT_FILE_FORMAT + ")"
