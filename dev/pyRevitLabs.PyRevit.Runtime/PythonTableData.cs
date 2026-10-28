@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Py = Python.Runtime.Py;
 using PyDict = Python.Runtime.PyDict;
 using PyObject = Python.Runtime.PyObject;
 using PySequence = Python.Runtime.PySequence;
@@ -13,6 +14,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// <remarks>
     /// Invariant: exceptions raised by the caller's Python objects while they are iterated
     /// propagate to the script; a table is never silently truncated. Strings are always one cell.
+    /// <para>
+    /// Important: pythonnet releases the GIL around CLR calls made from Python, so every entry
+    /// point takes it before touching a <see cref="PyObject"/>; without it CPython crashes the host.
+    /// </para>
     /// </remarks>
     internal static class PythonTableData {
         /// <summary>Markdown printed instead of a table when the table data yields no rows.</summary>
@@ -32,11 +37,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return rows;
 
             if (value is PyObject pythonValue) {
-                if (!IsIterable(pythonValue))
+                using (Py.GIL()) {
+                    if (!IsIterable(pythonValue))
+                        return rows;
+                    foreach (var row in Iterate(pythonValue))
+                        rows.Add(ToCells(row));
                     return rows;
-                foreach (var row in Iterate(pythonValue))
-                    rows.Add(ToCells(row));
-                return rows;
+                }
             }
 
             var enumerable = value as IEnumerable;
@@ -58,14 +65,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             if (value is PyObject pythonValue) {
-                if (!IsIterable(pythonValue)) {
-                    items.Add(ToCellText(pythonValue));
+                using (Py.GIL()) {
+                    if (!IsIterable(pythonValue)) {
+                        items.Add(ToCellText(pythonValue));
+                        return items;
+                    }
+
+                    foreach (var item in Iterate(pythonValue))
+                        items.Add(ToCellText(item));
                     return items;
                 }
-
-                foreach (var item in Iterate(pythonValue))
-                    items.Add(ToCellText(item));
-                return items;
             }
 
             var enumerable = value as IEnumerable;
@@ -84,19 +93,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (value == null)
                 return result;
 
-            if (value is PyObject pythonValue && PyDict.IsDictType(pythonValue)) {
-                using (var pythonDictionary = new PyDict(pythonValue)) {
-                    using (var entries = pythonDictionary.Items()) {
-                        foreach (var entry in Iterate(entries)) {
-                            using (var key = entry.GetItem(0)) {
-                                using (var entryValue = entry.GetItem(1)) {
-                                    result[key.ToString()] = entryValue.ToString();
-                                }
-                            }
-                        }
-                    }
+            if (value is PyObject pythonValue) {
+                using (Py.GIL()) {
+                    if (PyDict.IsDictType(pythonValue))
+                        return ToDictionary(pythonValue, result);
                 }
-                return result;
             }
 
             var dictionary = value as IDictionary;
@@ -105,6 +106,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     result[entry.Key.ToString()] = entry.Value?.ToString() ?? string.Empty;
             }
 
+            return result;
+        }
+
+        private static Dictionary<string, string> ToDictionary(PyObject pythonValue, Dictionary<string, string> result) {
+            using (var pythonDictionary = new PyDict(pythonValue)) {
+                using (var entries = pythonDictionary.Items()) {
+                    foreach (var entry in Iterate(entries)) {
+                        using (var key = entry.GetItem(0)) {
+                            using (var entryValue = entry.GetItem(1)) {
+                                result[key.ToString()] = entryValue.ToString();
+                            }
+                        }
+                    }
+                }
+            }
             return result;
         }
 

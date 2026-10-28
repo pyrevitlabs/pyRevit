@@ -30,10 +30,11 @@ internal static class ScriptOutputConversionProbe {
     public const string SequenceCells = "sequence-cells";
     public const string EmptyTable = "empty-table";
     public const string FilledTable = "filled-table";
+    public const string ReleasedGil = "released-gil";
 
     private static readonly string[] Keys = [
         NoneCells, NoneListItems, StringRows, StringTable, ScalarTable, StringList, RaisingRows, RaisingCells,
-        Dictionary, SequenceRows, SequenceCells, EmptyTable, FilledTable,
+        Dictionary, SequenceRows, SequenceCells, EmptyTable, FilledTable, ReleasedGil,
     ];
 
     private const string Fixtures = """
@@ -93,7 +94,26 @@ internal static class ScriptOutputConversionProbe {
         observations[SequenceCells] = Observe(() => Cells(fixture, scope.Get("sequence_cells")));
         observations[EmptyTable] = Observe(() => Warning(fixture, scope.Eval("[]")));
         observations[FilledTable] = Observe(() => Warning(fixture, scope.Eval("[[1]]")));
+        observations[ReleasedGil] = Observe(() => WithoutGil(fixture, scope));
         return observations;
+    }
+
+    private static string WithoutGil(Type fixture, PyModule scope) {
+        using PyObject rows = scope.Get("sequence_rows");
+        using PyObject cells = scope.Eval("['a', None, 1]");
+        using PyObject entries = scope.Eval("{'k': 1}");
+        nint state = PythonEngine.BeginAllowThreads();
+        try {
+            var renderedRows = (List<List<string>>)Invoke(fixture, "ToRows", rows)!;
+            var renderedCells = (List<string>)Invoke(fixture, "ToCells", cells)!;
+            var renderedEntries = (Dictionary<string, string>)Invoke(fixture, "ToDictionary", entries)!;
+            return string.Join(";", renderedRows.Select(row => string.Join("|", row)))
+                + "/" + string.Join("|", renderedCells)
+                + "/" + string.Join(";", renderedEntries.Select(entry => entry.Key + "=" + entry.Value));
+        }
+        finally {
+            PythonEngine.EndAllowThreads(state);
+        }
     }
 
     private static string Rows(Type fixture, PyObject value) {
