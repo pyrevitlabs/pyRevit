@@ -1,10 +1,17 @@
 """Read and write Excel files on both Python engines.
 
 CPython reads and writes ``.xlsx`` workbooks with openpyxl and reads legacy
-``.xls`` workbooks with the vendored xlrd. IronPython keeps xlrd and
+``.xls`` workbooks with the vendored xlrd, choosing the reader from the file
+signature and falling back to the extension. IronPython keeps xlrd and
 xlsxwriter for every workbook.
+
+Invariant:
+    ``load`` returns the same values on both engines: openpyxl cells are
+    normalized to what xlrd reports (blank as ``''``, numbers and dates as
+    ``float`` Excel serials, booleans as ``int``, errors as xlrd error codes).
 """
 
+import datetime
 import os.path as op
 
 from pyrevit.compat import IRONPY
@@ -17,8 +24,36 @@ else:
     import openpyxl
 
 
+_ZIP_SIGNATURE = b"PK\x03\x04"
+_OLE2_SIGNATURE = b"\xd0\xcf\x11\xe0"
+_XLRD_ERROR_CODES = {
+    "#NULL!": 0x00,
+    "#DIV/0!": 0x07,
+    "#VALUE!": 0x0F,
+    "#REF!": 0x17,
+    "#NAME?": 0x1D,
+    "#NUM!": 0x24,
+    "#N/A": 0x2A,
+}
+
+
 def _uses_openpyxl(xlfile):
-    return not IRONPY and not _is_legacy_workbook(xlfile)
+    if IRONPY:
+        return False
+    signature = _read_signature(xlfile)
+    if signature.startswith(_ZIP_SIGNATURE):
+        return True
+    if signature.startswith(_OLE2_SIGNATURE):
+        return False
+    return not _is_legacy_workbook(xlfile)
+
+
+def _read_signature(xlfile):
+    try:
+        with open(str(xlfile), "rb") as xlstream:
+            return xlstream.read(len(_OLE2_SIGNATURE))
+    except (IOError, OSError):
+        return b""
 
 
 def _is_legacy_workbook(xlfile):
@@ -46,9 +81,36 @@ def _open_legacy_workbook(xlfile):
         xlrd.book.time = original
 
 
+def _openpyxl_cell_value(cell, epoch):
+    value = cell.value
+    if value is None:
+        return ""
+    if cell.data_type == "e":
+        return _XLRD_ERROR_CODES.get(value, value)
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(
+        value, (datetime.datetime, datetime.date, datetime.time, datetime.timedelta)
+    ):
+        from openpyxl.utils.datetime import to_excel
+
+        return float(to_excel(value, epoch=epoch))
+    return value
+
+
+def _openpyxl_sheet_rows(xlsheet):
+    rows = list(xlsheet.iter_rows())
+    if all(cell.value is None for row in rows for cell in row):
+        return []
+    epoch = xlsheet.parent.epoch
+    return [[_openpyxl_cell_value(cell, epoch) for cell in row] for row in rows]
+
+
 def _sheet_rows(xlsheet, openpyxl_sheet):
     if openpyxl_sheet:
-        return [list(row) for row in xlsheet.iter_rows(values_only=True)]
+        return _openpyxl_sheet_rows(xlsheet)
     return [[cell.value for cell in row] for row in xlsheet.get_rows()]
 
 
@@ -86,10 +148,9 @@ def load(xlfile, sheets=None, columns=None, datatype=None, headers=True):
     sheets = sheets or []
     openpyxl_sheets = _uses_openpyxl(xlfile)
     if openpyxl_sheets:
-        worksheets = [
-            (sheet.title, sheet)
-            for sheet in openpyxl.load_workbook(xlfile, data_only=True).worksheets
-        ]
+        with open(str(xlfile), "rb") as xlstream:
+            xlwb = openpyxl.load_workbook(xlstream, data_only=True)
+        worksheets = [(sheet.title, sheet) for sheet in xlwb.worksheets]
     elif IRONPY:
         worksheets = [
             (sheet.name, sheet) for sheet in xlrd.open_workbook(xlfile).sheets()
@@ -123,13 +184,10 @@ def dump(xlfile, datadict):
         datadict (dict[str, list]): dictionary of worksheets names and data
 
     Raises:
-        ValueError: ``xlfile`` ends in ``.xls``; both engines write ``.xlsx``
-            content only, which Excel would reject under a legacy name.
+        ValueError: on CPython, ``xlfile`` ends in ``.xls``; openpyxl writes
+            ``.xlsx`` content only, which Excel would reject under a legacy
+            name. IronPython keeps writing through xlsxwriter unchanged.
     """
-    if _is_legacy_workbook(xlfile):
-        raise ValueError(
-            "Cannot write legacy .xls workbooks; save as .xlsx: {}".format(xlfile)
-        )
     if IRONPY:
         xlwb = xlsxwriter.Workbook(xlfile)
         for xlsheetname, xlsheetdata in datadict.items():
@@ -138,6 +196,10 @@ def dump(xlfile, datadict):
                 xlsheet.write_row(idx, 0, data)
         xlwb.close()
         return
+    if _is_legacy_workbook(xlfile):
+        raise ValueError(
+            "Cannot write legacy .xls workbooks; save as .xlsx: {}".format(xlfile)
+        )
     xlwb = openpyxl.Workbook()
     if datadict:
         xlwb.remove(xlwb.active)
