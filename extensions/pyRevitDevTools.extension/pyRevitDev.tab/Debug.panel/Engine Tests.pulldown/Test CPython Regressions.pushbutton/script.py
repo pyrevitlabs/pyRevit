@@ -30,18 +30,12 @@ class TestClass(unittest.TestCase):
         except Exception as err:
             self.fail("pyrevit.forms import failed: {}".format(err))
 
-    def test_pyrevit_forms_unported_dialog_raises(self):
-        """Dockable panels retain the unsupported-feature contract."""
-        from pyrevit import PyRevitCPythonNotSupported
+    def test_pyrevit_forms_dockable_panel_exported(self):
+        """Dockable panels are part of the CPython forms surface."""
         from pyrevit import forms
 
-        try:
-            getattr(forms, "WPFPanel")
-            self.fail("Expected PyRevitCPythonNotSupported for WPFPanel")
-        except PyRevitCPythonNotSupported as err:
-            self.assertEqual("pyrevit.forms.WPFPanel", err.feature_name)
-        except Exception as err:
-            self.fail("Unexpected error type for stubbed API: {}".format(err))
+        self.assertTrue(isinstance(forms.WPFPanel, type))
+        self.assertTrue(callable(forms.register_dockable_panel))
 
     def test_pyrevit_forms_missing_symbol_raises(self):
         """Missing symbols raise PyRevitCPythonNotSupported under CPython."""

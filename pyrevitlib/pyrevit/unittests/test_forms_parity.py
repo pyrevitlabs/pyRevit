@@ -475,10 +475,24 @@ class DocumentFormsParityTests(unittest.TestCase):
 
     def test_open_documents(self):
         """The active document can be selected when the two-document guard is disabled."""
+        target_index = []
+
+        def select_fixture_doc(dialog):
+            options = dialog._get_active_ctx()
+            target_index.extend(
+                index
+                for index, option in enumerate(options)
+                if option.item.Equals(self.doc)
+            )
+            dialog.list_lb.SelectedIndex = target_index[0]
+            _click(dialog.select_b)
+
         selected = self._select(
-            lambda: forms.select_open_docs(multiple=False, check_more_than_one=False)
+            lambda: forms.select_open_docs(multiple=False, check_more_than_one=False),
+            select_fixture_doc,
         )
-        self.assertEqual(self.doc.PathName, selected.PathName)
+        self.assertEqual(1, len(target_index))
+        self.assertTrue(selected.Equals(self.doc))
 
     def test_titleblocks(self):
         """The explicit no-titleblock option retains its invalid ElementId result."""
