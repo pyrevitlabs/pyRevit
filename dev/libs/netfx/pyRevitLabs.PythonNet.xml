@@ -3008,6 +3008,13 @@
             adds, removes or retypes them gets a new generated type instead of a cached one.
             </summary>
         </member>
+        <member name="M:Python.Runtime.ClassDerivedObject.ReserveTypeName(System.String,System.String,System.String)">
+            <summary>
+            Picks the CLR name for a new generated type. The first shape of a Python class keeps
+            its visible name so it stays importable from its namespace; later shapes with the same
+            name get a short hexadecimal hash suffix because an assembly cannot define a name twice.
+            </summary>
+        </member>
         <member name="M:Python.Runtime.ClassDerivedObject.AddConstructor(System.Reflection.ConstructorInfo,System.Type,System.Reflection.Emit.TypeBuilder)">
             <summary>
             Add a constructor override that calls the python ctor after calling the base type constructor.
