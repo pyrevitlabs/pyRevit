@@ -16,7 +16,26 @@ internal sealed class InterpreterLifecycleRecord {
     public required bool IsInitializedAfterShutdown { get; init; }
     public required string? DerivedTypeRedefinition { get; init; }
     public required string? DerivedTypeShapes { get; init; }
+    public required string? ImplicitInterfaceTypes { get; init; }
+    public required string? TruthyBooleans { get; init; }
     public required IReadOnlyDictionary<string, string> ScriptOutputConversions { get; init; }
+}
+
+/// <summary>CLR members that receive Python values where IronPython converts by truthiness.</summary>
+public sealed class TruthinessTarget {
+    public bool Flag { get; set; }
+
+    public bool? Maybe { get; set; } = true;
+
+    public bool Field;
+
+    public static string Pick(bool value) => "bool";
+
+    public static string Pick(object value) => "object";
+
+    public static string OnlyBool(bool value) => value.ToString();
+
+    public static bool Ask(Func<bool> predicate) => predicate();
 }
 
 /// <summary>
@@ -128,6 +147,57 @@ internal static class InterpreterLifecycleProbe {
             second_assembly.Assembly.GetName().Name,
         ])
         """;
+    private const string ImplicitInterfaceProbe = """
+        import clr
+        import sys
+        from System import IComparable
+        from System.Collections import Comparer
+
+        def define():
+            class ImplicitProbe(IComparable):
+                def CompareTo(self, other):
+                    return 7
+
+            return ImplicitProbe
+
+        first = define()
+        second = define()
+        built = type("BuiltProbe", (IComparable,), {"CompareTo": lambda self, other: 3})
+        sys.pyrevit_implicit = "|".join([
+            str(clr.GetClrType(first).Equals(clr.GetClrType(second))),
+            str(Comparer.Default.Compare(first(), 1)),
+            str(Comparer.Default.Compare(second(), 1)),
+            str(Comparer.Default.Compare(built(), 1)),
+            str(clr.GetClrType(first).IsInterface),
+        ])
+        """;
+    private const string TruthyBooleanProbe = """
+        import clr
+        import re
+        import sys
+        clr.AddReference("pyRevitLabs.PyRevit.Runtime.CPython.Tests")
+        from System import Func
+        from PyRevitLabs.PyRevit.Runtime.CPython.Tests import TruthinessTarget
+
+        target = TruthinessTarget()
+        observed = []
+        for value in (re.match("a", "a"), None, 0, "x", []):
+            target.Flag = value
+            observed.append(str(target.Flag))
+        target.Maybe = None
+        observed.append(str(target.Maybe))
+        target.Maybe = []
+        observed.append(str(target.Maybe))
+        target.Field = 1
+        observed.append(str(target.Field))
+        observed.append(TruthinessTarget.Pick("x"))
+        observed.append(TruthinessTarget.Pick(True))
+        observed.append(TruthinessTarget.OnlyBool(re.match("a", "a")))
+        observed.append(TruthinessTarget.OnlyBool(None))
+        observed.append(str(TruthinessTarget.Ask(Func[bool](lambda: re.match("a", "a")))))
+        observed.append(str(TruthinessTarget.Ask(Func[bool](lambda: None))))
+        sys.pyrevit_truthy = "|".join(observed)
+        """;
     private static readonly string MarkerRead = $"__import__('sys').{MarkerName}";
 
     private static readonly Lazy<InterpreterLifecycleRecord> _record = new(
@@ -146,6 +216,8 @@ internal static class InterpreterLifecycleProbe {
         Exec($"import sys; sys.{MarkerName} = 1");
         string? redefinition = Run(RedefinitionProbe, "__import__('sys').pyrevit_redefinition");
         string? shapes = Run(ShapesProbe, "__import__('sys').pyrevit_shapes");
+        string? implicitInterfaces = Run(ImplicitInterfaceProbe, "__import__('sys').pyrevit_implicit");
+        string? truthyBooleans = Run(TruthyBooleanProbe, "__import__('sys').pyrevit_truthy");
         IReadOnlyDictionary<string, string> conversions = ScriptOutputConversionProbe.Observe();
 
         var reattachFailures = new List<Exception>();
@@ -177,6 +249,8 @@ internal static class InterpreterLifecycleProbe {
             IsInitializedAfterShutdown = isInitializedAfterShutdown,
             DerivedTypeRedefinition = redefinition,
             DerivedTypeShapes = shapes,
+            ImplicitInterfaceTypes = implicitInterfaces,
+            TruthyBooleans = truthyBooleans,
             ScriptOutputConversions = conversions,
         };
     }

@@ -2,6 +2,8 @@
 
 import time
 
+clock = getattr(time, "perf_counter", time.time)
+
 
 def descendants(root):
     """Walk the visual tree after WPF has instantiated the real templates."""
@@ -80,7 +82,7 @@ finally:
 assert observations == [["Alpha", "Other"]]
 assert not theme_changed.handlers
 
-started = time.perf_counter()
+started = clock()
 dialog = forms.SelectFromList(
     ["Item {}".format(index) for index in range(2000)],
     "Large list",
@@ -95,5 +97,5 @@ try:
 finally:
     dialog.Close()
 selection_report = "Selection templates and 2000-item search passed in {:.3f}s".format(
-    time.perf_counter() - started
+    clock() - started
 )
