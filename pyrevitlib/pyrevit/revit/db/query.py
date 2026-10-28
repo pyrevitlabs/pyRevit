@@ -95,9 +95,11 @@ def get_name(element, title_on_sheet=False):
         str: The name of the element. For views, it may return the view's title
              on the sheet if `title_on_sheet` is True and the title is available.
     """
-    if isinstance(element, DB.View) and title_on_sheet:
-        titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
-        view_name = titleos_param.AsString()
+    if isinstance(element, DB.View):
+        view_name = None
+        if title_on_sheet:
+            titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
+            view_name = titleos_param.AsString()
         if view_name:
             return view_name
     if PY3:
