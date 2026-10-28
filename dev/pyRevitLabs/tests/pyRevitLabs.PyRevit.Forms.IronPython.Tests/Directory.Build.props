@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+    <Import Project="../../Directory.Build.props" />
+    <PropertyGroup>
+        <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY342</IronPythonVersion>
+        <BaseIntermediateOutputPath>obj\$(IronPythonVersion)\</BaseIntermediateOutputPath>
+        <BaseOutputPath>bin\$(IronPythonVersion)\</BaseOutputPath>
+    </PropertyGroup>
+</Project>

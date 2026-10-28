@@ -55,6 +55,31 @@ public class CPythonInterpreterLifecycleTests {
     }
 
     /// <summary>
+    /// A Python class that only implements CLR interfaces needs no <c>__namespace__</c>, as under
+    /// IronPython: pythonnet generates its CLR type, so CLR callers reach its Python methods, and
+    /// redefining it with the same shape, as a re-run command does, reuses that type.
+    /// </summary>
+    [Fact]
+    public void ImplementingAnInterface_WithoutANamespace_GeneratesAReusableType() {
+        string? record = InterpreterLifecycleProbe.Record.ImplicitInterfaceTypes;
+
+        Assert.Equal("True|7|7|3|False", record);
+    }
+
+    /// <summary>
+    /// Like IronPython, a <see cref="bool"/> or <see cref="Nullable{Boolean}"/> property, field,
+    /// parameter or delegate return accepts any Python value by truthiness, while <c>None</c> stays
+    /// null for <see cref="Nullable{Boolean}"/>. A <see cref="bool"/> overload never wins over one
+    /// that takes the value itself.
+    /// </summary>
+    [Fact]
+    public void BooleanTargets_AcceptPythonTruthiness_WithoutStealingOverloads() {
+        string? record = InterpreterLifecycleProbe.Record.TruthyBooleans;
+
+        Assert.Equal("True|False|False|True|False|None|False|True|object|bool|True|False|True|False", record);
+    }
+
+    /// <summary>
     /// <c>CPythonEngine.Start</c> must only assign <c>Runtime.PythonDLL</c> while the runtime is
     /// down, because pythonnet rejects the assignment afterwards. Hoisting those initialize-only
     /// settings back out of the guard would make the first CPython command after a Reload fail with

@@ -1,240 +1,4 @@
-"""Use real WPF/pythonnet with only the Revit-specific dependencies replaced.
-
-Runs in its own STA test process because the interpreter and WPF dispatcher
-are process-scoped. The production forms facade and modules are imported intact.
-"""
-
-import datetime
-from io import open
-import os
-import sys
-import types
-import uuid
-
-if not hasattr(types, "SimpleNamespace"):
-
-    class SimpleNamespace(object):
-        """Provide the Python 3.3-compatible namespace used by test doubles."""
-
-        def __init__(self, **values):
-            self.__dict__.update(values)
-
-    types.SimpleNamespace = SimpleNamespace
-
-sys.path.insert(0, fixture_root)
-
-import clr
-
-assemblies = [
-    "System.Windows.Forms",
-    "PresentationFramework",
-    "PresentationCore",
-    "WindowsBase",
-    "System.Xaml",
-]
-for assembly in assemblies:
-    clr.AddReference(assembly)
-
-import System
-from System import Windows, Uri, UriKind
-from System.IO import StringReader
-from System.Windows import Controls, Documents, Input, Interop, Media, Threading
-from System.Windows import ResourceDictionary
-from System.Windows.Media import Imaging
-from System.Collections.Generic import List
-from System.Collections.ObjectModel import ObservableCollection
-
-
-def module(name, **values):
-    """Install a focused host replacement without mocking any WPF types."""
-    result = types.ModuleType(name)
-    result.__dict__.update(values)
-    sys.modules[name] = result
-    return result
-
-
-class Unsupported(Exception):
-    """Match the facade's unsupported-feature contract."""
-
-    def __init__(self, feature):
-        self.feature_name = feature
-        Exception.__init__(self, feature)
-
-
-def to_clr_list(item_type, values):
-    """Use the same Add-based conversion as pyrevit.framework."""
-    result = List[item_type]()
-    for value in values:
-        result.Add(value)
-    return result
-
-
-class _HostEvent:
-    def __init__(self):
-        self.handlers = []
-
-    def __iadd__(self, handler):
-        self.handlers.append(handler)
-        return self
-
-    def __isub__(self, handler):
-        self.handlers.remove(handler)
-        return self
-
-
-class _DockablePaneId:
-    def __init__(self, pane_uuid):
-        self.Guid = pane_uuid
-        self.value = str(pane_uuid)
-
-
-class _DockablePane:
-    registered = {}
-    created = set()
-
-    def __init__(self):
-        self.is_visible = False
-
-    @staticmethod
-    def PaneIsRegistered(pane_id):
-        return pane_id.value in _DockablePane.registered
-
-    @staticmethod
-    def PaneExists(pane_id):
-        return pane_id.value in _DockablePane.created
-
-    def Show(self):
-        self.is_visible = True
-
-    def Hide(self):
-        self.is_visible = False
-
-
-class _DockablePaneProvider:
-    def __init__(self, framework_element, visible_by_default):
-        self.framework_element = framework_element
-        self.visible_by_default = visible_by_default
-        self.InitialState = None
-        self.EditorInteraction = None
-        self.ContextualHelp = None
-
-
-class _UiApplication:
-    def __init__(self):
-        self.ThemeChanged = theme_changed
-        self.Idling = _HostEvent()
-        self.ActiveUIDocument = None
-
-    def RegisterDockablePane(self, pane_id, title, provider):
-        _DockablePane.registered[pane_id.value] = (title, provider, _DockablePane())
-
-    def raise_idling(self):
-        for handler in list(self.Idling.handlers):
-            handler(self, None)
-
-    def GetDockablePane(self, pane_id):
-        return _DockablePane.registered[pane_id.value][2]
-
-
-theme_changed = _HostEvent()
-
-
-host = module(
-    "pyrevit",
-    __path__=[fixture_root],
-    HOST_APP=types.SimpleNamespace(
-        is_newer_than=lambda *args: True,
-        uiapp=_UiApplication(),
-    ),
-    EXEC_PARAMS=types.SimpleNamespace(
-        command_path=fixture_root, command_name="Forms probe"
-    ),
-    BIN_DIR=fixture_root,
-    ROOT_BIN_DIR=fixture_root,
-    DOCS=types.SimpleNamespace(docs=[]),
-    PyRevitException=RuntimeError,
-    PyRevitCPythonNotSupported=Unsupported,
-)
-module(
-    "pyrevit.compat",
-    IRONPY=bool(globals().get("ironpython_probe")),
-    safe_strtype=str,
-    get_elementid_value_func=lambda: lambda value: value.Value,
-)
-framework = module(
-    "pyrevit.framework",
-    System=System,
-    Windows=Windows,
-    Threading=Threading,
-    Interop=Interop,
-    Input=Input,
-    Media=Media,
-    Controls=Controls,
-    Documents=Documents,
-    Imaging=Imaging,
-    Uri=Uri,
-    UriKind=UriKind,
-    ResourceDictionary=ResourceDictionary,
-    StringReader=StringReader,
-    Forms=System.Windows.Forms,
-    CPDialogs=None,
-    ComponentModel=System.ComponentModel,
-    ObservableCollection=ObservableCollection,
-    to_clr_list=to_clr_list,
-    get_current_thread_id=lambda: System.Environment.CurrentManagedThreadId,
-)
-module(
-    "pyrevit.coreutils",
-    __path__=[],
-    Guid=System.Guid,
-    new_uuid=lambda: str(uuid.uuid4()),
-    fuzzy_search_ratio=lambda target_string, sfilter, regex: (
-        100 if sfilter.lower() in target_string.lower() else 0
-    ),
-)
-environment_values = {}
-module(
-    "pyrevit.coreutils.envvars",
-    get_pyrevit_env_var=lambda name: environment_values.get(name),
-    set_pyrevit_env_var=lambda name, value: environment_values.__setitem__(name, value),
-)
-colors_module = module("pyrevit.coreutils.colors")
-with open(os.path.join(fixture_root, "colors.py"), encoding="utf-8") as source:
-    exec(compile(source.read(), "colors.py", "exec"), colors_module.__dict__)
-logger = types.SimpleNamespace(debug=lambda *args: None, warning=lambda *args: None)
-module("pyrevit.coreutils.logger", get_logger=lambda name: logger)
-module(
-    "pyrevit.api",
-    AdWindows=types.SimpleNamespace(
-        ComponentManager=types.SimpleNamespace(ApplicationWindow=System.IntPtr.Zero)
-    ),
-)
-module("pyrevit.labs", Common=types.SimpleNamespace())
-module("pyrevit.userconfig", user_config=types.SimpleNamespace(user_locale="en_us"))
-module(
-    "pyrevit.revit",
-    ui=types.SimpleNamespace(
-        resolve_icon_file=lambda *args: None,
-        get_window_rectangle=lambda: System.Drawing.Rectangle(0, 0, 1920, 1080),
-        get_mainwindow=lambda: None,
-    ),
-)
-host.HOST_APP.proc_screen_workarea = System.Drawing.Rectangle(0, 0, 1920, 1080)
-host.HOST_APP.proc_screen_scalefactor = 1.0
-sys.modules["pyrevit.coreutils"].SafeDict = dict
-module(
-    "pyrevit.versionmgr",
-    get_pyrevit_version=lambda: types.SimpleNamespace(get_formatted=lambda: "test"),
-)
-module(
-    "pyrevit.UI",
-    DockablePane=_DockablePane,
-    DockablePaneId=_DockablePaneId,
-    IDockablePaneProvider=object,
-)
-module("pyrevit.DB")
-module("pyrevit.runtime", __path__=[])
-module("pyrevit.runtime.types", DockablePaneProvider=_DockablePaneProvider)
+"""Check CPython-backend internals with real WPF after HostStubs.py has run."""
 
 from pyrevit import forms
 from pyrevit.forms import _backend
@@ -263,7 +27,7 @@ for cycle in range(3):
     assert _backend.unwrap(dialog).FindName("okayButton") == dialog.okayButton
     dialog.okayButton.RaiseEvent(Windows.RoutedEventArgs(Controls.Button.ClickEvent))
     assert dialog.response == "available"
-    assert dialog._events.is_released
+    assert dialog._pyrevit_backend.events.is_released
     assert not theme_changed.handlers
 
 dialog = make_dialog(value_type="date", default=datetime.datetime(2026, 10, 26))
@@ -294,7 +58,7 @@ timer.Start()
 dialog.ShowDialog()
 timer.Tick -= accept
 assert dialog.response == "modal"
-assert dialog._events.is_released
+assert dialog._pyrevit_backend.events.is_released
 assert not theme_changed.handlers
 
 dialog = make_dialog(value_type="string", default="escape")
@@ -317,7 +81,7 @@ timer.Start()
 dialog.ShowDialog()
 timer.Tick -= escape
 assert dialog.response is None
-assert dialog._events.is_released
+assert dialog._pyrevit_backend.events.is_released
 assert not theme_changed.handlers
 
 
@@ -325,7 +89,7 @@ class FailingDialog(forms.GetValueWindow):
     """Exercise Python callback errors at the native WPF event boundary."""
 
     def select(self, sender, args):
-        """Raise an error which must reach the caller instead of the Dispatcher."""
+        """Raise an error which must leave ShowDialog as under IronPython."""
         raise ValueError("callback failed")
 
 
@@ -341,7 +105,10 @@ else:
 finally:
     timer.Stop()
     timer.Tick -= accept
-assert dialog._events.is_released
+assert dialog.IsVisible
+assert not dialog._pyrevit_backend.events.is_released
+dialog.Close()
+assert dialog._pyrevit_backend.events.is_released
 assert not theme_changed.handlers
 
 
@@ -399,16 +166,20 @@ dialog.Show()
 assert dialog.IsVisible
 environment_values["MODELESS_FORMS_PROBE"] = dialog
 assert forms.activate_open_window("MODELESS_FORMS_PROBE")
-environment_values["MODELESS_FORMS_PROBE"] = types.SimpleNamespace(
-    _window=_backend.unwrap(dialog)
+earlier_import = type(
+    "EarlierImportWindow", (object,), {"_pyrevit_root_type": Windows.Window}
+)()
+earlier_import.__dict__["_pyrevit_backend"] = types.SimpleNamespace(
+    root=_backend.unwrap(dialog)
 )
+environment_values["MODELESS_FORMS_PROBE"] = earlier_import
 assert forms.activate_open_window("MODELESS_FORMS_PROBE")
 environment_values["MODELESS_FORMS_PROBE"] = dialog
 timer.Start()
 Threading.Dispatcher.PushFrame(frame)
 timer.Tick -= close_modeless
 assert dialog.was_closed
-assert dialog._events.is_released
+assert dialog._pyrevit_backend.events.is_released
 assert not theme_changed.handlers
 assert not forms.activate_open_window("MODELESS_FORMS_PROBE")
 
@@ -425,11 +196,11 @@ _backend.bind_event(guarded, "Closing", keep_open)
 guarded.Show()
 guarded.Close()
 assert guarded.IsVisible
-assert not guarded._events.is_released
+assert not guarded._pyrevit_backend.events.is_released
 allow_close.append(True)
 guarded.Close()
 assert not guarded.IsVisible
-assert guarded._events.is_released
+assert guarded._pyrevit_backend.events.is_released
 assert guarded.was_closed
 
 for name in forms.__all__:
@@ -548,7 +319,7 @@ logger.error = lambda *args: logged_errors.append(args)
 
 
 def fail_panel_callback(sender, args):
-    """Raise from a dockable-page callback that no command owns."""
+    """Raise from a dockable-page callback that Python code raised."""
     raise ValueError("panel callback failure")
 
 
@@ -557,15 +328,18 @@ mouse_down = Input.MouseButtonEventArgs(
     Input.Mouse.PrimaryDevice, 0, Input.MouseButton.Left
 )
 mouse_down.RoutedEvent = Input.Mouse.MouseDownEvent
-panel.label.RaiseEvent(mouse_down)
-panel.label.RaiseEvent(mouse_down)
-assert len(logged_errors) == 2
-assert "panel callback failure" in logged_errors[0][1]
-assert panel._events.error is None
+for attempt in range(2):
+    try:
+        panel.label.RaiseEvent(mouse_down)
+    except ValueError as error:
+        assert str(error) == "panel callback failure"
+    else:
+        raise AssertionError("The Python caller of RaiseEvent must receive the error")
+assert not logged_errors
 
 
 def exit_panel_callback(sender, args):
-    """Raise a BaseException from a callback no command owns."""
+    """Raise a BaseException through a Python caller."""
     raise SystemExit("panel callback exit")
 
 
@@ -574,9 +348,13 @@ mouse_up = Input.MouseButtonEventArgs(
     Input.Mouse.PrimaryDevice, 0, Input.MouseButton.Left
 )
 mouse_up.RoutedEvent = Input.Mouse.MouseUpEvent
-panel.label.RaiseEvent(mouse_up)
-assert len(logged_errors) == 3
-assert "panel callback exit" in logged_errors[2][1]
+try:
+    panel.label.RaiseEvent(mouse_up)
+except SystemExit as error:
+    assert str(error) == "panel callback exit"
+else:
+    raise AssertionError("SystemExit must reach the Python caller of RaiseEvent")
+assert not logged_errors
 
 constructed = []
 
@@ -738,7 +516,6 @@ class ReplayWindow(forms.WPFWindow):
 
 replayed = ReplayWindow()
 assert replayed.seen == [("after", None)], replayed.seen
-assert replayed._events.error is None
 replayed.before.IsChecked = False
 replayed.before.IsChecked = True
 assert replayed.seen[-1] == ("before", "ready")
@@ -769,5 +546,99 @@ move.RoutedEvent = Input.Mouse.MouseMoveEvent
 custom_events.custom.RaiseEvent(move)
 assert custom_events.moves == 1
 custom_events.Close()
+
+
+class TemplateMenuWindow(forms.WPFWindow):
+    """Declare a MenuItem Click inside a DataTemplate's ContextMenu."""
+
+    def __init__(self):
+        self.clicks = []
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><ItemsControl x:Name='rows'><ItemsControl.ItemTemplate>"
+            "<DataTemplate><TextBlock Text='{{Binding}}'><TextBlock.ContextMenu>"
+            "<ContextMenu><MenuItem Header='Do' Click='clicked'/></ContextMenu>"
+            "</TextBlock.ContextMenu></TextBlock></DataTemplate>"
+            "</ItemsControl.ItemTemplate></ItemsControl></Window>".format(
+                xaml_namespaces
+            ),
+            literal_string=True,
+        )
+
+    def clicked(self, sender, args):
+        """Record the clicked menu item of any template instance."""
+        self.clicks.append(str(sender.Header))
+
+
+def template_menus(element):
+    """Return the ContextMenus of TextBlocks instantiated from the item template."""
+    found = []
+    if isinstance(element, Controls.TextBlock) and element.ContextMenu is not None:
+        found.append(element.ContextMenu)
+    for index in range(Media.VisualTreeHelper.GetChildrenCount(element)):
+        found.extend(template_menus(Media.VisualTreeHelper.GetChild(element, index)))
+    return found
+
+
+def click_menu_items(menus):
+    """Raise Click on the first item of each menu without opening it."""
+    for menu in menus:
+        menu.Items[0].RaiseEvent(Windows.RoutedEventArgs(Controls.MenuItem.ClickEvent))
+
+
+menu_window = TemplateMenuWindow()
+menu_window.rows.ItemsSource = forms._backend.items_source(["a", "b"])
+menu_window.Show()
+menu_window.UpdateLayout()
+row_menus = template_menus(_backend.unwrap(menu_window))
+assert len(row_menus) == 2
+click_menu_items(row_menus)
+assert menu_window.clicks == ["Do", "Do"], menu_window.clicks
+menu_window.Close()
+assert menu_window._pyrevit_backend.events.is_released
+click_menu_items(row_menus)
+assert menu_window.clicks == ["Do", "Do"], menu_window.clicks
+
+from pyrevit import _cpython_wpf as cpython_wpf
+
+data_template = Windows.DataTemplate()
+loaded_template = cpython_wpf.LoadComponent(
+    data_template,
+    StringReader(
+        "<DataTemplate {}><TextBlock Text='{{Binding}}'/></DataTemplate>".format(
+            xaml_namespaces
+        )
+    ),
+)
+assert System.Object.ReferenceEquals(loaded_template, data_template)
+assert isinstance(data_template.LoadContent(), Controls.TextBlock)
+template_path = os.path.join(fixture_root, "WpfShimTemplate.xaml")
+with open(template_path, "w", encoding="utf-8") as template_file:
+    template_file.write(
+        "<DataTemplate {}><Border/></DataTemplate>".format(xaml_namespaces)
+    )
+try:
+    from_path = cpython_wpf.LoadComponent(Windows.DataTemplate(), template_path)
+finally:
+    os.remove(template_path)
+assert isinstance(from_path.LoadContent(), Controls.Border)
+plain_window = Windows.Window()
+cpython_wpf.LoadComponent(
+    plain_window, StringReader("<Window {} Title='shim'/>".format(xaml_namespaces))
+)
+assert plain_window.Title == "shim"
+
+
+class PythonDerivedWindow(Windows.Window):
+    """A Python Window subclass, which only IronPython's loader supports."""
+
+
+try:
+    cpython_wpf.LoadComponent(
+        PythonDerivedWindow(), StringReader("<Window {}/>".format(xaml_namespaces))
+    )
+    raise AssertionError("A Python-derived window loaded through the wpf shim")
+except Unsupported as error:
+    assert "PythonDerivedWindow" in str(error)
 
 print("CPython WPF forms probe passed")
