@@ -224,7 +224,7 @@ the window, are marked with the `PythonEvents.Hook` attached property instead;
 WPF hands each instance to the backend as it creates it, and the handlers attach
 to that instance directly, as IronPython attaches template handlers.
 CPython reactive models expose
-a managed `ExpandoObject` for two-way WPF binding while selector results retain
+a managed `BindingModel` for two-way WPF binding while selector results retain
 the original Python or Revit object identity.
 
 Plain Python data reaches WPF under CPython the way it does under IronPython.
@@ -238,8 +238,12 @@ and copies other iterables once. A plain class instance or namedtuple assigned t
 `PythonObjectProxy`. Its property descriptors read and write attributes live and
 convert values to CLR `bool`, `int`/`long`, `double`, `string`, null or nested
 proxies, so triggers, sorting, filters, `DisplayMemberPath` and
-`SelectedValuePath` behave as under IronPython. A Reactive model assigned to
-`object` gets its `ExpandoObject` adapter, and a Python `int` becomes a CLR
+`SelectedValuePath` behave as under IronPython. Both the proxy and the
+`BindingModel` type each property by its current value, as IronPython 3 does,
+so an `int` binds to a `double` target such as `ProgressBar.Maximum`.
+`set_data_context` turns a Python list into a live list proxy, so
+`{Binding Count}` resolves and WPF can hash the context. A Reactive model assigned to
+`object` gets its `BindingModel` adapter, and a Python `int` becomes a CLR
 `Int32` (or `Int64` when larger) rather than a pythonnet `PyInt`, so values
 stored in that adapter match `SelectedValuePath` and trigger values. Every proxy, and every tracked
 adapter, goes back to Python as the original object: `ItemsSource`,

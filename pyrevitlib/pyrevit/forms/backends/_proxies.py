@@ -6,7 +6,7 @@ to an ``IEnumerable`` such as ``ItemsSource`` becomes a live managed list, and
 a plain Python object assigned to an ``object`` such as ``DataContext`` or
 ``Tag`` becomes a managed property bag that reads its attributes live. WPF
 hands every item, selection and ``DataContext`` back to Python as the original
-object. Reactive models keep their managed ``ExpandoObject`` adapter
+object. Reactive models keep their managed ``BindingModel`` adapter
 (``_binding.binding_source``), which also goes back to Python as the model.
 
 Warning:

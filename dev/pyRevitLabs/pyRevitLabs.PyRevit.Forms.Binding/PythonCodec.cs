@@ -50,6 +50,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             switch (value) {
                 case IPythonValue python:
                     return python.Source;
+                case BindingModel model:
+                    return PythonBinding.FindModel(model);
                 case ExpandoObject model:
                     return PythonBinding.FindModel(model);
                 default:

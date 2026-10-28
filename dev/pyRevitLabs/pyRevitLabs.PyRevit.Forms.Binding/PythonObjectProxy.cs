@@ -30,7 +30,6 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         private readonly PyObject source;
         private readonly IntPtr handle;
         private readonly bool isDict;
-        private PythonPropertyCollection properties;
 
         private PythonObjectProxy(PyObject source) {
             this.source = source;
@@ -116,18 +115,23 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             return handle.GetHashCode();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Returns a descriptor per known attribute, typed by the runtime type of its current
+        /// value as IronPython types them, so WPF converts an <see cref="int"/> for a
+        /// <see cref="double"/> target.
+        /// </summary>
         public PropertyDescriptorCollection GetProperties() {
-            if (properties == null) {
-                List<string> names;
-                using (Py.GIL())
-                    names = PythonBinding.NamesOf(source);
-                var known = new PropertyDescriptor[names.Count];
-                for (var index = 0; index < names.Count; index++)
-                    known[index] = PythonPropertyDescriptor.Named(names[index]);
-                properties = new PythonPropertyCollection(this, known);
-            }
-            return properties;
+            List<string> names;
+            using (Py.GIL())
+                names = PythonBinding.NamesOf(source);
+            var known = new PropertyDescriptor[names.Count];
+            for (var index = 0; index < names.Count; index++)
+                known[index] = PythonPropertyDescriptor.Named(names[index], TypeOfAttribute(names[index]));
+            return new PythonPropertyCollection(this, known);
+        }
+
+        internal Type TypeOfAttribute(string name) {
+            return GetAttribute(name)?.GetType() ?? typeof(object);
         }
 
         /// <inheritdoc/>
@@ -203,28 +207,31 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             var found = base.Find(name, ignoreCase);
             if (found != null || string.IsNullOrEmpty(name) || !owner.HasAttribute(name))
                 return found;
-            found = PythonPropertyDescriptor.Named(name);
+            found = PythonPropertyDescriptor.Named(name, owner.TypeOfAttribute(name));
             Add(found);
             return found;
         }
     }
 
     internal sealed class PythonPropertyDescriptor : PropertyDescriptor {
-        private static readonly ConcurrentDictionary<string, PythonPropertyDescriptor> Shared =
-            new ConcurrentDictionary<string, PythonPropertyDescriptor>();
+        private static readonly ConcurrentDictionary<(string, Type), PythonPropertyDescriptor> Shared =
+            new ConcurrentDictionary<(string, Type), PythonPropertyDescriptor>();
 
-        private PythonPropertyDescriptor(string name) : base(name, null) {
+        private readonly Type propertyType;
+
+        private PythonPropertyDescriptor(string name, Type propertyType) : base(name, null) {
+            this.propertyType = propertyType;
         }
 
-        internal static PythonPropertyDescriptor Named(string name) {
-            return Shared.GetOrAdd(name, key => new PythonPropertyDescriptor(key));
+        internal static PythonPropertyDescriptor Named(string name, Type propertyType) {
+            return Shared.GetOrAdd((name, propertyType), key => new PythonPropertyDescriptor(key.Item1, key.Item2));
         }
 
         public override Type ComponentType => typeof(PythonObjectProxy);
 
         public override bool IsReadOnly => false;
 
-        public override Type PropertyType => typeof(object);
+        public override Type PropertyType => propertyType;
 
         public override bool CanResetValue(object component) {
             return false;
