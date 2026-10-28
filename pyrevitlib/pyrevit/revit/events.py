@@ -6,7 +6,7 @@ from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
-from pyrevit import compat, PyRevitCPythonNotSupported
+from pyrevit import compat
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 
@@ -310,13 +310,12 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
             return False
 
 
-if compat.IRONPY:
-    _HANDLER = _GenericExternalEventHandler()
-    # Import can occur outside API context, so event creation may be deferred.
-    try:
-        _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
-    except Exception:
-        _EXTERNAL_EVENT = None
+_HANDLER = _GenericExternalEventHandler()
+# Import can occur outside API context, so event creation may be deferred.
+try:
+    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+except Exception:
+    _EXTERNAL_EVENT = None
 
 
 def _get_execute_extevent():
@@ -364,9 +363,6 @@ def execute_in_revit_context(func, *args, **kwargs):
         This function does not return values from the executed function.
         For return values, use callbacks or shared mutable objects.
     """
-    if not compat.IRONPY:
-        PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
-
     # Snapshot module-level imports from the function's globals at scheduling
     # time. When the ExternalEvent fires asynchronously, the IronPython engine
     # may have cleared the script scope (non-persistent engines) or module

@@ -308,5 +308,47 @@ class EventHandlerCleanupTests(unittest.TestCase):
         )
 
 
+class ExecuteInRevitContextTests(unittest.TestCase):
+    """CPython schedules callbacks through the same ExternalEvent as IronPython."""
+
+    def setUp(self):
+        """Load the events module as the CPython engine sees it."""
+        self.logger = _Logger()
+        self.events = load_events_module(
+            _AppDomain(), _HostApplication(), "cpython-exec", self.logger, "Accepted"
+        )
+        self.calls = []
+
+    def test_callback_runs_when_revit_executes_the_event(self):
+        """The callback waits for the ExternalEvent and then runs once."""
+        calls = self.calls
+
+        def callback(value, key=None):
+            calls.append((value, key))
+
+        self.events.execute_in_revit_context(callback, "value", key="option")
+
+        self.assertEqual([], calls)
+        handler = self.events._EXTERNAL_EVENT.handler
+        handler.Execute(None)
+        handler.Execute(None)
+        self.assertEqual([("value", "option")], calls)
+        self.assertEqual([], self.logger.errors)
+
+    def test_denied_request_discards_the_callback_and_logs(self):
+        """A refused ExternalEvent request never runs the callback later."""
+        calls = self.calls
+
+        def callback():
+            calls.append("ran")
+
+        self.events._EXTERNAL_EVENT.response = "Denied"
+        self.events.execute_in_revit_context(callback)
+        self.events._EXTERNAL_EVENT.handler.Execute(None)
+
+        self.assertEqual([], calls)
+        self.assertTrue(self.logger.errors)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -79,7 +79,7 @@ class XamlPreparationTests(unittest.TestCase):
         """The real input markup keeps resources and element-to-element bindings."""
         helpers = _load_xaml_helpers()
         source = (FORMS / "GetValueWindow.xaml").read_text(encoding="utf-8")
-        markup, names, events, _ = helpers.prepare_xaml(
+        markup, names, events, _, _ = helpers.prepare_xaml(
             source, ["file:///C:/forms/Theme.xaml"]
         )
         document = minidom.parseString(markup)
@@ -98,7 +98,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_event_without_name_receives_generated_name(self):
         """Unnamed controls remain reachable for deferred event attachment."""
-        markup, names, events, _ = _load_xaml_helpers().prepare_xaml(
+        markup, names, events, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             '<Button Click="select"/></Window>',
             [],
@@ -110,7 +110,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_existing_resource_dictionary_keeps_entries_and_merge_order(self):
         """Authored resources retain precedence over injected resources."""
-        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             "<Window.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries>"
             '<ResourceDictionary Source="custom.xaml"/>'
@@ -152,7 +152,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_template_names_remain_in_their_own_namescope(self):
         """Template names are not exposed as window fields."""
-        _, names, _, _ = _load_xaml_helpers().prepare_xaml(
+        _, names, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
             '<Window.Resources><ControlTemplate x:Key="t"><Border x:Name="inner"/>'
@@ -163,7 +163,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_attribute_line_breaks_survive_reparsing(self):
         """Encoded newlines and tabs in attributes are not normalized to spaces."""
-        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             '<TextBlock Text="Line1&#x0a;Line2&#x09;End"/></Window>',
             [],
@@ -175,7 +175,7 @@ class XamlPreparationTests(unittest.TestCase):
     def test_prefixed_wpf_root_keeps_merged_resources_in_the_wpf_namespace(self):
         """Generated resource nodes use the prefix the root binds to WPF."""
         wpf = "http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<w:Window xmlns:w="{}"><w:Grid/></w:Window>'.format(wpf),
             ["theme.xaml"],
         )
@@ -189,7 +189,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_static_palette_keys_resolve_dynamically(self):
         """Host keys added after parsing are looked up when they exist."""
-        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             '<Border Background="{StaticResource pyRevitAccentBrush}" '
             'BorderBrush="{StaticResource authored}"/></Window>',
@@ -201,7 +201,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_icon_font_characters_are_not_rewritten(self):
         """Private-use characters stay text; only real line breaks are encoded."""
-        markup, _, _, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             '<TextBlock Text="&#xE000;&#xE001;&#xE002;"/></Window>',
             [],
@@ -211,7 +211,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_resolved_clr_events_outside_the_allowlist_are_deferred(self):
         """Any attribute the backend reports as an event is detached for binding."""
-        markup, names, events, _ = _load_xaml_helpers().prepare_xaml(
+        markup, names, events, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
             '<Button MouseMove="moved" Content="Go"/></Window>',
             [],
@@ -229,7 +229,7 @@ class XamlPreparationTests(unittest.TestCase):
     def test_custom_template_elements_carry_their_namespace(self):
         """Template targets outside WPF are not mistaken for WPF controls."""
         helpers = _load_xaml_helpers()
-        _, _, events, _ = helpers.prepare_xaml(
+        _, _, events, _, _ = helpers.prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:local="clr-namespace:Tools"><Window.Resources>'
             '<DataTemplate x:Key="t" '
@@ -248,7 +248,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_template_events_are_tagged_with_their_authored_element(self):
         """Template handlers match only the element that declared them."""
-        markup, _, events, _ = _load_xaml_helpers().prepare_xaml(
+        markup, _, events, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
             '<Window.Resources><DataTemplate x:Key="a"><CheckBox Checked="first"/>'
@@ -270,7 +270,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_resource_names_record_their_owner_and_key(self):
         """Names inside resource entries are resolved through the dictionary."""
-        _, names, events, resource_names = _load_xaml_helpers().prepare_xaml(
+        _, names, events, resource_names, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
             '<Window.Resources><ContextMenu x:Key="root"><MenuItem Click="copy"/>'
@@ -288,7 +288,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_initial_state_replays_only_where_ironpython_delivers_it(self):
         """Replay follows attribute order like IronPython's LoadComponent."""
-        _, _, events, _ = _load_xaml_helpers().prepare_xaml(
+        _, _, events, _, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"><StackPanel>'
             '<RadioButton x:Name="before" IsChecked="True" Checked="mode"/>'
@@ -314,6 +314,124 @@ class XamlPreparationTests(unittest.TestCase):
             {event.name: event.replay for event in events},
         )
 
+    def test_selection_replays_once_its_items_exist(self):
+        """A selection takes effect when both its state and its items exist.
+
+        Mirrors IronPython's results in the parity test
+        ``test_initial_selection_waits_for_items``; a True flag still waits
+        for the loaded selector to have a selection.
+        """
+
+        def selector(tag, name, attributes, body=""):
+            return '<{0} x:Name="{1}" {2}>{3}</{0}>'.format(
+                tag, name, " ".join(attributes), body
+            )
+
+        index = 'SelectedIndex="1"'
+        source = 'ItemsSource="{StaticResource letters}"'
+        bound = 'ItemsSource="{Binding Source={StaticResource letters}}"'
+        event = 'SelectionChanged="pick"'
+        items = "<ComboBoxItem/><ComboBoxItem/>"
+        _, _, events, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"><StackPanel>'
+            + selector("ListBox", "list_children", [index, event], "<ListBoxItem/>" * 2)
+            + selector("TabControl", "tab_unselected", [event], "<TabItem/>")
+            + selector(
+                "ComboBox",
+                "items_element",
+                [index, event],
+                "<ComboBox.Items>" + items + "</ComboBox.Items>",
+            )
+            + selector(
+                "ComboBox",
+                "index_element",
+                [event],
+                items + "<ComboBox.SelectedIndex>1</ComboBox.SelectedIndex>",
+            )
+            + selector("ComboBox", "source_state_event", [source, index, event])
+            + selector("ComboBox", "state_source_event", [index, source, event])
+            + selector("ComboBox", "state_event_source", [index, event, source])
+            + selector("ComboBox", "state_binding_event", [index, bound, event])
+            + selector("ComboBox", "state_event_binding", [index, event, bound])
+            + selector(
+                "ComboBox", "item_source_event", ['SelectedItem="b"', source, event]
+            )
+            + selector(
+                "CheckBox",
+                "check_element",
+                ['Checked="mode"'],
+                "<CheckBox.IsChecked>True</CheckBox.IsChecked>",
+            )
+            + "</StackPanel></Window>",
+            [],
+        )
+        self.assertEqual(
+            {
+                "list_children": True,
+                "tab_unselected": True,
+                "items_element": True,
+                "index_element": True,
+                "source_state_event": False,
+                "state_source_event": False,
+                "state_event_source": True,
+                "state_binding_event": False,
+                "state_event_binding": True,
+                "item_source_event": False,
+                "check_element": True,
+            },
+            {event.name: event.replay for event in events},
+        )
+
+    def test_popup_template_events_are_hooked_per_instance(self):
+        """Template elements inside a ContextMenu or ToolTip use PythonEvents.Hook."""
+        helpers = _load_xaml_helpers()
+        markup, names, events, _, _ = helpers.prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            "<StackPanel><ItemsControl><ItemsControl.ItemTemplate><DataTemplate>"
+            '<TextBlock MouseDown="down"><TextBlock.ContextMenu><ContextMenu>'
+            '<MenuItem Click="do" Checked="check"/><MenuItem Click="other"/>'
+            "</ContextMenu></TextBlock.ContextMenu><TextBlock.ToolTip><ToolTip>"
+            '<Button Click="tip"/></ToolTip></TextBlock.ToolTip></TextBlock>'
+            "</DataTemplate></ItemsControl.ItemTemplate></ItemsControl>"
+            '<Button x:Name="plain"><Button.ContextMenu><ContextMenu>'
+            '<MenuItem x:Name="named" Click="named_click"/></ContextMenu>'
+            "</Button.ContextMenu></Button></StackPanel></Window>",
+            [],
+        )
+        hooked = [event for event in events if isinstance(event, helpers.HookedEvent)]
+        self.assertEqual(
+            ["do", "check", "other", "tip"], [event.handler for event in hooked]
+        )
+        self.assertEqual(hooked[0].key, hooked[1].key)
+        self.assertEqual(3, len(set(event.key for event in hooked)))
+        self.assertIsInstance(events[0], helpers.TemplateEvent)
+        self.assertEqual(
+            helpers.NamedEvent("named", "Click", "named_click", False), events[-1]
+        )
+        document = minidom.parseString(markup)
+        hooks = [
+            node.getAttributeNS(helpers._HOOK_NS, "PythonEvents.Hook")
+            for node in document.getElementsByTagName("*")
+        ]
+        self.assertEqual(
+            sorted(set(event.key for event in hooked)),
+            sorted(key for key in hooks if key),
+        )
+        self.assertIn("named", names)
+
+    def test_root_properties_list_attributes_and_property_elements(self):
+        """XAML-set root members are known so earlier assignments do not win."""
+        _, _, _, _, root_properties = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="t" '
+            'x:Name="root" Closing="closing"><Window.Width>200</Window.Width>'
+            "<Grid/></Window>",
+            [],
+        )
+        self.assertEqual({"Title", "Closing", "Width"}, set(root_properties))
+
     def test_section_box_navigator_markup_does_not_replay(self):
         """The shipped IsChecked-before-Checked markup keeps IronPython's silence."""
         source = next(
@@ -321,7 +439,7 @@ class XamlPreparationTests(unittest.TestCase):
         )
         if source is None:
             self.skipTest("SectionBoxNavigator markup is not bundled")
-        _, _, events, _ = _load_xaml_helpers().prepare_xaml(
+        _, _, events, _, _ = _load_xaml_helpers().prepare_xaml(
             source.read_text(encoding="utf-8-sig"), []
         )
         level_mode = [
@@ -344,7 +462,7 @@ class XamlPreparationTests(unittest.TestCase):
 
     def test_resource_owner_inside_a_resource_entry_is_resolved_through_it(self):
         """A keyed resource owning its own Resources is found via its dictionary."""
-        _, names, _, resource_names = _load_xaml_helpers().prepare_xaml(
+        _, names, _, resource_names, _ = _load_xaml_helpers().prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
             '<Window.Resources><ContextMenu x:Key="menu"><ContextMenu.Resources>'
@@ -567,7 +685,9 @@ class BindingRefreshTests(unittest.TestCase):
     def test_form_infrastructure_and_named_controls_are_not_copied(self):
         """Form base properties and XAML names never reach the binding model."""
         model = self.Model()
-        model.__dict__["_xaml_names"] = frozenset(["okButton"])
+        model.__dict__[self.binding.FORM_STATE] = SimpleNamespace(
+            xaml_names=frozenset(["okButton"])
+        )
         model.okButton = object()
         model.count = 1
         native = self.binding.binding_source(model)

@@ -6,7 +6,9 @@ replays ``Checked`` and ``SelectionChanged`` afterwards only where IronPython's
 loader would have delivered them (see ``NamedEvent.replay``). Templates retain
 their own namescopes; their event sources are tagged with ``Uid``, which
 template instances keep, so routed handlers on the root window can match the
-authored element.
+authored element. Template elements inside a ``ContextMenu`` or ``ToolTip``,
+whose events never reach the window, are marked with ``PythonEvents.Hook``
+instead, which hands each instance to the backend as WPF creates it.
 """
 
 import re
@@ -15,18 +17,22 @@ from collections import namedtuple
 from xml.dom import minidom
 
 
-class PreparedXaml(namedtuple("PreparedXaml", "markup names events resource_names")):
+class PreparedXaml(
+    namedtuple("PreparedXaml", "markup names events resource_names root_properties")
+):
     """Markup ready for ``XamlReader`` plus what must be attached after loading.
 
     Attributes:
         markup (str): Markup without deferred event attributes.
         names (list[str]): Element names outside templates, including
             generated ones for unnamed event sources.
-        events (list[NamedEvent | TemplateEvent]): Deferred handlers, in
-            document order.
+        events (list[NamedEvent | TemplateEvent | HookedEvent]): Deferred
+            handlers, in document order.
         resource_names (dict): {name: (owner name or None for the root,
             resource key)} for names declared inside resource entries, which
             WPF keeps out of the window namescope.
+        root_properties (frozenset[str]): Members the root element sets as
+            plain attributes or ``Root.Member`` property elements.
     """
 
     __slots__ = ()
@@ -41,10 +47,25 @@ class NamedEvent(namedtuple("NamedEvent", "name event handler replay")):
 
     Invariant:
         ``replay`` mirrors IronPython's ``LoadComponent``, which attaches
-        handlers in attribute order: it is True only when the event attribute
-        precedes every state attribute for that event on the same element
-        (for example ``Checked`` before ``IsChecked``). It is always False for
-        other events.
+        handlers in attribute order and applies child elements after every
+        attribute: it is True when the element's initial state takes effect
+        after the event attribute (for example ``Checked`` before
+        ``IsChecked``), or when no state attribute sets it. A selection takes
+        effect once both its state and its items exist; child items, ``Items``
+        and ``ItemsSource`` property elements and state property elements all
+        count as after every attribute, while an ``ItemsSource`` attribute
+        counts at its own position. It is always False for other events.
+    """
+
+    __slots__ = ()
+
+
+class HookedEvent(namedtuple("HookedEvent", "key event handler")):
+    """A handler deferred from a template element inside a popup tree.
+
+    Attributes:
+        key (str): ``PythonEvents.Hook`` value of the element, unique to this
+            preparation; every event of one element shares it.
     """
 
     __slots__ = ()
@@ -63,6 +84,12 @@ class TemplateEvent(namedtuple("TemplateEvent", "uid tag event handler")):
 
 _WPF_NS = "http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 _XAML_NS = "http://schemas.microsoft.com/winfx/2006/xaml"
+_HOOK_NS = (
+    "clr-namespace:PyRevitLabs.PyRevit.Forms.Binding;"
+    "assembly=pyRevitLabs.PyRevit.Forms.Binding"
+)
+_HOOK_ATTRIBUTE = "pyrevitevents:PythonEvents.Hook"
+_POPUP_HOSTS = ("ContextMenu", "ToolTip")
 _INITIAL_STATE_ATTRIBUTES = {
     "Checked": ("IsChecked",),
     "SelectionChanged": (
@@ -244,13 +271,60 @@ def _ensure_name(document, node, names):
     return name
 
 
-def _replays_initial_state(attributes, event):
+def _items_position(node, attributes, prefix):
+    """Return the attribute index at which a selector's items exist, or None."""
+    for child in _children(node):
+        member = child.localName[len(prefix) :]
+        if not child.localName.startswith(prefix) or member in ("Items", "ItemsSource"):
+            return len(attributes)
+    if "ItemsSource" in attributes:
+        return attributes.index("ItemsSource")
+    return None
+
+
+def _replays_initial_state(node, attributes, event):
     """Return whether IronPython's loader would deliver ``event`` for initial state."""
     states = _INITIAL_STATE_ATTRIBUTES.get(event)
     if not states:
         return False
     position = attributes.index(event)
-    return not any(name in states for name in attributes[:position])
+    prefix = node.localName + "."
+    if any(
+        child.localName.startswith(prefix) and child.localName[len(prefix) :] in states
+        for child in _children(node)
+    ):
+        return True
+    items = None
+    if event == "SelectionChanged":
+        items = _items_position(node, attributes, prefix)
+    effective = [
+        index if items is None else max(index, items)
+        for index, name in enumerate(attributes)
+        if name in states
+    ]
+    return not effective or max(effective) > position
+
+
+def _root_properties(root):
+    prefix = root.localName + "."
+    names = set(
+        name for name in root.attributes.keys() if ":" not in name and name != "xmlns"
+    )
+    names.update(
+        child.localName[len(prefix) :]
+        for child in _children(root)
+        if child.localName.startswith(prefix)
+    )
+    return frozenset(names)
+
+
+def _hook_template_source(document, node, token, index):
+    key = node.getAttributeNS(_HOOK_NS, "PythonEvents.Hook")
+    if not key:
+        key = "{}:{}".format(token, index)
+        document.documentElement.setAttribute("xmlns:pyrevitevents", _HOOK_NS)
+        node.setAttributeNS(_HOOK_NS, _HOOK_ATTRIBUTE, key)
+    return key
 
 
 def _tag_template_source(node, index):
@@ -292,12 +366,17 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
     """
     document = minidom.parseString(source)
     root = document.documentElement
+    root_properties = _root_properties(root)
     names = []
     events = []
     resource_names = {}
+    token = uuid.uuid4().hex
 
-    def visit(node, in_template=False, resource=None, entry_owner=_NOT_ENTRY):
+    def visit(
+        node, in_template=False, resource=None, entry_owner=_NOT_ENTRY, in_popup=False
+    ):
         in_template = in_template or node.localName in _TEMPLATES
+        in_popup = in_popup or node.localName in _POPUP_HOSTS
         if entry_owner is not _NOT_ENTRY and not in_template:
             key = node.getAttributeNS(_XAML_NS, "Key") or node.getAttribute("x:Key")
             resource = (entry_owner, key) if key else None
@@ -312,12 +391,15 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
             if event not in _EVENTS and not (is_event and is_event(type_name, event)):
                 continue
             handler = node.getAttribute(event)
-            if in_template:
+            if in_template and in_popup:
+                key = _hook_template_source(document, node, token, len(events))
+                events.append(HookedEvent(key, event, handler))
+            elif in_template:
                 uid = _tag_template_source(node, len(events))
                 events.append(TemplateEvent(uid, type_name, event, handler))
             else:
                 name = _ensure_name(document, node, names)
-                replay = _replays_initial_state(attributes, event)
+                replay = _replays_initial_state(node, attributes, event)
                 events.append(NamedEvent(name, event, handler, replay))
             node.removeAttribute(event)
         if name and not in_template:
@@ -327,7 +409,7 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
                 resource_names[name] = resource
         for child in _children(node):
             if in_template or not child.localName.endswith(".Resources"):
-                visit(child, in_template, resource)
+                visit(child, in_template, resource, in_popup=in_popup)
                 continue
             owner = None if node is root else _ensure_name(document, node, names)
             if owner is not None and resource is not None:
@@ -339,8 +421,10 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
                     else [nested]
                 )
                 for entry in entries:
-                    visit(entry, in_template, resource, owner)
+                    visit(entry, in_template, resource, owner, in_popup)
 
     visit(root)
     _merge_resources(document, resource_sources)
-    return PreparedXaml(_serialize(document), names, events, resource_names)
+    return PreparedXaml(
+        _serialize(document), names, events, resource_names, root_properties
+    )
