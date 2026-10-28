@@ -87,30 +87,21 @@ def _load_contrast_pass(test):
             "pyrevitlib",
             "pyrevit",
             "forms",
-            "base.py",
+            "_theme.py",
         )
     )
     with io.open(source_path, encoding="utf-8") as source:
         tree = ast.parse(source.read())
-    names = {"_argb", "_srgb_component", "_relative_luminance", "_contrast_ratio"}
+    names = {
+        "_argb",
+        "_srgb_component",
+        "_relative_luminance",
+        "_contrast_ratio",
+        "apply_contrast_foregrounds",
+    }
     selected = [node for node in tree.body if getattr(node, "name", None) in names]
-    mixin = next(
-        (node for node in tree.body if getattr(node, "name", None) == "_WPFMixin"),
-        None,
-    )
-    if mixin is None:
-        test.fail("Production _WPFMixin class was not found")
-    contrast_pass = next(
-        (
-            node
-            for node in mixin.body
-            if getattr(node, "name", None) == "apply_contrast_foregrounds"
-        ),
-        None,
-    )
-    if contrast_pass is None:
-        test.fail("Production apply_contrast_foregrounds method was not found")
-    selected.append(contrast_pass)
+    if "apply_contrast_foregrounds" not in {node.name for node in selected}:
+        test.fail("Production apply_contrast_foregrounds function was not found")
     tree.body = selected
     scope = {
         "framework": _Namespace(

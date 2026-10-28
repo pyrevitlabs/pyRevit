@@ -383,7 +383,9 @@ def create_ipyengine_configs(
 
     Invariant:
         Precedence matches the C# command generator: the bundle's
-        ``engine.type`` wins over the extension declaration.
+        ``engine.type`` wins over the extension declaration. ``ScriptRuntime``
+        honors only ``CPython`` or an explicit ``IronPython`` and falls back to
+        ``exts.first_line_selects_cpython`` for any other value.
     """
     engine_configs = {
         exts.MDATA_ENGINE_CLEAN: clean,
@@ -391,10 +393,10 @@ def create_ipyengine_configs(
         exts.MDATA_ENGINE_PERSISTENT: persistent,
     }
     if bundle_engine_type and bundle_engine_type.strip():
-        engine_configs["type"] = bundle_engine_type
-        engine_configs["type_explicit"] = True
+        engine_configs[exts.MDATA_ENGINE_TYPE] = bundle_engine_type
+        engine_configs[exts.MDATA_ENGINE_TYPE_EXPLICIT] = True
     elif engine_type == exts.PYTHON_ENGINE_CPYTHON:
-        engine_configs["type"] = "CPython"
+        engine_configs[exts.MDATA_ENGINE_TYPE] = exts.ENGINE_CONFIG_CPYTHON
     return json.dumps(engine_configs)
 
 

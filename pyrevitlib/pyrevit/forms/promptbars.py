@@ -24,17 +24,15 @@ class TemplatePromptBar(WPFWindow):
     """
 
     xaml_source = "TemplatePromptBar.xaml"
+    _binding_exclude = True
 
     def __init__(self, height=32, **kwargs):
         """Initialize user prompt window."""
         WPFWindow.__init__(self, op.join(XAML_FILES_DIR, self.xaml_source))
-        try:
+        with _backend.disposing(self):
             self.user_height = height
             self.update_window()
             self._setup(**kwargs)
-        except Exception:
-            _backend.dispose(self)
-            raise
 
     def update_window(self):
         """Update the prompt bar to match Revit window."""
@@ -109,6 +107,7 @@ class WarningBar(TemplatePromptBar):
     """
 
     xaml_source = "WarningBar.xaml"
+    _binding_exclude = True
 
     def _setup(self, **kwargs):
         self.message_tb.Text = kwargs.get("title", "")
@@ -182,6 +181,7 @@ class ProgressBar(TemplatePromptBar):
     """
 
     xaml_source = "ProgressBar.xaml"
+    _binding_exclude = True
 
     def _setup(self, **kwargs):
         self.max_value = 1

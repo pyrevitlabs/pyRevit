@@ -254,7 +254,7 @@ class Py2IdiomTests(unittest.TestCase):
     @unittest.skipUnless(IRONPY, "forms WPF classes are IronPython-only")
     def test_forms_paramdef_truthiness(self):
         """ParamDef instances stay truthy on Python 3 engines (__bool__)."""
-        from pyrevit.forms import _ipy
+        from pyrevit.forms import _ipy_legacy as _ipy
 
         param_def = _ipy.ParamDef(
             "name", False, None, False, False, None, "", True, None, False, 0

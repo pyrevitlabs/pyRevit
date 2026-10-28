@@ -9,8 +9,6 @@ Note:
     stay a literal list: tooling reads it without importing the module.
 """
 
-from . import _backend
-
 from .base import (
     WPFWindow,
     WPF_VISIBLE,
@@ -20,6 +18,7 @@ from .base import (
     is_dark_theme,
     WindowToggler,
     set_data_context,
+    activate_open_window,
 )
 from .dialogs import (
     TemplateUserInputWindow,
@@ -105,8 +104,6 @@ from .dockable import (
     close_dockable_panel,
     toggle_dockable_panel,
 )
-
-activate_open_window = _backend.activate_open_window
 
 
 __all__ = [

@@ -119,6 +119,7 @@ class SelectFromList(TemplateUserInputWindow):
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
     resolve_theme = True
+    _binding_exclude = True
 
     @property
     def use_regex(self):
@@ -350,7 +351,6 @@ class SelectFromList(TemplateUserInputWindow):
     def _unwrap_options(options):
         unwrapped = []
         for optn in options:
-            optn = _backend.unwrap_item(optn)
             if isinstance(optn, TemplateListItem):
                 unwrapped.append(optn.unwrap())
             else:
@@ -363,22 +363,20 @@ class SelectFromList(TemplateUserInputWindow):
                 return list(self._get_all_ctx())
             else:
                 selected = {
-                    id(_backend.unwrap_item(item))
-                    for item in self.list_lb.SelectedItems
+                    id(item) for item in _backend.selected_items_of(self.list_lb)
                 }
                 return self._unwrap_options(
                     [x for x in self._get_all_ctx() if x.state or id(x) in selected]
                 )
         else:
-            return self._unwrap_options([self.list_lb.SelectedItem])[0]
+            return self._unwrap_options([_backend.selected_item_of(self.list_lb)])[0]
 
     def _set_states(self, state=True, flip=False, selected=False):
         if selected:
-            current_list = self.list_lb.SelectedItems
+            current_list = _backend.selected_items_of(self.list_lb)
         else:
-            current_list = self.list_lb.ItemsSource
+            current_list = _backend.items_of(self.list_lb)
         for checkbox in current_list:
-            checkbox = _backend.unwrap_item(checkbox)
             # using .checked to push ui update
             if flip:
                 checkbox.checked = not checkbox.checked
@@ -414,7 +412,7 @@ class SelectFromList(TemplateUserInputWindow):
         if not self.in_check:
             try:
                 self.in_check = True
-                item = _backend.unwrap_item(sender.DataContext)
+                item = _backend.data_context_of(sender)
                 if isinstance(item, TemplateListItem):
                     item.checked = True
                 self._set_states(state=True, selected=True)
@@ -426,7 +424,7 @@ class SelectFromList(TemplateUserInputWindow):
         if not self.in_uncheck:
             try:
                 self.in_uncheck = True
-                item = _backend.unwrap_item(sender.DataContext)
+                item = _backend.data_context_of(sender)
                 if isinstance(item, TemplateListItem):
                     item.checked = False
                 self._set_states(state=False, selected=True)
@@ -437,23 +435,16 @@ class SelectFromList(TemplateUserInputWindow):
         """Pass the listed items to ``resetfunc`` and keep its changes visible.
 
         Note:
-            IronPython passes the live ``ItemsSource`` collection. CPython binds
-            managed proxies, so it passes the original Python items instead and
-            rebinds the list when ``resetfunc`` adds, removes or reorders them.
+            ``resetfunc`` receives a mutable sequence of the listed items:
+            the live ``ItemsSource`` collection under IronPython, a Python list
+            under CPython. Items it adds, removes or reorders in place are
+            listed afterwards on both engines.
         """
         if not self.reset_func:
             return
-        items_source = self.list_lb.ItemsSource
-        all_items = [_backend.unwrap_item(item) for item in items_source]
-        if all(item is native for item, native in zip(all_items, items_source)):
-            self.reset_func(items_source)
-            return
-        listed_items = list(all_items)
-        self.reset_func(all_items)
-        if len(all_items) != len(listed_items) or any(
-            item is not listed for item, listed in zip(all_items, listed_items)
-        ):
-            self.list_lb.ItemsSource = _backend.list_source(all_items)
+        items = _backend.items_of(self.list_lb)
+        self.reset_func(items)
+        _backend.rebind_if_changed(self.list_lb, items)
 
     def button_select(self, sender, args):  # pylint: disable=W0613
         """Handle select button click."""
@@ -484,7 +475,7 @@ class SelectFromList(TemplateUserInputWindow):
         if self.info_panel and self.list_lb.SelectedItem is not None:
             self._toggle_info_panel(state=True)
             self.infoData.Text = getattr(
-                _backend.unwrap_item(self.list_lb.SelectedItem), "description", ""
+                _backend.selected_item_of(self.list_lb), "description", ""
             )
 
     def toggle_regex(self, sender, args):

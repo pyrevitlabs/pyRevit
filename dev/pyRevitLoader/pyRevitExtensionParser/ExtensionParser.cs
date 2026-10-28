@@ -647,7 +647,8 @@ namespace pyRevitExtensionParser
             if (declared == null || declared.Type != JTokenType.String)
                 return null;
             var normalized = declared.ToString().Trim().ToLowerInvariant();
-            if (normalized == "cpython" || normalized == "ironpython")
+            if (normalized == ParsedExtension.CPythonEngineDeclaration
+                || normalized == ParsedExtension.IronPythonEngineDeclaration)
                 return normalized;
             LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
             return null;

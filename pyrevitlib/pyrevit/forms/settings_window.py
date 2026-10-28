@@ -55,6 +55,7 @@ class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
     resolve_theme = True
+    _binding_exclude = True
 
     def __init__(
         self,

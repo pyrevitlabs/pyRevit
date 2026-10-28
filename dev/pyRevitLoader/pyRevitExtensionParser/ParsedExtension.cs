@@ -24,15 +24,37 @@ namespace pyRevitExtensionParser
         /// </summary>
         public bool RocketModeCompatible { get; set; } = false;
 
+        /// <summary>Normalized <see cref="DeclaredPythonEngine"/> value for a CPython declaration.</summary>
+        public const string CPythonEngineDeclaration = "cpython";
+
+        /// <summary>Normalized <see cref="DeclaredPythonEngine"/> value for an IronPython declaration.</summary>
+        public const string IronPythonEngineDeclaration = "ironpython";
+
+        /// <summary>
+        /// Engine <c>type</c> written into a script's engine configs when the extension's
+        /// CPython declaration applies.
+        /// </summary>
+        public const string CPythonEngineType = "CPython";
+
         /// <summary>
         /// Gets or sets the Python engine the extension declares in <c>extension.json</c>
-        /// (<c>"cpython"</c> or <c>"ironpython"</c>), or null when it declares none.
+        /// (<see cref="CPythonEngineDeclaration"/> or <see cref="IronPythonEngineDeclaration"/>),
+        /// or null when it declares none.
         /// </summary>
         /// <remarks>
         /// It is a default for Python scripts only: a <c>#! python3</c> shebang or a bundle's
         /// own <c>engine.type</c> still wins.
         /// </remarks>
         public string DeclaredPythonEngine { get; set; }
+
+        /// <summary>
+        /// Whether the extension declares CPython as the default engine for its Python scripts.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a bundle's own non-blank <c>engine.type</c> takes precedence over this
+        /// declaration; only bundles without one run under <see cref="CPythonEngineType"/>.
+        /// </remarks>
+        public bool DeclaresCPython => DeclaredPythonEngine == CPythonEngineDeclaration;
 
         /// <summary>
         /// Layout directives that reference external components (from other extensions or native Revit).

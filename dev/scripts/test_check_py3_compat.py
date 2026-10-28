@@ -8,7 +8,10 @@ import unittest
 
 try:
     from .check_py3_compat import (
+        FORM_BASES,
         Finding,
+        _bundle_engine_type,
+        check_file,
         _is_clr_interface_base,
         _is_engine_guarded,
         _is_generic_list_constructor,
@@ -20,7 +23,10 @@ try:
     )
 except ImportError:
     from check_py3_compat import (
+        FORM_BASES,
         Finding,
+        _bundle_engine_type,
+        check_file,
         _is_clr_interface_base,
         _is_engine_guarded,
         _is_generic_list_constructor,
@@ -383,6 +389,70 @@ class NativeFormUseTests(unittest.TestCase):
         ):
             with self.subTest(text=text):
                 self.assertEqual(expected, _bundle_engine_type_from_regex(text))
+
+    def test_unknown_bundle_engine_type_replaces_the_extension_default(self):
+        """Like the runtime, any non-blank bundle type drops the extension default."""
+        with tempfile.TemporaryDirectory() as directory:
+            script = self._bundle_script(
+                Path(directory), "engine:\n  type: python3\n", '{"engine": "cpython"}'
+            )
+            self.assertFalse(_may_run_under_cpython(script, "import clr"))
+            self.assertTrue(_may_run_under_cpython(script, "#! python3"))
+
+    def test_bundle_yaml_parse_error_falls_back_to_the_regex(self):
+        """Text PyYAML rejects still yields the engine type without PyYAML's help."""
+        with tempfile.TemporaryDirectory() as directory:
+            script = self._bundle_script(
+                Path(directory), "engine:\n  type: cpython\ntitle: [unclosed\n"
+            )
+            self.assertEqual("cpython", _bundle_engine_type(script))
+
+    def test_custom_yaml_tags_do_not_hide_the_engine_type(self):
+        """Tags YamlDotNet accepts but safe_load rejects keep the declared type."""
+        with tempfile.TemporaryDirectory() as directory:
+            script = self._bundle_script(
+                Path(directory),
+                "title: !custom Tool\nengine:\n  type: cpython\n",
+                '{"engine": "ironpython"}',
+            )
+            self.assertEqual("cpython", _bundle_engine_type(script))
+            self.assertTrue(_may_run_under_cpython(script, "import clr"))
+
+    def test_form_bases_are_the_exported_form_classes(self):
+        """FORM_BASES follows forms/_common.py exports, filtered to form classes."""
+        self.assertLessEqual(
+            {"WPFWindow", "WPFPanel", "SelectFromList", "ProgressBar"}, FORM_BASES
+        )
+        self.assertFalse({"Reactive", "TemplateListItem", "alert"} & FORM_BASES)
+
+    def test_rules_report_in_registry_order(self):
+        """Each node reports its rules in order, after file-level rules."""
+        source = textwrap.dedent(
+            """
+            import StringIO
+            class It(object):
+                def __iter__(self):
+                    return self
+                def next(self):
+                    return d.iteritems()
+                def __nonzero__(self):
+                    return xrange(1)
+            """
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.py"
+            path.write_text(source)
+            findings = [(f.lineno, f.code) for f in check_file(path)]
+        self.assertEqual(
+            [
+                (2, "PY2-MODULE"),
+                (3, "PY2-BOOL"),
+                (3, "PY2-NEXT"),
+                (7, "PY2-ITER"),
+                (9, "PY2-NAME"),
+            ],
+            findings,
+        )
 
     def test_extension_form_findings_are_tracked(self):
         """Bundled extensions migrate to the rule without blocking CI."""

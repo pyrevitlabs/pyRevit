@@ -307,9 +307,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 configs["type"] = cmd.Engine.Type;
                 configs["type_explicit"] = true;
             }
-            else if (extension?.DeclaredPythonEngine == "cpython")
+            else if (extension?.DeclaresCPython == true)
             {
-                configs["type"] = "CPython";
+                configs["type"] = ParsedExtension.CPythonEngineType;
             }
 
             if (isDynamoScript)

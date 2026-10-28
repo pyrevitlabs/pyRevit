@@ -59,6 +59,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     """
 
     xaml_source = "CommandSwitchWindow.xaml"
+    _binding_exclude = True
 
     def _setup(self, **kwargs):
         self.selected_switch = ""

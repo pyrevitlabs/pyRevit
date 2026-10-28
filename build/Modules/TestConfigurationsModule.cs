@@ -13,8 +13,10 @@ namespace Build.Modules;
 [DependsOn<BuildShellModule>]
 /// <summary>
 /// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, renderer
-/// load-context, and compatibility tests after their build outputs are available.
+/// load-context, and compatibility tests after their build outputs are available, plus the
+/// Python 3 compatibility checker's own unit tests.
 /// </summary>
+/// <remarks>The checker tests need a <c>python</c> 3 interpreter on <c>PATH</c>.</remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -100,6 +102,25 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests",
             ],
             cancellationToken);
+
+        await RunPythonTestsAsync(context, "test_check_py3_compat.py", cancellationToken);
+    }
+
+    private static async Task RunPythonTestsAsync(
+        IModuleContext context,
+        string pattern,
+        CancellationToken cancellationToken)
+    {
+        await context.Shell.Command.ExecuteCommandLineTool(
+            new GenericCommandLineToolOptions("python")
+            {
+                Arguments = ["-m", "unittest", "discover", "-s", Path.Combine("dev", "scripts"), "-p", pattern],
+            },
+            new CommandExecutionOptions
+            {
+                WorkingDirectory = PyRevitPaths.Root,
+            },
+            cancellationToken: cancellationToken);
     }
 
     private static async Task RunTestsAsync(

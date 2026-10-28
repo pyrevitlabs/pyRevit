@@ -1,14 +1,14 @@
 """Retain CPython callbacks on native WPF objects for the lifetime of a form.
 
-Every callback a form attaches is recorded on the form so ``release_events``
-detaches all of them together. A callback that raises never escapes into the
-WPF dispatcher: the error is stored on the form, the form's
-``_on_callback_failure`` hook runs, and ``raise_callback_error`` reports it to
-the command that owns the form. Forms no command owns, such as dockable
-pages and persistent modeless windows, log it through ``report_callback_error``
-instead.
+Every callback a form attaches is recorded in the form's ``_EventRegistry`` so
+``release`` detaches all of them together. A callback that raises never
+escapes into the WPF dispatcher: the registry stores the error and runs the
+form's failure hook, and the command that owns the form receives the error
+from ``raise_error``. Forms no command owns, such as dockable pages and
+persistent modeless windows, log it through ``report_error`` instead.
 """
 
+import re
 import traceback
 
 import clr
@@ -19,6 +19,9 @@ from pyrevit.framework import Input, System, Windows, Media
 
 mlogger = get_logger(__name__)
 _event_attributes = {}
+_CLR_NAMESPACE_TAG = re.compile(
+    r"^\{clr-namespace:([^;}]*)(?:;assembly=([^}]+))?\}(.+)$"
+)
 
 _MOUSE_BUTTON_EVENTS = {
     "MouseLeftButtonDown": ("MouseDown", ("Left",), None),
@@ -34,59 +37,105 @@ _MOUSE_BUTTON_EVENTS = {
 }
 
 
-def initialize_events(target):
-    """Give a form the empty callback registries the other helpers rely on."""
-    target._event_bindings = []
-    target._routed_bindings = []
-    target._detachers = []
-    target._callback_error = None
+class _EventRegistry(object):
+    """Own every callback one form attached to native WPF objects.
 
-
-def release_events(target):
-    """Detach every callback recorded on the form."""
-    for detach in target._detachers:
-        detach()
-    target._detachers = []
-    for control, event, handler in target._routed_bindings:
-        control.RemoveHandler(event, handler)
-    target._routed_bindings = []
-    for control, event_name, handler in reversed(target._event_bindings):
-        event = getattr(control, event_name)
-        event -= handler
-    target._event_bindings = []
-
-
-def raise_callback_error(target):
-    """Raise, once, the first error a callback stored on the form."""
-    error = target._callback_error
-    if error is not None:
-        target._callback_error = None
-        raise error
-
-
-def report_callback_error(target):
-    """Log, once, the first callback error of a form that no command owns."""
-    error = target._callback_error
-    if error is None:
-        return
-    target._callback_error = None
-    mlogger.error(
-        "pyRevit form callback failed:\n%s",
-        "".join(traceback.format_exception(type(error), error, error.__traceback__)),
-    )
-
-
-def bind(target, control, event_name, handler):
-    """Attach a guarded callback to a CLR event and record it on the form.
-
-    Returns:
-        callable: The guarded callback, for ``replay_initial_state``.
+    Invariant:
+        ``release`` detaches everything recorded so far and may run any
+        number of times; a released registry keeps accepting new callbacks.
+        Only the first callback error is kept until it is raised or reported.
     """
-    callback = _guarded(target, handler)
-    event = getattr(control, event_name)
-    event += callback
-    target._event_bindings.append((control, event_name, callback))
-    return callback
+
+    def __init__(self, on_failure):
+        self._events = []
+        self._routed = []
+        self._detachers = []
+        self._error = None
+        self._on_failure = on_failure
+
+    @property
+    def is_released(self):
+        """Whether no callback or release hook is currently attached."""
+        return not (self._events or self._routed or self._detachers)
+
+    @property
+    def error(self):
+        """The stored callback error, or None."""
+        return self._error
+
+    def bind(self, control, event_name, handler, guarded=True):
+        """Attach a callback to a CLR event and record it.
+
+        A guarded callback routes exceptions to the registry instead of the
+        WPF dispatcher; lifecycle handlers that must not close the form on
+        failure pass ``guarded=False``.
+
+        Returns:
+            callable: The attached callback, for ``replay_initial_state``.
+        """
+        callback = self.guard(handler) if guarded else handler
+        event = getattr(control, event_name)
+        event += callback
+        self._events.append((control, event_name, callback))
+        return callback
+
+    def add_routed(self, element, routed_event, delegate, handled_too=False):
+        """Add a routed-event handler that ``release`` removes."""
+        if handled_too:
+            element.AddHandler(routed_event, delegate, True)
+        else:
+            element.AddHandler(routed_event, delegate)
+        self._routed.append((element, routed_event, delegate))
+
+    def on_release(self, detach):
+        """Run ``detach()`` once, on the next ``release``."""
+        self._detachers.append(detach)
+
+    def release(self):
+        """Detach every recorded callback and run the release hooks."""
+        detachers, self._detachers = self._detachers, []
+        for detach in detachers:
+            detach()
+        routed, self._routed = self._routed, []
+        for element, routed_event, delegate in routed:
+            element.RemoveHandler(routed_event, delegate)
+        events, self._events = self._events, []
+        for control, event_name, handler in reversed(events):
+            event = getattr(control, event_name)
+            event -= handler
+
+    def guard(self, handler):
+        """Wrap ``handler`` so an exception is stored rather than raised."""
+
+        def invoke(sender, args):
+            try:
+                handler(sender, args)
+            except BaseException as error:
+                if self._error is None:
+                    self._error = error
+                self._on_failure()
+
+        return invoke
+
+    def raise_error(self):
+        """Raise, once, the first stored callback error."""
+        error = self._error
+        if error is not None:
+            self._error = None
+            raise error
+
+    def report_error(self):
+        """Log, once, the first stored error of a form that no command owns."""
+        error = self._error
+        if error is None:
+            return
+        self._error = None
+        mlogger.error(
+            "pyRevit form callback failed:\n%s",
+            "".join(
+                traceback.format_exception(type(error), error, error.__traceback__)
+            ),
+        )
 
 
 def replay_initial_state(control, event_name, callback):
@@ -94,9 +143,10 @@ def replay_initial_state(control, event_name, callback):
 
     Handlers are attached after ``XamlReader.Load``, so ``Checked`` for a
     toggle that loads checked and ``SelectionChanged`` for a selector that
-    loads with a selection were raised before any handler existed. Only these
-    two events are replayed, judged from the loaded state rather than the
-    markup, so attribute order does not matter. ``TextChanged``,
+    loads with a selection were raised before any handler existed. The loader
+    calls this only for events whose ``NamedEvent.replay`` is set, which is
+    where IronPython's attribute-ordered loader would have delivered them;
+    the loaded state then decides whether anything is raised. ``TextChanged``,
     ``ValueChanged`` and other events raised during parsing are not replayed.
     """
     primitives = framework.Controls.Primitives
@@ -122,17 +172,22 @@ def replay_initial_state(control, event_name, callback):
 
 
 def is_event_attribute(tag, attribute):
-    """Return whether a XAML attribute on ``tag`` names a CLR event of that type."""
+    """Return whether a XAML attribute on ``tag`` names a CLR event of that type.
+
+    ``tag`` is a WPF type name or ``{clr-namespace:Ns;assembly=Asm}Name``;
+    custom types resolve through the loaded assemblies. Unresolvable types
+    report False, leaving ``_xaml._EVENTS`` as the fallback.
+    """
     key = (tag, attribute)
     if key not in _event_attributes:
-        owner = _control_type(tag)
+        owner = _clr_type(tag)
         _event_attributes[key] = (
-            owner is not None and clr.GetClrType(owner).GetEvent(attribute) is not None
+            owner is not None and owner.GetEvent(attribute) is not None
         )
     return _event_attributes[key]
 
 
-def bind_template_event(target, root, tag, uid, event_name, handler):
+def bind_template_event(registry, root, tag, uid, event_name, handler):
     """Route an event declared inside a template to ``handler``.
 
     Template instances do not exist when the XAML loads, so their elements are
@@ -166,7 +221,7 @@ def bind_template_event(target, root, tag, uid, event_name, handler):
             "{}.{} is a direct routed event; CPython forms cannot observe it "
             "inside templates.".format(tag, event_name)
         )
-    callback = _guarded(target, handler)
+    callback = registry.guard(handler)
     if mapped:
         callback = _mouse_button_filter(callback, button, clicks)
 
@@ -180,21 +235,9 @@ def bind_template_event(target, root, tag, uid, event_name, handler):
 
     preview = _routed_event(owner, "Preview" + routed_name)
     if event.RoutingStrategy == Windows.RoutingStrategy.Bubble and preview:
-        _attach_on_preview(target, root, event, preview, sources, callback)
+        _attach_on_preview(registry, root, event, preview, sources, callback)
         return
-    _attach_at_root(target, root, event, sources, callback)
-
-
-def _guarded(target, handler):
-    def invoke(sender, args):
-        try:
-            handler(sender, args)
-        except BaseException as error:
-            if target._callback_error is None:
-                target._callback_error = error
-            target._on_callback_failure()
-
-    return invoke
+    _attach_at_root(registry, root, event, sources, callback)
 
 
 def _mouse_button_filter(callback, buttons, clicks):
@@ -229,6 +272,33 @@ def _control_type(tag):
     )
 
 
+def _clr_namespace_type(tag):
+    match = _CLR_NAMESPACE_TAG.match(tag)
+    if match is None:
+        return None
+    namespace, assembly, name = match.groups()
+    full_name = "{}.{}".format(namespace, name) if namespace else name
+    try:
+        if assembly:
+            resolved = System.Type.GetType("{}, {}".format(full_name, assembly))
+            if resolved is not None:
+                return resolved
+        for loaded in System.AppDomain.CurrentDomain.GetAssemblies():
+            resolved = loaded.GetType(full_name)
+            if resolved is not None:
+                return resolved
+    except Exception:
+        return None
+    return None
+
+
+def _clr_type(tag):
+    if tag.startswith("{"):
+        return _clr_namespace_type(tag)
+    owner = _control_type(tag)
+    return None if owner is None else clr.GetClrType(owner)
+
+
 def _routed_event(owner, event_name):
     if owner is not None:
         return getattr(owner, event_name + "Event", None)
@@ -254,7 +324,7 @@ def _identity(element):
     return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(element)
 
 
-def _attach_on_preview(target, root, event, preview, sources, callback):
+def _attach_on_preview(registry, root, event, preview, sources, callback):
     direct = Windows.RoutedEventHandler(callback)
     attached = {}
 
@@ -305,13 +375,11 @@ def _attach_on_preview(target, root, event, preview, sources, callback):
                 detach(element)
         attached.clear()
 
-    delegate = Windows.RoutedEventHandler(discover)
-    root.AddHandler(preview, delegate, True)
-    target._routed_bindings.append((root, preview, delegate))
-    target._detachers.append(release)
+    registry.add_routed(root, preview, Windows.RoutedEventHandler(discover), True)
+    registry.on_release(release)
 
 
-def _attach_at_root(target, root, event, sources, callback):
+def _attach_at_root(registry, root, event, sources, callback):
     tunnels = event.RoutingStrategy == Windows.RoutingStrategy.Tunnel
 
     def routed(sender, args):
@@ -323,6 +391,4 @@ def _attach_at_root(target, root, event, sources, callback):
             if args.Handled:
                 break
 
-    delegate = Windows.RoutedEventHandler(routed)
-    root.AddHandler(event, delegate)
-    target._routed_bindings.append((root, event, delegate))
+    registry.add_routed(root, event, Windows.RoutedEventHandler(routed))

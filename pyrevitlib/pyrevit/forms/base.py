@@ -9,21 +9,31 @@ import webbrowser
 from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit import coreutils, framework, revit, versionmgr
 from pyrevit.api import AdWindows
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.framework import (
-    System,
-    Threading,
-    Interop,
-    Input,
-    Media,
-    Controls,
-    Documents,
-)
+from pyrevit.framework import System, Threading, Interop, Input
 from pyrevit.framework import Uri, UriKind, ResourceDictionary
-from pyrevit.labs import Common
 from pyrevit.userconfig import user_config
 from . import _backend
+from . import _theme
 from . import utils
+from ._theme import (  # noqa: F401
+    _BRAND_ACCENT,
+    _BRAND_DARK,
+    _BRAND_DARKER_DARK,
+    _PALETTE_DARK,
+    _PALETTE_LIGHT,
+    _argb,
+    _background_property,
+    _colorref,
+    _contrast_ratio,
+    _foreground_property,
+    _is_authored_value,
+    _relative_luminance,
+    _srgb_component,
+    _walk_logical_tree,
+    is_dark_theme,
+)
 
 mlogger = get_logger(__name__)
 
@@ -41,193 +51,6 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 
 XAML_FILES_DIR = op.dirname(__file__)
 THEME_XAML_FILE = op.join(XAML_FILES_DIR, "Theme.xaml")
-
-
-_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)  # dark blue-gray
-_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)  # darker blue-gray
-_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)  # amber
-
-_PALETTE_LIGHT = {
-    "WindowBackground": (0xFF, 0xF3, 0xF4, 0xF6),  # off white
-    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),  # black
-    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),  # light gray
-    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),  # white
-    "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),  # whitesmoke
-    "ContrastBackground": (0xFF, 0x2C, 0x3E, 0x50),  # dark blue-gray
-    "ContrastForeground": (0xFF, 0xFF, 0xFF, 0xFF),  # white
-    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),  # light gray
-    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),  # light gray
-    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),  # light gray
-    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),  # translucent black
-    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),  # translucent black
-    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),  # gray
-    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),  # dim gray
-    "DangerForeground": (0xFF, 0xB4, 0x23, 0x18),  # brick red
-    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),  # misty rose
-    "WarningForeground": (0xFF, 0x9A, 0x63, 0x00),  # dark amber
-    "WarningBackground": (0xFF, 0xFD, 0xF0, 0xD5),  # pale amber
-    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),  # pale green
-    "Icon": (0xFF, 0x00, 0x00, 0x00),  # black
-    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),  # pale blue
-    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),  # black
-    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),  # light gray
-    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),  # dark gray
-}
-
-_PALETTE_DARK = {
-    "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),  # charcoal blue
-    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
-    "ChromeBackground": (0xFF, 0x39, 0x42, 0x4F),  # dark slate
-    "ControlBackground": (0xFF, 0x22, 0x29, 0x33),  # charcoal
-    "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),  # charcoal
-    "ContrastBackground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
-    "ContrastForeground": (0xFF, 0x2C, 0x3E, 0x50),  # dark blue-gray
-    "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
-    "ControlHover": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
-    "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),  # steel blue
-    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),  # translucent white
-    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),  # translucent white
-    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),  # gray
-    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),  # muted blue-gray
-    "DangerForeground": (0xFF, 0xFF, 0x6B, 0x61),  # coral
-    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),  # dark red
-    "WarningForeground": (0xFF, 0xF0, 0xAD, 0x4E),  # amber
-    "WarningBackground": (0xFF, 0x5C, 0x48, 0x2E),  # dark amber
-    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),  # dark green
-    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
-    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),  # dark blue
-    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
-    "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
-    "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),  # steel blue
-}
-
-
-def _colorref(argb):
-    """Convert an (a, r, g, b) byte tuple to a Win32 COLORREF (0x00BBGGRR)."""
-    _, r, g, b = argb
-    return r | (g << 8) | (b << 16)
-
-
-def _argb(color):
-    """Convert a Media.Color to a hashable (a, r, g, b) byte tuple."""
-    return (color.A, color.R, color.G, color.B)
-
-
-def _srgb_component(byte_value):
-    """Linearize a single 0-255 sRGB channel for luminance math."""
-    channel = byte_value / 255.0
-    if channel <= 0.03928:
-        return channel / 12.92
-    return pow((channel + 0.055) / 1.055, 2.4)
-
-
-def _relative_luminance(color):
-    """Return the WCAG relative luminance of a Media.Color."""
-    return (
-        0.2126 * _srgb_component(color.R)
-        + 0.7152 * _srgb_component(color.G)
-        + 0.0722 * _srgb_component(color.B)
-    )
-
-
-def _contrast_ratio(first_color, second_color):
-    """Return the WCAG contrast ratio between two Media.Color values."""
-    first = _relative_luminance(first_color)
-    second = _relative_luminance(second_color)
-    return (max(first, second) + 0.05) / (min(first, second) + 0.05)
-
-
-def _background_property(wpf_element):
-    """Return the DependencyProperty painting an element's own background.
-
-    Returns:
-        DependencyProperty or None: None for elements that paint no background.
-    """
-    if isinstance(wpf_element, Controls.Control):
-        return Controls.Control.BackgroundProperty
-    if isinstance(wpf_element, Controls.TextBlock):
-        return Controls.TextBlock.BackgroundProperty
-    if isinstance(wpf_element, Controls.Panel):
-        return Controls.Panel.BackgroundProperty
-    if isinstance(wpf_element, Controls.Border):
-        return Controls.Border.BackgroundProperty
-    return None
-
-
-def _is_authored_value(wpf_element, dependency_property):
-    """Return True if a property value was authored rather than defaulted.
-
-    WPF hands out opaque metadata defaults for properties nobody set -- a bare
-    CheckBox reports a white Background its template never paints. Those must
-    not be mistaken for a real background, or the element gets a foreground
-    picked to contrast against a color that is never drawn.
-    """
-    try:
-        source = framework.Windows.DependencyPropertyHelper.GetValueSource(
-            wpf_element, dependency_property
-        ).BaseValueSource
-    except Exception:
-        return False
-    return source not in (
-        framework.Windows.BaseValueSource.Default,
-        framework.Windows.BaseValueSource.DefaultStyle,
-        framework.Windows.BaseValueSource.DefaultStyleTrigger,
-        framework.Windows.BaseValueSource.Inherited,
-        framework.Windows.BaseValueSource.Unknown,
-    )
-
-
-def _foreground_property(wpf_element):
-    """Return the DependencyProperty carrying text color for an element.
-
-    Controls and TextBlocks own a Foreground; Panels and Borders do not, so
-    the inherited TextElement.Foreground attached property is used to color
-    whatever text they contain.
-
-    Returns:
-        DependencyProperty or None: None for elements that paint no text.
-    """
-    if isinstance(wpf_element, Controls.Control):
-        return Controls.Control.ForegroundProperty
-    if isinstance(wpf_element, Controls.TextBlock):
-        return Controls.TextBlock.ForegroundProperty
-    if isinstance(wpf_element, (Controls.Panel, Controls.Border)):
-        return Documents.TextElement.ForegroundProperty
-    return None
-
-
-def _walk_logical_tree(root):
-    """Yield root and every logical descendant of a WPF element.
-
-    The logical tree deliberately excludes control-template internals, so
-    only elements authored in the window/panel XAML are visited.
-    """
-    pending = [_backend.unwrap(root)]
-    while pending:
-        current = pending.pop()
-        yield current
-        try:
-            children = framework.Windows.LogicalTreeHelper.GetChildren(current)
-        except Exception:
-            continue
-        for child in children:
-            if isinstance(child, framework.Windows.DependencyObject):
-                pending.append(child)
-
-
-def is_dark_theme():
-    """Return True if Revit's active UI theme is Dark.
-
-    Always False on Revit <2024, which has no UITheme concept.
-    """
-    try:
-        if HOST_APP.is_newer_than(2024, True):
-            from Autodesk.Revit.UI import UITheme
-
-            return revit.ui.get_current_theme() == UITheme.Dark
-    except Exception:
-        pass
-    return False
 
 
 class WindowToggler(object):
@@ -260,11 +83,60 @@ def set_data_context(control, model):
         reference to it, for example on the form, while it is bound. A form
         keeps its own ``DataContext`` model alive.
     """
-    native = _backend.unwrap(control)
-    if native is not control:
-        control.DataContext = model
-        return
-    native.DataContext = _backend.binding_source(model)
+    _backend.set_data_context(control, model)
+
+
+def activate_open_window(envvar):
+    """Bring a modeless window left open by an earlier run to the front.
+
+    Single-instance guard for modeless tools: the tool stores its window
+    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
+    this on every run before creating a new one. A minimized window is
+    restored before activation; a hidden one is left hidden.
+
+    Openness is judged by the window's native handle, which WPF releases on
+    close, not by ``IsLoaded``, which stays True after ``Close()``. Callers
+    therefore need not clear ``envvar`` in their ``Closed`` handler. Under
+    CPython the stored controller is unwrapped by attribute rather than by
+    class, so a window created before ``pyrevit.forms`` was re-imported
+    still counts.
+
+    Args:
+        envvar (str): pyRevit environment variable holding the window.
+
+    Returns:
+        (bool): True when a window already exists, meaning the caller must
+            not open another. It does not promise the window is now in front:
+            Windows may refuse the foreground request, and a hidden window
+            stays hidden. False otherwise; a stale (closed) reference is
+            cleared.
+
+    Examples:
+        ```python
+        from pyrevit import forms, script
+
+        if not forms.activate_open_window("MYTOOL_WINDOW"):
+            window = MyToolWindow("MyTool.xaml")
+            script.set_envvar("MYTOOL_WINDOW", window)
+            window.show()
+        ```
+    """
+    window = envvars.get_pyrevit_env_var(envvar)
+    if window is None:
+        return False
+    native = getattr(window, "_window", window)
+    try:
+        is_open = Interop.WindowInteropHelper(native).Handle != System.IntPtr.Zero
+    except Exception:
+        is_open = False
+    if not is_open:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if native.IsVisible:
+        if native.WindowState == framework.Windows.WindowState.Minimized:
+            native.WindowState = framework.Windows.WindowState.Normal
+        native.Activate()
+    return True
 
 
 class _WPFMixin(object):
@@ -287,6 +159,7 @@ class _WPFMixin(object):
     """
 
     _live_refresh_root_colors = False
+    _binding_exclude = True
 
     def add_PropertyChanged(self, value):
         """Expose reactive event accessors before the CLR window in the MRO.
@@ -329,31 +202,9 @@ class _WPFMixin(object):
             afterwards, even though descendants created later during XAML
             parsing do pick the styles up.
         """
-        res = wpf_ctrl.Resources
-
-        def _set_color(key, argb):
-            res[key + "Color"] = Media.Color.FromArgb(*argb)
-            res[key + "Brush"] = Media.SolidColorBrush(res[key + "Color"])
-
-        _set_color("pyRevitDark", _BRAND_DARK)
-        _set_color("pyRevitDarkerDark", _BRAND_DARKER_DARK)
-        _set_color("pyRevitAccent", _BRAND_ACCENT)
-        res["pyRevitButtonColor"] = Media.Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
-        res["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
-            res["pyRevitButtonColor"]
+        _theme.setup_resources(
+            wpf_ctrl, set_root_colors, resolve_theme, DEFAULT_RECOGNIZE_ACCESS_KEY
         )
-
-        is_dark = resolve_theme and is_dark_theme()
-        palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
-        for name, argb in palette.items():
-            _set_color("pyRevit" + name, argb)
-        res["pyRevitIsDarkTheme"] = is_dark
-
-        res["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
-
-        if set_root_colors:
-            wpf_ctrl.Background = res["pyRevitWindowBackgroundBrush"]
-            wpf_ctrl.Foreground = res["pyRevitWindowForegroundBrush"]
 
     @staticmethod
     def apply_theme(wpf_ctrl):
@@ -392,75 +243,7 @@ class _WPFMixin(object):
         are dropped from tracking on the next pass, and a failed element does
         not prevent the remaining controls from updating.
         """
-        res = self.Resources
-        try:
-            candidates = [
-                b
-                for b in [
-                    res["pyRevitWindowForegroundBrush"],
-                    res["pyRevitWindowBackgroundBrush"],
-                ]
-                if b is not None and b.Color is not None
-            ]
-            theme_argbs = set(
-                _argb(res[key]) for key in list(res.Keys) if str(key).endswith("Color")
-            )
-        except Exception:
-            return
-
-        if not candidates:
-            return
-
-        previous_managed = getattr(self, "_contrast_managed", {})
-        managed = {}
-        self._contrast_managed = managed
-
-        for element in _walk_logical_tree(self):
-            try:
-                if element in previous_managed:
-                    managed[element] = previous_managed[element]
-                fore_prop = _foreground_property(element)
-                back_prop = _background_property(element)
-                if fore_prop is None or back_prop is None:
-                    continue
-                if (
-                    element.ReadLocalValue(fore_prop)
-                    != framework.Windows.DependencyProperty.UnsetValue
-                ):
-                    continue
-                brush = (
-                    element.GetValue(back_prop)
-                    if _is_authored_value(element, back_prop)
-                    else None
-                )
-                if (
-                    not isinstance(brush, Media.SolidColorBrush)
-                    or brush.Color.A != 0xFF
-                    or _argb(brush.Color) in theme_argbs
-                ):
-                    contrast_style = managed.get(element)
-                    if contrast_style is not None:
-                        if element.Style is contrast_style:
-                            element.Style = contrast_style.BasedOn
-                        del managed[element]
-                    continue
-                background = brush.Color
-                best = max(
-                    candidates,
-                    key=lambda candidate: _contrast_ratio(background, candidate.Color),
-                )
-                base_style = element.Style
-                if element in managed and base_style is managed[element]:
-                    if base_style.Setters[0].Value is best:
-                        continue
-                    base_style = base_style.BasedOn
-                contrast_style = framework.Windows.Style(element.GetType(), base_style)
-                contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
-                element.Style = contrast_style
-                managed[element] = contrast_style
-            except Exception as contrast_error:
-                mlogger.debug("Could not apply contrast foreground: %s", contrast_error)
-                continue
+        _theme.apply_contrast_foregrounds(self)
 
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
@@ -482,8 +265,13 @@ class _WPFMixin(object):
     def _subscribe_theme_changed(self):
         """Subscribe this control to Revit's ThemeChanged event, if available.
 
-        Silently no-ops on Revit versions without a UITheme concept.
+        Silently no-ops on Revit versions without a UITheme concept, and when
+        already subscribed. The subscription ends when the form releases its
+        callbacks (see ``_backend.on_release``); dockable pages under
+        IronPython keep it for the session.
         """
+        if getattr(self, "_on_theme_changed", None) is not None:
+            return
         try:
             if not HOST_APP.is_newer_than(2024, True):
                 return
@@ -491,6 +279,8 @@ class _WPFMixin(object):
             HOST_APP.uiapp.ThemeChanged += self._on_theme_changed
         except Exception:
             self._on_theme_changed = None
+            return
+        _backend.on_release(self, self._unsubscribe_theme_changed)
 
     def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
         """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
@@ -512,9 +302,7 @@ class _WPFMixin(object):
         Args:
             xaml_source (str): absolute path to a ResourceDictionary xaml file.
         """
-        pending = getattr(self, "_pending_resources", None)
-        if pending is not None:
-            pending.append(xaml_source)
+        if _backend.queue_resource(self, xaml_source):
             return
         lang_dictionary = ResourceDictionary()
         lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
@@ -546,6 +334,28 @@ class _WPFMixin(object):
             fallback,
         )
         return fallback
+
+    def _load_root(self, xaml_source, literal_string):
+        """Load XAML into this form's root with pyRevit resources merged first.
+
+        Resolves the locale fallback chain for paths (see
+        ``_resolve_xaml_source``), applies contrast foregrounds and records
+        the UI thread. Theme subscription and window chrome stay with the
+        caller.
+        """
+        _backend.initialize(self)
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
+        self.merge_resource_dict(THEME_XAML_FILE)
+        if literal_string:
+            _backend.load_component(self, framework.StringReader(xaml_source))
+        else:
+            xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
+            # merge before LoadComponent so resources are available during parse
+            if pending_resource_merge:
+                self.merge_resource_dict(pending_resource_merge)
+            _backend.load_component(self, xaml_path)
+        self.apply_contrast_foregrounds()
+        self.thread_id = framework.get_current_thread_id()
 
     # ------------------------------------------------------------------ images
 
@@ -746,6 +556,7 @@ class WPFWindow(_WPFMixin, _backend.Window):
     """
 
     resolve_theme = False
+    _binding_exclude = True
 
     def __init__(
         self,
@@ -755,17 +566,13 @@ class WPFWindow(_WPFMixin, _backend.Window):
         set_owner=True,
     ):
         """Initialize WPF window and resources."""
-        _backend.initialize(self)
-        try:
+        with _backend.disposing(self):
             self.load_xaml(
                 xaml_source,
                 literal_string=literal_string,
                 handle_esc=handle_esc,
                 set_owner=set_owner,
             )
-        except Exception:
-            _backend.dispose(self)
-            raise
 
     def load_xaml(
         self,
@@ -789,24 +596,9 @@ class WPFWindow(_WPFMixin, _backend.Window):
             Safe to call on an instance whose ``__init__`` did not call
             ``WPFWindow.__init__``, as ``script.load_ui`` allows.
         """
-        _backend.initialize(self)
         # create new id for this window
         self.window_id = coreutils.new_uuid()
-
-        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
-        self.merge_resource_dict(THEME_XAML_FILE)
-        if not literal_string:
-            xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
-            # merge before LoadComponent so resources are available during parse
-            if pending_resource_merge:
-                self.merge_resource_dict(pending_resource_merge)
-            _backend.load_component(self, xaml_path)
-        else:
-            _backend.load_component(self, framework.StringReader(xaml_source))
-
-        # set properties
-        self.apply_contrast_foregrounds()
-        self.thread_id = framework.get_current_thread_id()
+        self._load_root(xaml_source, literal_string)
         if set_owner:
             self.setup_owner()
         self.setup_icon()
@@ -815,7 +607,6 @@ class WPFWindow(_WPFMixin, _backend.Window):
         if self.resolve_theme:
             self._apply_dark_titlebar()
             self._subscribe_theme_changed()
-        _backend.bind_event(self, "Closed", self._unsubscribe_theme_changed)
 
     def setup_owner(self):
         """Set the window owner."""
@@ -842,17 +633,7 @@ class WPFWindow(_WPFMixin, _backend.Window):
         dark gray) additionally require Windows 11 22000+ and are a no-op
         elsewhere.
         """
-        try:
-            wih = Interop.WindowInteropHelper(_backend.unwrap(self))
-            hwnd = wih.EnsureHandle()
-            is_dark = is_dark_theme()
-            Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
-            palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
-            caption_color = _colorref(palette["ChromeBackground"])
-            text_color = _colorref(palette["WindowForeground"])
-            Common.DwmApi.SetTitleBarColors(hwnd, caption_color, text_color)
-        except Exception:
-            pass
+        _theme.apply_title_bar_theme(self)
 
     def set_icon(self, icon_path):
         """Set window icon to given icon path."""

@@ -27,18 +27,41 @@ def _load_xaml_helpers():
     return module
 
 
-def _load_dialog():
+class _PyRevitException(Exception):
+    pass
+
+
+class _InputWindow(object):
+    created = []
+
+    def __init__(self, *args, **kwargs):
+        _InputWindow.created.append(kwargs)
+
+
+def _load_dialog_class():
     tree = ast.parse((FORMS / "dialogs.py").read_text(encoding="utf-8"))
     tree.body = [
-        node for node in tree.body if getattr(node, "name", None) == "GetValueWindow"
+        node
+        for node in tree.body
+        if getattr(node, "name", None) == "GetValueWindow"
+        or (
+            isinstance(node, ast.Assign)
+            and any(getattr(t, "id", None) == "VALUE_TYPES" for t in node.targets)
+        )
     ]
     scope = {
-        "TemplateUserInputWindow": object,
+        "TemplateUserInputWindow": _InputWindow,
+        "PyRevitException": _PyRevitException,
         "datetime": datetime,
         "_backend": SimpleNamespace(items_source=lambda values: values),
     }
     exec(compile(tree, "dialogs.py", "exec"), scope)
     return scope["GetValueWindow"]
+
+
+def _load_dialog():
+    dialog_class = _load_dialog_class()
+    return lambda: dialog_class.__new__(dialog_class)
 
 
 def _load_usage_inventory():
@@ -60,9 +83,12 @@ class XamlPreparationTests(unittest.TestCase):
             source, ["file:///C:/forms/Theme.xaml"]
         )
         document = minidom.parseString(markup)
+        handlers = [(event.name, event.event, event.handler) for event in events]
         self.assertIn("okayButton", names)
-        self.assertIn(("okayButton", "Click", "select"), events)
-        self.assertIn(("stringValue_tb", "TextChanged", "string_value_changed"), events)
+        self.assertIn(("okayButton", "Click", "select"), handlers)
+        self.assertIn(
+            ("stringValue_tb", "TextChanged", "string_value_changed"), handlers
+        )
         button = document.getElementsByTagName("Button")[0]
         self.assertFalse(button.hasAttribute("Click"))
         self.assertIn("{x:Type DatePicker}", markup)
@@ -78,8 +104,8 @@ class XamlPreparationTests(unittest.TestCase):
             [],
         )
         self.assertEqual(1, len(events))
-        self.assertIn(events[0][0], names)
-        self.assertEqual(("Click", "select"), events[0][1:])
+        self.assertIn(events[0].name, names)
+        self.assertEqual(("Click", "select"), (events[0].event, events[0].handler))
         self.assertNotIn('Click="select"', markup)
 
     def test_existing_resource_dictionary_keeps_entries_and_merge_order(self):
@@ -193,13 +219,17 @@ class XamlPreparationTests(unittest.TestCase):
                 (type_name, attribute) == ("Button", "MouseMove")
             ),
         )
-        self.assertEqual([(names[0], "MouseMove", "moved")], events)
+        helpers = _load_xaml_helpers()
+        self.assertEqual(
+            [helpers.NamedEvent(names[0], "MouseMove", "moved", False)], events
+        )
         self.assertNotIn("MouseMove", markup)
         self.assertIn('Content="Go"', markup)
 
     def test_custom_template_elements_carry_their_namespace(self):
         """Template targets outside WPF are not mistaken for WPF controls."""
-        _, _, events, _ = _load_xaml_helpers().prepare_xaml(
+        helpers = _load_xaml_helpers()
+        _, _, events, _ = helpers.prepare_xaml(
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
             'xmlns:local="clr-namespace:Tools"><Window.Resources>'
             '<DataTemplate x:Key="t" '
@@ -209,10 +239,8 @@ class XamlPreparationTests(unittest.TestCase):
         )
         self.assertEqual(
             [
-                (
-                    "@template:_pyrevit_template_0:{clr-namespace:Tools}Button",
-                    "Click",
-                    "go",
+                helpers.TemplateEvent(
+                    "_pyrevit_template_0", "{clr-namespace:Tools}Button", "Click", "go"
                 )
             ],
             events,
@@ -229,12 +257,12 @@ class XamlPreparationTests(unittest.TestCase):
             "</Window>",
             [],
         )
-        targets = [target for target, _, _ in events]
+        targets = [(event.uid, event.tag) for event in events]
         self.assertEqual(
             [
-                "@template:_pyrevit_template_0:CheckBox",
-                "@template:mine:CheckBox",
-                "@template:mine:CheckBox",
+                ("_pyrevit_template_0", "CheckBox"),
+                ("mine", "CheckBox"),
+                ("mine", "CheckBox"),
             ],
             targets,
         )
@@ -256,7 +284,63 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertEqual("item", key)
         self.assertIn(owner, names)
         self.assertNotIn(owner, resource_names)
-        self.assertEqual((None, "root"), resource_names[events[0][0]])
+        self.assertEqual((None, "root"), resource_names[events[0].name])
+
+    def test_initial_state_replays_only_where_ironpython_delivers_it(self):
+        """Replay follows attribute order like IronPython's LoadComponent."""
+        _, _, events, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"><StackPanel>'
+            '<RadioButton x:Name="before" IsChecked="True" Checked="mode"/>'
+            '<RadioButton x:Name="after" Checked="mode" IsChecked="True"/>'
+            '<CheckBox x:Name="implicit" Checked="mode"/>'
+            '<ComboBox x:Name="indexed" SelectedIndex="0" SelectionChanged="pick"/>'
+            '<ComboBox x:Name="listening" SelectionChanged="pick" SelectedItem="a"/>'
+            '<ListBox x:Name="valued" SelectedValue="a" SelectionChanged="pick"/>'
+            '<Button x:Name="clicked" Click="go" IsEnabled="True"/>'
+            "</StackPanel></Window>",
+            [],
+        )
+        self.assertEqual(
+            {
+                "before": False,
+                "after": True,
+                "implicit": True,
+                "indexed": False,
+                "listening": True,
+                "valued": False,
+                "clicked": False,
+            },
+            {event.name: event.replay for event in events},
+        )
+
+    def test_section_box_navigator_markup_does_not_replay(self):
+        """The shipped IsChecked-before-Checked markup keeps IronPython's silence."""
+        source = next(
+            (FORMS.parents[2] / "extensions").rglob("SectionBoxNavigator.xaml"), None
+        )
+        if source is None:
+            self.skipTest("SectionBoxNavigator markup is not bundled")
+        _, _, events, _ = _load_xaml_helpers().prepare_xaml(
+            source.read_text(encoding="utf-8-sig"), []
+        )
+        level_mode = [
+            event for event in events if event.handler == "rb_level_mode_changed"
+        ]
+        self.assertTrue(level_mode)
+        document = minidom.parseString(source.read_text(encoding="utf-8-sig"))
+        for event in level_mode:
+            node = next(
+                node
+                for node in document.getElementsByTagName("*")
+                if node.getAttribute("x:Name") == event.name
+                or node.getAttribute("Name") == event.name
+            )
+            attributes = list(node.attributes.keys())
+            checked_first = "IsChecked" in attributes and attributes.index(
+                "IsChecked"
+            ) < attributes.index("Checked")
+            self.assertEqual(not checked_first, event.replay)
 
     def test_resource_owner_inside_a_resource_entry_is_resolved_through_it(self):
         """A keyed resource owning its own Resources is found via its dictionary."""
@@ -284,14 +368,21 @@ def _load_cpython_facade(package_dir):
     (package_dir / "__init__.py").write_text(
         (FORMS / "__init__.py").read_text(encoding="utf-8"), encoding="utf-8"
     )
+    (package_dir / "_legacy_exports.py").write_text(
+        (FORMS / "_legacy_exports.py").read_text(encoding="utf-8"), encoding="utf-8"
+    )
     (package_dir / "extra.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (package_dir / "broken.py").write_text(
+        "import pyrevit_missing_dependency\n", encoding="utf-8"
+    )
     pyrevit = ModuleType("pyrevit")
     pyrevit.__path__ = []
     pyrevit.PyRevitCPythonNotSupported = _NotSupported
     compat = ModuleType("pyrevit.compat")
     compat.IRONPY = False
     common = ModuleType("pyrevit.forms._common")
-    common.__all__ = []
+    common.__all__ = ["ProgressBar"]
+    common.ProgressBar = object
     spec = importlib.util.spec_from_file_location(
         "pyrevit.forms",
         package_dir / "__init__.py",
@@ -336,6 +427,40 @@ class CPythonFacadeTests(unittest.TestCase):
         self.assertIsNone(getattr(self.forms, "does_not_exist", None))
         with self.assertRaises(AttributeError):
             getattr(self.forms, "_private")
+
+    def test_unported_legacy_names_keep_the_not_supported_message(self):
+        """Importing an IronPython-only export reports the unsupported feature."""
+        with self.assertRaises(_NotSupported) as raised:
+            exec("from pyrevit.forms import CPDialogs", {})
+        self.assertEqual("pyrevit.forms.CPDialogs", raised.exception.feature_name)
+        self.assertNotIsInstance(raised.exception, AttributeError)
+        with self.assertRaises(_NotSupported):
+            hasattr(self.forms, "Autodesk")
+
+    def test_shared_names_shadow_the_legacy_list(self):
+        """A legacy name CPython also exports resolves normally."""
+        self.assertIs(object, self.forms.ProgressBar)
+
+    def test_unknown_names_fail_as_import_errors(self):
+        """``from pyrevit.forms import`` an unknown name is an ImportError."""
+        with self.assertRaises(ImportError):
+            exec("from pyrevit.forms import does_not_exist", {})
+
+    def test_failed_submodule_import_is_an_absent_name(self):
+        """A submodule whose import fails is absent, and keeps the cause."""
+        self.assertFalse(hasattr(self.forms, "broken"))
+        with self.assertRaises(_NotSupported) as raised:
+            getattr(self.forms, "broken")
+        self.assertIsInstance(raised.exception, AttributeError)
+        self.assertEqual("pyrevit.forms.broken", raised.exception.feature_name)
+        self.assertIsInstance(raised.exception.__cause__, ImportError)
+
+    def test_submodule_lookups_are_cached(self):
+        """Repeated misses do not search the package again."""
+        with mock.patch("importlib.util.find_spec", return_value=None) as find_spec:
+            for _ in range(3):
+                self.assertFalse(hasattr(self.forms, "missing_name"))
+        self.assertEqual(1, find_spec.call_count)
 
 
 class _Expando(object):
@@ -431,7 +556,7 @@ class BindingRefreshTests(unittest.TestCase):
         infrastructure = type(
             "WPFWindow",
             (object,),
-            {"__module__": "pyrevit.forms.base", "pyrevit_version": tracked("ver")},
+            {"_binding_exclude": True, "pyrevit_version": tracked("ver")},
         )
         self.Model = type(
             "Model",
@@ -449,16 +574,53 @@ class BindingRefreshTests(unittest.TestCase):
         self.assertEqual({"title", "summary", "count"}, set(native.values))
         self.assertNotIn("ver", self.reads)
 
-    def test_rebinding_copies_plain_attributes_without_reading_properties(self):
-        """A repeated binding_source call does not re-run property getters."""
+    def test_rebinding_refreshes_own_properties_but_not_infrastructure(self):
+        """Rebinding re-reads the model's own properties and plain attributes."""
         model = self.Model()
         model.count = 1
         native = self.binding.binding_source(model)
         del self.reads[:]
         model.count = 2
+        model.__dict__["_title"] = "changed"
         self.assertIs(native, self.binding.binding_source(model))
         self.assertEqual(2, native["count"])
-        self.assertEqual([], self.reads)
+        self.assertEqual("changed", native["title"])
+        self.assertEqual(["summary", "title"], sorted(self.reads))
+
+    def test_rebinding_refreshes_computed_list_item_properties(self):
+        """Read-only properties backed by private state are current after rebind."""
+
+        class Item(self.binding.Reactive):
+            def __init__(self):
+                self._checkable = True
+
+            @property
+            def checkable(self):
+                return "Visible" if self._checkable else "Collapsed"
+
+        item = Item()
+        native = self.binding.binding_source(item)
+        item._checkable = False
+        self.binding.binding_source(item)
+        self.assertEqual("Collapsed", native["checkable"])
+
+    def test_subclasses_of_excluded_classes_contribute_their_properties(self):
+        """The exclusion marker applies only to the class that declares it."""
+
+        class Excluded(self.binding.Reactive):
+            _binding_exclude = True
+
+            @property
+            def use_regex(self):
+                return True
+
+        class Custom(Excluded):
+            @property
+            def label(self):
+                return "custom"
+
+        native = self.binding.binding_source(Custom())
+        self.assertEqual({"label"}, set(native.values))
 
     def test_two_way_edit_refreshes_only_written_and_notified_names(self):
         """A WPF edit re-reads the edited property and what its setter notified."""
@@ -468,6 +630,29 @@ class BindingRefreshTests(unittest.TestCase):
         native.edit("title", "new")
         self.assertEqual(["summary", "title"], self.reads)
         self.assertEqual("new", model.title)
+
+    def test_two_way_edit_copies_plain_attributes_the_setter_changed(self):
+        """A setter's side effect on a plain attribute reaches WPF too."""
+
+        class Item(self.binding.Reactive):
+            def __init__(self):
+                self.state = False
+                self.untouched = "same"
+
+            @property
+            def checked(self):
+                return self.state
+
+            @checked.setter
+            def checked(self, value):
+                self.state = value
+
+        item = Item()
+        native = self.binding.binding_source(item)
+        native.edit("checked", True)
+        self.assertTrue(item.state)
+        self.assertTrue(native["state"])
+        self.assertEqual("same", native["untouched"])
 
 
 class FormsExportsTests(unittest.TestCase):
@@ -479,7 +664,7 @@ class FormsExportsTests(unittest.TestCase):
         pre_split = json.loads(fixture.read_text(encoding="utf-8"))
         intended_additions = {"warning", "set_data_context"}
         common = _literal_list(FORMS / "_common.py", "__all__")
-        legacy = _literal_list(FORMS / "_ipy.py", "_LEGACY_EXPORTS")
+        legacy = _literal_list(FORMS / "_legacy_exports.py", "LEGACY_EXPORTS")
         self.assertFalse(set(common) & set(legacy))
         self.assertFalse(set(pre_split) & intended_additions)
         self.assertEqual(
@@ -487,7 +672,7 @@ class FormsExportsTests(unittest.TestCase):
             sorted(set(common + legacy) - intended_additions)
             + sorted(intended_additions),
         )
-        self.assertFalse(set(legacy) - _defined_names(FORMS / "_ipy.py"))
+        self.assertFalse(set(legacy) - _defined_names(FORMS / "_ipy_legacy.py"))
 
     def test_shared_names_are_defined_by_the_shared_module(self):
         """Every engine-neutral export resolves without engine-specific code."""
@@ -566,6 +751,16 @@ class InputResponseTests(unittest.TestCase):
         dialog.numberPicker = SimpleNamespace(Value=25.0)
         dialog.select(None, None)
         self.assertEqual(25.0, dialog.response)
+
+    def test_unknown_value_type_is_rejected_before_the_window_exists(self):
+        """Both engines refuse an input mode that would open an empty dialog."""
+        dialog_class = _load_dialog_class()
+        del _InputWindow.created[:]
+        with self.assertRaises(_PyRevitException):
+            dialog_class(None, "Title", 400, 300, value_type="color")
+        self.assertEqual([], _InputWindow.created)
+        dialog_class(None, "Title", 400, 300, value_type="slider")
+        self.assertEqual([{"value_type": "slider"}], _InputWindow.created)
 
     def test_reserved_value_disables_accept_then_recovers(self):
         """Validation responds to edits without closing the dialog."""

@@ -87,13 +87,18 @@ class ExcelInteropTests(unittest.TestCase):
         self.assertEqual(["Name", "Count"], loaded["Legacy"]["headers"])
         self.assertEqual([["A", 1.0]], loaded["Legacy"]["rows"])
 
-    def test_legacy_reader_shim_is_restored(self):
-        """Reading .xls does not leave xlrd's time module replaced."""
+    def test_legacy_reader_shim_is_installed_once(self):
+        """Reading .xls gives xlrd a lasting clock without touching ``time``."""
+        import time
+
         import xlrd.book
 
-        original = xlrd.book.time
         xl.load(FIXTURES / "legacy_workbook.xls")
-        self.assertIs(original, xlrd.book.time)
+        shim = xlrd.book.time
+        xl.load(FIXTURES / "legacy_workbook.xls")
+        self.assertIs(shim, xlrd.book.time)
+        self.assertTrue(callable(xlrd.book.time.clock))
+        self.assertEqual(hasattr(time, "clock"), xlrd.book.time is time)
 
     def test_dump_refuses_legacy_xls_names(self):
         """Writing OOXML content under an .xls name fails instead of corrupting."""

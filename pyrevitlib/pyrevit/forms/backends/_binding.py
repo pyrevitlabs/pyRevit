@@ -27,9 +27,6 @@ from System.Collections.Generic import IDictionary
 _controllers = weakref.WeakValueDictionary()
 _type_properties = {}
 _MISSING = object()
-_INFRASTRUCTURE_MODULES = frozenset(
-    ("pyrevit.forms.base", "pyrevit.forms.dockable", "pyrevit.forms.backends._cpy")
-)
 
 
 class _Event(object):
@@ -47,6 +44,8 @@ class _Event(object):
 
 class Reactive(object):
     """Keep Python property notifications connected to a managed binding model."""
+
+    _binding_exclude = True
 
     @property
     def PropertyChanged(self):
@@ -80,19 +79,23 @@ class Reactive(object):
 
 
 def _properties_of(cls):
+    """Return the bindable property names declared along ``cls.__mro__``.
+
+    A class that sets ``_binding_exclude = True`` in its own body, such as
+    the form base classes and shipped dialogs, contributes no properties;
+    subclasses that do not set it still do.
+    """
     names = _type_properties.get(cls)
     if names is None:
         found = set()
         seen = set()
         for klass in cls.__mro__:
+            excluded = vars(klass).get("_binding_exclude", False)
             for name, value in vars(klass).items():
                 if name in seen:
                     continue
                 seen.add(name)
-                if (
-                    isinstance(value, property)
-                    and klass.__module__ not in _INFRASTRUCTURE_MODULES
-                ):
+                if isinstance(value, property) and not excluded:
                     found.add(name)
         names = frozenset(found)
         _type_properties[cls] = names
@@ -111,16 +114,26 @@ def _public(controller, names):
 
 
 def _plain_names(controller):
-    names = set(controller.__dict__)
+    cls = type(controller)
+    names = set(
+        name
+        for name in controller.__dict__
+        if not isinstance(getattr(cls, name, None), property)
+    )
     wrapped = controller.__dict__.get("item")
     if wrapped is not None and hasattr(wrapped, "__dict__"):
         names.update(wrapped.__dict__)
     return _public(controller, names)
 
 
-def _property_names(controller):
+def _own_names(controller):
     names = set(_plain_names(controller))
     names.update(_properties_of(type(controller)))
+    return _public(controller, names)
+
+
+def _property_names(controller):
+    names = set(_own_names(controller))
     wrapped = controller.__dict__.get("item")
     if wrapped is not None and hasattr(wrapped, "__dict__"):
         names.update(_properties_of(type(wrapped)))
@@ -163,7 +176,7 @@ def _refresh(controller, names=None):
     markers = state.setdefault("_binding_markers", {})
     state["_binding_updating"] = True
     try:
-        for name in names or _property_names(controller):
+        for name in _property_names(controller) if names is None else names:
             try:
                 value = getattr(controller, name)
             except Exception:
@@ -184,10 +197,16 @@ def binding_source(controller):
     """Return a stable managed model with two-way property and item identity.
 
     The first call copies every bindable value. Later calls for the same model
-    only re-copy plain instance attributes, which cannot notify; properties
-    update through ``OnPropertyChanged``. Properties of the form base classes,
-    such as ``pyrevit_version``, ``logger`` and ``output``, and the form's
-    named XAML controls are never copied.
+    re-copy its plain instance attributes and the properties its own class
+    hierarchy declares, so computed values such as ``TemplateListItem.name``
+    and ``checkable`` are current when a list is rebound. Only values that
+    changed reach WPF. Properties of classes marked ``_binding_exclude``,
+    such as ``pyrevit_version``, ``logger`` and ``output`` on the form base
+    classes, and the form's named XAML controls are never copied.
+
+    A two-way edit from WPF writes the edited name, then re-copies that name,
+    the names its setter notified and any plain attribute the setter changed;
+    it runs no other property getter.
 
     Warning:
         The returned model holds its Python model weakly; keep a strong
@@ -197,7 +216,7 @@ def binding_source(controller):
         return controller
     state = controller.__dict__
     if "_binding_model" in state:
-        _refresh(controller, _plain_names(controller))
+        _refresh(controller, _own_names(controller))
         return state["_binding_model"]
     model = ExpandoObject()
     state["_binding_model"] = model
@@ -224,8 +243,9 @@ def binding_source(controller):
         notified.add(name)
         if state.pop("_binding_pending_all", False):
             _refresh(target)
-        else:
-            _refresh(target, sorted(notified))
+            return
+        _refresh(target, sorted(notified))
+        _refresh(target, _plain_names(target))
 
     notifier = ComponentModel.INotifyPropertyChanged(model)
     notifier.PropertyChanged += changed

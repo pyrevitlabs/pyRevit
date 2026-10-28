@@ -1,20 +1,77 @@
 """Prepare trusted dialog XAML for pythonnet without losing namespace prefixes.
 
-Common control events are deferred until the native tree exists, so events
-the parser raises while applying initial state never reach them; the CPython
-backend replays only ``Checked`` and ``SelectionChanged`` afterwards. Templates
-retain their own namescopes; their event sources are tagged with ``Uid``, which
+Control events are deferred until the native tree exists, so events the parser
+raises while applying initial state never reach them. The CPython backend
+replays ``Checked`` and ``SelectionChanged`` afterwards only where IronPython's
+loader would have delivered them (see ``NamedEvent.replay``). Templates retain
+their own namescopes; their event sources are tagged with ``Uid``, which
 template instances keep, so routed handlers on the root window can match the
 authored element.
 """
 
 import re
 import uuid
+from collections import namedtuple
 from xml.dom import minidom
+
+
+class PreparedXaml(namedtuple("PreparedXaml", "markup names events resource_names")):
+    """Markup ready for ``XamlReader`` plus what must be attached after loading.
+
+    Attributes:
+        markup (str): Markup without deferred event attributes.
+        names (list[str]): Element names outside templates, including
+            generated ones for unnamed event sources.
+        events (list[NamedEvent | TemplateEvent]): Deferred handlers, in
+            document order.
+        resource_names (dict): {name: (owner name or None for the root,
+            resource key)} for names declared inside resource entries, which
+            WPF keeps out of the window namescope.
+    """
+
+    __slots__ = ()
+
+
+class NamedEvent(namedtuple("NamedEvent", "name event handler replay")):
+    """A handler deferred from a named element outside any template.
+
+    Attributes:
+        replay (bool): Whether the backend replays the initial ``Checked`` or
+            ``SelectionChanged`` once the handler is attached.
+
+    Invariant:
+        ``replay`` mirrors IronPython's ``LoadComponent``, which attaches
+        handlers in attribute order: it is True only when the event attribute
+        precedes every state attribute for that event on the same element
+        (for example ``Checked`` before ``IsChecked``). It is always False for
+        other events.
+    """
+
+    __slots__ = ()
+
+
+class TemplateEvent(namedtuple("TemplateEvent", "uid tag event handler")):
+    """A handler deferred from an element inside a template.
+
+    Attributes:
+        uid (str): ``Uid`` that every template instance of the element keeps.
+        tag (str): WPF type name, or ``{namespace}Name`` outside WPF.
+    """
+
+    __slots__ = ()
 
 
 _WPF_NS = "http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 _XAML_NS = "http://schemas.microsoft.com/winfx/2006/xaml"
+_INITIAL_STATE_ATTRIBUTES = {
+    "Checked": ("IsChecked",),
+    "SelectionChanged": (
+        "SelectedIndex",
+        "SelectedItem",
+        "SelectedValue",
+        "IsSelected",
+    ),
+}
 _EVENTS = (
     "Click",
     "TextChanged",
@@ -187,28 +244,47 @@ def _ensure_name(document, node, names):
     return name
 
 
+def _replays_initial_state(attributes, event):
+    """Return whether IronPython's loader would deliver ``event`` for initial state."""
+    states = _INITIAL_STATE_ATTRIBUTES.get(event)
+    if not states:
+        return False
+    position = attributes.index(event)
+    return not any(name in states for name in attributes[:position])
+
+
+def _tag_template_source(node, index):
+    uid = (
+        node.getAttribute("Uid")
+        or node.getAttributeNS(_XAML_NS, "Uid")
+        or "_pyrevit_template_{}".format(index)
+    )
+    if node.hasAttributeNS(_XAML_NS, "Uid"):
+        node.removeAttributeNS(_XAML_NS, "Uid")
+    node.setAttribute("Uid", uid)
+    return uid
+
+
 def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
-    """Defer supported named events and prepend the host resource dictionaries.
+    """Defer named events and prepend the host resource dictionaries.
 
     Args:
         source (str): Authored XAML markup.
         resource_sources (list[str]): Dictionary URIs merged ahead of the
             authored resources.
         is_event (callable, optional): ``is_event(type_name, attribute)``
-            returns whether an attribute names a CLR event of that type, so
-            events outside ``_EVENTS`` are deferred too.
+            returns whether an attribute names a CLR event of that type. The
+            CPython backend resolves WPF and ``clr-namespace`` types by
+            reflection; ``_EVENTS`` is only the fallback for attributes it
+            cannot resolve, and the whole list when ``is_event`` is omitted.
         dynamic_keys (collection, optional): Resource keys the host adds only
             after parsing. ``{StaticResource key}`` for them becomes
             ``{DynamicResource key}``, which resolves once they exist.
 
     Returns:
-        tuple[str, list[str], list[tuple[str, str, str]], dict]: Markup,
-            control names, deferred (name, event, handler) registrations and
-            {name: (owner name or None for the root, resource key)} for names
-            declared inside resource entries, which WPF keeps out of the
-            window namescope; an owner of a nested ``.Resources`` block is
-            itself listed when it sits inside a resource entry. Namespace
-            declarations and markup extensions survive.
+        PreparedXaml: Namespace declarations and markup extensions survive;
+            an owner of a nested ``.Resources`` block is itself listed in
+            ``resource_names`` when it sits inside a resource entry.
 
     Raises:
         ValueError: An adapted event has no named target. Unsupported XAML
@@ -229,27 +305,21 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
         if dynamic_keys:
             _use_dynamic_resources(node, dynamic_keys)
         type_name = _type_name(node)
-        for event in list(node.attributes.keys()):
+        attributes = list(node.attributes.keys())
+        for event in attributes:
             if ":" in event or "." in event:
                 continue
             if event not in _EVENTS and not (is_event and is_event(type_name, event)):
                 continue
-            if node.hasAttribute(event):
-                if in_template:
-                    uid = (
-                        node.getAttribute("Uid")
-                        or node.getAttributeNS(_XAML_NS, "Uid")
-                        or "_pyrevit_template_{}".format(len(events))
-                    )
-                    if node.hasAttributeNS(_XAML_NS, "Uid"):
-                        node.removeAttributeNS(_XAML_NS, "Uid")
-                    node.setAttribute("Uid", uid)
-                    target = "@template:{}:{}".format(uid, type_name)
-                else:
-                    name = _ensure_name(document, node, names)
-                    target = name
-                events.append((target, event, node.getAttribute(event)))
-                node.removeAttribute(event)
+            handler = node.getAttribute(event)
+            if in_template:
+                uid = _tag_template_source(node, len(events))
+                events.append(TemplateEvent(uid, type_name, event, handler))
+            else:
+                name = _ensure_name(document, node, names)
+                replay = _replays_initial_state(attributes, event)
+                events.append(NamedEvent(name, event, handler, replay))
+            node.removeAttribute(event)
         if name and not in_template:
             if name not in names:
                 names.append(name)
@@ -273,4 +343,4 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
 
     visit(root)
     _merge_resources(document, resource_sources)
-    return _serialize(document), names, events, resource_names
+    return PreparedXaml(_serialize(document), names, events, resource_names)
