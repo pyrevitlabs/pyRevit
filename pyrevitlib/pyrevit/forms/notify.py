@@ -1,7 +1,10 @@
 """User notifications through Revit InfoCenter and Windows toast helpers."""
 
+import datetime
+
 from pyrevit.forms import toaster
 from pyrevit.api import AdWindows
+from pyrevit.framework import System
 
 
 def result_item_result_clicked(sender, e, debug=False):
@@ -30,7 +33,9 @@ def show_balloon(
         group (str): Group
         is_favourite (bool): Add a blue star before header
         is_new (bool): Flag to new
-        timestamp (str): Set timestamp
+        timestamp (datetime.datetime | System.DateTime): Set timestamp; a
+            Python datetime is converted to ``System.DateTime`` because
+            pythonnet does not convert it implicitly.
         click_result (def): Executed after a click event
 
     Examples:
@@ -51,12 +56,26 @@ def show_balloon(
     result_item.IsFavorite = is_favourite
     result_item.IsNew = is_new
     if timestamp:
-        result_item.Timestamp = timestamp
+        result_item.Timestamp = _to_clr_datetime(timestamp)
     result_item.ResultClicked += click_result
     balloon = AdWindows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
         result_item
     )
     return balloon
+
+
+def _to_clr_datetime(value):
+    if not isinstance(value, datetime.datetime):
+        return value
+    return System.DateTime(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second,
+        value.microsecond // 1000,
+    )
 
 
 def toast(

@@ -434,12 +434,26 @@ class SelectFromList(TemplateUserInputWindow):
                 self.in_uncheck = False
 
     def button_reset(self, sender, args):  # pylint: disable=W0613
-        """Handle reset button click."""
-        if self.reset_func:
-            all_items = [
-                _backend.unwrap_item(item) for item in self.list_lb.ItemsSource
-            ]
-            self.reset_func(all_items)
+        """Pass the listed items to ``resetfunc`` and keep its changes visible.
+
+        Note:
+            IronPython passes the live ``ItemsSource`` collection. CPython binds
+            managed proxies, so it passes the original Python items instead and
+            rebinds the list when ``resetfunc`` adds, removes or reorders them.
+        """
+        if not self.reset_func:
+            return
+        items_source = self.list_lb.ItemsSource
+        all_items = [_backend.unwrap_item(item) for item in items_source]
+        if all(item is native for item, native in zip(all_items, items_source)):
+            self.reset_func(items_source)
+            return
+        listed_items = list(all_items)
+        self.reset_func(all_items)
+        if len(all_items) != len(listed_items) or any(
+            item is not listed for item, listed in zip(all_items, listed_items)
+        ):
+            self.list_lb.ItemsSource = _backend.list_source(all_items)
 
     def button_select(self, sender, args):  # pylint: disable=W0613
         """Handle select button click."""
