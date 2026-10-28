@@ -22,6 +22,16 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     public sealed class BindingModel : ICustomTypeDescriptor, INotifyPropertyChanged {
         private readonly Dictionary<string, object> values = new Dictionary<string, object>();
 
+        private BindingModel() { }
+
+        /// <summary>Creates an empty model.</summary>
+        /// <remarks>
+        /// The constructor stays private: a public parameterless constructor would let WPF's
+        /// collection views add new items, so a <c>DataGrid</c> listing Reactive models would show
+        /// a new-row placeholder that IronPython's Python-typed items never get.
+        /// </remarks>
+        public static BindingModel Create() => new BindingModel();
+
         /// <inheritdoc/>
         public event PropertyChangedEventHandler PropertyChanged;
 
