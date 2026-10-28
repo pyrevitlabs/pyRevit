@@ -14,6 +14,7 @@ try:
         _is_generic_list_constructor,
         _has_stable_clr_namespace,
         _is_tracked_extension_finding,
+        _bundle_engine_type_from_regex,
         _may_run_under_cpython,
         _native_form_uses,
     )
@@ -25,6 +26,7 @@ except ImportError:
         _is_generic_list_constructor,
         _has_stable_clr_namespace,
         _is_tracked_extension_finding,
+        _bundle_engine_type_from_regex,
         _may_run_under_cpython,
         _native_form_uses,
     )
@@ -107,6 +109,37 @@ class GenericCollectionTests(unittest.TestCase):
         """The parameterless generic List constructor is portable."""
         call = ast.parse("List[DB.ElementId]()").body[0].value
         self.assertFalse(_is_generic_list_constructor(call))
+
+    def test_python_iterable_arguments_are_detected(self):
+        """Literal containers, comprehensions and iterable builtins need Add."""
+        for source in (
+            "List[int]([1, 2])",
+            "List[int]((1, 2))",
+            "List[int]({1, 2})",
+            "List[int]([x for x in xs])",
+            "List[int](x for x in xs)",
+            "List[int](list(xs))",
+            "List[int](sorted(xs))",
+            "framework.List[DB.ElementId](element_ids)",
+            "Generic.List[DB.Curve]([curve])",
+            "System.Collections.Generic.List[str](names)",
+        ):
+            with self.subTest(source=source):
+                call = ast.parse(source).body[0].value
+                self.assertTrue(_is_generic_list_constructor(call))
+
+    def test_clr_and_capacity_arguments_are_not_detected(self):
+        """Capacities and CLR collections from API calls are portable."""
+        for source in (
+            "List[DB.ElementId](10)",
+            "List[DB.ElementId](uidoc.Selection.GetElementIds())",
+            "List[DB.ElementId](el.GetTaggedLocalElementIds())",
+            "framework.List[DB.ElementId](self.element_ids)",
+            "Dictionary[str, int](names)",
+        ):
+            with self.subTest(source=source):
+                call = ast.parse(source).body[0].value
+                self.assertFalse(_is_generic_list_constructor(call))
 
     def test_bundled_extension_list_finding_is_tracked(self):
         """Known extension migrations stay visible without blocking the library gate."""
@@ -283,6 +316,16 @@ class NativeFormUseTests(unittest.TestCase):
         self.assertTrue(_may_run_under_cpython(script, "#! python3"))
         self.assertTrue(_may_run_under_cpython(script, "#! cpython"))
 
+    def test_first_line_rule_matches_the_runtime(self):
+        """Like ScriptRuntime, any first line containing the marker counts, case-sensitively."""
+        root = Path(__file__).resolve().parents[2]
+        script = root / "extensions" / "Tool.pushbutton" / "script.py"
+        self.assertTrue(_may_run_under_cpython(script, "# requires python3\nx = 1"))
+        self.assertTrue(_may_run_under_cpython(script, "# cpython engine"))
+        self.assertFalse(_may_run_under_cpython(script, "#! Python3"))
+        self.assertFalse(_may_run_under_cpython(script, "#! CPython"))
+        self.assertFalse(_may_run_under_cpython(script, "import clr\n#! python3"))
+
     def test_extension_and_bundle_engine_declarations_enable_the_check(self):
         """Scripts made CPython by their extension or bundle are checked too."""
         with tempfile.TemporaryDirectory() as directory:
@@ -302,6 +345,44 @@ class NativeFormUseTests(unittest.TestCase):
                 "title: Tool\nengine:\n  type: cpython\n"
             )
             self.assertTrue(_may_run_under_cpython(plain_script, "import clr"))
+
+    def _bundle_script(self, root, bundle_yaml, extension_json=None):
+        extension = root / "Ext.extension"
+        bundle = extension / "Tool.pushbutton"
+        bundle.mkdir(parents=True)
+        if extension_json is not None:
+            (extension / "extension.json").write_text(extension_json)
+        (bundle / "bundle.yaml").write_text(bundle_yaml)
+        return bundle / "script.py"
+
+    def test_flow_style_bundle_engine_is_read(self):
+        """``engine: {type: cpython}`` declares CPython like the block form."""
+        with tempfile.TemporaryDirectory() as directory:
+            script = self._bundle_script(
+                Path(directory), "title: Tool\nengine: {type: CPython, clean: true}\n"
+            )
+            self.assertTrue(_may_run_under_cpython(script, "import clr"))
+
+    def test_bundle_engine_type_wins_over_extension(self):
+        """A bundle's own ironpython type overrides a cpython extension."""
+        with tempfile.TemporaryDirectory() as directory:
+            script = self._bundle_script(
+                Path(directory),
+                "engine:\n  type: IronPython\n",
+                '{"engine": "cpython"}',
+            )
+            self.assertFalse(_may_run_under_cpython(script, "#! python3"))
+
+    def test_bundle_engine_regex_fallback_reads_both_styles(self):
+        """Without PyYAML the regex fallback still reads block and flow styles."""
+        for text, expected in (
+            ("engine:\n  clean: true\n  type: cpython\n", "cpython"),
+            ("engine: {clean: true, type: 'CPython'}\n", "CPython"),
+            ("title: x\nengine:\n  clean: true\nother:\n  type: cpython\n", None),
+            ("title: x\n", None),
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(expected, _bundle_engine_type_from_regex(text))
 
     def test_extension_form_findings_are_tracked(self):
         """Bundled extensions migrate to the rule without blocking CI."""

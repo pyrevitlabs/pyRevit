@@ -333,14 +333,57 @@ def _bare_py3_view(node):
     return isinstance(func, ast.Name) and func.id in PY3_LAZY_BUILTINS
 
 
+PYTHON_ITERABLE_BUILTINS = {
+    "list",
+    "tuple",
+    "set",
+    "sorted",
+    "reversed",
+    "map",
+    "filter",
+}
+
+
+def _is_generic_list_type(node):
+    if not isinstance(node, ast.Subscript):
+        return False
+    target = node.value
+    if isinstance(target, ast.Name):
+        return target.id == "List"
+    return isinstance(target, ast.Attribute) and target.attr == "List"
+
+
+def _is_python_iterable(node):
+    """Return whether node is clearly a Python iterable rather than a CLR value.
+
+    Literal containers, comprehensions, generators, calls to the iterable
+    builtins and bare names count; int capacities, attributes and other call
+    results (e.g. ``uidoc.Selection.GetElementIds()``) are left alone.
+    """
+    if isinstance(
+        node,
+        (ast.List, ast.Tuple, ast.Set, ast.ListComp, ast.SetComp, ast.GeneratorExp),
+    ):
+        return True
+    if isinstance(node, ast.Call):
+        return (
+            isinstance(node.func, ast.Name) and node.func.id in PYTHON_ITERABLE_BUILTINS
+        )
+    return isinstance(node, ast.Name)
+
+
 def _is_generic_list_constructor(node):
-    """Return whether node constructs a CLR List from a Python value."""
+    """Return whether node constructs a CLR List from a Python iterable.
+
+    Matches ``List[T](...)`` and attribute-qualified forms such as
+    ``framework.List[T](...)`` or ``Generic.List[T](...)``.
+    """
     return (
         isinstance(node, ast.Call)
-        and bool(node.args)
-        and isinstance(node.func, ast.Subscript)
-        and isinstance(node.func.value, ast.Name)
-        and node.func.value.id == "List"
+        and len(node.args) == 1
+        and not node.keywords
+        and _is_generic_list_type(node.func)
+        and _is_python_iterable(node.args[0])
     )
 
 
@@ -407,9 +450,17 @@ def _is_self(node):
     return isinstance(node, ast.Name) and node.id == "self"
 
 
-_BUNDLE_CPYTHON_ENGINE = re.compile(
-    r"^engine:[ \t]*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+type:[ \t]*['\"]?cpython\b",
-    re.IGNORECASE | re.MULTILINE,
+_BUNDLE_ENGINE_TYPE_PATTERNS = (
+    re.compile(
+        r"^engine[ \t]*:[ \t]*(?:#.*)?\r?\n"
+        r"(?:(?:[ \t]+.*|[ \t]*)\r?\n)*?"
+        r"[ \t]+type[ \t]*:[ \t]*['\"]?([^'\"\s#,}]*)",
+        re.IGNORECASE | re.MULTILINE,
+    ),
+    re.compile(
+        r"^engine[ \t]*:[ \t]*\{[^}]*?\btype[ \t]*:[ \t]*['\"]?([^'\"\s,}]*)",
+        re.IGNORECASE | re.MULTILINE,
+    ),
 )
 
 
@@ -431,37 +482,79 @@ def _extension_declares_cpython(path):
     return False
 
 
-def _bundle_declares_cpython(path):
-    """Return whether the script's bundle.yaml sets ``engine: type: cpython``."""
+def _bundle_engine_type_from_yaml(text):
+    import yaml
+
+    data = yaml.safe_load(text)
+    if not isinstance(data, dict):
+        return None
+    for key, engine in data.items():
+        if str(key).lower() != "engine" or not isinstance(engine, dict):
+            continue
+        for engine_key, engine_type in engine.items():
+            if str(engine_key).lower() == "type" and engine_type is not None:
+                return str(engine_type)
+    return None
+
+
+def _bundle_engine_type_from_regex(text):
+    for pattern in _BUNDLE_ENGINE_TYPE_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _bundle_engine_type(path):
+    """Return the raw ``engine.type`` of the script's bundle.yaml, if any.
+
+    Parses with PyYAML when it is installed so block and flow mappings both
+    count; a stock Python 3 falls back to regexes covering both styles.
+    """
     bundle = path.parent / "bundle.yaml"
     if not bundle.is_file():
-        return False
+        return None
     try:
-        return bool(
-            _BUNDLE_CPYTHON_ENGINE.search(bundle.read_text(encoding="utf-8-sig"))
-        )
+        text = bundle.read_text(encoding="utf-8-sig")
     except OSError:
-        return False
+        return None
+    try:
+        return _bundle_engine_type_from_yaml(text)
+    except ImportError:
+        return _bundle_engine_type_from_regex(text)
+    except Exception:
+        return None
+
+
+def _first_line_selects_cpython(source):
+    """Apply the runtime's shebang rule: a case-sensitive substring match.
+
+    Mirrors ``ScriptRuntime.EngineType`` and ``GenericUICommand.is_cpython``:
+    any first line containing ``python3`` or ``cpython`` selects CPython,
+    with or without ``#!``.
+    """
+    first_line = re.split(r"\r\n|\r|\n", source, maxsplit=1)[0]
+    return "python3" in first_line or "cpython" in first_line
 
 
 def _may_run_under_cpython(path, source):
     """Return whether a file is pyrevitlib code or a script that runs under CPython.
 
-    A script runs under CPython through a CPython shebang, a bundle.yaml
-    ``engine: type: cpython`` or an extension.json ``engine`` declaration.
+    Follows the loader's precedence: a bundle.yaml ``engine.type`` of
+    ``cpython`` or ``ironpython`` decides outright, then an extension.json
+    ``cpython`` declaration, then the script's first line.
     """
     try:
         path.relative_to(REPO_ROOT / "pyrevitlib")
         return True
     except ValueError:
         pass
-    lines = source.splitlines()
-    first_line = lines[0].lower() if lines else ""
-    if first_line.startswith("#!") and (
-        "python3" in first_line or "cpython" in first_line
-    ):
+    bundle_engine = (_bundle_engine_type(path) or "").strip().lower()
+    if bundle_engine == "cpython":
         return True
-    return _bundle_declares_cpython(path) or _extension_declares_cpython(path)
+    if bundle_engine == "ironpython":
+        return False
+    return _extension_declares_cpython(path) or _first_line_selects_cpython(source)
 
 
 def _class_body_nodes(class_node):
@@ -852,7 +945,7 @@ def iter_python_files(roots, resolve_against):
             yield path
 
 
-TRACKED_EXTENSION_FINDINGS_LIMIT = 55
+TRACKED_EXTENSION_FINDINGS_LIMIT = 54
 
 
 def _is_tracked_extension_finding(finding):
