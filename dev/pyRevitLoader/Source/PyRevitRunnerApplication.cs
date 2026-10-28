@@ -22,10 +22,11 @@ namespace PyRevitRunner
         // Hook into Revit to allow starting a command.
         Result IExternalApplication.OnStartup(UIControlledApplication application)
         {
-            LoadAssembliesInFolder(LoaderPath);
+            var hostYear = application.ControlledApplication.VersionNumber;
+            LoadAssembliesInFolder(LoaderPath, hostYear);
             // We need to also looad dlls from two folders up
             var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
-            LoadAssembliesInFolder(commonFolder);
+            LoadAssembliesInFolder(commonFolder, hostYear);
             try
             {
                 return RegisterExternalCommand(application);
@@ -37,13 +38,13 @@ namespace PyRevitRunner
             }
         }
 
-        private static void LoadAssembliesInFolder(string folder)
+        private static void LoadAssembliesInFolder(string folder, string hostYear)
         {
             // load all engine assemblies
             // this is to ensure pyRevit is loaded on its own assemblies
             foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
             {
-                var decision = AssemblyLoadPolicy.ShouldSkip(engineDll);
+                var decision = AssemblyLoadPolicy.ShouldSkip(engineDll, hostYear);
                 if (decision.Skip)
                     continue;
                 try

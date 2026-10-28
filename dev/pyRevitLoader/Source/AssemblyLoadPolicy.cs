@@ -29,6 +29,8 @@ namespace PyRevitLoader
         public const bool IsolatedOnNetCore = true;
 #endif
 
+        private const string RuntimeAssemblyPrefix = "pyRevitLabs.PyRevit.Runtime.";
+
         private static readonly string[] IsolatedAssemblyFileNames = {
             "Microsoft.Web.WebView2.Core.dll",
             "Microsoft.Web.WebView2.Wpf.dll",
@@ -77,6 +79,48 @@ namespace PyRevitLoader
             }
 
             return AssemblyLoadDecision.Allow("The file is not part of the isolated WebView2 stack.");
+        }
+
+        /// <summary>
+        /// Decides whether the loader must skip a file in a host of the given
+        /// Revit year, for the runtime this assembly was built for.
+        /// </summary>
+        /// <remarks>
+        /// The engine folders ship one pyRevit runtime per Revit year, and all
+        /// of them define the same types. Only the host year's runtime may be
+        /// loaded: CPython resolves a type from the first loaded assembly that
+        /// defines it, so another year's runtime would shadow the session's.
+        /// </remarks>
+        /// <param name="fileName">The file the loader is about to load.</param>
+        /// <param name="hostYear">The host Revit version number, such as "2026".</param>
+        public static AssemblyLoadDecision ShouldSkip(string fileName, string hostYear)
+        {
+            var decision = ShouldSkip(fileName);
+            if (decision.Skip || !IsRuntimeOfAnotherYear(fileName, hostYear))
+                return decision;
+
+            return AssemblyLoadDecision.Reject(
+                "The file is the pyRevit runtime of another Revit year; its types would shadow "
+                + "the host year's runtime.");
+        }
+
+        private static bool IsRuntimeOfAnotherYear(string fileName, string hostYear)
+        {
+            if (string.IsNullOrEmpty(fileName) || string.IsNullOrEmpty(hostYear))
+                return false;
+
+            var name = Path.GetFileNameWithoutExtension(fileName);
+            if (!name.StartsWith(RuntimeAssemblyPrefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var year = name.Substring(RuntimeAssemblyPrefix.Length);
+            foreach (var character in year)
+            {
+                if (!char.IsDigit(character))
+                    return false;
+            }
+
+            return year.Length > 0 && !string.Equals(year, hostYear, StringComparison.Ordinal);
         }
     }
 

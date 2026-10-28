@@ -66,6 +66,32 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
         }
 
         [TestMethod]
+        public void ShouldSkip_RejectsTheRuntimeOfAnotherRevitYear() {
+            foreach (var fileName in new[] { "pyRevitLabs.PyRevit.Runtime.2025.dll", "pyRevitLabs.PyRevit.Runtime.2027.dll" }) {
+                var decision = AssemblyLoadPolicy.ShouldSkip(
+                    Path.Combine("bin", "netcore", "engines", "IPY342", fileName), "2026");
+
+                Assert.IsTrue(decision.Skip, "'" + fileName + "' must be skipped in Revit 2026. " + decision.Reason);
+            }
+        }
+
+        [TestMethod]
+        public void ShouldSkip_AllowsTheHostYearRuntimeAndSharedRuntime() {
+            foreach (var fileName in new[] { "pyRevitLabs.PyRevit.Runtime.2026.dll", "pyRevitLabs.PyRevit.Runtime.Shared.dll" }) {
+                var decision = AssemblyLoadPolicy.ShouldSkip(fileName, "2026");
+
+                Assert.IsFalse(decision.Skip, "'" + fileName + "' must load in Revit 2026. " + decision.Reason);
+            }
+        }
+
+        [TestMethod]
+        public void ShouldSkip_WithHostYearStillRejectsTheWebView2Stack() {
+            var decision = AssemblyLoadPolicy.ShouldSkip("Microsoft.Web.WebView2.Core.dll", "2026");
+
+            Assert.IsTrue(decision.Skip, decision.Reason);
+        }
+
+        [TestMethod]
         public void Loader_UsesTheSharedPolicy() {
             var source = File.ReadAllText(
                 Path.Combine(AppContext.BaseDirectory, "Sources", "PyRevitLoaderApplication.cs"));
