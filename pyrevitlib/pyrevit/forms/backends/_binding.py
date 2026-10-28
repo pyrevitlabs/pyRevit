@@ -139,10 +139,14 @@ def _property_names(controller):
 
 
 def _bindable(value):
-    """Return a value WPF can bind: nested models and lists become managed too."""
+    """Return a value WPF can bind: nested models and lists become managed too.
+
+    A namedtuple stays a single value, so paths such as ``rev.is_set`` read
+    its fields as they do on IronPython.
+    """
     if isinstance(value, Reactive):
         return binding_source(value)
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, (list, tuple)) and not hasattr(value, "_fields"):
         return to_clr_list(System.Object, [_bindable(item) for item in value])
     return value
 
@@ -216,7 +220,7 @@ def binding_source(controller):
     if "_binding_model" in state:
         _refresh(controller, _own_names(controller))
         return state["_binding_model"]
-    model = BindingModel()
+    model = BindingModel.Create()
     state["_binding_model"] = model
     state["_binding_values"] = model
     _controllers[model] = controller

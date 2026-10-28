@@ -905,6 +905,59 @@ class BindingParityTests(unittest.TestCase):
         finally:
             window.Close()
 
+    def test_namedtuple_attribute_of_reactive_row(self):
+        """A namedtuple held by a Reactive row binds by field and drives triggers.
+
+        Print Sheets collapses the revision cell with a DataTrigger on
+        ``revision.is_set``.
+        """
+        revision = namedtuple("Revision", "number is_set")
+
+        class Sheet(forms.Reactive):
+            def __init__(self, rev):
+                super(Sheet, self).__init__()
+                self.rev = rev
+
+        window = _XamlWindow(
+            '<ListBox x:Name="list_lb"><ListBox.ItemTemplate><DataTemplate>'
+            '<StackPanel x:Name="info"><TextBlock Text="{Binding rev.number}"/>'
+            "</StackPanel><DataTemplate.Triggers>"
+            '<DataTrigger Binding="{Binding rev.is_set}" Value="False">'
+            '<Setter TargetName="info" Property="Visibility" Value="Collapsed"/>'
+            "</DataTrigger></DataTemplate.Triggers></DataTemplate>"
+            "</ListBox.ItemTemplate></ListBox>"
+        )
+        window.list_lb.ItemsSource = [
+            Sheet(revision(None, False)),
+            Sheet(revision("7", True)),
+        ]
+        with _Shown(window) as native:
+            panels = [
+                str(panel.Visibility)
+                for panel in _of_type(native, framework.Controls.StackPanel)
+                if panel.Name == "info"
+            ]
+            self.assertEqual(["Collapsed", "Visible"], panels)
+            self.assertIn("7", _texts(window.list_lb))
+
+    def test_datagrid_of_reactive_rows_has_no_new_row(self):
+        """An editable DataGrid of Reactive rows lists only the rows.
+
+        Print Sheets lists its Reactive sheet items in a DataGrid that leaves
+        ``CanUserAddRows`` at its default.
+        """
+        rows = [_Message("one"), _Message("two")]
+        window = _XamlWindow(
+            '<DataGrid x:Name="grid_dg" AutoGenerateColumns="False"><DataGrid.Columns>'
+            '<DataGridTextColumn Header="Message" Binding="{Binding message}"/>'
+            "</DataGrid.Columns></DataGrid>"
+        )
+        window.grid_dg.ItemsSource = rows
+        with _Shown(window):
+            listed = list(window.grid_dg.Items)
+            self.assertEqual(2, len(listed))
+            self.assertIs(rows[0], listed[0])
+
     def test_datagrid_sort_description_on_plain_items(self):
         """A SortDescription sorts plain Python rows by attribute name.
 
@@ -976,6 +1029,38 @@ class BindingParityTests(unittest.TestCase):
         """
         window = _XamlWindow('<ListBox x:Name="list_lb" DisplayMemberPath="name"/>')
         window.list_lb.ItemsSource = [_Row("first"), _Row("second")]
+        with _Shown(window):
+            self.assertEqual(["first", "second"], _texts(window.list_lb))
+
+    def test_display_member_path_on_object_generic_list(self):
+        """A ``List[object]`` of plain objects lists them by DisplayMemberPath.
+
+        Params2Param builds its category ComboBox this way; ``object`` must
+        mean ``System.Object`` as a generic argument on every engine.
+        """
+        from System.Collections.Generic import List
+
+        rows = List[object]()
+        rows.Add(_Row("first"))
+        rows.Add(_Row("second"))
+        window = _XamlWindow('<ListBox x:Name="list_lb" DisplayMemberPath="name"/>')
+        window.list_lb.ItemsSource = rows
+        with _Shown(window):
+            self.assertEqual(["first", "second"], _texts(window.list_lb))
+            window.list_lb.SelectedIndex = 1
+            self.assertEqual("second", window.list_lb.SelectedItem.name)
+
+    def test_python_list_to_generic_enumerable(self):
+        """A Python list converts where ``IEnumerable<T>`` is expected.
+
+        Params2Param fills its parameter lists with ``List[str].AddRange``.
+        """
+        from System.Collections.Generic import List
+
+        names = List[str]()
+        names.AddRange(["first", "second"])
+        window = _XamlWindow('<ListBox x:Name="list_lb"/>')
+        window.list_lb.ItemsSource = names
         with _Shown(window):
             self.assertEqual(["first", "second"], _texts(window.list_lb))
 
@@ -1870,6 +1955,20 @@ class InteropParityTests(unittest.TestCase):
             },
             observed,
         )
+
+    def test_disposable_with_statement(self):
+        """A CLR ``IDisposable`` works as a context manager and is disposed on exit.
+
+        Batch Sheet Maker wraps ``DB.TransactionGroup`` and ``DB.Transaction``
+        in ``with`` blocks.
+        """
+        from System.IO import MemoryStream
+
+        stream = MemoryStream()
+        with stream as entered:
+            self.assertIs(stream, entered)
+            self.assertTrue(stream.CanRead)
+        self.assertFalse(stream.CanRead)
 
     def test_load_xaml_twice(self):
         """A second load_xaml exposes the new names and wires the new handlers.

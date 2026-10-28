@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using Python.Runtime;
+using Python.Runtime.Codecs;
 
 namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// <summary>
@@ -113,6 +114,10 @@ def names(value):
         /// Reload: the codecs stay registered and only the hooks change. Codecs registered
         /// after other conversions took place apply to them too, because registration clears
         /// pythonnet's conversion caches.
+        /// pythonnet's generic list, sequence and iterable decoders are registered with them,
+        /// so a Python list passed where <c>IEnumerable&lt;T&gt;</c>, <c>ICollection&lt;T&gt;</c> or
+        /// <c>IList&lt;T&gt;</c> is expected, such as <c>List&lt;string&gt;.AddRange</c>, converts as
+        /// it does under IronPython.
         /// </remarks>
         public static void Register(PyObject adapt, PyObject findModel) {
             using (Py.GIL()) {
@@ -127,6 +132,9 @@ def names(value):
                     codec = new PythonCodec();
                     PyObjectConversions.RegisterDecoder(codec);
                     PyObjectConversions.RegisterEncoder(codec);
+                    ListDecoder.Register();
+                    SequenceDecoder.Register();
+                    IterableDecoder.Register();
                     PythonEngine.AddShutdownHandler(Reset);
                 }
             }
