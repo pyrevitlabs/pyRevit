@@ -15,6 +15,8 @@ internal sealed class InterpreterLifecycleRecord {
     public required Exception? Shutdown { get; init; }
     public required bool IsInitializedAfterShutdown { get; init; }
     public required string? DerivedTypeRedefinition { get; init; }
+    public required string? DerivedTypeShapes { get; init; }
+    public required IReadOnlyDictionary<string, string> ScriptOutputConversions { get; init; }
 }
 
 /// <summary>
@@ -60,6 +62,72 @@ internal static class InterpreterLifecycleProbe {
             str(plain.GetMethod("Extra") is not None),
         ])
         """;
+    private const string ShapesProbe = """
+        import clr
+        import sys
+        from System import IComparable, IDisposable
+
+        def named():
+            class NamedProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.naming"
+
+                def Dispose(self):
+                    pass
+
+            return clr.GetClrType(NamedProbe)
+
+        def generic():
+            class GenericProbe(IComparable[int]):
+                __namespace__ = "pyrevit.tests.naming"
+
+                def CompareTo(self, other):
+                    return 0
+
+            return clr.GetClrType(GenericProbe)
+
+        def with_property(writable):
+            class PropertyProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.properties"
+
+                def Dispose(self):
+                    pass
+
+                def _get(self):
+                    return 1
+
+                def _set(self, value):
+                    pass
+
+                Value = clr.clrproperty(int, _get, _set if writable else None)
+
+            return clr.GetClrType(PropertyProbe)
+
+        def in_assembly(name):
+            class AssemblyProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.assemblies"
+                __assembly__ = name
+
+                def Dispose(self):
+                    pass
+
+            return clr.GetClrType(AssemblyProbe)
+
+        first = named()
+        from pyrevit.tests.naming import NamedProbe as Imported
+        read_only = with_property(False)
+        writable = with_property(True)
+        first_assembly = in_assembly("pyrevit.tests.first")
+        second_assembly = in_assembly("pyrevit.tests.second")
+        sys.pyrevit_shapes = "|".join([
+            first.FullName,
+            str(clr.GetClrType(Imported).Equals(first)),
+            generic().FullName,
+            str(read_only.GetProperty("Value").CanWrite),
+            str(writable.GetProperty("Value").CanWrite),
+            first_assembly.Assembly.GetName().Name,
+            second_assembly.Assembly.GetName().Name,
+        ])
+        """;
     private static readonly string MarkerRead = $"__import__('sys').{MarkerName}";
 
     private static readonly Lazy<InterpreterLifecycleRecord> _record = new(
@@ -77,6 +145,8 @@ internal static class InterpreterLifecycleProbe {
         Exec("import clr");
         Exec($"import sys; sys.{MarkerName} = 1");
         string? redefinition = Run(RedefinitionProbe, "__import__('sys').pyrevit_redefinition");
+        string? shapes = Run(ShapesProbe, "__import__('sys').pyrevit_shapes");
+        IReadOnlyDictionary<string, string> conversions = ScriptOutputConversionProbe.Observe();
 
         var reattachFailures = new List<Exception>();
         for (int cycle = 0; cycle < ReattachCount; cycle++) {
@@ -106,6 +176,8 @@ internal static class InterpreterLifecycleProbe {
             Shutdown = shutdown,
             IsInitializedAfterShutdown = isInitializedAfterShutdown,
             DerivedTypeRedefinition = redefinition,
+            DerivedTypeShapes = shapes,
+            ScriptOutputConversions = conversions,
         };
     }
 

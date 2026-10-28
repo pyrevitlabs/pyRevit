@@ -40,6 +40,21 @@ public class CPythonInterpreterLifecycleTests {
     }
 
     /// <summary>
+    /// The generated CLR type keeps the Python class's visible name, so it stays importable from
+    /// its <c>__namespace__</c> even when it derives from interfaces or generic types. Properties
+    /// that differ only in having a setter, and classes placed in different <c>__assembly__</c>
+    /// values, are different shapes and must not share a cached type.
+    /// </summary>
+    [Fact]
+    public void DerivedClassTypes_KeepTheirNameAndSeparateEveryShape() {
+        string? record = InterpreterLifecycleProbe.Record.DerivedTypeShapes;
+
+        Assert.Equal(
+            "pyrevit.tests.naming.NamedProbe|True|pyrevit.tests.naming.GenericProbe|False|True|pyrevit.tests.first|pyrevit.tests.second",
+            record);
+    }
+
+    /// <summary>
     /// <c>CPythonEngine.Start</c> must only assign <c>Runtime.PythonDLL</c> while the runtime is
     /// down, because pythonnet rejects the assignment afterwards. Hoisting those initialize-only
     /// settings back out of the guard would make the first CPython command after a Reload fail with
