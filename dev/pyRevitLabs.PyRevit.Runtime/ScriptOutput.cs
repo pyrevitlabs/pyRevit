@@ -16,7 +16,6 @@ using PyDict = Python.Runtime.PyDict;
 using PyIterable = Python.Runtime.PyIterable;
 using PyObject = Python.Runtime.PyObject;
 using PyString = Python.Runtime.PyString;
-using PythonException = Python.Runtime.PythonException;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     /// <summary>
@@ -903,22 +902,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return rows;
 
             if (value is PyObject pythonValue) {
-                if (PyString.IsStringType(pythonValue))
+                if (PyString.IsStringType(pythonValue) || !pythonValue.IsIterable())
                     return rows;
-                try {
-                    using (var pythonRows = new PyIterable(pythonValue)) {
-                        foreach (PyObject row in pythonRows) {
-                            try {
-                                rows.Add(ToList(row));
-                            }
-                            finally {
-                                row.Dispose();
-                            }
+                using (var pythonRows = new PyIterable(pythonValue)) {
+                    foreach (PyObject row in pythonRows) {
+                        try {
+                            rows.Add(ToList(row));
+                        }
+                        finally {
+                            row.Dispose();
                         }
                     }
-                }
-                catch (PythonException) {
-                    return rows;
                 }
                 return rows;
             }
@@ -942,32 +936,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             if (value is PyObject pythonValue) {
-                try {
-                    if (pythonValue.AsManagedObject(typeof(string)) is string text) {
-                        items.Add(text);
-                        return items;
-                    }
-                }
-                catch (InvalidCastException) {
+                if (PyString.IsStringType(pythonValue) || !pythonValue.IsIterable()) {
+                    items.Add(ToCellText(pythonValue));
+                    return items;
                 }
 
-                try {
-                    using (var pythonItems = new PyIterable(pythonValue)) {
-                        foreach (PyObject item in pythonItems) {
-                            try {
-                                items.Add(item.ToString());
-                            }
-                            finally {
-                                item.Dispose();
-                            }
+                using (var pythonItems = new PyIterable(pythonValue)) {
+                    foreach (PyObject item in pythonItems) {
+                        try {
+                            items.Add(ToCellText(item));
+                        }
+                        finally {
+                            item.Dispose();
                         }
                     }
-                    return items;
                 }
-                catch (PythonException) {
-                    items.Add(pythonValue.ToString());
-                    return items;
-                }
+                return items;
             }
 
             var enumerable = value as IEnumerable;
@@ -979,6 +963,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             foreach (var item in enumerable)
                 items.Add(item == null ? string.Empty : item.ToString());
             return items;
+        }
+
+        private static string ToCellText(PyObject value) {
+            return value.IsNone() ? string.Empty : value.ToString();
         }
 
         private static Dictionary<string, string> ToDictionary(object value) {
