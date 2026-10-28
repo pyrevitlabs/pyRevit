@@ -615,6 +615,20 @@ class _Notifier(object):
         return self
 
 
+class _BindingModel(_Expando):
+    @staticmethod
+    def Create():
+        return _BindingModel()
+
+    @property
+    def PropertyChanged(self):
+        return _Notifier(self)
+
+    @PropertyChanged.setter
+    def PropertyChanged(self, value):
+        pass
+
+
 def _load_binding():
     system = SimpleNamespace(
         IO=SimpleNamespace(FileNotFoundException=OSError),
@@ -634,8 +648,14 @@ def _load_binding():
     generic.IDictionary = {(str, object): lambda model: model}
     clr = ModuleType("clr")
     clr.AddReference = lambda name: None
+    binding_assembly = ModuleType("PyRevitLabs.PyRevit.Forms.Binding")
+    binding_assembly.BindingModel = _BindingModel
     stubs = {
         "clr": clr,
+        "PyRevitLabs": ModuleType("PyRevitLabs"),
+        "PyRevitLabs.PyRevit": ModuleType("PyRevitLabs.PyRevit"),
+        "PyRevitLabs.PyRevit.Forms": ModuleType("PyRevitLabs.PyRevit.Forms"),
+        "PyRevitLabs.PyRevit.Forms.Binding": binding_assembly,
         "pyrevit.framework": framework,
         "System": ModuleType("System"),
         "System.Dynamic": dynamic,

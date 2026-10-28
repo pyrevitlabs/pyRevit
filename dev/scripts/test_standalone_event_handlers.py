@@ -59,14 +59,37 @@ class _EventHook:
         return self
 
 
-class _Application:
+class _EventInfo:
+    def __init__(self, name):
+        self.name = name
+
+    def AddEventHandler(self, source, handler):
+        hook = getattr(source, self.name)
+        hook += handler
+
+    def RemoveEventHandler(self, source, handler):
+        hook = getattr(source, self.name)
+        hook -= handler
+
+
+class _EventSourceType:
+    def GetEvent(self, name):
+        return _EventInfo(name)
+
+
+class _EventSource:
+    def GetType(self):
+        return _EventSourceType()
+
+
+class _Application(_EventSource):
     def __init__(self):
         self.DocumentChanged = _EventHook()
         self.DocumentClosed = _EventHook()
         self.DocumentOpened = _EventHook()
 
 
-class _UIApplication:
+class _UIApplication(_EventSource):
     def __init__(self):
         self.ViewActivated = _EventHook()
         self.SelectionChanged = _EventHook()
