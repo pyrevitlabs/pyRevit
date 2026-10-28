@@ -397,6 +397,24 @@
             <param name="setError">If true, call <c>Exceptions.SetError</c> with the reason for failure.</param>
             <returns>True on success</returns>
         </member>
+        <member name="M:Python.Runtime.Converter.ToManagedTruthy(Python.Runtime.BorrowedReference,System.Type,System.Object@,System.Boolean)">
+            <summary>
+            Like <see cref="M:Python.Runtime.Converter.ToManaged(Python.Runtime.BorrowedReference,System.Type,System.Object@,System.Boolean)"/>, but a
+            <see cref="T:System.Boolean"/> or <see cref="T:System.Nullable`1"/> target also accepts any Python
+            object and converts it by truthiness, as IronPython does.
+            </summary>
+            <remarks>
+            Used where the target type is fixed: property and field assignment and delegate
+            return values. Method arguments use it only after no overload matched strictly, so a
+            <see cref="T:System.Boolean"/> overload never wins over an overload that takes the value itself.
+            </remarks>
+        </member>
+        <member name="M:Python.Runtime.Converter.AllowTruthyBooleans">
+            <summary>
+            Lets <see cref="T:System.Boolean"/> targets accept any Python object by truthiness on this thread
+            until the returned scope is disposed.
+            </summary>
+        </member>
         <member name="M:Python.Runtime.Converter.ToManagedExplicit(Python.Runtime.BorrowedReference,System.Type,System.Object@)">
             <remarks>
             Unlike <see cref="M:Python.Runtime.Converter.ToManaged(Python.Runtime.BorrowedReference,System.Type,System.Object@,System.Boolean)"/>,
