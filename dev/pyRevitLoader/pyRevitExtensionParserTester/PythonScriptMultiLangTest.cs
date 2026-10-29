@@ -1,5 +1,6 @@
 using pyRevitExtensionParser;
 using pyRevitExtensionParserTest;
+using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
 using static pyRevitExtensionParser.ExtensionParser;
 
@@ -119,41 +120,28 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void TestPythonScriptWithSimpleStringTitle()
         {
-            // Test existing button: "Test Persistent Engine" has script with simple string __title__
-            // Script contains: __title__ = "Test Persistent Engine (NonModal)"
-
-            // Parse the extension
-            var extensions = ParseInstalledExtensions(new[] { _extensionPath });
-
-            Assert.AreEqual(1, extensions.Count());
-            var extension = extensions.First();
-
-            // Find the "Test Persistent Engine" component using recursive search
-            var button = FindComponentRecursively(extension, "TestPersistentEngine");
-
-            if (button == null)
+            var tempDir = Path.Combine(Path.GetTempPath(), $"pyRevitTest_{Guid.NewGuid():N}");
+            try
             {
-                button = FindComponentRecursively(extension, "Test Persistent Engine");
-            }
+                var extensionPath = TestExtensionBuilder.CreateMinimalExtension(
+                    tempDir,
+                    "SimpleTitle",
+                    buttonName: "SimpleTitleButton",
+                    scriptContent: "__title__ = \"Simple Script Title\"\n");
 
-            if (button == null)
+                var extension = ParseInstalledExtensions(new[] { extensionPath }).Single();
+                var button = FindComponentRecursively(extension, "SimpleTitleButton");
+
+                Assert.IsNotNull(button, "SimpleTitleButton should be parsed");
+                Assert.AreEqual("Simple Script Title", button.Title);
+                Assert.IsTrue(button.LocalizedTitles == null || button.LocalizedTitles.Count == 0,
+                    "Simple string __title__ should not create localized titles collection");
+            }
+            finally
             {
-                Assert.Inconclusive("Test Persistent Engine button not found. This test validates simple string __title__ parsing.");
-                return;
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, recursive: true);
             }
-
-            TestContext.Out.WriteLine($"Found button: {button.Name} ({button.DisplayName})");
-            TestContext.Out.WriteLine($"Title: {button.Title}");
-            TestContext.Out.WriteLine($"LocalizedTitles: {button.LocalizedTitles?.Count ?? 0}");
-
-            // Verify simple string title still works (backward compatibility)
-            Assert.IsNotEmpty(button.Title, "Button should have a title");
-
-            // LocalizedTitles should be null or empty for simple strings
-            Assert.IsTrue(button.LocalizedTitles == null || button.LocalizedTitles.Count == 0,
-                "Simple string __title__ should not create localized titles collection");
-
-            Assert.Pass("Simple string __title__ parsing validated successfully.");
         }
 
         [Test]
