@@ -8,13 +8,7 @@ from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
 
 
-from System.Windows import Window  # Used for cancel button
-from rpw.ui.forms import FlexForm, Label, Separator, Button  # RPW
-from rpw.ui.forms.flexform import (
-    RpwControlMixin,
-    Controls,
-)  # Used to create RadioButton
-
+from pyrevit import forms
 from pyrevit.coreutils import Timer  # Used for timing the check
 from datetime import timedelta  # Used for timing the check
 
@@ -44,39 +38,6 @@ def collect_cadinstances(active_view_only):
         return cadinstances
 
 
-# Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
-def cancel_clicked(sender, e):
-    window = Window.GetWindow(sender)
-    window.close()
-    script.exit()
-
-
-# Add radio button functionality to RPW Flexforms
-class RadioButton(RpwControlMixin, Controls.RadioButton):
-    """
-    Windows.Controls.RadioButton Wrapper
-
-    >>> RadioButton('Label')
-    """
-
-    def __init__(self, name, radio_text, default=False, **kwargs):
-        """
-        Args:
-            name (``str``): Name of control. Will be used to return value
-            radio_text (``str``): RadioButton label Text
-            default (``bool``): Sets IsChecked state [Default: False]
-            wpf_params (kwargs): Additional WPF attributes
-        """
-        self.Name = name
-        self.Content = radio_text
-        self.IsChecked = default
-        self.set_attrs(top_offset=0, **kwargs)
-
-    @property
-    def value(self):
-        return self.IsChecked
-
-
 def get_cad_site(cad_inst):
     """A CAD's location site cannot be got from the Shared Site parameter
     cad_inst.Name returns the site name with a 'location' prefix (language-specific, eg 'emplacement' in French)
@@ -84,28 +45,30 @@ def get_cad_site(cad_inst):
     return cad_inst.Name.replace("location", "-")
 
 
-def get_user_input():
-    """create RPW input FlexForm for user choice of collection mode (coll_mode) whole model or just active view"""
-    flexform_comp = [
-        Label(_t("CADAuditInstances")),
-        RadioButton(
-            "model", _t("CADAuditInProject"), True, GroupName="grp"
-        ),  # GroupName implemented in class through kwargs
-        RadioButton("active_view", _t("CADAuditInActiveView"), False, GroupName="grp"),
-        Separator(),
-        Button(_t("CADAuditCancel"), on_click=cancel_clicked),
-        Button(_t("CADAuditOK")),
-    ]
+class _CADAuditScopeWindow(forms.CommandSwitchWindow):
+    _binding_exclude = True
 
-    user_input = FlexForm(
-        _t("CADAuditTitle"), flexform_comp, Width=500, Height=200
-    )  # returns a FlexForm object
-    user_input.show()
-    user_input_dict = user_input.values  # This is a dictionary
-    if not user_input_dict:
+    def _setup(self, **kwargs):
+        super(_CADAuditScopeWindow, self)._setup(**kwargs)
+        self.Title = _t("CADAuditTitle")
+
+
+def get_user_input():
+    """Ask whether to audit only the active view instead of the whole model.
+
+    Returns:
+        bool: True for the active view only; exits the script when the user
+            cancels.
+    """
+    in_active_view = _t("CADAuditInActiveView")
+    choice = _CADAuditScopeWindow.show(
+        [_t("CADAuditInProject"), in_active_view],
+        message=_t("CADAuditInstances"),
+    )
+    if not choice:
         script.exit()
 
-    return user_input_dict
+    return choice == in_active_view
 
 
 def get_load_stat(cad, is_link):
@@ -151,7 +114,7 @@ def check_model(doc, output):
     output.set_title("CAD audit of model '{}'".format(doc.Title))
     output.set_width(1700)
 
-    coll_mode = get_user_input()["active_view"]
+    coll_mode = get_user_input()
 
     table_data = []  # store array for table formatted output
     row_head = [
@@ -183,7 +146,9 @@ def check_model(doc, output):
         for count, cad in enumerate(cad_instances, start=1):
             cad_id = cad.Id
             cad_is_link = cad.IsLinked
-            cad_name = cad.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
+            cad_name = cad.get_Parameter(
+                DB.BuiltInParameter.IMPORT_SYMBOL_NAME
+            ).AsString()
 
             table_row = [
                 count,
