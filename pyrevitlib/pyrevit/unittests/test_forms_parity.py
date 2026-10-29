@@ -1487,6 +1487,53 @@ class EventParityTests(unittest.TestCase):
         self.assertEqual([True, False], observed)
         self.assertEqual(["closing", "closing"], window.seen)
 
+    def test_hide_in_handler_keeps_callbacks_across_show_dialog(self):
+        """A handler that hides a modal window can show it again with live handlers.
+
+        Used by tools that hide their dialog for a Revit pick and then call
+        ``show_dialog`` again.
+        """
+
+        class PickingWindow(_XamlWindow):
+            def __init__(self):
+                _XamlWindow.__init__(self, '<Button x:Name="pick_b" Click="pick"/>')
+
+            def pick(self, sender, args):
+                self.seen.append("pick")
+                self.Hide()
+
+        window = PickingWindow()
+        native = _native(window)
+        failures = []
+        timer = framework.Threading.DispatcherTimer()
+        timer.Interval = framework.System.TimeSpan.FromMilliseconds(30)
+
+        def tick(sender, args):
+            if not native.IsVisible:
+                return
+            timer.Stop()
+            try:
+                _click(window.pick_b)
+            except Exception as error:
+                failures.append(error)
+            finally:
+                if native.IsVisible:
+                    native.Hide()
+
+        timer.Tick += tick
+        try:
+            for _ in range(2):
+                timer.Start()
+                window.ShowDialog()
+            _click(window.pick_b)
+        finally:
+            timer.Stop()
+            timer.Tick -= tick
+            window.Close()
+        if failures:
+            raise failures[0]
+        self.assertEqual(["pick", "pick", "pick"], window.seen)
+
     def test_handler_exception_policy(self):
         """A failing XAML handler surfaces as IronPython surfaces it.
 
