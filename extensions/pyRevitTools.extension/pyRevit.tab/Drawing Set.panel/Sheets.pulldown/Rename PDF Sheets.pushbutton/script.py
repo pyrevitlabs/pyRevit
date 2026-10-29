@@ -212,7 +212,6 @@ for pdf_file in pdf_files:
         print("  -> {}".format(e))
         continue
 
-    # Preserve the original extension and directory.
     target = op.join(
         op.dirname(pdf_file),
         "{}{}".format(new_stem, op.splitext(pdf_file)[1])
