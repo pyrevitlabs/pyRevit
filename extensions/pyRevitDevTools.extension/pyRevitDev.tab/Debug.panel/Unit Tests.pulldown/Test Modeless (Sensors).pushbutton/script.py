@@ -27,12 +27,13 @@ class SensorGroup(forms.Reactive):
 
 
 class Sensor(forms.Reactive):
-    def __init__(self, header, value="", has_progress=False):
+    def __init__(self, header, value="", has_progress=False, category_id=None):
         self._header = header
         self._value = value
         self._has_progress = has_progress
-        self._progress = 0
-        self._progress_max = 1
+        self._progress = 0.0
+        self._progress_max = 1.0
+        self.category_id = category_id
 
     @forms.reactive
     def header(self):
@@ -71,6 +72,20 @@ class Sensor(forms.Reactive):
         self._has_progress = value
 
 
+def _count_by_category(elements):
+    get_elementid_value = revit.query.get_elementid_value_func()
+    counts = {}
+    for element in elements:
+        if isinstance(element, DB.ElementType):
+            continue
+        category = element.Category
+        if category is None:
+            continue
+        category_id = get_elementid_value(category.Id)
+        counts[category_id] = counts.get(category_id, 0) + 1
+    return counts
+
+
 class NonModalWindow(forms.WPFWindow):
     def __init__(self):
         pass
@@ -100,17 +115,23 @@ class NonModalWindow(forms.WPFWindow):
             elements = revit.query.get_all_elements(doc=revit.doc)
             count = len(elements)
             self.doc_elmnts_snsr.value = str(count)
-            self.doc_elmnts_snsr.progress = count
+            self.doc_elmnts_snsr.progress = float(count)
 
-            self.dispatch(self.update_category_sensors, self.cat_snsrs.sensors, count)
+            self.update_category_sensors(
+                self.cat_snsrs.sensors, _count_by_category(elements), count
+            )
         else:
             self.doc_title_snsr.value = "N/A"
             self.doc_elmnts_snsr.value = 0
 
     def make_category_sensors(self):
+        get_elementid_value = revit.query.get_elementid_value_func()
         sensors = []
         for cat in revit.query.get_doc_categories(doc=revit.doc, include_subcats=False):
-            sensors.append(Sensor(cat.Name, has_progress=True))
+            category_id = None
+            if revit.query.get_builtincategory(cat, doc=revit.doc):
+                category_id = get_elementid_value(cat.Id)
+            sensors.append(Sensor(cat.Name, has_progress=True, category_id=category_id))
         return sensors
 
     def sort_category_sensors_list(self):
@@ -118,18 +139,14 @@ class NonModalWindow(forms.WPFWindow):
             self.cat_snsrs.sensors, key=lambda x: x.progress, reverse=True
         )
 
-    def update_category_sensors(self, sensors, max_count):
+    def update_category_sensors(self, sensors, counts, max_count):
         for sensor in sensors:
-            bicat = revit.query.get_builtincategory(sensor.header, doc=revit.doc)
-            if bicat:
-                elements = revit.query.get_elements_by_categories(
-                    [bicat], doc=revit.doc
-                )
-                count = len(elements)
+            if sensor.category_id is not None:
+                count = counts.get(sensor.category_id, 0)
                 sensor.value = count
-                sensor.progress = count
-                sensor.progress_max = max_count
-        self.dispatch(self.sort_category_sensors_list)
+                sensor.progress = float(count)
+                sensor.progress_max = float(max_count)
+        self.sort_category_sensors_list()
 
     def window_moving(self, sender, args):
         if args.ChangedButton == Input.MouseButton.Left:
