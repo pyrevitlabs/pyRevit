@@ -194,16 +194,18 @@ class Window(_Root):
     def ShowDialog(self):
         """Run the modal dialog and release its Python callbacks once it closes.
 
-        An error raised by a callback while the dialog runs leaves
-        ``ShowDialog`` as it does under IronPython; a window WPF leaves open
-        then keeps its callbacks until it closes.
+        A window that is only hidden, for example by a handler that calls
+        ``Hide`` to let the user pick elements before showing it again, keeps
+        its callbacks, as under IronPython. An error raised by a callback while
+        the dialog runs leaves ``ShowDialog`` as it does under IronPython; a
+        window WPF leaves open then keeps its callbacks until it closes.
         """
         state = _state(self)
         window = state.root
         try:
             return window.ShowDialog()
         finally:
-            if state.closed or not window.IsVisible:
+            if state.closed or not window.IsLoaded:
                 _release(state)
 
     def Close(self):
