@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+
+        <PermitDeploy>true</PermitDeploy>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+        <PackageReference Include="IronPython" Version="3.4.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.PythonNet"
+                   HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll"
+                   Private="true"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\..\..\..\pyrevitlib\pyrevit\coreutils\envvars.py"
+              Link="Sources\envvars.py"
+              CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="..\..\..\..\release\cengines\CPY3123\**\*"
+                 LinkBase="CPY3123"
+                 CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+</Project>

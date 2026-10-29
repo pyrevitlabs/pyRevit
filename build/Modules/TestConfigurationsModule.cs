@@ -12,9 +12,10 @@ namespace Build.Modules;
 [DependsOn<BuildRunnersModule>]
 [DependsOn<BuildShellModule>]
 /// <summary>
-/// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, renderer
-/// load-context, <c>pyrevit.forms</c> engine parity, and compatibility tests after their build
-/// outputs are available, plus the Python 3 compatibility checker's own unit tests.
+/// Runs configuration backend, CPython interpreter lifecycle, CPython env vars, agent runtime
+/// guard, renderer load-context, <c>pyrevit.forms</c> engine parity, and compatibility tests
+/// after their build outputs are available, plus the Python 3 compatibility checker's own unit
+/// tests.
 /// </summary>
 /// <remarks>
 /// The checker tests need a <c>python</c> 3 interpreter on <c>PATH</c>. The forms tests show real
@@ -43,6 +44,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
         await RunTestsAsync(
             context,
             PyRevitPaths.CPythonRuntimeTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.EnvVarsRuntimeTestProject,
             configuration,
             [],
             cancellationToken);
