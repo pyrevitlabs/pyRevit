@@ -7,6 +7,7 @@ from pyrevit import revit, DB, UI
 from pyrevit.runtime import types as runtime_types
 from pyrevit.framework import Input
 from pyrevit import script
+from pyrevit.compat import get_elementid_value_func
 
 
 logger = script.get_logger()
@@ -71,6 +72,22 @@ class Sensor(forms.Reactive):
         self._has_progress = value
 
 
+def count_instances_by_category(elements):
+    """Count non-type elements per category id value.
+
+    Matches one ``revit.query.get_elements_by_categories`` call per category.
+    """
+    get_elementid_value = get_elementid_value_func()
+    counts = {}
+    for element in elements:
+        category = element.Category
+        if category is None or isinstance(element, DB.ElementType):
+            continue
+        key = get_elementid_value(category.Id)
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 class NonModalWindow(forms.WPFWindow):
     def __init__(self):
         pass
@@ -102,7 +119,7 @@ class NonModalWindow(forms.WPFWindow):
             self.doc_elmnts_snsr.value = str(count)
             self.doc_elmnts_snsr.progress = count
 
-            self.dispatch(self.update_category_sensors, self.cat_snsrs.sensors, count)
+            self.update_category_sensors(self.cat_snsrs.sensors, elements, count)
         else:
             self.doc_title_snsr.value = "N/A"
             self.doc_elmnts_snsr.value = 0
@@ -118,18 +135,16 @@ class NonModalWindow(forms.WPFWindow):
             self.cat_snsrs.sensors, key=lambda x: x.progress, reverse=True
         )
 
-    def update_category_sensors(self, sensors, max_count):
+    def update_category_sensors(self, sensors, elements, max_count):
+        counts = count_instances_by_category(elements)
         for sensor in sensors:
             bicat = revit.query.get_builtincategory(sensor.header, doc=revit.doc)
             if bicat:
-                elements = revit.query.get_elements_by_categories(
-                    [bicat], doc=revit.doc
-                )
-                count = len(elements)
+                count = counts.get(int(bicat), 0)
                 sensor.value = count
                 sensor.progress = count
                 sensor.progress_max = max_count
-        self.dispatch(self.sort_category_sensors_list)
+        self.sort_category_sensors_list()
 
     def window_moving(self, sender, args):
         if args.ChangedButton == Input.MouseButton.Left:
