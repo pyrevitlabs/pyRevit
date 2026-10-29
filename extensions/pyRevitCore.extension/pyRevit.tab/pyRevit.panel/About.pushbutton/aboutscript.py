@@ -3,6 +3,8 @@
 import sys
 
 from pyrevit import versionmgr
+from pyrevit.compat import IRONPY
+from pyrevit.coreutils import envvars
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
@@ -10,6 +12,32 @@ from pyrevit import script
 from pyrevit.userconfig import user_config
 
 logger = script.get_logger()
+
+
+def _format_engine_version(code):
+    code = str(code or "").strip()
+    parts = code.split(".")
+    if len(parts) > 1 and all(part.isdigit() for part in parts):
+        return ".".join(parts[:3])
+    if code.isdigit() and len(code) >= 3:
+        return ".".join([code[0], code[1], code[2:]])
+    return "unknown"
+
+
+def _attached_ironpython_code():
+    try:
+        attachment = user_config.get_current_attachment()
+        if attachment and attachment.Engine:
+            return attachment.Engine.Version
+    except Exception as attach_ex:
+        logger.debug("Error getting attached engine: %s", attach_ex)
+    return envvars.get_pyrevit_env_var(envvars.IPYVERSION_ENVVAR)
+
+
+def _ironpython_version():
+    if IRONPY:
+        return sys.version.split("(")[0].strip()
+    return _format_engine_version(_attached_ironpython_code())
 
 
 class AboutWindow(forms.WPFWindow):
@@ -55,7 +83,7 @@ class AboutWindow(forms.WPFWindow):
         cpyver = user_config.get_active_cpython_engine()
         if cpyver:
             self.pyrevit_engine.Text = self.get_locale_string("pyRevit.Engine").format(
-                sys.version.split("(")[0].strip(), cpyver.Version
+                _ironpython_version(), cpyver.Version
             )
 
         if __cachedengine__:
