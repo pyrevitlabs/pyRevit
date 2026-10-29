@@ -1,8 +1,10 @@
-"""Names IronPython's ``pyrevit.forms`` exported before the engine split.
+"""IronPython-only names ``pyrevit.forms`` exported before the engine split.
 
 Only the IronPython facade (``_ipy_legacy``) exports them. Under CPython,
-``pyrevit.forms`` reports those not in ``_common.__all__`` as unsupported
-features rather than as missing attributes.
+``pyrevit.forms`` reports them as unsupported features rather than as missing
+attributes: ``wpf`` and ``pyevent`` are IronPython modules, and ``Autodesk`` is
+the namespace IronPython binds by importing the InfoCenter classes. Every
+engine-neutral pre-split export lives in ``_common.__all__`` instead.
 
 Note:
     ``LEGACY_EXPORTS`` must stay a literal list; tooling reads it without
@@ -10,61 +12,7 @@ Note:
 """
 
 LEGACY_EXPORTS = [
-    "AdWindows",
     "Autodesk",
-    "BIN_DIR",
-    "CPDialogs",
-    "Common",
-    "ComponentModel",
-    "Controls",
-    "DB",
-    "DEFAULT_CMDSWITCHWND_WIDTH",
-    "DEFAULT_INPUTWINDOW_HEIGHT",
-    "DEFAULT_INPUTWINDOW_WIDTH",
-    "DEFAULT_RECOGNIZE_ACCESS_KEY",
-    "DEFAULT_SEARCHWND_HEIGHT",
-    "DEFAULT_SEARCHWND_WIDTH",
-    "DOCS",
-    "Documents",
-    "EXEC_PARAMS",
-    "Forms",
-    "HOST_APP",
-    "IRONPY",
-    "Input",
-    "Interop",
-    "Media",
-    "ObservableCollection",
-    "OrderedDict",
-    "PyRevitCPythonNotSupported",
-    "PyRevitException",
-    "ResourceDictionary",
-    "System",
-    "THEME_XAML_FILE",
-    "Threading",
-    "UI",
-    "Uri",
-    "UriKind",
-    "colors",
-    "coreutils",
-    "datetime",
-    "envvars",
-    "framework",
-    "get_elementid_value_func",
-    "get_logger",
-    "mlogger",
-    "op",
-    "os",
     "pyevent",
-    "re",
-    "revit",
-    "safe_strtype",
-    "string",
-    "sys",
-    "threading",
-    "toaster",
-    "user_config",
-    "utils",
-    "versionmgr",
-    "webbrowser",
     "wpf",
 ]

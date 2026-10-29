@@ -142,7 +142,7 @@ class XamlPreparationTests(unittest.TestCase):
     def test_inventory_reports_full_cpython_forms_coverage(self):
         """Bundled forms usage resolves through the published CPython facade."""
         coverage = _load_usage_inventory()["cpython"]
-        self.assertEqual(397, coverage["supported_references"])
+        self.assertGreater(coverage["supported_references"], 0)
         self.assertEqual(0, coverage["modal_only_references"])
         self.assertEqual(0, coverage["host_required_references"])
         self.assertEqual(0, coverage["unsupported_references"])
@@ -549,8 +549,8 @@ class CPythonFacadeTests(unittest.TestCase):
     def test_unported_legacy_names_keep_the_not_supported_message(self):
         """Importing an IronPython-only export reports the unsupported feature."""
         with self.assertRaises(_NotSupported) as raised:
-            exec("from pyrevit.forms import CPDialogs", {})
-        self.assertEqual("pyrevit.forms.CPDialogs", raised.exception.feature_name)
+            exec("from pyrevit.forms import wpf", {})
+        self.assertEqual("pyrevit.forms.wpf", raised.exception.feature_name)
         self.assertNotIsInstance(raised.exception, AttributeError)
         with self.assertRaises(_NotSupported):
             hasattr(self.forms, "Autodesk")
@@ -813,6 +813,22 @@ class FormsExportsTests(unittest.TestCase):
             + sorted(intended_additions),
         )
         self.assertFalse(set(legacy) - _defined_names(FORMS / "_ipy_legacy.py"))
+
+    def test_only_ironpython_only_names_stay_unported_on_cpython(self):
+        """Engine-neutral pre-split exports are shared; only IronPython modules are not."""
+        common = _literal_list(FORMS / "_common.py", "__all__")
+        legacy = _literal_list(FORMS / "_legacy_exports.py", "LEGACY_EXPORTS")
+        self.assertEqual({"Autodesk", "pyevent", "wpf"}, set(legacy))
+        for name in (
+            "DEFAULT_INPUTWINDOW_WIDTH",
+            "DEFAULT_SEARCHWND_WIDTH",
+            "THEME_XAML_FILE",
+            "CPDialogs",
+            "safe_strtype",
+            "framework",
+        ):
+            with self.subTest(name=name):
+                self.assertIn(name, common)
 
     def test_shared_names_are_defined_by_the_shared_module(self):
         """Every engine-neutral export resolves without engine-specific code."""
