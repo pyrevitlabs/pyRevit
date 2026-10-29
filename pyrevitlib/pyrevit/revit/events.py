@@ -343,6 +343,11 @@ def execute_in_revit_context(func, *args, **kwargs):
         *args: Positional arguments to pass to the function
         **kwargs: Keyword arguments to pass to the function
 
+    Returns:
+        (bool): True when the callback was queued; False when the
+            ExternalEvent could not be created or raised, in which case the
+            callback never runs.
+
     Example:
         ```python
         # Simple function call
@@ -399,7 +404,7 @@ def execute_in_revit_context(func, *args, **kwargs):
     _ext_event = _get_execute_extevent()
     if _ext_event is None:
         mlogger.error("Could not create ExternalEvent; scheduled callback will not run")
-        return
+        return False
 
     _HANDLER.schedule(_wrapper)
     try:
@@ -414,8 +419,11 @@ def execute_in_revit_context(func, *args, **kwargs):
                     response
                 )
             )
+            return False
     except Exception as ex:
         _HANDLER.discard(_wrapper)
         mlogger.error(
             "Could not schedule callback through ExternalEvent: {}".format(ex)
         )
+        return False
+    return True

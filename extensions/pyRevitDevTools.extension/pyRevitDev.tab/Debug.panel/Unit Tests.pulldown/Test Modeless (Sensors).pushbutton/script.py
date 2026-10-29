@@ -7,7 +7,6 @@ from pyrevit import revit, DB, UI
 from pyrevit.runtime import types as runtime_types
 from pyrevit.framework import Input
 from pyrevit import script
-from pyrevit.compat import get_elementid_value_func
 
 
 logger = script.get_logger()
@@ -125,17 +124,24 @@ class NonModalWindow(forms.WPFWindow):
         ui.schedule_update()
 
     def schedule_update(self):
-        """Queue one ``update_ui`` for when Revit is idle.
+        """Queue one coalesced ``update_ui`` through an ExternalEvent.
 
         Note:
             Event handlers must not refresh synchronously: a refresh counts
             every category and would block Revit on each model change. Events
-            raised before the queued refresh runs share that one refresh.
+            raised before the queued refresh runs share that one refresh. A
+            refresh that could not be queued leaves the next event free to
+            queue again.
         """
         if self._update_scheduled or self._closed:
             return
         self._update_scheduled = True
-        revit.events.execute_in_revit_context(_refresh_scheduled_update)
+        queued = False
+        try:
+            queued = revit.events.execute_in_revit_context(_refresh_scheduled_update)
+        finally:
+            if not queued:
+                self._update_scheduled = False
 
     def _run_scheduled_update(self):
         self._update_scheduled = False
@@ -155,16 +161,9 @@ class NonModalWindow(forms.WPFWindow):
             self.doc_elmnts_snsr.value = 0
 
     def make_category_sensors(self):
-        get_elementid_value = get_elementid_value_func()
-        builtin_values = set(
-            int(bicat) for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory)
-        )
         sensors = []
         for cat in revit.query.get_doc_categories(doc=revit.doc, include_subcats=False):
-            category_id = None
-            if get_elementid_value(cat.Id) in builtin_values:
-                category_id = cat.Id
-            sensors.append(Sensor(cat.Name, has_progress=True, category_id=category_id))
+            sensors.append(Sensor(cat.Name, has_progress=True, category_id=cat.Id))
         return sensors
 
     def sort_category_sensors_list(self):
@@ -173,6 +172,18 @@ class NonModalWindow(forms.WPFWindow):
         )
 
     def update_category_sensors(self, sensors, max_count):
+        """Count instances per category sensor and re-sort by count.
+
+        Args:
+            sensors: Category sensors to refresh; sensors without a
+                ``category_id`` are skipped.
+            max_count: Document-wide element count used as every sensor's
+                ``progress_max``.
+
+        Note:
+            Uses ``FilteredElementCollector``, so it must run in Revit API
+            context.
+        """
         for sensor in sensors:
             if sensor.category_id is not None:
                 count = _count_category_instances(revit.doc, sensor.category_id)
