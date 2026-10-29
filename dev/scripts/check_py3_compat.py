@@ -46,6 +46,8 @@ Checks:
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
 NameError/ImportError fallback (the name-shim and import-fallback patterns).
+CLR-NAMED-INDEXER targets CPython instead, so it is skipped only in ``if``
+branches that cannot execute on CPython (``if IRONPY:``, else of ``if PY3:``).
 """
 
 import argparse
@@ -110,6 +112,13 @@ IPY3_FLAG_VALUES = {
     "IRONPY": True,
     "IRONPY2": False,
     "IRONPY3": True,
+}
+CPYTHON_FLAG_VALUES = {
+    "PY2": False,
+    "PY3": True,
+    "IRONPY": False,
+    "IRONPY2": False,
+    "IRONPY3": False,
 }
 
 # Builtins removed in Python 3. Flagged only when CALLED, and skipped when the
@@ -213,17 +222,23 @@ def _receiver_name(node):
     return None
 
 
-def _ipy3_condition_value(node):
-    """Resolve an engine condition when its value is certain on IronPython 3."""
+def _ipy3_condition_value(node, flag_values=IPY3_FLAG_VALUES):
+    """Resolve an engine condition when its value is certain on one engine.
+
+    ``flag_values`` names that engine; IronPython 3 by default. A flag read
+    off a module (``compat.IRONPY``) resolves like the bare name.
+    """
     if isinstance(node, ast.Name):
-        return IPY3_FLAG_VALUES.get(node.id)
+        return flag_values.get(node.id)
+    if isinstance(node, ast.Attribute):
+        return flag_values.get(node.attr)
     if isinstance(node, ast.Constant) and isinstance(node.value, bool):
         return node.value
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-        value = _ipy3_condition_value(node.operand)
+        value = _ipy3_condition_value(node.operand, flag_values)
         return None if value is None else not value
     if isinstance(node, ast.BoolOp):
-        values = [_ipy3_condition_value(value) for value in node.values]
+        values = [_ipy3_condition_value(value, flag_values) for value in node.values]
         if isinstance(node.op, ast.And):
             if False in values:
                 return False
@@ -262,6 +277,25 @@ def _is_engine_guarded(node, parents):
                     {"NameError", "ImportError"} & set(_names_in(handler.type))
                 ):
                     return True
+        current = parent
+    return False
+
+
+def _is_cpython_unreachable(node, parents):
+    """Return True when an ``if`` engine guard keeps a branch off CPython.
+
+    Separate from the IronPython 3 guard: ``if IRONPY:`` is reachable on
+    IronPython 3 but never on CPython, so CPython-only rules must not reuse it.
+    """
+    current = node
+    while current in parents:
+        parent = parents[current]
+        if isinstance(parent, ast.If):
+            value = _ipy3_condition_value(parent.test, CPYTHON_FLAG_VALUES)
+            if value is False and current in parent.body:
+                return True
+            if value is True and current in parent.orelse:
+                return True
         current = parent
     return False
 
@@ -566,7 +600,11 @@ def check_file(path):
                 )
             )
 
-        elif isinstance(node, ast.Subscript) and _is_named_indexer(node.value):
+        elif (
+            isinstance(node, ast.Subscript)
+            and _is_named_indexer(node.value)
+            and not _is_cpython_unreachable(node, parents)
+        ):
             findings.append(
                 Finding(
                     path,
