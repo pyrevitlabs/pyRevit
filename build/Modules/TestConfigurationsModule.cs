@@ -13,10 +13,13 @@ namespace Build.Modules;
 [DependsOn<BuildShellModule>]
 /// <summary>
 /// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, renderer
-/// load-context, and compatibility tests after their build outputs are available, plus the
-/// Python 3 compatibility checker's own unit tests.
+/// load-context, <c>pyrevit.forms</c> engine parity, and compatibility tests after their build
+/// outputs are available, plus the Python 3 compatibility checker's own unit tests.
 /// </summary>
-/// <remarks>The checker tests need a <c>python</c> 3 interpreter on <c>PATH</c>.</remarks>
+/// <remarks>
+/// The checker tests need a <c>python</c> 3 interpreter on <c>PATH</c>. The forms tests show real
+/// WPF windows, so the runner must have a desktop session.
+/// </remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -65,6 +68,28 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.FormsBindingTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.FormsTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        foreach (var engine in new[] { "IPY2712PR", "IPY342" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.FormsIronPythonTestProject,
+                configuration,
+                [$"-p:IronPythonVersion={engine}"],
+                cancellationToken);
+
         foreach (var engine in new[] { "IPY2712PR", "IPY342" })
             await RunTestsAsync(
                 context,
@@ -99,7 +124,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "-f",
                 "net8.0-windows",
                 "--filter",
-                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests",
+                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~ParsedBundleTests|FullyQualifiedName~StartupScriptTests",
             ],
             cancellationToken);
 
