@@ -7,9 +7,9 @@ reference drops, hiding the leak, so the tests keep every `zipfile.ZipFile`
 xlrd creates alive for the duration of the test, as IronPython effectively does.
 
 `xl.py` is loaded by path because importing the `pyrevit` package needs a Revit
-host. The vendored xlrd and xlsxwriter are taken from the repo's `site-packages`,
-appended to `sys.path` so the stdlib backports vendored there do not shadow the
-real stdlib.
+host. The vendored xlrd and xlsxwriter are loaded by path from the repo's
+`site-packages` rather than through `sys.path`, so neither an installed copy nor
+the stdlib backports vendored there can stand in for them.
 """
 
 import importlib.util
@@ -25,11 +25,24 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 SITE_PACKAGES = os.path.join(REPO_ROOT, "site-packages")
 XL_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "interop", "xl.py")
 
-if SITE_PACKAGES not in sys.path:
-    sys.path.append(SITE_PACKAGES)
 
-import xlrd  # noqa: E402
-import xlsxwriter  # noqa: E402
+def _load_vendored_package(name):
+    for loaded in [key for key in sys.modules if key.split(".")[0] == name]:
+        del sys.modules[loaded]
+    package_dir = os.path.join(SITE_PACKAGES, name)
+    spec = importlib.util.spec_from_file_location(
+        name,
+        os.path.join(package_dir, "__init__.py"),
+        submodule_search_locations=[package_dir],
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+xlrd = _load_vendored_package("xlrd")
+xlsxwriter = _load_vendored_package("xlsxwriter")
 
 
 def _load_xl():
@@ -51,7 +64,10 @@ class _RetainedZipFile(zipfile.ZipFile):
 
 
 class LoadReleasesWorkbookTests(unittest.TestCase):
+    """Check workbook data and file release while ZIP objects stay alive."""
+
     def setUp(self):
+        """Write a small workbook and retain every ZipFile xlrd opens."""
         self.tempdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tempdir, True)
         self.xlfile = os.path.join(self.tempdir, "data.xlsx")
@@ -73,13 +89,23 @@ class LoadReleasesWorkbookTests(unittest.TestCase):
             zf.close()
         _RetainedZipFile.instances = []
 
+    def test_vendored_libraries_are_under_test(self):
+        """Exercise the repo's vendored xlrd and xlsxwriter, not installed copies."""
+        for module in (xlrd, xlsxwriter, xl.xlrd, xl.xlsxwriter, xlrd.book):
+            self.assertTrue(
+                os.path.abspath(module.__file__).startswith(SITE_PACKAGES + os.sep),
+                module.__file__,
+            )
+
     def test_load_reads_the_workbook(self):
+        """Read headers and rows from the workbook."""
         data = xl.load(self.xlfile)
 
         self.assertEqual(data["Sheet1"]["headers"], ["name", "count"])
         self.assertEqual(data["Sheet1"]["rows"], [["walls", 3.0]])
 
     def test_workbook_can_be_renamed_right_after_load(self):
+        """Release the file so it can be renamed right after loading."""
         xl.load(self.xlfile)
 
         renamed = os.path.join(self.tempdir, "renamed.xlsx")
@@ -88,6 +114,7 @@ class LoadReleasesWorkbookTests(unittest.TestCase):
         self.assertTrue(os.path.exists(renamed))
 
     def test_workbook_can_be_deleted_right_after_load(self):
+        """Release the file so it can be deleted right after loading."""
         xl.load(self.xlfile)
 
         os.remove(self.xlfile)
