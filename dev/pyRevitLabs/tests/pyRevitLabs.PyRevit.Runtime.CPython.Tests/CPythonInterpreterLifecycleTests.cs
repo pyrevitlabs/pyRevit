@@ -69,6 +69,42 @@ public class CPythonInterpreterLifecycleTests {
     }
 
     /// <summary>
+    /// A class whose CLR type pythonnet generates still runs the class-creation protocol of
+    /// <c>type.__new__</c>, with or without a <c>__namespace__</c>: descriptors such as
+    /// <c>functools.cached_property</c> receive <c>__set_name__</c>, and the parent's
+    /// <c>__init_subclass__</c> runs with the class keywords.
+    /// </summary>
+    [Fact]
+    public void GeneratedClassTypes_RunTheClassCreationProtocol() {
+        string? record = InterpreterLifecycleProbe.Record.ClassCreationHooks;
+
+        Assert.Equal("10|9|HookedChild|HookedChild:child|cached", record);
+    }
+
+    /// <summary>
+    /// Every CPython command runs as <c>__main__</c>, so an interface-only class's generated type
+    /// is keyed by the file that defines it too: same-named classes from two scripts get their own
+    /// types, and instances .NET creates run their own script's Python, while re-running one script
+    /// still reuses its type.
+    /// </summary>
+    [Fact]
+    public void InterfaceOnlyClassesFromDifferentScripts_NeverShareAType() {
+        string? record = InterpreterLifecycleProbe.Record.DefinitionSites;
+
+        Assert.Equal("False|True|1|2", record);
+    }
+
+    /// <summary>
+    /// pythonnet asks codecs whether they can decode outside its registry lock, so a codec that
+    /// runs Python, and with it lets the GIL go, cannot deadlock against another thread that holds
+    /// the GIL and converts a value of its own.
+    /// </summary>
+    [Fact]
+    public void CodecLookup_LetsOtherThreadsConvertWhileACodecRuns() {
+        Assert.True(InterpreterLifecycleProbe.Record.DecoderLookupLetOtherThreadsConvert);
+    }
+
+    /// <summary>
     /// Like IronPython, a <see cref="bool"/> or <see cref="Nullable{Boolean}"/> property, field,
     /// parameter or delegate return accepts any Python value by truthiness, while <c>None</c> stays
     /// null for <see cref="Nullable{Boolean}"/>. A <see cref="bool"/> overload never wins over one
