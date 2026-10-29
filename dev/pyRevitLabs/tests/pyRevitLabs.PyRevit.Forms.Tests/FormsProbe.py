@@ -203,8 +203,10 @@ assert not guarded.IsVisible
 assert guarded._pyrevit_backend.events.is_released
 assert guarded.was_closed
 
+optional_exports = {"CPDialogs"}
 for name in forms.__all__:
-    assert getattr(forms, name) is not None
+    assert name in optional_exports or getattr(forms, name) is not None, name
+    assert hasattr(forms, name), name
 
 
 class ProbePanel(forms.WPFPanel):
@@ -638,5 +640,18 @@ try:
     raise AssertionError("A Python-derived window loaded through the wpf shim")
 except Unsupported as error:
     assert "PythonDerivedWindow" in str(error)
+
+
+class PlainPythonView(object):
+    """A pure Python class, which has no CLR type to load XAML into."""
+
+
+try:
+    cpython_wpf.LoadComponent(
+        PlainPythonView(), StringReader("<Window {}/>".format(xaml_namespaces))
+    )
+    raise AssertionError("A pure Python object loaded through the wpf shim")
+except Unsupported as error:
+    assert "PlainPythonView" in str(error)
 
 print("CPython WPF forms probe passed")

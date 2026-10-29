@@ -29,7 +29,10 @@ from System.Xaml import (  # noqa: E402
 
 
 def _is_python_class(cls):
-    clr_type = clr.GetClrType(cls)
+    try:
+        clr_type = clr.GetClrType(cls)
+    except TypeError:
+        return True
     if clr_type.GetInterface("IPythonDerivedType") is not None:
         return True
     return cls.__module__ != clr_type.Namespace
@@ -48,7 +51,8 @@ def LoadComponent(target, source):  # noqa: N802
 
     Raises:
         PyRevitCPythonNotSupported: ``target`` is an instance of a Python
-            class, such as a ``Window`` or ``UserControl`` subclass.
+            class, either a pure Python class or one deriving from a WPF type
+            such as ``Window`` or ``UserControl``.
     """
     if _is_python_class(type(target)):
         from pyrevit import PyRevitCPythonNotSupported
