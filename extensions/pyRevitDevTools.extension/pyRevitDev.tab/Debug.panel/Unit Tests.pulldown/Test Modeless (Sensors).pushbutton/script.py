@@ -7,6 +7,7 @@ from pyrevit import revit, DB, UI
 from pyrevit.runtime import types as runtime_types
 from pyrevit.framework import Input
 from pyrevit import script
+from pyrevit.compat import get_elementid_value_func
 
 
 logger = script.get_logger()
@@ -27,12 +28,13 @@ class SensorGroup(forms.Reactive):
 
 
 class Sensor(forms.Reactive):
-    def __init__(self, header, value="", has_progress=False):
+    def __init__(self, header, value="", has_progress=False, category_id=None):
         self._header = header
         self._value = value
         self._has_progress = has_progress
         self._progress = 0
         self._progress_max = 1
+        self.category_id = category_id
 
     @forms.reactive
     def header(self):
@@ -85,17 +87,21 @@ def count_all_elements(doc):
     )
 
 
-def count_category_instances(doc, bicat):
+def count_category_instances(doc, category_id):
     """Count one category's non-type elements without wrapping each in Python.
 
     Matches ``revit.query.get_elements_by_categories`` for a single category.
     """
     return (
         DB.FilteredElementCollector(doc)
-        .OfCategory(bicat)
+        .OfCategoryId(category_id)
         .WhereElementIsNotElementType()
         .GetElementCount()
     )
+
+
+def _refresh_scheduled_update():
+    ui._run_scheduled_update()
 
 
 class NonModalWindow(forms.WPFWindow):
@@ -104,6 +110,8 @@ class NonModalWindow(forms.WPFWindow):
 
     def setup(self):
         # self.set_image_source(self.icon, 'sensors.png')
+        self._update_scheduled = False
+        self._closed = False
         self.doc_title_snsr = Sensor("Title")
         self.doc_elmnts_snsr = Sensor("Elements", has_progress=True)
         self.doc_snsrs = SensorGroup(
@@ -119,7 +127,25 @@ class NonModalWindow(forms.WPFWindow):
         # the decorator captures the function from the class and not from the
         # instance. so the capture function is not bound thus no 'self'
         # ui however is inside the context and still accessible
-        ui.update_ui()
+        ui.schedule_update()
+
+    def schedule_update(self):
+        """Queue one ``update_ui`` for when Revit is idle.
+
+        Note:
+            Event handlers must not refresh synchronously: a refresh counts
+            every category and would block Revit on each model change. Events
+            raised before the queued refresh runs share that one refresh.
+        """
+        if self._update_scheduled or self._closed:
+            return
+        self._update_scheduled = True
+        revit.events.execute_in_revit_context(_refresh_scheduled_update)
+
+    def _run_scheduled_update(self):
+        self._update_scheduled = False
+        if not self._closed:
+            self.update_ui()
 
     def update_ui(self):
         if revit.doc:
@@ -134,9 +160,16 @@ class NonModalWindow(forms.WPFWindow):
             self.doc_elmnts_snsr.value = 0
 
     def make_category_sensors(self):
+        get_elementid_value = get_elementid_value_func()
+        builtin_values = set(
+            int(bicat) for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory)
+        )
         sensors = []
         for cat in revit.query.get_doc_categories(doc=revit.doc, include_subcats=False):
-            sensors.append(Sensor(cat.Name, has_progress=True))
+            category_id = None
+            if get_elementid_value(cat.Id) in builtin_values:
+                category_id = cat.Id
+            sensors.append(Sensor(cat.Name, has_progress=True, category_id=category_id))
         return sensors
 
     def sort_category_sensors_list(self):
@@ -146,9 +179,8 @@ class NonModalWindow(forms.WPFWindow):
 
     def update_category_sensors(self, sensors, max_count):
         for sensor in sensors:
-            bicat = revit.query.get_builtincategory(sensor.header, doc=revit.doc)
-            if bicat:
-                count = count_category_instances(revit.doc, bicat)
+            if sensor.category_id is not None:
+                count = count_category_instances(revit.doc, sensor.category_id)
                 sensor.value = count
                 sensor.progress = count
                 sensor.progress_max = max_count
@@ -159,6 +191,7 @@ class NonModalWindow(forms.WPFWindow):
             self.DragMove()
 
     def window_closing(self, sender, args):  # pylint: disable=unused-argument
+        self._closed = True
         revit.events.stop_events()
 
 
