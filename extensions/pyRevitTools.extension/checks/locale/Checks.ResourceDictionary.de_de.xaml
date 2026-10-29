@@ -257,8 +257,6 @@ wie durch eine Wandtypliste in Revit definiert.</system:String>
     <system:String x:Key="CADAuditInstances">CAD-Instanzen prüfen:</system:String>
     <system:String x:Key="CADAuditInProject">in diesem Projekt</system:String>
     <system:String x:Key="CADAuditInActiveView">nur in der aktiven Ansicht</system:String>
-    <system:String x:Key="CADAuditCancel">ABBRECHEN</system:String>
-    <system:String x:Key="CADAuditOK">OK</system:String>
     <system:String x:Key="CADAuditTitle">Prüfung der CAD-Instanzen im aktuellen Projekt</system:String>
     <system:String x:Key="CADAuditNoInstances">Keine CAD-Instanzen gefunden</system:String>
     <system:String x:Key="CADAuditSelect">Auswählen</system:String>
