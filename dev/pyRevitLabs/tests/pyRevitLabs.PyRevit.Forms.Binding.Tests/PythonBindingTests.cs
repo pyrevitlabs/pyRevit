@@ -402,14 +402,13 @@ assert box.Items[1] == 'b'
     [Fact]
     public void AdapterHooksMapModelsBothWays() {
         Python(@"
-from System.Dynamic import ExpandoObject
-from PyRevitLabs.PyRevit.Forms.Binding import PythonBinding
+from PyRevitLabs.PyRevit.Forms.Binding import BindingModel, PythonBinding
 
 class Marked(object):
     pass
 
 marked = Marked()
-native = ExpandoObject()
+native = BindingModel.Create()
 models = {}
 
 def adapt(value):
@@ -426,6 +425,36 @@ try:
     plain = Item('p', 1)
     text.DataContext = plain
     assert text.DataContext is plain
+finally:
+    PythonBinding.Register(None, None)
+");
+    }
+
+    [Fact]
+    public void RegisteringConversionsAgainKeepsTheHooks() {
+        Python(@"
+from PyRevitLabs.PyRevit.Forms.Binding import BindingModel, PythonBinding
+
+class Marked(object):
+    pass
+
+marked = Marked()
+native = BindingModel.Create()
+models = {}
+
+def adapt(value):
+    if isinstance(value, Marked):
+        models[native] = value
+        return native
+    return None
+
+PythonBinding.Register(adapt, models.get)
+try:
+    PythonBinding.RegisterConversions()
+    text = Controls.TextBlock()
+    text.DataContext = marked
+    assert text.DataContext is marked
+    assert native in models
 finally:
     PythonBinding.Register(None, None)
 ");

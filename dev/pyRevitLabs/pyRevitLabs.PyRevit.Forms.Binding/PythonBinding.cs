@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using Python.Runtime;
 using Python.Runtime.Codecs;
 
@@ -13,8 +12,9 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The conversions are pythonnet codecs, so once registered they apply to every CPython
-    /// script in the process, not only to forms. They claim only the CLR targets
+    /// The conversions are pythonnet codecs, registered by the CPython engine before the first
+    /// script runs (see <see cref="RegisterConversions"/>), so they apply to every CPython script
+    /// in the process, not only to forms. They claim only the CLR targets
     /// <see cref="object"/> (plain class instances, namedtuples, and exact <c>int</c>s, which
     /// become <see cref="int"/> or <see cref="long"/> as under IronPython) and the non-generic
     /// <c>IEnumerable</c>, <c>IList</c> and <c>ICollection</c> (iterables other than strings),
@@ -26,6 +26,7 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// Important: every proxy member takes the GIL itself, because WPF reaches them on the UI
     /// thread while pythonnet has released the GIL around the CLR call that triggered WPF.
     /// A thread that holds the GIL while blocking on the UI thread deadlocks against them.
+    /// For the same reason the registration lock is never held while Python code runs.
     /// </para>
     /// </remarks>
     public static class PythonBinding {
@@ -106,7 +107,7 @@ def names(value):
         /// or <c>None</c> to use a <see cref="PythonObjectProxy"/>.
         /// </param>
         /// <param name="findModel">
-        /// Called with a <see cref="BindingModel"/> or <see cref="ExpandoObject"/> going back to Python; returns the Python
+        /// Called with a <see cref="BindingModel"/> going back to Python; returns the Python
         /// model it represents, or <c>None</c> to pass the managed object through.
         /// </param>
         /// <remarks>
@@ -124,20 +125,46 @@ def names(value):
                 lock (Gate) {
                     adaptHook = Callable(adapt);
                     modelHook = Callable(findModel);
-                    if (codec != null)
-                        return;
-                    helpers = PyModule.FromString("pyrevit_forms_binding", HelperSource);
-                    using (var builtins = Py.Import("builtins"))
-                        boolType = builtins.GetAttr("bool");
-                    codec = new PythonCodec();
-                    PyObjectConversions.RegisterDecoder(codec);
-                    PyObjectConversions.RegisterEncoder(codec);
-                    ListDecoder.Register();
-                    SequenceDecoder.Register();
-                    IterableDecoder.Register();
-                    PythonEngine.AddShutdownHandler(Reset);
                 }
+                InstallCodecs();
             }
+        }
+
+        /// <summary>
+        /// Installs the codecs once per interpreter without touching the hooks, so conversions
+        /// behave the same in every CPython script whether or not <c>pyrevit.forms</c> was imported.
+        /// </summary>
+        /// <remarks>
+        /// The CPython engine calls this once the interpreter is up, before any script runs;
+        /// <see cref="Register"/> repeats it as a fallback. Without hooks, plain Python objects
+        /// converted to <see cref="object"/> become <see cref="PythonObjectProxy"/>s.
+        /// </remarks>
+        public static void RegisterConversions() {
+            using (Py.GIL())
+                InstallCodecs();
+        }
+
+        private static void InstallCodecs() {
+            if (codec != null)
+                return;
+            var installedHelpers = PyModule.FromString("pyrevit_forms_binding", HelperSource);
+            PyObject installedBoolType;
+            using (var builtins = Py.Import("builtins"))
+                installedBoolType = builtins.GetAttr("bool");
+            var installed = new PythonCodec();
+            lock (Gate) {
+                if (codec != null)
+                    return;
+                helpers = installedHelpers;
+                boolType = installedBoolType;
+                codec = installed;
+            }
+            PyObjectConversions.RegisterDecoder(installed);
+            PyObjectConversions.RegisterEncoder(installed);
+            ListDecoder.Register();
+            SequenceDecoder.Register();
+            IterableDecoder.Register();
+            PythonEngine.AddShutdownHandler(Reset);
         }
 
         /// <summary>
@@ -338,8 +365,6 @@ def names(value):
                 case IPythonValue python:
                     return python.Source;
                 case BindingModel model:
-                    return FindModel(model) ?? PyObject.FromManagedObject(model);
-                case ExpandoObject model:
                     return FindModel(model) ?? PyObject.FromManagedObject(model);
                 default:
                     return value.ToPython();
