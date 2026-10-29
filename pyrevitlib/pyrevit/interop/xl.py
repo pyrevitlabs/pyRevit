@@ -83,10 +83,8 @@ def _legacy_xlrd():
 
 
 def _openpyxl_cell_value(cell, epoch):
-    value = cell.value
-    if value is None:
-        return ""
-    if cell.data_type == "e":
+    value = cell["value"]
+    if cell["data_type"] == "e":
         return _XLRD_ERROR_CODES.get(value, value)
     if isinstance(value, bool):
         return int(value)
@@ -101,33 +99,48 @@ def _openpyxl_cell_value(cell, epoch):
     return value
 
 
-def _openpyxl_extent(xlsheet):
-    """Return the ``(nrows, ncols)`` xlrd reports for the same worksheet.
-
-    xlrd sizes a sheet by its cells that hold a value and by its merged
-    ranges; openpyxl's ``max_row``/``max_column`` also count cells that only
-    carry formatting, which would add trailing blank rows and columns.
-    """
-    nrows = ncols = 0
-    for row in xlsheet.iter_rows():
-        for cell in row:
-            if cell.value is not None:
-                nrows = max(nrows, cell.row)
-                ncols = max(ncols, cell.column)
-    for merged in xlsheet.merged_cells.ranges:
-        nrows = max(nrows, merged.max_row)
-        ncols = max(ncols, merged.max_col)
-    return nrows, ncols
-
-
 def _openpyxl_sheet_rows(xlsheet):
-    nrows, ncols = _openpyxl_extent(xlsheet)
-    if not nrows:
-        return []
+    """Return the worksheet's rows as xlrd reports them.
+
+    The sheet XML is parsed directly, so only cells stored in the file are
+    visited and numbers keep their stored value even under a date format.
+    Rows and columns span the cells holding a value and the merged ranges;
+    cells that only carry formatting are ignored, as in xlrd.
+
+    Note:
+        ``xlsheet`` must come from a ``read_only`` workbook that is still
+        open; its private ``_get_source``/``_shared_strings`` are read.
+    """
+    from openpyxl.utils.cell import range_boundaries
+    from openpyxl.worksheet._reader import WorkSheetParser
+
     epoch = xlsheet.parent.epoch
+    values = {}
+    with xlsheet._get_source() as src:
+        parser = WorkSheetParser(
+            src,
+            xlsheet._shared_strings,
+            data_only=True,
+            epoch=epoch,
+            date_formats=set(),
+            timedelta_formats=set(),
+        )
+        for _, row in parser.parse():
+            for cell in row:
+                if cell["value"] is not None:
+                    values[(cell["row"], cell["column"])] = _openpyxl_cell_value(
+                        cell, epoch
+                    )
+    nrows = max([r for r, _ in values] or [0])
+    ncols = max([c for _, c in values] or [0])
+    if parser.merged_cells is not None:
+        for merged in parser.merged_cells.mergeCell:
+            _, _, max_col, max_row = range_boundaries(merged.ref)
+            nrows = max(nrows, max_row)
+            ncols = max(ncols, max_col)
     return [
-        [_openpyxl_cell_value(cell, epoch) for cell in row]
-        for row in xlsheet.iter_rows(min_row=1, max_row=nrows, min_col=1, max_col=ncols)
+        [values.get((r, c), "") for c in range(1, ncols + 1)]
+        for r in range(1, nrows + 1)
     ]
 
 
@@ -144,17 +157,20 @@ def _open_sheets(xlfile, sheet_names=None):
     """
     if _uses_openpyxl(xlfile):
         with open(str(xlfile), "rb") as xlstream:
-            xlwb = openpyxl.load_workbook(xlstream, data_only=True)
-        named_sheets = [(sheet.title, sheet) for sheet in xlwb.worksheets]
-        read_rows = _openpyxl_sheet_rows
-    else:
-        xlwb = _legacy_xlrd().open_workbook(str(xlfile))
-        named_sheets = [(sheet.name, sheet) for sheet in xlwb.sheets()]
-        read_rows = _xlrd_sheet_rows
+            xlwb = openpyxl.load_workbook(xlstream, read_only=True, data_only=True)
+            try:
+                return [
+                    (sheet.title, _openpyxl_sheet_rows(sheet))
+                    for sheet in xlwb.worksheets
+                    if not sheet_names or sheet.title in sheet_names
+                ]
+            finally:
+                xlwb.close()
+    xlwb = _legacy_xlrd().open_workbook(str(xlfile))
     return [
-        (name, read_rows(sheet))
-        for name, sheet in named_sheets
-        if not sheet_names or name in sheet_names
+        (sheet.name, _xlrd_sheet_rows(sheet))
+        for sheet in xlwb.sheets()
+        if not sheet_names or sheet.name in sheet_names
     ]
 
 

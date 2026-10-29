@@ -197,6 +197,36 @@ class ExcelInteropTests(unittest.TestCase):
         rows = self._load_written("styled.xlsx", build)
         self.assertEqual({"headers": [], "rows": []}, list(rows.values())[0])
 
+    def test_openpyxl_date_formatted_numbers_keep_their_stored_value(self):
+        """Date-formatted serials load unchanged, including 60 and sub-millisecond parts."""
+
+        def build(workbook):
+            sheet = workbook.active
+            sheet.title = "Serials"
+            sheet.append([60, 45293.123456789, 0.000000123])
+            for cell in sheet[1]:
+                cell.number_format = "yyyy-mm-dd hh:mm:ss"
+
+        rows = self._load_written("serials.xlsx", build)["Serials"]["rows"]
+        self.assertEqual([[60.0, 45293.123456789, 0.000000123]], rows)
+
+    def test_openpyxl_far_formatting_is_not_expanded(self):
+        """Formatting at the last cell of the grid adds no rows and is read quickly."""
+        import time
+
+        from openpyxl.styles import Font
+
+        def build(workbook):
+            sheet = workbook.active
+            sheet.title = "Far"
+            sheet.append(["a"])
+            sheet["XFD1048576"].font = Font(bold=True)
+
+        started = time.monotonic()
+        rows = self._load_written("far.xlsx", build)["Far"]["rows"]
+        self.assertEqual([["a"]], rows)
+        self.assertLess(time.monotonic() - started, 10)
+
     def test_reader_is_chosen_by_file_signature(self):
         """Workbook content wins over a misleading file extension."""
         with tempfile.TemporaryDirectory() as directory:
