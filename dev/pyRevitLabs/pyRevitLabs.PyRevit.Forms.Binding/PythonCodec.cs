@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Dynamic;
 using Python.Runtime;
 
 namespace PyRevitLabs.PyRevit.Forms.Binding {
@@ -31,9 +30,13 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 return false;
             }
             if (typeof(T) == typeof(object) && PyInt.IsIntType(pyObj)) {
-                var converted = PythonBinding.TryToClrInteger(pyObj, out var number);
-                value = converted ? (T)number : default;
-                return converted;
+                if (!PythonBinding.TryToClrInteger(pyObj, out var number)) {
+                    value = default;
+                    return false;
+                }
+                pyObj.Dispose();
+                value = (T)number;
+                return true;
             }
             object result = typeof(T) == typeof(object)
                 ? PythonBinding.AdaptObject(pyObj)
@@ -51,8 +54,6 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 case IPythonValue python:
                     return python.Source;
                 case BindingModel model:
-                    return PythonBinding.FindModel(model);
-                case ExpandoObject model:
                     return PythonBinding.FindModel(model);
                 default:
                     return null;
