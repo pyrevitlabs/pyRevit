@@ -89,9 +89,14 @@ class TestFillPatternViewer(forms.WPFWindow):
         if selected_fillpattern:
             self._draw_fill_pattern(selected_fillpattern)
 
+    def _pattern_brush(self):
+        brush = self.TryFindResource("pyRevitWindowForegroundBrush")
+        return brush if brush is not None else Media.Brushes.Black
+
     def _draw_fill_pattern(self, fill_pattern):
         canvas = self.fillpattern_canvas
         canvas.Children.Clear()
+        brush = self._pattern_brush()
         width = canvas.Width
         height = canvas.Height
 
@@ -99,7 +104,7 @@ class TestFillPatternViewer(forms.WPFWindow):
             solid = Rectangle()
             solid.Width = width
             solid.Height = height
-            solid.Fill = Media.Brushes.Black
+            solid.Fill = brush
             canvas.Children.Add(solid)
             return
 
@@ -120,7 +125,7 @@ class TestFillPatternViewer(forms.WPFWindow):
                 line.Y1 = height / 2.0 - start_point[1] * scale
                 line.X2 = width / 2.0 + end_point[0] * scale
                 line.Y2 = height / 2.0 - end_point[1] * scale
-                line.Stroke = Media.Brushes.Black
+                line.Stroke = brush
                 line.StrokeThickness = LINE_THICKNESS
                 if period > 0:
                     line.StrokeDashCap = Media.PenLineCap.Round

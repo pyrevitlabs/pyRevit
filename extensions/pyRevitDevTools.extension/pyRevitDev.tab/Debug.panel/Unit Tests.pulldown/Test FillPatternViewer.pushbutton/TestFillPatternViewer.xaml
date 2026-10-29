@@ -10,6 +10,7 @@
         <Label FontWeight="Bold">Pattern Name:</Label>
         <ComboBox x:Name="pat_name_cb" Height="25px" SelectionChanged="fill_pattern_changed"/>
         <Canvas x:Name="fillpattern_canvas" Margin="0,10,0,0"
-                Width="264" Height="250" ClipToBounds="True" Background="White"/>
+                Width="264" Height="250" ClipToBounds="True"
+                Background="{DynamicResource pyRevitControlBackgroundBrush}"/>
     </StackPanel>
 </Window>

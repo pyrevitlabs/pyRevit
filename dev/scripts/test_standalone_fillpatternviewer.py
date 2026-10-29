@@ -33,6 +33,19 @@ def _load_pure_helpers():
             for target in node.targets
         ):
             nodes.append(node)
+    found = {
+        node.name if isinstance(node, ast.FunctionDef) else target.id
+        for node in nodes
+        for target in ([node] if isinstance(node, ast.FunctionDef) else node.targets)
+        if isinstance(node, ast.FunctionDef) or isinstance(target, ast.Name)
+    }
+    missing = PURE_NAMES - found
+    if missing:
+        raise AssertionError(
+            "{} no longer defines {}; update PURE_NAMES".format(
+                SCRIPT_PATH, ", ".join(sorted(missing))
+            )
+        )
     namespace = {"math": math}
     exec(
         compile(ast.Module(body=nodes, type_ignores=[]), SCRIPT_PATH, "exec"), namespace
