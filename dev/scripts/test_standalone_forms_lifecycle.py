@@ -104,11 +104,11 @@ class BalloonTimestampTests(unittest.TestCase):
 
 
 class PickFileTests(unittest.TestCase):
-    """Multi-file picks return a Python list, as documented."""
+    """Multi-file picks return the dialog's String[], as on develop's IronPython."""
 
-    def test_multi_file_returns_list(self):
-        """The managed String[] is copied into a list."""
-        dialog = SimpleNamespace(ShowDialog=lambda: "ok", FileNames=("a", "b"))
+    def _pick(self, **kwargs):
+        file_names = ("C:/a.csv", "C:/b.csv")
+        dialog = SimpleNamespace(ShowDialog=lambda: "ok", FileNames=file_names)
         scope = _load(
             "native.py",
             {"pick_file"},
@@ -116,10 +116,21 @@ class PickFileTests(unittest.TestCase):
                 "Forms": SimpleNamespace(
                     OpenFileDialog=lambda: dialog,
                     DialogResult=SimpleNamespace(OK="ok"),
-                )
+                ),
+                "coreutils": SimpleNamespace(dletter_to_unc=lambda path: "unc:" + path),
             },
         )
-        self.assertEqual(["a", "b"], scope["pick_file"](multi_file=True))
+        return file_names, scope["pick_file"](multi_file=True, **kwargs)
+
+    def test_multi_file_returns_the_managed_array(self):
+        """The managed String[] is returned as is, so ``.Length`` keeps working."""
+        file_names, picked = self._pick()
+        self.assertIs(file_names, picked)
+
+    def test_multi_file_unc_paths_return_a_list(self):
+        """UNC conversion builds a Python list, as it always has."""
+        file_names, picked = self._pick(unc_paths=True)
+        self.assertEqual(["unc:" + path for path in file_names], picked)
 
 
 class _Proxy(object):

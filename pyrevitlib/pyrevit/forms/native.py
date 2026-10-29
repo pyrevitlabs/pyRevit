@@ -277,7 +277,9 @@ def pick_file(
         title (str): text to show in the title bar
 
     Returns:
-        (str | list[str]): file path or list of file paths if multi_file=True
+        (str | System.String[] | list[str]): file path. With ``multi_file=True``,
+            the dialog's .NET ``String[]`` of paths on both engines, or a Python
+            list of UNC paths when ``unc_paths=True``.
 
     Examples:
         ```python
@@ -314,7 +316,7 @@ def pick_file(
         if multi_file:
             if unc_paths:
                 return [coreutils.dletter_to_unc(x) for x in of_dlg.FileNames]
-            return list(of_dlg.FileNames)
+            return of_dlg.FileNames
         else:
             if unc_paths:
                 return coreutils.dletter_to_unc(of_dlg.FileName)
