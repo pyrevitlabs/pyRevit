@@ -36,7 +36,7 @@ INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
 class Context(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "instance"):
-            cls.instance = super(Context, cls).__new__(cls, *args, **kwargs)
+            cls.instance = super(Context, cls).__new__(cls)
         return cls.instance
 
     def __init__(self, view_model):
