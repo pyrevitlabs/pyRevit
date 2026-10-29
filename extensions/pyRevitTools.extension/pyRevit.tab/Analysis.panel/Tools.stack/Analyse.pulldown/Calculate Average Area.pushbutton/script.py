@@ -40,16 +40,16 @@ def calc_and_print(items, item_type, type_name, match_name):
     if match_name not in processed_items[item_type]:
         print("{} TYPE IS: {}".format(type_name, match_name))
         for item in items:
-            item_name = item.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
-            item_number = item.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString()
-            item_level = item.Parameter[
+            item_name = item.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
+            item_number = item.get_Parameter(DB.BuiltInParameter.ROOM_NUMBER).AsString()
+            item_level = item.get_Parameter(
                 DB.BuiltInParameter.ROOM_LEVEL_ID
-            ].AsValueString()
+            ).AsValueString()
             if revit.query.is_placed(item):
                 if match_name == item_name:
-                    area_value = item.Parameter[
+                    area_value = item.get_Parameter(
                         DB.BuiltInParameter.ROOM_AREA
-                    ].AsDouble()
+                    ).AsDouble()
                     print(
                         '{} {} #{} "{}" @ "{}" = {}'.format(
                             output.linkify(item.Id),
@@ -81,19 +81,19 @@ for el in selection.elements:
     count = 0
     total = 0.0
     if isinstance(el, DB.Area):
-        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+        target_name = el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
         area_total, area_count = calc_and_print(areas, DB.Area, "AREA", target_name)
         count += area_count
         total += area_total
     elif isinstance(el, DB.Architecture.Room):
-        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+        target_name = el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
         area_total, area_count = calc_and_print(
             rooms, DB.Architecture.Room, "ROOM", target_name
         )
         count += area_count
         total += area_total
     elif isinstance(el, DB.Mechanical.Space):
-        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+        target_name = el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
         area_total, area_count = calc_and_print(
             spaces, DB.Mechanical.Space, "SPACE", target_name
         )

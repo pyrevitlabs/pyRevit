@@ -23,7 +23,7 @@ with revit.TransactionGroup("Shift Sheets"):
         with revit.Transaction("Shift Single Sheet"):
             try:
                 cur_sheet_num = sheet.SheetNumber
-                sheetnum_p = sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
+                sheetnum_p = sheet.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER)
                 sheetnum_p.Set(coreutils.decrement_str(sheet.SheetNumber, shift))
                 new_sheet_num = sheet.SheetNumber
                 logger.info("{} -> {}".format(cur_sheet_num, new_sheet_num))

@@ -17,6 +17,8 @@ if isinstance(el, DB.ElevationMarker):
                     str(v.ViewType).ljust(15),
                     str(v.Id).ljust(10),
                     str(v.IsTemplate).ljust(10),
-                    v.Parameter[DB.BuiltInParameter.VIEWER_DETAIL_NUMBER].AsString(),
+                    v.get_Parameter(
+                        DB.BuiltInParameter.VIEWER_DETAIL_NUMBER
+                    ).AsString(),
                 )
             )

@@ -528,17 +528,21 @@ def create_text_type(
     tnote_type = doc.GetElement(tnote_typeid)
     spec_tnote_type = tnote_type.Duplicate(name)
     if font_name:
-        spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_FONT].Set(font_name)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_SIZE].Set(font_size)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_TAB_SIZE].Set(tab_size)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_BOLD].Set(1 if bold else 0)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_ITALIC].Set(
+        spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_FONT).Set(font_name)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_SIZE).Set(font_size)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_TAB_SIZE).Set(tab_size)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_STYLE_BOLD).Set(
+        1 if bold else 0
+    )
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_STYLE_ITALIC).Set(
         1 if italic else 0
     )
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_UNDERLINE].Set(
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_STYLE_UNDERLINE).Set(
         1 if underline else 0
     )
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_WIDTH_SCALE].Set(width_factor)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_WIDTH_SCALE).Set(
+        width_factor
+    )
     return spec_tnote_type
 
 
