@@ -153,10 +153,12 @@ Use **DevTools > Debug > Unit Tests > Dynamo Tests** in a disposable project. Th
 For a reproducible local matrix, use an absolute script path:
 
 ```powershell
-pyrevit run C:/path/to/pyRevit/dev/tests/revit/run_dynamo.py --revit=2026
+pyrevit run C:/path/to/pyRevit/dev/tests/revit/run_dynamo.py --revit=2026 --purge
 ```
 
-The journal launches a separate Revit process, creates a disposable project, checks cold and repeat execution with different tokens, and exits. Evidence is written to `.test-results/dynamo/<year>.json`, including actual Revit/Dynamo versions and a test-source hash. These tests stay outside CI. Validate the installed Dynamo bundled with each supported Revit 2021–2027 host; this is not a claim about every independently installed Dynamo package or patch version.
+The journal launches a separate Revit process, creates a disposable project, checks cold and repeat execution with different tokens, and exits. Evidence is written to `.test-results/dynamo/<year>/<run-id>/result.json`, including actual Revit/Dynamo versions and a test-source hash. Each invocation preserves earlier results. Project filenames also include the run ID. The project lives in the journal's working directory; `--purge` deletes that directory after Revit exits and releases file locks. Omit `--purge` only to retain the journal and model for diagnosis. These tests stay outside CI. Validate the installed Dynamo bundled with each supported Revit 2021–2027 host; this is not a claim about every independently installed Dynamo package or patch version.
+
+Invoke this entry point once per journal process; its cold/repeat checks share one project. Use a fresh `pyrevit run` process for retries. A separate Revit 2025 probe invoking it twice in one process saved distinct projects and preserved both reports, but the second invocation failed graph-output verification after activating a new document. Successful execution across document switches is not established by this harness.
 
 Local validation on 2026-10-19 used IronPython 2.7.12 and a fresh project in each journal process. Both cold startup and repeat execution passed with distinct, verified tokens:
 
@@ -170,4 +172,4 @@ Local validation on 2026-10-19 used IronPython 2.7.12 and a fresh project in eac
 | 2026 | 3.7.0.11777 | Passed / passed |
 | 2027 | 4.2.1.5887 | Passed / passed |
 
-Each report records the test-source SHA-256. Interactive ribbon verification is separate from this journal evidence; other Python engines and independently installed Dynamo versions remain unverified.
+Each report records the test-source SHA-256. Interactive ribbon verification also passed twice on Revit 2025 build `25.5.0.57` with Dynamo `3.3.2.11986`: each run returned matching token/output values, the tokens differed between runs, and Dynamo reported `StartedUIless`. The measured execution times were 2.546 seconds and 0.124 seconds. Other Python engines and independently installed Dynamo versions remain unverified; this ribbon evidence does not establish model-change isolation.
