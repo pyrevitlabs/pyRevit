@@ -33,6 +33,9 @@ Checks:
     IPY-CLR     clr.AddReferenceToFileAndPath outside pyrevit.framework
     CLR-REF     clr.Reference out-param marshaling outside the sanctioned
                 engine-dispatch wrappers
+    CLR-NAMED-INDEXER
+                ``.Parameter[...]`` named indexed property read; pythonnet
+                (CPython) has no named indexers, use ``.get_Parameter(...)``
     SORT-KEY    sorted() over dict .items()/.values() without a key=
                 (tuple comparison can fall through to unorderable values)
     PY3-VIEW    a bare dict view (keys/values/items) or map/filter/zip that
@@ -167,6 +170,8 @@ PY2_ONLY_MODULES = {
 # returning one bare breaks on any Python 3 engine (IronPython 3 included).
 PY3_VIEW_METHODS = {"keys", "values", "items"}
 PY3_LAZY_BUILTINS = {"map", "filter", "zip"}
+
+CLR_NAMED_INDEXERS = {"Parameter"}
 
 
 class Finding:
@@ -315,6 +320,16 @@ def _bare_py3_view(node):
     if isinstance(func, ast.Attribute) and func.attr in PY3_VIEW_METHODS:
         return True
     return isinstance(func, ast.Name) and func.id in PY3_LAZY_BUILTINS
+
+
+def _is_named_indexer(node):
+    """Return True if node is a CLR named indexed property such as ``.Parameter``.
+
+    IronPython exposes named indexed properties as subscriptable attributes;
+    pythonnet does not, so ``el.Parameter[bip]`` raises on CPython while the
+    ``el.get_Parameter(bip)`` accessor works on every engine.
+    """
+    return isinstance(node, ast.Attribute) and node.attr in CLR_NAMED_INDEXERS
 
 
 def check_file(path):
@@ -548,6 +563,17 @@ def check_file(path):
                     "SORT-KEY",
                     "sorted() over dict view without key=; tuple comparison "
                     "can fall through to unorderable values in Python 3",
+                )
+            )
+
+        elif isinstance(node, ast.Subscript) and _is_named_indexer(node.value):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "CLR-NAMED-INDEXER",
+                    ".{0}[...] is an IronPython-only named indexer; "
+                    "use .get_{0}(...)".format(node.value.attr),
                 )
             )
 
