@@ -16,7 +16,10 @@ namespace pyRevitExtensionParserTester
         {
             // Use existing pyRevitDevTools extension for testing
             _extensionPath = TestConfiguration.TestExtensionPath;
+        }
 
+        private void RequireDevToolsExtension()
+        {
             if (!Directory.Exists(_extensionPath))
             {
                 Assert.Fail($"Extension path not found: {_extensionPath}");
@@ -26,6 +29,8 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void TestPythonScriptWithDictionaryTitle()
         {
+            RequireDevToolsExtension();
+
             // Test existing button: "Test pyRevit Button" has script with dictionary __title__
             // Script contains: __title__ = {"en_us": "Test pyRevit Button (Custom)", "chinese_s": "测试按钮"}
 
@@ -147,6 +152,8 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void TestBundleWithLocalizedTitles()
         {
+            RequireDevToolsExtension();
+
             // Test existing button: "Test pyRevit Bundle" has bundle.yaml with localized titles
             // bundle.yaml contains: title: {en_us: "Test pyRevit Bundle (Custom Title)", chinese_s: "测试包"}
 
@@ -195,6 +202,8 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void TestSetWorksetButtonFromToolsExtension()
         {
+            RequireDevToolsExtension();
+
             // Test button from pyRevitTools extension: "Set Workset" has bundle.yaml with localized titles
             // bundle.yaml contains multiple languages: en_us, ru, fr_fr, de_de
 

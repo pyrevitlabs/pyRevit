@@ -20,6 +20,8 @@ namespace pyRevitExtensionParserTester
     [NonParallelizable]
     public class MachineConfigIsolationTests
     {
+        private const string PlantedConfig = "[core]\nread_script_metadata = false\n";
+
         private string _cloneMarker;
         private string _cloneConfig;
 
@@ -29,6 +31,7 @@ namespace pyRevitExtensionParserTester
             var assemblyDir = Path.GetDirectoryName(typeof(PyRevitInstallScope).Assembly.Location);
             _cloneMarker = Path.Combine(assemblyDir, "pyRevitfile");
             _cloneConfig = Path.Combine(assemblyDir, PyRevitLabsConsts.DefaultConfigsFileName);
+            RemoveLeftoversOfAnInterruptedRun();
             if (File.Exists(_cloneMarker) || File.Exists(_cloneConfig))
             {
                 _cloneMarker = null;
@@ -37,7 +40,22 @@ namespace pyRevitExtensionParserTester
             }
 
             File.WriteAllText(_cloneMarker, string.Empty);
-            File.WriteAllText(_cloneConfig, "[core]\nread_script_metadata = false\n");
+            File.WriteAllText(_cloneConfig, PlantedConfig);
+        }
+
+        /// <summary>
+        /// Deletes the marker and config a killed run left behind, recognised by their exact
+        /// planted content; anything else in the output folder is left alone.
+        /// </summary>
+        private void RemoveLeftoversOfAnInterruptedRun()
+        {
+            if (File.Exists(_cloneMarker) && File.Exists(_cloneConfig)
+                && new FileInfo(_cloneMarker).Length == 0
+                && File.ReadAllText(_cloneConfig) == PlantedConfig)
+            {
+                File.Delete(_cloneMarker);
+                File.Delete(_cloneConfig);
+            }
         }
 
         [TearDown]
