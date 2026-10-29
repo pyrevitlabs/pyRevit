@@ -14,8 +14,12 @@ namespace PyRevitLoader
     /// leaves those files alone and the renderer picks them up from the
     /// isolated folder.
     ///
-    /// Invariant: on .NET Framework nothing is skipped. That runtime has no
-    /// isolated load context, and the renderer runs in the host process.
+    /// Invariant: on .NET Framework the WebView2 stack is never skipped. That
+    /// runtime has no isolated load context, and the renderer runs in the host
+    /// process.
+    ///
+    /// Independently of the runtime, callers that name a runtime year skip the
+    /// pyRevit runtimes of every other Revit year.
     /// </summary>
     public static class AssemblyLoadPolicy
     {
@@ -82,45 +86,69 @@ namespace PyRevitLoader
         }
 
         /// <summary>
-        /// Decides whether the loader must skip a file in a host of the given
-        /// Revit year, for the runtime this assembly was built for.
+        /// Decides whether the loader must skip a file when only one Revit
+        /// year's pyRevit runtime may be loaded.
         /// </summary>
         /// <remarks>
         /// The engine folders ship one pyRevit runtime per Revit year, and all
-        /// of them define the same types. Only the host year's runtime may be
-        /// loaded: CPython resolves a type from the first loaded assembly that
-        /// defines it, so another year's runtime would shadow the session's.
+        /// of them define the same types. CPython resolves a type from the
+        /// first loaded assembly that defines it, so a runtime other than the
+        /// one the caller executes through would shadow its types. The loader
+        /// passes the host year; the runner passes the year it was compiled
+        /// against, because its command binds to that runtime.
         /// </remarks>
         /// <param name="fileName">The file the loader is about to load.</param>
-        /// <param name="hostYear">The host Revit version number, such as "2026".</param>
-        public static AssemblyLoadDecision ShouldSkip(string fileName, string hostYear)
+        /// <param name="runtimeYear">
+        /// The Revit year of the runtime to keep, such as "2026". Null or empty
+        /// keeps every runtime.
+        /// </param>
+        public static AssemblyLoadDecision ShouldSkip(string fileName, string runtimeYear)
         {
             var decision = ShouldSkip(fileName);
-            if (decision.Skip || !IsRuntimeOfAnotherYear(fileName, hostYear))
+            if (decision.Skip || !IsRuntimeOfAnotherYear(fileName, runtimeYear))
                 return decision;
 
             return AssemblyLoadDecision.Reject(
                 "The file is the pyRevit runtime of another Revit year; its types would shadow "
-                + "the host year's runtime.");
+                + "the runtime of year " + runtimeYear + ".");
         }
 
-        private static bool IsRuntimeOfAnotherYear(string fileName, string hostYear)
+        /// <summary>
+        /// Returns the Revit year of a per-year pyRevit runtime assembly, such
+        /// as "2025" for "pyRevitLabs.PyRevit.Runtime.2025", or null for any
+        /// other assembly, including "pyRevitLabs.PyRevit.Runtime.Shared".
+        /// </summary>
+        /// <param name="assemblyName">An assembly simple name or file name.</param>
+        public static string GetRuntimeYear(string assemblyName)
         {
-            if (string.IsNullOrEmpty(fileName) || string.IsNullOrEmpty(hostYear))
-                return false;
+            if (string.IsNullOrEmpty(assemblyName))
+                return null;
 
-            var name = Path.GetFileNameWithoutExtension(fileName);
+            var name = Path.GetFileName(assemblyName);
+            if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(0, name.Length - 4);
             if (!name.StartsWith(RuntimeAssemblyPrefix, StringComparison.OrdinalIgnoreCase))
-                return false;
+                return null;
 
             var year = name.Substring(RuntimeAssemblyPrefix.Length);
+            if (year.Length == 0)
+                return null;
             foreach (var character in year)
             {
                 if (!char.IsDigit(character))
-                    return false;
+                    return null;
             }
 
-            return year.Length > 0 && !string.Equals(year, hostYear, StringComparison.Ordinal);
+            return year;
+        }
+
+        private static bool IsRuntimeOfAnotherYear(string fileName, string runtimeYear)
+        {
+            if (string.IsNullOrEmpty(runtimeYear))
+                return false;
+
+            var year = GetRuntimeYear(fileName);
+            return year != null && !string.Equals(year, runtimeYear, StringComparison.Ordinal);
         }
     }
 

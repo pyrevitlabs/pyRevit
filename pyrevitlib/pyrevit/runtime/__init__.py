@@ -350,6 +350,35 @@ def _generate_runtime_asm():
         raise compile_err
 
 
+def _select_year_runtime(assemblies, name_of):
+    """Return ``[runtime]`` when exactly one per-year pyRevit runtime is loaded.
+
+    Per-year runtimes are named ``pyRevitLabs.PyRevit.Runtime.<year>``; the
+    shared runtime and any other assembly are ignored. Returns ``[]`` when
+    none or several are loaded, so the caller keeps its usual fallback.
+
+    Note:
+        The pyRevit Runner keeps only the runtime year it was compiled against,
+        which can differ from the host year, and its command already executes
+        through that runtime. Normal sessions load the host year's runtime, so
+        this is reached only when that one is missing.
+    """
+    prefix = RUNTIME_NAMESPACE.lower() + "."
+    year_runtimes = []
+    for asm in assemblies:
+        name = safe_strtype(name_of(asm)).lower()
+        if name.startswith(prefix) and name[len(prefix) :].isdigit():
+            year_runtimes.append(asm)
+    return year_runtimes if len(year_runtimes) == 1 else []
+
+
+def _find_loaded_year_runtime():
+    return _select_year_runtime(
+        framework.AppDomain.CurrentDomain.GetAssemblies(),
+        lambda asm: asm.GetName().Name,
+    )
+
+
 def _get_runtime_asm():
     if appdata.is_data_file_available(
         file_id=RUNTIME_ASSM_FILE_ID, file_ext=framework.ASSEMBLY_FILE_TYPE
@@ -519,7 +548,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
 # compile or load the base types assembly
 # see it the assembly is already loaded
 RUNTIME_ASSM = None
-assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME)
+assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME) or _find_loaded_year_runtime()
 _perfmark("pyrevit.runtime:after assmutils.find_loaded_asm")
 if assm_list:
     RUNTIME_ASSM = assm_list[0]
