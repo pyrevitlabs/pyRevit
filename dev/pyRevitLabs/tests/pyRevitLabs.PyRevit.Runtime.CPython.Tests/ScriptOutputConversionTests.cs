@@ -73,23 +73,38 @@ public class ScriptOutputConversionTests {
         Assert.Equal("a|1;b|/a||1/k=1", Observed(ScriptOutputConversionProbe.ReleasedGil));
     }
 
-    /// <summary>Table data that yields no rows prints a warning instead of an empty table.</summary>
+    /// <summary>
+    /// <c>print_html_table</c> prints this warning instead of an empty table; <c>print_table</c>
+    /// prints nothing, as both did before CPython support.
+    /// </summary>
     [Fact]
-    public void EmptyTableData_PrintsWarning() {
+    public void EmptyTableData_HasAWarningForTheHtmlTable() {
         Assert.Equal("### :warning: No table_data list", Observed(ScriptOutputConversionProbe.EmptyTable));
         Assert.Equal("<render>", Observed(ScriptOutputConversionProbe.FilledTable));
     }
 
-    /// <summary>Both table printers take the empty-table decision from <c>PythonTableData</c>.</summary>
-    [Theory]
-    [InlineData("public void print_table(")]
-    [InlineData("public void print_html_table(")]
-    public void TablePrinters_UseEmptyTableWarning(string declaration) {
-        string source = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Sources", "ScriptOutput.cs"));
-        string body = CSharpSource.MemberBody(source, declaration);
+    /// <summary><c>print_html_table</c> takes the empty-table warning from <c>PythonTableData</c>.</summary>
+    [Fact]
+    public void HtmlTablePrinter_UsesEmptyTableWarning() {
+        string body = ScriptOutputMember("public void print_html_table(");
 
         Assert.True(CSharpSource.IsInBlockOf(body, "if (emptyTableWarning != null)", "return;"),
-            $"{declaration} must stop when PythonTableData.EmptyTableWarning reports no rows");
+            "print_html_table must stop when PythonTableData.EmptyTableWarning reports no rows");
         Assert.Contains("PythonTableData.EmptyTableWarning(rows)", body);
+    }
+
+    /// <summary><c>print_table</c> prints nothing for table data that yields no rows.</summary>
+    [Fact]
+    public void TablePrinter_SkipsEmptyTableData() {
+        string body = ScriptOutputMember("public void print_table(");
+
+        Assert.True(CSharpSource.IsInBlockOf(body, "if (rows.Count == 0)", "return;"),
+            "print_table must stop when the table data yields no rows");
+        Assert.DoesNotContain("EmptyTableWarning", body);
+    }
+
+    private static string ScriptOutputMember(string declaration) {
+        string source = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Sources", "ScriptOutput.cs"));
+        return CSharpSource.MemberBody(source, declaration);
     }
 }
