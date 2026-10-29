@@ -45,6 +45,8 @@ flowchart LR
         Facade["pyRevitLabs.PyRevit.Tests"]
         Agent["pyRevitLabs.PyRevit.Runtime.Agent.Tests"]
         CPython["pyRevitLabs.PyRevit.Runtime.CPython.Tests"]
+        Renderer["pyRevitLabs.PyRevit.Renderer.Tests"]
+        Shell["pyRevitLabs.PyRevit.Shell.Tests"]
         Legacy["pyRevitLabs.UnitTests"]
     end
 
