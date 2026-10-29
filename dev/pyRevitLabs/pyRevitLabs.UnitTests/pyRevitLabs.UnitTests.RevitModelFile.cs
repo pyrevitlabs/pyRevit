@@ -99,6 +99,20 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
         }
 
         [TestMethod()]
+        public void UnlistedProduct_DescribesTheRecordedBuild() {
+            var revit2026 = new RevitModelFile(WriteModel(Revit2026SampleInfo));
+            Assert.AreEqual(
+                "Autodesk Revit 2026 (build 1515(x64), not listed in pyrevit-hosts.json)",
+                revit2026.CreatedIn);
+
+            DeleteModel();
+            var revit2023 = new RevitModelFile(WriteModel(Revit2023SampleInfo));
+            Assert.AreEqual(
+                "Autodesk Revit 2023 (build 20220108_1515(x64), not listed in pyrevit-hosts.json)",
+                revit2023.CreatedIn);
+        }
+
+        [TestMethod()]
         public void FromProductYear_IsAYearOnlyProduct() {
             var product = RevitProduct.FromProductYear(2025);
 

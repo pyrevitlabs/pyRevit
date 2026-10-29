@@ -132,6 +132,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         private static readonly Regex FormatYearFinder = new Regex(@"^Format:\s*(?<year>\d{4})\b");
+        private static readonly Regex RecordedBuildFinder = new Regex(@"Build:\s*(?<build>[^\r\n\0]+)");
 
         private Regex buildFieldRegex(string fieldName, string captureId) {
             return new Regex(string.Format(@"{0}(?<{1}>.*$)", fieldName, captureId));
@@ -321,6 +322,43 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// database (pre-release builds, or a bare <c>Build: 1515(x64)</c> as Revit 2026 writes).
         /// </remarks>
         public int FormatYear { get; private set; } = 0;
+
+        /// <summary>
+        /// Describes the Revit release and build that saved the model, for display.
+        /// </summary>
+        /// <remarks>
+        /// A product resolved only from <see cref="FormatYear"/> is marked as not listed in
+        /// <c>pyrevit-hosts.json</c> and shows the build text as recorded in the file. Without
+        /// any product this is the raw <see cref="BuildInfoLine"/>.
+        /// </remarks>
+        public string CreatedIn {
+            get {
+                if (RevitProduct == null)
+                    return BuildInfoLine;
+                if (RevitProduct.IsListedInHostsDatabase) {
+                    var build = RevitProduct.BuildNumber ?? string.Empty;
+                    if (!string.IsNullOrEmpty(RevitProduct.BuildTarget))
+                        build += string.Format("({0})", RevitProduct.BuildTarget);
+                    return string.IsNullOrEmpty(build)
+                        ? RevitProduct.Name
+                        : string.Format("{0} {1}", RevitProduct.Name, build);
+                }
+
+                var recordedBuild = RecordedBuild;
+                return string.IsNullOrEmpty(recordedBuild)
+                    ? string.Format("{0} (not listed in pyrevit-hosts.json)", RevitProduct.Name)
+                    : string.Format("{0} (build {1}, not listed in pyrevit-hosts.json)", RevitProduct.Name, recordedBuild);
+            }
+        }
+
+        private string RecordedBuild {
+            get {
+                if (BuildInfoLine == null)
+                    return null;
+                var match = RecordedBuildFinder.Match(BuildInfoLine);
+                return match.Success ? match.Groups["build"].Value.Trim() : null;
+            }
+        }
 
         public string CentralModelPath { get; private set; } = null;
 
