@@ -222,15 +222,28 @@ def _receiver_name(node):
     return None
 
 
+def _is_compat_module(node):
+    """Return True for ``compat`` or ``pyrevit.compat``."""
+    if isinstance(node, ast.Name):
+        return node.id == "compat"
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "compat"
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "pyrevit"
+    )
+
+
 def _ipy3_condition_value(node, flag_values=IPY3_FLAG_VALUES):
     """Resolve an engine condition when its value is certain on one engine.
 
     ``flag_values`` names that engine; IronPython 3 by default. A flag read
-    off a module (``compat.IRONPY``) resolves like the bare name.
+    off ``compat`` or ``pyrevit.compat`` resolves like the bare name; the same
+    attribute on any other object (``options.IRONPY``) is unknown.
     """
     if isinstance(node, ast.Name):
         return flag_values.get(node.id)
-    if isinstance(node, ast.Attribute):
+    if isinstance(node, ast.Attribute) and _is_compat_module(node.value):
         return flag_values.get(node.attr)
     if isinstance(node, ast.Constant) and isinstance(node.value, bool):
         return node.value
@@ -250,18 +263,36 @@ def _ipy3_condition_value(node, flag_values=IPY3_FLAG_VALUES):
     return None
 
 
+def _is_branch_skipped(parent, child, flag_values):
+    """Return True when ``parent`` never evaluates ``child`` on the given engine.
+
+    Covers ``if`` statements, conditional expressions and the short-circuit
+    operands of ``and``/``or`` (``IRONPY and el.Parameter[bip]``).
+    """
+    if isinstance(parent, (ast.If, ast.IfExp)):
+        value = _ipy3_condition_value(parent.test, flag_values)
+        body = parent.body if isinstance(parent.body, list) else [parent.body]
+        orelse = parent.orelse if isinstance(parent.orelse, list) else [parent.orelse]
+        if value is False and child in body:
+            return True
+        if value is True and child in orelse:
+            return True
+    elif isinstance(parent, ast.BoolOp) and child in parent.values:
+        stop = False if isinstance(parent.op, ast.And) else True
+        for operand in parent.values[: parent.values.index(child)]:
+            if _ipy3_condition_value(operand, flag_values) is stop:
+                return True
+    return False
+
+
 def _is_engine_guarded(node, parents):
     """Return True when a branch cannot execute on IronPython 3."""
     current = node
     while current in parents:
         parent = parents[current]
-        if isinstance(parent, ast.If):
-            value = _ipy3_condition_value(parent.test)
-            if value is False and current in parent.body:
-                return True
-            if value is True and current in parent.orelse:
-                return True
-        elif isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if _is_branch_skipped(parent, current, IPY3_FLAG_VALUES):
+            return True
+        if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in parent.decorator_list:
                 if not isinstance(decorator, ast.Call) or not decorator.args:
                     continue
@@ -282,7 +313,7 @@ def _is_engine_guarded(node, parents):
 
 
 def _is_cpython_unreachable(node, parents):
-    """Return True when an ``if`` engine guard keeps a branch off CPython.
+    """Return True when an engine guard keeps a branch off CPython.
 
     Separate from the IronPython 3 guard: ``if IRONPY:`` is reachable on
     IronPython 3 but never on CPython, so CPython-only rules must not reuse it.
@@ -290,12 +321,8 @@ def _is_cpython_unreachable(node, parents):
     current = node
     while current in parents:
         parent = parents[current]
-        if isinstance(parent, ast.If):
-            value = _ipy3_condition_value(parent.test, CPYTHON_FLAG_VALUES)
-            if value is False and current in parent.body:
-                return True
-            if value is True and current in parent.orelse:
-                return True
+        if _is_branch_skipped(parent, current, CPYTHON_FLAG_VALUES):
+            return True
         current = parent
     return False
 

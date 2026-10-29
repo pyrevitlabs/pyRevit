@@ -128,9 +128,39 @@ class NamedIndexerTests(unittest.TestCase):
             "if not IRONPY:\n    value = el.Parameter[bip]\n",
             "if IRONPY:\n    pass\nelse:\n    value = el.Parameter[bip]\n",
             "if custom:\n    value = el.Parameter[bip]\n",
+            "value = PY3 and el.Parameter[bip]\n",
+            "value = IRONPY or el.Parameter[bip]\n",
+            "value = el.Parameter[bip] if PY3 else None\n",
         ):
             with self.subTest(source=source):
                 self.assertEqual(["CLR-NAMED-INDEXER"], self._codes(source))
+
+    def test_short_circuit_and_conditional_guards_are_clean(self):
+        """Operands and branches CPython never evaluates are not reported."""
+        for source in (
+            "value = IRONPY and el.Parameter[bip]\n",
+            "value = compat.IRONPY and el.Parameter[bip]\n",
+            "value = PY3 or el.Parameter[bip]\n",
+            "value = el.Parameter[bip] if IRONPY else el.get_Parameter(bip)\n",
+            "value = el.get_Parameter(bip) if PY3 else el.Parameter[bip]\n",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual([], self._codes(source))
+
+    def test_flags_on_other_objects_do_not_guard(self):
+        """Only pyRevit's compat flags are engine guards."""
+        for guard in ("options.IRONPY", "self.IRONPY"):
+            with self.subTest(guard=guard):
+                self.assertEqual(
+                    ["CLR-NAMED-INDEXER"],
+                    self._codes(
+                        "if {}:\n    value = el.Parameter[bip]\n".format(guard)
+                    ),
+                )
+        self.assertEqual(
+            [],
+            self._codes("if pyrevit.compat.IRONPY:\n    value = el.Parameter[bip]\n"),
+        )
 
 
 if __name__ == "__main__":
