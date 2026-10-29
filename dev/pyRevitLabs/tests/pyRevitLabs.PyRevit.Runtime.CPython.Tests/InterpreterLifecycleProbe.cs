@@ -18,6 +18,9 @@ internal sealed class InterpreterLifecycleRecord {
     public required string? DerivedTypeShapes { get; init; }
     public required string? ImplicitInterfaceTypes { get; init; }
     public required string? TruthyBooleans { get; init; }
+    public required string? ClassCreationHooks { get; init; }
+    public required string? DefinitionSites { get; init; }
+    public required bool? DecoderLookupLetOtherThreadsConvert { get; init; }
     public required IReadOnlyDictionary<string, string> ScriptOutputConversions { get; init; }
 }
 
@@ -51,6 +54,54 @@ public sealed class TruthinessTarget {
     public static string OnlyBool(bool value) => value.ToString();
 
     public static bool Ask(Func<bool> predicate) => predicate();
+}
+
+/// <summary>A conversion target only <see cref="GilYieldingDecoder"/> is asked about.</summary>
+public sealed class DecoderProbeTarget {
+}
+
+/// <summary>A conversion target the competing thread asks for while <see cref="GilYieldingDecoder"/> runs.</summary>
+public sealed class DecoderProbeOtherTarget {
+}
+
+/// <summary>
+/// A codec whose <c>CanDecode</c> lets the GIL go, as any codec running Python code can, and waits
+/// for another thread to finish a conversion of its own.
+/// </summary>
+internal sealed class GilYieldingDecoder : IPyObjectDecoder {
+    private int _started;
+
+    public bool? OtherThreadConverted { get; private set; }
+
+    public bool CanDecode(PyType objectType, Type targetType) {
+        if (targetType != typeof(DecoderProbeTarget) || Interlocked.Exchange(ref _started, 1) == 1)
+            return false;
+        var converted = new ManualResetEventSlim();
+        var other = new Thread(() => {
+            try {
+                using Py.GILState gil = Py.GIL();
+                using PyObject value = PythonEngine.Eval("type('DecoderLockProbeOther', (), {})()");
+                value.AsManagedObject(typeof(DecoderProbeOtherTarget));
+            }
+            catch (Exception) {
+            }
+            converted.Set();
+        });
+        IntPtr state = PythonEngine.BeginAllowThreads();
+        try {
+            other.Start();
+            OtherThreadConverted = converted.Wait(TimeSpan.FromSeconds(10));
+        }
+        finally {
+            PythonEngine.EndAllowThreads(state);
+        }
+        return false;
+    }
+
+    public bool TryDecode<T>(PyObject pyObj, out T? value) {
+        value = default;
+        return false;
+    }
 }
 
 /// <summary>
@@ -224,6 +275,80 @@ internal static class InterpreterLifecycleProbe {
         observed.append(str(TruthinessTarget.Ask(Func[bool](lambda: None))))
         sys.pyrevit_truthy = "|".join(observed)
         """;
+    private const string ClassCreationHooksProbe = """
+        import functools
+        import sys
+        from System import IComparable, IDisposable
+        from System.Collections import Comparer
+
+        calls = []
+
+        class CachedInterface(IComparable):
+            @functools.cached_property
+            def value(self):
+                calls.append("cached")
+                return 5
+
+            def CompareTo(self, other):
+                return self.value + self.value
+
+        class HookedBase(IDisposable):
+            __namespace__ = "pyrevit.tests.hooks"
+
+            def __init_subclass__(cls, tag=None, **kwargs):
+                super().__init_subclass__(**kwargs)
+                calls.append(cls.__name__ + ":" + str(tag))
+
+            def Dispose(self):
+                pass
+
+        class HookedChild(HookedBase, tag="child"):
+            __namespace__ = "pyrevit.tests.hooks"
+
+        class CachedNamespaced(IDisposable):
+            __namespace__ = "pyrevit.tests.hooks"
+
+            @functools.cached_property
+            def value(self):
+                return 9
+
+            def Dispose(self):
+                pass
+
+        sys.pyrevit_hooks = "|".join([
+            str(Comparer.Default.Compare(CachedInterface(), 1)),
+            str(CachedNamespaced().value),
+            type(HookedChild()).__name__,
+        ] + calls)
+        """;
+    private const string DefinitionSiteProbe = """
+        import clr
+        import sys
+        from System import Activator
+        from System.Collections import Comparer
+
+        source = '''
+        from System import IComparable
+        class SiteProbe(IComparable):
+            def CompareTo(self, other):
+                return RESULT
+        '''
+
+        def run(path, result):
+            scope = {"__name__": "__main__", "__file__": path}
+            exec(source.replace("RESULT", str(result)), scope)
+            return clr.GetClrType(scope["SiteProbe"])
+
+        first = run("C:/tools/first/script.py", 1)
+        second = run("C:/tools/second/script.py", 2)
+        first_again = run("C:/tools/first/script.py", 1)
+        sys.pyrevit_sites = "|".join([
+            str(first.Equals(second)),
+            str(first.Equals(first_again)),
+            str(Comparer.Default.Compare(Activator.CreateInstance(first), 0)),
+            str(Comparer.Default.Compare(Activator.CreateInstance(second), 0)),
+        ])
+        """;
     private static readonly string MarkerRead = $"__import__('sys').{MarkerName}";
 
     private static readonly Lazy<InterpreterLifecycleRecord> _record = new(
@@ -244,6 +369,9 @@ internal static class InterpreterLifecycleProbe {
         string? shapes = Run(ShapesProbe, "__import__('sys').pyrevit_shapes");
         string? implicitInterfaces = Run(ImplicitInterfaceProbe, "__import__('sys').pyrevit_implicit");
         string? truthyBooleans = Run(TruthyBooleanProbe, "__import__('sys').pyrevit_truthy");
+        string? classCreationHooks = Run(ClassCreationHooksProbe, "__import__('sys').pyrevit_hooks");
+        string? definitionSites = Run(DefinitionSiteProbe, "__import__('sys').pyrevit_sites");
+        bool? decoderLookup = ObserveDecoderLookup();
         IReadOnlyDictionary<string, string> conversions = ScriptOutputConversionProbe.Observe();
 
         var reattachFailures = new List<Exception>();
@@ -277,8 +405,24 @@ internal static class InterpreterLifecycleProbe {
             DerivedTypeShapes = shapes,
             ImplicitInterfaceTypes = implicitInterfaces,
             TruthyBooleans = truthyBooleans,
+            ClassCreationHooks = classCreationHooks,
+            DefinitionSites = definitionSites,
+            DecoderLookupLetOtherThreadsConvert = decoderLookup,
             ScriptOutputConversions = conversions,
         };
+    }
+
+    private static bool? ObserveDecoderLookup() {
+        var decoder = new GilYieldingDecoder();
+        PyObjectConversions.RegisterDecoder(decoder);
+        using Py.GILState gil = Py.GIL();
+        using PyObject value = PythonEngine.Eval("type('DecoderLockProbe', (), {})()");
+        try {
+            value.AsManagedObject(typeof(DecoderProbeTarget));
+        }
+        catch (Exception) {
+        }
+        return decoder.OtherThreadConverted;
     }
 
     private static int? ReadMarker() {
