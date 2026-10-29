@@ -15,12 +15,25 @@ output = script.get_output()
 MODEL_SCALE = 400.0
 DRAFTING_SCALE = 4000.0
 MAX_LINES_PER_GRID = 250
+LINE_THICKNESS = 1.0
+MIN_DASH = 1e-6
 
 
-def _dash_array(segments):
+def _round_cap_dashes(segments, thickness):
+    if len(segments) % 2:
+        return [max(segment, MIN_DASH) for segment in segments]
+    dashes = []
+    for index in range(0, len(segments), 2):
+        dash = max(segments[index] - thickness, MIN_DASH)
+        dashes.append(dash)
+        dashes.append(segments[index + 1] + segments[index] - dash)
+    return dashes
+
+
+def _dash_array(segments, thickness):
     dashes = Media.DoubleCollection()
-    for segment in segments:
-        dashes.Add(max(segment, 1e-6))
+    for dash in _round_cap_dashes(segments, thickness):
+        dashes.Add(dash / thickness)
     return dashes
 
 
@@ -41,8 +54,9 @@ def _grid_lines(fill_grid, scale, radius):
         ]
     )
     first = int(math.ceil(bounds[0]))
-    last = min(int(math.floor(bounds[1])), first + MAX_LINES_PER_GRID)
-    for index in range(first, last + 1):
+    last = int(math.floor(bounds[1]))
+    stride = max(1, int(math.ceil((last - first + 1) / float(MAX_LINES_PER_GRID))))
+    for index in range(first, last + 1, stride):
         base = (origin[0] + index * step[0], origin[1] + index * step[1])
         start = -(base[0] * direction[0] + base[1] * direction[1]) - reach
         end = start + 2 * reach
@@ -107,10 +121,15 @@ class TestFillPatternViewer(forms.WPFWindow):
                 line.X2 = width / 2.0 + end_point[0] * scale
                 line.Y2 = height / 2.0 - end_point[1] * scale
                 line.Stroke = Media.Brushes.Black
-                line.StrokeThickness = 1
+                line.StrokeThickness = LINE_THICKNESS
                 if period > 0:
-                    line.StrokeDashArray = _dash_array([x * scale for x in segments])
-                    line.StrokeDashOffset = (start % period) * scale
+                    line.StrokeDashCap = Media.PenLineCap.Round
+                    line.StrokeDashArray = _dash_array(
+                        [x * scale for x in segments], LINE_THICKNESS
+                    )
+                    line.StrokeDashOffset = (
+                        (start % period) * scale - LINE_THICKNESS / 2.0
+                    ) / LINE_THICKNESS
                 canvas.Children.Add(line)
 
 
