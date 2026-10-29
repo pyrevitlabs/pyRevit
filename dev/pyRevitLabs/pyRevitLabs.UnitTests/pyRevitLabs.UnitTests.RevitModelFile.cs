@@ -15,7 +15,9 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
     /// <remarks>
     /// The fixtures are minimal structured storage files laid out like a real model: binary
     /// header, ASCII CRLF, the UTF-16 info text, ASCII CRLF. The info texts are copied from the
-    /// Revit 2023 and 2026 sample projects, whose builds are not in the host database.
+    /// Revit 2023 and 2026 sample projects, whose builds are not in the host database. The
+    /// shared-build cases resolve against the host database this machine loads, and are
+    /// inconclusive when it does not list that build for both years.
     /// </remarks>
     [TestClass()]
     public class RevitModelFileVersionTests {
@@ -40,6 +42,8 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
         private const string NoFormatUnknownBuildInfo =
             "Worksharing: Not enabled\r\n"
             + "Build: 1515(x64)\r\n";
+
+        private const string Shared2022And2023Build = "20241107_1515";
 
         private string _modelPath;
 
@@ -88,6 +92,32 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
             Assert.AreEqual(2023, model.RevitProduct.ProductYear);
             Assert.AreEqual("20220108_1515", model.RevitProduct.BuildNumber);
             Assert.IsFalse(model.RevitProduct.IsListedInHostsDatabase);
+        }
+
+        private static void RequireSharedBuildInHostDatabase() {
+            var listedYears = RevitProductData.GetAllProductInfo()
+                                              .Where(prodInfo => prodInfo?.build == Shared2022And2023Build)
+                                              .Select(prodInfo => RevitProductData.GetProductYearFromVersionString(prodInfo.version))
+                                              .ToList();
+            if (!listedYears.Contains(2022) || !listedYears.Contains(2023))
+                Assert.Inconclusive("The host database does not list build " + Shared2022And2023Build + " for both Revit 2022 and 2023");
+        }
+
+        [DataTestMethod()]
+        [DataRow(2022, "22.1.80.32")]
+        [DataRow(2023, "23.1.60.36")]
+        public void SharedListedBuild_UsesTheFormatYearToPickTheRecord(int formatYear, string expectedVersion) {
+            RequireSharedBuildInHostDatabase();
+
+            var model = new RevitModelFile(WriteModel(
+                "Worksharing: Not enabled\r\n"
+                + "Format: " + formatYear + "\r\n"
+                + "Build: " + Shared2022And2023Build + "(x64)\r\n"));
+
+            Assert.IsNotNull(model.RevitProduct);
+            Assert.AreEqual(formatYear, model.RevitProduct.ProductYear);
+            Assert.AreEqual(expectedVersion, model.RevitProduct.Version.ToString());
+            Assert.IsTrue(model.RevitProduct.IsListedInHostsDatabase);
         }
 
         [TestMethod()]
