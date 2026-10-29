@@ -531,6 +531,39 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void CaptureViewForwardsTheDisplayCameraAndSectionArguments() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
+
+        Serve(ToolCall(1, "capture_view", new JObject {
+            ["view"] = "3d",
+            ["detail_level"] = "fine",
+            ["display_style"] = "hidden_line",
+            ["eye"] = new JArray(1, 2, 3),
+            ["target"] = new JArray(4, 5, 6),
+            ["section"] = new JObject { ["origin"] = new JArray(0, 0, 4), ["normal"] = new JArray(0, 0, -1), ["depth"] = 3 },
+        }));
+
+        var capture = host.RequestsFor("capture").Single()["params"];
+        Assert.Equal("fine", capture.Value<string>("detail_level"));
+        Assert.Equal("hidden_line", capture.Value<string>("display_style"));
+        Assert.Equal(new[] { 1, 2, 3 }, capture["eye"].Select(value => value.Value<int>()));
+        Assert.Equal(new[] { 4, 5, 6 }, capture["target"].Select(value => value.Value<int>()));
+        Assert.Equal(-1, capture["section"]["normal"][2].Value<int>());
+        Assert.Equal(3, capture["section"].Value<int>("depth"));
+    }
+
+    [Fact]
+    public void CaptureViewAdvertisesTheNewOptionalArguments() {
+        var tools = (JArray)Single(Request(1, "tools/list"))["result"]["tools"];
+        var schema = tools.Single(tool => tool.Value<string>("name") == "capture_view")["inputSchema"];
+
+        var properties = (JObject)schema["properties"];
+        foreach (var name in new[] { "detail_level", "display_style", "eye", "target", "section" })
+            Assert.True(properties.ContainsKey(name), name);
+        Assert.Empty((JArray)schema["required"] ?? new JArray());
+    }
+
+    [Fact]
     public void ACaptureIsReturnedAsAnImageBlockWithoutRepeatingTheData() {
         host.Handler = request => FakeAgentHost.Result(request, new JObject {
             ["image_base64"] = "QUJD",

@@ -24,6 +24,8 @@ from pyrevit.revit import ui
 
 Don't create a view only to look at something: `capture_view(view="3d", elements=[...], direction="southwest")` renders a temporary 3D view of model categories, framed on those elements, and leaves nothing behind.
 
+To judge detail-level-dependent content such as families, add `detail_level="fine"` (or `coarse`, `medium`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`); both apply to this capture only, also on a named view. For a camera of your own, pass `eye=[x, y, z]` and `target=[x, y, z]` in feet. For a cut, pass `section={"origin": [x, y, z], "normal": [nx, ny, nz], "depth": d}`: a horizontal `normal` is the direction the section looks along, `[0, 0, -1]` gives a plan cut at the origin's height. All of these stay temporary; don't create a real view just to look.
+
 To see what you just showed the user, call `show_elements` and then `capture_view(mode="viewport")`: it renders the active view exactly as zoomed and panned, with the temporary isolate, without depending on the Revit window. Use `mode="screen"` only when you need the selection highlight, and expect `view_obscured` if another window covers Revit.
 
 ## Finding views
