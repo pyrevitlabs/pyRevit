@@ -154,6 +154,13 @@ def _open_sheets(xlfile, sheet_names=None):
     Picks the reader once per file. Rows are lists of xlrd-equivalent values
     whatever the reader; ``sheet_names``, when given, skips the other sheets
     before their rows are read.
+
+    Note:
+        Neither reader keeps the file open after this returns, so it can be
+        renamed or deleted right away. xlrd gets the bytes rather than the
+        path: its zip handle on a path-opened .xlsx stays open on IronPython
+        until the GC runs. The path still goes along so an empty file raises
+        xlrd's own error.
     """
     if _uses_openpyxl(xlfile):
         with open(str(xlfile), "rb") as xlstream:
@@ -166,7 +173,9 @@ def _open_sheets(xlfile, sheet_names=None):
                 ]
             finally:
                 xlwb.close()
-    xlwb = _legacy_xlrd().open_workbook(str(xlfile))
+    with open(str(xlfile), "rb") as xlstream:
+        xlcontents = xlstream.read()
+    xlwb = _legacy_xlrd().open_workbook(filename=str(xlfile), file_contents=xlcontents)
     return [
         (sheet.name, _xlrd_sheet_rows(sheet))
         for sheet in xlwb.sheets()

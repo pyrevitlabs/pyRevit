@@ -255,5 +255,52 @@ class ExcelInteropTests(unittest.TestCase):
         writer.Workbook.assert_called_once_with("book.xls")
 
 
+class XlrdReaderReleaseTests(unittest.TestCase):
+    """The IronPython (xlrd) reader leaves no handle on the workbook file.
+
+    IronPython has no reference counting, so the test keeps every ZipFile xlrd
+    opens alive, as IronPython effectively does until its GC runs.
+    """
+
+    def setUp(self):
+        """Force the xlrd reader and retain the ZipFile objects it creates."""
+        xlrd = xl._legacy_xlrd()
+        retained = []
+        self.addCleanup(lambda: [zf.close() for zf in retained])
+
+        class RetainedZipFile(xlrd.zipfile.ZipFile):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                retained.append(self)
+
+        for patcher in (
+            mock.patch.object(xl, "_uses_openpyxl", return_value=False),
+            mock.patch.object(xlrd.zipfile, "ZipFile", RetainedZipFile),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_workbook_can_be_deleted_right_after_load(self):
+        """Read the workbook, then delete it while xlrd's objects are alive."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "data.xlsx"
+            xl.dump(path, {"Sheet1": [["name"], ["walls"]]})
+
+            loaded = xl.load(path)
+            path.unlink()
+
+            self.assertFalse(path.exists())
+        self.assertEqual([["walls"]], loaded["Sheet1"]["rows"])
+
+    def test_empty_workbook_raises_the_xlrd_error(self):
+        """An empty file reports xlrd's own error, as loading by path did."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "empty.xlsx"
+            path.write_bytes(b"")
+
+            with self.assertRaisesRegex(Exception, "File size is 0 bytes"):
+                xl.load(path)
+
+
 if __name__ == "__main__":
     unittest.main()
