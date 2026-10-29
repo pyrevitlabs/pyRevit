@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 import os.path as op
 import re
-
-from pathlib import Path
 
 from pyrevit import forms, EXEC_PARAMS
 from pyrevit.coreutils.applocales import get_locale_string
@@ -172,46 +171,87 @@ dir_pattern = "**/" if include_subfolders else ""
 
 # Main loop
 
-pdf_files = list(Path(basefolder).glob("{}*.pdf".format(dir_pattern)))
+pdf_files = []
+
+if include_subfolders:
+    for root, dirs, files in os.walk(basefolder):
+        for filename in files:
+            if filename.lower().endswith(".pdf"):
+                pdf_files.append(op.join(root, filename))
+else:
+    for filename in os.listdir(basefolder):
+        filepath = op.join(basefolder, filename)
+
+        if (
+            filename.lower().endswith(".pdf")
+            and op.isfile(filepath)
+        ):
+            pdf_files.append(filepath)
+
 pdf_count = len(pdf_files)
 sheet_count = rename_count = err_count = 0
 
 for pdf_file in pdf_files:
-    if not prefix_stripper.search(pdf_file.stem):
+    pdf_stem = op.splitext(op.basename(pdf_file))[0]
+
+    if not prefix_stripper.search(pdf_stem):
         continue
+
     sheet_count += 1
 
     # --- compute new name ---
     try:
-        new_stem = renamepdf(pdf_file.stem)
+        new_stem = renamepdf(pdf_stem)
     except (ValueError, re.error) as e:
         err_count += 1
-        print(get_locale_string(STR["not_renamed_bad_name"]).format(pdf_file))
+        print(
+            get_locale_string(STR["not_renamed_bad_name"]).format(
+                pdf_file
+            )
+        )
         print("  -> {}".format(e))
         continue
 
-    target = pdf_file.with_name("{}.pdf".format(new_stem))
+    # Preserve the original extension and directory.
+    target = op.join(
+        op.dirname(pdf_file),
+        "{}{}".format(new_stem, op.splitext(pdf_file)[1])
+    )
 
     # --- guard: target already exists ---
-    if target.exists():
+    if op.exists(target):
         err_count += 1
-        print(get_locale_string(STR["not_renamed_exists"]).format(pdf_file))
+        print(
+            get_locale_string(STR["not_renamed_exists"]).format(
+                pdf_file
+            )
+        )
         print("  -> {}".format(target))
         continue
 
     # --- rename ---
     try:
-        pdf_file.rename(target)
+        os.rename(pdf_file, target)
         rename_count += 1
+
     except OSError as e:
         import errno as _errno
 
         err_count += 1
+
         if e.errno == _errno.EEXIST:
-            print(get_locale_string(STR["not_renamed_exists"]).format(pdf_file))
+            print(
+                get_locale_string(STR["not_renamed_exists"]).format(
+                    pdf_file
+                )
+            )
             print("  -> {}".format(target))
         else:
-            print(get_locale_string(STR["not_renamed_locked"]).format(pdf_file))
+            print(
+                get_locale_string(STR["not_renamed_locked"]).format(
+                    pdf_file
+                )
+            )
             print("  -> {}".format(e))
 
 # Summary
