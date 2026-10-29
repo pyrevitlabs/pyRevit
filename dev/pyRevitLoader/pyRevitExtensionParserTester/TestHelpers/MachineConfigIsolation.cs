@@ -6,9 +6,11 @@ using pyRevitLabs.Common;
 using pyRevitLabs.Configurations;
 
 /// <summary>
-/// Points the per-user and all-users pyRevit directories at a temp folder for the
-/// whole test run, so the parser never reads the developer's or CI agent's real
-/// <c>pyRevit_config.ini</c>. Without this, a machine setting such as
+/// Points the per-user and all-users pyRevit directories, and the install root that
+/// the clone-local config is looked up in, at a temp folder for the whole test run,
+/// so the parser never reads the developer's or CI agent's real
+/// <c>pyRevit_config.ini</c>, including one beside the clone's <c>pyRevitfile</c>.
+/// Without this, a machine setting such as
 /// <c>read_script_metadata = false</c> silently changes what the parser returns.
 /// Tests that need specific settings still install their own factory through
 /// <see cref="PyRevitConfigStore.SetFactory"/>; <see cref="PyRevitConfigStore.Reset"/>
@@ -43,6 +45,7 @@ public class MachineConfigIsolation
         _previousProgramDataOverride = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar);
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitPathOverrideEnvVar, appData);
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar, programData);
+        PyRevitInstallScope.SetRuntimeInstallRoot(_isolatedRoot);
 
         ResetConfigState();
     }
@@ -52,6 +55,7 @@ public class MachineConfigIsolation
     {
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitPathOverrideEnvVar, _previousAppDataOverride);
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar, _previousProgramDataOverride);
+        PyRevitInstallScope.SetRuntimeInstallRoot(null);
         ResetConfigState();
 
         try
