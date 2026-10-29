@@ -228,8 +228,12 @@ a managed `BindingModel` for two-way WPF binding while selector results retain
 the original Python or Revit object identity.
 
 Plain Python data reaches WPF under CPython the way it does under IronPython.
-Importing the CPython backend loads `pyRevitLabs.PyRevit.Forms.Binding` and
-registers pythonnet codecs (`forms/backends/_proxies.py`). A Python list, tuple
+The CPython engine loads `pyRevitLabs.PyRevit.Forms.Binding` and registers its
+pythonnet codecs (`PythonBinding.RegisterConversions`) before the first script
+runs, so conversions never depend on whether an earlier command imported
+`pyrevit.forms`; importing the CPython backend (`forms/backends/_proxies.py`)
+only adds the Reactive model hooks and repeats the registration as an idempotent
+fallback. A Python list, tuple
 or other iterable assigned to a non-generic `IEnumerable`, `IList` or
 `ICollection`, such as `ItemsSource`, becomes a `PythonListProxy`. That proxy
 reads sized sequences live, so `Items.Refresh()` shows edits to the Python list,
@@ -250,7 +254,7 @@ adapter, goes back to Python as the original object: `ItemsSource`,
 `SelectedItem`, `Items[i]`, event arguments, filter predicates and
 `DataContext`. Proxies compare by Python identity, so unhashable objects work,
 and they take the GIL on each access.
-The codecs are process-wide once registered and claim only those four CLR
+The codecs are process-wide and claim only those four CLR
 targets, plus reference types a form's native root satisfies; Python lists
 passed as `object`, dicts and other builtins stay pythonnet objects. The bundled
 pythonnet also converts any Python value assigned to a `bool` or `bool?`
@@ -259,11 +263,15 @@ argument when no overload accepts it otherwise, so `args.Handled = re.match(...)
 works as under IronPython. A Python class that only implements .NET interfaces,
 such as an `IValueConverter`, needs no `__namespace__`: pythonnet generates its
 CLR type in a namespace named after its module and reuses it when a re-run
-command redefines the class. `pyrevit.framework.wpf` under CPython offers
-`LoadComponent` for plain CLR targets such as a new `DataTemplate`, and raises
-`PyRevitCPythonNotSupported` for Python-derived windows and controls. The bundled pythonnet clears its conversion caches when a
-codec is registered, so the late registration also covers types converted
-earlier in the session.
+command redefines the class. The generated type is keyed by the defining file's
+`__file__` too, so same-named classes from different scripts never share a CLR
+type. Generated classes run the full class-creation protocol (`__set_name__`,
+`__init_subclass__`) and expose `__dict__`, so `functools.cached_property`
+works. `pyrevit.framework.wpf` under CPython offers `LoadComponent` for plain CLR
+targets such as a new `DataTemplate`, and raises `PyRevitCPythonNotSupported` for
+Python-derived windows and controls. The bundled pythonnet asks codecs whether
+they apply outside its registry lock, so a codec that runs Python cannot
+deadlock another thread holding the GIL.
 
 | API | IronPython | CPython |
 | --- | --- | --- |
@@ -313,14 +321,15 @@ tests in `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests`. Portab
 `python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'`.
 The sibling `pyRevitLabs.PyRevit.Forms.IronPython.Tests` project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
-`-p:IronPythonVersion=IPY2712PR` or `IPY342`). The build pipeline does not run
-these two projects; run them manually before changing `pyrevit.forms`. Inside
+`-p:IronPythonVersion=IPY2712PR` or `IPY342`). The build pipeline's test gate
+runs both projects, each IronPython engine, and the proxy tests; they show real
+WPF windows, so they need a desktop session. Inside
 Revit, run `pyrevit.unittests.forms_acceptance.run(doc)`
 through pyRevit MCP with each engine and `dry_run=true`. The runner creates real
 selector fixtures and always rolls its transaction group back. On Revit 2026.5,
-23 cases passed without skips under CPython 3.12.3 (run `c94af430887c`); 21
-shared cases passed under IronPython 3.4.2 (run `2530e1bffe3b`) with two
-CPython-composition probes skipped. This covers actual modal control events,
+every case passed without skips under CPython 3.12.3, and every shared case
+passed under IronPython 3.4.2, where only the CPython-composition probes are
+skipped. This covers actual modal control events,
 two-way binding, selection identity, settings and scoped overlays. Native picker,
 persistent dockable-panel behavior and other Revit generations are not covered
 by those results. The DevTools **Debug → Forms Tests** pulldown runs this
@@ -338,8 +347,9 @@ modal or modeless controller, but still need individual workflow review. The
 inventory also audits every bundled custom
 XAML handler declaration against the CPython deferred-event registry (330
 bindings at this revision); it does not execute each tool workflow. The
-published CPython surface now covers all 397 bundled references, including
-dockable-panel registration and control APIs. That count is an API-coverage
+published CPython surface covers every bundled reference: the inventory reports
+no unsupported, modal-only or host-required references, including
+dockable-panel registration and control APIs. That result is an API-coverage
 guardrail, not evidence that all tool workflows are compatible: native CLR
 subclass assumptions, persistent pane lifetimes and callbacks requiring a Revit
 API context require live Revit validation.
