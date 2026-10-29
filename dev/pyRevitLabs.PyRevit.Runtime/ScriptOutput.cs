@@ -587,9 +587,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void print_table(object table_data, object columns = null, object formats = null, string title = "", string last_line_style = "") {
             var rows = PythonTableData.ToRows(table_data);
-            var emptyTableWarning = PythonTableData.EmptyTableWarning(rows);
-            if (emptyTableWarning != null) {
-                print_md(emptyTableWarning);
+            if (rows.Count == 0) {
                 return;
             }
 
