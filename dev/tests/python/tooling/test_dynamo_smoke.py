@@ -1,4 +1,4 @@
-"""API-free failure-path regressions for the local Dynamo smoke harness.
+"""API-free regressions for the local Dynamo smoke harness and evidence lifecycle.
 
 Only lightweight doubles are imported; these cases never load Revit or Dynamo.
 Real graph execution remains a separate local integration check.
