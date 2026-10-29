@@ -154,6 +154,49 @@ class ExcelInteropTests(unittest.TestCase):
         rows = self._load_written("blank.xlsx", lambda workbook: None)
         self.assertEqual({"headers": [], "rows": []}, list(rows.values())[0])
 
+    def test_openpyxl_extent_matches_xlrd(self):
+        """Formatted-only cells add no rows or columns; merged ranges do, as in xlrd."""
+        from openpyxl.styles import Font
+
+        def build(workbook):
+            sheet = workbook.active
+            sheet.title = "Extent"
+            sheet.append(["a", "b"])
+            sheet.append(["c", None])
+            sheet.merge_cells("A3:C4")
+            sheet["E9"].font = Font(bold=True)
+            sheet["A12"].font = Font(bold=True)
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "extent.xlsx"
+            import openpyxl
+
+            workbook = openpyxl.Workbook()
+            build(workbook)
+            workbook.save(path)
+            loaded = xl.load(path, headers=False)["Extent"]["rows"]
+            xlrd_sheet = (
+                xl._legacy_xlrd()
+                .open_workbook(file_contents=path.read_bytes())
+                .sheets()[0]
+            )
+            expected = [[cell.value for cell in row] for row in xlrd_sheet.get_rows()]
+
+        self.assertEqual(
+            [["a", "b", ""], ["c", "", ""], ["", "", ""], ["", "", ""]], expected
+        )
+        self.assertEqual(expected, loaded)
+
+    def test_openpyxl_formatted_only_sheet_has_no_rows(self):
+        """A worksheet with formatting but no values yields no rows, as xlrd does."""
+        from openpyxl.styles import Font
+
+        def build(workbook):
+            workbook.active["C5"].font = Font(bold=True)
+
+        rows = self._load_written("styled.xlsx", build)
+        self.assertEqual({"headers": [], "rows": []}, list(rows.values())[0])
+
     def test_reader_is_chosen_by_file_signature(self):
         """Workbook content wins over a misleading file extension."""
         with tempfile.TemporaryDirectory() as directory:

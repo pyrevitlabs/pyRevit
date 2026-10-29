@@ -101,12 +101,34 @@ def _openpyxl_cell_value(cell, epoch):
     return value
 
 
+def _openpyxl_extent(xlsheet):
+    """Return the ``(nrows, ncols)`` xlrd reports for the same worksheet.
+
+    xlrd sizes a sheet by its cells that hold a value and by its merged
+    ranges; openpyxl's ``max_row``/``max_column`` also count cells that only
+    carry formatting, which would add trailing blank rows and columns.
+    """
+    nrows = ncols = 0
+    for row in xlsheet.iter_rows():
+        for cell in row:
+            if cell.value is not None:
+                nrows = max(nrows, cell.row)
+                ncols = max(ncols, cell.column)
+    for merged in xlsheet.merged_cells.ranges:
+        nrows = max(nrows, merged.max_row)
+        ncols = max(ncols, merged.max_col)
+    return nrows, ncols
+
+
 def _openpyxl_sheet_rows(xlsheet):
-    rows = list(xlsheet.iter_rows())
-    if all(cell.value is None for row in rows for cell in row):
+    nrows, ncols = _openpyxl_extent(xlsheet)
+    if not nrows:
         return []
     epoch = xlsheet.parent.epoch
-    return [[_openpyxl_cell_value(cell, epoch) for cell in row] for row in rows]
+    return [
+        [_openpyxl_cell_value(cell, epoch) for cell in row]
+        for row in xlsheet.iter_rows(min_row=1, max_row=nrows, min_col=1, max_col=ncols)
+    ]
 
 
 def _xlrd_sheet_rows(xlsheet):
