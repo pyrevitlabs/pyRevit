@@ -5,6 +5,12 @@
     "line": 0.8413140311804009,
     "lines": 1796
   },
+  "dotnet-linked/pyRevitLabs.PyRevit.Renderer.Tests/net8.0-windows": {
+    "branch": 0.7763157894736842,
+    "branches": 76,
+    "line": 0.7680412371134021,
+    "lines": 194
+  },
   "dotnet-linked/pyRevitLabs.PyRevit.Runtime.Agent.Tests/net10.0-windows": {
     "branch": 0.771551724137931,
     "branches": 232,
@@ -130,6 +136,12 @@
     "branches": 62,
     "line": 0.9988974641675854,
     "lines": 2721
+  },
+  "dotnet/pyRevitLabs.PyRevit.Renderer/net8.0-windows": {
+    "branch": 0.625,
+    "branches": 8,
+    "line": 0.84,
+    "lines": 25
   },
   "dotnet/pyRevitLabs.PyRevit.Runtime.Shared/net48": {
     "branch": 0.75,
