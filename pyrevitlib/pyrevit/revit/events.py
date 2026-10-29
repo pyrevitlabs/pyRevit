@@ -57,16 +57,33 @@ def create_handler(handler_func, handler_args_type):
 
 
 _EVENT_SOURCES = {
-    "doc-changed": (DB.Events.DocumentChangedEventArgs, "app", "DocumentChanged"),
-    "doc-closed": (DB.Events.DocumentClosedEventArgs, "app", "DocumentClosed"),
-    "doc-opened": (DB.Events.DocumentOpenedEventArgs, "app", "DocumentOpened"),
-    "view-activated": (UI.Events.ViewActivatedEventArgs, "uiapp", "ViewActivated"),
+    "doc-changed": (DB.Events, "DocumentChangedEventArgs", "app", "DocumentChanged"),
+    "doc-closed": (DB.Events, "DocumentClosedEventArgs", "app", "DocumentClosed"),
+    "doc-opened": (DB.Events, "DocumentOpenedEventArgs", "app", "DocumentOpened"),
+    "view-activated": (
+        UI.Events,
+        "ViewActivatedEventArgs",
+        "uiapp",
+        "ViewActivated",
+    ),
     "selection-changed": (
-        UI.Events.SelectionChangedEventArgs,
+        UI.Events,
+        "SelectionChangedEventArgs",
         "uiapp",
         "SelectionChanged",
     ),
 }
+
+
+def _event_args_type(event_name):
+    """Resolve the event-args type only when a handler is attached.
+
+    Note:
+        ``SelectionChangedEventArgs`` exists only in Revit 2023+, so resolving
+        it at import time would break ``pyrevit.revit`` on older hosts.
+    """
+    namespace, type_name, _, _ = _EVENT_SOURCES[event_name]
+    return getattr(namespace, type_name)
 
 
 def _clr_event(event_name):
@@ -76,7 +93,7 @@ def _clr_event(event_name):
     is subscribed. Revit returns a new ``Application`` wrapper on every access,
     and CPython's ``-=`` only finds handlers added through the same wrapper.
     """
-    _, source_name, clr_event_name = _EVENT_SOURCES[event_name]
+    _, _, source_name, clr_event_name = _EVENT_SOURCES[event_name]
     source = getattr(HOST_APP, source_name)
     return source, source.GetType().GetEvent(clr_event_name)
 
@@ -87,7 +104,7 @@ def add_handler(event_name, handler_func):
     if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
         mlogger.error("Not available in this Revit Version")
         return None
-    event_handler = create_handler(handler_func, _EVENT_SOURCES[event_name][0])
+    event_handler = create_handler(handler_func, _event_args_type(event_name))
     source, clr_event = _clr_event(event_name)
     clr_event.AddEventHandler(source, event_handler)
     return event_handler
