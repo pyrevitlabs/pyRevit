@@ -17,7 +17,7 @@ class GreetingViewModel(forms.Reactive):
 
     @forms.reactive
     def name(self):
-        """Raises PropertyChanged when set to a different value."""
+        """Name to greet; setting a different value raises PropertyChanged."""
         return self._name
 
     @name.setter
