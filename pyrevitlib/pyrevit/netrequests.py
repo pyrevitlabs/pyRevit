@@ -334,6 +334,8 @@ def _create_request(method, url, headers=None, data=None, json_data=None):
 
 
 # fmt: off
+
+
 def request(
     method,
     url,
@@ -445,6 +447,8 @@ def get(
         allow_redirects=allow_redirects,
         **kwargs  # fmt: skip
     )
+
+
 def post(
     url,
     headers=None,
