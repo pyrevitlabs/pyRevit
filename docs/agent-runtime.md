@@ -313,19 +313,19 @@ is best checked by running its snippets through the MCP server in a Revit that h
 attached (`pyrevit attach dev default --installed`, see the developer guide). The steps in between
 are easy to get wrong:
 
-1. **Rebuild only for C# changes.** Changes under `dev/` or `build/` need
-   `cd build && dotnet run -c Debug -- ci`. Python under `pyrevitlib` and the skill markdown
-   don't.
-2. **Stop the MCP servers before a rebuild.** Each client session runs `bin\pyrevit.exe mcp` from
-   the clone, and that process keeps files in `bin\` open. The build then fails with "The process
-   cannot access the file ... because it is being used by another process", for example on
-   `Colorful.Console.dll`. Servers of other client sessions count too. Run
+1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
+   need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
+2. **Stop the MCP servers, then rebuild.** Each client session runs `bin\pyrevit.exe mcp` from
+   the clone, and that process keeps files in `bin\` open. A build started while one runs fails with
+   "The process cannot access the file ... because it is being used by another process", for example
+   on `Colorful.Console.dll`. Servers of other client sessions count too.
 
     ```shell
     pwsh dev/scripts/Stop-McpServers.ps1
+    cd build && dotnet run -c Debug -- ci
     ```
 
-    (`-WhatIf` lists the servers without stopping them). Clients start a new server on the next
+    `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
     tool call, or need a reconnect.
 3. **Restart Revit after a build.** Accept the "Security - Unsigned Add-In" dialog with **Load Once**
    every time; the MCP host doesn't answer before that. Python-only changes need no rebuild, but
