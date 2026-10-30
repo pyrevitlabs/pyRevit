@@ -41,6 +41,7 @@ from pyrevit.revit import units, ui
 | Views | `create.create_plan_view`, `create_model_3d_view`, `create_section_view`, `create_elevation_view` |
 | Drawings | `query.get_face_references(element, direction)`, `create.create_dimension`, `create.tag_elements`, `create.create_room_tags`, `create.create_schedule`, `create.create_sheet`, `create.place_on_sheet` |
 | View framing and visibility | `update.set_section_box`, `update.orient_3d_view`, `update.set_3d_view_camera`, `update.crop_view_to_elements`, `update.set_crop_region`, `update.hide_non_model_categories`, `update.hide_categories` |
+| Family content (family documents; see `family-geometry`) | `create.create_reference_plane`, `create.create_labelled_dimension`, `create.align_faces_to_planes`, `create.load_family_document`, `update.set_formula` |
 | Navigation | `ui.request_view_change(view)`, `ui.zoom_to_elements(elements)`, `ui.zoom_fit()` |
 | Units | `units.parse_length("32'-6\"")` (feet), `units.parse_slope("8:12")` (rise over run), `units.format_length(value)` |
 | Parameters | `query.get_param(element, name)`, `update.update_param_value(param, value)` |

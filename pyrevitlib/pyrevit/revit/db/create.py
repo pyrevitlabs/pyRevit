@@ -1957,3 +1957,211 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         placed.SetBoxCenter(placed.GetBoxCenter() + move)
     doc.Regenerate()
     return placed
+
+
+REFERENCE_PLANE_REFERENCES = {
+    "left": 0,
+    "center_left_right": 1,
+    "right": 2,
+    "front": 3,
+    "center_front_back": 4,
+    "back": 5,
+    "bottom": 6,
+    "center_elevation": 7,
+    "top": 8,
+    "not_a_reference": 12,
+    "strong": 13,
+    "weak": 14,
+}
+
+
+def _require_family_document(doc, action):
+    if not doc.IsFamilyDocument:
+        raise PyRevitException("To {}, use a family document.".format(action))
+    _require_transaction(doc, action)
+
+
+def create_reference_plane(
+    name, start, end, view, cut_vector=None, reference=None, doc=None
+):
+    """Create a named reference plane in a family document.
+
+    Args:
+        name (str): plane name, unique within the family.
+        start (DB.XYZ | tuple): bubble end of the plane.
+        end (DB.XYZ | tuple): free end of the plane.
+        view (DB.View): plan or elevation view the plane is drawn in.
+        cut_vector (DB.XYZ, optional): direction normal to the drawn line in
+            the view, defaults to the view direction.
+        reference (str, optional): "Is Reference" setting, a key of
+            ``REFERENCE_PLANE_REFERENCES`` such as ``"left"`` or ``"strong"``.
+            Required for a plane that a host family aligns to.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (DB.ReferencePlane): the plane.
+
+    Raises:
+        PyRevitException: outside a family document or transaction, or for an
+            unknown ``reference``.
+
+    Note:
+        The ``REFERENCE_PLANE_REFERENCES`` values were checked in Revit 2024.
+    """
+    doc = doc or DOCS.doc
+    _require_family_document(doc, "create reference planes")
+    if reference is not None and reference not in REFERENCE_PLANE_REFERENCES:
+        raise PyRevitException(
+            "reference must be one of {}.".format(
+                ", ".join(sorted(REFERENCE_PLANE_REFERENCES))
+            )
+        )
+    plane = doc.FamilyCreate.NewReferencePlane(
+        to_xyz(start), to_xyz(end), cut_vector or view.ViewDirection, view
+    )
+    plane.Name = name
+    if reference is not None:
+        plane.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).Set(
+            REFERENCE_PLANE_REFERENCES[reference]
+        )
+    return plane
+
+
+def create_labelled_dimension(
+    view, planes, start, end, label=None, equal_segments=False, doc=None
+):
+    """Dimension reference planes in a family, optionally driving a parameter.
+
+    Args:
+        view (DB.View): view the dimension is drawn in.
+        planes (list[DB.ReferencePlane]): at least two planes, in dimension order.
+        start (DB.XYZ | tuple): start of the dimension line.
+        end (DB.XYZ | tuple): end of the dimension line.
+        label (DB.FamilyParameter, optional): parameter that drives the
+            distance between the two planes.
+        equal_segments (bool, optional): keep the segments equal, which holds
+            a plane centred between two others.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (DB.Dimension): the dimension.
+
+    Raises:
+        PyRevitException: outside a family document or transaction, with fewer
+            than two planes, or when ``label`` is given for more than two planes.
+
+    Important:
+        A label on a dimension of three or more planes labels every segment,
+        so the family ends up twice as wide as the parameter. Label a
+        two-plane dimension and add a second, unlabelled dimension through the
+        centre plane with ``equal_segments=True``.
+    """
+    doc = doc or DOCS.doc
+    _require_family_document(doc, "create dimensions")
+    if len(planes) < 2:
+        raise PyRevitException("A dimension needs at least two reference planes.")
+    if label is not None and len(planes) > 2:
+        raise PyRevitException(
+            "Label a two-plane dimension; add a separate dimension with "
+            "equal_segments=True for the centre plane."
+        )
+    references = DB.ReferenceArray()
+    for plane in planes:
+        references.Append(plane.GetReference())
+    line = DB.Line.CreateBound(to_xyz(start), to_xyz(end))
+    dimension = doc.FamilyCreate.NewDimension(view, line, references)
+    if equal_segments:
+        dimension.AreSegmentsEqual = True
+    if label is not None:
+        dimension.FamilyLabel = label
+    return dimension
+
+
+def align_faces_to_planes(element, view, planes, tolerance=1e-6, doc=None):
+    """Lock the planar faces of a family element to coincident reference planes.
+
+    Every planar face that lies in one of ``planes`` gets an alignment
+    constraint, so the element follows the planes when their dimensions change.
+
+    Args:
+        element (DB.Element): form such as an extrusion.
+        view (DB.View): view the alignments are made in. A plan view reaches
+            vertical faces, an elevation view reaches horizontal ones.
+        planes (list[DB.ReferencePlane]): candidate planes.
+        tolerance (float, optional): distance in feet within which a face counts
+            as lying in a plane.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (list[str]): names of the planes that were aligned to a face.
+
+    Note:
+        A face that no plane contains is skipped. A point where two sloped
+        faces meet has no face to align; give it a short flat edge longer than
+        ``Application.ShortCurveTolerance``.
+    """
+    doc = doc or DOCS.doc
+    _require_family_document(doc, "align faces")
+    options = DB.Options()
+    options.ComputeReferences = True
+    options.View = view
+    plane_geometry = [(plane, plane.GetPlane()) for plane in planes]
+    aligned = []
+    for geometry in element.get_Geometry(options):
+        if not isinstance(geometry, DB.Solid):
+            continue
+        for face in geometry.Faces:
+            if not isinstance(face, DB.PlanarFace):
+                continue
+            for plane, plane_def in plane_geometry:
+                parallel = abs(abs(face.FaceNormal.DotProduct(plane_def.Normal)) - 1.0)
+                distance = abs(
+                    (face.Origin - plane_def.Origin).DotProduct(plane_def.Normal)
+                )
+                if parallel < tolerance and distance < tolerance:
+                    doc.FamilyCreate.NewAlignment(
+                        view, plane.GetReference(), face.Reference
+                    )
+                    aligned.append(plane.Name)
+                    break
+    return aligned
+
+
+def load_family_document(family_doc, doc=None, name=None):
+    """Load an open family document into a project or another family.
+
+    A family document that was never saved loads under its document title,
+    such as ``Family24``; pass ``name`` to rename the loaded family.
+
+    Args:
+        family_doc (DB.Document): the family document to load.
+        doc (DB.Document, optional): target document, defaults to the active one.
+        name (str, optional): name for the loaded family.
+
+    Returns:
+        (DB.Family): the loaded family, in ``doc``.
+
+    Raises:
+        PyRevitException: when ``family_doc`` is not a family document, or when
+            ``doc`` has an open transaction.
+
+    Important:
+        Call it without an open transaction on ``doc``: ``LoadFamily`` manages
+        its own. The rename runs in a transaction of its own.
+        Reloading replaces the ``Family`` object, so a ``Family`` kept from an
+        earlier load is no longer valid.
+    """
+    doc = doc or DOCS.doc
+    if not family_doc.IsFamilyDocument:
+        raise PyRevitException("load_family_document needs a family document.")
+    if doc.IsModifiable:
+        raise PyRevitException(
+            "Loading a family document must run outside a transaction on the target."
+        )
+    family = family_doc.LoadFamily(doc, FamilyLoaderOptionsHandler())
+    if name and family.Name != name:
+        rename = DB.Transaction(doc, "Rename loaded family")
+        rename.Start()
+        family.Name = name
+        rename.Commit()
+    return family

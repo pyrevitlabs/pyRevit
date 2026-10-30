@@ -21,6 +21,45 @@ def set_name(element, new_name):
     element.Name = new_name
 
 
+def set_formula(family_manager, parameter, formula):
+    """Set a family parameter formula and name the parameter when Revit refuses it.
+
+    Revit reports only "It is an invalid formula string", so a batch of
+    formulas gives no hint which one failed.
+
+    Args:
+        family_manager (DB.FamilyManager): manager of the family document.
+        parameter (DB.FamilyParameter): parameter that receives the formula.
+        formula (str): formula text; ``None`` clears it.
+
+    Raises:
+        PyRevitException: when the family has no type yet, or Revit rejects the
+            formula. The message names the parameter and the formula, and
+            points to ``not(a > b)`` for ``<=`` and ``>=``, which formulas lack.
+
+    Important:
+        Create a type with ``family_manager.NewType`` first, and call it inside
+        a transaction on the family document.
+    """
+    name = parameter.Definition.Name
+    if family_manager.CurrentType is None:
+        raise PyRevitException(
+            "Cannot set the formula of {!r}: the family has no type. "
+            "Call NewType first.".format(name)
+        )
+    try:
+        family_manager.SetFormula(parameter, formula)
+    except Exception as ex:
+        hint = ""
+        if formula and ("<=" in formula or ">=" in formula):
+            hint = " Formulas have no <= or >=; use not(a > b) or not(a < b)."
+        raise PyRevitException(
+            "Cannot set the formula of {!r} to {!r}: {}.{}".format(
+                name, formula, str(ex).strip().splitlines()[0].rstrip("."), hint
+            )
+        )
+
+
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     doc = doc or DOCS.doc
     get_elementid_value = get_elementid_value_func()

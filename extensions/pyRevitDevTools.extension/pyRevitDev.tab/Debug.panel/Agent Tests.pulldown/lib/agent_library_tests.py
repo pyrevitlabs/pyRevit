@@ -27,6 +27,7 @@ SHIPPED_SKILLS = (
     "drawings",
     "extension-authoring",
     "family-editing",
+    "family-geometry",
     "modeling",
     "pyrevit-library",
     "revit-files",
