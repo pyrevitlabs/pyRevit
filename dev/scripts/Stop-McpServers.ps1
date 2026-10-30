@@ -6,7 +6,7 @@ Stops the pyrevit MCP servers that run from this clone's bin folder.
 Every MCP client session starts bin\pyrevit.exe mcp, which keeps files in bin\ open.
 A rebuild fails with "The process cannot access the file ... because it is being used by
 another process" until those servers are stopped. The script ends only the servers of the
-given bin folder: "pyrevit.exe mcp", optionally with --revit=<year>. It never ends
+given bin folder: "pyrevit.exe mcp", optionally with --revit=<year> or --revit <year>. It never ends
 short-lived commands such as "pyrevit mcp install" or "pyrevit clones update mcp", nor a
 pyrevit.exe from another clone. Servers of every client session are stopped; clients start
 a new one on the next tool call or need a reconnect.
@@ -27,7 +27,7 @@ param(
 $BinPath = (Resolve-Path -LiteralPath $BinPath -ErrorAction Stop).ProviderPath
 $executable = Join-Path $BinPath 'pyrevit.exe'
 $launcher = '^\s*(?:"?' + [regex]::Escape($executable) + '"?|"[^"]*"|\S+)'
-$serverArguments = '^\s+mcp(\s+--revit=\S+)?\s*$'
+$serverArguments = '^\s+mcp(\s+--revit(?:=|\s+)\S+)?\s*$'
 $servers = @(
     Get-CimInstance Win32_Process -Filter "Name = 'pyrevit.exe'" |
         Where-Object {
