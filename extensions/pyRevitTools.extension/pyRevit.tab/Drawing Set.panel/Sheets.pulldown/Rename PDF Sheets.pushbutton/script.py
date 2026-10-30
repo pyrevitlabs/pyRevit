@@ -56,48 +56,64 @@ STR = {
         "de_de": "Datei NICHT umbenannt (Namensverarbeitung fehlgeschlagen): {}",
         "pt_br": "Arquivo NÃO renomeado (falha no processamento do nome): {}",
     },
+    "directory_scan_failed": {
+        "en_us": "Directory scan failed: {}",
+        "fr_fr": "Échec de l'analyse du répertoire : {}",
+        "ru": "Не удалось просканировать каталог: {}",
+        "chinese_s": "目录扫描失败：{}",
+        "es_es": "Error al explorar el directorio: {}",
+        "de_de": "Verzeichnis konnte nicht durchsucht werden: {}",
+        "pt_br": "Falha ao verificar o diretório: {}",
+    },
     "summary": {
         "en_us": (
             "{pdf_count} PDF files found\n"
             "{sheet_count} files matching sheet prefix\n"
             "{rename_count} files renamed\n"
-            "{err_count} errors"
+            "{err_count} errors\n"
+            "{scan_error_count} directories could not be scanned"
         ),
         "fr_fr": (
             "{pdf_count} fichiers PDF trouvés\n"
             "{sheet_count} fichiers avec préfixe de feuille\n"
             "{rename_count} fichiers renommés\n"
-            "{err_count} erreurs"
+            "{err_count} erreurs\n"
+            "{scan_error_count} dossiers n'ont pas pu être analysés"
         ),
         "ru": (
             "{pdf_count} файлов PDF найдено\n"
             "{sheet_count} файлов с префиксом листа\n"
             "{rename_count} файлов переименовано\n"
-            "{err_count} ошибок"
+            "{err_count} ошибок\n"
+            "{scan_error_count} каталогов не удалось просканировать"
         ),
         "chinese_s": (
             "共找到 {pdf_count} 个 PDF 文件\n"
             "{sheet_count} 个文件匹配图纸前缀\n"
             "{rename_count} 个文件已重命名\n"
-            "{err_count} 个错误"
+            "{err_count} 个错误\n"
+            "{scan_error_count} 个目录无法扫描"
         ),
         "es_es": (
             "{pdf_count} archivos PDF encontrados\n"
             "{sheet_count} archivos con prefijo de hoja\n"
             "{rename_count} archivos renombrados\n"
-            "{err_count} errores"
+            "{err_count} errores\n"
+            "{scan_error_count} directorios no se pudieron explorar"
         ),
         "de_de": (
             "{pdf_count} PDF-Dateien gefunden\n"
             "{sheet_count} Dateien mit Blatt-Präfix\n"
             "{rename_count} Dateien umbenannt\n"
-            "{err_count} Fehler"
+            "{err_count} Fehler\n"
+            "{scan_error_count} Verzeichnisse konnten nicht durchsucht werden"
         ),
         "pt_br": (
             "{pdf_count} arquivos PDF encontrados\n"
             "{sheet_count} arquivos com prefixo de folha\n"
             "{rename_count} arquivos renomeados\n"
-            "{err_count} erros"
+            "{err_count} erros\n"
+            "{scan_error_count} diretórios não puderam ser verificados"
         ),
     },
 }
@@ -167,19 +183,37 @@ include_subfolders = forms.alert(
     yes=True,
     no=True,
 )
-dir_pattern = "**/" if include_subfolders else ""
 
 # Main loop
 
 pdf_files = []
+scan_errors = []
+
+def on_walk_error(error):
+    # type: (OSError) -> None
+    scan_errors.append(error)
+    print(
+        get_locale_string(STR["directory_scan_failed"]).format(
+            getattr(error, "filename", None) or error
+        )
+    )
 
 if include_subfolders:
-    for root, dirs, files in os.walk(basefolder):
+    for root, dirs, files in os.walk(
+        basefolder,
+        onerror=on_walk_error
+    ):
         for filename in files:
             if filename.lower().endswith(".pdf"):
                 pdf_files.append(op.join(root, filename))
 else:
-    for filename in os.listdir(basefolder):
+    try:
+        filenames = os.listdir(basefolder)
+    except OSError as error:
+        scan_errors.append(error)
+        filenames = []
+
+    for filename in filenames:
         filepath = op.join(basefolder, filename)
 
         if (
@@ -212,6 +246,7 @@ for pdf_file in pdf_files:
         print("  -> {}".format(e))
         continue
 
+    # Preserve the original extension and directory.
     target = op.join(
         op.dirname(pdf_file),
         "{}{}".format(new_stem, op.splitext(pdf_file)[1])
@@ -255,11 +290,14 @@ for pdf_file in pdf_files:
 
 # Summary
 
+scan_error_count = len(scan_errors)
+
 forms.alert(
     get_locale_string(STR["summary"]).format(
         pdf_count=pdf_count,
         sheet_count=sheet_count,
         rename_count=rename_count,
         err_count=err_count,
+        scan_error_count=scan_error_count,
     )
 )
