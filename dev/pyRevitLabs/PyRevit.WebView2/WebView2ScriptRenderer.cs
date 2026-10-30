@@ -192,9 +192,8 @@ namespace PyRevitLabs.PyRevit.WebView2 {
             if (_disposed || !_coreReady || string.IsNullOrEmpty(json))
                 return false;
             if (_dispatcher.CheckAccess())
-                SendMessage(json);
-            else
-                _dispatcher.BeginInvoke(new Action(() => SendMessage(json)));
+                return SendMessage(json);
+            _dispatcher.BeginInvoke(new Action(() => SendMessage(json)));
             return true;
         }
 
@@ -556,12 +555,14 @@ namespace PyRevitLabs.PyRevit.WebView2 {
             handler(this, new RendererMessageReceivedEventArgs(e.WebMessageAsJson, text));
         }
 
-        private void SendMessage(string json) {
+        private bool SendMessage(string json) {
             try {
                 _control?.CoreWebView2?.PostWebMessageAsJson(json);
+                return true;
             }
             catch (Exception ex) {
                 ScriptRendererLog.Error("could not post a message to the page. {0}", ex.Message);
+                return false;
             }
         }
 

@@ -406,12 +406,17 @@ class PyRevitOutputWindow(object):
         """bool: Whether the page can exchange messages with Python.
 
         False when the window falls back to plain text (e.g. the WebView2
-        runtime is missing) or has been closed. Scripts should check this and
-        fall back to a printed report.
+        runtime is missing) or has been closed by the user. Scripts should
+        check this and fall back to a printed report.
+
+        Note:
+            Opens the output window if it does not exist yet and waits for it
+            to be ready, but never reopens one the user closed.
         """
-        if not self._runtime_output().IsWindowReady:
+        runtime_output = self._runtime_output()
+        if runtime_output.IsWindowClosed:
             return False
-        return self._runtime_output().window.SupportsWebMessages
+        return runtime_output.window.SupportsWebMessages
 
     def on_message(self, handler):
         """Register a handler for messages the output page posts to Python.
@@ -453,6 +458,8 @@ class PyRevitOutputWindow(object):
                     '<button onclick="chrome.webview.postMessage('
                     '{ids: [1234]})">Select</button>'
                 )
+            else:
+                output.print_md("Interactive actions need the WebView2 runtime.")
             ```
         """
         if not self.supports_messages:
@@ -460,10 +467,13 @@ class PyRevitOutputWindow(object):
         handlers = self.__dict__.setdefault("_message_handlers", [])
         if handler not in handlers:
             handlers.append(handler)
-        if "_message_subscription" not in self.__dict__:
-            subscription = self._dispatch_message
-            self._runtime_output().window.WebMessageReceived += subscription
-            self._message_subscription = subscription
+        window = self._runtime_output().window
+        if self.__dict__.get("_message_window") != window:
+            subscription = self.__dict__.setdefault(
+                "_message_subscription", self._dispatch_message
+            )
+            window.WebMessageReceived += subscription
+            self._message_window = window
         return True
 
     def off_message(self, handler):
