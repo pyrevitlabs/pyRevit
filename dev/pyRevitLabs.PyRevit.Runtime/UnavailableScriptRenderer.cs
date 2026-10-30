@@ -65,6 +65,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             remove { }
         }
 
+        public event EventHandler<RendererMessageReceivedEventArgs> MessageReceived {
+            add { }
+            remove { }
+        }
+
+        public bool PostMessage(string json) {
+            return false;
+        }
+
         public void EnsureReady(Func<string> firstNavigationProvider) {
         }
 

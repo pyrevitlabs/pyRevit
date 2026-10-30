@@ -66,6 +66,13 @@ namespace PyRevitLabs.PyRevit.Renderer {
         /// <summary>Show the print dialog for the current document.</summary>
         void ShowPrintUi();
 
+        /// <summary>
+        /// Deliver a JSON message to the page, which receives it as a
+        /// <c>message</c> event on <c>window.chrome.webview</c>. Does not block.
+        /// </summary>
+        /// <returns>False when the renderer cannot deliver messages, so the caller can fall back.</returns>
+        bool PostMessage(string json);
+
         /// <summary>Raised for top-level navigations so the owner can enforce URL policy.</summary>
         event EventHandler<RendererNavigationStartingEventArgs> NavigationStartingRequested;
 
@@ -74,5 +81,12 @@ namespace PyRevitLabs.PyRevit.Renderer {
         /// core comes online and after each navigation settles.
         /// </summary>
         event EventHandler DocumentReady;
+
+        /// <summary>
+        /// Raised on the owner dispatcher for each message the page posts with
+        /// <c>window.chrome.webview.postMessage</c>. Survives navigations; ends
+        /// when the renderer is disposed.
+        /// </summary>
+        event EventHandler<RendererMessageReceivedEventArgs> MessageReceived;
     }
 }

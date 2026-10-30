@@ -302,6 +302,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _renderer = ScriptRendererProvider.Create(Dispatcher.CurrentDispatcher);
             _renderer.NavigationStartingRequested += WebView_NavigationStarting;
             _renderer.DocumentReady += WebView_DocumentReady;
+            _renderer.MessageReceived += Renderer_MessageReceived;
 
             InitializeComponent();
         }
@@ -420,6 +421,38 @@ namespace PyRevitLabs.PyRevit.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target) {
             this._contentLoaded = true;
+        }
+
+        /// <summary>
+        /// Raised for each message the page posts with
+        /// <c>window.chrome.webview.postMessage</c>, on the window's UI thread
+        /// and outside Revit API context. Subscribers are released when the
+        /// window closes.
+        /// </summary>
+        public event EventHandler<RendererMessageReceivedEventArgs> WebMessageReceived;
+
+        /// <summary>
+        /// True when the page can exchange messages with the host, i.e. the
+        /// window renders with WebView2 rather than the plain-text fallback.
+        /// Initializes the renderer when necessary.
+        /// </summary>
+        public bool SupportsWebMessages {
+            get {
+                if (ClosedByUser)
+                    return false;
+                EnsureDocumentReadyBlocking();
+                return _plainTextOutput == null
+                    && _renderer.Failure == RendererFailure.None
+                    && !_renderer.InitializationFailed;
+            }
+        }
+
+        /// <summary>
+        /// Deliver a JSON message to the page's <c>chrome.webview</c> message
+        /// listeners. Returns false when the window cannot deliver messages.
+        /// </summary>
+        public bool PostWebMessage(string json) {
+            return SupportsWebMessages && _renderer.PostMessage(json);
         }
 
         /// <summary>
@@ -892,6 +925,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _renderer.Failure, _renderer.InitializationFailed);
         }
 
+        private void Renderer_MessageReceived(object sender, RendererMessageReceivedEventArgs e) {
+            var handlers = WebMessageReceived;
+            if (handlers == null)
+                return;
+            foreach (EventHandler<RendererMessageReceivedEventArgs> handler in handlers.GetInvocationList()) {
+                try {
+                    handler(this, e);
+                }
+                catch (Exception ex) {
+                    ScriptRendererLog.Error("web message handler failed. {0}", ex);
+                }
+            }
+        }
+
         private void WebView_DocumentReady(object sender, EventArgs e) {
             FlushPendingEntries();
             FlushPendingScripts();
@@ -1256,6 +1303,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             grid.Children.Clear();
 
             outputWindow._renderer.Dispose();
+            outputWindow.WebMessageReceived = null;
             outputWindow.Content = null;
 
             if (outputWindow._outputHtmlPath != null) {
