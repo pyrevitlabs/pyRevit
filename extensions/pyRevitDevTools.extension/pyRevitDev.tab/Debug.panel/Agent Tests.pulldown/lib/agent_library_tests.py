@@ -363,10 +363,15 @@ def build_box(fam_doc, project):
         t.Commit()
 
         flex = DB.Transaction(fam_doc, "Flex")
-        flex.Start()
-        fm.Set(width, 4.0)
-        fam_doc.Regenerate()
-        flex.Commit()
+        try:
+            flex.Start()
+            fm.Set(width, 4.0)
+            fam_doc.Regenerate()
+            flex.Commit()
+        except Exception:
+            if flex.GetStatus() == DB.TransactionStatus.Started:
+                flex.RollBack()
+            raise
         box = extrusion.get_BoundingBox(None)
         found["width_after_flex"] = round(box.Max.X - box.Min.X, 3)
     except Exception:
@@ -377,10 +382,11 @@ def build_box(fam_doc, project):
 
 
 out = {}
-fam_doc = app.NewFamilyDocument(find_template())
-second_doc = app.NewFamilyDocument(find_template())
-project = app.NewProjectDocument(DB.UnitSystem.Metric)
+fam_doc = second_doc = project = None
 try:
+    fam_doc = app.NewFamilyDocument(find_template())
+    second_doc = app.NewFamilyDocument(find_template())
+    project = app.NewProjectDocument(DB.UnitSystem.Metric)
     out.update(build_box(fam_doc, project))
     family = create.load_family_document(fam_doc, doc=project, name="Helper Box")
     out["loaded_name"] = family.Name
@@ -394,7 +400,8 @@ try:
     )
 finally:
     for opened in (fam_doc, second_doc, project):
-        opened.Close(False)
+        if opened is not None:
+            opened.Close(False)
 result = out
 """
 

@@ -2156,6 +2156,12 @@ def load_family_document(family_doc, doc=None, name=None):
         back if Revit rejects the name.
         Reloading replaces the ``Family`` object, so a ``Family`` kept from an
         earlier load is no longer valid.
+
+    Note:
+        Revit matches an incoming family by its document title, not by the
+        name it was renamed to. Loading the same unsaved document again does
+        not update the renamed family; it adds a new family under the title.
+        The name check refuses that case instead of leaving the duplicate.
     """
     doc = doc or DOCS.doc
     if not family_doc.IsFamilyDocument:
@@ -2178,7 +2184,12 @@ def load_family_document(family_doc, doc=None, name=None):
         rename.Start()
         try:
             family.Name = name
-            rename.Commit()
+            status = rename.Commit()
+            if status != DB.TransactionStatus.Committed:
+                raise PyRevitException(
+                    "Revit did not apply the name {!r} to the loaded family "
+                    "(transaction {}).".format(name, status)
+                )
         except Exception:
             if rename.GetStatus() == DB.TransactionStatus.Started:
                 rename.RollBack()
