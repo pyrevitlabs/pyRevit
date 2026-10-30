@@ -369,6 +369,19 @@
             "website": "https://github.com/ndev16/NdevTools",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "False",
+            "name": "HUI",
+            "description": "MEP tools for Revit: tags, schematics, plenum families, ESKD sketches, schedules, sheet export (Russian UI)",
+            "author": "Budzhak",
+            "author_profile": "https://github.com/Budzhak",
+            "url": "https://github.com/Budzhak/HUI.git",
+            "website": "https://github.com/Budzhak/HUI",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
