@@ -93,6 +93,7 @@ nav:
     - Extensions: extensions.md
     - Writing pyRevit-style code: pyrevit-style.md
     - Python config API: config-api.md
+    - Revit API compatibility lint: revit-api-compat.md
     - Theming and dark mode: theming.md
     - Interactive Python shell: python-shell.md
     - Agent runtime: agent-runtime.md

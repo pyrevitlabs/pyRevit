@@ -89,10 +89,6 @@ class ElementSelection:
         return ensure.ensure_element_ids(mixed_list)
 
     @staticmethod
-    def _supports_link_selection():
-        return HOST_APP.is_newer_than(2022)
-
-    @staticmethod
     def _find_link_instance(link_doc):
         for link_instance in DB.FilteredElementCollector(DOCS.doc).OfClass(
             DB.RevitLinkInstance
@@ -225,25 +221,30 @@ class ElementSelection:
                 selection is left unchanged in that case.
         """
         host_items, link_refs = ElementSelection._split_host_and_linked(element_list)
-        if link_refs and not ElementSelection._supports_link_selection():
+        host_ids = ElementSelection.get_element_ids(host_items)
+
+        if not link_refs:
+            self._refs = host_ids
+            self._link_refs = link_refs
+            HOST_APP.uidoc.Selection.SetElementIds(
+                framework.to_clr_list(DB.ElementId, self._refs)
+            )
+            HOST_APP.uidoc.RefreshActiveView()
+            return
+
+        if not HOST_APP.is_newer_than(2023, or_equal=True):
             raise PyRevitException(
                 "Selecting elements inside links requires Revit 2023 or newer."
             )
 
-        self._refs = ElementSelection.get_element_ids(host_items)
+        self._refs = host_ids
         self._link_refs = link_refs
-
-        if link_refs:
-            host_elements = [DOCS.doc.GetElement(x) for x in self._refs]
-            all_refs = [DB.Reference(x) for x in host_elements if x is not None]
-            all_refs.extend(link_refs)
-            HOST_APP.uidoc.Selection.SetReferences(
-                framework.to_clr_list(DB.Reference, all_refs)
-            )
-        else:
-            HOST_APP.uidoc.Selection.SetElementIds(
-                framework.to_clr_list(DB.ElementId, self._refs)
-            )
+        host_elements = [DOCS.doc.GetElement(x) for x in self._refs]
+        all_refs = [DB.Reference(x) for x in host_elements if x is not None]
+        all_refs.extend(link_refs)
+        HOST_APP.uidoc.Selection.SetReferences(
+            framework.to_clr_list(DB.Reference, all_refs)
+        )
         HOST_APP.uidoc.RefreshActiveView()
 
     def clear(self):
