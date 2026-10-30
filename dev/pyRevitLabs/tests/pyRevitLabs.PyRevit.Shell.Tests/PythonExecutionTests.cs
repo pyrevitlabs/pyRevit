@@ -8,6 +8,8 @@ using PythonConsoleControl;
 using PyRevitLabs.PyRevit.Shell;
 
 namespace pyRevitLabs.PyRevit.Shell.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Integration")]
     public class PythonExecutionTests {
         [Theory]
         [InlineData(false, false)]

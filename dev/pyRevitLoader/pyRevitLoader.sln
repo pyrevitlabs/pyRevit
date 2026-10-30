@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
@@ -33,7 +33,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Props and Targets - Master"
 		..\Directory.Build.targets = ..\Directory.Build.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitExtensionParserTest", "pyRevitExtensionParserTester\pyRevitExtensionParserTest.csproj", "{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitExtensionParser.Tests", "tests\pyRevitExtensionParser.Tests\pyRevitExtensionParser.Tests.csproj", "{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitAssemblyBuilder.Tests", "tests\pyRevitAssemblyBuilder.Tests\pyRevitAssemblyBuilder.Tests.csproj", "{315ED305-860F-445E-AEDD-3374D8E48965}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLoader.Integration.Tests", "tests\pyRevitLoader.Integration.Tests\pyRevitLoader.Integration.Tests.csproj", "{A7F10561-D960-486E-A612-835AF1F77F53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +47,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Debug|x64.Build.0 = Debug|Any CPU
+		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Release|x64.ActiveCfg = Release|Any CPU
+		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Release|x64.Build.0 = Release|Any CPU
+		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Debug|x64.Build.0 = Debug|Any CPU
+		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Release|x64.ActiveCfg = Release|Any CPU
+		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Release|x64.Build.0 = Release|Any CPU
 		{B1E9CE55-3A8E-4961-B441-33EEB933E237}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{B1E9CE55-3A8E-4961-B441-33EEB933E237}.Debug|x64.Build.0 = Debug|Any CPU
 		{B1E9CE55-3A8E-4961-B441-33EEB933E237}.Release|x64.ActiveCfg = Release|Any CPU
@@ -58,22 +72,17 @@ Global
 		{E28B1811-FBD5-F701-8ECA-553894F780EC}.Release|x64.ActiveCfg = Release|Any CPU
 		{E28B1811-FBD5-F701-8ECA-553894F780EC}.Release|x64.Build.0 = Release|Any CPU
 		{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8}.Debug|x64.Build.0 = Debug|Any CPU
 		{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8}.Release|x64.ActiveCfg = Release|Any CPU
-		{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8}.Release|x64.Build.0 = Release|Any CPU
-		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Debug|x64.Build.0 = Debug|Any CPU
-		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Release|x64.ActiveCfg = Release|Any CPU
-		{B4999A6B-E890-4514-9FEF-4FC5C0332C89}.Release|x64.Build.0 = Release|Any CPU
-		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Debug|x64.Build.0 = Debug|Any CPU
-		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Release|x64.ActiveCfg = Release|Any CPU
-		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}.Release|x64.Build.0 = Release|Any CPU
+		{315ED305-860F-445E-AEDD-3374D8E48965}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{315ED305-860F-445E-AEDD-3374D8E48965}.Release|x64.ActiveCfg = Release|Any CPU
+		{A7F10561-D960-486E-A612-835AF1F77F53}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A7F10561-D960-486E-A612-835AF1F77F53}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{B4999A6B-E890-4514-9FEF-4FC5C0332C89} = {5D24CE7B-67FD-4685-AC89-578FF15552A2}
 		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
 		{B1E9CE55-3A8E-4961-B441-33EEB933E237} = {5D24CE7B-67FD-4685-AC89-578FF15552A2}
@@ -81,6 +90,8 @@ Global
 		{37607FDE-9E96-28B6-AAB7-975357B22391} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{E28B1811-FBD5-F701-8ECA-553894F780EC} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{7396BE4A-8DA6-CCCC-C7EE-12A2A8F787D8} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{315ED305-860F-445E-AEDD-3374D8E48965} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{A7F10561-D960-486E-A612-835AF1F77F53} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8CC1064C-1D16-446B-B480-989CE124102A}

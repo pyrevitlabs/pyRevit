@@ -9,32 +9,29 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// configs sort ahead of the canonical name in directory enumeration, so discovery
 /// must not resolve by enumeration order alone.
 /// </summary>
-public class ConfigDiscoveryTests : IDisposable
-{
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
+public class ConfigDiscoveryTests : IDisposable {
     private readonly string _dir;
 
-    public ConfigDiscoveryTests()
-    {
+    public ConfigDiscoveryTests() {
         _dir = Path.Combine(Path.GetTempPath(), $"cfgdisc_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_dir);
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         try { Directory.Delete(_dir, true); }
         catch { }
     }
 
-    private string Write(string name)
-    {
+    private string Write(string name) {
         var path = Path.Combine(_dir, name);
         File.WriteAllText(path, "[core]\n");
         return path;
     }
 
     [Fact]
-    public void CanonicalConfig_WinsOverVersionSuffixedConfig()
-    {
+    public void CanonicalConfig_WinsOverVersionSuffixedConfig() {
         Write("pyRevit_config.2025.ini");
         var expected = Write(PyRevitLabsConsts.DefaultConfigsFileName);
         Write("pyRevit_config.2026.ini");
@@ -46,16 +43,14 @@ public class ConfigDiscoveryTests : IDisposable
     /// A version-suffixed config is not the main config; its own lookup owns it.
     /// </summary>
     [Fact]
-    public void VersionSuffixedConfig_IsNotDiscoveredAsMainConfig()
-    {
+    public void VersionSuffixedConfig_IsNotDiscoveredAsMainConfig() {
         Write("pyRevit_config.2025.ini");
 
         Assert.Null(PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
     [Fact]
-    public void CustomNamedConfig_IsStillDiscovered()
-    {
+    public void CustomNamedConfig_IsStillDiscovered() {
         var expected = Write("pyrevit_admin_config.ini");
 
         Assert.Equal(expected, PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
@@ -64,16 +59,14 @@ public class ConfigDiscoveryTests : IDisposable
     [Theory]
     [InlineData("config.ini")]
     [InlineData("pyrevit.ini")]
-    public void ConfigNamePattern_MatchesNonCanonicalNames(string fileName)
-    {
+    public void ConfigNamePattern_MatchesNonCanonicalNames(string fileName) {
         var expected = Write(fileName);
 
         Assert.Equal(expected, PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
     [Fact]
-    public void CustomNamedConfig_LosesToCanonicalConfig()
-    {
+    public void CustomNamedConfig_LosesToCanonicalConfig() {
         Write("pyrevit_admin_config.ini");
         var expected = Write(PyRevitLabsConsts.DefaultConfigsFileName);
 
@@ -81,21 +74,18 @@ public class ConfigDiscoveryTests : IDisposable
     }
 
     [Fact]
-    public void EmptyDirectory_ResolvesToNull()
-    {
+    public void EmptyDirectory_ResolvesToNull() {
         Assert.Null(PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
     [Fact]
-    public void MissingDirectory_ResolvesToNull()
-    {
+    public void MissingDirectory_ResolvesToNull() {
         Assert.Null(PyRevitConfigPaths.FindConfigFileInDirectory(
             Path.Combine(_dir, "does-not-exist")));
     }
 
     [Fact]
-    public void UnrelatedIni_IsNotDiscovered()
-    {
+    public void UnrelatedIni_IsNotDiscovered() {
         Write("desktop.ini");
 
         Assert.Null(PyRevitConfigPaths.FindConfigFileInDirectory(_dir));

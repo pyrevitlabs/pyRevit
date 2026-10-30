@@ -14,6 +14,8 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// takes down the loader, the CLI, and the script engines at once, and never
 /// reaches the migrator that would repair it.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class MalformedConfigToleranceTests : IDisposable {
     private readonly List<string> _files = new();
 
@@ -88,6 +90,8 @@ public class MalformedConfigToleranceTests : IDisposable {
 /// nothing it stores ever reaches the file and a caller that must not report a
 /// false success tests <see cref="IConfigurationService.ReadOnly"/> itself.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class ReadOnlyWriteGuardTests : IDisposable {
     private readonly string _path =
         Path.Combine(Path.GetTempPath(), $"readonly_{Guid.NewGuid():N}.ini");

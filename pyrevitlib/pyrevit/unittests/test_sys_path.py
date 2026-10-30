@@ -17,6 +17,10 @@ actually exposes. pyRevit's patched IronPython unifies ``str`` and
 cannot exist and the cases that need one skip rather than pass quietly.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os
 import os.path as op
 import shutil

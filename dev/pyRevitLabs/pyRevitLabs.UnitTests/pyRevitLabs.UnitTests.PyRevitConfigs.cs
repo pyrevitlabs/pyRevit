@@ -11,6 +11,8 @@ namespace pyRevitLabs.UnitTests {
     /// <summary>Tests seeding the machine-wide configuration from the active configuration.</summary>
     [TestClass]
     [DoNotParallelize]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class PyRevitConfigsSeedTests {
         private const string ConfigContent = "[core]\r\nuserlocale = en_us\r\n";
 

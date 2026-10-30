@@ -22,15 +22,16 @@ assemblies are not loadable.
 Run from Revit via the pyRevit DevTools "Config Module Tests" button.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os
 import tempfile
 import unittest
 
 from pyrevit.coreutils.configparser import ConfigSection, ConfigSections
 from pyrevit.userconfig import _SectionCompatWrapper
-
-TEST_ENVIRONMENT = "Revit"
-TEST_LEVEL = "Integration"
 
 
 def _load_ini_backend():

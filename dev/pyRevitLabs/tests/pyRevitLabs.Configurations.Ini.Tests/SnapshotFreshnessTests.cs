@@ -13,23 +13,21 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// leave a reader holding values older than that write, or the next save writes
 /// the stale copy back over it.
 /// </summary>
-public class SnapshotFreshnessTests : IDisposable
-{
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
+public class SnapshotFreshnessTests : IDisposable {
     private readonly string _path;
 
-    public SnapshotFreshnessTests()
-    {
+    public SnapshotFreshnessTests() {
         _path = Path.Combine(Path.GetTempPath(), $"snapfresh_{Guid.NewGuid():N}.ini");
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         try { File.Delete(_path); }
         catch { }
     }
 
-    private IConfigurationService Service(string content)
-    {
+    private IConfigurationService Service(string content) {
         File.WriteAllText(_path, content);
         return new ConfigurationBuilder(false)
             .AddIniConfiguration(_path)
@@ -43,8 +41,7 @@ public class SnapshotFreshnessTests : IDisposable
     /// than never having been overwritten in the first place.
     /// </summary>
     [Fact]
-    public void RawWriteThenSaveSection_DoesNotRevertTheWrite()
-    {
+    public void RawWriteThenSaveSection_DoesNotRevertTheWrite() {
         var service = Service("[core]\nuserextensions = " + @"[""C:\\A""]" + "\n");
         var cfg = service.Configuration;
 
@@ -72,8 +69,7 @@ public class SnapshotFreshnessTests : IDisposable
     /// revert to the default is detectable.
     /// </summary>
     [Fact]
-    public void ApplySectionAcrossSections_SurvivesInterveningDynamicWrite_OnSingleFlush()
-    {
+    public void ApplySectionAcrossSections_SurvivesInterveningDynamicWrite_OnSingleFlush() {
         var service = Service("[core]\nrocketmode = true\n");
         var cfg = service.Configuration;
 
@@ -96,8 +92,7 @@ public class SnapshotFreshnessTests : IDisposable
     }
 
     [Fact]
-    public void RawWrite_IsVisibleOnTypedSection_WithoutExplicitReload()
-    {
+    public void RawWrite_IsVisibleOnTypedSection_WithoutExplicitReload() {
         var service = Service("[core]\nrocketmode = true\n");
         Assert.True(service.Core.RocketMode);
 
@@ -111,8 +106,7 @@ public class SnapshotFreshnessTests : IDisposable
     /// 10 is CoreSection.StartupLogTimeout's declared [DefaultValue].
     /// </summary>
     [Fact]
-    public void RemovingAnOption_IsVisibleOnTypedSection()
-    {
+    public void RemovingAnOption_IsVisibleOnTypedSection() {
         var service = Service("[core]\nstartuplogtimeout = 99\n");
         Assert.Equal(99, service.Core.StartupLogTimeout);
 
@@ -122,16 +116,14 @@ public class SnapshotFreshnessTests : IDisposable
     }
 
     [Fact]
-    public void UnchangedStore_ReturnsTheSameSnapshotInstance()
-    {
+    public void UnchangedStore_ReturnsTheSameSnapshotInstance() {
         var service = Service("[core]\nrocketmode = true\n");
 
         Assert.Same(service.Core, service.Core);
     }
 
     [Fact]
-    public void Revision_AdvancesOnEachMutationKind()
-    {
+    public void Revision_AdvancesOnEachMutationKind() {
         var service = Service("[core]\nrocketmode = true\n");
         var cfg = service.Configuration;
 
@@ -161,8 +153,7 @@ public class SnapshotFreshnessTests : IDisposable
     /// A no-op removal changed nothing, so derived state stays valid.
     /// </summary>
     [Fact]
-    public void Revision_DoesNotAdvanceOnNoOpMutation()
-    {
+    public void Revision_DoesNotAdvanceOnNoOpMutation() {
         var service = Service("[core]\nrocketmode = true\n");
         var cfg = service.Configuration;
 

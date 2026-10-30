@@ -3,6 +3,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AutomationOperationsTests {
     private static readonly string[] Ids = {
         "pyrevit.units.parse-length", "pyrevit.units.parse-slope", "pyrevit.levels.resolve", "pyrevit.elements.by-category",

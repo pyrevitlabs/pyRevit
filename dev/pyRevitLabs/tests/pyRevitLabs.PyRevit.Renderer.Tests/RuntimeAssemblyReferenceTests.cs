@@ -22,6 +22,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// so that reading them cannot change what the test process has bound.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class RuntimeAssemblyReferenceTests {
         private static readonly string[] NetCoreRuntimeVersions = { "2025", "2026", "2027" };
         private static readonly string[] NetFxRuntimeVersions = { "2021", "2022", "2023", "2024" };
