@@ -2,7 +2,7 @@
 
 Owner: repository tooling maintainers, or the owning library maintainers for standalone library tests. The change author owns unassigned fixes until reassigned.
 
-- `tooling/`: shared runner, Python compatibility checker, and config API checker contracts.
+- `tooling/`: shared runner, Python compatibility checker, config API checker, and Revit API compatibility lint contracts.
 - `library/`: automation markers, event handlers, logging, Keynote read errors, and hosted test reporting. These use isolated module doubles or source extraction to avoid importing the Revit-dependent `pyrevit` package.
 
 From the repository root:
