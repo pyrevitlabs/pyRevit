@@ -71,49 +71,49 @@ STR = {
             "{sheet_count} files matching sheet prefix\n"
             "{rename_count} files renamed\n"
             "{err_count} errors\n"
-            "{scan_error_count} directories could not be scanned"
+            "{scan_error_count} directory scan errors"
         ),
         "fr_fr": (
             "{pdf_count} fichiers PDF trouvés\n"
             "{sheet_count} fichiers avec préfixe de feuille\n"
             "{rename_count} fichiers renommés\n"
             "{err_count} erreurs\n"
-            "{scan_error_count} dossiers n'ont pas pu être analysés"
+            "{scan_error_count} erreurs d'analyse de répertoire"
         ),
         "ru": (
             "{pdf_count} файлов PDF найдено\n"
             "{sheet_count} файлов с префиксом листа\n"
             "{rename_count} файлов переименовано\n"
             "{err_count} ошибок\n"
-            "{scan_error_count} каталогов не удалось просканировать"
+            "{scan_error_count} ошибок сканирования каталогов"
         ),
         "chinese_s": (
             "共找到 {pdf_count} 个 PDF 文件\n"
             "{sheet_count} 个文件匹配图纸前缀\n"
             "{rename_count} 个文件已重命名\n"
             "{err_count} 个错误\n"
-            "{scan_error_count} 个目录无法扫描"
+            "{scan_error_count} 次目录扫描错误"
         ),
         "es_es": (
             "{pdf_count} archivos PDF encontrados\n"
             "{sheet_count} archivos con prefijo de hoja\n"
             "{rename_count} archivos renombrados\n"
             "{err_count} errores\n"
-            "{scan_error_count} directorios no se pudieron explorar"
+            "{scan_error_count} errores de exploración de directorios"
         ),
         "de_de": (
             "{pdf_count} PDF-Dateien gefunden\n"
             "{sheet_count} Dateien mit Blatt-Präfix\n"
             "{rename_count} Dateien umbenannt\n"
             "{err_count} Fehler\n"
-            "{scan_error_count} Verzeichnisse konnten nicht durchsucht werden"
+            "{scan_error_count} Fehler beim Durchsuchen von Verzeichnissen"
         ),
         "pt_br": (
             "{pdf_count} arquivos PDF encontrados\n"
             "{sheet_count} arquivos com prefixo de folha\n"
             "{rename_count} arquivos renomeados\n"
             "{err_count} erros\n"
-            "{scan_error_count} diretórios não puderam ser verificados"
+            "{scan_error_count} erros ao verificar diretórios"
         ),
     },
 }
@@ -189,14 +189,20 @@ include_subfolders = forms.alert(
 pdf_files = []
 scan_errors = []
 
-def on_walk_error(error):
+def report_scan_error(error):
     # type: (OSError) -> None
+    """Records a directory scanning error and prints its localized message."""
     scan_errors.append(error)
     print(
         get_locale_string(STR["directory_scan_failed"]).format(
             getattr(error, "filename", None) or error
         )
     )
+
+def on_walk_error(error):
+    # type: (OSError) -> None
+    """Handles errors raised by os.walk() during directory traversal."""
+    report_scan_error(error)
 
 if include_subfolders:
     for root, dirs, files in os.walk(
@@ -210,12 +216,11 @@ else:
     try:
         filenames = os.listdir(basefolder)
     except OSError as error:
-        scan_errors.append(error)
+        report_scan_error(error)
         filenames = []
 
     for filename in filenames:
         filepath = op.join(basefolder, filename)
-
         if (
             filename.lower().endswith(".pdf")
             and op.isfile(filepath)
