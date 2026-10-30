@@ -188,28 +188,26 @@ def create_new_project(template=None, imperial=True):
         return HOST_APP.app.NewProjectDocument(units)
 
 
-def _set_revision_number_type(revision, number_type, doc):
+def _find_revision_numbering_sequence(doc, number_type):
+    if HOST_APP.is_older_than(2023):
+        return None
+    if number_type == coreutils.get_enum_none(DB.RevisionNumberType):
+        return DB.ElementId.InvalidElementId
+    for sequence in DB.FilteredElementCollector(doc).OfClass(
+        DB.RevisionNumberingSequence
+    ):
+        if sequence.NumberType == number_type:
+            return sequence.Id
+    raise PyRevitException(
+        "The document has no {} revision numbering sequence.".format(number_type)
+    )
+
+
+def _set_revision_number_type(revision, number_type, sequence_id):
     if HOST_APP.is_older_than(2023):
         revision.NumberType = number_type
         return
-    if number_type == coreutils.get_enum_none(DB.RevisionNumberType):
-        revision.RevisionNumberingSequenceId = DB.ElementId.InvalidElementId
-        return
-    sequence = next(
-        (
-            x
-            for x in DB.FilteredElementCollector(doc).OfClass(
-                DB.RevisionNumberingSequence
-            )
-            if x.NumberType == number_type  # compat-ignore: RevisionNumberingSequence
-        ),
-        None,
-    )
-    if sequence is None:
-        raise PyRevitException(
-            "The document has no {} revision numbering sequence.".format(number_type)
-        )
-    revision.RevisionNumberingSequenceId = sequence.Id
+    revision.RevisionNumberingSequenceId = sequence_id
 
 
 def create_revision(
@@ -227,16 +225,22 @@ def create_revision(
             has no alphanumeric numbering sequence.
     """
     doc = doc or DOCS.doc
+    number_type = None
+    if alphanum:
+        number_type = DB.RevisionNumberType.Alphanumeric
+    if nonum:
+        number_type = coreutils.get_enum_none(DB.RevisionNumberType)
+    sequence_id = (
+        _find_revision_numbering_sequence(doc, number_type)
+        if number_type is not None
+        else None
+    )
     new_rev = DB.Revision.Create(doc)
     new_rev.Description = description
     new_rev.IssuedBy = by or ""
     new_rev.IssuedTo = to or ""
-    if alphanum:
-        _set_revision_number_type(new_rev, DB.RevisionNumberType.Alphanumeric, doc)
-    if nonum:
-        _set_revision_number_type(
-            new_rev, coreutils.get_enum_none(DB.RevisionNumberType), doc
-        )
+    if number_type is not None:
+        _set_revision_number_type(new_rev, number_type, sequence_id)
     new_rev.RevisionDate = date or ""
     return new_rev
 

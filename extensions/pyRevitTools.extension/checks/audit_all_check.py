@@ -153,7 +153,7 @@ class ElementCounts:
             .WhereElementIsNotElementType()
             .GetElementCount()
         )
-        self.purgeable_elements_count = 0
+        self.purgeable_elements_count = None
         if HOST_APP.is_newer_than(2024, or_equal=True):
             self.purgeable_elements_count = len(
                 document.GetUnusedElements(HashSet[DB.ElementId]())
@@ -647,6 +647,8 @@ class ReportData:
             return "".join(escape_map.get(c, c) for c in str(s))
 
         def format_value(value):
+            if value is None:
+                return "n/a"
             if isinstance(value, list):
                 return '"{}"'.format(", ".join(html_escape(v) for v in value))
             return html_escape(value)
@@ -724,12 +726,16 @@ def generate_html_content(data, links_cards=""):
     Returns:
         str: Combined HTML content for the report.
     """
+    purgeable_count = data.element_counts.purgeable_elements_count
+    purgeable_card = (
+        ""
+        if purgeable_count is None
+        else card_builder(1000, purgeable_count, " Purgeable (2024+)")
+    )
     critical_elements_frame = create_frame(
         "Critical Elements",
         card_builder(100000, data.element_counts.element_count, " Elements"),
-        card_builder(
-            1000, data.element_counts.purgeable_elements_count, " Purgeable (2024+)"
-        ),
+        purgeable_card,
         card_builder(100, data.warnings_info.all_warnings_count, " Warnings"),
         card_builder(
             5, data.warnings_info.critical_warnings_count, " Critical Warnings"
