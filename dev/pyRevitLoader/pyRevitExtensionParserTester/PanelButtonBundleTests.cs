@@ -257,7 +257,7 @@ print('test')");
     /// These tests require the repo's pyRevitDevTools.extension directory.
     /// </summary>
     [TestFixture]
-    public class DevToolsPanelButtonTests
+    public class DevToolsPanelButtonTests : TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
 
@@ -524,6 +524,7 @@ print('test')");
                 "Test pyRevit Bundle",
                 "Test pyRevit Button",
                 "Test Smart Button",
+                "Test Reload Icon Toggle",
                 "Test C# Script",
                 "Test Direct Invoke",
                 "Test Direct Invoke (ExecParams)",
@@ -531,15 +532,24 @@ print('test')");
                 "Test Link Button",
                 "Test VisualBasic",
                 "Test Ruby",
-                "Test DynamoBIM",
-                "Test DynamoBIM GUI",
+                "Test DynamoBIM_Ironpython",
+                "Test DynamoBIM_cpy2.5",
+                "Test DynamoBIM_Cpython",
+                "Test DynamoBIM_Pythonnet",
+                "Test DynamoBIM Headless Auto 2024",
+                "Test DynamoBIM Headless Auto 2025",
+                "Test DynamoBIM Headless Auto 2026",
+                "Test DynamoBIM Headless Auto 2027",
+                "Test DynamoBIM Headless Manual",
+                "Test DynamoBIM Headless Forced Manual",
+                "Test DynamoBIM Headless Execute CPython3",
+                "Test DynamoBIM Headless Execute PythonNet3",
                 "Test Grasshopper",
                 "Test Content Bundle",
-                "Test Content Bundle - no rfa in folder nor specifed in bundle",
                 "Test Content Bundle - rfa in same folder and specified in bundle",
                 "Test Content Bundle - with rfa outside of content folder",
                 "Test Hyperlink",
-                "Test Блог"
+                "Test JSON Formatter"
             };
 
             Assert.IsNotNull(bundlePulldown.LayoutOrder, "Pulldown layout order should be parsed");
@@ -547,32 +557,7 @@ print('test')");
 
             Assert.IsNotNull(bundlePulldown.Children, "Pulldown children should not be null");
 
-            // List of layout items that have corresponding child components
-            // Note: "Test Content Bundle - no rfa in folder nor specifed in bundle" is in bundle.yaml
-            // but does not have a corresponding component directory, so it won't have a child
-            var expectedChildren = new[]
-            {
-                "Test pyRevit Bundle",
-                "Test pyRevit Button",
-                "Test Smart Button",
-                "Test C# Script",
-                "Test Direct Invoke",
-                "Test Direct Invoke (ExecParams)",
-                "Test Direct Class Invoke",
-                "Test Link Button",
-                "Test VisualBasic",
-                "Test Ruby",
-                "Test DynamoBIM",
-                "Test DynamoBIM GUI",
-                "Test Grasshopper",
-                "Test Content Bundle",
-                "Test Content Bundle - rfa in same folder and specified in bundle",
-                "Test Content Bundle - with rfa outside of content folder",
-                "Test Hyperlink",
-                "Test Блог"
-            };
-
-            foreach (var layoutName in expectedChildren)
+            foreach (var layoutName in expectedLayout)
             {
                 var child = bundlePulldown.Children.FirstOrDefault(c => c.DisplayName == layoutName);
                 Assert.IsNotNull(child, $"Pulldown child '{layoutName}' missing");
