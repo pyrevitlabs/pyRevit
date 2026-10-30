@@ -26,10 +26,13 @@ param(
 
 $BinPath = (Resolve-Path -LiteralPath $BinPath -ErrorAction Stop).ProviderPath
 $executable = Join-Path $BinPath 'pyrevit.exe'
-$serverCommand = '^\s*"?' + [regex]::Escape($executable) + '"?\s+mcp(\s+--revit=\S+)?\s*$'
+$launcher = '^\s*(?:"?' + [regex]::Escape($executable) + '"?|"[^"]*"|\S+)'
+$serverArguments = '^\s+mcp(\s+--revit=\S+)?\s*$'
 $servers = @(
     Get-CimInstance Win32_Process -Filter "Name = 'pyrevit.exe'" |
-        Where-Object { $_.ExecutablePath -eq $executable -and $_.CommandLine -match $serverCommand }
+        Where-Object {
+            $_.ExecutablePath -eq $executable -and ($_.CommandLine -replace $launcher, '') -match $serverArguments
+        }
 )
 
 $stopped = 0
@@ -42,6 +45,10 @@ foreach ($server in $servers) {
             if (Get-Process -Id $server.ProcessId -ErrorAction SilentlyContinue) {
                 throw
             }
+        }
+        Wait-Process -Id $server.ProcessId -Timeout 10 -ErrorAction SilentlyContinue
+        if (Get-Process -Id $server.ProcessId -ErrorAction SilentlyContinue) {
+            throw "pyrevit.exe mcp (PID $($server.ProcessId)) did not exit within 10 seconds."
         }
         $stopped++
     }
