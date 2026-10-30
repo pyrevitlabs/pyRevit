@@ -393,11 +393,18 @@ try:
     out["duplicate_name"] = message_of(
         lambda: create.load_family_document(second_doc, doc=project, name="Helper Box")
     )
-    out["target_left_open_transaction"] = project.IsModifiable
-    out["families_after_refusal"] = sorted(
-        f.Name for f in DB.FilteredElementCollector(project).OfClass(DB.Family)
-        if f.Name.startswith("Family") or f.Name == "Helper Box"
+    create.load_family_document(second_doc, doc=project)
+    out["overwrite_refusal"] = message_of(
+        lambda: create.load_family_document(second_doc, doc=project, name="Other Box")
     )
+    family_names = sorted(
+        f.Name for f in DB.FilteredElementCollector(project).OfClass(DB.Family)
+    )
+    out["existing_family_survived"] = second_doc.Title in family_names
+    out["target_left_open_transaction"] = project.IsModifiable
+    out["families_after_refusal"] = [
+        name for name in family_names if name in ("Helper Box", "Other Box")
+    ]
 finally:
     for opened in (fam_doc, second_doc, project):
         if opened is not None:
@@ -422,6 +429,8 @@ class FamilyHelperTests(TestCase):
             self.assertIn("not(a > b)", result["formula_error"], engine)
             self.assertEqual("Helper Box", result["loaded_name"], engine)
             self.assertIn("already exists", result["duplicate_name"], engine)
+            self.assertIn("would overwrite", result["overwrite_refusal"], engine)
+            self.assertTrue(result["existing_family_survived"], engine)
             self.assertFalse(result["target_left_open_transaction"], engine)
             self.assertEqual(["Helper Box"], result["families_after_refusal"], engine)
 

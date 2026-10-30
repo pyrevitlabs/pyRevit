@@ -2146,9 +2146,11 @@ def load_family_document(family_doc, doc=None, name=None):
 
     Raises:
         PyRevitException: when ``family_doc`` is not a family document, when
-            ``doc`` has an open transaction, or when another family in ``doc``
-            already has the requested ``name``. The name is checked before
-            loading, so nothing is loaded in that case.
+            ``doc`` has an open transaction, when another family in ``doc``
+            already has the requested ``name``, or when ``doc`` already has a
+            family named like ``family_doc`` and ``name`` would rename it. The
+            names are checked before loading, so nothing is loaded in those
+            cases.
 
     Important:
         Call it without an open transaction on ``doc``: ``LoadFamily`` manages
@@ -2171,12 +2173,20 @@ def load_family_document(family_doc, doc=None, name=None):
             "Loading a family document must run outside a transaction on the target."
         )
     if name and name != family_doc.Title:
-        taken = DB.FilteredElementCollector(doc).OfClass(DB.Family)
-        if any(existing.Name == name for existing in taken):
+        taken = set(
+            existing.Name
+            for existing in DB.FilteredElementCollector(doc).OfClass(DB.Family)
+        )
+        if name in taken:
             raise PyRevitException(
                 "A family named {!r} already exists in the target document.".format(
                     name
                 )
+            )
+        if family_doc.Title in taken:
+            raise PyRevitException(
+                "Loading would overwrite the existing family {!r} and rename it. "
+                "Load without a name to update that family.".format(family_doc.Title)
             )
     family = family_doc.LoadFamily(doc, FamilyLoaderOptionsHandler())
     if name and family.Name != name:
