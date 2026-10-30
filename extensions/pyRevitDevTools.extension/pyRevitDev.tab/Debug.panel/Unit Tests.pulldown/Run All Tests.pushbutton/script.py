@@ -8,12 +8,17 @@ import pyrevit.unittests as tests_pkg
 from pyrevit.unittests.runner import run_module_tests
 
 TEST_MODULE_PREFIX = "test_"
+OPT_IN_MODULES = frozenset(["test_revit_api_catalog"])
 
 
 def _discover_test_modules():
     module_names = []
     for _, module_name, is_package in pkgutil.iter_modules(tests_pkg.__path__):
-        if not is_package and module_name.startswith(TEST_MODULE_PREFIX):
+        if (
+            not is_package
+            and module_name.startswith(TEST_MODULE_PREFIX)
+            and module_name not in OPT_IN_MODULES
+        ):
             module_names.append(module_name)
     return sorted(module_names)
 

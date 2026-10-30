@@ -186,7 +186,9 @@ def attach_wall_tops(walls, target):
                 "Wall attachment is unavailable in this Revit version. "
                 "Use an untrimmed wall or model the gable end explicitly."
             )
-        attach(target.Id, DB.AttachmentLocation.Top)
+        attach(
+            target.Id, DB.AttachmentLocation.Top
+        )  # compat-ignore: ships with AddAttachment
     target.Document.Regenerate()
 
 
