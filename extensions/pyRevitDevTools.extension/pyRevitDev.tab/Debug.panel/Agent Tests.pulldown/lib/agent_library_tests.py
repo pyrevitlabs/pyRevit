@@ -295,6 +295,130 @@ class AutomationTests(TestCase):
             self.assertEqual("PyRevitException", error["type"], engine)
 
 
+FAMILY_HELPERS_SCRIPT = """
+import os
+from pyrevit import PyRevitException
+from pyrevit.revit.db import create, update
+
+
+def find_template():
+    for folder, _, files in os.walk(app.FamilyTemplatePath):
+        for name in files:
+            if name in ("Metric Generic Model.rft", "Generic Model.rft"):
+                return os.path.join(folder, name)
+
+
+def message_of(action):
+    try:
+        action()
+    except PyRevitException as ex:
+        return str(ex)
+    return None
+
+
+def build_box(fam_doc, project):
+    fm = fam_doc.FamilyManager
+    plan = [
+        v for v in DB.FilteredElementCollector(fam_doc).OfClass(DB.ViewPlan)
+        if not v.IsTemplate and v.ViewType == DB.ViewType.FloorPlan
+    ][0]
+    centre = dict(
+        (p.Name, p)
+        for p in DB.FilteredElementCollector(fam_doc).OfClass(DB.ReferencePlane)
+    )
+    found = {}
+    t = DB.Transaction(fam_doc, "Build box")
+    try:
+        t.Start()
+        width = fm.AddParameter("Width", DB.GroupTypeId.Geometry, DB.SpecTypeId.Length, False)
+        fm.NewType("Default")
+        fm.Set(width, 2.0)
+        left = create.create_reference_plane("Left", (-1, -2), (-1, 2), plan, reference="left", doc=fam_doc)
+        right = create.create_reference_plane("Right", (1, -2), (1, 2), plan, reference="right", doc=fam_doc)
+        fam_doc.Regenerate()
+        found["reference"] = left.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).AsValueString()
+        found["three_plane_label"] = message_of(
+            lambda: create.create_labelled_dimension(
+                plan, [left, centre["Center (Left/Right)"], right], (-1, -3), (1, -3), label=width, doc=fam_doc
+            )
+        )
+        found["two_plane_equal"] = message_of(
+            lambda: create.create_labelled_dimension(
+                plan, [left, right], (-1, -3), (1, -3), equal_segments=True, doc=fam_doc
+            )
+        )
+        create.create_labelled_dimension(plan, [left, right], (-1, -1.5), (1, -1.5), label=width, doc=fam_doc)
+        create.create_labelled_dimension(
+            plan, [left, centre["Center (Left/Right)"], right], (-1, -2.5), (1, -2.5),
+            equal_segments=True, doc=fam_doc,
+        )
+        level = DB.FilteredElementCollector(fam_doc).OfClass(DB.Level).FirstElement()
+        sketch_plane = DB.SketchPlane.Create(fam_doc, level.GetPlaneReference())
+        profile = DB.CurveArrArray()
+        profile.Append(create.create_curve_array([(-1, -0.5), (1, -0.5), (1, 0.5), (-1, 0.5)]))
+        extrusion = fam_doc.FamilyCreate.NewExtrusion(True, profile, sketch_plane, 3.0)
+        fam_doc.Regenerate()
+        found["aligned"] = sorted(create.align_faces_to_planes(extrusion, plan, [left, right], doc=fam_doc))
+        found["formula_error"] = message_of(lambda: update.set_formula(fm, width, "Depth <= 5"))
+        t.Commit()
+
+        flex = DB.Transaction(fam_doc, "Flex")
+        flex.Start()
+        fm.Set(width, 4.0)
+        fam_doc.Regenerate()
+        flex.Commit()
+        box = extrusion.get_BoundingBox(None)
+        found["width_after_flex"] = round(box.Max.X - box.Min.X, 3)
+    except Exception:
+        if t.GetStatus() == DB.TransactionStatus.Started:
+            t.RollBack()
+        raise
+    return found
+
+
+out = {}
+fam_doc = app.NewFamilyDocument(find_template())
+second_doc = app.NewFamilyDocument(find_template())
+project = app.NewProjectDocument(DB.UnitSystem.Metric)
+try:
+    out.update(build_box(fam_doc, project))
+    family = create.load_family_document(fam_doc, doc=project, name="Helper Box")
+    out["loaded_name"] = family.Name
+    out["duplicate_name"] = message_of(
+        lambda: create.load_family_document(second_doc, doc=project, name="Helper Box")
+    )
+    out["target_left_open_transaction"] = project.IsModifiable
+    out["families_after_refusal"] = sorted(
+        f.Name for f in DB.FilteredElementCollector(project).OfClass(DB.Family)
+        if f.Name.startswith("Family") or f.Name == "Helper Box"
+    )
+finally:
+    for opened in (fam_doc, second_doc, project):
+        opened.Close(False)
+result = out
+"""
+
+
+class FamilyHelperTests(TestCase):
+    """The family authoring helpers, run in scratch family documents on both engines."""
+
+    def test_family_box_follows_its_parameters_and_helpers_refuse_bad_input(self):
+        """A family built with the helpers flexes, and the helpers refuse bad input cleanly."""
+        for engine in ENGINES:
+            result = run(FAMILY_HELPERS_SCRIPT, engine=engine)["result"]
+            self.assertEqual("Left", result["reference"], engine)
+            self.assertEqual(["Left", "Right"], result["aligned"], engine)
+            self.assertAlmostEqual(4.0, result["width_after_flex"], 3, engine)
+            self.assertIn("separate dimension", result["three_plane_label"], engine)
+            self.assertIn("at least three", result["two_plane_equal"], engine)
+            self.assertIn("'Width'", result["formula_error"], engine)
+            self.assertIn("not(a > b)", result["formula_error"], engine)
+            self.assertEqual("Helper Box", result["loaded_name"], engine)
+            self.assertIn("already exists", result["duplicate_name"], engine)
+            self.assertFalse(result["target_left_open_transaction"], engine)
+            self.assertEqual(["Helper Box"], result["families_after_refusal"], engine)
+
+
 def _write_skill(root, folder, description, body):
     path = op.join(root, folder)
     os.makedirs(path)

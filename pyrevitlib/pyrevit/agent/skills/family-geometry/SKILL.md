@@ -121,7 +121,7 @@ finally:
 ## Visibility and graphics
 
 ```python
-visibility = DB.FamilyElementVisibility(DB.FamilyElementVisibilityType.Model)
+visibility = extrusion.GetVisibility()
 visibility.IsShownInCoarse = False
 extrusion.SetVisibility(visibility)
 
@@ -134,9 +134,9 @@ patterns = list(DB.FilteredElementCollector(fam_doc).OfClass(DB.LinePatternEleme
 subcategory.SetLinePatternId(patterns[0].Id, DB.GraphicsStyleType.Projection)
 ```
 
-- **`FamilyElementVisibility`** has `IsShownInCoarse`, `IsShownInMedium`, `IsShownInFine`, `IsShownInPlanRCPCut`, `IsShownInFrontBack`, `IsShownInLeftRight`, `IsShownInTopBottom` and `IsShownOnlyWhenCut`. Read it back with `element.GetVisibility()`; `SetVisibility` replaces all flags, so start from the current object when you change one.
+- **`FamilyElementVisibility`** has `IsShownInCoarse`, `IsShownInMedium`, `IsShownInFine`, `IsShownInPlanRCPCut`, `IsShownInFrontBack`, `IsShownInLeftRight`, `IsShownInTopBottom` and `IsShownOnlyWhenCut`. `SetVisibility` replaces all flags, so start from `element.GetVisibility()` when you change one, as above; a new `FamilyElementVisibility` resets the rest.
 - **Keep the object `NewSubcategory` returns.** Looking the subcategory up again through the `category.SubCategories` you read earlier fails. Line patterns include "Dash", "Dash dot", "Center" and "Dot".
-- **Materials:** `doc.GetElement(DB.Material.Create(fam_doc, "Paint"))` gives a material; `material.Color`, `Transparency` (0 to 100) and `Shininess` set its look. To let each type choose, add a parameter `fm.AddParameter("Frame Material", DB.GroupTypeId.Materials, DB.SpecTypeId.Reference.Material, True)` and associate it with `extrusion.get_Parameter(DB.BuiltInParameter.MATERIAL_ID_PARAM)`; set the value with `fm.Set(parameter, material.Id)`.
+- **Materials:** `fam_doc.GetElement(DB.Material.Create(fam_doc, "Paint"))` gives a material; `material.Color`, `Transparency` (0 to 100) and `Shininess` set its look. To let each type choose, add a parameter `fm.AddParameter("Frame Material", DB.GroupTypeId.Materials, DB.SpecTypeId.Reference.Material, True)` and associate it with `extrusion.get_Parameter(DB.BuiltInParameter.MATERIAL_ID_PARAM)`; set the value with `fm.Set(parameter, material.Id)`.
 - **Appearance assets are not covered here.** Editing one with `DB.Visual.AppearanceAssetEditScope` changed values in memory, but `Commit` failed with "EditScope cannot be closed, there is no opened transaction" in a family document on both engines. Say so to the user instead of retrying.
 - **`Visible = No` hides nothing in the editor.** The form's `IS_VISIBLE_PARAM` set to 0 still returns its full solid from `get_Geometry`; the effect shows only on placed instances. Check hidden forms on an instance, not in the family view.
 
@@ -159,7 +159,7 @@ t.Commit()
 ```
 
 - **Load outside a transaction.** `load_family_document` raises when the target has one open: `LoadFamily` runs its own. Call it before `t.Start()`.
-- **Rename on load.** A family document that was never saved loads under its document title (`Family24`), and the same happens for a nested family loaded into a host. Pass `name=` to rename it at once, and do so before the host is itself loaded into a project: the nested name is stored in the host.
+- **Rename on load.** A family document that was never saved loads under its document title (`Family24`), and the same happens for a nested family loaded into a host. Pass `name=` to rename it at once, and do so before the host is itself loaded into a project: the nested name is stored in the host. The helper raises before loading when another family already has that name, and rolls its rename back if Revit rejects the name.
 - **Reloading replaces the `Family`.** Keep the name, not the object, and look it up again after a reload. The helper returns the new object.
 - **Associate a nested parameter** with a host parameter and the host drives it: a host `Width` of 6 resized the nested instance to 6. `IS_VISIBLE_PARAM` takes a Yes/No host parameter and shows or hides the instance.
 - **`instance.GetReferenceByName("Left")`** returns the nested family's plane for alignment when the child flagged it with `reference="left"`.

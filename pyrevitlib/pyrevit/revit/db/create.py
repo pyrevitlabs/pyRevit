@@ -2048,7 +2048,8 @@ def create_labelled_dimension(
 
     Raises:
         PyRevitException: outside a family document or transaction, with fewer
-            than two planes, or when ``label`` is given for more than two planes.
+            than two planes, when ``label`` is given for more than two planes,
+            or when ``equal_segments`` is set for fewer than three.
 
     Important:
         A label on a dimension of three or more planes labels every segment,
@@ -2060,6 +2061,8 @@ def create_labelled_dimension(
     _require_family_document(doc, "create dimensions")
     if len(planes) < 2:
         raise PyRevitException("A dimension needs at least two reference planes.")
+    if equal_segments and len(planes) < 3:
+        raise PyRevitException("equal_segments needs at least three reference planes.")
     if label is not None and len(planes) > 2:
         raise PyRevitException(
             "Label a two-plane dimension; add a separate dimension with "
@@ -2142,12 +2145,15 @@ def load_family_document(family_doc, doc=None, name=None):
         (DB.Family): the loaded family, in ``doc``.
 
     Raises:
-        PyRevitException: when ``family_doc`` is not a family document, or when
-            ``doc`` has an open transaction.
+        PyRevitException: when ``family_doc`` is not a family document, when
+            ``doc`` has an open transaction, or when another family in ``doc``
+            already has the requested ``name``. The name is checked before
+            loading, so nothing is loaded in that case.
 
     Important:
         Call it without an open transaction on ``doc``: ``LoadFamily`` manages
-        its own. The rename runs in a transaction of its own.
+        its own. The rename runs in a transaction of its own, which is rolled
+        back if Revit rejects the name.
         Reloading replaces the ``Family`` object, so a ``Family`` kept from an
         earlier load is no longer valid.
     """
@@ -2158,10 +2164,23 @@ def load_family_document(family_doc, doc=None, name=None):
         raise PyRevitException(
             "Loading a family document must run outside a transaction on the target."
         )
+    if name and name != family_doc.Title:
+        taken = DB.FilteredElementCollector(doc).OfClass(DB.Family)
+        if any(existing.Name == name for existing in taken):
+            raise PyRevitException(
+                "A family named {!r} already exists in the target document.".format(
+                    name
+                )
+            )
     family = family_doc.LoadFamily(doc, FamilyLoaderOptionsHandler())
     if name and family.Name != name:
         rename = DB.Transaction(doc, "Rename loaded family")
         rename.Start()
-        family.Name = name
-        rename.Commit()
+        try:
+            family.Name = name
+            rename.Commit()
+        except Exception:
+            if rename.GetStatus() == DB.TransactionStatus.Started:
+                rename.RollBack()
+            raise
     return family
