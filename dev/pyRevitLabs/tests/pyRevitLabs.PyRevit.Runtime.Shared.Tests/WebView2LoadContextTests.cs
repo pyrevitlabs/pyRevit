@@ -4,28 +4,28 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 using pyRevitLabs.PyRevit.Runtime.Shared;
 
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
     /// <summary>
     /// Exercises the deployed shared runtime's WebView2 load context: only the
     /// WebView2 stack is isolated, and a missing isolated file fails loudly.
     /// </summary>
-    [TestClass]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class WebView2LoadContextTests {
         private string _directory;
 
-        [TestInitialize]
+        [SetUp]
         public void SetUp() {
             _directory = Path.Combine(Path.GetTempPath(), "pyrevit-webview2-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_directory);
         }
 
-        [TestCleanup]
+        [TearDown]
         public void TearDown() {
             Directory.Delete(_directory, recursive: true);
         }
@@ -44,51 +44,51 @@ namespace pyRevitLabs.UnitTests {
         private static IntPtr LoadUnmanaged(WebView2LoadContext context, string name) =>
             (IntPtr)InvokeProtected(context, "LoadUnmanagedDll", name);
 
-        [TestMethod]
+        [Test]
         public void NonIsolatedAssemblies_FallBackToTheDefaultContext() {
             var context = new WebView2LoadContext(_directory);
 
             var assembly = context.LoadFromAssemblyName(typeof(Uri).Assembly.GetName());
 
-            Assert.AreSame(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(assembly));
-            Assert.IsNull(InvokeProtected(context, "Load", new AssemblyName { Name = null }));
-            Assert.AreEqual(WebView2LoadContext.ContextName, context.Name);
-            Assert.AreEqual(_directory, context.AssemblyDirectory);
+            Assert.That(AssemblyLoadContext.GetLoadContext(assembly), Is.SameAs(AssemblyLoadContext.Default));
+            Assert.That(InvokeProtected(context, "Load", new AssemblyName { Name = null }), Is.Null);
+            Assert.That(context.Name, Is.EqualTo(WebView2LoadContext.ContextName));
+            Assert.That(context.AssemblyDirectory, Is.EqualTo(_directory));
         }
 
-        [TestMethod]
+        [Test]
         public void MissingIsolatedAssembly_FailsInsteadOfFallingBack() {
             var context = new WebView2LoadContext(_directory);
 
-            var error = Assert.ThrowsException<FileNotFoundException>(
+            var error = Assert.Throws<FileNotFoundException>(
                 () => InvokeProtected(context, "Load", new AssemblyName("microsoft.web.webview2.core")));
 
-            StringAssert.Contains(error.Message, "installation is incomplete");
+            Assert.That(error.Message, Does.Contain("installation is incomplete"));
         }
 
-        [TestMethod]
+        [Test]
         public void MissingNativeLoader_FailsLoudly() {
             var context = new WebView2LoadContext(_directory);
 
-            Assert.ThrowsException<DllNotFoundException>(() => LoadUnmanaged(context, "WebView2Loader"));
-            Assert.ThrowsException<DllNotFoundException>(() => LoadUnmanaged(context, "WebView2Loader.dll"));
+            Assert.Throws<DllNotFoundException>(() => LoadUnmanaged(context, "WebView2Loader"));
+            Assert.Throws<DllNotFoundException>(() => LoadUnmanaged(context, "WebView2Loader.dll"));
         }
 
-        [TestMethod]
+        [Test]
         public void OtherMissingNativeLibraries_DeferToDefaultProbing() {
             var context = new WebView2LoadContext(_directory);
 
-            Assert.AreEqual(IntPtr.Zero, LoadUnmanaged(context, "not-a-webview2-library"));
-            Assert.AreEqual(IntPtr.Zero, LoadUnmanaged(context, string.Empty));
+            Assert.That(LoadUnmanaged(context, "not-a-webview2-library"), Is.EqualTo(IntPtr.Zero));
+            Assert.That(LoadUnmanaged(context, string.Empty), Is.EqualTo(IntPtr.Zero));
         }
 
-        [TestMethod]
+        [Test]
         public void IsolatedContext_IsSharedByTheWholeProcess() {
             var first = IsolatedWebView2Context.GetOrCreate(_directory);
             var second = IsolatedWebView2Context.GetOrCreate(Path.Combine(_directory, "other"));
 
-            Assert.AreSame(first, second);
-            Assert.AreEqual(first.AssemblyDirectory, second.AssemblyDirectory);
+            Assert.That(second, Is.SameAs(first));
+            Assert.That(second.AssemblyDirectory, Is.EqualTo(first.AssemblyDirectory));
         }
     }
 }

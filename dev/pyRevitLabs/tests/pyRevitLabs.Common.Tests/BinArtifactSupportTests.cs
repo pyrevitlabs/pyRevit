@@ -1,17 +1,18 @@
 using System;
 using System.IO;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.UnitTests.Common {
-    [TestClass]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+namespace pyRevitLabs.Common.Tests {
+    [TestFixture]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class BinArtifactSupportTests {
-        private string _tempRoot;
+        private string _tempRoot = null!;
 
-        [TestInitialize]
+        [SetUp]
         public void SetUp() {
             _tempRoot = Path.Combine(
                 Path.GetTempPath(),
@@ -19,61 +20,61 @@ namespace pyRevitLabs.UnitTests.Common {
             Directory.CreateDirectory(_tempRoot);
         }
 
-        [TestCleanup]
+        [TearDown]
         public void TearDown() {
             if (Directory.Exists(_tempRoot))
-                CommonUtils.DeleteDirectory(_tempRoot, verbose: false);
+                Directory.Delete(_tempRoot, recursive: true);
         }
 
-        [TestMethod]
+        [Test]
         public void IsSupportedCiBinBranch_DevelopAndMaster_Test() {
-            Assert.IsTrue(BinArtifactSupport.IsSupportedCiBinBranch("develop"));
-            Assert.IsTrue(BinArtifactSupport.IsSupportedCiBinBranch("master"));
-            Assert.IsTrue(BinArtifactSupport.IsSupportedCiBinBranch("Develop"));
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("develop"), Is.True);
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("master"), Is.True);
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("Develop"), Is.True);
         }
 
-        [TestMethod]
+        [Test]
         public void IsSupportedCiBinBranch_OtherBranches_Test() {
-            Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch("feature/foo"));
-            Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch("v6.5.3.26176+2017"));
-            Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch(null));
-            Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch(string.Empty));
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("feature/foo"), Is.False);
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("v6.5.3.26176+2017"), Is.False);
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch(null), Is.False);
+            Assert.That(BinArtifactSupport.IsSupportedCiBinBranch(string.Empty), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void IsVersionTagRef_PublishedReleaseTags_Test() {
-            Assert.IsTrue(BinArtifactSupport.IsVersionTagRef("v6.5.3.26176+2017"));
-            Assert.IsTrue(BinArtifactSupport.IsVersionTagRef("V6.5.3.26176+2017"));
-            Assert.IsTrue(BinArtifactSupport.IsVersionTagRef(" v4.8.16 "));
+            Assert.That(BinArtifactSupport.IsVersionTagRef("v6.5.3.26176+2017"), Is.True);
+            Assert.That(BinArtifactSupport.IsVersionTagRef("V6.5.3.26176+2017"), Is.True);
+            Assert.That(BinArtifactSupport.IsVersionTagRef(" v4.8.16 "), Is.True);
         }
 
-        [TestMethod]
+        [Test]
         public void IsVersionTagRef_NonVersionRefs_Test() {
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef("develop"));
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef("master"));
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef("feature/foo"));
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef("version"));
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef("v"));
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef(null));
-            Assert.IsFalse(BinArtifactSupport.IsVersionTagRef(string.Empty));
+            Assert.That(BinArtifactSupport.IsVersionTagRef("develop"), Is.False);
+            Assert.That(BinArtifactSupport.IsVersionTagRef("master"), Is.False);
+            Assert.That(BinArtifactSupport.IsVersionTagRef("feature/foo"), Is.False);
+            Assert.That(BinArtifactSupport.IsVersionTagRef("version"), Is.False);
+            Assert.That(BinArtifactSupport.IsVersionTagRef("v"), Is.False);
+            Assert.That(BinArtifactSupport.IsVersionTagRef(null), Is.False);
+            Assert.That(BinArtifactSupport.IsVersionTagRef(string.Empty), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void GetReleaseDownloadRepos_ForkIncludesUpstream_Test() {
             var repos = BinArtifactSupport.GetReleaseDownloadRepos("myorg/pyRevit");
-            Assert.AreEqual(2, repos.Count);
-            Assert.AreEqual("myorg/pyRevit", repos[0]);
-            Assert.AreEqual(PyRevitLabsConsts.OriginalRepoId, repos[1]);
+            Assert.That(repos.Count, Is.EqualTo(2));
+            Assert.That(repos[0], Is.EqualTo("myorg/pyRevit"));
+            Assert.That(repos[1], Is.EqualTo(PyRevitLabsConsts.OriginalRepoId));
         }
 
-        [TestMethod]
+        [Test]
         public void GetReleaseDownloadRepos_UpstreamOnly_Test() {
             var repos = BinArtifactSupport.GetReleaseDownloadRepos(PyRevitLabsConsts.OriginalRepoId);
-            Assert.AreEqual(1, repos.Count);
-            Assert.AreEqual(PyRevitLabsConsts.OriginalRepoId, repos[0]);
+            Assert.That(repos.Count, Is.EqualTo(1));
+            Assert.That(repos[0], Is.EqualTo(PyRevitLabsConsts.OriginalRepoId));
         }
 
-        [TestMethod]
+        [Test]
         public void ResolveBinSourceRoot_DirectBinWrapper_Test() {
             var extractRoot = Path.Combine(_tempRoot, "extract-direct");
             var binDir = Path.Combine(extractRoot, "bin");
@@ -81,10 +82,10 @@ namespace pyRevitLabs.UnitTests.Common {
             File.WriteAllText(Path.Combine(binDir, "marker.txt"), "ok");
 
             var resolved = BinArtifactSupport.ResolveBinSourceRoot(extractRoot);
-            Assert.AreEqual(binDir, resolved);
+            Assert.That(resolved, Is.EqualTo(binDir));
         }
 
-        [TestMethod]
+        [Test]
         public void ResolveBinSourceRoot_FlatRoot_Test() {
             var extractRoot = Path.Combine(_tempRoot, "extract-flat");
             Directory.CreateDirectory(extractRoot);
@@ -92,10 +93,10 @@ namespace pyRevitLabs.UnitTests.Common {
             File.WriteAllText(Path.Combine(extractRoot, "marker.txt"), "ok");
 
             var resolved = BinArtifactSupport.ResolveBinSourceRoot(extractRoot);
-            Assert.AreEqual(extractRoot, resolved);
+            Assert.That(resolved, Is.EqualTo(extractRoot));
         }
 
-        [TestMethod]
+        [Test]
         public void ResolveBinSourceRoot_SingleNestedDir_Test() {
             var extractRoot = Path.Combine(_tempRoot, "extract-nested");
             var nested = Path.Combine(extractRoot, "payload");
@@ -104,16 +105,16 @@ namespace pyRevitLabs.UnitTests.Common {
             File.WriteAllText(Path.Combine(nestedBin, "marker.txt"), "ok");
 
             var resolved = BinArtifactSupport.ResolveBinSourceRoot(extractRoot);
-            Assert.AreEqual(nestedBin, resolved);
+            Assert.That(resolved, Is.EqualTo(nestedBin));
         }
 
-        [TestMethod]
+        [Test]
         public void BuildNuGetPackageVersion_Test() {
             var version = GithubNuGetBinAPI.BuildPackageVersion("abcdef1234567890abcdef1234567890abcdef12");
-            Assert.AreEqual("1.0.0-ci-abcdef1", version);
+            Assert.That(version, Is.EqualTo("1.0.0-ci-abcdef1"));
         }
 
-        [TestMethod]
+        [Test]
         public void SwapBinDirectory_ReplacesExistingBin_Test() {
             var clonePath = Path.Combine(_tempRoot, "clone-success");
             var existingBin = Path.Combine(clonePath, "bin");
@@ -126,13 +127,13 @@ namespace pyRevitLabs.UnitTests.Common {
 
             BinArtifactSupport.SwapBinDirectory(clonePath, newSource);
 
-            Assert.IsFalse(File.Exists(Path.Combine(existingBin, "old.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(existingBin, "new.txt")));
-            Assert.IsFalse(Directory.Exists(Path.Combine(clonePath, "bin.bak")));
-            Assert.IsFalse(Directory.Exists(Path.Combine(clonePath, "bin.new")));
+            Assert.That(File.Exists(Path.Combine(existingBin, "old.txt")), Is.False);
+            Assert.That(File.Exists(Path.Combine(existingBin, "new.txt")), Is.True);
+            Assert.That(Directory.Exists(Path.Combine(clonePath, "bin.bak")), Is.False);
+            Assert.That(Directory.Exists(Path.Combine(clonePath, "bin.new")), Is.False);
         }
 
-        [TestMethod]
+        [Test]
         public void SwapBinDirectory_RestoresBackupOnFailure_Test() {
             var clonePath = Path.Combine(_tempRoot, "clone-failure");
             var existingBin = Path.Combine(clonePath, "bin");
@@ -147,8 +148,8 @@ namespace pyRevitLabs.UnitTests.Common {
                 Assert.Fail("Expected swap to fail for missing source.");
             }
             catch (PyRevitException) {
-                Assert.IsTrue(File.Exists(lockedFile));
-                Assert.IsTrue(Directory.Exists(existingBin));
+                Assert.That(File.Exists(lockedFile), Is.True);
+                Assert.That(Directory.Exists(existingBin), Is.True);
             }
         }
     }
