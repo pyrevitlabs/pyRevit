@@ -434,13 +434,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>
         /// True when the page can exchange messages with the host, i.e. the
         /// window renders with WebView2 rather than the plain-text fallback.
-        /// Initializes the renderer when necessary.
+        /// Starts the renderer when necessary but never waits for it, so it is
+        /// safe during session load; a missing runtime or broken deployment is
+        /// known as soon as the renderer starts.
+        ///
+        /// Warning: do not switch this to <see cref="EnsureDocumentReadyBlocking"/>.
+        /// That pumps a nested dispatcher frame, which terminates the host when
+        /// reached from Revit API callbacks during session load.
         /// </summary>
         public bool SupportsWebMessages {
             get {
                 if (ClosedByUser)
                     return false;
-                EnsureDocumentReadyBlocking();
+                EnsureDocumentReady();
                 return _plainTextOutput == null
                     && _renderer.Failure == RendererFailure.None
                     && !_renderer.InitializationFailed;
@@ -449,7 +455,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>
         /// Deliver a JSON message to the page's <c>chrome.webview</c> message
-        /// listeners. Returns false when the window cannot deliver messages.
+        /// listeners. Returns false when the window cannot deliver messages,
+        /// including while the renderer is still starting.
         /// </summary>
         public bool PostWebMessage(string json) {
             return SupportsWebMessages && _renderer.PostMessage(json);

@@ -410,8 +410,8 @@ class PyRevitOutputWindow(object):
         check this and fall back to a printed report.
 
         Note:
-            Opens the output window if it does not exist yet and waits for it
-            to be ready, but never reopens one the user closed.
+            Opens the output window and starts its renderer if needed, without
+            waiting for it, but never reopens a window the user closed.
         """
         runtime_output = self._runtime_output()
         if runtime_output.IsWindowClosed:
@@ -464,16 +464,17 @@ class PyRevitOutputWindow(object):
         """
         if not self.supports_messages:
             return False
-        handlers = self.__dict__.setdefault("_message_handlers", [])
-        if handler not in handlers:
-            handlers.append(handler)
         window = self._runtime_output().window
         if self.__dict__.get("_message_window") != window:
+            self._message_handlers = []
             subscription = self.__dict__.setdefault(
                 "_message_subscription", self._dispatch_message
             )
             window.WebMessageReceived += subscription
             self._message_window = window
+        handlers = self._message_handlers
+        if handler not in handlers:
+            handlers.append(handler)
         return True
 
     def off_message(self, handler):
@@ -492,7 +493,8 @@ class PyRevitOutputWindow(object):
             data (object): value to serialize with ``json.dumps``
 
         Returns:
-            (bool): False when the window is closed or cannot deliver messages.
+            (bool): False when the window is closed or cannot deliver messages,
+            including while the page is still loading.
         """
         if not self._runtime_output().IsWindowReady:
             return False
