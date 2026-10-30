@@ -315,10 +315,11 @@ are easy to get wrong:
 
 1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
    need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
-2. **Stop the MCP servers, then rebuild.** Each client session runs `bin\pyrevit.exe mcp` from
-   the clone, and that process keeps files in `bin\` open. A build started while one runs fails with
-   "The process cannot access the file ... because it is being used by another process", for example
-   on `Colorful.Console.dll`. Servers of other client sessions count too.
+2. **Close Revit, stop the MCP servers, then rebuild.** Revit loads pyRevit from the clone's `bin\`
+   and keeps its DLLs open, and each client session runs `bin\pyrevit.exe mcp` from there too.
+   A build started while either runs fails with "The process cannot access the file ... because it
+   is being used by another process", for example on `pyRevitLabs.Language.dll` (Revit) or
+   `Colorful.Console.dll` (a server). Servers of other client sessions count too.
 
     ```shell
     pwsh dev/scripts/Stop-McpServers.ps1
@@ -326,7 +327,8 @@ are easy to get wrong:
     ```
 
     `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
-    tool call, or need a reconnect.
+    tool call, so don't call an MCP tool between the script and the build; afterwards the
+    new server starts by itself, or the client needs a reconnect.
 3. **Restart Revit after a build.** Accept the "Security - Unsigned Add-In" dialog with **Load Once**
    every time; the MCP host doesn't answer before that. Python-only changes need no rebuild, but
    they need a restart or reload to take effect: IronPython can `reload()` a changed module, while

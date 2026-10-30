@@ -9,7 +9,8 @@ another process" until those servers are stopped. The script ends only the serve
 given bin folder: "pyrevit.exe mcp", optionally with --revit=<year> or --revit <year>. It never ends
 short-lived commands such as "pyrevit mcp install" or "pyrevit clones update mcp", nor a
 pyrevit.exe from another clone. Servers of every client session are stopped; clients start
-a new one on the next tool call or need a reconnect.
+a new one on the next tool call or need a reconnect. Revit keeps the clone's DLLs open as
+well, so close it before rebuilding.
 
 .PARAMETER BinPath
 The bin folder of the clone, absolute or relative to the current folder. Defaults to bin\
