@@ -494,7 +494,8 @@ class PyRevitOutputWindow(object):
 
         Returns:
             (bool): False when the window is closed or cannot deliver messages,
-            including while the page is still loading.
+            including while the page is loading or navigating (e.g. right
+            after :func:`open_page`).
         """
         if not self._runtime_output().IsWindowReady:
             return False

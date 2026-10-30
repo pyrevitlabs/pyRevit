@@ -189,7 +189,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
 
         /// <inheritdoc />
         public bool PostMessage(string json) {
-            if (_disposed || !_coreReady || string.IsNullOrEmpty(json))
+            if (_disposed || !IsDocumentReady || string.IsNullOrEmpty(json))
                 return false;
             if (_dispatcher.CheckAccess())
                 return SendMessage(json);

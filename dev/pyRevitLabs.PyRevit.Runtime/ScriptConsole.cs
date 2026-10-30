@@ -456,7 +456,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>
         /// Deliver a JSON message to the page's <c>chrome.webview</c> message
         /// listeners. Returns false when the window cannot deliver messages,
-        /// including while the renderer is still starting.
+        /// including while the renderer is starting or the page is navigating.
         /// </summary>
         public bool PostWebMessage(string json) {
             return SupportsWebMessages && _renderer.PostMessage(json);

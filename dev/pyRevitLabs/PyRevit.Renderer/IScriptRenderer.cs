@@ -70,7 +70,11 @@ namespace PyRevitLabs.PyRevit.Renderer {
         /// Deliver a JSON message to the page, which receives it as a
         /// <c>message</c> event on <c>window.chrome.webview</c>. Does not block.
         /// </summary>
-        /// <returns>False when the renderer cannot deliver messages, so the caller can fall back.</returns>
+        /// <returns>
+        /// False when the renderer cannot deliver messages, including while the
+        /// core is starting or a navigation is pending, since navigation discards
+        /// messages posted to the outgoing page.
+        /// </returns>
         bool PostMessage(string json);
 
         /// <summary>Raised for top-level navigations so the owner can enforce URL policy.</summary>
