@@ -10,6 +10,7 @@ from System.Collections.Generic import HashSet
 from pyrevit.coreutils import Timer
 from pyrevit import HOST_APP
 from pyrevit import DB
+from pyrevit.compat import get_elementid_value_func
 from pyrevit.script import get_config, get_logger
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
@@ -28,6 +29,27 @@ _XAML = os.path.join(
 
 def _t(key):
     return applocales.get_locale_string_from_xaml(_XAML, key)
+
+
+get_elementid_value = get_elementid_value_func()
+
+
+def _get_placed_view_ids(document, sheets):
+    placed_ids = set()
+    for sheet in sheets:
+        placed_ids.update(get_elementid_value(x) for x in sheet.GetAllPlacedViews())
+    placed_ids.update(
+        get_elementid_value(x.ScheduleId) for x in q.get_schedules_instances(document)
+    )
+    panel_schedule_instances = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.Electrical.PanelScheduleSheetInstance)
+        .ToElements()
+    )
+    placed_ids.update(
+        get_elementid_value(x.ScheduleId) for x in panel_schedule_instances
+    )
+    return placed_ids
 
 
 logger = get_logger()
@@ -94,6 +116,17 @@ if _PresureLossReport is not None:
 if _SystemsAnalysisReport is not None:
     VALID_VIEW_TYPES.append(_SystemsAnalysisReport)
 
+_NOT_PLACEABLE_VIEW_TYPES = {
+    DB.ViewType.DrawingSheet,
+    DB.ViewType.CostReport,
+    DB.ViewType.LoadsReport,
+    DB.ViewType.Walkthrough,
+}
+if _PresureLossReport is not None:
+    _NOT_PLACEABLE_VIEW_TYPES.add(_PresureLossReport)
+if _SystemsAnalysisReport is not None:
+    _NOT_PLACEABLE_VIEW_TYPES.add(_SystemsAnalysisReport)
+
 INVALID_VIEW_TYPES = [
     DB.ViewType.Undefined,
     DB.ViewType.ProjectBrowser,
@@ -139,9 +172,11 @@ class ElementCounts:
             .WhereElementIsNotElementType()
             .GetElementCount()
         )
-        self.purgeable_elements_count = len(
-            document.GetUnusedElements(HashSet[DB.ElementId]())
-        )
+        self.purgeable_elements_count = None
+        if HOST_APP.is_newer_than(2024, or_equal=True):
+            self.purgeable_elements_count = len(
+                document.GetUnusedElements(HashSet[DB.ElementId]())
+            )
         self.activated_analytical_model_elements_count = (
             cnt.count_analytical_model_activated(document)
         )
@@ -242,16 +277,25 @@ class SheetViewInfo:
             if _SystemsAnalysisReport is not None
             else 0
         )
-        self.views_not_on_sheets = sum(
-            1
-            for x in views
-            if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
-        )
-        self.schedules_not_sheeted_count = sum(
-            1
-            for x in schedules
-            if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
-        )
+        if HOST_APP.is_newer_than(2023, or_equal=True):
+            not_placed = DB.ViewPlacementOnSheetStatus.NotPlaced
+            self.views_not_on_sheets = sum(
+                1 for x in views if x.GetPlacementOnSheetStatus() == not_placed
+            )
+            self.schedules_not_sheeted_count = sum(
+                1 for x in schedules if x.GetPlacementOnSheetStatus() == not_placed
+            )
+        else:
+            placed_ids = _get_placed_view_ids(document, sheets_set)
+            self.views_not_on_sheets = sum(
+                1
+                for x in views
+                if x.ViewType not in _NOT_PLACEABLE_VIEW_TYPES
+                and get_elementid_value(x.Id) not in placed_ids
+            )
+            self.schedules_not_sheeted_count = sum(
+                1 for x in schedules if get_elementid_value(x.Id) not in placed_ids
+            )
         self.copied_views_count = cnt.count_copied_views(views)
 
 
@@ -625,6 +669,8 @@ class ReportData:
             return "".join(escape_map.get(c, c) for c in str(s))
 
         def format_value(value):
+            if value is None:
+                return "n/a"
             if isinstance(value, list):
                 return '"{}"'.format(", ".join(html_escape(v) for v in value))
             return html_escape(value)
@@ -702,12 +748,16 @@ def generate_html_content(data, links_cards=""):
     Returns:
         str: Combined HTML content for the report.
     """
+    purgeable_count = data.element_counts.purgeable_elements_count
+    purgeable_card = (
+        ""
+        if purgeable_count is None
+        else card_builder(1000, purgeable_count, " Purgeable (2024+)")
+    )
     critical_elements_frame = create_frame(
         "Critical Elements",
         card_builder(100000, data.element_counts.element_count, " Elements"),
-        card_builder(
-            1000, data.element_counts.purgeable_elements_count, " Purgeable (2024+)"
-        ),
+        purgeable_card,
         card_builder(100, data.warnings_info.all_warnings_count, " Warnings"),
         card_builder(
             5, data.warnings_info.critical_warnings_count, " Critical Warnings"

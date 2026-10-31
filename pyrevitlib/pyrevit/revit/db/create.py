@@ -188,17 +188,59 @@ def create_new_project(template=None, imperial=True):
         return HOST_APP.app.NewProjectDocument(units)
 
 
+def _find_revision_numbering_sequence(doc, number_type):
+    if HOST_APP.is_older_than(2023):
+        return None
+    if number_type == coreutils.get_enum_none(DB.RevisionNumberType):
+        return DB.ElementId.InvalidElementId
+    for sequence in DB.FilteredElementCollector(doc).OfClass(
+        DB.RevisionNumberingSequence
+    ):
+        if sequence.NumberType == number_type:
+            return sequence.Id
+    raise PyRevitException(
+        "The document has no {} revision numbering sequence.".format(number_type)
+    )
+
+
+def _set_revision_number_type(revision, number_type, sequence_id):
+    if HOST_APP.is_older_than(2023):
+        revision.NumberType = number_type
+        return
+    revision.RevisionNumberingSequenceId = sequence_id
+
+
 def create_revision(
     description=None, by=None, to=None, date=None, alphanum=False, nonum=False, doc=None
 ):
-    new_rev = DB.Revision.Create(doc or DOCS.doc)
+    """Create a revision.
+
+    Note:
+        On Revit 2023+, numbering comes from a RevisionNumberingSequence, so
+        ``alphanum`` assigns the document's first alphanumeric sequence and
+        ``nonum`` clears the sequence.
+
+    Raises:
+        PyRevitException: ``alphanum`` is set on Revit 2023+ and the document
+            has no alphanumeric numbering sequence.
+    """
+    doc = doc or DOCS.doc
+    number_type = None
+    if alphanum:
+        number_type = DB.RevisionNumberType.Alphanumeric
+    if nonum:
+        number_type = coreutils.get_enum_none(DB.RevisionNumberType)
+    sequence_id = (
+        _find_revision_numbering_sequence(doc, number_type)
+        if number_type is not None
+        else None
+    )
+    new_rev = DB.Revision.Create(doc)
     new_rev.Description = description
     new_rev.IssuedBy = by or ""
     new_rev.IssuedTo = to or ""
-    if alphanum:
-        new_rev.NumberType = DB.RevisionNumberType.Alphanumeric
-    if nonum:
-        new_rev.NumberType = coreutils.get_enum_none(DB.RevisionNumberType)
+    if number_type is not None:
+        _set_revision_number_type(new_rev, number_type, sequence_id)
     new_rev.RevisionDate = date or ""
     return new_rev
 
@@ -989,7 +1031,12 @@ def create_ceiling(points, ceiling_type, level=None, offset=8.0, doc=None):
 
     Returns:
         (DB.Ceiling): the ceiling.
+
+    Raises:
+        PyRevitException: on Revit 2021, which has no ceiling creation API.
     """
+    if HOST_APP.is_older_than(2022):
+        raise PyRevitException("Creating ceilings requires Revit 2022 or later.")
     doc = doc or DOCS.doc
     _require_transaction(doc, "create ceilings")
     level = query.find_level(level, doc=doc)

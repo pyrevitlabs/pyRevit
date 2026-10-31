@@ -325,7 +325,7 @@ class PrintUtils:
             a sheet in the other orientation, a sheet larger than the paper, or
             a print setting with a non-zero user-defined origin offset.
         """
-        opts = DB.PDFExportOptions()
+        opts = DB.PDFExportOptions()  # compat-ignore: callers gate on IS_REVIT_2022_OR_NEWER
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
         opts.HideReferencePlane = hrp
