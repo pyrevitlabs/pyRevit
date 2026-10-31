@@ -268,25 +268,36 @@ class PrintUtils:
 
     @staticmethod
     def sheet_size_mm(sheet):
-        """Return a sheet's (short, long) side lengths in millimeters."""
+        """Return a sheet's (width, height) in millimeters."""
         outline = sheet.Outline
-        sides = (
+        return (
             (outline.Max.U - outline.Min.U) * FEET_TO_MM,
             (outline.Max.V - outline.Min.V) * FEET_TO_MM,
         )
-        return min(sides), max(sides)
 
     @staticmethod
-    def sheets_match_paper(sheets, paper_format):
-        """Return True when every sheet has the size of the given paper format."""
+    def sheets_match_paper(sheets, paper_format, orientation):
+        """Return True when every sheet fills the paper in the given orientation.
+
+        An orientation other than landscape or portrait leaves the paper's
+        orientation open, so a sheet matches in either one.
+        """
         paper = STANDARD_PAPER_SIZES_MM.get(str(paper_format))
         if not paper or not sheets:
             return False
+        short_side, long_side = paper
+        if orientation == DB.PageOrientationType.Landscape:
+            accepted = [(long_side, short_side)]
+        elif orientation == DB.PageOrientationType.Portrait:
+            accepted = [(short_side, long_side)]
+        else:
+            accepted = [(long_side, short_side), (short_side, long_side)]
         for sheet in sheets:
-            short_side, long_side = PrintUtils.sheet_size_mm(sheet)
-            if (
-                abs(short_side - paper[0]) > PAPER_SIZE_TOLERANCE_MM
-                or abs(long_side - paper[1]) > PAPER_SIZE_TOLERANCE_MM
+            width, height = PrintUtils.sheet_size_mm(sheet)
+            if not any(
+                abs(width - paper_width) <= PAPER_SIZE_TOLERANCE_MM
+                and abs(height - paper_height) <= PAPER_SIZE_TOLERANCE_MM
+                for paper_width, paper_height in accepted
             ):
                 return False
         return True
@@ -300,8 +311,10 @@ class PrintUtils:
         Note:
             Revit's Fit to Page leaves a white border inside the PDF page even
             when the paper is exactly the sheet size. When ``sheets`` all have
-            the size of the print setting's paper, Fit to Page is mapped to
-            100% zoom so the sheet fills the page edge to edge.
+            the size of the print setting's paper in its page orientation, Fit
+            to Page is mapped to 100% zoom so the sheet fills the page edge to
+            edge. A sheet in the other orientation keeps Fit to Page, since
+            100% zoom would clip it.
         """
         opts = DB.PDFExportOptions()
         opts.HideCropBoundaries = hcb
@@ -352,7 +365,9 @@ class PrintUtils:
                 try:
                     opts.ZoomType = print_params.ZoomType
                     if opts.ZoomType == DB.ZoomType.FitToPage and (
-                        PrintUtils.sheets_match_paper(sheets, paper_format)
+                        PrintUtils.sheets_match_paper(
+                            sheets, paper_format, opts.PaperOrientation
+                        )
                     ):
                         opts.ZoomType = DB.ZoomType.Zoom
                     else:
