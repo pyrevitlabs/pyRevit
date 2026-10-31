@@ -141,12 +141,13 @@ else:
 import IronPython
 
 # WPF
-wpf = None
 if IRONPY:
     wpf_assmname = "{prefix}IronPython.Wpf".format(prefix=eng.EnginePrefix)
     wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
     clr.AddReferenceToFileAndPath(wpf_dllpath)
     import wpf
+else:
+    from pyrevit import _cpython_wpf as wpf
 
 
 # SQLite

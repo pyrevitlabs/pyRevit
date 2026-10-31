@@ -43,8 +43,11 @@ VB_LANG = "visualbasic"
 RUBY_LANG = "ruby"
 DYNAMO_LANG = "dynamobim"
 GRASSHOPPER_LANG = "grasshopper"
-# cpython hash-bang
+PYTHON_ENGINE_CPYTHON = "cpython"
+PYTHON_ENGINE_IRONPYTHON = "ironpython"
+PYTHON_ENGINES = {PYTHON_ENGINE_CPYTHON, PYTHON_ENGINE_IRONPYTHON}
 CPYTHON_HASHBANG = "#! python3"
+CPYTHON_FIRST_LINE_MARKERS = ("python3", "cpython")
 
 # supported script files
 PYTHON_SCRIPT_FILE_FORMAT = ".py"
@@ -103,6 +106,9 @@ MDATA_MIN_REVIT_VERSION = "min_revit_version"
 MDATA_MAX_REVIT_VERSION = "max_revit_version"
 MDATA_BETA_SCRIPT = "is_beta"
 MDATA_ENGINE = "engine"
+MDATA_ENGINE_TYPE = "type"
+MDATA_ENGINE_TYPE_EXPLICIT = "type_explicit"
+ENGINE_CONFIG_CPYTHON = "CPython"
 MDATA_ENGINE_CLEAN = "clean"
 MDATA_ENGINE_FULLFRAME = "full_frame"
 MDATA_ENGINE_PERSISTENT = "persistent"
@@ -178,6 +184,67 @@ SLIDEOUT_IDENTIFIER = ">>>"
 
 # bundle icon
 ICON_FILE_FORMAT = ".png"
+
+
+def _engine_type_of(engine_meta):
+    if isinstance(engine_meta, dict):
+        engine_meta = engine_meta.get(MDATA_ENGINE_TYPE)
+    if not hasattr(engine_meta, "strip"):
+        return None
+    return engine_meta
+
+
+def get_declared_engine_type(metadata):
+    """Return the raw engine type an extension manifest declares, if any.
+
+    Accepts ``"engine": "cpython"`` and the bundle-style mapping
+    ``"engine": {"type": "cpython", ...}`` that the C# loader also reads. A
+    mapping without ``type`` only configures engine behavior and declares
+    nothing.
+    """
+    if not isinstance(metadata, dict):
+        return None
+    return _engine_type_of(metadata.get(MDATA_ENGINE))
+
+
+def get_bundle_engine_type(metadata):
+    """Return the raw ``engine.type`` of a bundle's metadata, if any.
+
+    Unlike an extension manifest, a bundle declares its engine only through
+    the ``engine:`` mapping; a scalar ``engine:`` is ignored, as the C#
+    ``BundleParser`` ignores it.
+    """
+    if not isinstance(metadata, dict):
+        return None
+    engine_meta = metadata.get(MDATA_ENGINE)
+    if not isinstance(engine_meta, dict):
+        return None
+    return _engine_type_of(engine_meta)
+
+
+def first_line_selects_cpython(first_line):
+    """Return whether a Python script's first line selects the CPython engine.
+
+    Invariant:
+        Mirrors ``ScriptRuntime.EngineType`` in C#: a case-sensitive substring
+        match for any of ``CPYTHON_FIRST_LINE_MARKERS``, with or without
+        ``#!``. It applies only when no bundle ``engine.type`` or extension
+        ``cpython`` declaration has decided the engine already.
+    """
+    return any(marker in first_line for marker in CPYTHON_FIRST_LINE_MARKERS)
+
+
+def get_declared_python_engine(metadata):
+    """Return a valid extension-level Python engine declaration, if any."""
+    declared_engine = get_declared_engine_type(metadata)
+    if declared_engine is None:
+        return None
+    normalized_engine = declared_engine.strip().lower()
+    if normalized_engine in PYTHON_ENGINES:
+        return normalized_engine
+    return None
+
+
 ICON_DARK_SUFFIX = ".dark"
 DEFAULT_ICON_FILE = "icon" + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = "on" + ICON_FILE_FORMAT

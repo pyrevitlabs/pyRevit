@@ -6,7 +6,6 @@ layout:
   - Appdata Module Tests
   - CoreUtils Module Tests
   - Credentials Module Tests
-  - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
   - Routes Module Tests

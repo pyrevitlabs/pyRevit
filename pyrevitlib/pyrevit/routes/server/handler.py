@@ -118,6 +118,8 @@ class RequestHandler(UI.IExternalEventHandler):
     invocations, therefore determines how many handlers Execute must run.
     """
 
+    __namespace__ = "pyrevit.routes.server.handler"
+
     def __init__(self):
         self._queue = deque()
         self._lock = threading.RLock()

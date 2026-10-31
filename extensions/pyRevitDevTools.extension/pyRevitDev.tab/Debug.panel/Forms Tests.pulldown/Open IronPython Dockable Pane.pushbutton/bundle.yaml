@@ -1,0 +1,3 @@
+title: Open IronPython Dockable Pane
+tooltip: Open the DevTools dockable pane registered by the IronPython startup script.
+context: zero-doc

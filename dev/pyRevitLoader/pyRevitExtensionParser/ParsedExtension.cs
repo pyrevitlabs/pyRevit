@@ -24,6 +24,38 @@ namespace pyRevitExtensionParser
         /// </summary>
         public bool RocketModeCompatible { get; set; } = false;
 
+        /// <summary>Normalized <see cref="DeclaredPythonEngine"/> value for a CPython declaration.</summary>
+        public const string CPythonEngineDeclaration = "cpython";
+
+        /// <summary>Normalized <see cref="DeclaredPythonEngine"/> value for an IronPython declaration.</summary>
+        public const string IronPythonEngineDeclaration = "ironpython";
+
+        /// <summary>
+        /// Engine <c>type</c> written into a script's engine configs when the extension's
+        /// CPython declaration applies.
+        /// </summary>
+        public const string CPythonEngineType = "CPython";
+
+        /// <summary>
+        /// Gets or sets the Python engine the extension declares in <c>extension.json</c>
+        /// (<see cref="CPythonEngineDeclaration"/> or <see cref="IronPythonEngineDeclaration"/>),
+        /// or null when it declares none.
+        /// </summary>
+        /// <remarks>
+        /// It is a default for Python scripts only: a <c>#! python3</c> shebang or a bundle's
+        /// own <c>engine.type</c> still wins.
+        /// </remarks>
+        public string DeclaredPythonEngine { get; set; }
+
+        /// <summary>
+        /// Whether the extension declares CPython as the default engine for its Python scripts.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a bundle's own non-blank <c>engine.type</c> takes precedence over this
+        /// declaration; only bundles without one run under <see cref="CPythonEngineType"/>.
+        /// </remarks>
+        public bool DeclaresCPython => DeclaredPythonEngine == CPythonEngineDeclaration;
+
         /// <summary>
         /// Layout directives that reference external components (from other extensions or native Revit).
         /// These must be applied after the full UI is built using the Revit ribbon API.
@@ -232,6 +264,12 @@ namespace pyRevitExtensionParser
         // Cached startup script path to avoid repeated file system checks
         private string _startupScript;
         private bool _startupScriptInitialized;
+        private IReadOnlyList<string> _startupScripts;
+
+        /// <summary>
+        /// File name of the extension startup script that always runs under CPython.
+        /// </summary>
+        public const string CPythonStartupFileName = "startup.cpython.py";
 
         /// <summary>
         /// Gets the path to the startup script if it exists
@@ -246,6 +284,24 @@ namespace pyRevitExtensionParser
                     _startupScriptInitialized = true;
                 }
                 return _startupScript;
+            }
+        }
+
+        /// <summary>
+        /// Gets every startup script in execution order: <see cref="StartupScript"/>, then
+        /// <c>startup.cpython.py</c>, which runs under CPython alongside or instead of it.
+        /// </summary>
+        /// <remarks>
+        /// An extension may ship only <c>startup.cpython.py</c>, so callers must check this
+        /// list rather than <see cref="StartupScript"/> to decide whether startup work exists.
+        /// </remarks>
+        public IReadOnlyList<string> StartupScripts
+        {
+            get
+            {
+                if (_startupScripts == null)
+                    _startupScripts = FindStartupScripts();
+                return _startupScripts;
             }
         }
 
@@ -498,6 +554,20 @@ namespace pyRevitExtensionParser
             }
 
             return null;
+        }
+
+        private IReadOnlyList<string> FindStartupScripts()
+        {
+            var scripts = new List<string>();
+            if (StartupScript != null)
+                scripts.Add(StartupScript);
+            if (!string.IsNullOrEmpty(Directory))
+            {
+                var cpythonStartupScript = Path.Combine(Directory, CPythonStartupFileName);
+                if (File.Exists(cpythonStartupScript))
+                    scripts.Add(cpythonStartupScript);
+            }
+            return scripts;
         }
 
     }

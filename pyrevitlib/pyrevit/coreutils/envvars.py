@@ -38,6 +38,7 @@ Examples:
     {'someconfig': True}
 """
 
+from pyrevit.compat import IRONPY
 from pyrevit.framework import AppDomain
 from pyrevit.labs import Common
 
@@ -112,9 +113,23 @@ def set_pyrevit_env_var(param_name, param_value):
     Args:
         param_name (str): name of environment variable
         param_value (object): any python object
+
+    Note:
+        Under CPython the root dictionary is the .NET ``PythonDictionary``
+        seeded by the C# loader. pythonnet binds ``d[key] = value`` on it to
+        the ``this[params object[]]`` indexer, which stores a tuple of the
+        key's characters and, in a process with no IronPython context (the
+        ``pyrevit run`` runner), raises ``NullReferenceException``. The
+        ``Add(object, object)`` overload stores the plain string key and
+        replaces an existing entry.
     """
     # Get function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
-    data_dict = get_pyrevit_env_vars() or {}
-    data_dict[param_name] = param_value
+    data_dict = get_pyrevit_env_vars()
+    if data_dict is None:
+        data_dict = {}
+    if IRONPY or isinstance(data_dict, dict):
+        data_dict[param_name] = param_value
+    else:
+        data_dict.Add(param_name, param_value)
     AppDomain.CurrentDomain.SetData(ENV_VAR_DICT_NAME, data_dict)

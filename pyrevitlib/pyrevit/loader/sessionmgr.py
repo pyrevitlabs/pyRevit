@@ -340,10 +340,12 @@ class PyRevitExternalCommandType(object):
 
     def __init__(self, extcmd_type, extcmd_availtype):
         self._extcmd_type = extcmd_type
-        self._extcmd = extcmd_type()
+        self._extcmd = framework.System.Activator.CreateInstance(extcmd_type)
         if extcmd_availtype:
             self._extcmd_availtype = extcmd_availtype
-            self._extcmd_avail = extcmd_availtype()
+            self._extcmd_avail = framework.System.Activator.CreateInstance(
+                extcmd_availtype
+            )
         else:
             self._extcmd_availtype = None
             self._extcmd_avail = None
@@ -482,13 +484,13 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
     Searches the pyRevit-generated assemblies under current session for
     the command with the matching unique name (class name) and returns the
-    command type. Notice that this returned value is a 'type' and should be
-    instantiated before use.
+    command type. Notice that this returned value is a `System.Type` and
+    should be instantiated before use; CPython cannot call it directly.
 
     Examples:
         ```python
         cmd = find_pyrevitcmd('pyrevitcore_pyrevit_pyrevit_tools_reload')
-        command_instance = cmd()
+        command_instance = System.Activator.CreateInstance(cmd)
         command_instance.Execute() # Provide commandData, message, elements
         ```
 
@@ -554,7 +556,7 @@ def execute_command_cls(
     extcmd_type, arguments=None, config_mode=False, exec_from_ui=True
 ):
 
-    command_instance = extcmd_type()
+    command_instance = framework.System.Activator.CreateInstance(extcmd_type)
     # pass the arguments to the instance
     if arguments:
         command_instance.ScriptRuntimeConfigs.Arguments = framework.to_clr_list(

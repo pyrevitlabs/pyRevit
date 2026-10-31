@@ -14,6 +14,94 @@ internal sealed class InterpreterLifecycleRecord {
     public required Exception? PythonDllReassignment { get; init; }
     public required Exception? Shutdown { get; init; }
     public required bool IsInitializedAfterShutdown { get; init; }
+    public required string? DerivedTypeRedefinition { get; init; }
+    public required string? DerivedTypeShapes { get; init; }
+    public required string? ImplicitInterfaceTypes { get; init; }
+    public required string? TruthyBooleans { get; init; }
+    public required string? ClassCreationHooks { get; init; }
+    public required string? DefinitionSites { get; init; }
+    public required bool? DecoderLookupLetOtherThreadsConvert { get; init; }
+    public required IReadOnlyDictionary<string, string> ScriptOutputConversions { get; init; }
+}
+
+/// <summary>Base of <see cref="IDerivedProbe"/>, whose members a Python implementer must also receive.</summary>
+public interface IBaseProbe {
+    string Base();
+}
+
+/// <summary>An interface whose members come partly from <see cref="IBaseProbe"/>, like Revit's server interfaces.</summary>
+public interface IDerivedProbe : IBaseProbe {
+    string Derived();
+}
+
+/// <summary>Calls a Python implementation through both interfaces, as Revit calls a registered server.</summary>
+public static class InheritedInterfaceCaller {
+    public static string Call(IDerivedProbe probe) => probe.Base() + "+" + probe.Derived();
+}
+
+/// <summary>CLR members that receive Python values where IronPython converts by truthiness.</summary>
+public sealed class TruthinessTarget {
+    public bool Flag { get; set; }
+
+    public bool? Maybe { get; set; } = true;
+
+    public bool Field;
+
+    public static string Pick(bool value) => "bool";
+
+    public static string Pick(object value) => "object";
+
+    public static string OnlyBool(bool value) => value.ToString();
+
+    public static bool Ask(Func<bool> predicate) => predicate();
+}
+
+/// <summary>A conversion target only <see cref="GilYieldingDecoder"/> is asked about.</summary>
+public sealed class DecoderProbeTarget {
+}
+
+/// <summary>A conversion target the competing thread asks for while <see cref="GilYieldingDecoder"/> runs.</summary>
+public sealed class DecoderProbeOtherTarget {
+}
+
+/// <summary>
+/// A codec whose <c>CanDecode</c> lets the GIL go, as any codec running Python code can, and waits
+/// for another thread to finish a conversion of its own.
+/// </summary>
+internal sealed class GilYieldingDecoder : IPyObjectDecoder {
+    private int _started;
+
+    public bool? OtherThreadConverted { get; private set; }
+
+    public bool CanDecode(PyType objectType, Type targetType) {
+        if (targetType != typeof(DecoderProbeTarget) || Interlocked.Exchange(ref _started, 1) == 1)
+            return false;
+        var converted = new ManualResetEventSlim();
+        var other = new Thread(() => {
+            try {
+                using Py.GILState gil = Py.GIL();
+                using PyObject value = PythonEngine.Eval("type('DecoderLockProbeOther', (), {})()");
+                value.AsManagedObject(typeof(DecoderProbeOtherTarget));
+            }
+            catch (Exception) {
+            }
+            converted.Set();
+        });
+        IntPtr state = PythonEngine.BeginAllowThreads();
+        try {
+            other.Start();
+            OtherThreadConverted = converted.Wait(TimeSpan.FromSeconds(10));
+        }
+        finally {
+            PythonEngine.EndAllowThreads(state);
+        }
+        return false;
+    }
+
+    public bool TryDecode<T>(PyObject pyObj, out T? value) {
+        value = default;
+        return false;
+    }
 }
 
 /// <summary>
@@ -29,6 +117,238 @@ internal static class InterpreterLifecycleProbe {
     public const int ReattachCount = 3;
 
     private const string MarkerName = "pyrevit_reload_probe";
+
+    private const string RedefinitionProbe = """
+        import clr
+        import sys
+        from System import IDisposable
+
+        def define(extra):
+            class RedefinedProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.redefinition"
+
+                def Dispose(self):
+                    pass
+
+                if extra:
+                    @clr.clrmethod(int, [])
+                    def Extra(self):
+                        return 1
+
+            return clr.GetClrType(RedefinedProbe)
+
+        plain = define(False)
+        extended = define(True)
+        plain_again = define(False)
+        sys.pyrevit_redefinition = "|".join([
+            str(plain.Equals(plain_again)),
+            str(extended.Equals(plain)),
+            str(extended.GetMethod("Extra") is not None),
+            str(plain.GetMethod("Extra") is not None),
+        ])
+        """;
+    private const string ShapesProbe = """
+        import clr
+        import sys
+        from System import IComparable, IDisposable
+
+        def named():
+            class NamedProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.naming"
+
+                def Dispose(self):
+                    pass
+
+            return clr.GetClrType(NamedProbe)
+
+        def generic():
+            class GenericProbe(IComparable[int]):
+                __namespace__ = "pyrevit.tests.naming"
+
+                def CompareTo(self, other):
+                    return 0
+
+            return clr.GetClrType(GenericProbe)
+
+        def with_property(writable):
+            class PropertyProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.properties"
+
+                def Dispose(self):
+                    pass
+
+                def _get(self):
+                    return 1
+
+                def _set(self, value):
+                    pass
+
+                Value = clr.clrproperty(int, _get, _set if writable else None)
+
+            return clr.GetClrType(PropertyProbe)
+
+        def in_assembly(name):
+            class AssemblyProbe(IDisposable):
+                __namespace__ = "pyrevit.tests.assemblies"
+                __assembly__ = name
+
+                def Dispose(self):
+                    pass
+
+            return clr.GetClrType(AssemblyProbe)
+
+        first = named()
+        from pyrevit.tests.naming import NamedProbe as Imported
+        read_only = with_property(False)
+        writable = with_property(True)
+        first_assembly = in_assembly("pyrevit.tests.first")
+        second_assembly = in_assembly("pyrevit.tests.second")
+        sys.pyrevit_shapes = "|".join([
+            first.FullName,
+            str(clr.GetClrType(Imported).Equals(first)),
+            generic().FullName,
+            str(read_only.GetProperty("Value").CanWrite),
+            str(writable.GetProperty("Value").CanWrite),
+            first_assembly.Assembly.GetName().Name,
+            second_assembly.Assembly.GetName().Name,
+        ])
+        """;
+    private const string ImplicitInterfaceProbe = """
+        import clr
+        import sys
+        from System import IComparable
+        from System.Collections import Comparer
+
+        def define():
+            class ImplicitProbe(IComparable):
+                def CompareTo(self, other):
+                    return 7
+
+            return ImplicitProbe
+
+        first = define()
+        second = define()
+        built = type("BuiltProbe", (IComparable,), {"CompareTo": lambda self, other: 3})
+        clr.AddReference("pyRevitLabs.PyRevit.Runtime.CPython.Tests")
+        from PyRevitLabs.PyRevit.Runtime.CPython.Tests import IDerivedProbe, InheritedInterfaceCaller
+
+        class InheritedProbe(IDerivedProbe):
+            def Base(self):
+                return "base"
+
+            def Derived(self):
+                return "derived"
+
+        sys.pyrevit_implicit = "|".join([
+            str(clr.GetClrType(first).Equals(clr.GetClrType(second))),
+            str(Comparer.Default.Compare(first(), 1)),
+            str(Comparer.Default.Compare(second(), 1)),
+            str(Comparer.Default.Compare(built(), 1)),
+            str(clr.GetClrType(first).IsInterface),
+            InheritedInterfaceCaller.Call(InheritedProbe()),
+        ])
+        """;
+    private const string TruthyBooleanProbe = """
+        import clr
+        import re
+        import sys
+        clr.AddReference("pyRevitLabs.PyRevit.Runtime.CPython.Tests")
+        from System import Func
+        from PyRevitLabs.PyRevit.Runtime.CPython.Tests import TruthinessTarget
+
+        target = TruthinessTarget()
+        observed = []
+        for value in (re.match("a", "a"), None, 0, "x", []):
+            target.Flag = value
+            observed.append(str(target.Flag))
+        target.Maybe = None
+        observed.append(str(target.Maybe))
+        target.Maybe = []
+        observed.append(str(target.Maybe))
+        target.Field = 1
+        observed.append(str(target.Field))
+        observed.append(TruthinessTarget.Pick("x"))
+        observed.append(TruthinessTarget.Pick(True))
+        observed.append(TruthinessTarget.OnlyBool(re.match("a", "a")))
+        observed.append(TruthinessTarget.OnlyBool(None))
+        observed.append(str(TruthinessTarget.Ask(Func[bool](lambda: re.match("a", "a")))))
+        observed.append(str(TruthinessTarget.Ask(Func[bool](lambda: None))))
+        sys.pyrevit_truthy = "|".join(observed)
+        """;
+    private const string ClassCreationHooksProbe = """
+        import functools
+        import sys
+        from System import IComparable, IDisposable
+        from System.Collections import Comparer
+
+        calls = []
+
+        class CachedInterface(IComparable):
+            @functools.cached_property
+            def value(self):
+                calls.append("cached")
+                return 5
+
+            def CompareTo(self, other):
+                return self.value + self.value
+
+        class HookedBase(IDisposable):
+            __namespace__ = "pyrevit.tests.hooks"
+
+            def __init_subclass__(cls, tag=None, **kwargs):
+                super().__init_subclass__(**kwargs)
+                calls.append(cls.__name__ + ":" + str(tag))
+
+            def Dispose(self):
+                pass
+
+        class HookedChild(HookedBase, tag="child"):
+            __namespace__ = "pyrevit.tests.hooks"
+
+        class CachedNamespaced(IDisposable):
+            __namespace__ = "pyrevit.tests.hooks"
+
+            @functools.cached_property
+            def value(self):
+                return 9
+
+            def Dispose(self):
+                pass
+
+        sys.pyrevit_hooks = "|".join([
+            str(Comparer.Default.Compare(CachedInterface(), 1)),
+            str(CachedNamespaced().value),
+            type(HookedChild()).__name__,
+        ] + calls)
+        """;
+    private const string DefinitionSiteProbe = """
+        import clr
+        import sys
+        from System import Activator
+        from System.Collections import Comparer
+
+        source = '''
+        from System import IComparable
+        class SiteProbe(IComparable):
+            def CompareTo(self, other):
+                return RESULT
+        '''
+
+        def run(path, result):
+            scope = {"__name__": "__main__", "__file__": path}
+            exec(source.replace("RESULT", str(result)), scope)
+            return clr.GetClrType(scope["SiteProbe"])
+
+        first = run("C:/tools/first/script.py", 1)
+        second = run("C:/tools/second/script.py", 2)
+        first_again = run("C:/tools/first/script.py", 1)
+        sys.pyrevit_sites = "|".join([
+            str(first.Equals(second)),
+            str(first.Equals(first_again)),
+            str(Comparer.Default.Compare(Activator.CreateInstance(first), 0)),
+            str(Comparer.Default.Compare(Activator.CreateInstance(second), 0)),
+        ])
+        """;
     private static readonly string MarkerRead = $"__import__('sys').{MarkerName}";
 
     private static readonly Lazy<InterpreterLifecycleRecord> _record = new(
@@ -45,6 +365,14 @@ internal static class InterpreterLifecycleProbe {
         bool broughtUp = PythonEngine.IsInitialized;
         Exec("import clr");
         Exec($"import sys; sys.{MarkerName} = 1");
+        string? redefinition = Run(RedefinitionProbe, "__import__('sys').pyrevit_redefinition");
+        string? shapes = Run(ShapesProbe, "__import__('sys').pyrevit_shapes");
+        string? implicitInterfaces = Run(ImplicitInterfaceProbe, "__import__('sys').pyrevit_implicit");
+        string? truthyBooleans = Run(TruthyBooleanProbe, "__import__('sys').pyrevit_truthy");
+        string? classCreationHooks = Run(ClassCreationHooksProbe, "__import__('sys').pyrevit_hooks");
+        string? definitionSites = Run(DefinitionSiteProbe, "__import__('sys').pyrevit_sites");
+        bool? decoderLookup = ObserveDecoderLookup();
+        IReadOnlyDictionary<string, string> conversions = ScriptOutputConversionProbe.Observe();
 
         var reattachFailures = new List<Exception>();
         for (int cycle = 0; cycle < ReattachCount; cycle++) {
@@ -73,13 +401,46 @@ internal static class InterpreterLifecycleProbe {
             PythonDllReassignment = pythonDllReassignment,
             Shutdown = shutdown,
             IsInitializedAfterShutdown = isInitializedAfterShutdown,
+            DerivedTypeRedefinition = redefinition,
+            DerivedTypeShapes = shapes,
+            ImplicitInterfaceTypes = implicitInterfaces,
+            TruthyBooleans = truthyBooleans,
+            ClassCreationHooks = classCreationHooks,
+            DefinitionSites = definitionSites,
+            DecoderLookupLetOtherThreadsConvert = decoderLookup,
+            ScriptOutputConversions = conversions,
         };
+    }
+
+    private static bool? ObserveDecoderLookup() {
+        var decoder = new GilYieldingDecoder();
+        PyObjectConversions.RegisterDecoder(decoder);
+        using Py.GILState gil = Py.GIL();
+        using PyObject value = PythonEngine.Eval("type('DecoderLockProbe', (), {})()");
+        try {
+            value.AsManagedObject(typeof(DecoderProbeTarget));
+        }
+        catch (Exception) {
+        }
+        return decoder.OtherThreadConverted;
     }
 
     private static int? ReadMarker() {
         using Py.GILState gil = Py.GIL();
         using PyObject? value = PythonEngine.Eval(MarkerRead);
         return value is null ? null : Convert.ToInt32(value);
+    }
+
+    private static string? Run(string code, string result) {
+        try {
+            using Py.GILState gil = Py.GIL();
+            PythonEngine.Exec(code);
+            using PyObject? value = PythonEngine.Eval(result);
+            return value?.ToString();
+        }
+        catch (Exception ex) {
+            return "error: " + ex.Message;
+        }
     }
 
     private static void Exec(string code) {

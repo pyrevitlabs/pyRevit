@@ -12,9 +12,15 @@ namespace Build.Modules;
 [DependsOn<BuildRunnersModule>]
 [DependsOn<BuildShellModule>]
 /// <summary>
-/// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, renderer
-/// load-context, and compatibility tests after their build outputs are available.
+/// Runs configuration backend, CPython interpreter lifecycle, CPython env vars, agent runtime
+/// guard, renderer load-context, <c>pyrevit.forms</c> engine parity, and compatibility tests
+/// after their build outputs are available, plus the Python 3 compatibility checker's own unit
+/// tests.
 /// </summary>
+/// <remarks>
+/// The checker tests need a <c>python</c> 3 interpreter on <c>PATH</c>. The forms tests show real
+/// WPF windows, so the runner must have a desktop session.
+/// </remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -44,6 +50,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
 
         await RunTestsAsync(
             context,
+            PyRevitPaths.EnvVarsRuntimeTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
             PyRevitPaths.AgentRuntimeTestProject,
             configuration,
             [],
@@ -62,6 +75,28 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             configuration,
             [],
             cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.FormsBindingTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.FormsTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        foreach (var engine in new[] { "IPY2712PR", "IPY342" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.FormsIronPythonTestProject,
+                configuration,
+                [$"-p:IronPythonVersion={engine}"],
+                cancellationToken);
 
         foreach (var engine in new[] { "IPY2712PR", "IPY342" })
             await RunTestsAsync(
@@ -100,6 +135,25 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests",
             ],
             cancellationToken);
+
+        await RunPythonTestsAsync(context, "test_check_py3_compat.py", cancellationToken);
+    }
+
+    private static async Task RunPythonTestsAsync(
+        IModuleContext context,
+        string pattern,
+        CancellationToken cancellationToken)
+    {
+        await context.Shell.Command.ExecuteCommandLineTool(
+            new GenericCommandLineToolOptions("python")
+            {
+                Arguments = ["-m", "unittest", "discover", "-s", Path.Combine("dev", "scripts"), "-p", pattern],
+            },
+            new CommandExecutionOptions
+            {
+                WorkingDirectory = PyRevitPaths.Root,
+            },
+            cancellationToken: cancellationToken);
     }
 
     private static async Task RunTestsAsync(

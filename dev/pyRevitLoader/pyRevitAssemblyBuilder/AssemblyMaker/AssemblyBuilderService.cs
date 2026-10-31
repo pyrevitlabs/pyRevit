@@ -82,6 +82,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 _buildStrategy.ToString(),
                 $"rocket:{rocketMode}",
                 $"rocket_compat:{extension.RocketModeCompatible}",
+                $"python_engine:{extension.DeclaredPythonEngine}",
                 $"builder:{GetAssemblyBuildFingerprint()}",
                 $"runtime:{GetRuntimeBuildFingerprint()}",
                 $"libs:{LibraryExtensionSearchPaths.CacheSeed(libraryExtensions)}");

@@ -16,6 +16,7 @@ Static counterpart: ``dev/scripts/check_py3_compat.py`` (no Revit needed).
 """
 
 import importlib
+import datetime
 import unittest
 
 from pyrevit.compat import IRONPY, IRONPY3, NETCORE
@@ -25,6 +26,69 @@ from pyrevit.compat import IRONPY, IRONPY3, NETCORE
 # with pyrevitlib. Tests skip when unset.
 FAMILY_FILE = None
 FAMILY_UTILS_FILE = None
+
+
+class ModalFormsTests(unittest.TestCase):
+    """Exercise shared input-dialog behavior on the actual Revit UI thread."""
+
+    def test_string_validation_and_xaml_callback(self):
+        """The shipped XAML wires edits and accept on both Python engines."""
+        from pyrevit import forms, framework
+
+        dialog = forms.GetValueWindow(
+            None,
+            "Forms parity",
+            400,
+            300,
+            value_type="string",
+            default="taken",
+            reserved_values=["taken"],
+        )
+        try:
+            self.assertFalse(dialog.okayButton.IsEnabled)
+            dialog.stringValue_tb.Text = "available"
+            self.assertTrue(dialog.okayButton.IsEnabled)
+            event = framework.Windows.RoutedEventArgs(
+                framework.Controls.Button.ClickEvent
+            )
+            dialog.okayButton.RaiseEvent(event)
+            self.assertEqual("available", dialog.response)
+        finally:
+            dialog.Close()
+
+    def test_date_slider_and_cancel(self):
+        """Simple results retain their Python types and cancellation returns None."""
+        from pyrevit import forms
+
+        cases = [
+            ("date", datetime.datetime(2026, 10, 26)),
+            ("slider", 25.0),
+        ]
+        for value_type, default in cases:
+            dialog = forms.GetValueWindow(
+                None,
+                "Forms parity",
+                400,
+                300,
+                value_type=value_type,
+                default=default,
+            )
+            try:
+                dialog.select(None, None)
+                self.assertEqual(default, dialog.response)
+            finally:
+                dialog.Close()
+        dialog = forms.GetValueWindow(
+            None,
+            "Forms parity",
+            400,
+            300,
+            value_type="string",
+            default="cancel",
+        )
+        dialog.Close()
+        self.assertIsNone(dialog.response)
+
 
 # Modules every engine must import cleanly today.
 CORE_MODULES = [
@@ -190,7 +254,7 @@ class Py2IdiomTests(unittest.TestCase):
     @unittest.skipUnless(IRONPY, "forms WPF classes are IronPython-only")
     def test_forms_paramdef_truthiness(self):
         """ParamDef instances stay truthy on Python 3 engines (__bool__)."""
-        from pyrevit.forms import _ipy
+        from pyrevit.forms import _ipy_legacy as _ipy
 
         param_def = _ipy.ParamDef(
             "name", False, None, False, False, None, "", True, None, False, 0

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -587,15 +586,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void print_table(object table_data, object columns = null, object formats = null, string title = "", string last_line_style = "") {
-            var rows = ToRows(table_data);
-            if (rows.Count == 0)
+            var rows = PythonTableData.ToRows(table_data);
+            if (rows.Count == 0) {
                 return;
+            }
 
             if (!string.IsNullOrEmpty(last_line_style))
                 add_style(string.Format("tr:last-child {{ {0} }}", last_line_style));
 
-            var headers = ToList(columns);
-            var formatList = ToList(formats);
+            var headers = PythonTableData.ToCells(columns);
+            var formatList = PythonTableData.ToCells(formats);
             var maxCols = 0;
             foreach (var row in rows)
                 maxCols = Math.Max(maxCols, row.Count);
@@ -641,19 +641,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             string table_width_style = null,
             bool repeat_head_as_foot = false,
             bool row_striping = true) {
-            var rows = ToRows(table_data);
-            if (rows.Count == 0) {
-                print_md("### :warning: No table_data list");
+            var rows = PythonTableData.ToRows(table_data);
+            var emptyTableWarning = PythonTableData.EmptyTableWarning(rows);
+            if (emptyTableWarning != null) {
+                print_md(emptyTableWarning);
                 return;
             }
 
             _tableCounter += 1;
             var tableId = _tableCounter;
-            var headers = ToList(columns);
-            var formatList = ToList(formats);
-            var headAlign = ToList(column_head_align_styles);
-            var dataAlign = ToList(column_data_align_styles);
-            var widths = ToList(column_widths);
+            var headers = PythonTableData.ToCells(columns);
+            var formatList = PythonTableData.ToCells(formats);
+            var headAlign = PythonTableData.ToCells(column_head_align_styles);
+            var dataAlign = PythonTableData.ToCells(column_data_align_styles);
+            var widths = PythonTableData.ToCells(column_widths);
             var border = string.IsNullOrEmpty(column_vertical_border_style)
                 ? string.Empty
                 : string.Format(" style='{0}'", column_vertical_border_style);
@@ -727,7 +728,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void InjectElement(string targetName, string elementTag, string contents, object attribs) {
             output_stream.Flush();
-            var attribsDict = ToDictionary(attribs);
+            var attribsDict = PythonTableData.ToDictionary(attribs);
             window.InjectHtmlElement(targetName, elementTag, contents ?? string.Empty, attribsDict);
         }
 
@@ -888,55 +889,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 html.AppendFormat("<th class='head_title-{0}-{1}' align='left'>{2}</th>", tableUid, idx, columns[idx]);
             html.Append("</tr></thead>");
             return html.ToString();
-        }
-
-        private static List<List<string>> ToRows(object value) {
-            var rows = new List<List<string>>();
-            if (value == null || value is string)
-                return rows;
-
-            var enumerable = value as IEnumerable;
-            if (enumerable == null)
-                return rows;
-
-            foreach (var rowObj in enumerable)
-                rows.Add(ToList(rowObj));
-            return rows;
-        }
-
-        private static List<string> ToList(object value) {
-            var items = new List<string>();
-            if (value == null)
-                return items;
-            if (value is string) {
-                items.Add((string)value);
-                return items;
-            }
-
-            var enumerable = value as IEnumerable;
-            if (enumerable == null) {
-                items.Add(value.ToString());
-                return items;
-            }
-
-            foreach (var item in enumerable)
-                items.Add(item == null ? string.Empty : item.ToString());
-            return items;
-        }
-
-        private static Dictionary<string, string> ToDictionary(object value) {
-            var result = new Dictionary<string, string>();
-            if (value == null)
-                return result;
-
-            var dictionary = value as IDictionary;
-            if (dictionary != null) {
-                foreach (DictionaryEntry entry in dictionary)
-                    result[entry.Key.ToString()] = entry.Value?.ToString() ?? string.Empty;
-                return result;
-            }
-
-            return result;
         }
 
         private static string ApplyFormat(string format, string value) {
