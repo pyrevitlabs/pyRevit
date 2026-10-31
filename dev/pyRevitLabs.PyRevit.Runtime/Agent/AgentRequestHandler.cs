@@ -30,10 +30,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 id = request["id"];
                 var method = request.Value<string>("method") ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
-                return Success(id, Dispatch(method, parameters));
+                return Success(id, Dispatch(method, parameters, id));
             }
             catch (AgentException ex) {
-                return Failure(id, -32000, ex.Message, ex.Code);
+                return Failure(id, -32000, ex.Message, ex.Code, ex.Details);
             }
             catch (JsonException ex) {
                 return Failure(id, -32700, ex.Message, "parse_error");
@@ -44,7 +44,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static JToken Dispatch(string method, JObject parameters) {
+        private static JToken Dispatch(string method, JObject parameters, JToken id) {
             AgentHost.RefreshConfigIfChanged();
             switch (method) {
                 case "ping":
@@ -61,7 +61,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     EnforcePolicy(runRequest);
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
-                    return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters);
+                    runRequest.RequestId = id?.ToString(Formatting.None).Trim('"');
+                    return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
@@ -127,6 +128,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }, parameters);
         }
 
+        /// <summary>
+        /// Runs a <c>run</c> request on the main thread. A request refused as <c>revit_busy</c>
+        /// never ran, and leaves a <c>not_run</c> record so the caller can confirm that later.
+        /// </summary>
+        private static JToken InvokeRunOnMainThread(AgentRunRequest request, JObject parameters) {
+            try {
+                return InvokeOnMainThread(app => AgentRunService.Execute(app, request), parameters);
+            }
+            catch (AgentException ex) when (ex.Code == AgentException.NotRunCode) {
+                AgentRunService.RecordNotRun(request, ex);
+                throw;
+            }
+        }
+
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
@@ -153,14 +168,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }.ToString(Formatting.None);
         }
 
-        private static string Failure(JToken id, int code, string message, string type) {
+        private static string Failure(JToken id, int code, string message, string type, JObject details = null) {
+            var data = new JObject { ["type"] = type };
+            if (details != null)
+                foreach (var property in details.Properties())
+                    data[property.Name] = property.Value;
             return new JObject {
                 ["jsonrpc"] = "2.0",
                 ["id"] = id,
                 ["error"] = new JObject {
                     ["code"] = code,
                     ["message"] = message,
-                    ["data"] = new JObject { ["type"] = type },
+                    ["data"] = data,
                 },
             }.ToString(Formatting.None);
         }
