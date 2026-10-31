@@ -12,33 +12,21 @@ from pyrevit import forms, script
 from pyrevit import revit, DB
 from pyrevit.revit import query
 
-logger = script.get_logger()
 output = script.get_output()
 
+sheets = query.get_elements_by_categories([DB.BuiltInCategory.OST_Sheets])
+revised_sheets = [sheet for sheet in sheets if sheet.GetAllRevisionIds()]
+if not revised_sheets:
+    forms.alert("No revised sheets found.", exitscript=True)
 
-def collect_revised_sheets():
-    sheets = query.get_elements_by_categories([DB.BuiltInCategory.OST_Sheets])
-    return sorted(
-        (sheet for sheet in sheets if sheet.GetAllRevisionIds()),
-        key=lambda sheet: sheet.SheetNumber,
-    )
-
-
-def main():
-    sheets = collect_revised_sheets()
-    if not sheets:
-        forms.alert("No revised sheets found.", exitscript=True)
-
-    for sheet in sheets:
-        output.print_md("**{}** {}".format(sheet.SheetNumber, output.linkify(sheet.Id)))
-
-
-main()
+for sheet in sorted(revised_sheets, key=lambda sheet: sheet.SheetNumber):
+    output.print_md("**{}** {}".format(sheet.SheetNumber, output.linkify(sheet.Id)))
 ```
 
 - Titles, tooltips, icons and authorship belong in `bundle.yaml` next to `script.py` (see [Extensions](extensions.md)).
 - Module-level handles come first and are named the same everywhere: `logger`, `output`, and `selection` when needed. Don't invent alternatives.
-- Logic lives in small functions. The entry point is a `main()` called at the bottom of `script.py`.
+- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about ten lines (loops, several branches), put that flow in a `main()` called at the bottom of `script.py`.
+- Logic that gets reused or tested on its own lives in small named functions.
 - Helpers a script outgrows go in separate modules next to `script.py` in the bundle folder (it is on `sys.path` automatically), rather than into one 1500-line file. A `lib/` subfolder is optional.
 
 ## Imports
@@ -114,6 +102,46 @@ forms.alert("Done.", sub_msg="3 sheets updated.")
 - Per-script data files: `script.get_data_file(...)`, `script.get_instance_data_file(...)`. Never hardcode paths.
 - Bundle-relative files: `script.get_bundle_file("name.ext")`.
 
+## Button metadata
+
+Everything the user sees on the ribbon before clicking lives in `bundle.yaml`.
+
+### Context
+
+Set `context` so the button is disabled when it cannot work, instead of failing after the click. Pick the narrowest flags that are true for every code path of the script: `doc-project`, `doc-family`, `doc-workshared`, `selection`, `active-plan-view`, `active-3d-view`, ... The full grammar is in [Extensions](extensions.md#bundleyaml).
+
+```yaml
+context:
+  - doc-project
+  - selection
+```
+
+### Alternate run modes
+
+A button can do something else on shift-click. How the mode is wired decides whether you add the dot marker yourself:
+
+| Alternate mode lives in | Dot marker |
+|---|---|
+| a `config.py` next to `script.py` | Added by pyRevit automatically. **Don't add your own**, or the title shows two dots. |
+| `script.py` itself, via `EXEC_PARAMS.config_mode` | Add ` ●` (space and U+25CF) to the end of the title yourself. |
+| nowhere (no alternate mode) | None. |
+
+Either way, describe the mode in the tooltip: first paragraph says what a plain click does, then a blank line, `Shift-click:` on its own line, and the alternate action on the next line.
+
+```yaml
+title: Get Centroid ●
+tooltip: |-
+  Calculate the centroid of the selected elements and place three model lines that intersect at that point.
+
+  Shift-click:
+  Choose the line style to use for the centroid markers.
+```
+
+- Write both parts as imperative sentences ending in a full stop: "Select group members instead of their parent group.", not "Selects..." or "Group members are selected".
+- Use a `|-` block scalar so the blank line and line break survive. Don't squeeze it into a quoted string with `\n`.
+- If the title has translations, add the dot to each one.
+- Describe each additional mode as its own label-and-line pair after the previous one, separated by a blank line.
+
 ## Python compatibility
 
 Scripts run on IronPython 2.7 by default, and can also run on CPython 3 and IronPython 3.4.
@@ -146,7 +174,7 @@ Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop
 | `element.Id.IntegerValue` | `get_elementid_value_func()(element.Id)` |
 | `if revit_version == "2022": ...` string compares | `HOST_APP.is_newer_than(2021)` |
 | `except: pass` | catch the specific exception and `logger.error(...)` |
-| One 1500-line `script.py` | `main()` plus helper modules next to `script.py` |
+| One 1500-line `script.py` | Small functions, a `main()`, and helper modules next to `script.py` |
 
 ## For AI agents
 

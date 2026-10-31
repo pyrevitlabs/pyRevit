@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="unknown_type">未知类型</sys:String>
+    <sys:String x:Key="parking_count">停车位数量：{}</sys:String>
+    <sys:String x:Key="table_title">停车位类型及数量</sys:String>
+    <sys:String x:Key="column_type">类型</sys:String>
+    <sys:String x:Key="column_count">数量</sys:String>
+</ResourceDictionary>

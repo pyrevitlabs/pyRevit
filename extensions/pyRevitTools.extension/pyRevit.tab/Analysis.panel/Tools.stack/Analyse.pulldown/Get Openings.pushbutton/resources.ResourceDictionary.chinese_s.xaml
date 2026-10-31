@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_name">创建洞口过滤器</sys:String>
+    <sys:String x:Key="openings_in_project">项目中的洞口（楼板、墙、竖井、屋顶）：{}</sys:String>
+    <sys:String x:Key="table_title">洞口</sys:String>
+    <sys:String x:Key="column_name">名称</sys:String>
+    <sys:String x:Key="column_id">图元 ID</sys:String>
+    <sys:String x:Key="column_show">选择/显示图元</sys:String>
+    <sys:String x:Key="created_filter">已创建选择过滤器 {}。</sys:String>
+    <sys:String x:Key="updated_filter">已更新选择过滤器 {}。</sys:String>
+    <sys:String x:Key="finished_in">脚本已在 {:.2f} 秒内完成</sys:String>
+</ResourceDictionary>

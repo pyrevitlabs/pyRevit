@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_sloped_roofs">В модели не найдено крыш по контуру с кромками, задающими уклон.</sys:String>
+    <sys:String x:Key="table_title">Уклоны крыш</sys:String>
+    <sys:String x:Key="column_slope">Уклон</sys:String>
+    <sys:String x:Key="column_count">Количество</sys:String>
+    <sys:String x:Key="column_roofs">Крыши</sys:String>
+</ResourceDictionary>

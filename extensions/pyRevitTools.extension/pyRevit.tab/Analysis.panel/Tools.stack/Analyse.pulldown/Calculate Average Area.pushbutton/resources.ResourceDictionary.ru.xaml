@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="kind_area">Зона</sys:String>
+    <sys:String x:Key="kind_room">Помещение</sys:String>
+    <sys:String x:Key="kind_space">Пространство</sys:String>
+    <sys:String x:Key="column_element">Элемент</sys:String>
+    <sys:String x:Key="column_number">Номер</sys:String>
+    <sys:String x:Key="column_name">Название</sys:String>
+    <sys:String x:Key="column_level">Уровень</sys:String>
+    <sys:String x:Key="column_area">Площадь</sys:String>
+    <sys:String x:Key="skipped_title">Пропущено (не размещено)</sys:String>
+    <sys:String x:Key="total_found">Всего найдено: {}</sys:String>
+    <sys:String x:Key="average_area">Средняя площадь: {}</sys:String>
+    <sys:String x:Key="average_area_alt">{:.4f} акров · {:.4f} гектаров</sys:String>
+    <sys:String x:Key="select_spatial_element">Выберите хотя бы одно помещение, зону или пространство.</sys:String>
+</ResourceDictionary>

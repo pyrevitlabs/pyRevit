@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="unknown_type">Unbekannter Typ</sys:String>
+    <sys:String x:Key="parking_count">Anzahl Parkplätze: {}</sys:String>
+    <sys:String x:Key="table_title">Parkplatztypen und Anzahl</sys:String>
+    <sys:String x:Key="column_type">Typ</sys:String>
+    <sys:String x:Key="column_count">Anzahl</sys:String>
+</ResourceDictionary>
