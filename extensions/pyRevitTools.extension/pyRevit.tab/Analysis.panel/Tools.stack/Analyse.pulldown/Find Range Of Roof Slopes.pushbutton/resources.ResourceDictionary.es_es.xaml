@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="no_sloped_roofs">No se encontraron techos por perímetro con pendiente en el modelo.</sys:String>
+    <sys:String x:Key="no_sloped_roofs">No se encontraron techos por perímetro con aristas que definan pendiente en el modelo.</sys:String>
     <sys:String x:Key="table_title">Pendientes de techo</sys:String>
     <sys:String x:Key="column_slope">Pendiente</sys:String>
     <sys:String x:Key="column_count">Cantidad</sys:String>

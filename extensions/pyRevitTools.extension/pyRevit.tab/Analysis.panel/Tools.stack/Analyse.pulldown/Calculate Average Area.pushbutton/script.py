@@ -24,8 +24,11 @@ def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-def escape_for_table(text):
-    return escape_for_html(text).replace("|", "&#124;")
+def escape_for_output(text):
+    escaped = escape_for_html(text)
+    for character in "|*_`[":
+        escaped = escaped.replace(character, "&#{};".format(ord(character)))
+    return escaped
 
 
 def read_text(element, builtin_parameter):
@@ -43,9 +46,9 @@ def read_area(element):
 def describe(element):
     return [
         output.linkify(element.Id),
-        escape_for_table(read_text(element, DB.BuiltInParameter.ROOM_NUMBER)),
-        escape_for_table(read_text(element, DB.BuiltInParameter.ROOM_NAME)),
-        escape_for_table(read_level_name(element)),
+        escape_for_output(read_text(element, DB.BuiltInParameter.ROOM_NUMBER)),
+        escape_for_output(read_text(element, DB.BuiltInParameter.ROOM_NAME)),
+        escape_for_output(read_level_name(element)),
     ]
 
 
@@ -57,7 +60,7 @@ def find_kind(element):
 
 
 def report_group(kind_label, name, placed, unplaced):
-    output.print_md("### {}: {}".format(kind_label, escape_for_html(name)))
+    output.print_md("### {}: {}".format(kind_label, escape_for_output(name)))
     if placed:
         output.print_table(
             table_data=[
@@ -99,6 +102,7 @@ def report_group(kind_label, name, placed, unplaced):
 
 def main():
     reported = set()
+    elements_by_category = {}
     for selected in revit.get_selection().elements:
         kind = find_kind(selected)
         if not kind:
@@ -108,9 +112,13 @@ def main():
         if (element_class, name) in reported:
             continue
         reported.add((element_class, name))
+        if category not in elements_by_category:
+            elements_by_category[category] = query.get_elements_by_categories(
+                [category]
+            )
         siblings = [
             item
-            for item in query.get_elements_by_categories([category])
+            for item in elements_by_category[category]
             if read_text(item, DB.BuiltInParameter.ROOM_NAME) == name
         ]
         report_group(

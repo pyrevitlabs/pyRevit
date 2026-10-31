@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="no_sloped_roofs">模型中未找到带坡度的迹线屋顶。</sys:String>
+    <sys:String x:Key="no_sloped_roofs">模型中未找到带有定义坡度边的迹线屋顶。</sys:String>
     <sys:String x:Key="table_title">屋顶坡度</sys:String>
     <sys:String x:Key="column_slope">坡度</sys:String>
     <sys:String x:Key="column_count">数量</sys:String>

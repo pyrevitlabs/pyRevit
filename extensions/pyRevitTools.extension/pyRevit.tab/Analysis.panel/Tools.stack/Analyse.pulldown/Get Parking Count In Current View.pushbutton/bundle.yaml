@@ -22,4 +22,5 @@ context:
       - active-plan-view
       - active-section-view
       - active-elevation-view
+      - active-detail-view
       - active-3d-view

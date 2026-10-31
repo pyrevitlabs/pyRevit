@@ -22,8 +22,11 @@ def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-def escape_for_table(text):
-    return escape_for_html(text).replace("|", "&#124;")
+def escape_for_output(text):
+    escaped = escape_for_html(text)
+    for character in "|*_`[":
+        escaped = escaped.replace(character, "&#{};".format(ord(character)))
+    return escaped
 
 
 def collect_inplace_instances():
@@ -48,8 +51,8 @@ def report(instances):
         table_data=[
             [
                 output.linkify(instance.Id),
-                escape_for_table(instance.Symbol.Family.FamilyCategory.Name),
-                escape_for_table(instance.Symbol.Family.Name),
+                escape_for_output(instance.Symbol.Family.FamilyCategory.Name),
+                escape_for_output(instance.Symbol.Family.Name),
             ]
             for instance in instances
         ],

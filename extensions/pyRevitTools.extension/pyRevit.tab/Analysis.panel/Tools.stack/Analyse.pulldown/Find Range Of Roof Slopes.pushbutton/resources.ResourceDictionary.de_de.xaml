@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="no_sloped_roofs">Im Modell wurden keine geneigten Dächer über Grundfläche gefunden.</sys:String>
+    <sys:String x:Key="no_sloped_roofs">Im Modell wurden keine Dächer über Grundfläche mit neigungsdefinierenden Kanten gefunden.</sys:String>
     <sys:String x:Key="table_title">Dachneigungen</sys:String>
     <sys:String x:Key="column_slope">Neigung</sys:String>
     <sys:String x:Key="column_count">Anzahl</sys:String>

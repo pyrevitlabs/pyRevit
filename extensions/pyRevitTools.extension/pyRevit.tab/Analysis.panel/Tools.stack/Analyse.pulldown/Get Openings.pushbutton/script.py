@@ -28,8 +28,11 @@ def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-def escape_for_table(text):
-    return escape_for_html(text).replace("|", "&#124;")
+def escape_for_output(text):
+    escaped = escape_for_html(text)
+    for character in "|*_`[":
+        escaped = escaped.replace(character, "&#{};".format(ord(character)))
+    return escaped
 
 
 def sync_opening_filter():
@@ -67,7 +70,7 @@ def report(openings):
     output.print_table(
         table_data=[
             [
-                escape_for_table(opening.Name),
+                escape_for_output(opening.Name),
                 get_elementid_value(opening.Id),
                 output.linkify(opening.Id),
             ]

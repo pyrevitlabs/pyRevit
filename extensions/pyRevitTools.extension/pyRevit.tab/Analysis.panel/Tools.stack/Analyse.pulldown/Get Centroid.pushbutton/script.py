@@ -58,7 +58,7 @@ def collect_solids(elements):
         logger.debug("processing {}".format(element.Name))
         solids.extend(
             geometry
-            for geometry in query.get_geometry(element, compute_references=True)
+            for geometry in query.get_geometry(element, compute_references=True) or []
             if isinstance(geometry, DB.Solid) and geometry.Faces.Size > 0
         )
     return solids
