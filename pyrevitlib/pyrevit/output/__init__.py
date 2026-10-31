@@ -12,13 +12,15 @@ Examples:
     ```
 """
 
+import json
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DB
 from pyrevit import framework
-from pyrevit.compat import PY3, safe_strtype
+from pyrevit.compat import IRONPY, PY3, safe_strtype
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import charts
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.runtime.types import ScriptConsoleManager, ScriptOutput
 from pyrevit.userconfig import user_config
 from pyrevit.output import linkmaker
@@ -29,6 +31,8 @@ if PY3:
 else:
     from urllib import quote as urlquote
 
+
+mlogger = get_logger(__name__)
 
 DEFAULT_STYLESHEET_NAME = "outputstyles.css"
 
@@ -396,6 +400,124 @@ class PyRevitOutputWindow(object):
             dest_file (str): full path of the target html file
         """
         return self._runtime_output().open_page(dest_file)
+
+    @property
+    def supports_messages(self):
+        """bool: Whether the page can exchange messages with Python.
+
+        False when the window falls back to plain text (e.g. the WebView2
+        runtime is missing) or has been closed by the user. Scripts should
+        check this and fall back to a printed report.
+
+        Note:
+            Opens the output window and starts its renderer if needed, without
+            waiting for it, but never reopens a window the user closed.
+        """
+        runtime_output = self._runtime_output()
+        if runtime_output.IsWindowClosed:
+            return False
+        return runtime_output.window.SupportsWebMessages
+
+    def on_message(self, handler):
+        """Register a handler for messages the output page posts to Python.
+
+        The page sends with ``window.chrome.webview.postMessage(value)``. The
+        handler receives the JSON-decoded value (``dict`` for a posted object)
+        and runs in Revit API context through
+        :func:`pyrevit.revit.events.execute_in_revit_context`, one call per
+        message in arrival order. Return values are ignored; answer with
+        :func:`post_message`. Handlers are released when the window closes.
+
+        Warning:
+            ``execute_in_revit_context`` is IronPython-only. Under CPython
+            handlers run directly on the UI thread, outside Revit API
+            context, so they can update the page but cannot read or modify
+            the model.
+
+        Args:
+            handler (function): ``handler(message)``; a plain function or
+                method, as required by ``execute_in_revit_context``
+
+        Returns:
+            (bool): False when the window cannot receive messages; see
+            :attr:`supports_messages`.
+
+        Important:
+            Handlers outlive the command, so the bundle must run on a
+            persistent engine (``engine: persistent`` in ``bundle.yaml``).
+
+        Examples:
+            ```python
+            output = script.get_output()
+
+            def select_elements(message):
+                revit.get_selection().set_to(message["ids"])
+
+            if output.on_message(select_elements):
+                output.print_html(
+                    '<button onclick="chrome.webview.postMessage('
+                    '{ids: [1234]})">Select</button>'
+                )
+            else:
+                output.print_md("Interactive actions need the WebView2 runtime.")
+            ```
+        """
+        if not self.supports_messages:
+            return False
+        window = self._runtime_output().window
+        if self.__dict__.get("_message_window") != window:
+            self._message_handlers = []
+            subscription = self.__dict__.setdefault(
+                "_message_subscription", self._dispatch_message
+            )
+            window.WebMessageReceived += subscription
+            self._message_window = window
+        handlers = self._message_handlers
+        if handler not in handlers:
+            handlers.append(handler)
+        return True
+
+    def off_message(self, handler):
+        """Unregister a handler added with :func:`on_message`."""
+        handlers = self.__dict__.get("_message_handlers", [])
+        if handler in handlers:
+            handlers.remove(handler)
+
+    def post_message(self, data):
+        """Send a JSON-serializable value to the page.
+
+        The page receives it as the ``data`` of a ``message`` event:
+        ``chrome.webview.addEventListener("message", e => e.data)``.
+
+        Args:
+            data (object): value to serialize with ``json.dumps``
+
+        Returns:
+            (bool): False when the window is closed or cannot deliver messages,
+            including while the page is loading or navigating (e.g. right
+            after :func:`open_page`).
+        """
+        if not self._runtime_output().IsWindowReady:
+            return False
+        return self._runtime_output().window.PostWebMessage(json.dumps(data))
+
+    def _dispatch_message(self, sender, args):
+        """Decode one page message and schedule every handler in API context."""
+        from pyrevit.revit import events
+
+        try:
+            message = json.loads(args.Json)
+        except ValueError:
+            mlogger.debug("Ignoring output page message that is not valid JSON")
+            return
+        for handler in list(self.__dict__.get("_message_handlers", [])):
+            if IRONPY:
+                events.execute_in_revit_context(handler, message)
+                continue
+            try:
+                handler(message)
+            except Exception as ex:
+                mlogger.error("Output message handler failed: {}".format(ex))
 
     def update_progress(self, cur_value, max_value):
         """Activate and update the output window progress bar.

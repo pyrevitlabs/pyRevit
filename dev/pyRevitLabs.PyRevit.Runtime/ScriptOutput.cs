@@ -302,7 +302,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private bool IsWindowClosed => _window != null && _window.ClosedByUser;
+        /// <summary>
+        /// True only when a window was created and has since been closed. Unlike
+        /// <see cref="is_closed_by_user"/> it never creates a window, and unlike
+        /// <see cref="IsWindowReady"/> it is false before the first window exists.
+        /// </summary>
+        public bool IsWindowClosed => _window != null && _window.ClosedByUser;
 
         /// <summary>
         /// True only when a window already exists and has not been closed. Lets callers

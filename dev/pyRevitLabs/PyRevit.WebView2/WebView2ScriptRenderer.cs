@@ -67,6 +67,9 @@ namespace PyRevitLabs.PyRevit.WebView2 {
         public event EventHandler DocumentReady;
 
         /// <inheritdoc />
+        public event EventHandler<RendererMessageReceivedEventArgs> MessageReceived;
+
+        /// <inheritdoc />
         public FrameworkElement Control => _control;
 
         /// <inheritdoc />
@@ -185,6 +188,16 @@ namespace PyRevitLabs.PyRevit.WebView2 {
         }
 
         /// <inheritdoc />
+        public bool PostMessage(string json) {
+            if (_disposed || !IsDocumentReady || string.IsNullOrEmpty(json))
+                return false;
+            if (_dispatcher.CheckAccess())
+                return SendMessage(json);
+            _dispatcher.BeginInvoke(new Action(() => SendMessage(json)));
+            return true;
+        }
+
+        /// <inheritdoc />
         public void Dispose() {
             if (_disposed)
                 return;
@@ -196,6 +209,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                     if (core != null) {
                         core.NavigationStarting -= OnNavigationStarting;
                         core.NavigationCompleted -= OnNavigationCompleted;
+                        core.WebMessageReceived -= OnWebMessageReceived;
                     }
                     _control.Dispose();
                 });
@@ -340,6 +354,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
 
                 _control.CoreWebView2.NavigationStarting += OnNavigationStarting;
                 _control.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+                _control.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
                 _control.CoreWebView2.Settings.AreDevToolsEnabled = false;
                 _control.CoreWebView2.Settings.IsStatusBarEnabled = false;
 
@@ -525,6 +540,30 @@ namespace PyRevitLabs.PyRevit.WebView2 {
             _navigationTcs = null;
             tcs?.TrySetResult(e.IsSuccess);
             RaiseDocumentReady();
+        }
+
+        private void OnWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e) {
+            var handler = MessageReceived;
+            if (handler == null)
+                return;
+            string text = null;
+            try {
+                text = e.TryGetWebMessageAsString();
+            }
+            catch (ArgumentException) {
+            }
+            handler(this, new RendererMessageReceivedEventArgs(e.WebMessageAsJson, text));
+        }
+
+        private bool SendMessage(string json) {
+            try {
+                _control?.CoreWebView2?.PostWebMessageAsJson(json);
+                return true;
+            }
+            catch (Exception ex) {
+                ScriptRendererLog.Error("could not post a message to the page. {0}", ex.Message);
+                return false;
+            }
         }
 
         private T InvokeOnUi<T>(Func<T> action) {
