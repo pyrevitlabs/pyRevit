@@ -83,6 +83,19 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 
 Run any of these commands without a value to print the current setting.
 
+### Run document tab
+
+The document captured at the start of a run has an amber pyRevit accent tab with black text throughout execution and the Keep/Discard prompt.
+The tooltip reads `Agent: <run title>` during execution and `Agent: <run title> (awaiting approval)` during approval.
+The highlight identifies the run document, not a document inspected by an earlier `get_context` request.
+All tabs for the same native document identity are highlighted, even when document titles match.
+The first successful paint remains visible for at least 1.5 seconds; consecutive runs on that document share the highlight without an intermediate restore.
+Tab Coloring remains underneath the temporary overlay and resumes when it ends.
+
+**Settings > Agent Runtime (MCP) > Highlight the document tab during agent runs** controls `[agent] tab_highlight`, which defaults to `true` and applies to the next run without reloading pyRevit.
+The configuration accessor is `PyRevitConfigs.GetAgentTabHighlight()` / `SetAgentTabHighlight(bool)`; no flat Python userconfig alias is provided.
+Three consecutive visual failures disable highlighting for the Revit process and produce one log entry without changing a run's outcome.
+
 ### MCP tools
 
 | Tool | Changes the model | Purpose |

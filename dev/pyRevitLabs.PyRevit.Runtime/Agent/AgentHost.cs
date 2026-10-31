@@ -38,6 +38,53 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static bool exitHandlerRegistered;
         private static string configWatchedPath;
         private static DateTime configLastWrite = DateTime.MinValue;
+        private static AgentTabHighlight tabHighlight;
+        private static AgentTabHighlightVisuals tabHighlightVisuals;
+        private static bool tabHighlightDisabled;
+
+        internal static AgentTabHighlight.Lease BeginTabHighlight(UIApplication application, Autodesk.Revit.DB.Document document, string title) {
+            RefreshConfigIfChanged();
+            try {
+                if (!PyRevitConfigs.GetAgentTabHighlight()) {
+                    DisposeTabHighlight();
+                    return null;
+                }
+                if (document == null || tabHighlightDisabled)
+                    return null;
+                if (tabHighlight == null) {
+                    var window = DocumentTabLocator.GetWindowRoot(application);
+                    if (window == null)
+                        return null;
+                    tabHighlightVisuals = new AgentTabHighlightVisuals(window.Dispatcher);
+                    var clock = Stopwatch.StartNew();
+                    tabHighlight = new AgentTabHighlight(() => clock.ElapsedMilliseconds,
+                        tabHighlightVisuals.Schedule, tabHighlightVisuals, exception => {
+                            tabHighlightDisabled = true;
+                            logger.Warn("Agent tab highlighting disabled after three visual failures: {0}", exception.Message);
+                        });
+                    tabHighlightVisuals.Refresh = tabHighlight.Refresh;
+                    tabHighlightVisuals.VisualFailure = tabHighlight.VisualFailed;
+                }
+                var key = DocumentTabLocator.GetAPIDocumentId(document);
+                tabHighlightVisuals.Register(application, document, key);
+                return tabHighlight.Begin(key, title);
+            }
+            catch (Exception exception) {
+                tabHighlight?.VisualFailed(exception);
+                return null;
+            }
+        }
+
+        internal static void AwaitTabApproval(AgentTabHighlight.Lease lease) => tabHighlight?.AwaitApproval(lease);
+
+        internal static void EndTabHighlight(AgentTabHighlight.Lease lease) => tabHighlight?.End(lease);
+
+        private static void DisposeTabHighlight() {
+            tabHighlightVisuals?.Dispose();
+            tabHighlight?.Dispose();
+            tabHighlightVisuals = null;
+            tabHighlight = null;
+        }
 
         [ThreadStatic]
         private static UIApplication inlineApplication;
@@ -183,6 +230,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static void Stop() {
+            DisposeTabHighlight();
             lock (sync) {
                 if (pipeServer == null)
                     return;
