@@ -14,9 +14,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             var parsedQuery = HttpUtility.ParseQueryString(inputUrl.Split('?')[1]);
 
-            if (parsedQuery["command"] == "select" && parsedQuery["element[]"] != null) {
+            var elementIds = parsedQuery["element[]"] ?? output?.ResolveElementIds(parsedQuery["elements"]);
+
+            if (parsedQuery["command"] == "select" && elementIds != null) {
                 var idList = new List<ElementId>();
-                foreach (string strId in parsedQuery["element[]"].Split(',')) {
+                foreach (string strId in elementIds.Split(',')) {
 #if !(REVIT2021 || REVIT2022 || REVIT2023)
                     idList.Add(new ElementId(Convert.ToInt64(strId)));
 #else
