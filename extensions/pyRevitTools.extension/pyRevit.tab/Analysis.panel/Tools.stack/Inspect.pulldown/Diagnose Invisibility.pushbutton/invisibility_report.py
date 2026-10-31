@@ -367,7 +367,11 @@ class DiagnosisSession(object):
                 t("fix_stale", "This fix no longer applies. Recheck the view."),
             )
             return
-        template_name = fixes.describe(view, fix)["template"]
+        description, error = _try_describe_fix(view, fix)
+        if error:
+            self._reply(request_id, False, error)
+            return
+        template_name = description["template"]
         if template_name and not forms.alert(
             t(
                 "confirm_template_fix",
@@ -384,7 +388,7 @@ class DiagnosisSession(object):
             self._reply(request_id, False, str(ex))
             return
         self._push_views()
-        self._reply(request_id, True, fixes.describe(view, fix)["label"])
+        self._reply(request_id, True, description["label"])
 
     def _on_fix_all(self, payload, request_id):
         """Apply every distinct confirmed fix in a view as one undo step.
@@ -412,16 +416,20 @@ class DiagnosisSession(object):
                 if key not in seen:
                     seen.add(key)
                     pending.append((element, fix))
+        errors = []
+        described = []
+        templates = set()
+        for element, fix in pending:
+            description, error = _try_describe_fix(view, fix)
+            if error:
+                errors.append(error)
+                continue
+            described.append((element, fix))
+            if description["template"]:
+                templates.add(description["template"])
+        pending = described
+        templates = sorted(templates)
         label = t("ui_fix_all", "Fix all ({0})").replace("{0}", str(len(pending)))
-        templates = sorted(
-            set(
-                name
-                for name in (
-                    fixes.describe(view, fix)["template"] for _, fix in pending
-                )
-                if name
-            )
-        )
         message = (
             t("confirm_fix_all", "Apply {0} fixes to '{1}'?")
             .replace("{0}", str(len(pending)))
@@ -433,13 +441,13 @@ class DiagnosisSession(object):
                 "View templates changed for every view using them: {}",
             ).format(", ".join(templates))
         if pending and not forms.alert(message, yes=True, no=True):
-            self._reply(request_id, False, t("fix_cancelled", "Cancelled."))
+            errors.append(t("fix_cancelled", "Cancelled."))
+            self._reply(request_id, False, "; ".join(errors))
             return
         group = DB.TransactionGroup(
             self.doc, "{}: {}".format(t("report_title", "Visibility Diagnosis"), label)
         )
         group.Start()
-        errors = []
         try:
             for element, fix in pending:
                 try:
@@ -480,6 +488,20 @@ class DiagnosisSession(object):
         else:
             self.bridge.send("scene", raw_payload=scene.scene_to_json(data))
         self._reply(request_id, True)
+
+
+def _try_describe_fix(view, fix):
+    """Describe ``fix`` in ``view``, returning ``(description, error)``.
+
+    Fails closed: when the description cannot be built, the caller must not
+    apply the fix, because its template ownership is unknown and a
+    template-owned fix would otherwise skip confirmation.
+    """
+    try:
+        return fixes.describe(view, fix), None
+    except Exception as ex:
+        logger.debug("Cannot describe fix: %s", ex)
+        return None, t("fix_describe_failed", "Could not describe fix: {}").format(ex)
 
 
 def _close_ghost_preview(ghost):
