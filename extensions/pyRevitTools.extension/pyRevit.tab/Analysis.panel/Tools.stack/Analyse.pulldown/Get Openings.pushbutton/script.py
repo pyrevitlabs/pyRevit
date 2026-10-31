@@ -15,12 +15,6 @@ output = script.get_output()
 
 RESOURCES = script.get_bundle_file("resources.xaml")
 OPENING_FILTER_NAME = "0_ShaftOpenings"
-OPENING_CATEGORIES = [
-    DB.BuiltInCategory.OST_FloorOpening,
-    DB.BuiltInCategory.OST_SWallRectOpening,
-    DB.BuiltInCategory.OST_ShaftOpening,
-    DB.BuiltInCategory.OST_RoofOpening,
-]
 
 
 def _t(key):
@@ -42,29 +36,21 @@ def escape_for_output(text):
 
 
 def collect_openings():
-    """Collect the openings of ``OPENING_CATEGORIES``.
+    """Collect every ``DB.Opening`` of the project.
 
     Note:
-        Filters by ``BuiltInCategory`` directly: these categories are missing from
-        ``doc.Settings.Categories``, so ``query.get_elements_by_categories`` skips
-        most of them.
+        Collects by class instead of by category so that openings in arc walls,
+        columns, beams and any other host are included, not only floor, wall,
+        shaft and roof openings.
     """
-    return (
-        DB.FilteredElementCollector(revit.doc)
-        .WherePasses(
-            DB.ElementMulticategoryFilter(List[DB.BuiltInCategory](OPENING_CATEGORIES))
-        )
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
+    return list(DB.FilteredElementCollector(revit.doc).OfClass(DB.Opening))
 
 
 def sync_opening_filter(openings):
     """Create the selection filter for the openings, or reset the existing one to them.
 
     Args:
-        openings: The openings of the categories in ``OPENING_CATEGORIES``, the
-            same set the report lists.
+        openings: The openings of the project, the same set the report lists.
 
     Returns:
         bool: True if the filter was created, False if an existing one was updated.
