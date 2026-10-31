@@ -46,52 +46,74 @@ def read_level_name(element):
     return element.Parameter[DB.BuiltInParameter.ROOM_LEVEL_ID].AsValueString() or ""
 
 
-def read_area(element):
-    return element.Parameter[DB.BuiltInParameter.ROOM_AREA].AsDouble()
+processed_items = {DB.Area: [], DB.Architecture.Room: [], DB.Mechanical.Space: []}
 
 
-def describe(element):
-    return [
-        output.linkify(element.Id),
-        escape_for_output(read_text(element, DB.BuiltInParameter.ROOM_NUMBER)),
-        escape_for_output(read_text(element, DB.BuiltInParameter.ROOM_NAME)),
-        escape_for_output(read_level_name(element)),
-    ]
+selection = revit.get_selection()
 
 
-def find_kind(element):
-    for element_class, category, kind_key in SPATIAL_KINDS:
-        if isinstance(element, element_class):
-            return element_class, category, kind_key
-    return None
+def calc_and_print(items, item_type, type_name, match_name):
+    item_total_area = 0.0
+    item_count = 0
+    if match_name not in processed_items[item_type]:
+        print("{} TYPE IS: {}".format(type_name, match_name))
+        for item in items:
+            item_name = item.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
+            item_number = item.get_Parameter(DB.BuiltInParameter.ROOM_NUMBER).AsString()
+            item_level = item.get_Parameter(
+                DB.BuiltInParameter.ROOM_LEVEL_ID
+            ).AsValueString()
+            if revit.query.is_placed(item):
+                if match_name == item_name:
+                    area_value = item.get_Parameter(
+                        DB.BuiltInParameter.ROOM_AREA
+                    ).AsDouble()
+                    print(
+                        '{} {} #{} "{}" @ "{}" = {}'.format(
+                            output.linkify(item.Id),
+                            type_name.title(),
+                            item_number,
+                            item_name,
+                            item_level,
+                            revit.units.format_area(area_value),
+                        )
+                    )
+                    item_total_area += area_value
+                    item_count += 1
+            else:
+                print(
+                    ':cross_mark: SKIPPED "NOT PLACED" {} {} #{} "{}" @ "{}"'.format(
+                        output.linkify(item.Id),
+                        type_name.title(),
+                        item_number,
+                        item_name,
+                        item_level,
+                    )
+                )
+        print("TOTAL OF {} {}S WERE FOUND.".format(item_count, type_name))
+        processed_items[item_type].append(match_name)
+    return item_total_area, item_count
 
 
-def report_group(kind_label, name, placed, unplaced):
-    output.print_md("### {}: {}".format(kind_label, escape_for_output(name)))
-    if placed:
-        output.print_table(
-            table_data=[
-                describe(item) + [revit.units.format_area(read_area(item))]
-                for item in placed
-            ],
-            columns=[
-                _t("column_element"),
-                _t("column_number"),
-                _t("column_name"),
-                _t("column_level"),
-                _t("column_area"),
-            ],
+for el in selection.elements:
+    count = 0
+    total = 0.0
+    if isinstance(el, DB.Area):
+        target_name = el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
+        area_total, area_count = calc_and_print(areas, DB.Area, "AREA", target_name)
+        count += area_count
+        total += area_total
+    elif isinstance(el, DB.Architecture.Room):
+        target_name = el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
+        area_total, area_count = calc_and_print(
+            rooms, DB.Architecture.Room, "ROOM", target_name
         )
-    if unplaced:
-        output.print_table(
-            table_data=[describe(item) for item in unplaced],
-            title=_t("skipped_title"),
-            columns=[
-                _t("column_element"),
-                _t("column_number"),
-                _t("column_name"),
-                _t("column_level"),
-            ],
+        count += area_count
+        total += area_total
+    elif isinstance(el, DB.Mechanical.Space):
+        target_name = el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString()
+        area_total, area_count = calc_and_print(
+            spaces, DB.Mechanical.Space, "SPACE", target_name
         )
     output.print_md("**{}**".format(_t("total_found").format(len(placed))))
     if not placed:

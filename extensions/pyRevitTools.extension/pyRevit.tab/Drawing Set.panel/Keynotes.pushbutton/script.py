@@ -2570,7 +2570,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             for kn in keynotes:
                 if kn is None:
                     continue
-                p = kn.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                p = kn.get_Parameter(DB.BuiltInParameter.KEY_VALUE)
                 if not p:
                     continue
                 key = p.AsString()
@@ -2579,7 +2579,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 used[key].append(kn.Id)
                 # Detect keynote type from the tag's source param
                 try:
-                    src = kn.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                    src = kn.get_Parameter(DB.BuiltInParameter.KEY_SOURCE_PARAM)
                     if src and src.HasValue:
                         val = src.AsString()
                         if val:
@@ -3538,19 +3538,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
             for kid in a_ids:
                 kel = revit.doc.GetElement(kid)
                 if kel:
-                    p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                    p = kel.get_Parameter(DB.BuiltInParameter.KEY_VALUE)
                     if p:
                         p.Set(temp)
             for kid in b_ids:
                 kel = revit.doc.GetElement(kid)
                 if kel:
-                    p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                    p = kel.get_Parameter(DB.BuiltInParameter.KEY_VALUE)
                     if p:
                         p.Set(key_a)
             for kid in a_ids:
                 kel = revit.doc.GetElement(kid)
                 if kel:
-                    p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                    p = kel.get_Parameter(DB.BuiltInParameter.KEY_VALUE)
                     if p and p.AsString() == temp:
                         p.Set(key_b)
 
@@ -4713,7 +4713,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             for kid in ids.get(from_key, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
-                    p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                    p = kel.get_Parameter(DB.BuiltInParameter.KEY_VALUE)
                     if p:
                         p.Set(to_key)
 
@@ -4809,7 +4809,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 if kel is None:
                     continue
                 ehist = revit.query.get_history(kel)
-                p = kel.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                p = kel.get_Parameter(DB.BuiltInParameter.KEY_SOURCE_PARAM)
                 if p:
                     source = p.AsString()
                 vel = revit.doc.GetElement(kel.OwnerViewId)

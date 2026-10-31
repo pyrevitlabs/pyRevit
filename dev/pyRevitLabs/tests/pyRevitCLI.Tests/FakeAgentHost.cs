@@ -57,11 +57,14 @@ internal sealed class FakeAgentHost : IDisposable {
         return new JObject { ["jsonrpc"] = "2.0", ["id"] = request["id"], ["result"] = result };
     }
 
-    public static JObject Failure(JObject request, string type, string message) {
+    public static JObject Failure(JObject request, string type, string message, JObject extraData = null) {
+        var data = new JObject { ["type"] = type };
+        if (extraData != null)
+            data.Merge(extraData);
         return new JObject {
             ["jsonrpc"] = "2.0",
             ["id"] = request["id"],
-            ["error"] = new JObject { ["code"] = -32000, ["message"] = message, ["data"] = new JObject { ["type"] = type } },
+            ["error"] = new JObject { ["code"] = -32000, ["message"] = message, ["data"] = data },
         };
     }
 
@@ -79,8 +82,10 @@ internal sealed class FakeAgentHost : IDisposable {
             }.ToString());
     }
 
-    public string AddRun(string runId, string response = null, string script = null, string result = null, string stamp = "20260101-000000") {
+    public string AddRun(string runId, string response = null, string script = null, string result = null, string stamp = "20260101-000000", string requestId = null) {
         var directory = Directory.CreateDirectory(Path.Combine(AgentDir, "runs", stamp + "-" + runId)).FullName;
+        if (requestId != null)
+            File.WriteAllText(Path.Combine(directory, "request.json"), new JObject { ["request_id"] = requestId }.ToString());
         if (response != null)
             File.WriteAllText(Path.Combine(directory, "response.json"), response);
         if (script != null)

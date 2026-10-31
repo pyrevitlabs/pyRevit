@@ -43,9 +43,9 @@ for view_id in clouded_views:
         rev_creator = DB.WorksharingUtils.GetWorksharingTooltipInfo(
             revit.doc, rev_cloud.Id
         ).Creator
-        commet_param = rev_cloud.Parameter[
+        commet_param = rev_cloud.get_Parameter(
             DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS
-        ]
+        )
         if commet_param.HasValue:
             rev_comments = commet_param.AsString()
         else:

@@ -432,6 +432,26 @@ namespace pyRevitLabs.TargetApps.Revit {
             return null;
         }
 
+        /// <summary>
+        /// Build a product known only by its year, for a Revit file whose build is not in the host
+        /// database.
+        /// </summary>
+        /// <remarks>
+        /// The result carries no <see cref="Version"/> and is flagged with
+        /// <see cref="IsListedInHostsDatabase"/> false, so it is good for year comparisons only and
+        /// must not be treated as an installed or attachable product.
+        /// </remarks>
+        /// <param name="productYear">Product year, e.g. the <c>Format:</c> year of BasicFileInfo.</param>
+        /// <param name="buildNumber">Build number recorded with the year, if any.</param>
+        public static RevitProduct FromProductYear(int productYear, string buildNumber = null) {
+            return new RevitProduct(
+                new HostProductInfo {
+                    release = string.Format("Autodesk Revit {0}", productYear),
+                    build = buildNumber ?? string.Empty,
+                },
+                isListedInHostsDatabase: false);
+        }
+
         public static RevitProduct LookupRevitProduct(Version version) {
             return LookupRevitProduct(version.ToString());
         }

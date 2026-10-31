@@ -113,9 +113,16 @@ namespace pyRevitCLI {
             }
         }
 
+        private static string NoRunMessage(string runId) {
+            if (!(runId ?? string.Empty).Trim().StartsWith("req-"))
+                return "No recorded agent run with id " + runId;
+            return "No run is recorded for request " + runId + ". The host records a request when it starts it "
+                + "or refuses it, so a request that is still waiting in Revit, or never arrived, has no record yet.";
+        }
+
         public static void ShowRun(string runId) {
             var runDir = PyRevitAgentClient.FindRunDir(runId)
-                ?? throw new PyRevitException("No recorded agent run with id " + runId);
+                ?? throw new PyRevitException(NoRunMessage(runId));
             Console.WriteLine("Run folder: " + runDir);
             foreach (var file in new[] { "request.json", "script.py", "response.json" }) {
                 var path = Path.Combine(runDir, file);

@@ -605,15 +605,57 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
-    public void HostErrorsKeepTheirTypeAndAMalformedAnswerBecomesAServerError() {
+    public void HostErrorsKeepTheirTypeAndAnUnreadableAnswerIsAnUnknownOutcomeWithTheRequestId() {
         host.Handler = request => FakeAgentHost.Failure(request, "no_active_document", "Open a project first");
         var hostError = Single(ToolCall(1, "get_context"));
-        host.RawResponse = "this is not json";
-        var malformed = Single(ToolCall(2, "get_context"));
+        host.RawResponse = "{\"jsonrpc\":\"2.0\",\"id\":\"req-";
+        var unreadable = Single(ToolCall(2, "get_context"));
 
         Assert.Equal("no_active_document", Payload(hostError).Value<string>("error"));
         Assert.Equal("Open a project first", Payload(hostError).Value<string>("message"));
-        Assert.Equal("server_error", Payload(malformed).Value<string>("error"));
+        var payload = Payload(unreadable);
+        Assert.Equal("pipe_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.RequestsFor("get_context").Last().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ARefusedRequestTellsTheAgentItDidNotRunAndHowToFindItsRecord() {
+        host.Handler = request => FakeAgentHost.Failure(
+            request, "revit_busy", "Revit did not become idle.",
+            new JObject { ["outcome"] = "not_run", ["run_id"] = "abc123def456" });
+
+        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("revit_busy", payload.Value<string>("error"));
+        Assert.Equal("Revit did not become idle.", payload.Value<string>("message"));
+        Assert.Equal("not_run", payload.Value<string>("outcome"));
+        Assert.Equal("abc123def456", payload.Value<string>("run_id"));
+        Assert.Equal(host.Requests.Single().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ALostAnswerIsReportedAsAnUnknownOutcomeWithTheRequestId() {
+        host.Handler = request => null;
+
+        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+
+        var payload = Payload(response);
+        Assert.Equal("pipe_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.Requests.Single().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ARecordedRunCanBeReadByTheRequestIdOfItsRequest() {
+        host.AddRun("abc123def456", response: "{\"status\":\"not_run\",\"decision\":\"not_run\"}", script: "x = 1", requestId: "req-0123456789ab");
+
+        var run = Payload(Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "req-0123456789ab" })));
+
+        Assert.Equal("not_run", run.Value<string>("status"));
+        Assert.Equal("x = 1", run.Value<string>("script"));
     }
 
     [Fact]

@@ -25,7 +25,9 @@ if revit.active_view:
             for room_id in rooms:
                 rm = revit.doc.GetElement(room_id)
                 if rm.Number == room_number:
-                    room_name = rm.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+                    room_name = rm.get_Parameter(
+                        DB.BuiltInParameter.ROOM_NAME
+                    ).AsString()
                     print(
                         "\t{} (@ {}) {}".format(
                             room_name.ljust(30), rm.Level.Name, output.linkify(rm.Id)

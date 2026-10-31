@@ -281,7 +281,7 @@ print('test')");
 
             foreach (var extension in _installedExtensions)
             {
-                var pushButton = FindComponentRecursively(extension, "Logs");
+                var pushButton = FindComponentRecursively(extension, "AVF");
                 if (pushButton != null)
                 {
                     TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
@@ -297,7 +297,7 @@ print('test')");
                     Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
                     Assert.IsNotNull(pushButton.ScriptPath);
                     Assert.IsTrue(pushButton.ScriptPath.EndsWith("script.py"));
-                    Assert.AreEqual("Logs", pushButton.DisplayName);
+                    Assert.AreEqual("AVF", pushButton.DisplayName);
 
                     // Should have no bundle file
                     Assert.IsNull(pushButton.BundleFile);
@@ -307,7 +307,7 @@ print('test')");
                 }
             }
 
-            Assert.Fail("Logs push button not found");
+            Assert.Fail("AVF push button not found");
         }
 
         [Test]
@@ -524,6 +524,7 @@ print('test')");
                 "Test pyRevit Bundle",
                 "Test pyRevit Button",
                 "Test Smart Button",
+                "Test Reload Icon Toggle",
                 "Test C# Script",
                 "Test Direct Invoke",
                 "Test Direct Invoke (ExecParams)",
@@ -531,15 +532,25 @@ print('test')");
                 "Test Link Button",
                 "Test VisualBasic",
                 "Test Ruby",
-                "Test DynamoBIM",
-                "Test DynamoBIM GUI",
+                "Test DynamoBIM_Ironpython",
+                "Test DynamoBIM_cpy2.5",
+                "Test DynamoBIM_Cpython",
+                "Test DynamoBIM_Pythonnet",
+                "Test DynamoBIM Headless Auto 2024",
+                "Test DynamoBIM Headless Auto 2025",
+                "Test DynamoBIM Headless Auto 2026",
+                "Test DynamoBIM Headless Auto 2027",
+                "Test DynamoBIM Headless Manual",
+                "Test DynamoBIM Headless Forced Manual",
+                "Test DynamoBIM Headless Execute CPython3",
+                "Test DynamoBIM Headless Execute PythonNet3",
                 "Test Grasshopper",
                 "Test Content Bundle",
                 "Test Content Bundle - no rfa in folder nor specifed in bundle",
                 "Test Content Bundle - rfa in same folder and specified in bundle",
                 "Test Content Bundle - with rfa outside of content folder",
                 "Test Hyperlink",
-                "Test Блог"
+                "Test JSON Formatter"
             };
 
             Assert.IsNotNull(bundlePulldown.LayoutOrder, "Pulldown layout order should be parsed");
@@ -555,6 +566,7 @@ print('test')");
                 "Test pyRevit Bundle",
                 "Test pyRevit Button",
                 "Test Smart Button",
+                "Test Reload Icon Toggle",
                 "Test C# Script",
                 "Test Direct Invoke",
                 "Test Direct Invoke (ExecParams)",
@@ -562,14 +574,24 @@ print('test')");
                 "Test Link Button",
                 "Test VisualBasic",
                 "Test Ruby",
-                "Test DynamoBIM",
-                "Test DynamoBIM GUI",
+                "Test DynamoBIM_Ironpython",
+                "Test DynamoBIM_cpy2.5",
+                "Test DynamoBIM_Cpython",
+                "Test DynamoBIM_Pythonnet",
+                "Test DynamoBIM Headless Auto 2024",
+                "Test DynamoBIM Headless Auto 2025",
+                "Test DynamoBIM Headless Auto 2026",
+                "Test DynamoBIM Headless Auto 2027",
+                "Test DynamoBIM Headless Manual",
+                "Test DynamoBIM Headless Forced Manual",
+                "Test DynamoBIM Headless Execute CPython3",
+                "Test DynamoBIM Headless Execute PythonNet3",
                 "Test Grasshopper",
                 "Test Content Bundle",
                 "Test Content Bundle - rfa in same folder and specified in bundle",
                 "Test Content Bundle - with rfa outside of content folder",
                 "Test Hyperlink",
-                "Test Блог"
+                "Test JSON Formatter"
             };
 
             foreach (var layoutName in expectedChildren)

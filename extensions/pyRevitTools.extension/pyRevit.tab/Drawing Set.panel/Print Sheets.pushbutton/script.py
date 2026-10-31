@@ -425,8 +425,8 @@ class ViewSheetListItem(forms.Reactive):
             self._sheet.SheetNumber if hasattr(self._sheet, "SheetNumber") else ""
         )
         self.issue_date = (
-            self._sheet.Parameter[DB.BuiltInParameter.SHEET_ISSUE_DATE].AsString()
-            if self._sheet.Parameter[DB.BuiltInParameter.SHEET_ISSUE_DATE]
+            self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE).AsString()
+            if self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE)
             else ""
         )
         self.printable = self._sheet.CanBePrinted

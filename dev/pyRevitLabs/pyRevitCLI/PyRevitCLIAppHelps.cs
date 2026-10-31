@@ -280,7 +280,7 @@ namespace pyRevitCLI {
                         header: "Manage installed and running Revits and addons",
                         commands: new Dictionary<string, string>() {
                             { "killall",                "Kill all running Revits" },
-                            { "fileinfo",               "Delete existing deployment image" },
+                            { "fileinfo",               "Print information about a Revit model file" },
                         },
                         options: new Dictionary<string, string>() {
                             { "<revit_year>",           "Target Revit year (major version)" },
@@ -353,7 +353,7 @@ namespace pyRevitCLI {
                             { "--timeout=<seconds>",    "Stop the script after this many seconds (default 300, max 3600)" },
                             { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
-                            { "<run_id>",               "Run id printed by 'agent run' or 'agent runs'" },
+                            { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
                             { "--json",                 "Print status as json" },
                         });
                     break;
