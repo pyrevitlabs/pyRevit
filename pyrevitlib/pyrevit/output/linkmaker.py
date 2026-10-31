@@ -9,6 +9,7 @@ mlogger = get_logger(__name__)
 
 
 PROTOCOL_NAME = "revit://outputhelpers?"
+MAX_INLINE_QUERY_LENGTH = 2000
 # ctrl+click adds the link's elements to the
 # current selection instead of replacing it
 APPEND_SELECTION_ONCLICK = (
@@ -44,7 +45,7 @@ DEFAULT_LINK = (
 )
 
 
-def make_link(element_ids, contents=None):
+def make_link(element_ids, contents=None, register_ids=None):
     """Create link for given element ids.
 
     This link is a special format link with revit:// scheme that is handled
@@ -52,6 +53,23 @@ def make_link(element_ids, contents=None):
     Scripts should not call this function directly. Creating clickable element
     links is handled by the output wrapper object through the :func:`linkify`
     method.
+
+    Ids that fit in a url (under :data:`MAX_INLINE_QUERY_LENGTH` characters) are
+    embedded in the link itself. Longer lists are handed to ``register_ids`` and
+    the link carries the token it returns, so any number of elements can be
+    selected with one link.
+
+    Args:
+        element_ids (ElementId | list[ElementId]): single or multiple ids
+        contents (str): label of the link. defaults to the list of ids, or to
+            the element count when the ids are registered
+        register_ids (callable): receives the comma separated id values and
+            returns the token the output window resolves back to them. Only
+            called when the ids do not fit in the url
+
+    Raises:
+        ValueError: when an item is not an ElementId, or the ids do not fit in
+            the url and no ``register_ids`` was given
 
     Examples:
         ```python
@@ -74,32 +92,20 @@ def make_link(element_ids, contents=None):
     reviturl = "&".join(elementquery)
     link_title = ", ".join(strids)
 
-    if len(reviturl) >= 2000:
-        total_length = 0
-        max_elements = 0
-        elementquery_parts = ["element[]=" + strid for strid in strids]
-        for i, part in enumerate(elementquery_parts):
-            if i > 0:
-                total_length += 1  # for '&'
-            total_length += len(part)
-            if total_length >= 2000:
-                break
-            max_elements += 1
-
-        alertjs = (
-            "alert(&quot;URL was too long ({} characters). Maximum allowed is 2000. "
-            "Only {} out of {} elements could fit.&quot;);".format(
-                len(reviturl), max_elements, len(strids)
+    if len(reviturl) >= MAX_INLINE_QUERY_LENGTH:
+        if register_ids is None:
+            raise ValueError(
+                "{} element ids do not fit in one link and no register_ids "
+                "was given".format(len(strids))
             )
-        )
-        linkattrs_select = 'href="#" onClick="{}"'.format(alertjs)
-        linkattrs_show = linkattrs_select
-    else:
-        base_link = 'href="{}{}{}&show={{}}"'.format(
-            PROTOCOL_NAME, "&command=select&", reviturl
-        )
-        linkattrs_select = base_link.format("false") + " " + APPEND_SELECTION_ONCLICK
-        linkattrs_show = base_link.format("true") + " " + APPEND_SELECTION_ONCLICK
+        reviturl = "elements={}".format(register_ids(",".join(strids)))
+        link_title = "{} elements".format(len(strids))
+
+    base_link = 'href="{}{}{}&show={{}}"'.format(
+        PROTOCOL_NAME, "&command=select&", reviturl
+    )
+    linkattrs_select = base_link.format("false") + " " + APPEND_SELECTION_ONCLICK
+    linkattrs_show = base_link.format("true") + " " + APPEND_SELECTION_ONCLICK
 
     return DEFAULT_LINK.format(
         attrs_select=linkattrs_select,

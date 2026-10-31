@@ -122,6 +122,18 @@ class OutputWindowPrintTests(unittest.TestCase):
         self.assertIn(PROTOCOL_NAME, link)
         self.assertIn("element[]=", link)
 
+    def test_linkify_registers_ids_that_do_not_fit_in_a_link(self):
+        """Element ids beyond the url limit resolve through the output window."""
+        from pyrevit import DB
+        from pyrevit.output.linkmaker import MAX_INLINE_QUERY_LENGTH
+
+        element_ids = [DB.ElementId(1000000 + i) for i in range(500)]
+        link = self.output.linkify(element_ids)
+        self.assertLess(len(link), MAX_INLINE_QUERY_LENGTH)
+        self.assertNotIn("element[]=", link)
+        self.assertIn("elements=", link)
+        self.assertIn("500 elements", link)
+
 
 class OutputWindowProgressTests(unittest.TestCase):
     """Progress bar control methods complete without error."""

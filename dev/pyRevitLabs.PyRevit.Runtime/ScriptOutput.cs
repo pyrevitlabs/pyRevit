@@ -484,6 +484,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _window.IsSessionOutput = isSessionOutput;
         }
 
+        public string register_element_ids(string comma_separated_ids) => window.RegisterElementIds(comma_separated_ids);
         public void close() { window.Close(); }
         public void hide() { window.Hide(); }
         public void show() { window.Show(); }
