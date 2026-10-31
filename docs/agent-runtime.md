@@ -334,7 +334,13 @@ are easy to get wrong:
    they need a restart or reload to take effect: IronPython can `reload()` a changed module, while
    CPython can't redefine classes that implement .NET interfaces (reloading `pyrevit.revit.db.create`
    raises `Duplicate type name within an assembly`). Restarting Revit loads the edits on both engines.
-4. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
+4. **Repeat full test runs on the other IronPython.** The attached IronPython is one setting per
+   clone: `ironpython` runs on 2.7.12 after `pyrevit attach <clone> default --installed` and on 3.4.2
+   after `pyrevit attach <clone> 342 --installed`, while `cpython` is unaffected. The switch
+   rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
+   (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
+   the version in use. Run the full tests once per IronPython, and attach `default` again afterwards.
+5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
    document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
    or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
    Roll back an open transaction on that document first: `Close` raises while one is open, and the
