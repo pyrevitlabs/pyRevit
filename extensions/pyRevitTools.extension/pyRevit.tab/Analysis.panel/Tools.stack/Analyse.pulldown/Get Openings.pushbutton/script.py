@@ -14,6 +14,8 @@ from pyrevit.framework import List
 output = script.get_output()
 
 RESOURCES = script.get_bundle_file("resources.xaml")
+# TODO(Wurschdhaud, #3873): mirrors the 2000-character limit hardcoded in
+# pyrevit.output.linkmaker.make_link; remove once linkify splits ids itself.
 LINK_URL_LIMIT = 2000
 OPENING_FILTER_NAME = "0_ShaftOpenings"
 OPENING_CATEGORIES = [
