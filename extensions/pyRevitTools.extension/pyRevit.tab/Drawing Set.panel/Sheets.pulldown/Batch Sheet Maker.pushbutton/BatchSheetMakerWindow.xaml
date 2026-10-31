@@ -30,10 +30,12 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <CheckBox Grid.Column="0" VerticalAlignment="Center"
+                                                      AutomationProperties.LabeledBy="{Binding ElementName=ParameterNameLabel}"
                                                       IsChecked="{Binding is_selected, Mode=TwoWay}"/>
-                                            <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                            <TextBlock x:Name="ParameterNameLabel" Grid.Column="1" VerticalAlignment="Center"
                                                        Margin="5,0,10,0" Text="{Binding name}"/>
                                             <TextBox Grid.Column="2"
+                                                     AutomationProperties.LabeledBy="{Binding ElementName=ParameterNameLabel}"
                                                      Text="{Binding value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         </Grid>
                                     </DataTemplate>
