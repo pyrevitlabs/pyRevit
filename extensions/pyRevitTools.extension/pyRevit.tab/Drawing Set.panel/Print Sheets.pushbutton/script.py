@@ -93,6 +93,7 @@ PAPER_FORMAT_ALIASES = {
 }
 
 MM_PER_INCH = 25.4
+FEET_TO_MM = 304.8
 CM_TO_MM = 10.0
 
 STANDARD_PAPER_SIZES_MM = {
@@ -266,8 +267,42 @@ class PrintUtils:
         return DB.ExportPaperFormat.Default
 
     @staticmethod
-    def pdf_opts(hcb=True, hsb=True, hrp=True, hvt=True, mcl=True, print_params=None):
-        """Build PDF export options and map compatible print settings."""
+    def sheet_size_mm(sheet):
+        """Return a sheet's (short, long) side lengths in millimeters."""
+        outline = sheet.Outline
+        sides = (
+            (outline.Max.U - outline.Min.U) * FEET_TO_MM,
+            (outline.Max.V - outline.Min.V) * FEET_TO_MM,
+        )
+        return min(sides), max(sides)
+
+    @staticmethod
+    def sheets_match_paper(sheets, paper_format):
+        """Return True when every sheet has the size of the given paper format."""
+        paper = STANDARD_PAPER_SIZES_MM.get(str(paper_format))
+        if not paper or not sheets:
+            return False
+        for sheet in sheets:
+            short_side, long_side = PrintUtils.sheet_size_mm(sheet)
+            if (
+                abs(short_side - paper[0]) > PAPER_SIZE_TOLERANCE_MM
+                or abs(long_side - paper[1]) > PAPER_SIZE_TOLERANCE_MM
+            ):
+                return False
+        return True
+
+    @staticmethod
+    def pdf_opts(
+        hcb=True, hsb=True, hrp=True, hvt=True, mcl=True, print_params=None, sheets=None
+    ):
+        """Build PDF export options and map compatible print settings.
+
+        Note:
+            Revit's Fit to Page leaves a white border inside the PDF page even
+            when the paper is exactly the sheet size. When ``sheets`` all have
+            the size of the print setting's paper, Fit to Page is mapped to
+            100% zoom so the sheet fills the page edge to edge.
+        """
         opts = DB.PDFExportOptions()
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
@@ -316,7 +351,12 @@ class PrintUtils:
                         logger.debug("Could not map OriginOffset: %s", ex)
                 try:
                     opts.ZoomType = print_params.ZoomType
-                    opts.ZoomPercentage = int(print_params.Zoom)
+                    if opts.ZoomType == DB.ZoomType.FitToPage and (
+                        PrintUtils.sheets_match_paper(sheets, paper_format)
+                    ):
+                        opts.ZoomType = DB.ZoomType.Zoom
+                    else:
+                        opts.ZoomPercentage = int(print_params.Zoom)
                 except Exception as ex:
                     logger.debug("Could not map Zoom: %s", ex)
         return opts
@@ -1555,7 +1595,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             DB.KeynoteTable.GetKeynoteTable(doc).Reload(None)
 
         optspdf = PrintUtils.pdf_opts(
-            print_params=self.selected_print_setting.print_params
+            print_params=self.selected_print_setting.print_params,
+            sheets=[x.revit_sheet for x in target_sheets if x.printable],
         )
         try:
             with forms.ProgressBar(
@@ -1656,7 +1697,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                         else self.selected_print_setting.print_params
                                                     )
                                                     optspdf = PrintUtils.pdf_opts(
-                                                        print_params=_params
+                                                        print_params=_params,
+                                                        sheets=[sheet.revit_sheet],
                                                     )
                                                     PrintUtils.export_sheet_pdf(
                                                         dirPath,
@@ -1754,7 +1796,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                         else self.selected_print_setting.print_params
                                                     )
                                                     optspdf = PrintUtils.pdf_opts(
-                                                        print_params=_params
+                                                        print_params=_params,
+                                                        sheets=[sheet.revit_sheet],
                                                     )
                                                     PrintUtils.export_sheet_pdf(
                                                         dirPath,
@@ -1835,7 +1878,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             == "Revit Internal Printer"
                                         ):
                                             optspdf = PrintUtils.pdf_opts(
-                                                print_params=self.selected_print_setting.print_params
+                                                print_params=self.selected_print_setting.print_params,
+                                                sheets=[sheet.revit_sheet],
                                             )
                                             PrintUtils.export_sheet_pdf(
                                                 dirPath,
