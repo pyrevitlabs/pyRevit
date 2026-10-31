@@ -10,7 +10,7 @@ Page -> Python messages are ``{channel, action, payload, requestId}``; messages
 from other channels (e.g. a previous run printed into the same window) are
 ignored.
 Page -> Python actions: ``select``, ``zoom``, ``open_view``, ``fix``,
-``fix_all``, ``recheck``, ``scene``.
+``fix_all``, ``recheck``, ``scene``, ``ghost``.
 Python -> page events: ``view`` (refreshed view section), ``result``
 (outcome of a request), ``scene`` (3D preview data), ``error``.
 """
