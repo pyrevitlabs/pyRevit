@@ -8,6 +8,9 @@
     <sys:String x:Key="column_name">Nombre</sys:String>
     <sys:String x:Key="column_id">ID de elemento</sys:String>
     <sys:String x:Key="column_show">Seleccionar/Mostrar elemento</sys:String>
+    <sys:String x:Key="select_all">Seleccionar todas las aberturas</sys:String>
+    <sys:String x:Key="select_part">Seleccionar aberturas, parte {} de {}</sys:String>
+    <sys:String x:Key="select_parts_hint">Mantenga pulsada la tecla Ctrl al hacer clic para añadir una parte a la selección actual.</sys:String>
     <sys:String x:Key="created_filter">Filtro de selección {} creado.</sys:String>
     <sys:String x:Key="updated_filter">Filtro de selección {} actualizado.</sys:String>
     <sys:String x:Key="finished_in">Script finalizado en {:.2f} s</sys:String>

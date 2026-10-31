@@ -14,6 +14,9 @@ from pyrevit.framework import List
 output = script.get_output()
 
 RESOURCES = script.get_bundle_file("resources.xaml")
+# TODO(Wurschdhaud, #3873): mirrors the 2000-character limit hardcoded in
+# pyrevit.output.linkmaker.make_link; remove once linkify splits ids itself.
+LINK_URL_LIMIT = 2000
 OPENING_FILTER_NAME = "0_ShaftOpenings"
 OPENING_CATEGORIES = [
     DB.BuiltInCategory.OST_FloorOpening,
@@ -88,10 +91,47 @@ def sync_opening_filter(openings):
     return created
 
 
+def split_ids_for_links(element_ids):
+    """Split element ids into groups that each fit in one ``output.linkify`` link.
+
+    Note:
+        ``output.linkify`` refuses links whose ``element[]=<id>&...`` query reaches
+        ``LINK_URL_LIMIT`` characters, so a single link cannot select every opening
+        of a large project.
+    """
+    get_elementid_value = get_elementid_value_func()
+    groups = []
+    group = []
+    group_length = 0
+    for element_id in element_ids:
+        query_length = len("element[]={}&".format(get_elementid_value(element_id)))
+        if group and group_length + query_length >= LINK_URL_LIMIT:
+            groups.append(group)
+            group = []
+            group_length = 0
+        group.append(element_id)
+        group_length += query_length
+    if group:
+        groups.append(group)
+    return groups
+
+
+def select_all_links(openings):
+    groups = split_ids_for_links([opening.Id for opening in openings])
+    if len(groups) == 1:
+        return output.linkify(groups[0], title=_t("select_all"))
+    part_links = " ".join(
+        output.linkify(group, title=_t("select_part").format(number, len(groups)))
+        for number, group in enumerate(groups, 1)
+    )
+    return "{}\n\n*{}*".format(part_links, _t("select_parts_hint"))
+
+
 def report(openings):
     output.print_md("#### {}".format(_t("openings_in_project").format(len(openings))))
     if not openings:
         return
+    output.print_md(select_all_links(openings))
     get_elementid_value = get_elementid_value_func()
     output.print_table(
         table_data=[

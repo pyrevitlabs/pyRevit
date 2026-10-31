@@ -8,6 +8,9 @@
     <sys:String x:Key="column_name">名称</sys:String>
     <sys:String x:Key="column_id">图元 ID</sys:String>
     <sys:String x:Key="column_show">选择/显示图元</sys:String>
+    <sys:String x:Key="select_all">选择所有洞口</sys:String>
+    <sys:String x:Key="select_part">选择洞口，第 {}/{} 部分</sys:String>
+    <sys:String x:Key="select_parts_hint">点击时按住 Ctrl 可将该部分添加到当前选择。</sys:String>
     <sys:String x:Key="created_filter">已创建选择过滤器 {}。</sys:String>
     <sys:String x:Key="updated_filter">已更新选择过滤器 {}。</sys:String>
     <sys:String x:Key="finished_in">脚本已在 {:.2f} 秒内完成</sys:String>
