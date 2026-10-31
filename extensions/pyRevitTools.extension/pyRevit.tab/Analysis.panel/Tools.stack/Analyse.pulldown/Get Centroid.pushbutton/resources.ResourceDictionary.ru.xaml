@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">Выберите стиль линий для обозначения центра тяжести</sys:String>
+    <sys:String x:Key="transaction_name">Получить центр тяжести</sys:String>
+    <sys:String x:Key="select_element">Выберите хотя бы один элемент.</sys:String>
+    <sys:String x:Key="no_solid_geometry">У выбранных элементов нет твердотельной геометрии.</sys:String>
+</ResourceDictionary>
