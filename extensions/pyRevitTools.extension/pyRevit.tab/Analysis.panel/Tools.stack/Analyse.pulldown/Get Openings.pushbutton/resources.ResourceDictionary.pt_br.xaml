@@ -3,7 +3,7 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <sys:String x:Key="transaction_name">Criar filtro de aberturas</sys:String>
-    <sys:String x:Key="openings_in_project">Aberturas no projeto (piso, parede, shaft, telhado): {}</sys:String>
+    <sys:String x:Key="openings_in_project">Aberturas no projeto: {}</sys:String>
     <sys:String x:Key="table_title">Aberturas</sys:String>
     <sys:String x:Key="column_name">Nome</sys:String>
     <sys:String x:Key="column_id">ID do elemento</sys:String>
