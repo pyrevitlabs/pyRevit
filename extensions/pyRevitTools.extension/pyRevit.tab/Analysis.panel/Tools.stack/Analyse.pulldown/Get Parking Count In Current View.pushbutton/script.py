@@ -18,7 +18,14 @@ def _t(key):
 
 
 def escape_for_output(text):
-    escaped = escape_for_html(text)
+    """Make model text render literally in print_table cells and print_md headings.
+
+    print_table splits cells on pipes and renders Markdown, so pipes, emphasis and
+    link characters are encoded as entities. Ampersands are encoded so names such
+    as "&copy;" are not read as entities, and line breaks become spaces so a name
+    stays on one table row.
+    """
+    escaped = escape_for_html(" ".join(text.splitlines()).replace("&", "&#38;"))
     for character in "|*_`[":
         escaped = escaped.replace(character, "&#{};".format(ord(character)))
     return escaped
