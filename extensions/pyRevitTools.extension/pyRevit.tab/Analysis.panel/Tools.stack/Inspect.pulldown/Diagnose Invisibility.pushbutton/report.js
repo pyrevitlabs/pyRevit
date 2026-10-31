@@ -77,9 +77,12 @@
       const requestId = ++this.requestSeq;
       return new Promise((resolve, reject) => {
         this.requests.set(requestId, { resolve, reject });
-        window.chrome.webview.postMessage(
-          JSON.stringify({ channel: this.data.channel, action, payload, requestId })
-        );
+        window.chrome.webview.postMessage({
+          channel: this.data.channel,
+          action,
+          payload,
+          requestId,
+        });
       });
     }
 

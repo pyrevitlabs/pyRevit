@@ -3,11 +3,14 @@
 
 Renders the diagnosis as a single-page app inside the command's output window
 (``report.js``, ``report.css``, ``viewer3d.js``) and keeps it live: buttons on
-the page post messages through ``invisibility_bridge``; handlers here run them
+the page post messages through ``output.on_message``; handlers here run them
 in Revit API context and push refreshed state back to the page.
 
+Page -> Python messages are ``{channel, action, payload, requestId}``; messages
+from other channels (e.g. a previous run printed into the same window) are
+ignored.
 Page -> Python actions: ``select``, ``zoom``, ``open_view``, ``fix``,
-``fix_all``, ``recheck``, ``scene``.
+``fix_all``, ``recheck``, ``scene``, ``ghost``.
 Python -> page events: ``view`` (refreshed view section), ``result``
 (outcome of a request), ``scene`` (3D preview data), ``error``.
 """
@@ -23,7 +26,6 @@ from pyrevit.revit import events
 
 import invisibility_fixes as fixes
 import invisibility_scene as scene
-from invisibility_bridge import WebViewBridge
 from invisibility_ghost import GhostPreview
 from invisibility_checks import collect_visible_ids, diagnose, id_value, t
 
@@ -163,8 +165,12 @@ class DiagnosisSession(object):
     the report stays open.
 
     Lifecycle: created and shown by the command; afterwards it lives only
-    through the bridge's event subscriptions and ends when the output window
+    through its output window subscriptions and ends when the output window
     closes.
+
+    Important:
+        Handlers outlive the command, so the bundle must run on a persistent
+        engine; a cleaned-up engine would leave dangling callbacks.
     """
 
     def __init__(self, output, doc, elements, views):
@@ -174,7 +180,8 @@ class DiagnosisSession(object):
         self.view_ids = [v.Id for v in views]
         self.channel = "invisibility-{}".format(uuid.uuid4().hex)
         self.root_id = "invisibility-app-{}".format(uuid.uuid4().hex[:8])
-        self.bridge = WebViewBridge(output, self.channel)
+        self.interactive = False
+        self._handlers = {}
         self.ghost = GhostPreview(doc)
 
     def _elements(self):
@@ -268,7 +275,7 @@ class DiagnosisSession(object):
         views = [self.doc.GetElement(view_id) for view_id in self.view_ids]
         return {
             "channel": self.channel,
-            "bridge": self.bridge.attached,
+            "bridge": self.interactive,
             "document": self.doc.Title,
             "strings": dict(
                 (name, t(key, default)) for name, (key, default) in _UI_STRINGS.items()
@@ -283,10 +290,11 @@ class DiagnosisSession(object):
     def show(self):
         """Render the report and start listening for page messages.
 
-        Must run in the command, in API context; it blocks until the output
-        document is ready.
+        Must run in the command, in API context. Falls back to a read-only
+        report when the output window cannot receive page messages.
         """
-        if self.bridge.attach():
+        if self.output.on_message(self._on_page_message):
+            self.interactive = True
             for action, handler in (
                 ("select", self._on_select),
                 ("zoom", self._on_zoom),
@@ -297,8 +305,8 @@ class DiagnosisSession(object):
                 ("scene", self._on_scene),
                 ("ghost", self._on_ghost),
             ):
-                self.bridge.on(action, handler)
-            self.bridge.on_closed(self._close_ghosts)
+                self._handlers[action] = handler
+            self.output.window.Closed += self._on_window_closed
         self.output.set_title(t("report_title", "Visibility Diagnosis"))
         self.output.add_style(_read_asset(_STYLESHEET))
         for asset in _ASSETS:
@@ -311,16 +319,53 @@ class DiagnosisSession(object):
             body=True,
         )
 
-    def _reply(self, request_id, ok, message=None):
-        self.bridge.send(
-            "result", {"requestId": request_id, "ok": ok, "message": message}
+    def _on_page_message(self, message):
+        if not isinstance(message, dict) or message.get("channel") != self.channel:
+            return
+        action = message.get("action")
+        handler = self._handlers.get(action)
+        if handler is None:
+            logger.debug("No handler for action '%s'", action)
+            return
+        request_id = message.get("requestId")
+        try:
+            handler(message.get("payload") or {}, request_id)
+        except Exception as ex:
+            logger.debug("Handler '%s' failed: %s", action, ex)
+            self._send(
+                "error",
+                {"action": action, "requestId": request_id, "message": str(ex)},
+            )
+
+    def _on_window_closed(self, sender, args):
+        self.interactive = False
+        self._close_ghosts()
+
+    def _send(self, event, payload=None, raw_payload=None):
+        """Post ``{channel, event, payload}`` to the page.
+
+        ``raw_payload`` is pre-encoded JSON used instead of ``payload``, for
+        large bodies serialized by a faster custom encoder than ``json.dumps``.
+        """
+        if raw_payload is None:
+            self.output.post_message(
+                {"channel": self.channel, "event": event, "payload": payload}
+            )
+            return
+        self.output.window.PostWebMessage(
+            '{{"channel":{},"event":{},"payload":{}}}'.format(
+                json.dumps(self.channel), json.dumps(event), raw_payload
+            )
         )
+
+    def _reply(self, request_id, ok, message=None):
+        self._send("result", {"requestId": request_id, "ok": ok, "message": message})
 
     def _push_views(self, view_ids=None):
         for view_id in view_ids or self.view_ids:
             view = self.doc.GetElement(view_id)
             if view is not None:
-                self.bridge.send("view", self.view_payload(view))
+                self._send("view", self.view_payload(view))
 
     def _ids(self, payload):
         return List[DB.ElementId](
@@ -484,9 +529,9 @@ class DiagnosisSession(object):
             states.append((element, not any(not f.informational for f in findings)))
         data = scene.build_scene(view, states, format_element_label)
         if data is None:
-            self.bridge.send("scene", {"viewId": id_value(view.Id), "meshes": []})
+            self._send("scene", {"viewId": id_value(view.Id), "meshes": []})
         else:
-            self.bridge.send("scene", raw_payload=scene.scene_to_json(data))
+            self._send("scene", raw_payload=scene.scene_to_json(data))
         self._reply(request_id, True)
 
 
@@ -513,7 +558,8 @@ def show_report(output, elements, views):
     """Diagnose ``elements`` in ``views`` and show the interactive report.
 
     Returns:
-        (DiagnosisSession): the live session (kept alive by its bridge).
+        (DiagnosisSession): the live session (kept alive by its output window
+        subscriptions).
     """
     session = DiagnosisSession(output, elements[0].Document, elements, views)
     session.show()
