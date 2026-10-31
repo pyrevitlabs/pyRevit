@@ -24,6 +24,10 @@ def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
+def escape_for_table(text):
+    return escape_for_html(text).replace("|", "&#124;")
+
+
 def read_text(element, builtin_parameter):
     return element.Parameter[builtin_parameter].AsString() or ""
 
@@ -39,9 +43,9 @@ def read_area(element):
 def describe(element):
     return [
         output.linkify(element.Id),
-        escape_for_html(read_text(element, DB.BuiltInParameter.ROOM_NUMBER)),
-        escape_for_html(read_text(element, DB.BuiltInParameter.ROOM_NAME)),
-        escape_for_html(read_level_name(element)),
+        escape_for_table(read_text(element, DB.BuiltInParameter.ROOM_NUMBER)),
+        escape_for_table(read_text(element, DB.BuiltInParameter.ROOM_NAME)),
+        escape_for_table(read_level_name(element)),
     ]
 
 

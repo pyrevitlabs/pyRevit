@@ -28,6 +28,10 @@ def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
+def escape_for_table(text):
+    return escape_for_html(text).replace("|", "&#124;")
+
+
 def sync_opening_filter():
     """Create the selection filter for all openings, or add them to the existing one.
 
@@ -63,7 +67,7 @@ def report(openings):
     output.print_table(
         table_data=[
             [
-                escape_for_html(opening.Name),
+                escape_for_table(opening.Name),
                 get_elementid_value(opening.Id),
                 output.linkify(opening.Id),
             ]

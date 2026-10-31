@@ -17,6 +17,10 @@ def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
+def escape_for_table(text):
+    return escape_for_html(text).replace("|", "&#124;")
+
+
 def type_name_of(element):
     element_type = revit.doc.GetElement(element.GetTypeId())
     return query.get_name(element_type) if element_type else _t("unknown_type")
@@ -31,7 +35,7 @@ output.print_md("### {}".format(_t("parking_count").format(len(parking_elements)
 if counts_by_type:
     output.print_table(
         table_data=[
-            [escape_for_html(type_name), counts_by_type[type_name]]
+            [escape_for_table(type_name), counts_by_type[type_name]]
             for type_name in sorted(counts_by_type)
         ],
         title=_t("table_title"),
