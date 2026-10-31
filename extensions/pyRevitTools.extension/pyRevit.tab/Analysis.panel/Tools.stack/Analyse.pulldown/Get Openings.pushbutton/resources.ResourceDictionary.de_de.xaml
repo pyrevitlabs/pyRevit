@@ -8,6 +8,8 @@
     <sys:String x:Key="column_name">Name</sys:String>
     <sys:String x:Key="column_id">Element-ID</sys:String>
     <sys:String x:Key="column_show">Element auswählen/anzeigen</sys:String>
+    <sys:String x:Key="select_all">Alle Öffnungen auswählen</sys:String>
+    <sys:String x:Key="select_part">Öffnungen auswählen, Teil {} von {}</sys:String>
     <sys:String x:Key="created_filter">Auswahlfilter {} erstellt.</sys:String>
     <sys:String x:Key="updated_filter">Auswahlfilter {} aktualisiert.</sys:String>
     <sys:String x:Key="finished_in">Skript in {:.2f} s abgeschlossen</sys:String>

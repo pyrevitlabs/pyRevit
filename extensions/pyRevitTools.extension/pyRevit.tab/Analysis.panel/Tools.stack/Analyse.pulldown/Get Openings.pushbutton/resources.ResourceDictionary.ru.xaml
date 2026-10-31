@@ -8,6 +8,8 @@
     <sys:String x:Key="column_name">Название</sys:String>
     <sys:String x:Key="column_id">ID элемента</sys:String>
     <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+    <sys:String x:Key="select_all">Выбрать все отверстия</sys:String>
+    <sys:String x:Key="select_part">Выбрать отверстия, часть {} из {}</sys:String>
     <sys:String x:Key="created_filter">Создан фильтр выбора {}.</sys:String>
     <sys:String x:Key="updated_filter">Обновлён фильтр выбора {}.</sys:String>
     <sys:String x:Key="finished_in">Скрипт выполнен за {:.2f} с</sys:String>
