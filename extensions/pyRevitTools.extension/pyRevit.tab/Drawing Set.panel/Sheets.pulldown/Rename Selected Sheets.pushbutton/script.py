@@ -14,11 +14,11 @@ RENAME_MODES = [
 
 
 def _get_sheet_name(sheet):
-    return sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()
+    return sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString()
 
 
 def _set_sheet_name(sheet, name):
-    sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].Set(name)
+    sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME).Set(name)
 
 
 def _collect_rename_inputs(mode):
