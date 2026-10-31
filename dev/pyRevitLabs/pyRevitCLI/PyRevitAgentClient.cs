@@ -340,11 +340,13 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Finds a recorded run folder by its run id (the folder name ends with the id).
+        /// Finds a recorded run folder by its run id (the folder name ends with the id), or by the
+        /// request id (<c>req-</c> and twelve hex digits) the host kept in the record.
         /// </summary>
         /// <remarks>
-        /// An id that isn't letters and digits matches nothing: it is used in a directory search
-        /// pattern, where a wildcard would match an unrelated run and a path segment would throw.
+        /// A request id is matched against <c>request.json</c>, see <see cref="FindRunDirByRequestId"/>.
+        /// Any other id that isn't letters and digits matches nothing: a run id is used in a directory
+        /// search pattern, where a wildcard would match an unrelated run and a path segment would throw.
         /// </remarks>
         public static string FindRunDir(string runId) {
             if (string.IsNullOrWhiteSpace(runId) || !Directory.Exists(RunsDir))

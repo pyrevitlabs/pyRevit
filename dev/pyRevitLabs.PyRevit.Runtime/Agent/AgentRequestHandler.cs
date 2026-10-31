@@ -16,7 +16,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <see cref="AgentDispatcher.Invoke"/>, except a request made in-process through
     /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
-    /// <c>data.type</c> carries the <see cref="AgentException.Code"/>.
+    /// <c>data.type</c> carries the <see cref="AgentException.Code"/> and whose other <c>data</c>
+    /// fields come from <see cref="AgentException.Details"/> (for example <c>outcome</c>).
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
