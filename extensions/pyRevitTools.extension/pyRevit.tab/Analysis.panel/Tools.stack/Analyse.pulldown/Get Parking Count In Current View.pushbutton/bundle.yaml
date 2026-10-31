@@ -1,7 +1,6 @@
 title:
   en_us: Get Parking Count In Current View
   ko: 현재 뷰의 주차 공간 수 가져오기
-
   fr_fr: Obtenir le nombre de stationnements dans la vue actuelle
   ru: Получить количество парковок на текущем виде
   chinese_s: 获取停车位数量
@@ -9,7 +8,7 @@ title:
   de_de: Anzahl der Parkplätze in aktueller Ansicht ausgeben
   pt_br: Obter Contagem de Vagas na Vista Atual
 tooltip:
-  en_us: Get a total count and types of parking elements in the current view
+  en_us: Count the parking elements in the active view and list the count per type.
   ko: 현재 뷰의 주차 요소 총 수 및 유형을 가져옵니다
   fr_fr: Obtenez un nombre total et les types d'éléments de stationnement dans la vue actuelle
   ru: Получает общее количество парковочных элементов на текущем виде.
@@ -19,3 +18,8 @@ tooltip:
   pt_br: Obtém uma contagem total e tipos de elementos de vaga de estacionamento na vista atual
 context:
   - doc-project
+  - any:
+      - active-plan-view
+      - active-section-view
+      - active-elevation-view
+      - active-3d-view
