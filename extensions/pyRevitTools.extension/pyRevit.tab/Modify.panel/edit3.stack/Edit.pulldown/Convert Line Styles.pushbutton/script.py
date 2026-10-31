@@ -64,7 +64,7 @@ class StyleOption(object):
     @property
     def color_hex(self):
         if self.color:
-            return "#{:x02}{:x02}{:x02}".format(
+            return "#{:02x}{:02x}{:02x}".format(
                 self.color.Red, self.color.Green, self.color.Blue
             )
         else:

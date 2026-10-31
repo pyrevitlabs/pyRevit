@@ -2,6 +2,7 @@
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
+from collections import OrderedDict
 from pyrevit import revit, DB
 from pyrevit import forms
 
@@ -27,13 +28,15 @@ def _sentence(name):
     return name.capitalize()
 
 
-CASE_FUNCTIONS = {
-    "UPPER CASE": _upper,
-    "lower case": _lower,
-    "camel Case": _camel,
-    "Title Case": _title,
-    "Sentence case": _sentence,
-}
+CASE_FUNCTIONS = OrderedDict(
+    [
+        ("UPPER CASE", _upper),
+        ("lower case", _lower),
+        ("camel Case", _camel),
+        ("Title Case", _title),
+        ("Sentence case", _sentence),
+    ]
+)
 
 
 def _change_case(view_list, casefunc, verbose=False):

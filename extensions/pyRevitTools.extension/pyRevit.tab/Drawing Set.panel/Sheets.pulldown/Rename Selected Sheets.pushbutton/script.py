@@ -2,7 +2,10 @@
 
 from pyrevit import revit, DB
 from pyrevit import forms
+from pyrevit.compat import get_elementid_value_func
 
+
+get_elementid_value = get_elementid_value_func()
 
 RENAME_MODES = [
     "Find & Replace",
@@ -14,11 +17,11 @@ RENAME_MODES = [
 
 
 def _get_sheet_name(sheet):
-    return sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()
+    return sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString()
 
 
 def _set_sheet_name(sheet, name):
-    sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].Set(name)
+    sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME).Set(name)
 
 
 def _collect_rename_inputs(mode):
@@ -141,11 +144,11 @@ def _execute_renames(rename_pairs):
         for idx, pair in enumerate(rename_pairs):
             sheet = pair["sheet"]
             temp_name = "__pyrevit_temp_sheet_name_{}_{}__".format(
-                sheet.Id.IntegerValue, idx
+                pair["sheet_id"], idx
             )
             try:
                 _set_sheet_name(sheet, temp_name)
-                temp_name_map[sheet.Id.IntegerValue] = temp_name
+                temp_name_map[pair["sheet_id"]] = temp_name
             except Exception as err:
                 failed.append(
                     {
@@ -158,7 +161,7 @@ def _execute_renames(rename_pairs):
 
         for pair in rename_pairs:
             sheet = pair["sheet"]
-            if sheet.Id.IntegerValue not in temp_name_map:
+            if pair["sheet_id"] not in temp_name_map:
                 continue
             try:
                 _set_sheet_name(sheet, pair["new_name"])
@@ -175,7 +178,7 @@ def _execute_renames(rename_pairs):
                     _set_sheet_name(sheet, pair["old_name"])
                     restore_reason = " Restored original name."
                 except Exception as restore_err:
-                    temp_name = temp_name_map[sheet.Id.IntegerValue]
+                    temp_name = temp_name_map[pair["sheet_id"]]
                     try:
                         _set_sheet_name(sheet, temp_name)
                         restore_reason = (
@@ -228,7 +231,7 @@ def main():
         .ToElements()
     )
     for sheet in all_sheets:
-        all_sheet_names[sheet.Id.IntegerValue] = _get_sheet_name(sheet)
+        all_sheet_names[get_elementid_value(sheet.Id)] = _get_sheet_name(sheet)
 
     rename_pairs = []
     unchanged = []
@@ -247,6 +250,7 @@ def main():
         rename_pairs.append(
             {
                 "sheet": sheet,
+                "sheet_id": get_elementid_value(sheet.Id),
                 "old_name": old_name,
                 "new_name": new_name,
             }
@@ -281,7 +285,7 @@ def main():
 
     unique_pairs = list(valid_pairs)
     while True:
-        selected_sheet_ids = set([x["sheet"].Id.IntegerValue for x in unique_pairs])
+        selected_sheet_ids = set([x["sheet_id"] for x in unique_pairs])
         existing_names = set(
             name
             for sid, name in all_sheet_names.items()
