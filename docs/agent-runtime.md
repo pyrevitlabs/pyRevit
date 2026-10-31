@@ -339,7 +339,8 @@ are easy to get wrong:
    after `pyrevit attach <clone> 342 --installed`, while `cpython` is unaffected. The switch
    rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
    (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
-   the version in use. Run the full tests once per IronPython, and attach `default` again afterwards.
+   the version in use. Run the full tests once per IronPython. Attach `default` again, restart Revit
+   and accept **Load Once** before continuing.
 5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
    document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
    or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
