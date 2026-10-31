@@ -1,113 +1,122 @@
-# pylint: disable=E0401,C0103
-from pyrevit import revit, DB
-from pyrevit import script
+# -*- coding: utf-8 -*-
+"""Find all rooms, areas or spaces named like the selected ones and report their average area."""
 
+from pyrevit import forms, script
+from pyrevit import revit, DB
+from pyrevit.coreutils import applocales, escape_for_html
+from pyrevit.revit import query
 
 output = script.get_output()
 
+RESOURCES = script.get_bundle_file("resources.xaml")
 
-areas = (
-    DB.FilteredElementCollector(revit.doc)
-    .OfCategory(DB.BuiltInCategory.OST_Areas)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
+SQUARE_FEET_PER_ACRE = 43560.0
+SQUARE_FEET_PER_HECTARE = 107639.0
 
-rooms = (
-    DB.FilteredElementCollector(revit.doc)
-    .OfCategory(DB.BuiltInCategory.OST_Rooms)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
-
-spaces = (
-    DB.FilteredElementCollector(revit.doc)
-    .OfCategory(DB.BuiltInCategory.OST_MEPSpaces)
-    .WhereElementIsNotElementType()
-    .ToElements()
+SPATIAL_KINDS = (
+    (DB.Area, DB.BuiltInCategory.OST_Areas, "kind_area"),
+    (DB.Architecture.Room, DB.BuiltInCategory.OST_Rooms, "kind_room"),
+    (DB.Mechanical.Space, DB.BuiltInCategory.OST_MEPSpaces, "kind_space"),
 )
 
 
-processed_items = {DB.Area: [], DB.Architecture.Room: [], DB.Mechanical.Space: []}
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-selection = revit.get_selection()
+def read_text(element, builtin_parameter):
+    return element.Parameter[builtin_parameter].AsString() or ""
 
 
-def calc_and_print(items, item_type, type_name, match_name):
-    item_total_area = 0.0
-    item_count = 0
-    if match_name not in processed_items[item_type]:
-        print("{} TYPE IS: {}".format(type_name, match_name))
-        for item in items:
-            item_name = item.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
-            item_number = item.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString()
-            item_level = item.Parameter[
-                DB.BuiltInParameter.ROOM_LEVEL_ID
-            ].AsValueString()
-            if revit.query.is_placed(item):
-                if match_name == item_name:
-                    area_value = item.Parameter[
-                        DB.BuiltInParameter.ROOM_AREA
-                    ].AsDouble()
-                    print(
-                        '{} {} #{} "{}" @ "{}" = {}'.format(
-                            output.linkify(item.Id),
-                            type_name.title(),
-                            item_number,
-                            item_name,
-                            item_level,
-                            revit.units.format_area(area_value),
-                        )
-                    )
-                    item_total_area += area_value
-                    item_count += 1
-            else:
-                print(
-                    ':cross_mark: SKIPPED "NOT PLACED" {} {} #{} "{}" @ "{}"'.format(
-                        output.linkify(item.Id),
-                        type_name.title(),
-                        item_number,
-                        item_name,
-                        item_level,
-                    )
-                )
-        print("TOTAL OF {} {}S WERE FOUND.".format(item_count, type_name))
-        processed_items[item_type].append(match_name)
-    return item_total_area, item_count
+def read_level_name(element):
+    return element.Parameter[DB.BuiltInParameter.ROOM_LEVEL_ID].AsValueString() or ""
 
 
-for el in selection.elements:
-    count = 0
-    total = 0.0
-    if isinstance(el, DB.Area):
-        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
-        area_total, area_count = calc_and_print(areas, DB.Area, "AREA", target_name)
-        count += area_count
-        total += area_total
-    elif isinstance(el, DB.Architecture.Room):
-        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
-        area_total, area_count = calc_and_print(
-            rooms, DB.Architecture.Room, "ROOM", target_name
+def read_area(element):
+    return element.Parameter[DB.BuiltInParameter.ROOM_AREA].AsDouble()
+
+
+def describe(element):
+    return [
+        output.linkify(element.Id),
+        escape_for_html(read_text(element, DB.BuiltInParameter.ROOM_NUMBER)),
+        escape_for_html(read_text(element, DB.BuiltInParameter.ROOM_NAME)),
+        escape_for_html(read_level_name(element)),
+    ]
+
+
+def find_kind(element):
+    for element_class, category, kind_key in SPATIAL_KINDS:
+        if isinstance(element, element_class):
+            return element_class, category, kind_key
+    return None
+
+
+def report_group(kind_label, name, placed, unplaced):
+    output.print_md("### {}: {}".format(kind_label, escape_for_html(name)))
+    if placed:
+        output.print_table(
+            table_data=[
+                describe(item) + [revit.units.format_area(read_area(item))]
+                for item in placed
+            ],
+            columns=[
+                _t("column_element"),
+                _t("column_number"),
+                _t("column_name"),
+                _t("column_level"),
+                _t("column_area"),
+            ],
         )
-        count += area_count
-        total += area_total
-    elif isinstance(el, DB.Mechanical.Space):
-        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
-        area_total, area_count = calc_and_print(
-            spaces, DB.Mechanical.Space, "SPACE", target_name
+    if unplaced:
+        output.print_table(
+            table_data=[describe(item) for item in unplaced],
+            title=_t("skipped_title"),
+            columns=[
+                _t("column_element"),
+                _t("column_number"),
+                _t("column_name"),
+                _t("column_level"),
+            ],
         )
-        count += area_count
-        total += area_total
+    output.print_md("**{}**".format(_t("total_found").format(len(placed))))
+    if not placed:
+        return
+    average = sum(read_area(item) for item in placed) / len(placed)
+    output.print_md(
+        "**{}**  \n{}".format(
+            _t("average_area").format(revit.units.format_area(average)),
+            _t("average_area_alt").format(
+                average / SQUARE_FEET_PER_ACRE, average / SQUARE_FEET_PER_HECTARE
+            ),
+        )
+    )
 
-    if count != 0:
-        average = total / count
-        print(
-            "\nAVERAGE AREA OF THE SELECTED TYPE IS:"
-            "\n{}"
-            "\n ======================================="
-            "\n{} ACRE"
-            "\n{} HECTARES".format(
-                revit.units.format_area(average), average / 43560, average / 107639
-            )
+
+def main():
+    reported = set()
+    for selected in revit.get_selection().elements:
+        kind = find_kind(selected)
+        if not kind:
+            continue
+        element_class, category, kind_key = kind
+        name = read_text(selected, DB.BuiltInParameter.ROOM_NAME)
+        if (element_class, name) in reported:
+            continue
+        reported.add((element_class, name))
+        siblings = [
+            item
+            for item in query.get_elements_by_categories([category])
+            if read_text(item, DB.BuiltInParameter.ROOM_NAME) == name
+        ]
+        report_group(
+            _t(kind_key),
+            name,
+            [item for item in siblings if query.is_placed(item)],
+            [item for item in siblings if not query.is_placed(item)],
         )
+    if not reported:
+        forms.alert(_t("select_spatial_element"), exitscript=True)
+
+
+main()

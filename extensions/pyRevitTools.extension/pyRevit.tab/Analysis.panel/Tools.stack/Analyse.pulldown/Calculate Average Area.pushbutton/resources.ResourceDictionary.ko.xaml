@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="kind_area">구역</sys:String>
+    <sys:String x:Key="kind_room">방</sys:String>
+    <sys:String x:Key="kind_space">공간</sys:String>
+    <sys:String x:Key="column_element">요소</sys:String>
+    <sys:String x:Key="column_number">번호</sys:String>
+    <sys:String x:Key="column_name">이름</sys:String>
+    <sys:String x:Key="column_level">레벨</sys:String>
+    <sys:String x:Key="column_area">면적</sys:String>
+    <sys:String x:Key="skipped_title">건너뜀 (배치되지 않음)</sys:String>
+    <sys:String x:Key="total_found">총 {}개 찾음</sys:String>
+    <sys:String x:Key="average_area">평균 면적: {}</sys:String>
+    <sys:String x:Key="average_area_alt">{:.4f} 에이커 · {:.4f} 헥타르</sys:String>
+    <sys:String x:Key="select_spatial_element">방, 구역 또는 공간을 하나 이상 선택하세요.</sys:String>
+</ResourceDictionary>
