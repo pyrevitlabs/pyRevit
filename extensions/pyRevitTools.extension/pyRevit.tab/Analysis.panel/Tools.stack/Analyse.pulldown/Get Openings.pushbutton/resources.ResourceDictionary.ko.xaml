@@ -10,6 +10,7 @@
     <sys:String x:Key="column_show">요소 선택/표시</sys:String>
     <sys:String x:Key="select_all">모든 개구부 선택</sys:String>
     <sys:String x:Key="select_part">개구부 선택, {}/{}번째 부분</sys:String>
+    <sys:String x:Key="select_parts_hint">Ctrl 키를 누른 채 클릭하면 해당 부분이 현재 선택에 추가됩니다.</sys:String>
     <sys:String x:Key="created_filter">선택 필터 {}을(를) 생성했습니다.</sys:String>
     <sys:String x:Key="updated_filter">선택 필터 {}을(를) 업데이트했습니다.</sys:String>
     <sys:String x:Key="finished_in">스크립트가 {:.2f}초 만에 완료되었습니다</sys:String>

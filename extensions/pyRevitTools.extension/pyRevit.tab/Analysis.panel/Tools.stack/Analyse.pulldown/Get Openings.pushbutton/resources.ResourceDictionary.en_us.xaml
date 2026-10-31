@@ -10,6 +10,7 @@
     <sys:String x:Key="column_show">Select/Show element</sys:String>
     <sys:String x:Key="select_all">Select all openings</sys:String>
     <sys:String x:Key="select_part">Select openings, part {} of {}</sys:String>
+    <sys:String x:Key="select_parts_hint">Hold Ctrl while clicking to add a part to the current selection.</sys:String>
     <sys:String x:Key="created_filter">Created the selection filter {}.</sys:String>
     <sys:String x:Key="updated_filter">Updated the selection filter {}.</sys:String>
     <sys:String x:Key="finished_in">Script has finished in {:.2f}s</sys:String>

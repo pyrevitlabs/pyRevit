@@ -118,10 +118,11 @@ def select_all_links(openings):
     groups = split_ids_for_links([opening.Id for opening in openings])
     if len(groups) == 1:
         return output.linkify(groups[0], title=_t("select_all"))
-    return " ".join(
+    part_links = " ".join(
         output.linkify(group, title=_t("select_part").format(number, len(groups)))
         for number, group in enumerate(groups, 1)
     )
+    return "{}\n\n*{}*".format(part_links, _t("select_parts_hint"))
 
 
 def report(openings):
