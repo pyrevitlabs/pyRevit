@@ -3,11 +3,12 @@ using System.IO;
 using System.Reflection;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
+using PyRevitLoader;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
  * To ensure the correct version of IronPython dlls are loaded, the OnStartup()
- * methods manually loads the IronPython assemblies before calling into the 
+ * methods manually loads the IronPython assemblies before calling into the
  * ScriptExecutor that has IronPython references
  */
 namespace PyRevitRunner
@@ -42,6 +43,9 @@ namespace PyRevitRunner
             // this is to ensure pyRevit is loaded on its own assemblies
             foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
             {
+                var decision = AssemblyLoadPolicy.ShouldSkip(engineDll);
+                if (decision.Skip)
+                    continue;
                 try
                 {
                     Assembly.LoadFrom(engineDll);

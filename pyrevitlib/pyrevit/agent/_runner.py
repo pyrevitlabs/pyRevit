@@ -20,9 +20,11 @@ import ast
 import json
 import linecache
 import os.path as op
+import re
 import sys
 import threading
 import time
+import tokenize
 import traceback
 
 try:
@@ -75,13 +77,16 @@ class _NarrowBroadHandlers(ast.NodeTransformer):
 
     def __init__(self):
         ast.NodeTransformer.__init__(self)
-        self.narrowed = 0
+        self.narrowed = []
 
     def visit_ExceptHandler(self, node):
         self.generic_visit(node)
         if _catches_base_exception(node.type):
-            node.type = ast.Name(id="Exception", ctx=ast.Load())
-            self.narrowed += 1
+            original_type = node.type
+            node.type = ast.copy_location(
+                ast.Name(id="Exception", ctx=ast.Load()), original_type or node
+            )
+            self.narrowed.append(node)
         return node
 
 
@@ -95,30 +100,90 @@ def _catches_base_exception(handler_type):
     return False
 
 
+def _source_lines(source):
+    """Split physical source lines without treating string contents as newlines."""
+    lines = []
+    start = 0
+    for match in re.finditer(r"\r\n|\r|\n", source):
+        lines.append(source[start : match.end()])
+        start = match.end()
+    if start < len(source):
+        lines.append(source[start:])
+    return lines
+
+
+def _narrow_source_handlers(source, handlers):
+    """Rewrite only handler headers without compiling an AST on IronPython.
+
+    IronPython loses source lines when compiling ASTs even when their locations
+    are populated. Keep the original source and its newline count instead,
+    including multiline exception tuples and Python 2 exception bindings.
+    Preserve the star in exception group handlers while narrowing their types.
+    """
+    positions = set((node.lineno, node.col_offset) for node in handlers)
+    lines = _source_lines(source)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+    replacements = []
+    header_start = None
+    depth = 0
+    token_source = source.replace("\r\n", "\n").replace("\r", "\n")
+    for token in tokenize.generate_tokens(StringIO(token_source).readline):
+        token_type, text, start, end, _ = token
+        if header_start is None:
+            if text == "except" and start in positions:
+                header_start = end
+                depth = 0
+                type_started = False
+            continue
+        if not type_started:
+            type_started = True
+            if text == "*":
+                header_start = end
+                continue
+        if depth == 0 and text in (":", "as", ","):
+            first = offsets[header_start[0] - 1] + header_start[1]
+            last = offsets[start[0] - 1] + start[1]
+            newlines = "".join(re.findall(r"\r\n|\r|\n", source[first:last]))
+            replacement = " (Exception" + newlines + ") "
+            replacements.append((first, last, replacement))
+            header_start = None
+        elif token_type == tokenize.OP:
+            if text in ("(", "[", "{"):
+                depth += 1
+            elif text in (")", "]", "}"):
+                depth -= 1
+    for first, last, replacement in reversed(replacements):
+        source = source[:first] + replacement + source[last:]
+    return source
+
+
 def _compile_source(source):
     """Compile the agent source with broad exception handlers narrowed.
 
     Returns:
-        tuple: the code object, and None or a description of why the rewrite
-        was skipped. Falls back to compiling the source unchanged when the
-        rewrite fails, so a syntax error keeps its original message and line
-        number; the caller must report the skipped rewrite, because a script
-        compiled that way can swallow its own timeout.
+        tuple: the code object, and None or a description of why source rewriting
+        was skipped. If rewritten source does not compile, compile the narrowed
+        AST instead so broad handlers cannot swallow the timeout.
 
     Note:
-        IronPython reports every line as line 1 for code compiled from an AST,
-        so the source text is compiled whenever no handler needed narrowing.
+        Prefer source text because IronPython reports every script frame as
+        line 1 when compiling an AST. The fallback sacrifices source locations,
+        not timeout safety.
     """
+    tree = ast.parse(source, SOURCE_NAME, "exec")
+    narrower = _NarrowBroadHandlers()
+    narrower.visit(tree)
+    if not narrower.narrowed:
+        return compile(source, SOURCE_NAME, "exec"), None
     try:
-        narrower = _NarrowBroadHandlers()
-        tree = narrower.visit(ast.parse(source, SOURCE_NAME, "exec"))
-        if not narrower.narrowed:
-            return compile(source, SOURCE_NAME, "exec"), None
-        ast.fix_missing_locations(tree)
-        return compile(tree, SOURCE_NAME, "exec"), None
+        narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
+        return compile(narrowed_source, SOURCE_NAME, "exec"), None
     except Exception as ex:
-        return compile(source, SOURCE_NAME, "exec"), "{}: {}".format(
-            type(ex).__name__, _safe_text(ex)
+        return compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"), (
+            "{}: {}; compiled the narrowed AST instead; source line numbers "
+            "may be unavailable".format(type(ex).__name__, _safe_text(ex))
         )
 
 
@@ -219,7 +284,7 @@ def run(context):
     linecache.cache[SOURCE_NAME] = (
         len(source),
         None,
-        source.splitlines(True),
+        _source_lines(source),
         SOURCE_NAME,
     )
     captured = StringIO()
@@ -240,9 +305,8 @@ def run(context):
         code, rewrite_problem = _compile_source(source)
         if rewrite_problem:
             print(
-                "[pyRevit agent] Could not narrow the script's bare except "
-                "handlers ({}); a handler that catches everything can swallow "
-                "the timeout.".format(rewrite_problem)
+                "[pyRevit agent] Could not rewrite the script's handler "
+                "headers ({}).".format(rewrite_problem)
             )
         started = time.time()
         stop_watchdog = None

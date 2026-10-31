@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">무게중심 표시선에 사용할 선 스타일 선택</sys:String>
+    <sys:String x:Key="transaction_name">무게중심 가져오기</sys:String>
+    <sys:String x:Key="select_element">요소를 하나 이상 선택하세요.</sys:String>
+    <sys:String x:Key="no_solid_geometry">선택한 요소에 솔리드 형상이 없습니다.</sys:String>
+</ResourceDictionary>

@@ -36,9 +36,16 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
     Returns:
         (dict[str, dict[str, Any]]): Excel data grouped by worksheet.
             Each worksheet is a dictionary with `headers` and `rows`.
+
+    Note:
+        The file is read into memory and closed before parsing, so it can be
+        renamed or deleted as soon as this returns. Opening it by path would
+        leave xlrd's zip handle on .xlsx files open until IronPython's GC runs.
     """
     xldata = {}
-    xlwb = xlrd.open_workbook(xlfile)
+    with open(xlfile, "rb") as xlstream:
+        xlcontents = xlstream.read()
+    xlwb = xlrd.open_workbook(file_contents=xlcontents)
     for xlsheet in xlwb.sheets():
         if sheets:
             if xlsheet.name in sheets:

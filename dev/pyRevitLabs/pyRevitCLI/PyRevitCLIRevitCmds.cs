@@ -314,8 +314,7 @@ namespace pyRevitCLI {
         // print info on a revit model
         private static void PrintModelInfo(RevitModelFile model) {
             if (model.RevitProduct != null)
-                Console.WriteLine(
-                    $"Created in: {model.RevitProduct.Name} {model.RevitProduct.BuildNumber}({model.RevitProduct.BuildTarget})");
+                Console.WriteLine($"Created in: {model.CreatedIn}");
             else
                 Console.WriteLine(model.BuildInfoLine);
 

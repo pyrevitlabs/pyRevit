@@ -1639,8 +1639,6 @@ class SelectFromList(TemplateUserInputWindow):
 
     """
 
-    in_check = False
-    in_uncheck = False
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
     resolve_theme = True
@@ -1927,29 +1925,17 @@ class SelectFromList(TemplateUserInputWindow):
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
-    def check_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as checked."""
-        if not self.in_check:
-            try:
-                self.in_check = True
-                item = sender.DataContext
-                if isinstance(item, TemplateListItem):
-                    item.checked = True
-                self._set_states(state=True, selected=True)
-            finally:
-                self.in_check = False
+    def checkbox_clicked(self, sender, args):  # pylint: disable=W0613
+        """Apply user toggles without treating binding updates as user input.
 
-    def uncheck_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as unchecked."""
-        if not self.in_uncheck:
-            try:
-                self.in_uncheck = True
-                item = sender.DataContext
-                if isinstance(item, TemplateListItem):
-                    item.checked = False
-                self._set_states(state=False, selected=True)
-            finally:
-                self.in_uncheck = False
+        Checked and Unchecked also fire when filtering rebuilds the item
+        containers. Only Click should propagate a toggle to selected rows.
+        """
+        state = bool(sender.IsChecked)
+        item = sender.DataContext
+        if isinstance(item, TemplateListItem):
+            item.checked = state
+        self._set_states(state=state, selected=True)
 
     def button_reset(self, sender, args):  # pylint: disable=W0613
         """Handle reset button click."""

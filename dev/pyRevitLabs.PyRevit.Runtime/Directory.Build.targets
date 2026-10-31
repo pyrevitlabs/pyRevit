@@ -28,9 +28,21 @@
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
         <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
         <Reference Include="pyRevitLabs.Python.Net" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll" Private="false" />
-        <Reference Include="Microsoft.Web.WebView2.Core" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Core.dll" Private="false" />
-        <Reference Include="Microsoft.Web.WebView2.WinForms" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.WinForms.dll" Private="false" />
-        <Reference Include="Microsoft.Web.WebView2.Wpf" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Wpf.dll" Private="false" />
+    </ItemGroup>
+
+    <!--
+      The WebView2 stack must not be referenced from the runtime on Revit 2025
+      and newer: the host process already carries its own WebView2 core, and a
+      metadata reference here would make the default load context bind
+      pyRevit's newer wrapper against the host's older core. The renderer is
+      loaded into an isolated load context instead, by path.
+    -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+        <PackageReference Include="Microsoft.Web.WebView2" Version="$(PyRevitWebView2Version)"
+                          GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
+        <Reference Include="Microsoft.Web.WebView2.Core" HintPath="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Core.dll" Private="false" />
+        <Reference Include="Microsoft.Web.WebView2.WinForms" HintPath="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.WinForms.dll" Private="false" />
+        <Reference Include="Microsoft.Web.WebView2.Wpf" HintPath="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Wpf.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -49,8 +61,18 @@
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
         <Reference Include="pyRevitLabs.Emojis" HintPath="$(PyRevitBinDir)\pyRevitLabs.Emojis.dll" />
         <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
+        <Reference Include="pyRevitLabs.PyRevit.Renderer" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.Renderer.dll" Private="false" />
         <Reference Include="pyRevitLabs.PyRevit.Runtime.Shared" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.Runtime.Shared.dll" />
         <Reference Include="pyRevitLabs.TargetApps.Revit" HintPath="$(PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
+    </ItemGroup>
+
+    <!--
+      Only the .NET Framework runtime links the WebView2 renderer directly.
+      On Revit 2025 and newer it is loaded into an isolated load context by
+      path, so no metadata reference may exist there.
+    -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+        <Reference Include="pyRevitLabs.PyRevit.WebView2" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.WebView2.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -63,7 +85,7 @@
         <PackageReference Condition="'$(TargetFramework)' == 'net8.0-windows'" Include="System.CodeDom" Version="10.0.5" />
     </ItemGroup>
 
-    <Target Name="Deploy" AfterTargets="AfterBuild">
+    <Target Name="Deploy" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
         <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
     </Target>

@@ -531,6 +531,39 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void CaptureViewForwardsTheDisplayCameraAndSectionArguments() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
+
+        Serve(ToolCall(1, "capture_view", new JObject {
+            ["view"] = "3d",
+            ["detail_level"] = "fine",
+            ["display_style"] = "hidden_line",
+            ["eye"] = new JArray(1, 2, 3),
+            ["target"] = new JArray(4, 5, 6),
+            ["section"] = new JObject { ["origin"] = new JArray(0, 0, 4), ["normal"] = new JArray(0, 0, -1), ["depth"] = 3 },
+        }));
+
+        var capture = host.RequestsFor("capture").Single()["params"];
+        Assert.Equal("fine", capture.Value<string>("detail_level"));
+        Assert.Equal("hidden_line", capture.Value<string>("display_style"));
+        Assert.Equal(new[] { 1, 2, 3 }, capture["eye"].Select(value => value.Value<int>()));
+        Assert.Equal(new[] { 4, 5, 6 }, capture["target"].Select(value => value.Value<int>()));
+        Assert.Equal(-1, capture["section"]["normal"][2].Value<int>());
+        Assert.Equal(3, capture["section"].Value<int>("depth"));
+    }
+
+    [Fact]
+    public void CaptureViewAdvertisesTheNewOptionalArguments() {
+        var tools = (JArray)Single(Request(1, "tools/list"))["result"]["tools"];
+        var schema = tools.Single(tool => tool.Value<string>("name") == "capture_view")["inputSchema"];
+
+        var properties = (JObject)schema["properties"];
+        foreach (var name in new[] { "detail_level", "display_style", "eye", "target", "section" })
+            Assert.True(properties.ContainsKey(name), name);
+        Assert.Empty((JArray)schema["required"] ?? new JArray());
+    }
+
+    [Fact]
     public void ACaptureIsReturnedAsAnImageBlockWithoutRepeatingTheData() {
         host.Handler = request => FakeAgentHost.Result(request, new JObject {
             ["image_base64"] = "QUJD",
@@ -572,15 +605,57 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
-    public void HostErrorsKeepTheirTypeAndAMalformedAnswerBecomesAServerError() {
+    public void HostErrorsKeepTheirTypeAndAnUnreadableAnswerIsAnUnknownOutcomeWithTheRequestId() {
         host.Handler = request => FakeAgentHost.Failure(request, "no_active_document", "Open a project first");
         var hostError = Single(ToolCall(1, "get_context"));
-        host.RawResponse = "this is not json";
-        var malformed = Single(ToolCall(2, "get_context"));
+        host.RawResponse = "{\"jsonrpc\":\"2.0\",\"id\":\"req-";
+        var unreadable = Single(ToolCall(2, "get_context"));
 
         Assert.Equal("no_active_document", Payload(hostError).Value<string>("error"));
         Assert.Equal("Open a project first", Payload(hostError).Value<string>("message"));
-        Assert.Equal("server_error", Payload(malformed).Value<string>("error"));
+        var payload = Payload(unreadable);
+        Assert.Equal("pipe_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.RequestsFor("get_context").Last().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ARefusedRequestTellsTheAgentItDidNotRunAndHowToFindItsRecord() {
+        host.Handler = request => FakeAgentHost.Failure(
+            request, "revit_busy", "Revit did not become idle.",
+            new JObject { ["outcome"] = "not_run", ["run_id"] = "abc123def456" });
+
+        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("revit_busy", payload.Value<string>("error"));
+        Assert.Equal("Revit did not become idle.", payload.Value<string>("message"));
+        Assert.Equal("not_run", payload.Value<string>("outcome"));
+        Assert.Equal("abc123def456", payload.Value<string>("run_id"));
+        Assert.Equal(host.Requests.Single().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ALostAnswerIsReportedAsAnUnknownOutcomeWithTheRequestId() {
+        host.Handler = request => null;
+
+        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+
+        var payload = Payload(response);
+        Assert.Equal("pipe_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.Requests.Single().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ARecordedRunCanBeReadByTheRequestIdOfItsRequest() {
+        host.AddRun("abc123def456", response: "{\"status\":\"not_run\",\"decision\":\"not_run\"}", script: "x = 1", requestId: "req-0123456789ab");
+
+        var run = Payload(Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "req-0123456789ab" })));
+
+        Assert.Equal("not_run", run.Value<string>("status"));
+        Assert.Equal("x = 1", run.Value<string>("script"));
     }
 
     [Fact]

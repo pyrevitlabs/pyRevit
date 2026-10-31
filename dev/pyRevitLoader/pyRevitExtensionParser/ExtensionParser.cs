@@ -477,9 +477,8 @@ namespace pyRevitExtensionParser
 
             // skip disabled extensions before walking the component tree
             var extConfig = GetConfig().ParseExtensionByName(extName);
-            if (extConfig != null && extConfig.Disabled)
-                return null;
-            if (extConfig == null && !IsExtensionDefaultEnabled(extDir))
+            var disabled = extConfig?.Disabled ?? !IsExtensionDefaultEnabled(extDir);
+            if (disabled)
                 return null;
 
             var bundlePath = Path.Combine(extDir, "bundle.yaml");

@@ -165,9 +165,7 @@ def _store_token(section_name, token):
         credentials.delete_credential(section_name)
         return False
 
-    credentials.set_credential(
-        section_name, credentials.DEFAULT_TOKEN_USERNAME, token
-    )
+    credentials.set_credential(section_name, credentials.DEFAULT_TOKEN_USERNAME, token)
 
     from pyrevit.userconfig import user_config
 
@@ -229,7 +227,7 @@ class ExtensionPackageListItem:
         if self.ext_pkg.is_installed:
             self.Status = (
                 self.locale.get_locale_string("Extension.Enabled")
-                if not self.ext_pkg.config.disabled
+                if self.ext_pkg.is_enabled
                 else self.locale.get_locale_string("Extension.Disabled")
             )
 
@@ -417,7 +415,7 @@ class ExtensionsWindow(forms.WPFWindow):
                     self.show_element(self.ext_remove_b)
 
                 # Action Button: Toggle (Enable / Disable)
-                self._update_toggle_button(enable=ext_pkg_item.ext_pkg.config.disabled)
+                self._update_toggle_button(enable=not ext_pkg_item.ext_pkg.is_enabled)
             else:
                 self.hide_element(self.ext_toggle_b, self.ext_remove_b)
         elif len(ext_pkg_items) > 1:
@@ -426,12 +424,12 @@ class ExtensionsWindow(forms.WPFWindow):
             if any([not x.ext_pkg.is_installed for x in ext_pkg_items]):
                 self.hide_element(self.ext_toggle_b)
             else:
-                all_disabled = [x.ext_pkg.config.disabled for x in ext_pkg_items]
+                all_disabled = [not x.ext_pkg.is_enabled for x in ext_pkg_items]
                 if all(all_disabled):
                     self._update_toggle_button(enable=True, multiple=True)
                     return
 
-                all_enabled = [not x.ext_pkg.config.disabled for x in ext_pkg_items]
+                all_enabled = [x.ext_pkg.is_enabled for x in ext_pkg_items]
                 if all(all_enabled):
                     self._update_toggle_button(enable=False, multiple=True)
                     return
@@ -708,9 +706,7 @@ class ExtensionsWindow(forms.WPFWindow):
                     dest_path = _get_default_ext_dir()
                 token = self.custom_token_pb.Password.strip()
                 if token:
-                    _store_token(
-                        self.selected_pkg.ext_pkg.config_section_name, token
-                    )
+                    _store_token(self.selected_pkg.ext_pkg.config_section_name, token)
                 extpkgs.install(self.selected_pkg.ext_pkg, dest_path)
                 _ensure_path_registered(dest_path)
                 self._refresh_extension_list()

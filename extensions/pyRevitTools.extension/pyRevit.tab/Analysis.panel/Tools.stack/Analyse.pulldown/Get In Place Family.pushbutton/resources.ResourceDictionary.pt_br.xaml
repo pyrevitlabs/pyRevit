@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="found_count">Famílias no local encontradas: {}</sys:String>
+    <sys:String x:Key="column_element">Elemento</sys:String>
+    <sys:String x:Key="column_category">Categoria</sys:String>
+    <sys:String x:Key="column_family">Família</sys:String>
+    <sys:String x:Key="transaction_name">Isolar famílias no local</sys:String>
+    <sys:String x:Key="transaction_reset_isolation">Redefinir ocultar/isolar temporário</sys:String>
+    <sys:String x:Key="transaction_isolate">Isolar</sys:String>
+    <sys:String x:Key="no_inplace_families">Nenhuma família no local foi encontrada neste projeto.</sys:String>
+</ResourceDictionary>

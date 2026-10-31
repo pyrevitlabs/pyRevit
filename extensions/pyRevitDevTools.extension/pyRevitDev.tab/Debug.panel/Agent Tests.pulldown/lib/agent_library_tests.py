@@ -27,6 +27,7 @@ SHIPPED_SKILLS = (
     "drawings",
     "extension-authoring",
     "family-editing",
+    "family-geometry",
     "modeling",
     "pyrevit-library",
     "revit-files",
@@ -292,6 +293,244 @@ class AutomationTests(TestCase):
                 engine=engine,
             )["error"]
             self.assertEqual("PyRevitException", error["type"], engine)
+
+
+FAMILY_HELPERS_SCRIPT = """
+import os
+from pyrevit import PyRevitException
+from pyrevit.revit.db import create, query, update
+
+ENGLISH_TEMPLATES = ("Metric Generic Model.rft", "Generic Model.rft")
+
+
+def english_templates():
+    return sorted(
+        os.path.join(folder, name)
+        for folder, _, files in os.walk(app.FamilyTemplatePath)
+        for name in files
+        if name in ENGLISH_TEMPLATES
+    )
+
+
+def is_unhosted_generic_model(path):
+    scratch = app.NewFamilyDocument(path)
+    try:
+        family = scratch.OwnerFamily
+        generic_model = DB.ElementId(DB.BuiltInCategory.OST_GenericModel)
+        return (
+            family.FamilyCategory.Id == generic_model
+            and family.FamilyPlacementType == DB.FamilyPlacementType.OneLevelBased
+        )
+    finally:
+        scratch.Close(False)
+
+
+def localized_templates():
+    language = str(app.Language)
+    for folder, _, files in sorted(os.walk(app.FamilyTemplatePath)):
+        folder_name = os.path.basename(folder.rstrip("/" + os.sep))
+        if not folder_name or folder_name.split("-")[0] not in language:
+            continue
+        names = sorted(
+            (n for n in files if n.lower().endswith(".rft")),
+            key=lambda n: (len(n), n),
+        )
+        for name in names:
+            if is_unhosted_generic_model(os.path.join(folder, name)):
+                return [os.path.join(folder, name)]
+    return []
+
+
+def message_of(action):
+    try:
+        action()
+    except PyRevitException as ex:
+        return str(ex)
+    return None
+
+
+def add_length_parameter(fm, name):
+    if hasattr(DB, "GroupTypeId"):
+        return fm.AddParameter(name, DB.GroupTypeId.Geometry, DB.SpecTypeId.Length, False)
+    return fm.AddParameter(name, DB.BuiltInParameterGroup.PG_GEOMETRY, DB.ParameterType.Length, False)
+
+
+def floor_plan(fam_doc):
+    return [
+        v for v in DB.FilteredElementCollector(fam_doc).OfClass(DB.ViewPlan)
+        if not v.IsTemplate and v.ViewType == DB.ViewType.FloorPlan
+    ][0]
+
+
+def reference_rules(fam_doc):
+    plan = floor_plan(fam_doc)
+    reference_of = lambda plane: plane.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).AsInteger()
+    t = DB.Transaction(fam_doc, "Reference rules")
+    try:
+        t.Start()
+        first = create.create_reference_plane("First", (-1, -2), (-1, 2), plan, reference="left", doc=fam_doc)
+        create.create_reference_plane("Second", (-3, -2), (-3, 2), plan, reference="left", doc=fam_doc)
+        found = {
+            "left_owner": query.get_reference_plane("left", doc=fam_doc).Name,
+            "left_taken_from_first": reference_of(first),
+        }
+        create.create_reference_plane("Strong 1", (-4, -2), (-4, 2), plan, reference="strong", doc=fam_doc)
+        create.create_reference_plane("Strong 2", (-5, -2), (-5, 2), plan, reference="strong", doc=fam_doc)
+        found["ambiguous_reference"] = message_of(lambda: query.get_reference_plane("strong", doc=fam_doc))
+        return found
+    finally:
+        if t.GetStatus() == DB.TransactionStatus.Started:
+            t.RollBack()
+
+
+def build_box(fam_doc):
+    fm = fam_doc.FamilyManager
+    plan = floor_plan(fam_doc)
+    centre = query.get_reference_plane("center_left_right", doc=fam_doc)
+    found = {}
+    t = DB.Transaction(fam_doc, "Build box")
+    try:
+        t.Start()
+        width = add_length_parameter(fm, "Width")
+        fm.NewType("Default")
+        fm.Set(width, 2.0)
+        left = create.create_reference_plane("Left", (-1, -2), (-1, 2), plan, reference="left", doc=fam_doc)
+        right = create.create_reference_plane("Right", (1, -2), (1, 2), plan, reference="right", doc=fam_doc)
+        fam_doc.Regenerate()
+        found["reference"] = left.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).AsInteger()
+        found["centre_reference"] = centre.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).AsInteger()
+        found["unknown_reference"] = message_of(lambda: query.get_reference_plane("middle", doc=fam_doc))
+        found["missing_reference"] = message_of(lambda: query.get_reference_plane("top", doc=fam_doc))
+        found["found_left"] = query.get_reference_plane("left", doc=fam_doc).Name
+        found["three_plane_label"] = message_of(
+            lambda: create.create_labelled_dimension(
+                plan, [left, centre, right], (-1, -3), (1, -3), label=width, doc=fam_doc
+            )
+        )
+        found["two_plane_equal"] = message_of(
+            lambda: create.create_labelled_dimension(
+                plan, [left, right], (-1, -3), (1, -3), equal_segments=True, doc=fam_doc
+            )
+        )
+        create.create_labelled_dimension(plan, [left, right], (-1, -1.5), (1, -1.5), label=width, doc=fam_doc)
+        create.create_labelled_dimension(
+            plan, [left, centre, right], (-1, -2.5), (1, -2.5),
+            equal_segments=True, doc=fam_doc,
+        )
+        level = DB.FilteredElementCollector(fam_doc).OfClass(DB.Level).FirstElement()
+        sketch_plane = DB.SketchPlane.Create(fam_doc, level.GetPlaneReference())
+        profile = DB.CurveArrArray()
+        profile.Append(create.create_curve_array([(-1, -0.5), (1, -0.5), (1, 0.5), (-1, 0.5)]))
+        extrusion = fam_doc.FamilyCreate.NewExtrusion(True, profile, sketch_plane, 3.0)
+        fam_doc.Regenerate()
+        found["aligned"] = sorted(create.align_faces_to_planes(extrusion, plan, [left, right], doc=fam_doc))
+        found["formula_error"] = message_of(lambda: update.set_formula(fm, width, "Depth <= 5"))
+        t.Commit()
+
+        flex = DB.Transaction(fam_doc, "Flex")
+        try:
+            flex.Start()
+            fm.Set(width, 4.0)
+            fam_doc.Regenerate()
+            flex.Commit()
+        except Exception:
+            if flex.GetStatus() == DB.TransactionStatus.Started:
+                flex.RollBack()
+            raise
+        box = extrusion.get_BoundingBox(None)
+        found["width_after_flex"] = round(box.Max.X - box.Min.X, 3)
+    except Exception:
+        if t.GetStatus() == DB.TransactionStatus.Started:
+            t.RollBack()
+        raise
+    return found
+
+
+def load_into_project(fam_doc, second_doc, project):
+    out = {}
+    family = create.load_family_document(fam_doc, doc=project, name="Helper Box")
+    out["loaded_name"] = family.Name
+    out["duplicate_name"] = message_of(
+        lambda: create.load_family_document(second_doc, doc=project, name="Helper Box")
+    )
+    create.load_family_document(second_doc, doc=project)
+    out["overwrite_refusal"] = message_of(
+        lambda: create.load_family_document(second_doc, doc=project, name="Other Box")
+    )
+    family_names = sorted(
+        f.Name for f in DB.FilteredElementCollector(project).OfClass(DB.Family)
+    )
+    out["existing_family_survived"] = second_doc.Title in family_names
+    out["target_left_open_transaction"] = project.IsModifiable
+    out["families_after_refusal"] = [
+        name for name in family_names if name in ("Helper Box", "Other Box")
+    ]
+    return out
+
+
+def run_template(template):
+    units = DB.UnitSystem.Imperial if "Imperial" in template else DB.UnitSystem.Metric
+    fam_doc = second_doc = project = None
+    try:
+        fam_doc = app.NewFamilyDocument(template)
+        second_doc = app.NewFamilyDocument(template)
+        project = app.NewProjectDocument(units)
+        out = build_box(fam_doc)
+        out.update(reference_rules(second_doc))
+        out.update(load_into_project(fam_doc, second_doc, project))
+        return out
+    finally:
+        for opened in (fam_doc, second_doc, project):
+            if opened is not None:
+                opened.Close(False)
+
+
+templates = english_templates() or localized_templates()
+result = dict(
+    (os.path.basename(os.path.dirname(t)) + "/" + os.path.basename(t), run_template(t))
+    for t in templates
+)
+"""
+
+
+class FamilyHelperTests(TestCase):
+    """The family authoring helpers, run in scratch family documents on both engines."""
+
+    def test_family_box_follows_its_parameters_and_helpers_refuse_bad_input(self):
+        """A family built with the helpers flexes, and the helpers refuse bad input cleanly.
+
+        Runs for every Generic Model template it can find (metric and imperial in
+        English Revit, the template of the Revit language otherwise), so units and
+        language folders are covered by whatever the installation has.
+        """
+        for engine in ENGINES:
+            runs = run(FAMILY_HELPERS_SCRIPT, engine=engine)["result"]
+            if not runs:
+                self.skipTest("No unhosted Generic Model family template found.")
+            for template, result in runs.items():
+                label = "{} {}".format(engine, template)
+                self.assertEqual(0, result["reference"], label)
+                self.assertEqual(1, result["centre_reference"], label)
+                self.assertEqual("Left", result["found_left"], label)
+                self.assertIn("one of", result["unknown_reference"], label)
+                self.assertIn("found 0", result["missing_reference"], label)
+                self.assertEqual("Second", result["left_owner"], label)
+                self.assertEqual(12, result["left_taken_from_first"], label)
+                self.assertIn("found 2", result["ambiguous_reference"], label)
+                self.assertEqual(["Left", "Right"], result["aligned"], label)
+                self.assertAlmostEqual(4.0, result["width_after_flex"], 3, label)
+                self.assertIn("separate dimension", result["three_plane_label"], label)
+                self.assertIn("at least three", result["two_plane_equal"], label)
+                self.assertIn("'Width'", result["formula_error"], label)
+                self.assertIn("not(a > b)", result["formula_error"], label)
+                self.assertEqual("Helper Box", result["loaded_name"], label)
+                self.assertIn("already exists", result["duplicate_name"], label)
+                self.assertIn("would overwrite", result["overwrite_refusal"], label)
+                self.assertTrue(result["existing_family_survived"], label)
+                self.assertFalse(result["target_left_open_transaction"], label)
+                self.assertEqual(
+                    ["Helper Box"], result["families_after_refusal"], label
+                )
 
 
 def _write_skill(root, folder, description, body):

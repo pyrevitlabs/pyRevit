@@ -33,7 +33,9 @@ if selection:
             target_view = vp
 
         target_viewname = revit.query.get_name(target_view)
-        title = target_view.Parameter[DB.BuiltInParameter.VIEW_DESCRIPTION].AsString()
+        title = target_view.get_Parameter(
+            DB.BuiltInParameter.VIEW_DESCRIPTION
+        ).AsString()
         print(
             '\nTarget View: "{}" referenced by:'.format(
                 title if title else target_viewname

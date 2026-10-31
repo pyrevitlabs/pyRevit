@@ -121,84 +121,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
                 throw new AgentException("document_read_only", "The active document is read-only.");
             if (doc != null && doc.IsModifiable)
-                throw new AgentException("revit_busy", "Another transaction is open in the active document.");
+                throw AgentException.NotRun("Another transaction is open in the active document.");
 
-            var highlight = AgentHost.BeginTabHighlight(app, doc, request.Title);
-            try {
-                var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
-                var runDir = AgentPaths.CreateRunDir(runId);
-                File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
-                File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
+            var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
+            var runDir = AgentPaths.CreateRunDir(runId);
+            WriteRequestRecord(runDir, request);
 
-                var warnings = new JArray();
-                var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
-                if (lostBefore != null)
-                    warnings.Add(lostBefore);
+            var warnings = new JArray();
+            var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
+            if (lostBefore != null)
+                warnings.Add(lostBefore);
 
-                AgentHost.RefreshConfigIfChanged();
-                var policyAtStart = ReadPolicy();
+            AgentHost.RefreshConfigIfChanged();
+            var policyAtStart = ReadPolicy();
 
-                var stopwatch = Stopwatch.StartNew();
-                var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
-                var response = new JObject {
-                    ["run_id"] = runId,
-                    ["run_dir"] = runDir,
-                    ["mode"] = request.ModeName,
-                    ["title"] = request.Title,
-                };
-
-                var openAtStart = AgentDocuments.Snapshot(app.Application);
-                var guard = new AgentRunGuard(app, doc);
-                using (guard) {
-                    try {
-                        guard.Arm("Agent: " + request.Title);
-                        var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
-
-                        var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;
-                        if (guard.ErrorRollbacks > 0 && !context.HasError)
-                            context.SetError(
-                                "revit_failure",
-                                $"Revit rolled back {guard.ErrorRollbacks} transaction(s) because of errors: "
-                                + $"{guard.FirstErrorDescription} See 'failures' for every message. Fix the cause "
-                                + "(for example an opening wider than its host wall) and run again.",
-                                null);
-                        var changes = doc != null ? guard.Changes.Describe(doc, MaxChangeSamples) : guard.Changes.Summarize();
-                        var otherDocuments = guard.DescribeOtherDocuments();
-                        if (otherDocuments.Count > 0)
-                            changes["other_documents"] = otherDocuments;
-                        AgentHost.RefreshConfigIfChanged();
-                        var verdict = AgentRunDecision.Decide(new AgentRunFacts {
-                            Mode = request.Mode,
-                            HasDocument = doc != null,
-                            TransactionLeftOpen = transactionLeftOpen,
-                            ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
-                            ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
-                            HasChanges = !guard.Changes.IsEmpty,
-                            Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
-                        });
-                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight);
-
-                        var approval = AgentRunDecision.Approval(verdict);
-                        if (approval != null)
-                            response["approval"] = approval;
-                        response["status"] = AgentRunDecision.Status(verdict);
-                        response["decision"] = AgentRunDecision.Decision(verdict);
-                        response["exit_code"] = exitCode;
-                        response["changes"] = changes;
-                        response["failures"] = guard.Failures;
-                        response["dialogs"] = guard.Dialogs;
-                        response["blocked"] = guard.Blocked;
-                    }
-                    catch (Exception ex) {
-                        logger.Error(ex, "Agent run {0} failed in the host", runId);
-                        context.SetError("host_error", ex.Message, ex.ToString());
-                        response["status"] = "error";
-                        response["decision"] = "rolled_back";
-                        response["failures"] = guard.Failures;
-                        response["dialogs"] = guard.Dialogs;
-                        response["blocked"] = guard.Blocked;
-                    }
-                }
+            var stopwatch = Stopwatch.StartNew();
+            var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
+            var response = new JObject {
+                ["run_id"] = runId,
+                ["run_dir"] = runDir,
+                ["request_id"] = request.RequestId,
+                ["mode"] = request.ModeName,
+                ["title"] = request.Title,
+            };
 
                 if (doc != null && response.Value<string>("decision") != "committed") {
                     var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
@@ -255,6 +200,45 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             finally {
                 AgentHost.EndTabHighlight(highlight);
+            }
+        }
+
+        private static void WriteRequestRecord(string runDir, AgentRunRequest request) {
+            File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
+            File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
+        }
+
+        /// <summary>
+        /// Leaves a run folder for a request the host refused as <c>revit_busy</c>, with
+        /// <c>status</c> and <c>decision</c> <c>not_run</c>, and adds its <c>run_id</c> and
+        /// <c>run_dir</c> to <paramref name="refusal"/>.
+        /// </summary>
+        /// <remarks>
+        /// Without it a refused request leaves no trace, so a caller that got no answer can not tell
+        /// a request that never ran from one still queued. Best effort: a failure to write the
+        /// record only means the error carries no <c>run_id</c>.
+        /// </remarks>
+        public static void RecordNotRun(AgentRunRequest request, AgentException refusal) {
+            try {
+                var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
+                var runDir = AgentPaths.CreateRunDir(runId);
+                WriteRequestRecord(runDir, request);
+                var record = new JObject {
+                    ["run_id"] = runId,
+                    ["run_dir"] = runDir,
+                    ["request_id"] = request.RequestId,
+                    ["mode"] = request.ModeName,
+                    ["title"] = request.Title,
+                    ["status"] = "not_run",
+                    ["decision"] = "not_run",
+                    ["error"] = new JObject { ["type"] = refusal.Code, ["message"] = refusal.Message },
+                };
+                File.WriteAllText(Path.Combine(runDir, "response.json"), record.ToString(Formatting.Indented), Utf8);
+                refusal.Details["run_id"] = runId;
+                refusal.Details["run_dir"] = runDir;
+            }
+            catch (Exception ex) {
+                logger.Warn("Could not write the record of a refused agent request: {0}", ex.Message);
             }
         }
 

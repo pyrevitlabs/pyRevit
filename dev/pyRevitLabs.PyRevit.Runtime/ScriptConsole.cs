@@ -9,7 +9,6 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
-using Microsoft.Web.WebView2.Core;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
@@ -17,6 +16,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
 using pyRevitLabs.PyRevit;
+using PyRevitLabs.PyRevit.Renderer;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public struct ScriptConsoleDebugger {
@@ -183,7 +183,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private UIApplication _uiApp;
         private ScriptConsoleLowLevelKeyHook _keyHook;
 
-        private readonly ScriptWebView _webView;
+        private readonly IScriptRenderer _renderer;
         private readonly object _pendingLock = new object();
         private readonly StringBuilder _pendingHtml = new StringBuilder();
         private readonly StringBuilder _frozenPendingHtml = new StringBuilder();
@@ -299,9 +299,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // setup unique id for this output window
             OutputUniqueId = Guid.NewGuid().ToString();
 
-            _webView = new ScriptWebView(Dispatcher.CurrentDispatcher);
-            _webView.NavigationStartingRequested += WebView_NavigationStarting;
-            _webView.DocumentReady += WebView_DocumentReady;
+            _renderer = ScriptRendererProvider.Create(Dispatcher.CurrentDispatcher);
+            _renderer.NavigationStartingRequested += WebView_NavigationStarting;
+            _renderer.DocumentReady += WebView_DocumentReady;
+            _renderer.MessageReceived += Renderer_MessageReceived;
 
             InitializeComponent();
         }
@@ -336,9 +337,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             activityBar.Visibility = Visibility.Collapsed;
             Grid.SetRow(activityBar, 0);
 
-            // Add the WebView2 renderer to the Grid
+            // Add the renderer to the Grid
             baseGrid.RowDefinitions.Add(_rendererRow);
-            Grid.SetRow(_webView.Control, baseGrid.RowDefinitions.IndexOf(_rendererRow));
+            Grid.SetRow(_renderer.Control, baseGrid.RowDefinitions.IndexOf(_rendererRow));
 
             // standard input bar
             var stdinRow = new RowDefinition();
@@ -350,7 +351,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // set activity bar and renderer
             baseGrid.Children.Add(activityBar);
-            baseGrid.Children.Add(_webView.Control);
+            baseGrid.Children.Add(_renderer.Control);
             baseGrid.Children.Add(stdinBar);
             this.Content = baseGrid;
 
@@ -423,13 +424,52 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
+        /// Raised for each message the page posts with
+        /// <c>window.chrome.webview.postMessage</c>, on the window's UI thread
+        /// and outside Revit API context. Subscribers are released when the
+        /// window closes.
+        /// </summary>
+        public event EventHandler<RendererMessageReceivedEventArgs> WebMessageReceived;
+
+        /// <summary>
+        /// True when the page can exchange messages with the host, i.e. the
+        /// window renders with WebView2 rather than the plain-text fallback.
+        /// Starts the renderer when necessary but never waits for it, so it is
+        /// safe during session load; a missing runtime or broken deployment is
+        /// known as soon as the renderer starts.
+        ///
+        /// Warning: do not switch this to <see cref="EnsureDocumentReadyBlocking"/>.
+        /// That pumps a nested dispatcher frame, which terminates the host when
+        /// reached from Revit API callbacks during session load.
+        /// </summary>
+        public bool SupportsWebMessages {
+            get {
+                if (ClosedByUser)
+                    return false;
+                EnsureDocumentReady();
+                return _plainTextOutput == null
+                    && _renderer.Failure == RendererFailure.None
+                    && !_renderer.InitializationFailed;
+            }
+        }
+
+        /// <summary>
+        /// Deliver a JSON message to the page's <c>chrome.webview</c> message
+        /// listeners. Returns false when the window cannot deliver messages,
+        /// including while the renderer is starting or the page is navigating.
+        /// </summary>
+        public bool PostWebMessage(string json) {
+            return SupportsWebMessages && _renderer.PostMessage(json);
+        }
+
+        /// <summary>
         /// Chromium runtime version of the renderer. Initializes the renderer
         /// when necessary; 0.0 only if initialization is unavailable.
         /// </summary>
         public Version RendererVersion {
             get {
                 EnsureDocumentReadyBlocking();
-                return Version.TryParse(_webView.BrowserVersion.Split(' ')[0], out var parsed)
+                return Version.TryParse(_renderer.BrowserVersion.Split(' ')[0], out var parsed)
                     ? parsed
                     : new Version(0, 0);
             }
@@ -437,7 +477,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>Engine identity of the renderer, e.g. "WebView2/Chromium".</summary>
         public string RendererEngine {
-            get { return _webView.RuntimeMissing ? "WebView2 (runtime missing)" : "WebView2/Chromium"; }
+            get {
+                switch (_renderer.Failure) {
+                    case RendererFailure.RuntimeMissing:
+                        return "WebView2 (runtime missing)";
+                    case RendererFailure.BrokenDeployment:
+                        return "WebView2 (failed to start)";
+                    default:
+                        return "WebView2/Chromium";
+                }
+            }
         }
 
         /// <summary>
@@ -447,7 +496,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string RendererFullVersion {
             get {
                 EnsureDocumentReadyBlocking();
-                return _webView.BrowserVersion;
+                return _renderer.BrowserVersion;
             }
         }
 
@@ -460,7 +509,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (string.IsNullOrEmpty(javaScript))
                 return string.Empty;
             EnsureDocumentReadyBlocking();
-            var result = _webView.EvalScript(javaScript);
+            var result = _renderer.EvalScript(javaScript);
             return DecodeJsonString(result) ?? result;
         }
 
@@ -472,13 +521,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>Full current document including the html wrapper.</summary>
         public string GetFullHtml() {
             EnsureDocumentReadyBlocking();
-            var html = DecodeJsonString(_webView.EvalScript("document.documentElement.outerHTML"));
+            if (_plainTextOutput != null)
+                return ScriptConsoleConfigs.DOCTYPE
+                       + "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" /></head>"
+                       + "<body><pre>"
+                       + System.Net.WebUtility.HtmlEncode(_plainTextOutput.Text)
+                       + "</pre></body></html>";
+            var html = DecodeJsonString(_renderer.EvalScript("document.documentElement.outerHTML"));
             return ScriptConsoleConfigs.DOCTYPE + (html ?? string.Empty);
         }
 
         internal string GetHeadHtml() {
             EnsureDocumentReadyBlocking();
-            return DecodeJsonString(_webView.EvalScript("(document.head ? document.head.innerHTML : '')"))
+            return DecodeJsonString(_renderer.EvalScript("(document.head ? document.head.innerHTML : '')"))
                 ?? string.Empty;
         }
 
@@ -487,7 +542,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (string.IsNullOrEmpty(url))
                 return;
             EnsureDocumentReadyBlocking();
-            _webView.Navigate(url);
+            _renderer.Navigate(url);
         }
 
         /// <summary>
@@ -528,9 +583,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public void SetupDefaultPage(string styleSheetFilePath = null) {
             _initialStyleSheetPath = styleSheetFilePath ?? GetStyleSheetFile();
-            if (_documentStarted && _webView.Control.CoreWebView2 != null) {
+            if (_documentStarted && _renderer.IsCoreReady) {
                 SyncFlushBlocking();
-                _webView.Navigate(WriteInitialPageFile());
+                _renderer.Navigate(WriteInitialPageFile());
             }
         }
 
@@ -569,8 +624,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 catch {
                 }
             }
-            _webView.EnsureReady(ProvideInitialPageUri);
-            if (_webView.RuntimeMissing && _plainTextOutput == null) {
+            _renderer.EnsureReady(ProvideInitialPageUri);
+            if (_renderer.Failure != RendererFailure.None && _plainTextOutput == null) {
                 var grid = Content as Grid;
                 if (grid == null)
                     return;
@@ -580,15 +635,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     TextWrapping = TextWrapping.Wrap,
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     Margin = new Thickness(12),
-                    Text = "WebView2 Runtime not found.\n"
-                        + "Script output is displayed as plain text. Install the Microsoft Edge "
-                        + "WebView2 Evergreen Runtime, then reopen this window:\n"
-                        + ScriptWebView.RuntimeDownloadUrl + "\n\n"
+                    Text = BuildPlainTextFallbackNotice()
                 };
                 Grid.SetRow(_plainTextOutput, grid.RowDefinitions.IndexOf(_rendererRow));
-                _webView.Control.Visibility = Visibility.Collapsed;
+                _renderer.Control.Visibility = Visibility.Collapsed;
                 grid.Children.Add(_plainTextOutput);
             }
+        }
+
+        /// <summary>
+        /// What the plain-text fallback tells the user. A broken deployment is
+        /// not fixed by installing the Evergreen runtime, so it must not offer
+        /// the download.
+        /// </summary>
+        private string BuildPlainTextFallbackNotice() {
+            if (_renderer.Failure == RendererFailure.BrokenDeployment) {
+                return "The WebView2 components of this pyRevit installation failed to start.\n"
+                    + "Script output is displayed as plain text. Reinstall pyRevit to restore the "
+                    + "output window.\n\n";
+            }
+
+            return "WebView2 Runtime not found.\n"
+                + "Script output is displayed as plain text. Install the Microsoft Edge "
+                + "WebView2 Evergreen Runtime, then reopen this window:\n"
+                + ScriptRendererConsts.RuntimeDownloadUrl + "\n\n";
         }
 
         private string ProvideInitialPageUri() {
@@ -609,7 +679,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var dochead = string.Format(
                 ScriptConsoleConfigs.DOCTYPE + ScriptConsoleConfigs.DOCHead,
                 AppVersion,
-                _webView.BrowserVersion,
+                _renderer.BrowserVersion,
                 cssHref
                 );
             var html = dochead + "<html><body></body></html>";
@@ -640,9 +710,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_frozen)
                 return;
             EnsureDocumentReadyBlocking();
-            _frozenBodyHtml = _webView.RuntimeMissing
+            _frozenBodyHtml = _renderer.Failure != RendererFailure.None
                 ? string.Empty
-                : DecodeJsonString(_webView.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
+                : DecodeJsonString(_renderer.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
             _frozen = true;
             UpdateInlineWaitAnimation();
         }
@@ -660,18 +730,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 snapshot = _frozenBodyHtml ?? string.Empty;
             }
-            if (_webView.RuntimeMissing) {
+            if (_renderer.Failure != RendererFailure.None) {
                 lock (_pendingLock) {
                     _pendingHtml.Append(snapshot);
                 }
             }
             else {
-                _webView.EvalScript("document.body.innerHTML = " + ToJsString(snapshot) + ";");
+                _renderer.EvalScript("document.body.innerHTML = " + ToJsString(snapshot) + ";");
             }
             _frozenBodyHtml = null;
             _frozen = false;
             UpdateInlineWaitAnimation(false);
-            if (_webView.RuntimeMissing)
+            if (_renderer.Failure != RendererFailure.None)
                 QueueFlush();
         }
 
@@ -707,7 +777,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_plainTextOutput != null)
                 _plainTextOutput.Focus();
             else
-                _webView.Control.Focus();
+                _renderer.Control.Focus();
         }
 
         /// <summary>
@@ -791,7 +861,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// it runs inside Revit API callbacks during session load.
         ///
         /// Content arriving before the document is ready stays buffered until
-        /// <see cref="ScriptWebView.DocumentReady"/>; re-queueing instead would
+        /// <see cref="IScriptRenderer.DocumentReady"/>; re-queueing instead would
         /// spin the dispatcher for as long as the core takes to come up.
         /// A missing runtime displays buffered entries as plain text.
         /// </summary>
@@ -809,7 +879,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             EnsureDocumentReady();
 
-            if (_webView.RuntimeMissing) {
+            if (_renderer.Failure != RendererFailure.None) {
                 var plainText = ToPlainText(payload);
                 if (plainText.Length == 0)
                     return;
@@ -825,19 +895,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
-            if (_webView.InitializationFailed) {
+            if (_renderer.InitializationFailed) {
                 ReportOutputLossOnce();
                 return;
             }
 
-            if (!_webView.IsDocumentReady) {
+            if (!_renderer.IsDocumentReady) {
                 lock (_pendingLock) {
                     _pendingHtml.Insert(0, payload);
                 }
                 return;
             }
 
-            _webView.PostScript(BuildInsertEntriesJs(ToJsString(payload)));
+            _renderer.PostScript(BuildInsertEntriesJs(ToJsString(payload)));
         }
 
         internal static string ToPlainText(string html) {
@@ -858,8 +928,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             _outputLossReported = true;
             ScriptRendererLog.Error(
-                "discarding output for this window: runtimeMissing={0} initFailed={1}",
-                _webView.RuntimeMissing, _webView.InitializationFailed);
+                "discarding output for this window: failure={0} initFailed={1}",
+                _renderer.Failure, _renderer.InitializationFailed);
+        }
+
+        private void Renderer_MessageReceived(object sender, RendererMessageReceivedEventArgs e) {
+            var handlers = WebMessageReceived;
+            if (handlers == null)
+                return;
+            foreach (EventHandler<RendererMessageReceivedEventArgs> handler in handlers.GetInvocationList()) {
+                try {
+                    handler(this, e);
+                }
+                catch (Exception ex) {
+                    ScriptRendererLog.Error("web message handler failed. {0}", ex);
+                }
+            }
         }
 
         private void WebView_DocumentReady(object sender, EventArgs e) {
@@ -884,13 +968,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             EnsureDocumentReady();
             lock (_pendingLock) {
-                if (!_webView.IsDocumentReady) {
+                if (!_renderer.IsDocumentReady) {
                     _pendingScripts.Enqueue(javaScript);
                     return;
                 }
             }
 
-            _webView.PostScript(javaScript);
+            _renderer.PostScript(javaScript);
         }
 
         private void FlushPendingScripts() {
@@ -903,7 +987,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             foreach (var pendingScript in pendingScripts)
-                _webView.PostScript(pendingScript);
+                _renderer.PostScript(pendingScript);
         }
 
         /// <summary>
@@ -913,11 +997,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// Warning: for the synchronous API only — DOM reads, freeze, and
         /// injection, which run from user commands and would otherwise silently
         /// drop work posted before the core is up. Never call this from the print
-        /// path; see <see cref="ScriptWebView.WaitUntilReady"/>.
+        /// path; see <see cref="IScriptRenderer.WaitUntilReady"/>.
         /// </summary>
         internal void EnsureDocumentReadyBlocking() {
             EnsureDocumentReady();
-            _webView.WaitUntilReady();
+            _renderer.WaitUntilReady();
             SyncFlushBlocking();
         }
 
@@ -1038,7 +1122,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return inputText;
         }
 
-        private void WebView_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e) {
+        private void WebView_NavigationStarting(object sender, RendererNavigationStartingEventArgs e) {
             var inputUrl = e.Uri ?? string.Empty;
             if (inputUrl.StartsWith("about:", StringComparison.InvariantCultureIgnoreCase))
                 return;
@@ -1222,10 +1306,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var outputWindow = (ScriptConsole)sender;
 
             var grid = (Grid)outputWindow.Content;
-            grid.Children.Remove(outputWindow._webView.Control);
+            grid.Children.Remove(outputWindow._renderer.Control);
             grid.Children.Clear();
 
-            outputWindow._webView.Dispose();
+            outputWindow._renderer.Dispose();
+            outputWindow.WebMessageReceived = null;
             outputWindow.Content = null;
 
             if (outputWindow._outputHtmlPath != null) {
@@ -1282,7 +1367,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             try {
                 Dispatcher.Invoke(new Action(() => {
                     var selection = _plainTextOutput?.SelectedText ?? DecodeJsonString(
-                        _webView.EvalScript("window.getSelection().toString()"));
+                        _renderer.EvalScript("window.getSelection().toString()"));
                     if (!string.IsNullOrEmpty(selection))
                         Clipboard.SetText(selection);
                 }));
@@ -1294,7 +1379,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal bool RendererHasFocus {
-            get { return _plainTextOutput?.IsKeyboardFocusWithin ?? _webView.Control.IsKeyboardFocusWithin; }
+            get { return _plainTextOutput?.IsKeyboardFocusWithin ?? _renderer.Control.IsKeyboardFocusWithin; }
         }
 
         internal static string ToJsString(string value) {
@@ -1430,12 +1515,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void PrintButton_Click(object sender, RoutedEventArgs e) {
-            _webView.ShowPrintUi();
+            _renderer.ShowPrintUi();
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e) {
             SyncFlushBlocking();
-            var text = _plainTextOutput?.Text ?? DecodeJsonString(_webView.EvalScript("document.body.innerText"));
+            var text = _plainTextOutput?.Text ?? DecodeJsonString(_renderer.EvalScript("document.body.innerText"));
             Clipboard.SetText(text ?? string.Empty);
             var notif = new ToolTip() { Content = "Copied to Clipboard" };
             notif.StaysOpen = false;

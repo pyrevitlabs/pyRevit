@@ -24,7 +24,7 @@ def who_reloaded_keynotes():
                     and "" != path
                 ):
                     ktable = revit.doc.GetElement(extRef.GetReferencingId())
-                    editedByParam = ktable.Parameter[DB.BuiltInParameter.EDITED_BY]
+                    editedByParam = ktable.get_Parameter(DB.BuiltInParameter.EDITED_BY)
                     if editedByParam and editedByParam.AsString() != "":
                         forms.alert(
                             "Keynote table has been reloaded by:\n"

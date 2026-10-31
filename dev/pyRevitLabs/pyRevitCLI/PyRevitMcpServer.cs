@@ -170,7 +170,7 @@ namespace pyRevitCLI {
                         : ToolResult(payload.Type == JTokenType.String ? payload.ToString() : payload.ToString(Formatting.None), isError);
                 }
                 catch (AgentClientException ex) {
-                    result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
+                    result = ToolResult(ex.ToJson().ToString(Formatting.None), true);
                 }
                 catch (InvalidCastException) {
                     result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument type." }.ToString(Formatting.None), true);
@@ -442,6 +442,16 @@ namespace pyRevitCLI {
             };
         }
 
+        private static JObject PointProperty(string description) {
+            return new JObject {
+                ["type"] = "array",
+                ["items"] = new JObject { ["type"] = "number" },
+                ["minItems"] = 3,
+                ["maxItems"] = 3,
+                ["description"] = description,
+            };
+        }
+
         private static JObject InputsProperty() {
             return new JObject {
                 ["type"] = "object",
@@ -611,8 +621,10 @@ namespace pyRevitCLI {
                         + "exactly as the user sees it, including selection and temporary isolate; it fails with view_obscured "
                         + "when another application covers the view. view '3d' renders a temporary "
                         + "3D view of model categories only, framed by a section box around the whole model or around 'elements', "
-                        + "seen from 'direction' (never saved). The image is also saved under "
-                        + "%APPDATA%\\pyRevit\\agent\\captures for the user.",
+                        + "seen from 'direction' (never saved); give 'eye' and 'target' for a perspective camera instead, "
+                        + "or 'section' for a temporary section, elevation or plan cut at a height. 'detail_level' and "
+                        + "'display_style' override the view's own for this capture only, also for named views. "
+                        + "The image is also saved under %APPDATA%\\pyRevit\\agent\\captures for the user.",
                         new JObject {
                             ["view"] = new JObject {
                                 ["type"] = "string",
@@ -635,7 +647,33 @@ namespace pyRevitCLI {
                             ["elements"] = new JObject {
                                 ["type"] = "array",
                                 ["items"] = new JObject { ["type"] = "integer" },
-                                ["description"] = "view '3d' only: element ids to frame; default is the whole model.",
+                                ["description"] = "view '3d' only: element ids to frame; default is the whole model. Ignored with 'eye' and 'target'.",
+                            },
+                            ["detail_level"] = new JObject {
+                                ["type"] = "string",
+                                ["enum"] = new JArray("coarse", "medium", "fine"),
+                                ["description"] = "Detail level for this capture only (view '3d' default: medium; named views keep their own). Not for mode 'screen'.",
+                            },
+                            ["display_style"] = new JObject {
+                                ["type"] = "string",
+                                ["enum"] = new JArray("wireframe", "hidden_line", "shaded", "shaded_edges"),
+                                ["description"] = "Display style for this capture only (view '3d' default: shaded_edges; named views keep their own). Not for mode 'screen'.",
+                            },
+                            ["eye"] = PointProperty("view '3d' only: camera position in model coordinates, feet. Needs 'target'. Renders a perspective view with no section box."),
+                            ["target"] = PointProperty("view '3d' only: the point the camera looks at, feet. Needs 'eye'."),
+                            ["section"] = new JObject {
+                                ["type"] = "object",
+                                ["description"] = "view '3d' only: a temporary section instead of the 3D views, framed on 'elements' or the whole model. "
+                                    + "'normal' is the direction the view looks along: horizontal gives a section or elevation, [0,0,-1] a plan cut at origin z.",
+                                ["properties"] = new JObject {
+                                    ["origin"] = PointProperty("A point on the cutting plane, feet."),
+                                    ["normal"] = PointProperty("Look direction: horizontal, or [0,0,-1] for a plan."),
+                                    ["depth"] = new JObject {
+                                        ["type"] = "number",
+                                        ["description"] = "How far the view sees past the plane, feet. Default reaches the far side of the framed elements.",
+                                    },
+                                },
+                                ["required"] = new JArray("origin", "normal"),
                             },
                             ["revit"] = RevitProperty(),
                         }),
@@ -645,6 +683,11 @@ namespace pyRevitCLI {
                         ["width"] = arguments["width"],
                         ["direction"] = arguments["direction"],
                         ["elements"] = arguments["elements"],
+                        ["detail_level"] = arguments["detail_level"],
+                        ["display_style"] = arguments["display_style"],
+                        ["eye"] = arguments["eye"],
+                        ["target"] = arguments["target"],
+                        ["section"] = arguments["section"],
                     })),
 
                 new McpTool("run_query", readOnly: false, new[] { "script" },
@@ -675,7 +718,7 @@ namespace pyRevitCLI {
                     arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify")),
 
                 new McpTool("get_run", readOnly: true, new[] { "run_id" },
-                    () => ("Read a recorded run by run_id: response, script, and pages of a result too large to return inline (use offset/length).",
+                    () => ("Read a recorded run by run_id, or by the request_id of a request that got no answer: response, script, and pages of a result too large to return inline (use offset/length).",
                         new JObject {
                             ["run_id"] = new JObject { ["type"] = "string" },
                             ["offset"] = new JObject { ["type"] = "integer", ["description"] = "Character offset into a truncated result." },
