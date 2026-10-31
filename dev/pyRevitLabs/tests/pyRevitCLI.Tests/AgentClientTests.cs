@@ -309,6 +309,7 @@ public class AgentClientTests : IDisposable {
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(instance, "run", new JObject { ["script"] = "secret" }));
 
         Assert.Equal("pipe_error", error.Code);
+        Assert.Equal(AgentOutcome.NotSent, error.Outcome);
         Assert.Contains("served by another process", error.Message);
         Assert.Empty(host.Requests);
     }
@@ -321,6 +322,104 @@ public class AgentClientTests : IDisposable {
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(instance, "ping"));
 
         Assert.Equal("revit_busy", error.Code);
+    }
+
+    [Fact]
+    public void EveryCallGoesOutUnderItsOwnRequestId() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject());
+
+        PyRevitAgentClient.Call(ThisHost(), "ping");
+        PyRevitAgentClient.Call(ThisHost(), "ping");
+
+        var ids = host.Requests.Select(request => request.Value<string>("id")).ToList();
+        Assert.All(ids, id => Assert.Matches("^req-[0-9a-f]{12}$", id));
+        Assert.Equal(2, ids.Distinct().Count());
+    }
+
+    [Fact]
+    public void ARefusedRequestReportsItsOutcomeItsRequestIdAndItsRunRecord() {
+        host.Handler = request => FakeAgentHost.Failure(
+            request, "revit_busy", "Revit did not become idle within 30s.",
+            new JObject { ["outcome"] = "not_run", ["run_id"] = "abc123def456" });
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "run"));
+
+        Assert.Equal("revit_busy", error.Code);
+        Assert.Equal(AgentOutcome.NotRun, error.Outcome);
+        Assert.Equal(host.Requests.Single().Value<string>("id"), error.RequestId);
+        Assert.Equal("abc123def456", error.RunId);
+        Assert.Equal("Revit did not become idle within 30s.", error.HostMessage);
+        Assert.Contains(error.RequestId, error.Message);
+        Assert.Contains("pyrevit agent show abc123def456", error.Message);
+    }
+
+    [Fact]
+    public void ARefusalWithoutARunRecordNamesTheRequestButOffersNoLookup() {
+        host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "busy", new JObject { ["outcome"] = "not_run" });
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "get_context"));
+
+        Assert.Null(error.RunId);
+        Assert.EndsWith("(request " + error.RequestId + ")", error.Message);
+        Assert.DoesNotContain("agent show", error.Message);
+    }
+
+    [Fact]
+    public void AnErrorThatSaysNothingAboutTheOutcomeKeepsItsMessageUnchanged() {
+        host.Handler = request => FakeAgentHost.Failure(request, "no_active_document", "Open a project first");
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "run"));
+
+        Assert.Null(error.Outcome);
+        Assert.Equal("Open a project first", error.Message);
+    }
+
+    [Fact]
+    public void ALostAnswerAfterSendingIsAnUnknownOutcomeThatSaysSo() {
+        host.Handler = request => null;
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "run"));
+
+        Assert.Equal("pipe_error", error.Code);
+        Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+        Assert.Equal(host.Requests.Single().Value<string>("id"), error.RequestId);
+        Assert.Contains("outcome is unknown", error.Message);
+        Assert.Contains("pyrevit agent show " + error.RequestId, error.Message);
+    }
+
+    [Fact]
+    public void NobodyListeningMeansTheRequestWasNotSent() {
+        PyRevitAgentClient.ConnectTimeoutMs = 200;
+        var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = "pyrevit-nobody-" + Guid.NewGuid().ToString("N"), RevitVersion = "2090" };
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(instance, "ping"));
+
+        Assert.Equal("revit_busy", error.Code);
+        Assert.Equal(AgentOutcome.NotSent, error.Outcome);
+        Assert.Contains("not sent", error.HostMessage);
+    }
+
+    [Fact]
+    public void ARequestIdFindsTheRunTheHostRecordedForIt() {
+        var other = host.AddRun("111111111111", requestId: "req-aaaaaaaaaaaa", stamp: "20260101-000001");
+        var wanted = host.AddRun("222222222222", requestId: "req-bbbbbbbbbbbb", stamp: "20260101-000002");
+
+        Assert.Equal(wanted, PyRevitAgentClient.FindRunDir("req-bbbbbbbbbbbb"));
+        Assert.Equal(other, PyRevitAgentClient.FindRunDirByRequestId("req-aaaaaaaaaaaa"));
+    }
+
+    [Theory]
+    [InlineData("req-cccccccccccc")]
+    [InlineData("req-*")]
+    [InlineData("req-..")]
+    [InlineData("req-AAAAAAAAAAAA")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void AnUnknownOrMalformedRequestIdFindsNothing(string requestId) {
+        host.AddRun("111111111111", requestId: "req-aaaaaaaaaaaa");
+
+        Assert.Null(PyRevitAgentClient.FindRunDirByRequestId(requestId));
+        Assert.Null(PyRevitAgentClient.FindRunDir(requestId));
     }
 
     [Fact]

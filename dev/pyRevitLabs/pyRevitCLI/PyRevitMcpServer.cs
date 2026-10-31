@@ -170,7 +170,7 @@ namespace pyRevitCLI {
                         : ToolResult(payload.Type == JTokenType.String ? payload.ToString() : payload.ToString(Formatting.None), isError);
                 }
                 catch (AgentClientException ex) {
-                    result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
+                    result = ToolResult(ex.ToJson().ToString(Formatting.None), true);
                 }
                 catch (InvalidCastException) {
                     result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument type." }.ToString(Formatting.None), true);
@@ -718,7 +718,7 @@ namespace pyRevitCLI {
                     arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify")),
 
                 new McpTool("get_run", readOnly: true, new[] { "run_id" },
-                    () => ("Read a recorded run by run_id: response, script, and pages of a result too large to return inline (use offset/length).",
+                    () => ("Read a recorded run by run_id, or by the request_id of a request that got no answer: response, script, and pages of a result too large to return inline (use offset/length).",
                         new JObject {
                             ["run_id"] = new JObject { ["type"] = "string" },
                             ["offset"] = new JObject { ["type"] = "integer", ["description"] = "Character offset into a truncated result." },

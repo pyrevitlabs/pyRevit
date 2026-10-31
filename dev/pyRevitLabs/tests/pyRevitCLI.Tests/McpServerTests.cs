@@ -617,6 +617,45 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void ARefusedRequestTellsTheAgentItDidNotRunAndHowToFindItsRecord() {
+        host.Handler = request => FakeAgentHost.Failure(
+            request, "revit_busy", "Revit did not become idle.",
+            new JObject { ["outcome"] = "not_run", ["run_id"] = "abc123def456" });
+
+        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("revit_busy", payload.Value<string>("error"));
+        Assert.Equal("Revit did not become idle.", payload.Value<string>("message"));
+        Assert.Equal("not_run", payload.Value<string>("outcome"));
+        Assert.Equal("abc123def456", payload.Value<string>("run_id"));
+        Assert.Equal(host.Requests.Single().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ALostAnswerIsReportedAsAnUnknownOutcomeWithTheRequestId() {
+        host.Handler = request => null;
+
+        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+
+        var payload = Payload(response);
+        Assert.Equal("pipe_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.Requests.Single().Value<string>("id"), payload.Value<string>("request_id"));
+    }
+
+    [Fact]
+    public void ARecordedRunCanBeReadByTheRequestIdOfItsRequest() {
+        host.AddRun("abc123def456", response: "{\"status\":\"not_run\",\"decision\":\"not_run\"}", script: "x = 1", requestId: "req-0123456789ab");
+
+        var run = Payload(Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "req-0123456789ab" })));
+
+        Assert.Equal("not_run", run.Value<string>("status"));
+        Assert.Equal("x = 1", run.Value<string>("script"));
+    }
+
+    [Fact]
     public void ListedInstancesReportWhetherTheyRespond() {
         var responding = Payload(Single(ToolCall(1, "list_revit_instances")));
         host.Handler = request => null;
