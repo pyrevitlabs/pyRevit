@@ -131,6 +131,9 @@ namespace pyRevitLabs.TargetApps.Revit {
             catch { return false; }
         }
 
+        private static readonly Regex FormatYearFinder = new Regex(@"^Format:\s*(?<year>\d{4})\b");
+        private static readonly Regex RecordedBuildFinder = new Regex(@"Build:\s*(?<build>[^\r\n\0]+)");
+
         private Regex buildFieldRegex(string fieldName, string captureId) {
             return new Regex(string.Format(@"{0}(?<{1}>.*$)", fieldName, captureId));
         }
@@ -158,15 +161,16 @@ namespace pyRevitLabs.TargetApps.Revit {
                 }
 
                 // Format: 2019
+                match = FormatYearFinder.Match(line);
+                if (match.Success) {
+                    FormatYear = int.Parse(match.Groups["year"].Value);
+                    logger.Debug("Format: {0}", FormatYear);
+                }
 
                 // Build: 20180806_1515(x64)
                 match = buildFieldRegex("Build: ", "build").Match(line);
-                if (match.Success) {
+                if (match.Success)
                     BuildInfoLine = line;
-                    var revitProduct = RevitProduct.LookupRevitProduct(BuildInfoLine);
-                    if (revitProduct != null)
-                        RevitProduct = revitProduct;
-                }
 
                 // Last Save Path: C:\Users\pyrevitlabs\Desktop\Project1.rvt
                 match = buildFieldRegex("Last Save Path: ", "lastpath").Match(line);
@@ -227,6 +231,23 @@ namespace pyRevitLabs.TargetApps.Revit {
 
                 // Author: Autodesk Revit
             }
+
+            RevitProduct = ResolveModelProduct(BuildInfoLine, FormatYear);
+        }
+
+        private static RevitProduct ResolveModelProduct(string buildInfoLine, int formatYear) {
+            if (buildInfoLine != null) {
+                var formatVersion = formatYear != 0 ? new Version(formatYear, 0) : null;
+                var revitProduct = RevitProduct.LookupRevitProduct(buildInfoLine, productVersion: formatVersion);
+                if (revitProduct != null)
+                    return revitProduct;
+            }
+
+            if (formatYear == 0)
+                return null;
+
+            logger.Debug("Build \"{0}\" is not in the host database. Using file format year {1}.", buildInfoLine, formatYear);
+            return RevitProduct.FromProductYear(formatYear, RevitProductData.ExtractBuildNumberFromString(buildInfoLine ?? string.Empty));
         }
 
         private void ProcessPartAtom(string rawPartAtom) {
@@ -292,6 +313,53 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public string BuildInfoLine { get; private set; } = null;
 
+        /// <summary>
+        /// Product year from the <c>Format:</c> line of BasicFileInfo, or 0 when the file has none.
+        /// </summary>
+        /// <remarks>
+        /// The format year is the Revit release the file was saved in, regardless of build. It is
+        /// what <see cref="RevitProduct"/> falls back to when the build is missing from the host
+        /// database (pre-release builds, or a bare <c>Build: 1515(x64)</c> as Revit 2026 writes).
+        /// </remarks>
+        public int FormatYear { get; private set; } = 0;
+
+        /// <summary>
+        /// Describes the Revit release and build that saved the model, for display.
+        /// </summary>
+        /// <remarks>
+        /// A product resolved only from <see cref="FormatYear"/> is marked as not listed in
+        /// <c>pyrevit-hosts.json</c> and shows the build text as recorded in the file. Without
+        /// any product this is the raw <see cref="BuildInfoLine"/>.
+        /// </remarks>
+        public string CreatedIn {
+            get {
+                if (RevitProduct == null)
+                    return BuildInfoLine;
+                if (RevitProduct.IsListedInHostsDatabase) {
+                    var build = RevitProduct.BuildNumber ?? string.Empty;
+                    if (!string.IsNullOrEmpty(RevitProduct.BuildTarget))
+                        build += string.Format("({0})", RevitProduct.BuildTarget);
+                    return string.IsNullOrEmpty(build)
+                        ? RevitProduct.Name
+                        : string.Format("{0} {1}", RevitProduct.Name, build);
+                }
+
+                var recordedBuild = RecordedBuild;
+                return string.IsNullOrEmpty(recordedBuild)
+                    ? string.Format("{0} (not listed in pyrevit-hosts.json)", RevitProduct.Name)
+                    : string.Format("{0} (build {1}, not listed in pyrevit-hosts.json)", RevitProduct.Name, recordedBuild);
+            }
+        }
+
+        private string RecordedBuild {
+            get {
+                if (BuildInfoLine == null)
+                    return null;
+                var match = RecordedBuildFinder.Match(BuildInfoLine);
+                return match.Success ? match.Groups["build"].Value.Trim() : null;
+            }
+        }
+
         public string CentralModelPath { get; private set; } = null;
 
         public RevitModelFileOpenWorksetConfig OpenWorksetConfig { get; private set; } = 0;
@@ -302,6 +370,16 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public Guid LastReloadLatestUniqueId { get; private set; } = new Guid();
 
+        /// <summary>
+        /// Revit product the model was saved with, or null when neither the build nor the format
+        /// year is known.
+        /// </summary>
+        /// <remarks>
+        /// The build is matched against the host database with <see cref="FormatYear"/> as the
+        /// year hint, since build numbers are shared across releases. An unlisted build resolves to
+        /// a product built from the format year alone, flagged with
+        /// <see cref="RevitProduct.IsListedInHostsDatabase"/> false.
+        /// </remarks>
         public RevitProduct RevitProduct { get; private set; } = null;
 
         public Dictionary<string, string> ProjectInfoProperties { get; private set; }

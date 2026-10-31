@@ -280,7 +280,7 @@ namespace pyRevitCLI {
                         header: "Manage installed and running Revits and addons",
                         commands: new Dictionary<string, string>() {
                             { "killall",                "Kill all running Revits" },
-                            { "fileinfo",               "Delete existing deployment image" },
+                            { "fileinfo",               "Print information about a Revit model file" },
                         },
                         options: new Dictionary<string, string>() {
                             { "<revit_year>",           "Target Revit year (major version)" },
