@@ -10,7 +10,6 @@ from pyrevit import revit, DB
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.coreutils import applocales, escape_for_html
 from pyrevit.framework import List
-from pyrevit.revit import query
 
 output = script.get_output()
 
@@ -42,15 +41,35 @@ def escape_for_output(text):
     return escaped
 
 
-def sync_opening_filter():
-    """Create the selection filter for all openings, or reset the existing one to them.
+def collect_openings():
+    """Collect the openings of ``OPENING_CATEGORIES``.
+
+    Note:
+        Filters by ``BuiltInCategory`` directly: these categories are missing from
+        ``doc.Settings.Categories``, so ``query.get_elements_by_categories`` skips
+        most of them.
+    """
+    return (
+        DB.FilteredElementCollector(revit.doc)
+        .WherePasses(
+            DB.ElementMulticategoryFilter(List[DB.BuiltInCategory](OPENING_CATEGORIES))
+        )
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
+
+
+def sync_opening_filter(openings):
+    """Create the selection filter for the openings, or reset the existing one to them.
+
+    Args:
+        openings: The openings of the categories in ``OPENING_CATEGORIES``, the
+            same set the report lists.
 
     Returns:
         bool: True if the filter was created, False if an existing one was updated.
     """
-    opening_ids = List[DB.ElementId](
-        DB.FilteredElementCollector(revit.doc).OfClass(DB.Opening).ToElementIds()
-    )
+    opening_ids = List[DB.ElementId](opening.Id for opening in openings)
     existing_filters = {
         selection_filter.Name: selection_filter
         for selection_filter in DB.FilteredElementCollector(revit.doc).OfClass(
@@ -89,8 +108,8 @@ def report(openings):
 
 
 started = time.time()
-openings = query.get_elements_by_categories(OPENING_CATEGORIES)
-filter_message = "created_filter" if sync_opening_filter() else "updated_filter"
+openings = collect_openings()
+filter_message = "created_filter" if sync_opening_filter(openings) else "updated_filter"
 output.print_md(_t(filter_message).format(OPENING_FILTER_NAME))
 report(openings)
 output.print_md("---")
