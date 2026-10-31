@@ -122,6 +122,7 @@ STANDARD_PAPER_SIZES_MM = {
 }
 
 PAPER_SIZE_TOLERANCE_MM = 3.0
+SHEET_OVERSIZE_EPSILON_MM = 0.5
 
 WARNED_PAPER_SIZES = set()
 
@@ -279,7 +280,9 @@ class PrintUtils:
     def sheets_match_paper(sheets, paper_format, orientation):
         """Return True when every sheet fills the paper in the given orientation.
 
-        An orientation other than landscape or portrait leaves the paper's
+        A sheet may be up to ``PAPER_SIZE_TOLERANCE_MM`` smaller than the paper
+        but never larger, since 100% zoom would clip the overhang. An
+        orientation other than landscape or portrait leaves the paper's
         orientation open, so a sheet matches in either one.
         """
         paper = STANDARD_PAPER_SIZES_MM.get(str(paper_format))
@@ -295,8 +298,12 @@ class PrintUtils:
         for sheet in sheets:
             width, height = PrintUtils.sheet_size_mm(sheet)
             if not any(
-                abs(width - paper_width) <= PAPER_SIZE_TOLERANCE_MM
-                and abs(height - paper_height) <= PAPER_SIZE_TOLERANCE_MM
+                -SHEET_OVERSIZE_EPSILON_MM
+                <= paper_width - width
+                <= PAPER_SIZE_TOLERANCE_MM
+                and -SHEET_OVERSIZE_EPSILON_MM
+                <= paper_height - height
+                <= PAPER_SIZE_TOLERANCE_MM
                 for paper_width, paper_height in accepted
             ):
                 return False
@@ -313,8 +320,9 @@ class PrintUtils:
             when the paper is exactly the sheet size. When ``sheets`` all have
             the size of the print setting's paper in its page orientation, Fit
             to Page is mapped to 100% zoom so the sheet fills the page edge to
-            edge. A sheet in the other orientation keeps Fit to Page, since
-            100% zoom would clip it.
+            edge. Fit to Page is kept whenever 100% zoom could clip the sheet:
+            a sheet in the other orientation, a sheet larger than the paper, or
+            a print setting with a non-zero user-defined origin offset.
         """
         opts = DB.PDFExportOptions()
         opts.HideCropBoundaries = hcb
@@ -364,8 +372,10 @@ class PrintUtils:
                         logger.debug("Could not map OriginOffset: %s", ex)
                 try:
                     opts.ZoomType = print_params.ZoomType
-                    if opts.ZoomType == DB.ZoomType.FitToPage and (
-                        PrintUtils.sheets_match_paper(
+                    if (
+                        opts.ZoomType == DB.ZoomType.FitToPage
+                        and not PrintUtils._has_origin_offset(print_params)
+                        and PrintUtils.sheets_match_paper(
                             sheets, paper_format, opts.PaperOrientation
                         )
                     ):
@@ -383,6 +393,15 @@ class PrintUtils:
                 print_params.PaperPlacement == DB.PaperPlacementType.Margins
                 and print_params.MarginType == DB.MarginType.UserDefined
             )
+        except Exception:
+            return False
+
+    @staticmethod
+    def _has_origin_offset(print_params):
+        if not PrintUtils._has_user_defined_margins(print_params):
+            return False
+        try:
+            return bool(print_params.OriginOffsetX or print_params.OriginOffsetY)
         except Exception:
             return False
 
