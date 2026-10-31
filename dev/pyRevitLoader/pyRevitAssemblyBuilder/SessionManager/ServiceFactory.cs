@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
@@ -45,7 +46,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>A new IExtensionManagerService instance.</returns>
         public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0, UIApplication? uiApplication = null, ILogger? logger = null)
         {
-            return new ExtensionManagerService(revitYear, uiApplication, logger);
+            Func<string?>? revitUsernameProvider = uiApplication == null
+                ? null
+                : () => uiApplication.Application?.Username;
+            return new ExtensionManagerService(revitYear, revitUsernameProvider, logger);
         }
 
         /// <summary>
