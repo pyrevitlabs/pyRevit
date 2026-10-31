@@ -55,3 +55,4 @@ transaction.Commit()
 - Set `result` to JSON-compatible data for structured query output.
 - Print concise diagnostics. Large results are truncated in the immediate response.
 - Fix `revit_busy`, `document_read_only`, `no_active_document`, `query_modified_model`, `transaction_left_open`, and `other_document_modified` before retrying.
+- `revit_busy` means the request was not run and will not run later: it is safe to send again once Revit is idle (a modal dialog such as the save reminder blocks every request until the user answers it). The error's `outcome` says what is known. When it is `unknown` (the connection broke after the request was sent), read the run with `get_run` using the error's `request_id` before sending it again.

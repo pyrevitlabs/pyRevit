@@ -282,7 +282,7 @@ pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year>]
                   [--timeout=<seconds>] [--workspace=<folder>]
 pyrevit agent runs [--limit=<n>]           recent runs
-pyrevit agent show <run_id>                request, script and response of a run
+pyrevit agent show <run_id|req-id>           request, script and response of a run, by run id or request id
 pyrevit mcp [--revit=<year>]               the MCP server (stdio); started by MCP clients
 pyrevit mcp (install | uninstall) (claude | codex | cursor | vscode | opencode) [--project]
 pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --owned keeps
@@ -405,6 +405,34 @@ at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
 `invalid_params`.
 
+### What became of a request that got no answer
+
+A client that gets `revit_busy`, or loses the connection, has to know whether its request ran
+before it sends it again. Every request goes out under a request id (the CLI and MCP server
+use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what is known:
+
+| `outcome` | Meaning | What to do |
+|---|---|---|
+| `not_sent` | The request never reached the host: nobody was listening, another client held the pipe, or the pipe belongs to another process. | Send it again. |
+| `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
+| `unknown` | The request was sent and the answer was lost (the connection broke or closed). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
+
+Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
+run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
+error's `data`. Without it a refused request would leave no trace. A run that did start records
+the request id in `request.json` and `response.json` (`request_id`), so a request can be found
+either way:
+
+```
+pyrevit agent show req-0123456789ab
+```
+
+The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
+`outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
+queued has no record yet, and one that never arrived has none at all. Only a pipe error after
+sending leaves the outcome `unknown`, so look again after the host's 30-second start timeout
+before concluding that the request never arrived.
+
 ### The guarded run
 
 Every run executes in one ExternalEvent callback on the Revit main thread:
@@ -461,6 +489,8 @@ Honest limits:
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
   request is still running: a modal dialog Revit shows while idle, such as the save
   reminder, isn't part of any run and blocks every request until the user answers it.
+  The refused request is discarded and never runs after the dialog closes; see
+  [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer).
 - A rollback must not touch committed work, but rolling back a dry run once undid the
   previous committed run as well (that run used `StairsEditScope`; Revit's journal logged
   `UndoElement::simplify PROBLEMS`). The host remembers a sample of the elements each
