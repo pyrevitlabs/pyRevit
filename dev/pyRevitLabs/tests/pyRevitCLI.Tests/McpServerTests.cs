@@ -605,15 +605,18 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
-    public void HostErrorsKeepTheirTypeAndAMalformedAnswerBecomesAServerError() {
+    public void HostErrorsKeepTheirTypeAndAnUnreadableAnswerIsAnUnknownOutcomeWithTheRequestId() {
         host.Handler = request => FakeAgentHost.Failure(request, "no_active_document", "Open a project first");
         var hostError = Single(ToolCall(1, "get_context"));
-        host.RawResponse = "this is not json";
-        var malformed = Single(ToolCall(2, "get_context"));
+        host.RawResponse = "{\"jsonrpc\":\"2.0\",\"id\":\"req-";
+        var unreadable = Single(ToolCall(2, "get_context"));
 
         Assert.Equal("no_active_document", Payload(hostError).Value<string>("error"));
         Assert.Equal("Open a project first", Payload(hostError).Value<string>("message"));
-        Assert.Equal("server_error", Payload(malformed).Value<string>("error"));
+        var payload = Payload(unreadable);
+        Assert.Equal("pipe_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.RequestsFor("get_context").Last().Value<string>("id"), payload.Value<string>("request_id"));
     }
 
     [Fact]

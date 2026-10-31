@@ -430,8 +430,12 @@ pyrevit agent show req-0123456789ab
 The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
 `outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
 queued has no record yet, and one that never arrived has none at all. Only a pipe error after
-sending leaves the outcome `unknown`, so look again after the host's 30-second start timeout
-before concluding that the request never arrived.
+sending, or an answer that cannot be read, leaves the outcome `unknown`.
+
+A missing record does not prove that resending is safe. A request waits to start for
+`start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and
+leaves no record until it starts or is refused, so it may still run. Look the request up again
+after that wait has passed, and send it again only if there is still no record.
 
 ### The guarded run
 

@@ -302,7 +302,17 @@ namespace pyRevitCLI {
                     sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
                     requestId);
 
-            var response = JObject.Parse(responseLine);
+            JObject response;
+            try {
+                response = JObject.Parse(responseLine);
+            }
+            catch (JsonException) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Revit sent an answer that could not be read." + LostAnswerNotice(sent: true),
+                    AgentOutcome.Unknown,
+                    requestId);
+            }
             if (response["error"] is JObject error) {
                 var data = error["data"] as JObject;
                 throw new AgentClientException(

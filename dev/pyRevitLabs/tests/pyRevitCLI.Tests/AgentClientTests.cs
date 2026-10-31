@@ -388,6 +388,18 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void AnAnswerCutShortIsAnUnknownOutcomeThatKeepsTheRequestId() {
+        host.RawResponse = "{\"jsonrpc\":\"2.0\",\"id\":\"req-0123";
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "run"));
+
+        Assert.Equal("pipe_error", error.Code);
+        Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+        Assert.Equal(host.Requests.Single().Value<string>("id"), error.RequestId);
+        Assert.Contains("pyrevit agent show " + error.RequestId, error.Message);
+    }
+
+    [Fact]
     public void NobodyListeningMeansTheRequestWasNotSent() {
         PyRevitAgentClient.ConnectTimeoutMs = 200;
         var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = "pyrevit-nobody-" + Guid.NewGuid().ToString("N"), RevitVersion = "2090" };
