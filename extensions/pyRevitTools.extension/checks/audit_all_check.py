@@ -41,6 +41,14 @@ def _get_placed_view_ids(document, sheets):
     placed_ids.update(
         get_elementid_value(x.ScheduleId) for x in q.get_schedules_instances(document)
     )
+    panel_schedule_instances = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.Electrical.PanelScheduleSheetInstance)
+        .ToElements()
+    )
+    placed_ids.update(
+        get_elementid_value(x.ScheduleId) for x in panel_schedule_instances
+    )
     return placed_ids
 
 
