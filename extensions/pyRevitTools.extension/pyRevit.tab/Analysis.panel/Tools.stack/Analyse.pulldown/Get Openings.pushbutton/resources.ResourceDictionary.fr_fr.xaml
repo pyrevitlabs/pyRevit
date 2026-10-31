@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_name">Créer le filtre des ouvertures</sys:String>
+    <sys:String x:Key="openings_in_project">Ouvertures dans le projet (plancher, mur, cage, toit) : {}</sys:String>
+    <sys:String x:Key="table_title">Ouvertures</sys:String>
+    <sys:String x:Key="column_name">Nom</sys:String>
+    <sys:String x:Key="column_id">ID de l'élément</sys:String>
+    <sys:String x:Key="column_show">Sélectionner/Afficher l'élément</sys:String>
+    <sys:String x:Key="created_filter">Filtre de sélection {} créé.</sys:String>
+    <sys:String x:Key="updated_filter">Filtre de sélection {} mis à jour.</sys:String>
+    <sys:String x:Key="finished_in">Script terminé en {:.2f} s</sys:String>
+</ResourceDictionary>
