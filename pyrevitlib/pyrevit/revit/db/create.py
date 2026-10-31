@@ -1959,22 +1959,6 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
     return placed
 
 
-REFERENCE_PLANE_REFERENCES = {
-    "left": 0,
-    "center_left_right": 1,
-    "right": 2,
-    "front": 3,
-    "center_front_back": 4,
-    "back": 5,
-    "bottom": 6,
-    "center_elevation": 7,
-    "top": 8,
-    "not_a_reference": 12,
-    "strong": 13,
-    "weak": 14,
-}
-
-
 def _require_family_document(doc, action):
     if not doc.IsFamilyDocument:
         raise PyRevitException("To {}, use a family document.".format(action))
@@ -1994,7 +1978,7 @@ def create_reference_plane(
         cut_vector (DB.XYZ, optional): direction normal to the drawn line in
             the view, defaults to the view direction.
         reference (str, optional): "Is Reference" setting, a key of
-            ``REFERENCE_PLANE_REFERENCES`` such as ``"left"`` or ``"strong"``.
+            ``query.REFERENCE_PLANE_REFERENCES`` such as ``"left"`` or ``"strong"``.
             Required for a plane that a host family aligns to.
         doc (DB.Document, optional): family document, defaults to the active one.
 
@@ -2005,15 +1989,23 @@ def create_reference_plane(
         PyRevitException: outside a family document or transaction, or for an
             unknown ``reference``.
 
+    Important:
+        Revit keeps ``"left"``, ``"center_left_right"``, ``"right"``,
+        ``"front"``, ``"center_front_back"``, ``"back"``, ``"bottom"``,
+        ``"center_elevation"`` and ``"top"`` on one plane per family. Giving one
+        to a new plane resets the plane that had it to ``"not_a_reference"``
+        without an error. Only ``"strong"`` and ``"weak"`` can be on many planes.
+
     Note:
-        The ``REFERENCE_PLANE_REFERENCES`` values were checked in Revit 2024.
+        The ``query.REFERENCE_PLANE_REFERENCES`` values were checked in Revit
+        2024 and 2026.
     """
     doc = doc or DOCS.doc
     _require_family_document(doc, "create reference planes")
-    if reference is not None and reference not in REFERENCE_PLANE_REFERENCES:
+    if reference is not None and reference not in query.REFERENCE_PLANE_REFERENCES:
         raise PyRevitException(
             "reference must be one of {}.".format(
-                ", ".join(sorted(REFERENCE_PLANE_REFERENCES))
+                ", ".join(sorted(query.REFERENCE_PLANE_REFERENCES))
             )
         )
     plane = doc.FamilyCreate.NewReferencePlane(
@@ -2022,7 +2014,7 @@ def create_reference_plane(
     plane.Name = name
     if reference is not None:
         plane.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).Set(
-            REFERENCE_PLANE_REFERENCES[reference]
+            query.REFERENCE_PLANE_REFERENCES[reference]
         )
     return plane
 

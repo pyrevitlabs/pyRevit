@@ -3035,6 +3035,72 @@ def get_family_parameters(family_doc):
         raise PyRevitException("Document is not a family")
 
 
+REFERENCE_PLANE_REFERENCES = {
+    "left": 0,
+    "center_left_right": 1,
+    "right": 2,
+    "front": 3,
+    "center_front_back": 4,
+    "back": 5,
+    "bottom": 6,
+    "center_elevation": 7,
+    "top": 8,
+    "not_a_reference": 12,
+    "strong": 13,
+    "weak": 14,
+}
+
+
+def get_reference_plane(reference, doc=None):
+    """Find the reference plane of a family by its "Is Reference" setting.
+
+    The planes that a family template ships with are named in the language of
+    Revit (``Center (Left/Right)`` is ``Mitte (Links/rechts)`` in German), but
+    their "Is Reference" setting is the same in every language.
+
+    Args:
+        reference (str): a key of ``REFERENCE_PLANE_REFERENCES`` such as
+            ``"center_left_right"``.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (DB.ReferencePlane): the plane with that setting.
+
+    Raises:
+        PyRevitException: outside a family document, for an unknown
+            ``reference``, or when no plane or more than one plane has that
+            setting. Only ``"strong"``, ``"weak"`` and ``"not_a_reference"``
+            can be on several planes; Revit keeps every other setting on one
+            plane per family.
+
+    Note:
+        The ``REFERENCE_PLANE_REFERENCES`` values were checked in Revit 2024
+        and 2026.
+    """
+    doc = doc or DOCS.doc
+    if not doc.IsFamilyDocument:
+        raise PyRevitException("Reference planes are looked up in a family document.")
+    if reference not in REFERENCE_PLANE_REFERENCES:
+        raise PyRevitException(
+            "reference must be one of {}.".format(
+                ", ".join(sorted(REFERENCE_PLANE_REFERENCES))
+            )
+        )
+    wanted = REFERENCE_PLANE_REFERENCES[reference]
+    matches = []
+    for plane in DB.FilteredElementCollector(doc).OfClass(DB.ReferencePlane):
+        setting = plane.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME)
+        if setting is not None and setting.AsInteger() == wanted:
+            matches.append(plane)
+    if len(matches) != 1:
+        raise PyRevitException(
+            "Expected one reference plane with Is Reference {!r}, found {}.".format(
+                reference, len(matches)
+            )
+        )
+    return matches[0]
+
+
 def get_family_label_parameters(family_doc):
     """
     Retrieves the set of family label parameters from a given Revit family document.
