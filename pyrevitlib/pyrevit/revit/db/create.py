@@ -1994,7 +1994,8 @@ def create_reference_plane(
         ``"front"``, ``"center_front_back"``, ``"back"``, ``"bottom"``,
         ``"center_elevation"`` and ``"top"`` on one plane per family. Giving one
         to a new plane resets the plane that had it to ``"not_a_reference"``
-        without an error. Only ``"strong"`` and ``"weak"`` can be on many planes.
+        without an error. ``"strong"``, ``"weak"`` and ``"not_a_reference"`` can
+        be on many planes.
 
     Note:
         The ``query.REFERENCE_PLANE_REFERENCES`` values were checked in Revit
