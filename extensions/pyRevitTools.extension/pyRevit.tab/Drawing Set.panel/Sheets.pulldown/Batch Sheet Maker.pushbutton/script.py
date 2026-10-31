@@ -1,4 +1,5 @@
 import re
+from collections import Counter
 
 from pyrevit import coreutils
 from pyrevit import revit, DB
@@ -21,8 +22,9 @@ class SheetParameterEntry(forms.Reactive):
     the value but excludes the parameter from the batch.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, parameter_id):
         self._name = name
+        self.parameter_id = parameter_id
         self._value = ""
         self._is_selected = False
 
@@ -52,10 +54,12 @@ class SheetParameterEntry(forms.Reactive):
         self._is_selected = new_value
 
 
-def get_sheet_text_parameter_names(doc):
-    """Return the sorted names of writable text parameters on sheets.
+def get_sheet_text_parameters(doc):
+    """Return (display name, parameter id) pairs of writable text parameters.
 
     Sheet number and sheet name are excluded, they are always set by the tool.
+    Parameters sharing a name get their id appended to the display name so
+    each can be told apart and targeted by id.
 
     Note:
         Parameters are read from a probe sheet created in a transaction that
@@ -66,7 +70,7 @@ def get_sheet_text_parameter_names(doc):
     transaction.Start()
     try:
         probe_sheet = DB.ViewSheet.Create(doc, DB.ElementId.InvalidElementId)
-        names = set()
+        found = []
         for param in probe_sheet.Parameters:
             if param.IsReadOnly or param.StorageType != DB.StorageType.String:
                 continue
@@ -75,8 +79,15 @@ def get_sheet_text_parameter_names(doc):
                 in NUMBER_AND_NAME_PARAMETERS
             ):
                 continue
-            names.add(param.Definition.Name)
-        return sorted(names)
+            found.append((param.Definition.Name, param.Id))
+        name_counts = Counter(name for name, _ in found)
+        return sorted(
+            (
+                name if name_counts[name] == 1 else "{} ({})".format(name, param_id),
+                param_id,
+            )
+            for name, param_id in found
+        )
     finally:
         transaction.RollBack()
 
@@ -90,8 +101,8 @@ class BatchSheetMakerWindow(forms.WPFWindow):
         self._titleblock_id = None
         self._parameter_values = []
         self._parameter_entries = [
-            SheetParameterEntry(name)
-            for name in get_sheet_text_parameter_names(revit.doc)
+            SheetParameterEntry(name, parameter_id)
+            for name, parameter_id in get_sheet_text_parameters(revit.doc)
         ]
         self.parameters_ic.ItemsSource = self._parameter_entries
         self.sheets_tb.Focus()
@@ -128,13 +139,19 @@ class BatchSheetMakerWindow(forms.WPFWindow):
 
         return False
 
+    @staticmethod
+    def _find_parameter(sheet, parameter_id):
+        for param in sheet.Parameters:
+            if param.Id == parameter_id:
+                return param
+
     def _apply_parameter_values(self, sheet):
-        for param_name, param_value in self._parameter_values:
-            param = sheet.LookupParameter(param_name)
-            if param is None or param.IsReadOnly or not param.Set(param_value):
+        for entry in self._parameter_values:
+            param = self._find_parameter(sheet, entry.parameter_id)
+            if param is None or param.IsReadOnly or not param.Set(entry.value):
                 logger.warning(
                     "Could not set parameter {} on sheet {}".format(
-                        param_name, sheet.SheetNumber
+                        entry.name, sheet.SheetNumber
                     )
                 )
 
@@ -174,9 +191,7 @@ class BatchSheetMakerWindow(forms.WPFWindow):
 
     def create_sheets(self, sender, args):
         self._parameter_values = [
-            (entry.name, entry.value)
-            for entry in self._parameter_entries
-            if entry.is_selected
+            entry for entry in self._parameter_entries if entry.is_selected
         ]
         self.Close()
 
