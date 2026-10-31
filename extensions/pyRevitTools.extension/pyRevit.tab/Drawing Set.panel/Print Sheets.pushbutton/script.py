@@ -123,6 +123,7 @@ STANDARD_PAPER_SIZES_MM = {
 
 PAPER_SIZE_TOLERANCE_MM = 3.0
 SHEET_OVERSIZE_EPSILON_MM = 0.5
+FULL_SIZE_ZOOM_PERCENT = 100
 
 WARNED_PAPER_SIZES = set()
 
@@ -380,6 +381,7 @@ class PrintUtils:
                         )
                     ):
                         opts.ZoomType = DB.ZoomType.Zoom
+                        opts.ZoomPercentage = FULL_SIZE_ZOOM_PERCENT
                     else:
                         opts.ZoomPercentage = int(print_params.Zoom)
                 except Exception as ex:
