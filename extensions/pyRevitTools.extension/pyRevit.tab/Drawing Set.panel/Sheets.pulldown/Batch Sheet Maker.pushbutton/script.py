@@ -8,6 +8,78 @@ from pyrevit import script
 
 logger = script.get_logger()
 
+NUMBER_AND_NAME_PARAMETERS = (
+    DB.BuiltInParameter.SHEET_NUMBER,
+    DB.BuiltInParameter.SHEET_NAME,
+)
+
+
+class SheetParameterEntry(forms.Reactive):
+    """A sheet parameter row in the window, ticked when it should be set.
+
+    Typing a value ticks the row automatically; unticking afterwards keeps
+    the value but excludes the parameter from the batch.
+    """
+
+    def __init__(self, name):
+        self._name = name
+        self._value = ""
+        self._is_selected = False
+
+    @property
+    def name(self):
+        """Parameter name."""
+        return self._name
+
+    @forms.reactive
+    def value(self):
+        """Value to set on every sheet."""
+        return self._value
+
+    @value.setter
+    def value(self, new_value):
+        self._value = new_value
+        if new_value:
+            self.is_selected = True
+
+    @forms.reactive
+    def is_selected(self):
+        """Whether the parameter is set on the created sheets."""
+        return self._is_selected
+
+    @is_selected.setter
+    def is_selected(self, new_value):
+        self._is_selected = new_value
+
+
+def get_sheet_text_parameter_names(doc):
+    """Return the sorted names of writable text parameters on sheets.
+
+    Sheet number and sheet name are excluded, they are always set by the tool.
+
+    Note:
+        Parameters are read from a probe sheet created in a transaction that
+        is always rolled back, so the list also works in projects without any
+        sheet and leaves the model untouched.
+    """
+    transaction = DB.Transaction(doc, "Probe Sheet Parameters")
+    transaction.Start()
+    try:
+        probe_sheet = DB.ViewSheet.Create(doc, DB.ElementId.InvalidElementId)
+        names = set()
+        for param in probe_sheet.Parameters:
+            if param.IsReadOnly or param.StorageType != DB.StorageType.String:
+                continue
+            if (
+                getattr(param.Definition, "BuiltInParameter", None)
+                in NUMBER_AND_NAME_PARAMETERS
+            ):
+                continue
+            names.add(param.Definition.Name)
+        return sorted(names)
+    finally:
+        transaction.RollBack()
+
 
 class BatchSheetMakerWindow(forms.WPFWindow):
     resolve_theme = True
@@ -16,6 +88,12 @@ class BatchSheetMakerWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self._sheet_dict = {}
         self._titleblock_id = None
+        self._parameter_values = []
+        self._parameter_entries = [
+            SheetParameterEntry(name)
+            for name in get_sheet_text_parameter_names(revit.doc)
+        ]
+        self.parameters_ic.ItemsSource = self._parameter_entries
         self.sheets_tb.Focus()
 
     def _process_sheet_code(self):
@@ -50,14 +128,24 @@ class BatchSheetMakerWindow(forms.WPFWindow):
 
         return False
 
-    @staticmethod
-    def _create_placeholder(sheet_num, sheet_name):
+    def _apply_parameter_values(self, sheet):
+        for param_name, param_value in self._parameter_values:
+            param = sheet.LookupParameter(param_name)
+            if param is None or param.IsReadOnly or not param.Set(param_value):
+                logger.warning(
+                    "Could not set parameter {} on sheet {}".format(
+                        param_name, sheet.SheetNumber
+                    )
+                )
+
+    def _create_placeholder(self, sheet_num, sheet_name):
         with DB.Transaction(revit.doc, "Create Placeholder") as t:
             try:
                 t.Start()
                 new_phsheet = DB.ViewSheet.CreatePlaceholder(revit.doc)
                 new_phsheet.Name = sheet_name
                 new_phsheet.SheetNumber = sheet_num
+                self._apply_parameter_values(new_phsheet)
                 t.Commit()
             except Exception as create_err:
                 t.RollBack()
@@ -74,6 +162,7 @@ class BatchSheetMakerWindow(forms.WPFWindow):
                 new_phsheet = DB.ViewSheet.Create(revit.doc, self._titleblock_id)
                 new_phsheet.Name = sheet_name
                 new_phsheet.SheetNumber = sheet_num
+                self._apply_parameter_values(new_phsheet)
                 t.Commit()
             except Exception as create_err:
                 t.RollBack()
@@ -84,6 +173,11 @@ class BatchSheetMakerWindow(forms.WPFWindow):
                 )
 
     def create_sheets(self, sender, args):
+        self._parameter_values = [
+            (entry.name, entry.value)
+            for entry in self._parameter_entries
+            if entry.is_selected
+        ]
         self.Close()
 
         if self._process_sheet_code():
