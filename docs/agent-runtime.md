@@ -306,6 +306,51 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 
 Run records and `capture_view` images older than 14 days are deleted when the host starts.
 
+### Testing agent skills and library changes through MCP
+
+A change to a skill under `pyrevitlib/pyrevit/agent/skills` or to a pyrevitlib helper it describes
+is best checked by running its snippets through the MCP server in a Revit that has your clone
+attached (`pyrevit attach dev default --installed`, see the developer guide). The steps in between
+are easy to get wrong:
+
+1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
+   need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
+2. **Close Revit, stop the MCP servers, then rebuild.** Revit loads pyRevit from the clone's `bin\`
+   and keeps its DLLs open, and each client session runs `bin\pyrevit.exe mcp` from there too.
+   A build started while either runs fails with "The process cannot access the file ... because it
+   is being used by another process", for example on `pyRevitLabs.Language.dll` (Revit) or
+   `Colorful.Console.dll` (a server). Servers of other client sessions count too.
+
+    ```shell
+    pwsh dev/scripts/Stop-McpServers.ps1
+    cd build && dotnet run -c Debug -- ci
+    ```
+
+    `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
+    tool call, so don't call an MCP tool between the script and the build; afterwards the
+    new server starts by itself, or the client needs a reconnect.
+3. **Restart Revit after a build.** Accept the "Security - Unsigned Add-In" dialog with **Load Once**
+   every time; the MCP host doesn't answer before that. Python-only changes need no rebuild, but
+   they need a restart or reload to take effect: IronPython can `reload()` a changed module, while
+   CPython can't redefine classes that implement .NET interfaces (reloading `pyrevit.revit.db.create`
+   raises `Duplicate type name within an assembly`). Restarting Revit loads the edits on both engines.
+4. **Repeat full test runs on the other IronPython.** The attached IronPython is one setting per
+   clone: `ironpython` runs on 2.7.12 after `pyrevit attach <clone> default --installed` and on 3.4.2
+   after `pyrevit attach <clone> 342 --installed`, while `cpython` is unaffected. The switch
+   rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
+   (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
+   the version in use. Run the full tests once per IronPython. Attach `default` again, restart Revit
+   and accept **Load Once** before continuing.
+5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
+   document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
+   or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
+   Roll back an open transaction on that document first: `Close` raises while one is open, and the
+   error hides the original failure. Put back any user setting the snippet touched, such as
+   `app.SharedParametersFilename`.
+
+The [in-Revit agent tests](#in-revit-agent-tests) cover the shipped skills and the pyrevitlib side
+of the automation operations on both engines.
+
 ## Design
 
 ### Architecture

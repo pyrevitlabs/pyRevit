@@ -64,6 +64,8 @@ pyrevit clones add dev <path-to-repo>
 pyrevit attach dev default --installed
 ```
 
+To check agent skills or pyrevitlib helpers against a live Revit through MCP, follow [Testing agent skills and library changes through MCP](docs/agent-runtime.md#testing-agent-skills-and-library-changes-through-mcp).
+
 ## Development workflow
 
 - `develop` branch: active development — branch from here, PR back into it.
