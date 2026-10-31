@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_name">개구부 필터 생성</sys:String>
+    <sys:String x:Key="openings_in_project">프로젝트의 개구부(바닥, 벽, 샤프트, 지붕): {}개</sys:String>
+    <sys:String x:Key="table_title">개구부</sys:String>
+    <sys:String x:Key="column_name">이름</sys:String>
+    <sys:String x:Key="column_id">요소 ID</sys:String>
+    <sys:String x:Key="column_show">요소 선택/표시</sys:String>
+    <sys:String x:Key="created_filter">선택 필터 {}을(를) 생성했습니다.</sys:String>
+    <sys:String x:Key="updated_filter">선택 필터 {}을(를) 업데이트했습니다.</sys:String>
+    <sys:String x:Key="finished_in">스크립트가 {:.2f}초 만에 완료되었습니다</sys:String>
+</ResourceDictionary>

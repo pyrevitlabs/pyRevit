@@ -108,6 +108,17 @@ if _PresureLossReport is not None:
 if _SystemsAnalysisReport is not None:
     VALID_VIEW_TYPES.append(_SystemsAnalysisReport)
 
+_NOT_PLACEABLE_VIEW_TYPES = {
+    DB.ViewType.DrawingSheet,
+    DB.ViewType.CostReport,
+    DB.ViewType.LoadsReport,
+    DB.ViewType.Walkthrough,
+}
+if _PresureLossReport is not None:
+    _NOT_PLACEABLE_VIEW_TYPES.add(_PresureLossReport)
+if _SystemsAnalysisReport is not None:
+    _NOT_PLACEABLE_VIEW_TYPES.add(_SystemsAnalysisReport)
+
 INVALID_VIEW_TYPES = [
     DB.ViewType.Undefined,
     DB.ViewType.ProjectBrowser,
@@ -269,7 +280,10 @@ class SheetViewInfo:
         else:
             placed_ids = _get_placed_view_ids(document, sheets_set)
             self.views_not_on_sheets = sum(
-                1 for x in views if get_elementid_value(x.Id) not in placed_ids
+                1
+                for x in views
+                if x.ViewType not in _NOT_PLACEABLE_VIEW_TYPES
+                and get_elementid_value(x.Id) not in placed_ids
             )
             self.schedules_not_sheeted_count = sum(
                 1 for x in schedules if get_elementid_value(x.Id) not in placed_ids

@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="found_count">찾은 인플레이스 패밀리: {}개</sys:String>
+    <sys:String x:Key="column_element">요소</sys:String>
+    <sys:String x:Key="column_category">카테고리</sys:String>
+    <sys:String x:Key="column_family">패밀리</sys:String>
+    <sys:String x:Key="transaction_name">인플레이스 패밀리 격리</sys:String>
+    <sys:String x:Key="transaction_reset_isolation">임시 숨기기/격리 재설정</sys:String>
+    <sys:String x:Key="transaction_isolate">격리</sys:String>
+    <sys:String x:Key="no_inplace_families">이 프로젝트에서 인플레이스 패밀리를 찾을 수 없습니다.</sys:String>
+</ResourceDictionary>

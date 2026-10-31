@@ -14,6 +14,7 @@ from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwException, RpwWrongStorageType
 from rpw.exceptions import RpwParameterNotFound, RpwTypeError
 from rpw.utils.logger import logger
+from pyrevit import HOST_APP
 from pyrevit.compat import get_elementid_value_func
 
 
@@ -231,12 +232,13 @@ class Parameter(BaseObjectWrapper):
         """Returns the data type of the Parameter.
 
         Returns:
-            (``DB.ForgeTypeId``): on Revit 2022+, from ``Definition.GetDataType()``
-            (``DB.ParameterType``): on older Revit versions
+            (``DB.ForgeTypeId``): on Revit 2023+, from ``Definition.GetDataType()``
+            (``DB.ParameterType``): on older Revit versions, from
+            ``Definition.ParameterType``
 
         """
         definition = self._revit_object.Definition
-        if hasattr(definition, 'GetDataType'):
+        if HOST_APP.is_newer_than(2023, or_equal=True):
             return definition.GetDataType()
         return definition.ParameterType
 

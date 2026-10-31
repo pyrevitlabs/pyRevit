@@ -83,6 +83,19 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 
 Run any of these commands without a value to print the current setting.
 
+### Run document tab
+
+The document captured at the start of a run has an amber pyRevit accent tab with black text throughout execution and the Keep/Discard prompt.
+The tooltip reads `Agent: <run title>` during execution and `Agent: <run title> (awaiting approval)` during approval.
+The highlight identifies the run document, not a document inspected by an earlier `get_context` request.
+All tabs for the same native document identity are highlighted, even when document titles match.
+The first successful paint remains visible for at least 1.5 seconds; consecutive runs on that document share the highlight without an intermediate restore.
+Tab Coloring remains underneath the temporary overlay and resumes when it ends.
+
+**Settings > Agent Runtime (MCP) > Highlight the document tab during agent runs** controls `[agent] tab_highlight`, which defaults to `true` and applies to the next run without reloading pyRevit.
+The configuration accessor is `PyRevitConfigs.GetAgentTabHighlight()` / `SetAgentTabHighlight(bool)`; no flat Python userconfig alias is provided.
+Three consecutive visual failures disable highlighting for the Revit process and produce one log entry without changing a run's outcome.
+
 ### MCP tools
 
 | Tool | Changes the model | Purpose |
@@ -282,7 +295,7 @@ pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year>]
                   [--timeout=<seconds>] [--workspace=<folder>]
 pyrevit agent runs [--limit=<n>]           recent runs
-pyrevit agent show <run_id>                request, script and response of a run
+pyrevit agent show <run_id|req-id>           request, script and response of a run, by run id or request id
 pyrevit mcp [--revit=<year>]               the MCP server (stdio); started by MCP clients
 pyrevit mcp (install | uninstall) (claude | codex | cursor | vscode | opencode) [--project]
 pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --owned keeps
@@ -305,6 +318,51 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `result.json`: present when the result was too large to return inline
 
 Run records and `capture_view` images older than 14 days are deleted when the host starts.
+
+### Testing agent skills and library changes through MCP
+
+A change to a skill under `pyrevitlib/pyrevit/agent/skills` or to a pyrevitlib helper it describes
+is best checked by running its snippets through the MCP server in a Revit that has your clone
+attached (`pyrevit attach dev default --installed`, see the developer guide). The steps in between
+are easy to get wrong:
+
+1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
+   need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
+2. **Close Revit, stop the MCP servers, then rebuild.** Revit loads pyRevit from the clone's `bin\`
+   and keeps its DLLs open, and each client session runs `bin\pyrevit.exe mcp` from there too.
+   A build started while either runs fails with "The process cannot access the file ... because it
+   is being used by another process", for example on `pyRevitLabs.Language.dll` (Revit) or
+   `Colorful.Console.dll` (a server). Servers of other client sessions count too.
+
+    ```shell
+    pwsh dev/scripts/Stop-McpServers.ps1
+    cd build && dotnet run -c Debug -- ci
+    ```
+
+    `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
+    tool call, so don't call an MCP tool between the script and the build; afterwards the
+    new server starts by itself, or the client needs a reconnect.
+3. **Restart Revit after a build.** Accept the "Security - Unsigned Add-In" dialog with **Load Once**
+   every time; the MCP host doesn't answer before that. Python-only changes need no rebuild, but
+   they need a restart or reload to take effect: IronPython can `reload()` a changed module, while
+   CPython can't redefine classes that implement .NET interfaces (reloading `pyrevit.revit.db.create`
+   raises `Duplicate type name within an assembly`). Restarting Revit loads the edits on both engines.
+4. **Repeat full test runs on the other IronPython.** The attached IronPython is one setting per
+   clone: `ironpython` runs on 2.7.12 after `pyrevit attach <clone> default --installed` and on 3.4.2
+   after `pyrevit attach <clone> 342 --installed`, while `cpython` is unaffected. The switch
+   rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
+   (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
+   the version in use. Run the full tests once per IronPython. Attach `default` again, restart Revit
+   and accept **Load Once** before continuing.
+5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
+   document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
+   or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
+   Roll back an open transaction on that document first: `Close` raises while one is open, and the
+   error hides the original failure. Put back any user setting the snippet touched, such as
+   `app.SharedParametersFilename`.
+
+The [in-Revit agent tests](#in-revit-agent-tests) cover the shipped skills and the pyrevitlib side
+of the automation operations on both engines.
 
 ## Design
 
@@ -405,6 +463,38 @@ at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
 `invalid_params`.
 
+### What became of a request that got no answer
+
+A client that gets `revit_busy`, or loses the connection, has to know whether its request ran
+before it sends it again. Every request goes out under a request id (the CLI and MCP server
+use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what is known:
+
+| `outcome` | Meaning | What to do |
+|---|---|---|
+| `not_sent` | The request never reached the host: nobody was listening, another client held the pipe, or the pipe belongs to another process. | Send it again. |
+| `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
+| `unknown` | The request was sent and the answer was lost (the connection broke or closed). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
+
+Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
+run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
+error's `data`. Without it a refused request would leave no trace. A run that did start records
+the request id in `request.json` and `response.json` (`request_id`), so a request can be found
+either way:
+
+```
+pyrevit agent show req-0123456789ab
+```
+
+The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
+`outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
+queued has no record yet, and one that never arrived has none at all. Only a pipe error after
+sending, or an answer that cannot be read, leaves the outcome `unknown`.
+
+A missing record does not prove that resending is safe. A request waits to start for
+`start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and
+leaves no record until it starts or is refused, so it may still run. Look the request up again
+after that wait has passed, and send it again only if there is still no record.
+
 ### The guarded run
 
 Every run executes in one ExternalEvent callback on the Revit main thread:
@@ -461,6 +551,8 @@ Honest limits:
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
   request is still running: a modal dialog Revit shows while idle, such as the save
   reminder, isn't part of any run and blocks every request until the user answers it.
+  The refused request is discarded and never runs after the dialog closes; see
+  [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer).
 - A rollback must not touch committed work, but rolling back a dry run once undid the
   previous committed run as well (that run used `StairsEditScope`; Revit's journal logged
   `UndoElement::simplify PROBLEMS`). The host remembers a sample of the elements each

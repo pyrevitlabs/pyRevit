@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_name">Создать фильтр отверстий</sys:String>
+    <sys:String x:Key="openings_in_project">Отверстий в проекте (перекрытие, стена, шахта, крыша): {}</sys:String>
+    <sys:String x:Key="table_title">Отверстия</sys:String>
+    <sys:String x:Key="column_name">Название</sys:String>
+    <sys:String x:Key="column_id">ID элемента</sys:String>
+    <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+    <sys:String x:Key="created_filter">Создан фильтр выбора {}.</sys:String>
+    <sys:String x:Key="updated_filter">Обновлён фильтр выбора {}.</sys:String>
+    <sys:String x:Key="finished_in">Скрипт выполнен за {:.2f} с</sys:String>
+</ResourceDictionary>

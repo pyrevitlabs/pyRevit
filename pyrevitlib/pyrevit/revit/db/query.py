@@ -91,7 +91,7 @@ def get_name(element, title_on_sheet=False):
     if isinstance(element, DB.View):
         view_name = None
         if title_on_sheet:
-            titleos_param = element.Parameter[DB.BuiltInParameter.VIEW_DESCRIPTION]
+            titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
             view_name = titleos_param.AsString()
         if view_name:
             return view_name
@@ -300,7 +300,7 @@ def get_mark(element):
         str: The value of the 'Mark' parameter as a string.
     Returns an empty string if the parameter is not found.
     """
-    mparam = element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+    mparam = element.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK)
     return mparam.AsString() if mparam else ""
 
 
@@ -1206,7 +1206,7 @@ def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
         sheets = [
             x
             for x in sheets
-            if x.Parameter[DB.BuiltInParameter.SHEET_SCHEDULED].AsInteger() > 0
+            if x.get_Parameter(DB.BuiltInParameter.SHEET_SCHEDULED).AsInteger() > 0
         ]
     if not include_placeholders:
         return [x for x in sheets if not x.IsPlaceholder]
@@ -1523,9 +1523,9 @@ def get_viewport_by_number(sheet_num, detail_num, doc=None):
     if sheet:
         vps = [doc.GetElement(x) for x in sheet.GetAllViewports()]
         for vp in vps:
-            det_num = vp.Parameter[
+            det_num = vp.get_Parameter(
                 DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
-            ].AsString()
+            ).AsString()
             if det_num == detail_num:
                 return vp
 
@@ -2680,9 +2680,11 @@ def get_view_sheetrefinfo(view):
         SheetRefInfo: An object containing the sheet number, sheet name, detail
                       number, and reference view ID if applicable.
     """
-    sheet_num = view.Parameter[DB.BuiltInParameter.VIEWPORT_SHEET_NUMBER].AsString()
-    sheet_name = view.Parameter[DB.BuiltInParameter.VIEWPORT_SHEET_NAME].AsString()
-    detail_num = view.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER].AsString()
+    sheet_num = view.get_Parameter(DB.BuiltInParameter.VIEWPORT_SHEET_NUMBER).AsString()
+    sheet_name = view.get_Parameter(DB.BuiltInParameter.VIEWPORT_SHEET_NAME).AsString()
+    detail_num = view.get_Parameter(
+        DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+    ).AsString()
 
     if sheet_num:
         return SheetRefInfo(
@@ -2691,14 +2693,14 @@ def get_view_sheetrefinfo(view):
             detail_num=detail_num,
             ref_viewid=None,
         )
-    ref_sheet_num = view.Parameter[
+    ref_sheet_num = view.get_Parameter(
         DB.BuiltInParameter.VIEW_REFERENCING_SHEET
-    ].AsString()
+    ).AsString()
     ref_sheet = get_sheet_by_number(ref_sheet_num)
     ref_sheet_name = get_name(ref_sheet) if ref_sheet else ""
-    ref_detail_num = view.Parameter[
+    ref_detail_num = view.get_Parameter(
         DB.BuiltInParameter.VIEW_REFERENCING_DETAIL
-    ].AsString()
+    ).AsString()
     if ref_sheet_num:
         return SheetRefInfo(
             sheet_num=ref_sheet_num,
@@ -2770,9 +2772,9 @@ def is_referring_to(source_view, target_view):
     if can_refer_other_views(source_view):
         for ref_elid in get_all_referencing_elements_in_view(source_view):
             viewref_el = doc.GetElement(ref_elid)
-            targetview_param = viewref_el.Parameter[
+            targetview_param = viewref_el.get_Parameter(
                 DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW
-            ]
+            )
             if targetview_param:
                 tvp_view = doc.GetElement(targetview_param.AsElementId())
                 if tvp_view and get_name(tvp_view) == target_viewname:
@@ -3035,6 +3037,72 @@ def get_family_parameters(family_doc):
         raise PyRevitException("Document is not a family")
 
 
+REFERENCE_PLANE_REFERENCES = {
+    "left": 0,
+    "center_left_right": 1,
+    "right": 2,
+    "front": 3,
+    "center_front_back": 4,
+    "back": 5,
+    "bottom": 6,
+    "center_elevation": 7,
+    "top": 8,
+    "not_a_reference": 12,
+    "strong": 13,
+    "weak": 14,
+}
+
+
+def get_reference_plane(reference, doc=None):
+    """Find the reference plane of a family by its "Is Reference" setting.
+
+    The planes that a family template ships with are named in the language of
+    Revit (``Center (Left/Right)`` is ``Mitte (Links/rechts)`` in German), but
+    their "Is Reference" setting is the same in every language.
+
+    Args:
+        reference (str): a key of ``REFERENCE_PLANE_REFERENCES`` such as
+            ``"center_left_right"``.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (DB.ReferencePlane): the plane with that setting.
+
+    Raises:
+        PyRevitException: outside a family document, for an unknown
+            ``reference``, or when no plane or more than one plane has that
+            setting. Only ``"strong"``, ``"weak"`` and ``"not_a_reference"``
+            can be on several planes; Revit keeps every other setting on one
+            plane per family.
+
+    Note:
+        The ``REFERENCE_PLANE_REFERENCES`` values were checked in Revit 2024
+        and 2026.
+    """
+    doc = doc or DOCS.doc
+    if not doc.IsFamilyDocument:
+        raise PyRevitException("Reference planes are looked up in a family document.")
+    if reference not in REFERENCE_PLANE_REFERENCES:
+        raise PyRevitException(
+            "reference must be one of {}.".format(
+                ", ".join(sorted(REFERENCE_PLANE_REFERENCES))
+            )
+        )
+    wanted = REFERENCE_PLANE_REFERENCES[reference]
+    matches = []
+    for plane in DB.FilteredElementCollector(doc).OfClass(DB.ReferencePlane):
+        setting = plane.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME)
+        if setting is not None and setting.AsInteger() == wanted:
+            matches.append(plane)
+    if len(matches) != 1:
+        raise PyRevitException(
+            "Expected one reference plane with Is Reference {!r}, found {}.".format(
+                reference, len(matches)
+            )
+        )
+    return matches[0]
+
+
 def get_family_label_parameters(family_doc):
     """
     Retrieves the set of family label parameters from a given Revit family document.
@@ -3216,8 +3284,8 @@ def get_titleblock_print_settings(tblock, printer_name, doc_psettings):
         list[DB.PrintSetting]: A sorted list of print settings that match the title block size and orientation.
     """
     doc = tblock.Document
-    page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
-    page_height_param = tblock.Parameter[DB.BuiltInParameter.SHEET_HEIGHT]
+    page_width_param = tblock.get_Parameter(DB.BuiltInParameter.SHEET_WIDTH)
+    page_height_param = tblock.get_Parameter(DB.BuiltInParameter.SHEET_HEIGHT)
     page_width = int(round(page_width_param.AsDouble() * 12.0))
     page_height = int(round(page_height_param.AsDouble() * 12.0))
     tform = tblock.GetTotalTransform()

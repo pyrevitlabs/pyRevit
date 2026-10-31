@@ -127,6 +127,15 @@ no-op on older Windows. Before Windows 10 20H1, the title bar stays in the syste
 - A window that declares its own literal `Background` — a transparent overlay, for instance — keeps
   it. Root colours are only forced before the window's own XAML is parsed.
 
+## Agent document tab overlay
+
+Agent runs use the pyRevit amber accent with black foreground for contrast in both UI themes.
+Revit versions before 2024 retain the light UI classification described above; the overlay does not depend on their reported dark theme.
+The overlay is a temporary style based on the tab's current style.
+Tab Coloring detaches the overlay before rebuilding its styles and reapplies it afterward.
+Restoration preserves bindings and resource expressions, and skips any property whose current value another add-in replaced.
+The [agent runtime reference](agent-runtime.md#run-document-tab) describes its duration and configuration.
+
 ## Version support
 
 | Revit | Theme API | Behaviour |
