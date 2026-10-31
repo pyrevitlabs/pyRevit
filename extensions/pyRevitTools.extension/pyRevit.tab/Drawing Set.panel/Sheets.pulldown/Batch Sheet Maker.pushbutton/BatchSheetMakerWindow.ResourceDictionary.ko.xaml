@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">시트 생성</system:String>
     <system:String x:Key="CreatePlaceholders">자리 표시자 생성</system:String>
     <system:String x:Key="CreateButton">생성</system:String>
+    <system:String x:Key="SheetParametersLabel">시트 매개변수</system:String>
+    <system:String x:Key="SheetParametersHint">이 일괄 작업에서 생성되는 모든 시트에 설정할 매개변수를 선택하고 각각의 값을 입력하세요.</system:String>
 </ResourceDictionary>

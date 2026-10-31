@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">Créer des feuilles</system:String>
     <system:String x:Key="CreatePlaceholders">Créer des espaces réservés</system:String>
     <system:String x:Key="CreateButton">Créer</system:String>
+    <system:String x:Key="SheetParametersLabel">Paramètres de feuille</system:String>
+    <system:String x:Key="SheetParametersHint">Cochez les paramètres à définir sur chaque feuille créée dans ce lot et saisissez une valeur pour chacun.</system:String>
 </ResourceDictionary>
