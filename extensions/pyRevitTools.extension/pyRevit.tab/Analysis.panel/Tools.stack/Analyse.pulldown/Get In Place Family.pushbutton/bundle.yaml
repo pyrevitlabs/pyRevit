@@ -8,7 +8,7 @@ title:
   de_de: Alle Projektfamilien zählen u. in 3D anzeigen
   pt_br: Obter Famílias No Local
 tooltip:
-  en_us: Get a total count and types of In Place Family in the current document and create a new 3Dview named InPlace Families isolate them
+  en_us: Count the in-place families in the project, list their categories and families, and isolate them in a 3D view named InPlace Families.
   ko: 현재 문서의 인플레이스 패밀리 총 수 및 유형을 가져오고 격리된 'InPlace Families'라는 새 3D 뷰를 생성합니다
   fr_fr: Obtenez un nombre total et des types de familles in situ dans le document actuel et créez une nouvelle vue 3D nommée Familles InPlace pour les isoler
   ru: Получает общее количество семейств в контексте текущего документа и создает новый 3D вид с именем InPlace Families, в котором изолирует их.
