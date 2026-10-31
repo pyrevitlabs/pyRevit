@@ -31,9 +31,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Runs <paramref name="work"/> on the main thread and waits for its result.
         /// </summary>
         /// <exception cref="AgentException">
-        /// <c>revit_busy</c> when Revit refuses the ExternalEvent or does not become idle
-        /// within <paramref name="startTimeout"/>. Once the work has started, the call waits
-        /// for it to finish no matter how long it takes, because it can't be aborted safely.
+        /// <c>revit_busy</c> (see <see cref="AgentException.NotRun"/>) when Revit refuses the
+        /// ExternalEvent or does not become idle within <paramref name="startTimeout"/>. The work
+        /// is then removed from the queue and never runs. Once the work has started, the call
+        /// waits for it to finish no matter how long it takes, because it can't be aborted safely.
         /// </exception>
         public JToken Invoke(Func<UIApplication, JToken> work, TimeSpan startTimeout) {
             var item = new AgentWorkItem(work);
@@ -43,12 +44,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var response = externalEvent.Raise();
             if (response == ExternalEventRequest.Denied || response == ExternalEventRequest.TimedOut) {
                 if (TryRemove(item))
-                    throw new AgentException("revit_busy", "Revit rejected the agent request: " + response);
+                    throw AgentException.NotRun("Revit rejected the agent request: " + response + ".");
             }
 
             if (!item.Started.Wait(startTimeout)) {
                 if (TryRemove(item))
-                    throw new AgentException("revit_busy", BusyMessage(startTimeout));
+                    throw AgentException.NotRun(BusyMessage(startTimeout));
             }
 
             return item.Completion.Task.GetAwaiter().GetResult();
@@ -132,10 +133,34 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// A failure reported to the agent with a stable machine-readable <see cref="Code"/>.
     /// </summary>
     public sealed class AgentException : Exception {
+        public const string NotRunCode = "revit_busy";
+
         public AgentException(string code, string message) : base(message) {
             Code = code;
         }
 
         public string Code { get; }
+
+        /// <summary>
+        /// Extra fields for the error's <c>data</c> object, next to <c>type</c>.
+        /// </summary>
+        public JObject Details { get; } = new JObject();
+
+        /// <summary>
+        /// A request the host refused before running any of it because Revit was busy.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: every <c>revit_busy</c> the host raises goes through here. It means the
+        /// request was discarded and will never run later, so the caller may send it again.
+        /// The message says so and <c>data.outcome</c> is <c>not_run</c>.
+        /// </remarks>
+        public static AgentException NotRun(string message) {
+            var exception = new AgentException(
+                NotRunCode,
+                message + " The request was not run and has been discarded; it will not run later, "
+                + "so it is safe to send again once Revit is idle.");
+            exception.Details["outcome"] = "not_run";
+            return exception;
+        }
     }
 }
