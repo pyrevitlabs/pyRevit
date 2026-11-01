@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">Dreiecke werden gezählt</sys:String>
+    <sys:String x:Key="no_geometry">Es wurden keine Familieninstanzen mit Volumenkörpern gefunden.</sys:String>
+    <sys:String x:Key="table_title">Dreiecke je Familientyp</sys:String>
+    <sys:String x:Key="column_type">Typ</sys:String>
+    <sys:String x:Key="column_category">Kategorie</sys:String>
+    <sys:String x:Key="column_example">Beispielelement</sys:String>
+    <sys:String x:Key="column_coarse">Grob</sys:String>
+    <sys:String x:Key="column_medium">Mittel</sys:String>
+    <sys:String x:Key="column_fine">Fein</sys:String>
+    <sys:String x:Key="grand_total">Gesamtsumme</sys:String>
+</ResourceDictionary>

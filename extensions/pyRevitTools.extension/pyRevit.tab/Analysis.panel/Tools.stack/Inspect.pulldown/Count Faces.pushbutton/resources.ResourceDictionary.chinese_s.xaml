@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">正在统计三角形面数</sys:String>
+    <sys:String x:Key="no_geometry">未找到带有实体几何的族实例。</sys:String>
+    <sys:String x:Key="table_title">各族类型的三角形面数</sys:String>
+    <sys:String x:Key="column_type">类型</sys:String>
+    <sys:String x:Key="column_category">类别</sys:String>
+    <sys:String x:Key="column_example">示例图元</sys:String>
+    <sys:String x:Key="column_coarse">粗略</sys:String>
+    <sys:String x:Key="column_medium">中等</sys:String>
+    <sys:String x:Key="column_fine">精细</sys:String>
+    <sys:String x:Key="grand_total">总计</sys:String>
+</ResourceDictionary>
