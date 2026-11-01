@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Purge line styles, line patterns, fill patterns and shared parameters that nothing uses."""
 
+from collections import OrderedDict
+
 from pyrevit import forms, script
 from pyrevit import revit
 from pyrevit.coreutils import escape_for_html
@@ -58,7 +60,7 @@ def _check_for_unused(doc, candidates):
 
 def _pick_unused(unused):
     options = [_CandidateOption(x) for x in unused]
-    groups = {ALL_GROUP: options}
+    groups = OrderedDict([(ALL_GROUP, options)])
     for option in options:
         groups.setdefault(option.item.kind, []).append(option)
     picked = forms.SelectFromList.show(
