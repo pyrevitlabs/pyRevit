@@ -3,7 +3,7 @@
 
 from collections import defaultdict
 
-from pyrevit import script
+from pyrevit import forms, script
 from pyrevit import revit, DB
 from pyrevit.coreutils import applocales
 
@@ -16,6 +16,24 @@ RESOURCES = script.get_bundle_file("resources.xaml")
 
 def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
+
+
+def can_list_rooms(view):
+    """Tell whether the view can be searched for rooms.
+
+    A schedule counts only when it lists rooms, or several categories at once.
+    """
+    if not DB.FilteredElementCollector.IsViewValidForElementIteration(
+        revit.doc, view.Id
+    ):
+        return False
+    if isinstance(view, DB.ViewSchedule):
+        category_id = view.Definition.CategoryId
+        return category_id in (
+            DB.ElementId.InvalidElementId,
+            DB.ElementId(DB.BuiltInCategory.OST_Rooms),
+        )
+    return True
 
 
 def collect_rooms_by_number():
@@ -57,6 +75,8 @@ def report(rooms_by_number):
 
 
 def main():
+    if not can_list_rooms(revit.active_view):
+        forms.alert(_t("no_rooms_in_view"), exitscript=True)
     report(collect_rooms_by_number())
 
 

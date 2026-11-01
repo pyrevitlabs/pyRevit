@@ -8,5 +8,6 @@
     <sys:String x:Key="column_name">名称</sys:String>
     <sys:String x:Key="column_level">标高</sys:String>
     <sys:String x:Key="column_show">选择/显示图元</sys:String>
+    <sys:String x:Key="no_rooms_in_view">此视图无法显示房间。请打开平面、剖面、立面、三维视图或房间明细表。</sys:String>
     <sys:String x:Key="no_level">无标高</sys:String>
 </ResourceDictionary>

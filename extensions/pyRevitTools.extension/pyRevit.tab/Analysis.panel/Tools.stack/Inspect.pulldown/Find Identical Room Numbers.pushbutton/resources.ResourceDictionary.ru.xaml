@@ -8,5 +8,6 @@
     <sys:String x:Key="column_name">Название</sys:String>
     <sys:String x:Key="column_level">Уровень</sys:String>
     <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+    <sys:String x:Key="no_rooms_in_view">На этом виде нельзя показать помещения. Откройте план, разрез, фасад, 3D-вид или спецификацию помещений.</sys:String>
     <sys:String x:Key="no_level">Нет уровня</sys:String>
 </ResourceDictionary>

@@ -8,5 +8,6 @@
     <sys:String x:Key="column_name">Nombre</sys:String>
     <sys:String x:Key="column_level">Nivel</sys:String>
     <sys:String x:Key="column_show">Seleccionar/Mostrar elemento</sys:String>
+    <sys:String x:Key="no_rooms_in_view">Esta vista no puede mostrar habitaciones. Abra una planta, sección, alzado, vista 3D o una tabla de habitaciones.</sys:String>
     <sys:String x:Key="no_level">Sin nivel</sys:String>
 </ResourceDictionary>
