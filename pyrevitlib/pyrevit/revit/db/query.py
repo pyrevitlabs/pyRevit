@@ -502,7 +502,14 @@ def get_elements_by_parameter(
 
     Returns:
         list: A list of elements that match the specified parameter name and value.
+
+    Raises:
+        PyRevitException: when partial is True and param_value is not a string.
     """
+    if partial and not isinstance(param_value, str):
+        raise PyRevitException(
+            "A partial match needs a text value, not {!r}.".format(param_value)
+        )
     doc = doc or DOCS.doc
     elements = (
         DB.FilteredElementCollector(doc, view_id).ToElements()
@@ -3734,11 +3741,14 @@ def find_view(view_name_or_id, doc=None):
         )
     doc = doc or DOCS.doc
     if isinstance(view_name_or_id, (numbers.Integral, DB.ElementId)):
-        element_id = (
-            view_name_or_id
-            if isinstance(view_name_or_id, DB.ElementId)
-            else get_elementid_from_value_func()(view_name_or_id)
-        )
+        try:
+            element_id = (
+                view_name_or_id
+                if isinstance(view_name_or_id, DB.ElementId)
+                else get_elementid_from_value_func()(view_name_or_id)
+            )
+        except (OverflowError, TypeError, ValueError):
+            raise PyRevitException("No view with id {}.".format(view_name_or_id))
         view = doc.GetElement(element_id)
         if isinstance(view, DB.View):
             return view
