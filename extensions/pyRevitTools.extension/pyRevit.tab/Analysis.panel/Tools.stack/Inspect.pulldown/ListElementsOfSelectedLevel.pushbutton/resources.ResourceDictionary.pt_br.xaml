@@ -4,7 +4,6 @@
 
     <sys:String x:Key="select_levels">Pelo menos um nível deve ser selecionado.</sys:String>
     <sys:String x:Key="list_elements_title">Listar todos os elementos dos níveis selecionados</sys:String>
-    <sys:String x:Key="by">Por: [{}]({})</sys:String>
     <sys:String x:Key="elements_on_level">Elementos no nível {}</sys:String>
     <sys:String x:Key="no_elements">Nenhum elemento está associado a este nível.</sys:String>
     <sys:String x:Key="table_title">{} categorias, {} elementos</sys:String>

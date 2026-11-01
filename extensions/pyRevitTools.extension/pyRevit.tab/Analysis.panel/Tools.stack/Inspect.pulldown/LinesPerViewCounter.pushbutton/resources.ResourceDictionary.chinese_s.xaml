@@ -14,5 +14,4 @@
     <sys:String x:Key="column_name">名称</sys:String>
     <sys:String x:Key="column_id">ID</sys:String>
     <sys:String x:Key="column_creator">创建者</sys:String>
-    <sys:String x:Key="credits">作者：[{}]({})，部分改进来自 [{}]({})</sys:String>
 </ResourceDictionary>

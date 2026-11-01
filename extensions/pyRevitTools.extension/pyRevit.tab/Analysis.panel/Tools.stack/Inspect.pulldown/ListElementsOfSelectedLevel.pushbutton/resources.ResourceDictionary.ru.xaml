@@ -4,7 +4,6 @@
 
     <sys:String x:Key="select_levels">Необходимо выбрать хотя бы один уровень.</sys:String>
     <sys:String x:Key="list_elements_title">Все элементы на выбранных уровнях</sys:String>
-    <sys:String x:Key="by">Автор: [{}]({})</sys:String>
     <sys:String x:Key="elements_on_level">Элементы на уровне {}</sys:String>
     <sys:String x:Key="no_elements">С этим уровнем не связано ни одного элемента.</sys:String>
     <sys:String x:Key="table_title">Категорий: {}, элементов: {}</sys:String>

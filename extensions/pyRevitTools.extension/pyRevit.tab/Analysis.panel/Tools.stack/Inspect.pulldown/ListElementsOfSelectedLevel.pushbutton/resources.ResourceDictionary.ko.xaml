@@ -4,7 +4,6 @@
 
     <sys:String x:Key="select_levels">레벨을 하나 이상 선택해야 합니다.</sys:String>
     <sys:String x:Key="list_elements_title">선택한 레벨의 모든 요소 나열</sys:String>
-    <sys:String x:Key="by">작성: [{}]({})</sys:String>
     <sys:String x:Key="elements_on_level">레벨 {}의 요소</sys:String>
     <sys:String x:Key="no_elements">이 레벨에 연결된 요소가 없습니다.</sys:String>
     <sys:String x:Key="table_title">카테고리 {}개, 요소 {}개</sys:String>

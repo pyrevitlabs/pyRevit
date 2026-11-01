@@ -4,7 +4,6 @@
 
     <sys:String x:Key="select_levels">必须至少选择一个标高。</sys:String>
     <sys:String x:Key="list_elements_title">列出所选标高上的所有图元</sys:String>
-    <sys:String x:Key="by">作者：[{}]({})</sys:String>
     <sys:String x:Key="elements_on_level">标高 {} 上的图元</sys:String>
     <sys:String x:Key="no_elements">没有图元与此标高关联。</sys:String>
     <sys:String x:Key="table_title">{} 个类别，{} 个图元</sys:String>

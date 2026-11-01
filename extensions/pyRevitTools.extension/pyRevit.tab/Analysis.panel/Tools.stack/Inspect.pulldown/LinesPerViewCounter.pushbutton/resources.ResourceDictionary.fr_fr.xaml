@@ -14,5 +14,4 @@
     <sys:String x:Key="column_name">Nom</sys:String>
     <sys:String x:Key="column_id">Id</sys:String>
     <sys:String x:Key="column_creator">Créateur</sys:String>
-    <sys:String x:Key="credits">Par : [{}]({}) et quelques améliorations de [{}]({})</sys:String>
 </ResourceDictionary>

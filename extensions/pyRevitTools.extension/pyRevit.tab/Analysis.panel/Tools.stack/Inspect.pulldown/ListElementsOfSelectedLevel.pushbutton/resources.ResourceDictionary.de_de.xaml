@@ -4,7 +4,6 @@
 
     <sys:String x:Key="select_levels">Es muss mindestens eine Ebene ausgewählt werden.</sys:String>
     <sys:String x:Key="list_elements_title">Alle Elemente auf den ausgewählten Ebenen auflisten</sys:String>
-    <sys:String x:Key="by">Von: [{}]({})</sys:String>
     <sys:String x:Key="elements_on_level">Elemente auf Ebene {}</sys:String>
     <sys:String x:Key="no_elements">Dieser Ebene sind keine Elemente zugeordnet.</sys:String>
     <sys:String x:Key="table_title">{} Kategorien, {} Elemente</sys:String>

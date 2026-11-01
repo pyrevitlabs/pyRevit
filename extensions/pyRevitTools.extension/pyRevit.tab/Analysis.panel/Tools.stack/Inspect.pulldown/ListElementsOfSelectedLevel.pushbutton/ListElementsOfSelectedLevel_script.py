@@ -12,8 +12,6 @@ from outputtext import escape_for_output
 output = script.get_output()
 
 RESOURCES = script.get_bundle_file("resources.xaml")
-AUTHOR = "Frederic Beaupere"
-AUTHOR_URL = "https://github.com/frederic-beaupere"
 
 
 def _t(key):
@@ -80,7 +78,6 @@ def main():
         forms.alert(_t("select_levels"), exitscript=True)
     elements_by_level = group_elements_by_level()
     output.print_md("#### {}".format(_t("list_elements_title")))
-    output.print_md(_t("by").format(AUTHOR, AUTHOR_URL))
     for level in levels:
         report_level(level, elements_by_level[level.Id])
 

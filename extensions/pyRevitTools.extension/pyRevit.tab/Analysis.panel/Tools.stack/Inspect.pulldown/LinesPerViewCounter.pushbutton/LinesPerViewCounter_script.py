@@ -13,13 +13,6 @@ from pyrevit.coreutils import applocales
 
 from outputtext import escape_for_output
 
-__title__ = "Lines Per View Counter"
-__author__ = "Frederic Beaupere"
-__contact__ = "https://github.com/frederic-beaupere"
-__author2__ = "Jean-Marc Couffin"
-__contact2__ = "https://github.com/jmcouffin"
-__credits__ = "http://eirannejad.github.io/pyRevit/credits/"
-
 logger = script.get_logger()
 output = script.get_output()
 output.close_others()
@@ -113,9 +106,6 @@ def main():
     )
     if EXEC_PARAMS.config_mode:
         report_links()
-    output.print_md(
-        _t("credits").format(__author__, __contact__, __author2__, __contact2__)
-    )
 
 
 if __name__ == "__main__":
