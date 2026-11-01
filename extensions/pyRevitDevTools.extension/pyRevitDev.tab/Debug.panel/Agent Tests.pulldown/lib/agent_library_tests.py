@@ -294,6 +294,45 @@ class AutomationTests(TestCase):
             )["error"]
             self.assertEqual("PyRevitException", error["type"], engine)
 
+    def test_marked_operations_run_through_invoke_on_every_engine(self):
+        """run_automation's fixed script names a view, lists revisions and rejects bad inputs."""
+        view = run(
+            "view = next(v for v in DB.FilteredElementCollector(doc).OfClass(DB.View)"
+            " if not v.IsTemplate)\nresult = {'id': view.Id, 'name': view.Name}"
+        )["result"]
+        script = (
+            "from pyrevit.agent import _operations\n"
+            "result = _operations.invoke(inputs['operation'], inputs['inputs'], doc)"
+        )
+        name_of = {
+            "id": "pyrevit.elements.name",
+            "module": "pyrevit.revit.db.query",
+            "function": "get_name",
+        }
+        revisions = {
+            "id": "pyrevit.revisions.list",
+            "module": "pyrevit.revit.db.query",
+            "function": "get_revisions",
+        }
+        for engine in ENGINES:
+            named = run(
+                script,
+                engine=engine,
+                inputs={"operation": name_of, "inputs": {"element": view["id"]}},
+            )
+            self.assertEqual({"value": view["name"]}, named["result"], engine)
+            listed = run(
+                script, engine=engine, inputs={"operation": revisions, "inputs": {}}
+            )["result"]
+            self.assertEqual(len(listed["value"]), listed["total"], engine)
+            self.assertFalse(listed["truncated"], engine)
+            refused = run(
+                script,
+                engine=engine,
+                inputs={"operation": name_of, "inputs": {"element": "Level 1"}},
+            )["error"]
+            self.assertEqual("InputError", refused["type"], engine)
+
 
 FAMILY_HELPERS_SCRIPT = """
 import os

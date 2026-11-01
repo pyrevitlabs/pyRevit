@@ -152,4 +152,138 @@ public class AutomationOperationsTests {
         Assert.Equal(second.Value<string>("source"), first.Value<string>("source"));
         Assert.Contains("inputs[", first.Value<string>("source"));
     }
+
+    [Fact]
+    public void AMarkedOperationRunsTheFixedScriptWithTheFunctionAsData() {
+        var operation = PyRevitAutomationOperations.Resolve(
+            "PYREVIT.elements.NAME", new JObject { ["element"] = 316542, ["title_on_sheet"] = true });
+
+        Assert.Equal("pyrevit.elements.name", operation.Value<string>("id"));
+        Assert.Equal(PyRevitAutomationOperations.MarkedOperationSource, operation.Value<string>("source"));
+        Assert.True(operation.Value<bool>("requires_document"));
+        Assert.False(string.IsNullOrWhiteSpace(operation.Value<string>("title")));
+        Assert.True(operation.Value<string>("title").Length <= 80);
+        var call = operation["inputs"]["operation"];
+        Assert.Equal("pyrevit.elements.name", call.Value<string>("id"));
+        Assert.Equal("pyrevit.revit.db.query", call.Value<string>("module"));
+        Assert.Equal("get_name", call.Value<string>("function"));
+        Assert.Equal(316542, operation["inputs"]["inputs"].Value<int>("element"));
+        Assert.True(operation["inputs"]["inputs"].Value<bool>("title_on_sheet"));
+    }
+
+    [Fact]
+    public void AMarkedOperationWithNoInputsTakesAnEmptyObjectOnly() {
+        PyRevitAutomationOperations.Resolve("pyrevit.revisions.list", new JObject());
+
+        Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.revisions.list", new JObject { ["doc"] = 1 })));
+        Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve("pyrevit.revisions.list", null)));
+    }
+
+    [Fact]
+    public void TheCallersTextNeverReachesTheScriptOfAMarkedOperation() {
+        var marker = "SENTINEL_" + Guid.NewGuid().ToString("N");
+
+        var operation = PyRevitAutomationOperations.Resolve("pyrevit.elements.by-family", new JObject { ["family_name"] = marker });
+
+        Assert.Equal(PyRevitAutomationOperations.MarkedOperationSource, operation.Value<string>("source"));
+        Assert.Equal(marker, operation["inputs"]["inputs"].Value<string>("family_name"));
+    }
+
+    [Theory]
+    [InlineData("pyrevit.walls.create")]
+    [InlineData("pyrevit.elements.delete")]
+    [InlineData("pyrevit.geometry.point")]
+    [InlineData("rpw.elements.name")]
+    public void ModifyOperationsMethodsAndUndeclaredMarkersStayUnexposed(string id) {
+        Assert.False(PyRevitAutomationOperations.IsInvocable(id));
+        Assert.Equal("automation_not_exposed", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject())));
+    }
+
+    private static LibrarySymbol Marked(string mode = "query", string transaction = "none", string owner = null,
+                                        string kind = "function", string module = "pyrevit.revit.db.query",
+                                        string name = "get_name", bool declared = true) {
+        return new LibrarySymbol {
+            Module = module,
+            Name = name,
+            Owner = owner,
+            Kind = kind,
+            Automation = new AutomationMetadata {
+                Id = "test.marked",
+                PlainEnglish = "Test.",
+                Mode = mode,
+                Effects = new List<string>(),
+                Context = "document",
+                Transaction = transaction,
+                Inputs = declared ? AutomationInput.ParseAll(new[] { "element: element" }) : null,
+            },
+        };
+    }
+
+    [Fact]
+    public void OnlyModuleLevelQueryOrPureFunctionsWithInputsRunFromTheirMarker() {
+        Assert.True(PyRevitAutomationOperations.IsMarkedInvocable(Marked()));
+        Assert.True(PyRevitAutomationOperations.IsMarkedInvocable(Marked(mode: "pure", module: "rpw.db.element")));
+
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(declared: false)));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(mode: "modify")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(mode: "interactive")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(transaction: "caller")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(owner: "Element", kind: "method")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(kind: "property")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(module: "os")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(module: "pyrevitx.db")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(Marked(name: "_private")));
+        Assert.False(PyRevitAutomationOperations.IsMarkedInvocable(null));
+    }
+
+    private static readonly List<AutomationInput> Declared = AutomationInput.ParseAll(new[] {
+        "name: string", "count: integer?", "ratio: number?", "flag: boolean?", "element: element?", "value: scalar?",
+    });
+
+    [Fact]
+    public void DeclaredInputsAcceptEachTypeAndReturnTheObjectUnchanged() {
+        var inputs = new JObject {
+            ["name"] = "Level 1", ["count"] = 3, ["ratio"] = 1.5, ["flag"] = false, ["element"] = 316542L, ["value"] = "Concrete",
+        };
+
+        Assert.Same(inputs, AutomationInput.Validate(Declared, inputs));
+        AutomationInput.Validate(Declared, new JObject { ["name"] = new string('x', 256) });
+        foreach (var scalar in new JToken[] { 2, 2.5, true, "x" })
+            AutomationInput.Validate(Declared, new JObject { ["name"] = "a", ["value"] = scalar });
+    }
+
+    public static IEnumerable<object[]> InvalidInputs() {
+        yield return new object[] { new JObject() };
+        yield return new object[] { new JObject { ["name"] = "a", ["extra"] = 1 } };
+        yield return new object[] { new JObject { ["name"] = JValue.CreateNull() } };
+        yield return new object[] { new JObject { ["name"] = "a", ["count"] = JValue.CreateNull() } };
+        yield return new object[] { new JObject { ["name"] = 1 } };
+        yield return new object[] { new JObject { ["name"] = "   " } };
+        yield return new object[] { new JObject { ["name"] = new string('x', 257) } };
+        yield return new object[] { new JObject { ["name"] = "a", ["count"] = 1.0 } };
+        yield return new object[] { new JObject { ["name"] = "a", ["count"] = true } };
+        yield return new object[] { new JObject { ["name"] = "a", ["count"] = "3" } };
+        yield return new object[] { new JObject { ["name"] = "a", ["count"] = JToken.Parse("9223372036854775808") } };
+        yield return new object[] { new JObject { ["name"] = "a", ["ratio"] = double.PositiveInfinity } };
+        yield return new object[] { new JObject { ["name"] = "a", ["ratio"] = double.NaN } };
+        yield return new object[] { new JObject { ["name"] = "a", ["ratio"] = "1.5" } };
+        yield return new object[] { new JObject { ["name"] = "a", ["flag"] = 1 } };
+        yield return new object[] { new JObject { ["name"] = "a", ["element"] = "316542" } };
+        yield return new object[] { new JObject { ["name"] = "a", ["element"] = 3.0 } };
+        yield return new object[] { new JObject { ["name"] = "a", ["value"] = new JArray() } };
+        yield return new object[] { new JObject { ["name"] = "a", ["value"] = new JObject() } };
+        yield return new object[] { new JObject { ["name"] = "a", ["value"] = "" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidInputs))]
+    public void DeclaredInputsRejectMissingUnknownNullAndMistypedValues(JObject inputs) {
+        Assert.Equal("invalid_params", Code(() => AutomationInput.Validate(Declared, inputs)));
+    }
+
+    [Fact]
+    public void DeclaredInputsMustBeAnObject() {
+        Assert.Equal("invalid_params", Code(() => AutomationInput.Validate(Declared, new JArray("name"))));
+        Assert.Equal("invalid_params", Code(() => AutomationInput.Validate(new List<AutomationInput>(), new JObject { ["any"] = 1 })));
+    }
 }

@@ -112,7 +112,7 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// A malformed marker, or an id used by more than one symbol, is left out instead of
-        /// failing the listing; <c>dev/scripts/test_automation_marker.py</c> fails on both.
+        /// failing the listing; <c>dev/scripts/test_standalone_automation_marker.py</c> fails on both.
         /// </remarks>
         public static JObject ListAutomation(int offset = 0, int limit = DefaultAutomationResults) {
             if (offset < 0)
@@ -140,12 +140,22 @@ namespace pyRevitCLI {
             };
         }
 
-        public static bool IsMarkedAutomation(string id) {
+        /// <summary>
+        /// The one symbol marked with <paramref name="id"/>, or null when none is, the id is used
+        /// twice (and so not listed), or the library cannot be read.
+        /// </summary>
+        public static LibrarySymbol FindAutomation(string id) {
+            if (string.IsNullOrWhiteSpace(id))
+                return null;
             try {
-                return Load().Any(symbol => string.Equals(symbol.Automation?.Id, id, StringComparison.OrdinalIgnoreCase));
+                var marked = Load()
+                    .Where(symbol => string.Equals(symbol.Automation?.Id, id, StringComparison.OrdinalIgnoreCase))
+                    .Take(2)
+                    .ToList();
+                return marked.Count == 1 ? marked[0] : null;
             }
             catch (AgentClientException) {
-                return false;
+                return null;
             }
         }
 
@@ -193,15 +203,18 @@ namespace pyRevitCLI {
         private static JObject Automation(LibrarySymbol symbol) {
             if (symbol.Automation == null)
                 return null;
-            return new JObject {
+            var automation = new JObject {
                 ["id"] = symbol.Automation.Id,
                 ["plain_english"] = symbol.Automation.PlainEnglish,
                 ["mode"] = symbol.Automation.Mode,
                 ["effects"] = new JArray(symbol.Automation.Effects),
                 ["context"] = symbol.Automation.Context,
                 ["transaction"] = symbol.Automation.Transaction,
-                ["invocable"] = PyRevitAutomationOperations.IsInvocable(symbol.Automation.Id),
+                ["invocable"] = PyRevitAutomationOperations.IsInvocable(symbol),
             };
+            if (symbol.Automation.Inputs != null)
+                automation["inputs"] = new JArray(symbol.Automation.Inputs.Select(input => input.ToJson()));
+            return automation;
         }
 
         private static string ImportLine(LibrarySymbol symbol) {
