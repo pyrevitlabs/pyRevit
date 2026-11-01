@@ -78,6 +78,9 @@ def report(openings):
     output.print_md("#### {}".format(_t("openings_in_project").format(len(openings))))
     if not openings:
         return
+    output.print_md(
+        output.linkify([opening.Id for opening in openings], title=_t("select_all"))
+    )
     get_elementid_value = get_elementid_value_func()
     output.print_table(
         table_data=[
