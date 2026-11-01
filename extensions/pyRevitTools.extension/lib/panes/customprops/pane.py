@@ -259,6 +259,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             "pt_br": "Propriedades personalizadas",
             "ru": "Свойства элемента",
             "chinese_s": "自定义属性",
+            "ko": "사용자 지정 속성",
         }
     )
     panel_id = "d3a7f2c1-8e45-4b9a-a312-0f6b7c8d9e10"
@@ -1313,7 +1314,20 @@ class CustomPropertiesPanel(forms.WPFPanel):
         view = uidoc.ActiveView
 
         if not isinstance(view, DB.View):
-            forms.alert("Active view is not suitable for filters.")
+            forms.alert(
+                applocales.get_locale_string(
+                    {
+                        "en_us": "Active view is not suitable for filters.",
+                        "de_de": "Die aktive Ansicht ist für Filter nicht geeignet.",
+                        "fr_fr": "La vue active ne convient pas aux filtres.",
+                        "es_es": "La vista activa no es adecuada para filtros.",
+                        "pt_br": "A vista ativa não é adequada para filtros.",
+                        "ru": "Активный вид не подходит для фильтров.",
+                        "chinese_s": "当前视图不适用于过滤器。",
+                        "ko": "활성 뷰에는 필터를 사용할 수 없습니다.",
+                    }
+                )
+            )
             return
 
         checked_names = self._get_checked_param_names()

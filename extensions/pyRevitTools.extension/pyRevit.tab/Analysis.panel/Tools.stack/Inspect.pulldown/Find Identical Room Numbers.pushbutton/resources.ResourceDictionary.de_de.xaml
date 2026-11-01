@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">In der aktiven Ansicht wurden keine identischen Raumnummern gefunden.</sys:String>
+    <sys:String x:Key="duplicates_found">Mehrfach verwendete Raumnummern: {}</sys:String>
+    <sys:String x:Key="number_title">Raumnummer {}</sys:String>
+    <sys:String x:Key="column_name">Name</sys:String>
+    <sys:String x:Key="column_level">Ebene</sys:String>
+    <sys:String x:Key="column_show">Element auswählen/anzeigen</sys:String>
+    <sys:String x:Key="no_rooms_in_view">In dieser Ansicht können keine Räume vorkommen. Öffnen Sie einen Grundriss, Schnitt, eine Ansicht, eine 3D-Ansicht oder eine Raumliste.</sys:String>
+    <sys:String x:Key="no_level">Keine Ebene</sys:String>
+</ResourceDictionary>

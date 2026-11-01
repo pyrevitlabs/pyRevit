@@ -9,7 +9,7 @@ title:
   de_de: Finde alle verbundenen Abhängigkeiten
   pt_br: Encontrar Todas as Restrições Anexadas
 tooltip:
-  en_us: Find all constraints attached to the selected element
+  en_us: Find all constraints attached to the selected element.
   ko: 선택한 요소에 연결된 모든 구속 조건을 찾습니다.
   fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
   ru: Находит все зависимости, связанные с выделенным элементом.

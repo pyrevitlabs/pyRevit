@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Window.Title">요소 속성 – 추가 매개변수 구성</system:String>
+    <system:String x:Key="ChkEnableStartup">시작 시 창 불러오기</system:String>
+    <system:String x:Key="TbRestartHint">시작 설정 변경 사항을 적용하려면 Revit을 다시 시작해야 합니다.</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">작업 공유 정보 표시 (작성자 / 마지막 수정자 / 소유자)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">창에서 작성자, 마지막 수정자, 소유자 행을 켜거나 끕니다. 다시 시작할 필요가 없습니다.</system:String>
+    <system:String x:Key="TbParamsHint">한 줄에 매개변수 이름 하나를 입력하세요. 줄을 #으로 시작하면 구역 제목이 되며(예: "# 일반"), "#"만 입력하면 구분선이 됩니다. 창은 다음 선택 변경 시 변경 사항을 반영하며 다시 시작할 필요가 없습니다.</system:String>
+    <system:String x:Key="TbExamples">예: 주석, 마크, # 일반, 제조업체, 유형 주석</system:String>
+    <system:String x:Key="BtnCancel">취소</system:String>
+    <system:String x:Key="BtnSave">저장</system:String>
+
+</ResourceDictionary>

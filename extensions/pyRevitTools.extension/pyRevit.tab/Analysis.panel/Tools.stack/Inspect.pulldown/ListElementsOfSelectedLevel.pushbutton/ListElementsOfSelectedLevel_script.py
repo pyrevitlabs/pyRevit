@@ -3,63 +3,84 @@
 
 from collections import defaultdict
 
-from pyrevit import script
+from pyrevit import forms, script
 from pyrevit import revit, DB
-from pyrevit import forms
+from pyrevit.coreutils import applocales
 
+from outputtext import escape_for_output
 
 output = script.get_output()
 
-all_elements = (
-    DB.FilteredElementCollector(revit.doc).WhereElementIsNotElementType().ToElements()
-)
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-levels = forms.select_levels(use_selection=True)
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-if not levels:
-    forms.alert("At least one Level element must be selected.")
-else:
-    output.print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
-    output.print_md(
-        "By: [{}]({})".format(
-            "Frederic Beaupere", "https://github.com/frederic-beaupere"
+def group_elements_by_level():
+    elements_by_level = defaultdict(list)
+    all_elements = DB.FilteredElementCollector(revit.doc).WhereElementIsNotElementType()
+    for element in all_elements:
+        elements_by_level[element.LevelId].append(element)
+    return elements_by_level
+
+
+def group_by_category(elements):
+    elements_by_category = defaultdict(list)
+    for element in elements:
+        category_name = element.Category.Name if element.Category else _t("no_category")
+        elements_by_category[category_name].append(element)
+    return elements_by_category
+
+
+def print_category_elements(category_name, elements):
+    output.print_html(
+        "<details><summary>{}: {}</summary>{}</details>".format(
+            escape_for_output(category_name),
+            len(elements),
+            "<br>".join(output.linkify(element.Id) for element in elements),
         )
     )
 
-    all_count = all_elements.Count
-    print("\n" + str(all_count) + " Elements found in project.")
 
-    for element in levels:
-        element_categories = defaultdict(list)
-        level = element
-        counter = 0
+def report_level(level, elements):
+    elements_by_category = group_by_category(elements)
+    category_items = sorted(elements_by_category.items(), key=lambda item: item[0])
+    output.print_md(
+        "### {}".format(_t("elements_on_level").format(escape_for_output(level.Name)))
+    )
+    if not elements:
+        output.print_md("**{}**".format(_t("no_elements")))
+        return
+    output.print_table(
+        table_data=[
+            [
+                escape_for_output(category_name),
+                len(category_elements),
+                output.linkify(
+                    [element.Id for element in category_elements],
+                    title=_t("select_all"),
+                ),
+            ]
+            for category_name, category_elements in category_items
+        ],
+        title=_t("table_title").format(len(elements_by_category), len(elements)),
+        columns=[_t("column_category"), _t("column_count"), _t("column_select")],
+    )
+    for category_name, category_elements in category_items:
+        print_category_elements(category_name, category_elements)
 
-        print("\n" + "╞═════════■ {}:".format(level.Name))
 
-        for elem in all_elements:
-            if elem.LevelId == level.Id:
-                counter += 1
-                element_categories[elem.Category.Name].append(elem)
+def main():
+    levels = forms.select_levels(use_selection=True)
+    if not levels:
+        forms.alert(_t("select_levels"), exitscript=True)
+    elements_by_level = group_elements_by_level()
+    output.print_md("#### {}".format(_t("list_elements_title")))
+    for level in levels:
+        report_level(level, elements_by_level[level.Id])
 
-        for category in element_categories:
-            print(
-                "├──────────□ {}: {}".format(
-                    category, str(len(element_categories[category]))
-                )
-            )
 
-            for elem_cat in element_categories[category]:
-                print("├ id: {}".format(output.linkify(elem_cat.Id)))
-
-        print(
-            "├────────── {} Categories found in {}:".format(
-                str(len(element_categories)), level.Name
-            )
-        )
-
-        for cat in element_categories:
-            print("│ {}: {}".format(str(cat), str(len(element_categories[cat]))))
-
-        print("└────────── {}: {} Elements found.".format(level.Name, str(counter)))
+if __name__ == "__main__":
+    main()

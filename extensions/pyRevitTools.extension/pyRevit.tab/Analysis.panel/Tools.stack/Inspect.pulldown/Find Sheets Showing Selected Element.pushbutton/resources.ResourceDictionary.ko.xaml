@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_containing">선택한 요소를 포함하는 시트</sys:String>
+    <sys:String x:Key="no_sheets">선택한 요소 중 시트에 표시되는 것이 없습니다.</sys:String>
+    <sys:String x:Key="table_title">시트 및 뷰포트</sys:String>
+    <sys:String x:Key="column_number">시트 번호</sys:String>
+    <sys:String x:Key="column_sheet">시트 이름</sys:String>
+    <sys:String x:Key="column_sheet_show">시트 표시</sys:String>
+    <sys:String x:Key="column_view">뷰</sys:String>
+    <sys:String x:Key="column_viewport_show">뷰포트 표시</sys:String>
+</ResourceDictionary>

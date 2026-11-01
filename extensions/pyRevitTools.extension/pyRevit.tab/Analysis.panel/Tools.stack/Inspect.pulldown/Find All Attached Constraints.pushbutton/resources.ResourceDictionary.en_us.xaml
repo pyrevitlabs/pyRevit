@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="constraints_of_element">Constraints attached to element {}</sys:String>
+    <sys:String x:Key="no_constraints">No constraints are attached to this element.</sys:String>
+    <sys:String x:Key="table_title">{} constraint(s)</sys:String>
+    <sys:String x:Key="column_constraint">Constraint</sys:String>
+    <sys:String x:Key="column_constraint_type">Constraint type</sys:String>
+    <sys:String x:Key="column_reference_type">Reference type</sys:String>
+    <sys:String x:Key="column_category">Linked category</sys:String>
+    <sys:String x:Key="column_element">Linked element</sys:String>
+    <sys:String x:Key="this_element">this</sys:String>
+    <sys:String x:Key="unknown_category">Unknown</sys:String>
+</ResourceDictionary>
