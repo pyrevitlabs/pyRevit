@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="all_selected">所有选定图元</sys:String>
+    <sys:String x:Key="sum_prompt">对参数值求和：</sys:String>
+    <sys:String x:Key="no_shared_params">所选图元没有可求和的共有数值参数。</sys:String>
+    <sys:String x:Key="sum_of_parameter">{} 求和</sys:String>
+    <sys:String x:Key="summary_title">汇总</sys:String>
+    <sys:String x:Key="column_group">分组</sys:String>
+    <sys:String x:Key="column_elements">图元数</sys:String>
+    <sys:String x:Key="column_total">总计</sys:String>
+    <sys:String x:Key="breakdown_title">明细：{}</sys:String>
+    <sys:String x:Key="column_element">图元</sys:String>
+    <sys:String x:Key="column_value">值</sys:String>
+    <sys:String x:Key="total">总计</sys:String>
+</ResourceDictionary>

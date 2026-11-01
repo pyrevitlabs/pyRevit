@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="all_selected">Todos los elementos seleccionados</sys:String>
+    <sys:String x:Key="sum_prompt">Sumar los valores del parámetro:</sys:String>
+    <sys:String x:Key="no_shared_params">Los elementos seleccionados no comparten ningún parámetro numérico que sumar.</sys:String>
+    <sys:String x:Key="sum_of_parameter">Suma de {}</sys:String>
+    <sys:String x:Key="summary_title">Totales</sys:String>
+    <sys:String x:Key="column_group">Grupo</sys:String>
+    <sys:String x:Key="column_elements">Elementos</sys:String>
+    <sys:String x:Key="column_total">Total</sys:String>
+    <sys:String x:Key="breakdown_title">Desglose: {}</sys:String>
+    <sys:String x:Key="column_element">Elemento</sys:String>
+    <sys:String x:Key="column_value">Valor</sys:String>
+    <sys:String x:Key="total">Total</sys:String>
+</ResourceDictionary>
