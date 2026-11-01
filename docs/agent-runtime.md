@@ -165,7 +165,7 @@ items and add `total` and `truncated`.
 The CLI validates the inputs, then sends a fixed script that calls
 `pyrevit.agent._operations.invoke`; the operation's module and function travel in the run's
 inputs, never in the script. `invoke` checks the live marker and the inputs again inside
-Revit. `dev/scripts/test_automation_marker.py` fails when declared inputs don't match the
+Revit. `dev/scripts/test_standalone_automation_marker.py` fails when declared inputs don't match the
 function they mark.
 
 !!! tip "Long approvals"
