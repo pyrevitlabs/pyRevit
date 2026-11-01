@@ -75,5 +75,4 @@ tooltip:
     Na janela de saída WebView2 o relatório é interativo: correções
     com um clique, seleção e visualização 3D do recorte da vista.
 engine:
-  clean: true
   persistent: true
