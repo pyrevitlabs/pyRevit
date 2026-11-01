@@ -157,12 +157,14 @@ def report(groups, param_def):
         )
         for group_name, element_list in groups.items()
     )
-    heading = _t("sum_of_parameter").format(escape_for_output(param_def.name))
     unit_label = display_unit_label(param_def)
-    if unit_label:
-        heading = "{} [{}]".format(heading, escape_for_output(unit_label))
-    output.print_md("### {}".format(heading))
-    output.print_table(
+    unit_suffix = " [{}]".format(escape_for_output(unit_label)) if unit_label else ""
+    output.print_md(
+        "### {}".format(
+            _t("sum_of_parameter").format(escape_for_output(param_def.name))
+        )
+    )
+    output.print_html_table(
         table_data=[
             [
                 escape_for_output(group_name),
@@ -172,7 +174,13 @@ def report(groups, param_def):
             for group_name, values in values_by_group.items()
         ],
         title=_t("summary_title"),
-        columns=[_t("column_group"), _t("column_elements"), _t("column_total")],
+        columns=[
+            _t("column_group"),
+            _t("column_elements"),
+            _t("column_total") + unit_suffix,
+        ],
+        column_head_align_styles=["left", "right", "right"],
+        column_data_align_styles=["left", "right", "right"],
     )
     for group_name, values in values_by_group.items():
         rows = [
@@ -182,11 +190,13 @@ def report(groups, param_def):
         rows.append(
             [_t("total"), format_value(sum(value for _, value in values), param_def)]
         )
-        output.print_table(
+        output.print_html_table(
             table_data=rows,
             title=_t("breakdown_title").format(escape_for_output(group_name)),
-            columns=[_t("column_element"), _t("column_value")],
+            columns=[_t("column_element"), _t("column_value") + unit_suffix],
             last_line_style="font-weight:bold;",
+            column_head_align_styles=["left", "right"],
+            column_data_align_styles=["left", "right"],
         )
 
 
