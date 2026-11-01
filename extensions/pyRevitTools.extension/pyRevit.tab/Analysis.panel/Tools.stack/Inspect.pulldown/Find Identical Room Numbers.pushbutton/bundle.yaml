@@ -23,3 +23,4 @@ context:
       - active-section-view
       - active-elevation-view
       - active-3d-view
+      - active-schedule
