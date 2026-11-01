@@ -3,6 +3,7 @@
 Select a few elements first (optional), then run this script.
 In the output window: plain click a link to replace the selection,
 ctrl+click a link to add it to the current selection instead.
+The last link selects every element of the model at once, however many there are.
 """
 
 from pyrevit import revit, script, DB
@@ -32,3 +33,11 @@ print("Ctrl+click a link to add it to the current selection.\n")
 
 for idx, elid in enumerate(element_ids):
     print("{}: {}".format(idx + 1, output.linkify(elid)))
+
+all_element_ids = list(
+    DB.FilteredElementCollector(revit.doc).WhereElementIsNotElementType().ToElementIds()
+)
+print("")
+print(
+    "All {} elements: {}".format(len(all_element_ids), output.linkify(all_element_ids))
+)

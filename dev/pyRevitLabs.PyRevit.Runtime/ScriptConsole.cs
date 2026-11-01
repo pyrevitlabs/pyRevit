@@ -1145,6 +1145,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             e.Cancel = true;
         }
 
+        internal ElementIdRegistry ElementIds { get; set; }
+
+        internal string ResolveElementIds(string token) => ElementIds?.Resolve(token);
+
         private static void OpenUrlExternally(string url) {
             try {
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -1322,6 +1326,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 outputWindow._outputHtmlPath = null;
             }
 
+            outputWindow.ElementIds?.Clear();
             outputWindow.ClosedByUser = true;
         }
 

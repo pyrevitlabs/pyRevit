@@ -30,6 +30,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private WeakReference<ScriptRuntime> _runtime;
         private ScriptConsole _window;
+        private readonly ElementIdRegistry _elementIds = new ElementIdRegistry();
         private ScriptIO _outputStream;
         private UIApplication _uiApp;
         private bool _debugMode;
@@ -225,6 +226,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (_window == null || _window.ClosedByUser) {
                     _heldRecords.Close();
                     _window = new ScriptConsole(_debugMode, _uiApp);
+                    _window.ElementIds = _elementIds;
                     _window.Closed += hold_records_while_closed;
                     if (string.IsNullOrEmpty(_window.OutputId))
                         _window.OutputId = "pyrevit-output";
@@ -240,8 +242,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal void TrackRuntimeWindow(ScriptConsole window) {
-            if (window != null)
-                _window = window;
+            if (window == null)
+                return;
+            _window = window;
+            _window.ElementIds = _elementIds;
         }
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
@@ -483,6 +487,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (IsWindowReady)
                 _window.IsSessionOutput = isSessionOutput;
         }
+
+        /// <summary>
+        /// Stores element ids too many to fit in a <c>revit://</c> link and returns the token the
+        /// link carries instead. Safe from any thread: it does not touch the output window. The
+        /// token resolves in this output's window until that window closes.
+        /// </summary>
+        /// <param name="comma_separated_ids">Element id values joined by commas.</param>
+        public string register_element_ids(string comma_separated_ids) => _elementIds.Register(comma_separated_ids);
 
         public void close() { window.Close(); }
         public void hide() { window.Hide(); }
