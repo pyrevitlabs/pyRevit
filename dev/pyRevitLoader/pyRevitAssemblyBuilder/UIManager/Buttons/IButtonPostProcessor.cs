@@ -51,7 +51,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
         /// <summary>
         /// Queues the component's <c>shortcuts</c> for registration as Revit keyboard shortcuts.
-        /// Only push and smart buttons are handled; other component types are ignored.
+        /// Only push, smart, invoke, URL and link buttons are handled; other component types are ignored.
         /// </summary>
         /// <param name="ribbonItem">The ribbon item the shortcuts belong to.</param>
         /// <param name="component">The component containing the shortcut configuration.</param>

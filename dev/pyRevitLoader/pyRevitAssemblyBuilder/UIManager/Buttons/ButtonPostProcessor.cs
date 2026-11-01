@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Autodesk.Revit.UI;
@@ -25,6 +26,15 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         private readonly IIconManager _iconManager;
         private readonly ITooltipManager _tooltipManager;
         private readonly ShortcutRegistrar _shortcutRegistrar;
+
+        private static readonly HashSet<CommandComponentType> ShortcutCapableTypes = new HashSet<CommandComponentType>
+        {
+            CommandComponentType.PushButton,
+            CommandComponentType.SmartButton,
+            CommandComponentType.InvokeButton,
+            CommandComponentType.UrlButton,
+            CommandComponentType.LinkButton
+        };
 
         // Total post-processing time across all Process(...) calls in the current build window.
         // Interlocked so a future off-thread caller (e.g. parallel icon warm-up) can't tear it.
@@ -170,7 +180,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             if (component.Shortcuts == null || component.Shortcuts.Count == 0)
                 return;
 
-            if (component.Type != CommandComponentType.PushButton && component.Type != CommandComponentType.SmartButton)
+            if (!ShortcutCapableTypes.Contains(component.Type))
                 return;
 
             try
