@@ -56,7 +56,9 @@ def collect_type_counts():
     """
     instances = revit.query.get_elements_by_class(DB.FamilyInstance, doc=revit.doc)
     rows = {}
-    with forms.ProgressBar(title=_t("progress_title"), cancellable=True) as progress:
+    with forms.ProgressBar(
+        title=_t("progress_title"), cancellable=True, step=10
+    ) as progress:
         for index, instance in enumerate(instances):
             if progress.cancelled:
                 script.exit()

@@ -52,7 +52,7 @@ def get_definition_type(definition):
 def get_definition_spec(definition):
     if HOST_APP.is_newer_than(2021):
         return DB.LabelUtils.GetLabelForSpec(definition.GetDataType())
-    return definition.ParameterType
+    return DB.LabelUtils.GetLabelFor(definition.ParameterType)
 
 
 def read_numeric_value(element, param_name):

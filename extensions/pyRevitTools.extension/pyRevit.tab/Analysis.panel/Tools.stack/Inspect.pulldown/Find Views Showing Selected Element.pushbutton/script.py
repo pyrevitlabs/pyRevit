@@ -22,7 +22,14 @@ def collect_views():
         .OfCategory(DB.BuiltInCategory.OST_Views)
         .WhereElementIsNotElementType()
     )
-    return [view for view in views if not view.IsTemplate]
+    return [
+        view
+        for view in views
+        if not view.IsTemplate
+        and DB.FilteredElementCollector.IsViewValidForElementIteration(
+            revit.doc, view.Id
+        )
+    ]
 
 
 def count_selected_elements_in(view, selected_ids):

@@ -36,13 +36,9 @@ tooltip:
     Especialmente útil para encontrar legendas
 author: '{{author}}'
 context:
-  - doc-project
-  - any:
-      - active-plan-view
-      - active-section-view
-      - active-elevation-view
-      - active-detail-view
-      - active-3d-view
-      - active-drafting-view
-      - active-legend
-      - active-schedule
+  all:
+    - doc-project
+  not_any:
+    - active-sheet
+    - active-project-browser
+    - active-system-browser
