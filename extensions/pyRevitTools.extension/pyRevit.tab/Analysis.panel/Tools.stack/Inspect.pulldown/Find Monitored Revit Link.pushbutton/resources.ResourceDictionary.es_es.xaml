@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_monitored_links">Los elementos seleccionados no monitorean ningún vínculo de Revit.</sys:String>
+    <sys:String x:Key="table_title">Vínculos de Revit monitoreados</sys:String>
+    <sys:String x:Key="column_element">Elemento</sys:String>
+    <sys:String x:Key="column_link">Vínculo de Revit</sys:String>
+</ResourceDictionary>
