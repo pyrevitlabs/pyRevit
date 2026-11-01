@@ -157,6 +157,54 @@ class _DryTransactionGroup(object):
         return False
 
 
+LINE_PATTERN_ELEMENT = type("LinePatternElement", (), {})
+FILL_PATTERN_ELEMENT = type("FillPatternElement", (), {})
+SHARED_PARAMETER_ELEMENT = type("SharedParameterElement", (), {})
+PROJECTION = 1
+CUT = 2
+
+
+class _RecordingLogger(object):
+    def __init__(self):
+        self.debug_calls = []
+
+    def debug(self, message, *args):
+        self.debug_calls.append(message % args)
+
+
+class _Category(object):
+    def __init__(self, projection_pattern_id, cut_pattern_id=-1, subcategories=()):
+        self._pattern_ids = {PROJECTION: projection_pattern_id, CUT: cut_pattern_id}
+        self.SubCategories = list(subcategories)
+
+    def GetLinePatternId(self, style_type):
+        return self._pattern_ids[style_type]
+
+
+def _collector_doc(categories=(), elements_by_class=None, bound_definitions=()):
+    return types.SimpleNamespace(
+        Settings=types.SimpleNamespace(Categories=list(categories)),
+        ParameterBindings=types.SimpleNamespace(
+            Contains=lambda definition: definition in bound_definitions
+        ),
+        elements_by_class=elements_by_class or {},
+        line_categories=[],
+    )
+
+
+def _line_pattern(element_id):
+    return types.SimpleNamespace(Id=element_id, Name="pattern {}".format(element_id))
+
+
+def _shared_parameter(element_id):
+    return types.SimpleNamespace(
+        Id=element_id,
+        Name="parameter {}".format(element_id),
+        GuidValue="guid-{}".format(element_id),
+        GetDefinition=lambda: "definition-{}".format(element_id),
+    )
+
+
 def _load_probe():
     db = types.SimpleNamespace(
         IFailuresPreprocessor=object,
@@ -165,15 +213,19 @@ def _load_probe():
         ),
         Events=types.SimpleNamespace(DocumentChangedEventArgs=object),
         UndoOperation=types.SimpleNamespace(TransactionCommitted=COMMITTED),
-        GraphicsStyleType=types.SimpleNamespace(Projection=1, Cut=2),
-        LinePatternElement=object,
-        FillPatternElement=object,
-        SharedParameterElement=object,
+        GraphicsStyleType=types.SimpleNamespace(Projection=PROJECTION, Cut=CUT),
+        LinePatternElement=LINE_PATTERN_ELEMENT,
+        FillPatternElement=FILL_PATTERN_ELEMENT,
+        SharedParameterElement=SHARED_PARAMETER_ELEMENT,
     )
     revit = types.ModuleType("pyrevit.revit")
     revit.Transaction = _Transaction
     revit.DryTransactionGroup = _DryTransactionGroup
-    revit.query = types.SimpleNamespace()
+    revit.query = types.SimpleNamespace(
+        get_elements_by_class=lambda cls, doc: doc.elements_by_class.get(cls, []),
+        get_name=lambda element: element.Name,
+        get_line_categories=lambda doc: doc.line_categories,
+    )
     revit.events = types.SimpleNamespace(create_handler=lambda func, _: func)
     pyrevit = types.ModuleType("pyrevit")
     pyrevit.revit = revit
@@ -181,7 +233,17 @@ def _load_probe():
     pyrevit.EXEC_PARAMS = types.SimpleNamespace(exec_id="PyRevitTest")
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: lambda element_id: element_id
-    stubs = {"pyrevit": pyrevit, "pyrevit.revit": revit, "pyrevit.compat": compat}
+    coreutils = types.ModuleType("pyrevit.coreutils")
+    logger_module = types.ModuleType("pyrevit.coreutils.logger")
+    logger_module.get_logger = lambda name: _RecordingLogger()
+    coreutils.logger = logger_module
+    stubs = {
+        "pyrevit": pyrevit,
+        "pyrevit.revit": revit,
+        "pyrevit.compat": compat,
+        "pyrevit.coreutils": coreutils,
+        "pyrevit.coreutils.logger": logger_module,
+    }
     saved = {name: sys.modules.get(name) for name in stubs}
     sys.modules.update(stubs)
     try:
@@ -245,10 +307,13 @@ class FindUnusedTests(unittest.TestCase):
         doc = _FakeDoc({10: {"deleted": [10], "failures": 1}})
         self.assertEqual(self.probe.find_unused(doc, [self._candidate(10)]), [])
 
-    def test_refused_delete_means_in_use(self):
+    def test_refused_delete_means_in_use_and_is_logged(self):
         doc = _FakeDoc({10: {"raises": True}, 11: {"deleted": [11]}})
+        self.probe.logger.debug_calls[:] = []
         result = self.probe.find_unused(doc, [self._candidate(10), self._candidate(11)])
         self.assertEqual([x.element_id for x in result], [11])
+        self.assertEqual(len(self.probe.logger.debug_calls), 1)
+        self.assertIn("item 10", self.probe.logger.debug_calls[0])
 
     def test_no_change_event_means_in_use(self):
         doc = _FakeDoc({10: {}})
@@ -281,6 +346,35 @@ class FindUnusedTests(unittest.TestCase):
         )
         self.assertEqual([x.element_id for x in result], [10])
         self.assertEqual(progress.updates, [(1, 3)])
+
+
+class CollectorTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.probe = _load_probe()
+
+    def test_line_patterns_set_in_object_styles_are_not_candidates(self):
+        doc = _collector_doc(
+            categories=[
+                _Category(101, subcategories=[_Category(-1, cut_pattern_id=102)])
+            ],
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102, 103, -5)]
+            },
+        )
+        candidates = self.probe._collect_line_patterns(doc)
+        self.assertEqual([x.element_id for x in candidates], [103])
+
+    def test_bound_shared_parameters_are_not_candidates(self):
+        doc = _collector_doc(
+            elements_by_class={
+                SHARED_PARAMETER_ELEMENT: [_shared_parameter(x) for x in (201, 202)]
+            },
+            bound_definitions={"definition-201"},
+        )
+        candidates = self.probe._collect_shared_parameters(doc)
+        self.assertEqual([x.element_id for x in candidates], [202])
+        self.assertEqual(candidates[0].detail, "guid-202")
 
 
 class PurgeTests(unittest.TestCase):

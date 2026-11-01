@@ -18,12 +18,15 @@ from pyrevit import EXEC_PARAMS
 from pyrevit import revit, DB
 from pyrevit.revit import query, events
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.coreutils.logger import get_logger
 
 
 LINE_STYLES = "Line Styles"
 LINE_PATTERNS = "Line Patterns"
 FILL_PATTERNS = "Fill Patterns"
 SHARED_PARAMETERS = "Shared Parameters"
+
+logger = get_logger(__name__)
 
 get_elementid_value = get_elementid_value_func()
 
@@ -228,7 +231,13 @@ def _is_unused(doc, candidate, recorder):
     failures = PurgeProbeFailureRecorder()
     try:
         _delete_and_roll_back(doc, candidate, failures)
-    except Exception:  # pylint: disable=broad-except
+    except Exception as check_error:  # pylint: disable=broad-except
+        logger.debug(
+            "Deep Purge check failed for %s %s: %s",
+            candidate.kind,
+            candidate.name,
+            check_error,
+        )
         return False
     if failures.failed or not recorder.changed:
         return False
