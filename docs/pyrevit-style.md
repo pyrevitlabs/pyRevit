@@ -4,7 +4,7 @@ What a pyRevit Python script should look like, for new contributors and for AI a
 
 Scope:
 
-- **Python scripts only** (IronPython 2.7, IronPython 3.4, CPython 3). C# and VB.NET bundles follow the C# conventions in [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md#code-style); Ruby, Dynamo and Grasshopper bundles are not covered.
+- **Python scripts only** (IronPython 2.7, IronPython 3.4, CPython 3). C# bundles follow the C# conventions in [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md#code-style); VB.NET, Ruby, Dynamo and Grasshopper bundles are not covered.
 - **`script.py` and `config.py` stand for `*script.py` and `*config.py`.** pyRevit picks the entry point by file name ending, so `export_script.py` and `export_config.py` work the same as the bare names.
 - [Button metadata](#button-metadata) applies to every bundle language.
 
