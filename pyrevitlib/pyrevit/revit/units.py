@@ -67,6 +67,72 @@ def get_unit_info(spec_type_id, doc=None):
     return unit, unit_label, symbol, symbol_label
 
 
+def is_measurable(spec):
+    """Tell whether a parameter spec carries a unit.
+
+    Args:
+        spec (DB.ForgeTypeId or DB.UnitType): Revit 2022+ takes the parameter
+            data type (``Definition.GetDataType()``), Revit 2021 takes
+            ``Definition.UnitType``
+
+    Returns:
+        (bool): False for unitless specs such as integers, text or yes/no
+    """
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitUtils.IsMeasurableSpec(spec)
+    return spec != DB.UnitType.UT_Undefined
+
+
+def display_unit_label(spec, doc=None):
+    """Return the name of the display unit that a document uses for a spec.
+
+    The name is read from the unit and not from the unit symbol, because the
+    symbol can be empty in a project.
+
+    Args:
+        spec (DB.ForgeTypeId or DB.UnitType): see :func:`is_measurable`
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (str): unit name, or an empty string for unitless specs
+    """
+    if not is_measurable(spec):
+        return ""
+    doc = doc or DOCS.doc
+    format_options = doc.GetUnits().GetFormatOptions(spec)
+    if HOST_APP.is_newer_than(2021):
+        return DB.LabelUtils.GetLabelForUnit(format_options.GetUnitTypeId())
+    return DB.LabelUtils.GetLabelFor(format_options.DisplayUnits)
+
+
+def format_value(value, spec, doc=None):
+    """Format an internal value in the display units of a document.
+
+    Args:
+        value (float): internal value
+        spec (DB.ForgeTypeId or DB.UnitType): see :func:`is_measurable`
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (str): value in display units. Unitless specs are shown as plain
+            numbers, with two decimals unless the value is whole.
+    """
+    if not is_measurable(spec):
+        return str(int(value)) if value == int(value) else "{:.2f}".format(value)
+    units = (doc or DOCS.doc).GetUnits()
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(
+            units=units, specTypeId=spec, value=value, forEditing=False
+        )
+    return DB.UnitFormatUtils.Format(
+        units=units,
+        unitType=spec,
+        value=value,
+        maxAccuracy=False,
+        forEditing=False,
+    )
+
+
 @automation.operation(
     "pyrevit.units.format-area",
     PlainEnglish="Format an internal area value using the project's display units.",
