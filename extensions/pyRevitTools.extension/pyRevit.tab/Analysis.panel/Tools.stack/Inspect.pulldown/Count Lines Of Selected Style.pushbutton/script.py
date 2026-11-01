@@ -8,9 +8,7 @@ from collections import OrderedDict
 
 from pyrevit import script
 from pyrevit import revit, DB, EXEC_PARAMS
-from pyrevit.coreutils import applocales
-
-from outputtext import escape_for_output
+from pyrevit.coreutils import applocales, escape_for_output
 
 output = script.get_output()
 

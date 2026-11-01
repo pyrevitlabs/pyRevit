@@ -10,9 +10,7 @@ from pyrevit import forms, script
 from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit.compat import safe_strtype
-from pyrevit.coreutils import applocales
-
-from outputtext import escape_for_output
+from pyrevit.coreutils import applocales, escape_for_output
 
 logger = script.get_logger()
 output = script.get_output()
