@@ -140,7 +140,8 @@ Mark dangerous-to-break constraints explicitly with Google-style sections: `Impo
 
 ### Language rules
 
-- **Python**: Google-style docstrings on **public** symbols (non-underscored).
+- **Python**: Google-style docstrings on **public** symbols (non-underscored) of importable library code: `pyrevitlib/` and extension `lib/` folders.
+  - Bundle entry points (`*_script.py`, `*_config.py`) and helper modules inside a bundle folder are not an API. Their functions and classes are exempt unless a docstring adds a non-obvious contract.
 - **C#**: XML `///` doc comments on **public** classes and methods. `<summary>` carries purpose; `<param>` / `<returns>` / `<exception>` cover non-obvious details only.
 - Private (underscored Python, `private` / `internal` C#) members are exempt.
 
