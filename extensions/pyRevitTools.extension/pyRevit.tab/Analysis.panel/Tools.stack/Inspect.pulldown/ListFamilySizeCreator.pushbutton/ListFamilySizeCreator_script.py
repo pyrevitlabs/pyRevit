@@ -118,7 +118,7 @@ def collect_family_items():
                     if item:
                         items.append(item)
             if progress.cancelled:
-                break
+                script.exit()
             progress.update_progress(index, len(families))
     return items
 

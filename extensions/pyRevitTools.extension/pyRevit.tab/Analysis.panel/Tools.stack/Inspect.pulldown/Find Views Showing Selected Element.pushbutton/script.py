@@ -41,7 +41,7 @@ def find_showing_views(selected_ids):
     with forms.ProgressBar(title=_t("progress_title"), cancellable=True) as progress:
         for index, view in enumerate(views):
             if progress.cancelled:
-                break
+                script.exit()
             progress.update_progress(index, len(views))
             matches = count_selected_elements_in(view, selected_ids)
             if matches:

@@ -59,7 +59,7 @@ def collect_type_counts():
     with forms.ProgressBar(title=_t("progress_title"), cancellable=True) as progress:
         for index, instance in enumerate(instances):
             if progress.cancelled:
-                break
+                script.exit()
             progress.update_progress(index, len(instances))
             type_id = instance.GetTypeId()
             if type_id in rows:
