@@ -110,6 +110,9 @@ Three consecutive visual failures disable highlighting for the Revit process and
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
 | `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
+| `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
+| `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
+| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source |
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
@@ -133,6 +136,37 @@ and adds a warning. The corresponding `get_run` record can be incomplete or unav
 Every tool that talks to Revit accepts an optional `revit` argument (a year such as
 `"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
 sets a default.
+
+### Automation operations
+
+pyrevitlib and rpw functions marked with `@automation.operation` (from `pyrevit_automation`)
+are listed by `list_automation` with a stable id, mode, effects, context and transaction.
+`run_automation` can call an operation when it is hand-wired in
+`dev/pyRevitLabs/pyRevitCLI/PyRevitAutomationOperations.cs`, or when its marker declares
+`inputs` on a module-level `query` or `pure` function that opens no transaction:
+
+```python
+@automation.operation(
+    "pyrevit.elements.name",
+    PlainEnglish="Read an element name, including a view title on a sheet when requested.",
+    effects=("model.read",),
+    inputs=("element: element", "title_on_sheet: boolean?"),
+)
+def get_name(element, title_on_sheet=False):
+```
+
+Each input is `"<name>: <type>"`, with `?` for an optional one, and is passed as the keyword
+argument of the same name. Types are `string` (non-blank, at most 256 characters), `number`,
+`integer`, `boolean`, `element` (an element id, resolved in the active document) and `scalar`
+(a string, number or boolean). `inputs=()` declares an operation that takes no inputs. A
+function with a `doc` parameter gets the active document. List results keep their first 200
+items and add `total` and `truncated`.
+
+The CLI validates the inputs, then sends a fixed script that calls
+`pyrevit.agent._operations.invoke`; the operation's module and function travel in the run's
+inputs, never in the script. `invoke` checks the live marker and the inputs again inside
+Revit. `dev/scripts/test_automation_marker.py` fails when declared inputs don't match the
+function they mark.
 
 !!! tip "Long approvals"
 

@@ -7,8 +7,153 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI {
     /// <summary>
+    /// One entry of an automation marker's <c>inputs</c> declaration, such as
+    /// <c>"element: element"</c> or <c>"title_on_sheet: boolean?"</c>.
+    /// </summary>
+    /// <remarks>
+    /// Mirrors <c>parse_inputs</c> and <c>validate_inputs</c> in <c>pyrevitlib/pyrevit_automation.py</c>,
+    /// which check the same inputs again inside Revit.
+    /// </remarks>
+    internal sealed class AutomationInput {
+        public const int MaxTextLength = 256;
+
+        public static readonly string[] Types = { "string", "number", "integer", "boolean", "element", "scalar" };
+
+        private static readonly Regex Spec = new Regex(@"^\s*(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*(?<type>[a-z]+)\s*(?<optional>\?)?\s*$", RegexOptions.Compiled);
+
+        public string Name { get; private set; }
+        public string Type { get; private set; }
+        public bool Required { get; private set; }
+
+        /// <summary>
+        /// Parses a declaration, throwing <c>invalid_automation_marker</c> for a malformed entry,
+        /// an unknown type or a name declared twice.
+        /// </summary>
+        public static List<AutomationInput> ParseAll(IEnumerable<string> specs) {
+            var inputs = new List<AutomationInput>();
+            foreach (var spec in specs) {
+                var match = Spec.Match(spec ?? string.Empty);
+                if (!match.Success || !Types.Contains(match.Groups["type"].Value))
+                    throw new AgentClientException("invalid_automation_marker", $"Automation input '{spec}' must look like 'name: type' with a type of {string.Join(", ", Types)}.");
+                var name = match.Groups["name"].Value;
+                if (inputs.Any(input => input.Name == name))
+                    throw new AgentClientException("invalid_automation_marker", $"Automation input '{name}' is declared twice.");
+                inputs.Add(new AutomationInput {
+                    Name = name,
+                    Type = match.Groups["type"].Value,
+                    Required = !match.Groups["optional"].Success,
+                });
+            }
+            return inputs;
+        }
+
+        public JObject ToJson() {
+            return new JObject {
+                ["name"] = Name,
+                ["type"] = Type,
+                ["required"] = Required,
+            };
+        }
+
+        /// <summary>
+        /// Checks an input object against a declaration and returns it unchanged.
+        /// </summary>
+        public static JObject Validate(List<AutomationInput> declared, JToken input) {
+            var inputs = input as JObject
+                ?? throw new AgentClientException("invalid_params", "'inputs' must be an object.");
+            var unknown = inputs.Properties()
+                .Select(property => property.Name)
+                .Where(name => declared.All(spec => spec.Name != name))
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToList();
+            if (unknown.Count > 0) {
+                var accepted = declared.Count == 0 ? "nothing" : string.Join(", ", declared.Select(spec => spec.Name).OrderBy(name => name, StringComparer.Ordinal));
+                throw new AgentClientException("invalid_params", $"'inputs' accepts only {accepted} (got {string.Join(", ", unknown)}).");
+            }
+            foreach (var spec in declared) {
+                var value = inputs[spec.Name];
+                if (value == null || value.Type == JTokenType.Null) {
+                    if (spec.Required)
+                        throw new AgentClientException("invalid_params", $"'inputs.{spec.Name}' is required.");
+                    if (value != null)
+                        throw new AgentClientException("invalid_params", $"'inputs.{spec.Name}' must be left out rather than null.");
+                    continue;
+                }
+                spec.Check(value);
+            }
+            return inputs;
+        }
+
+        private void Check(JToken value) {
+            switch (Type) {
+                case "string":
+                    CheckText(value);
+                    return;
+                case "boolean":
+                    if (value.Type != JTokenType.Boolean)
+                        throw Invalid("must be true or false");
+                    return;
+                case "integer":
+                    if (!IsInt64(value))
+                        throw Invalid("must be an integer");
+                    return;
+                case "element":
+                    if (!IsInt64(value))
+                        throw Invalid("must be an element id");
+                    return;
+                case "number":
+                    if (!IsNumber(value))
+                        throw Invalid("must be a finite number");
+                    return;
+                case "scalar":
+                    if (value.Type == JTokenType.String)
+                        CheckText(value);
+                    else if (value.Type != JTokenType.Boolean && !IsNumber(value))
+                        throw Invalid("must be a string, a finite number or a boolean");
+                    return;
+                default:
+                    throw Invalid("has an unknown type");
+            }
+        }
+
+        private void CheckText(JToken value) {
+            if (value.Type != JTokenType.String)
+                throw Invalid("must be a string");
+            var text = value.Value<string>();
+            if (string.IsNullOrWhiteSpace(text) || text.Length > MaxTextLength)
+                throw Invalid($"must be non-empty and contain at most {MaxTextLength} characters");
+        }
+
+        // A JSON integer beyond the Int64 range parses as a BigInteger.
+        private static bool IsInt64(JToken value) {
+            var raw = (value as JValue)?.Value;
+            return value.Type == JTokenType.Integer && (raw is long || raw is int);
+        }
+
+        private static bool IsNumber(JToken value) {
+            if (IsInt64(value))
+                return true;
+            if (value.Type != JTokenType.Float)
+                return false;
+            var number = value.Value<double>();
+            return !double.IsNaN(number) && !double.IsInfinity(number);
+        }
+
+        private AgentClientException Invalid(string problem) {
+            return new AgentClientException("invalid_params", $"'inputs.{Name}' {problem}.");
+        }
+    }
+
+    /// <summary>
     /// Reviewed Python automation operations that can run through the guarded agent host.
     /// </summary>
+    /// <remarks>
+    /// An operation is invocable when it is hand-wired below, or when its marker in
+    /// pyrevitlib or rpw declares <c>inputs</c> on a module-level <c>query</c> or <c>pure</c>
+    /// function that opens no transaction. Hand-wired entries take precedence. Marked operations
+    /// run through a fixed script; the function to call travels in the run's inputs, and
+    /// <c>pyrevit.agent._operations</c> checks the live marker again before calling it.
+    /// </remarks>
     internal static class PyRevitAutomationOperations {
         private sealed class Operation {
             public string Id { get; set; }
@@ -49,8 +194,44 @@ namespace pyRevitCLI {
             },
         };
 
+        /// <summary>
+        /// The script every marked operation runs; <c>inputs</c> carries the operation and its inputs.
+        /// </summary>
+        internal const string MarkedOperationSource =
+            "from pyrevit.agent import _operations\n"
+            + "result = _operations.invoke(inputs['operation'], inputs['inputs'], doc)\n";
+
+        private const int MaxTitleLength = 80;
+
+        private static readonly Regex ModuleName = new Regex(@"^(?:pyrevit|rpw)(?:\.[A-Za-z_][A-Za-z0-9_]*)+$", RegexOptions.Compiled);
+        private static readonly Regex FunctionName = new Regex(@"^[A-Za-z][A-Za-z0-9_]*$", RegexOptions.Compiled);
+
         public static bool IsInvocable(string id) {
-            return !string.IsNullOrWhiteSpace(id) && Operations.ContainsKey(id);
+            return !string.IsNullOrWhiteSpace(id)
+                && (Operations.ContainsKey(id) || PyRevitLibraryIndex.FindAutomation(id) is LibrarySymbol symbol && IsMarkedInvocable(symbol));
+        }
+
+        /// <summary>
+        /// Whether run_automation can run this marked symbol, either hand-wired or from its marker.
+        /// </summary>
+        internal static bool IsInvocable(LibrarySymbol symbol) {
+            return symbol?.Automation != null
+                && (Operations.ContainsKey(symbol.Automation.Id) || IsMarkedInvocable(symbol));
+        }
+
+        /// <summary>
+        /// A marked operation runs from its marker when it declares inputs on a module-level
+        /// query or pure function of pyrevitlib or rpw that opens no transaction.
+        /// </summary>
+        internal static bool IsMarkedInvocable(LibrarySymbol symbol) {
+            var automation = symbol?.Automation;
+            return automation?.Inputs != null
+                && symbol.Kind == "function"
+                && symbol.Owner == null
+                && (automation.Mode == "query" || automation.Mode == "pure")
+                && automation.Transaction == "none"
+                && ModuleName.IsMatch(symbol.Module ?? string.Empty)
+                && FunctionName.IsMatch(symbol.Name ?? string.Empty);
         }
 
         /// <summary>
@@ -61,7 +242,10 @@ namespace pyRevitCLI {
                 throw new AgentClientException("invalid_params", "'id' is required.");
             Operation operation;
             if (!Operations.TryGetValue(id, out operation)) {
-                if (PyRevitLibraryIndex.IsMarkedAutomation(id))
+                var symbol = PyRevitLibraryIndex.FindAutomation(id);
+                if (symbol != null && IsMarkedInvocable(symbol))
+                    return ResolveMarked(symbol, input);
+                if (symbol != null)
                     throw new AgentClientException("automation_not_exposed", $"'{id}' is listed by list_automation but cannot be run through run_automation. Call it from a run_query or run_modify script instead.");
                 throw new AgentClientException("unknown_automation_id", $"'{id}' is not an invocable automation operation.");
             }
@@ -76,6 +260,29 @@ namespace pyRevitCLI {
                 ["source"] = operation.Source,
                 ["requires_document"] = operation.RequiresDocument,
                 ["inputs"] = inputs,
+            };
+        }
+
+        private static JObject ResolveMarked(LibrarySymbol symbol, JToken input) {
+            var automation = symbol.Automation;
+            var inputs = AutomationInput.Validate(automation.Inputs, input);
+            var title = automation.PlainEnglish.Trim().TrimEnd('.');
+            if (title.Length > MaxTitleLength)
+                title = title.Substring(0, MaxTitleLength - 3).TrimEnd() + "...";
+
+            return new JObject {
+                ["id"] = automation.Id,
+                ["title"] = title,
+                ["source"] = MarkedOperationSource,
+                ["requires_document"] = automation.Context == "document",
+                ["inputs"] = new JObject {
+                    ["operation"] = new JObject {
+                        ["id"] = automation.Id,
+                        ["module"] = symbol.Module,
+                        ["function"] = symbol.Name,
+                    },
+                    ["inputs"] = inputs,
+                },
             };
         }
 

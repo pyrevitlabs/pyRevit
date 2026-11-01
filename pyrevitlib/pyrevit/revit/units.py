@@ -72,6 +72,7 @@ def get_unit_info(spec_type_id, doc=None):
     PlainEnglish="Format an internal area value using the project's display units.",
     mode="query",
     effects=("model.read",),
+    inputs=("area_value: number",),
 )
 def format_area(area_value, doc=None):
     """Return formatted area value in document units.
@@ -106,6 +107,7 @@ def format_area(area_value, doc=None):
     PlainEnglish="Format an internal length value using the project's display units.",
     mode="query",
     effects=("model.read",),
+    inputs=("length_value: number",),
 )
 def format_length(length_value, doc=None):
     """Return formatted length value in document units.
@@ -140,6 +142,7 @@ def format_length(length_value, doc=None):
     PlainEnglish="Format a rise-over-run slope using the project's display units.",
     mode="query",
     effects=("model.read",),
+    inputs=("slope_value: number",),
 )
 def format_slope(slope_value, doc=None):
     """Return formatted slope value in document units.

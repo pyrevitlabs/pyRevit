@@ -73,6 +73,7 @@ ElementHistory = namedtuple("ElementHistory", ["creator", "owner", "last_changed
     "pyrevit.elements.name",
     PlainEnglish="Read an element name, including a view title on a sheet when requested.",
     effects=("model.read",),
+    inputs=("element: element", "title_on_sheet: boolean?"),
 )
 def get_name(element, title_on_sheet=False):
     """
@@ -109,6 +110,7 @@ def get_name(element, title_on_sheet=False):
     "pyrevit.elements.type",
     PlainEnglish="Get the element type for a Revit element.",
     effects=("model.read",),
+    inputs=("element: element",),
 )
 def get_type(element):
     """Get element type.
@@ -127,6 +129,7 @@ def get_type(element):
     "pyrevit.elements.symbol-name",
     PlainEnglish="Read the family symbol name used by an element.",
     effects=("model.read",),
+    inputs=("element: element",),
 )
 def get_symbol_name(element):
     """
@@ -145,6 +148,7 @@ def get_symbol_name(element):
     "pyrevit.elements.family-name",
     PlainEnglish="Read the family name used by an element.",
     effects=("model.read",),
+    inputs=("element: element",),
 )
 def get_family_name(element):
     """
@@ -473,6 +477,7 @@ def get_value_range(param_name, doc=None, elements=None):
     "pyrevit.elements.by-parameter",
     PlainEnglish="Find elements whose named parameter matches a supplied value.",
     effects=("model.read",),
+    inputs=("param_name: string", "param_value: scalar", "partial: boolean?"),
 )
 def get_elements_by_parameter(
     param_name, param_value, doc=None, partial=False, view_id=None
@@ -761,6 +766,7 @@ def get_noteblock_families(doc=None):
     "pyrevit.elements.by-family",
     PlainEnglish="Find placed elements whose family name exactly matches a supplied name.",
     effects=("model.read",),
+    inputs=("family_name: string",),
 )
 def get_elements_by_family(family_name, doc=None):
     """
@@ -1134,6 +1140,7 @@ def get_phases_names(doc=None):
     "pyrevit.revisions.list",
     PlainEnglish="List revision elements in the current document.",
     effects=("model.read",),
+    inputs=(),
 )
 def get_revisions(doc=None):
     """
@@ -1184,6 +1191,7 @@ def get_current_sheet_revision(sheet):
     "pyrevit.sheets.list",
     PlainEnglish="List sheets, with optional placeholder and project-browser filtering.",
     effects=("model.read",),
+    inputs=("include_placeholders: boolean?", "include_noappear: boolean?"),
 )
 def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     """
@@ -1435,6 +1443,7 @@ def compare_revisions(src_rev, dest_rev, case_sensitive=False):
     "pyrevit.views.list",
     PlainEnglish="List Revit views with optional type and graphical-view filtering.",
     effects=("model.read",),
+    inputs=("include_nongraphical: boolean?",),
 )
 def get_all_views(doc=None, view_types=None, include_nongraphical=False):
     """
@@ -1575,6 +1584,7 @@ def is_schedule(view):
     "pyrevit.schedules.list",
     PlainEnglish="List schedule views that can be placed on a sheet.",
     effects=("model.read",),
+    inputs=(),
 )
 def get_all_schedules(doc=None):
     """
@@ -3633,6 +3643,7 @@ def find_type(type_class, type_name, doc=None):
     "pyrevit.family-symbols.resolve",
     PlainEnglish="Find a family type by name, family and optional category.",
     effects=("model.read",),
+    inputs=("symbol_name: string", "family_name: string?", "category: string?"),
 )
 def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     """Return a family type by name, or raise listing the family types.
@@ -3698,6 +3709,7 @@ def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     "pyrevit.views.resolve",
     PlainEnglish="Find a Revit view by name or id.",
     effects=("model.read",),
+    inputs=("view_name_or_id: string",),
 )
 def find_view(view_name_or_id, doc=None):
     """Return a view (or view template) by name or id, or raise listing similar names.
@@ -3744,6 +3756,7 @@ def find_view(view_name_or_id, doc=None):
     "pyrevit.plan-views.resolve",
     PlainEnglish="Find a floor plan for a level.",
     effects=("model.read",),
+    inputs=("level: string",),
 )
 def find_plan_view(level, doc=None):
     """Return a floor plan of a level, or raise when the level has none.
