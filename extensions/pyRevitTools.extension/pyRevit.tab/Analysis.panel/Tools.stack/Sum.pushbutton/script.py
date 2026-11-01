@@ -55,16 +55,16 @@ def get_definition_spec(definition):
     return definition.ParameterType
 
 
-def get_param_value(element, param_name):
-    """Return the internal value of a parameter, looked up on the element and then its type.
+def read_numeric_value(element, param_name):
+    """Return the internal value of a numeric parameter, from the element or else its type.
 
     Returns:
         float: The value, or 0.0 when the parameter is missing or not numeric.
     """
-    param = element.LookupParameter(param_name)
+    param = query.get_param(element, param_name)
     if not param:
         element_type = revit.doc.GetElement(element.GetTypeId())
-        param = element_type.LookupParameter(param_name) if element_type else None
+        param = query.get_param(element_type, param_name) if element_type else None
     if not param:
         logger.error(
             "Element with ID: {} does not have parameter: {}.".format(
@@ -72,11 +72,8 @@ def get_param_value(element, param_name):
             )
         )
         return 0.0
-    if param.StorageType == DB.StorageType.Double:
-        return param.AsDouble()
-    if param.StorageType == DB.StorageType.Integer:
-        return float(param.AsInteger())
-    return 0.0
+    value = query.get_param_value(param)
+    return float(value) if isinstance(value, (int, float)) else 0.0
 
 
 def is_measurable(param_def):
@@ -154,7 +151,7 @@ def report(groups, param_def):
         (
             group_name,
             [
-                (element, get_param_value(element, param_def.name))
+                (element, read_numeric_value(element, param_def.name))
                 for element in element_list
             ],
         )
