@@ -48,4 +48,4 @@ tooltip:
 
     Shift+clique:
     Listar cada linha correspondente.
-context: selection
+context: OST_Lines

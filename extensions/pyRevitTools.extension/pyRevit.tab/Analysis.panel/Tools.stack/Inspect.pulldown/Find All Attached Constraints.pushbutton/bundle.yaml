@@ -1,4 +1,6 @@
-context: selection
+context:
+  - doc-project
+  - selection
 title:
   en_us: Find all attached constraints
   ko: 연결된 모든 구속 조건 찾기

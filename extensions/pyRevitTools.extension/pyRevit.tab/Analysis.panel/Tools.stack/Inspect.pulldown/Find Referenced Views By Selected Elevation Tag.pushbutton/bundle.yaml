@@ -1,4 +1,6 @@
-context: selection
+context:
+  - doc-project
+  - OST_Elev
 title:
   en_us: Find referenced views by selected elevation tag
   ko: 선택한 입면 태그로 참조된 뷰 찾기

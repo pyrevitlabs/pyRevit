@@ -18,3 +18,8 @@ tooltip:
   pt_br: Encontra e lista ambientes com números idênticos
 context:
   - doc-project
+  - any:
+      - active-plan-view
+      - active-section-view
+      - active-elevation-view
+      - active-3d-view
