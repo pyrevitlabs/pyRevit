@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_levels">Es muss mindestens eine Ebene ausgewählt werden.</sys:String>
+    <sys:String x:Key="list_elements_title">Alle Elemente auf den ausgewählten Ebenen auflisten</sys:String>
+    <sys:String x:Key="by">Von: [{}]({})</sys:String>
+    <sys:String x:Key="elements_on_level">Elemente auf Ebene {}</sys:String>
+    <sys:String x:Key="no_elements">Dieser Ebene sind keine Elemente zugeordnet.</sys:String>
+    <sys:String x:Key="table_title">{} Kategorien, {} Elemente</sys:String>
+    <sys:String x:Key="column_category">Kategorie</sys:String>
+    <sys:String x:Key="column_count">Anzahl</sys:String>
+    <sys:String x:Key="column_select">Auswählen</sys:String>
+    <sys:String x:Key="select_all">Alle auswählen</sys:String>
+    <sys:String x:Key="no_category">&lt;keine Kategorie&gt;</sys:String>
+</ResourceDictionary>
