@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_elevation_tag">입면 태그를 선택하세요.</sys:String>
+    <sys:String x:Key="table_title">입면 태그가 참조하는 뷰</sys:String>
+    <sys:String x:Key="column_detail_number">상세 번호</sys:String>
+    <sys:String x:Key="column_name">이름</sys:String>
+    <sys:String x:Key="column_view_type">뷰 유형</sys:String>
+    <sys:String x:Key="column_template">템플릿</sys:String>
+    <sys:String x:Key="column_show">요소 선택/표시</sys:String>
+    <sys:String x:Key="no_views">입면 태그가 참조하는 뷰가 없습니다.</sys:String>
+    <sys:String x:Key="yes">예</sys:String>
+    <sys:String x:Key="no">아니요</sys:String>
+</ResourceDictionary>

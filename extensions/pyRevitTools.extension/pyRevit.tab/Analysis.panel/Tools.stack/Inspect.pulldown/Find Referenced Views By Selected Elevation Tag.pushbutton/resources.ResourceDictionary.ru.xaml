@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_elevation_tag">Выберите маркер фасада.</sys:String>
+    <sys:String x:Key="table_title">Виды, на которые ссылается маркер фасада</sys:String>
+    <sys:String x:Key="column_detail_number">Номер узла</sys:String>
+    <sys:String x:Key="column_name">Название</sys:String>
+    <sys:String x:Key="column_view_type">Тип вида</sys:String>
+    <sys:String x:Key="column_template">Шаблон</sys:String>
+    <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+    <sys:String x:Key="no_views">Маркер фасада не ссылается ни на один вид.</sys:String>
+    <sys:String x:Key="yes">Да</sys:String>
+    <sys:String x:Key="no">Нет</sys:String>
+</ResourceDictionary>
