@@ -89,15 +89,11 @@ def get_name(element, title_on_sheet=False):
         str: The name of the element. For views, it may return the view's title
              on the sheet if `title_on_sheet` is True and the title is available.
     """
-    if isinstance(element, DB.View):
-        view_name = None
-        if title_on_sheet:
-            titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
-            view_name = titleos_param.AsString()
+    if isinstance(element, DB.View) and title_on_sheet:
+        titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
+        view_name = titleos_param.AsString()
         if view_name:
             return view_name
-        else:
-            return element.Name
     if PY3:
         return element.Name
     try:
@@ -3597,11 +3593,11 @@ def find_level(level_name=None, doc=None):
         active_level = getattr(doc.ActiveView, "GenLevel", None)
         return active_level if active_level is not None else levels[0]
     for level in levels:
-        if level.Name == level_name:
+        if get_name(level) == level_name:
             return level
     raise PyRevitException(
         "No level named {!r}. Levels: {}.".format(
-            level_name, _name_listing(level.Name for level in levels)
+            level_name, _name_listing(get_name(level) for level in levels)
         )
     )
 
@@ -3709,7 +3705,7 @@ def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     "pyrevit.views.resolve",
     PlainEnglish="Find a Revit view by name or id.",
     effects=("model.read",),
-    inputs=("view_name_or_id: string",),
+    inputs=("view_name_or_id: scalar",),
 )
 def find_view(view_name_or_id, doc=None):
     """Return a view (or view template) by name or id, or raise listing similar names.
@@ -3726,6 +3722,10 @@ def find_view(view_name_or_id, doc=None):
     """
     if isinstance(view_name_or_id, DB.View):
         return view_name_or_id
+    if isinstance(view_name_or_id, bool):
+        raise PyRevitException(
+            "A view name or id is required, not {}.".format(view_name_or_id)
+        )
     doc = doc or DOCS.doc
     if isinstance(view_name_or_id, (int, DB.ElementId)):
         element_id = (
@@ -3739,11 +3739,13 @@ def find_view(view_name_or_id, doc=None):
         raise PyRevitException("No view with id {}.".format(view_name_or_id))
     views = DB.FilteredElementCollector(doc).OfClass(DB.View).ToElements()
     for view in views:
-        if view.Name == view_name_or_id:
+        if get_name(view) == view_name_or_id:
             return view
     words = [word for word in str(view_name_or_id).lower().split() if len(word) > 2]
     similar = [
-        view.Name for view in views if any(w in view.Name.lower() for w in words)
+        name
+        for name in (get_name(view) for view in views)
+        if any(w in name.lower() for w in words)
     ]
     raise PyRevitException(
         "No view named {!r}. Similar: {}.".format(
@@ -3783,7 +3785,7 @@ def find_plan_view(level, doc=None):
             return view
     raise PyRevitException(
         "Level {!r} has no floor plan; create one with "
-        "create.create_plan_view(level).".format(level.Name)
+        "create.create_plan_view(level).".format(get_name(level))
     )
 
 

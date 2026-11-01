@@ -34,8 +34,6 @@ MAX_TEXT_LENGTH = 256
 _INT64_MIN = -(2**63)
 _INT64_MAX = 2**63 - 1
 
-# One flat string per input keeps the marker readable by the CLI library
-# index, which scans the source text instead of importing it.
 _INPUT_SPEC = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([a-z]+)\s*(\?)?\s*$")
 
 
@@ -63,6 +61,10 @@ def parse_inputs(specs):
     Each entry is one string, ``"<name>: <type>"``, with a trailing ``?`` for
     an optional input: ``("element: element", "title_on_sheet: boolean?")``.
     The name is the keyword argument the operation receives.
+
+    Note:
+        Keep each input one flat string literal: the CLI library index reads
+        markers by scanning the source text, without importing it.
 
     Args:
         specs (tuple[str]): the declaration as written in the marker

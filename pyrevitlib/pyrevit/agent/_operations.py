@@ -31,10 +31,10 @@ class OperationError(Exception):
 
 
 def _parameter_names(function):
+    """Parameter names, from the code object where inspect.signature is missing (IronPython 2.7)."""
     try:
         return list(inspect.signature(function).parameters)
     except (AttributeError, TypeError, ValueError):
-        # IronPython 2.7 has no inspect.signature; read the code object instead
         code = getattr(function, "__code__", None) or function.func_code
         return list(code.co_varnames[: code.co_argcount])
 
@@ -99,12 +99,17 @@ def _element(doc, element_id, name):
 
 
 def _is_sequence(value):
+    """Whether a result is a collection to bound.
+
+    Covers Python collections, .NET lists such as
+    ``FilteredElementCollector.ToElements()``, and Python iterators such as
+    generators and ``map()`` or ``filter()`` results; dictionaries and .NET
+    dictionaries are returned whole.
+    """
     if isinstance(value, (list, tuple, set, frozenset)):
         return True
     if not hasattr(value, "__iter__") or hasattr(value, "Keys"):
         return False
-    # .NET lists, such as FilteredElementCollector.ToElements(), and Python
-    # iterators, such as generators and map() or filter() results
     return (
         hasattr(value, "Count") or hasattr(value, "__next__") or hasattr(value, "next")
     )

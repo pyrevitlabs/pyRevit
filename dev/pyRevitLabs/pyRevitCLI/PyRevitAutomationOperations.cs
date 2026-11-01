@@ -124,7 +124,9 @@ namespace pyRevitCLI {
                 throw Invalid($"must be non-empty and contain at most {MaxTextLength} characters");
         }
 
-        // A JSON integer beyond the Int64 range parses as a BigInteger.
+        /// <summary>
+        /// True for a JSON integer that fits in Int64; a larger one parses as a BigInteger.
+        /// </summary>
         private static bool IsInt64(JToken value) {
             var raw = (value as JValue)?.Value;
             return value.Type == JTokenType.Integer && (raw is long || raw is int);

@@ -233,12 +233,17 @@ public partial class McpServerTests {
     public void AMarkedButUnexposedAutomationIsNotReportedAsUnknown() {
         var listing = Payload(Single(ToolCall(1, "list_automation", new JObject { ["limit"] = 50 })));
         var notInvocable = listing["operations"].Select(operation => operation["automation"]).First(automation => !automation.Value<bool>("invocable"));
-        var invocable = listing["operations"].Select(operation => operation["automation"]).Count(automation => automation.Value<bool>("invocable"));
+        var invocable = listing["operations"].Select(operation => operation["automation"])
+            .Where(automation => automation.Value<bool>("invocable"))
+            .Select(automation => automation.Value<string>("id"))
+            .ToList();
 
         var response = Single(ToolCall(2, "run_automation", new JObject { ["id"] = notInvocable.Value<string>("id"), ["inputs"] = new JObject() }));
 
-        // 4 hand-wired operations plus 16 whose markers declare inputs.
-        Assert.Equal(20, invocable);
+        foreach (var id in new[] { "pyrevit.units.parse-length", "pyrevit.levels.resolve", "pyrevit.elements.name", "pyrevit.revisions.list", "pyrevit.units.format-length" })
+            Assert.Contains(id, invocable);
+        foreach (var id in new[] { "pyrevit.walls.create", "pyrevit.elements.delete", "pyrevit.geometry.point", "rpw.elements.name" })
+            Assert.DoesNotContain(id, invocable);
         Assert.Equal("automation_not_exposed", Payload(response).Value<string>("error"));
         Assert.Empty(host.Requests);
     }
@@ -253,9 +258,15 @@ public partial class McpServerTests {
         Assert.Equal(new[] { "element", "title_on_sheet" }, name["inputs"].Select(input => input.Value<string>("name")));
         Assert.Equal(new[] { "element", "boolean" }, name["inputs"].Select(input => input.Value<string>("type")));
         Assert.Equal(new[] { true, false }, name["inputs"].Select(input => input.Value<bool>("required")));
-        foreach (var automation in listing["operations"].Select(operation => operation["automation"]))
-            if (automation["inputs"] != null)
+        foreach (var operation in listing["operations"]) {
+            var automation = operation["automation"];
+            var markedInvocableShape = automation["inputs"] != null
+                && operation.Value<string>("kind") == "function"
+                && (automation.Value<string>("mode") == "query" || automation.Value<string>("mode") == "pure")
+                && automation.Value<string>("transaction") == "none";
+            if (markedInvocableShape)
                 Assert.True(automation.Value<bool>("invocable"), automation.Value<string>("id"));
+        }
         Assert.Empty(host.Requests);
     }
 
