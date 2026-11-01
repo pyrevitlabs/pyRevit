@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">No identical room numbers were found in the active view.</sys:String>
+    <sys:String x:Key="duplicates_found">Room numbers used more than once: {}</sys:String>
+    <sys:String x:Key="number_title">Room number {}</sys:String>
+    <sys:String x:Key="column_name">Name</sys:String>
+    <sys:String x:Key="column_level">Level</sys:String>
+    <sys:String x:Key="column_show">Select/Show element</sys:String>
+    <sys:String x:Key="no_level">No level</sys:String>
+</ResourceDictionary>

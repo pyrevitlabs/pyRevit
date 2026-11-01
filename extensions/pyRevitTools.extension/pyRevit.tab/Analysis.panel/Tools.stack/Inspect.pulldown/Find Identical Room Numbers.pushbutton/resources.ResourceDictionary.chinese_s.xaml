@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">在当前视图中未发现重复的房间编号。</sys:String>
+    <sys:String x:Key="duplicates_found">重复使用的房间编号数量：{}</sys:String>
+    <sys:String x:Key="number_title">房间编号 {}</sys:String>
+    <sys:String x:Key="column_name">名称</sys:String>
+    <sys:String x:Key="column_level">标高</sys:String>
+    <sys:String x:Key="column_show">选择/显示图元</sys:String>
+    <sys:String x:Key="no_level">无标高</sys:String>
+</ResourceDictionary>

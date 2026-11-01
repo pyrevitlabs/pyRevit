@@ -8,7 +8,7 @@ title:
   de_de: Finde identische Raum Nummern
   pt_br: Encontrar Números de Ambiente Idênticos
 tooltip:
-  en_us: Finds and lists rooms with identical numbers
+  en_us: Find and list rooms with identical numbers in the active view.
   ko: 동일한 번호의 방을 찾아 나열합니다
   fr_fr: Trouver et lister les pièces avec un numéro identique
   ru: Находит и выводит помещения с одинаковыми номерами.

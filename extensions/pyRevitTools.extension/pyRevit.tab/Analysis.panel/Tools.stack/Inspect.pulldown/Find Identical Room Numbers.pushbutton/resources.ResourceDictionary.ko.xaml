@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">활성 뷰에서 동일한 룸 번호를 찾을 수 없습니다.</sys:String>
+    <sys:String x:Key="duplicates_found">중복 사용된 룸 번호: {}</sys:String>
+    <sys:String x:Key="number_title">룸 번호 {}</sys:String>
+    <sys:String x:Key="column_name">이름</sys:String>
+    <sys:String x:Key="column_level">레벨</sys:String>
+    <sys:String x:Key="column_show">요소 선택/표시</sys:String>
+    <sys:String x:Key="no_level">레벨 없음</sys:String>
+</ResourceDictionary>

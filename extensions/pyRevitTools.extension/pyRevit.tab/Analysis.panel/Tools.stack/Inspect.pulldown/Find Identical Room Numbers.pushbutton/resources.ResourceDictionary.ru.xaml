@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">Одинаковые номера помещений на активном виде не найдены.</sys:String>
+    <sys:String x:Key="duplicates_found">Номера помещений, использованные более одного раза: {}</sys:String>
+    <sys:String x:Key="number_title">Номер помещения {}</sys:String>
+    <sys:String x:Key="column_name">Название</sys:String>
+    <sys:String x:Key="column_level">Уровень</sys:String>
+    <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+    <sys:String x:Key="no_level">Нет уровня</sys:String>
+</ResourceDictionary>
