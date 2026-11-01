@@ -426,6 +426,22 @@ namespace pyRevitExtensionParser
         public string Highlight { get; set; }
 
         /// <summary>
+        /// Gets the keyboard shortcuts requested for this bundle's button.
+        /// </summary>
+        /// <remarks>
+        /// <para>Declared as a list of strings, or a single string, under the "shortcuts" key.</para>
+        /// <para>Shortcuts already assigned to another Revit command are skipped at registration time.</para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// shortcuts:
+        ///   - ZQ
+        ///   - Ctrl+Shift+K
+        /// </code>
+        /// </example>
+        public List<string> Shortcuts { get; } = new List<string>();
+
+        /// <summary>
         /// Gets or sets whether this bundle contains beta tools.
         /// </summary>
         /// <remarks>
