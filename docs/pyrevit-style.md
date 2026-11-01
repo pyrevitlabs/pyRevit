@@ -129,8 +129,8 @@ A button can do something else on shift-click. How the mode is wired decides whe
 
 | Alternate mode lives in | Dot marker |
 |---|---|
-| a `*config.py` next to `*script.py` | Added by pyRevit automatically. **Don't add your own**, or the title shows two dots. |
-| `script.py` itself, via `EXEC_PARAMS.config_mode` | Add ` ●` (space and U+25CF) to the end of the title yourself. |
+| a `*config.<ext>` next to `*script.<ext>` | Added by pyRevit automatically. **Don't add your own**, or the title shows two dots. |
+| the script itself (in Python, via `EXEC_PARAMS.config_mode`) | Add ` ●` (space and U+25CF) to the end of the title yourself. |
 | nowhere (no alternate mode) | None. |
 
 Either way, describe the mode in the tooltip: first paragraph says what a plain click does, then a blank line, `Shift-click:` on its own line, and the alternate action on the next line.
