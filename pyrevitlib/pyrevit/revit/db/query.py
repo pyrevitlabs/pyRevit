@@ -2,6 +2,7 @@
 """Helper functions to query info and elements from Revit."""
 
 # pylint: disable=W0703,C0103,too-many-lines
+import numbers
 from collections import namedtuple
 from os.path import basename, splitext
 
@@ -10,7 +11,12 @@ from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework
 from pyrevit import automation
-from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
+from pyrevit.compat import (
+    PY3,
+    safe_strtype,
+    get_elementid_value_func,
+    get_elementid_from_value_func,
+)
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -3727,11 +3733,11 @@ def find_view(view_name_or_id, doc=None):
             "A view name or id is required, not {}.".format(view_name_or_id)
         )
     doc = doc or DOCS.doc
-    if isinstance(view_name_or_id, (int, DB.ElementId)):
+    if isinstance(view_name_or_id, (numbers.Integral, DB.ElementId)):
         element_id = (
             view_name_or_id
             if isinstance(view_name_or_id, DB.ElementId)
-            else DB.ElementId(view_name_or_id)
+            else get_elementid_from_value_func()(view_name_or_id)
         )
         view = doc.GetElement(element_id)
         if isinstance(view, DB.View):
