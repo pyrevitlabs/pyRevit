@@ -163,7 +163,7 @@ Scripts run on IronPython 2.7 by default, and can also run on CPython 3 and Iron
 Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md). Only `ruff format` is automated; the rest is checked in review:
 
 - **No inline comments.** Make the code self-explanatory with names and small functions. Exceptions: tooling pragmas (`# noqa`, `# type: ignore`), `TODO` / `FIXME` with an owner and ticket, and the group labels on `pyrevit` imports (see [Imports](#imports)).
-- **Docstrings on public symbols only**, Google style, and only where they add what the code can't say: purpose, contract, side effects, exceptions, invariants. Don't restate the signature.
+- **Docstrings on public symbols of importable library code only** (`pyrevitlib/` except `rpw/`, and shared `lib/` folders), Google style, and only where they add what the code can't say: purpose, contract, side effects, exceptions, invariants. Don't restate the signature.
 - `ruff format` formats Python on commit. Run `pipenv run ruff check --fix <path>` before finishing.
 - Names: `snake_case` functions and variables, `PascalCase` classes, `UPPER_CASE` constants. Revit API members keep their original `PascalCase`.
 - Prefer early returns over deep nesting. Prefer `for`/comprehensions over `map`/`filter` chains.
