@@ -67,6 +67,13 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
                     Assert.IsTrue(
                         renderer.ReadyTask.IsCompleted,
                         "The stand-in must not leave the owner waiting for a renderer.");
+
+                    EventHandler<RendererMessageReceivedEventArgs> handler = (sender, args) => { };
+                    renderer.MessageReceived += handler;
+                    renderer.MessageReceived -= handler;
+                    Assert.IsFalse(
+                        renderer.PostMessage("{}"),
+                        "The stand-in has no page, so it must report that a message was not delivered.");
                 }
             });
         }
