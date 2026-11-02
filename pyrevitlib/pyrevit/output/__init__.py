@@ -503,7 +503,10 @@ class PyRevitOutputWindow(object):
         ``chrome.webview.addEventListener("message", e => e.data)``.
 
         Args:
-            data (object): value to serialize with ``json.dumps``
+            data (object): value to serialize with ``json.dumps``. Non-ASCII
+                text is sent as is, not escaped as unicode sequences, because
+                IronPython 2's ASCII-escaping encoder raises on some mixed
+                Cyrillic and Latin-1 strings.
 
         Returns:
             (bool): False when the window is closed or cannot deliver messages,

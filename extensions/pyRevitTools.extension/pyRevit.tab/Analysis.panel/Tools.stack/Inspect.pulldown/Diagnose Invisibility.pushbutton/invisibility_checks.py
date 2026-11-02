@@ -13,7 +13,10 @@ import os
 from pyrevit import DB
 from pyrevit.compat import get_elementid_from_value_func, get_elementid_value_func
 from pyrevit.coreutils import applocales
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.revit import query, units
+
+mlogger = get_logger(__name__)
 
 get_elementid_value = get_elementid_value_func()
 get_elementid_from_value = get_elementid_from_value_func()
@@ -60,11 +63,12 @@ def t(key, default=None):
     return result
 
 
-def format_length(doc, feet):
+def format_length_with_symbol(doc, feet):
     """Format an internal length in the project's display units with its symbol."""
     try:
         return units.format_length(feet, doc, append_symbol=True)
-    except Exception:
+    except Exception as ex:
+        mlogger.debug("Cannot format length %s: %s", feet, ex)
         return "{:.2f} ft".format(feet)
 
 
@@ -869,8 +873,8 @@ def _check_view_range(ctx):
                         "Element is above the view range top clip plane"
                         " (element min Z {} > top {})",
                     ).format(
-                        format_length(ctx.doc, bbox.Min.Z),
-                        format_length(ctx.doc, upper),
+                        format_length_with_symbol(ctx.doc, bbox.Min.Z),
+                        format_length_with_symbol(ctx.doc, upper),
                     ),
                     fix=None
                     if hidden_above_cut
@@ -890,8 +894,8 @@ def _check_view_range(ctx):
                         " generic models and non-cuttable categories; '{}' is"
                         " cuttable",
                     ).format(
-                        format_length(ctx.doc, bbox.Min.Z),
-                        format_length(ctx.doc, cut),
+                        format_length_with_symbol(ctx.doc, bbox.Min.Z),
+                        format_length_with_symbol(ctx.doc, cut),
                         category.Name if category else "?",
                     ),
                     fix={"action": "raise_cut_plane"},
@@ -907,8 +911,8 @@ def _check_view_range(ctx):
                         " clip / view depth) (element max Z {} < lower"
                         " bound {})",
                     ).format(
-                        format_length(ctx.doc, bbox.Max.Z),
-                        format_length(ctx.doc, lower),
+                        format_length_with_symbol(ctx.doc, bbox.Max.Z),
+                        format_length_with_symbol(ctx.doc, lower),
                     ),
                     fix=None
                     if is_rcp
