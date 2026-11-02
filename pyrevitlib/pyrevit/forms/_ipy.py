@@ -30,6 +30,7 @@ if not IRONPY:
 
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import applocales
 from pyrevit.coreutils import colors
 from pyrevit.coreutils import envvars
 
@@ -2062,9 +2063,42 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     xaml_source = "CommandSwitchWindow.xaml"
 
+    RESOURCES = {
+        "cmdswitchwnd_width": {
+            "en_us": DEFAULT_CMDSWITCHWND_WIDTH,
+            "fr_fr": 700,
+            "ru": 700,
+            "chinese_s": DEFAULT_CMDSWITCHWND_WIDTH,
+            "es_es": 700,
+            "de_de": 700,
+            "pt_br": 700,
+        },
+        "message_label_content": {
+            "en_us": "Pick a command option:",
+            "fr_fr": "Choisissez une option de commande:",
+            "ru": "Выберите вариант команды:",
+            "chinese_s": "选择命令选项:",
+            "es_es": "Seleccione una opción de comando:",
+            "de_de": "Befehlsoption auswählen:",
+            "pt_br": "Escolha uma opção de comando:",
+        },
+        "search_tb_tag": {
+            "en_us": "Type to Filter / Tab to Select / Enter or Click to Run",
+            "fr_fr": "Tapez pour filtrer / Tab pour sélectionner / Entrée ou clic pour exécuter",
+            "ru": "Введите для фильтрации / Tab для выбора / Enter или щелчок для запуска",
+            "chinese_s": "输入以筛选 / 按 Tab 键选择 / 按 Enter 键或单击运行",
+            "es_es": "Escriba para filtrar / Tab para seleccionar / Enter o haga clic para ejecutar",
+            "de_de": "Tippen zum Filtern / Tab zum Auswählen / Enter oder Klicken zum Ausführen",
+            "pt_br": "Digite para filtrar / Tab para selecionar / Enter ou clique para executar",
+        },
+    }
+
+    def _ls(self, key):
+        return applocales.get_locale_string(self.RESOURCES[key])
+
     def _setup(self, **kwargs):
         self.selected_switch = ""
-        self.Width = DEFAULT_CMDSWITCHWND_WIDTH
+        self.Width = self._ls("cmdswitchwnd_width")
         self.Title = "Command Options"
 
         message = kwargs.get("message", None)
@@ -2074,7 +2108,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         configs = kwargs.get("config", None)
 
-        self.message_label.Content = message if message else "Pick a command option:"
+        self.message_label.Content = message if message else self._ls("message_label_content")
 
         self.Resources["pyRevitRecognizesAccessKey"] = kwargs.get(
             "recognize_access_key", DEFAULT_RECOGNIZE_ACCESS_KEY
@@ -2126,7 +2160,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     button.Visibility = WPF_VISIBLE
         else:
             self.search_tb.Tag = (
-                "Type to Filter / Tab to Select / Enter or Click to Run"
+                self._ls("search_tb_tag")
             )
             for button in self.button_list.Children:
                 button.Visibility = WPF_VISIBLE
