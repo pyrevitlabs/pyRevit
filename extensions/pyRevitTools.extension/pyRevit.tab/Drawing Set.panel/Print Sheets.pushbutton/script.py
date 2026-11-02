@@ -2239,8 +2239,10 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _all_models_sheet_items(self):
         sheet_items = []
-        models = [revit.doc] + list(revit.query.get_all_linkeddocs(doc=revit.doc))
-        for model in models:
+        models = {}
+        for model in [revit.doc] + list(revit.query.get_all_linkeddocs(doc=revit.doc)):
+            models.setdefault(model.GetHashCode(), model)
+        for model in models.values():
             tblocks = revit.query.get_elements_by_categories(
                 [DB.BuiltInCategory.OST_TitleBlocks], doc=model
             )
@@ -2262,6 +2264,12 @@ class PrintSheetsWindow(forms.WPFWindow):
         return sheet_items
 
     def sheetlist_changed(self, sender, args):
+        """Rebuild the sheet list after the model or the sheet index changed.
+
+        In All Models mode the list holds the sheets of the host and every
+        linked model, each with that model's current print setting, and the
+        Model column is shown.
+        """
         if self.is_all_models:
             if self.selected_sheetlist:
                 self.hide_element(self.varsizeguide)
@@ -2380,7 +2388,9 @@ class PrintSheetsWindow(forms.WPFWindow):
         for sheet in sheet_list:
             if sheet.printable and sheet.print_filename:
                 key = sheet.print_filename.lower()
-                sheets_by_filename.setdefault(key, set()).add(sheet.model_name)
+                sheets_by_filename.setdefault(key, set()).add(
+                    sheet.revit_sheet.Document.GetHashCode()
+                )
         return any(len(models) > 1 for models in sheets_by_filename.values())
 
     def set_sheet_printsettings(self, sender, args):
