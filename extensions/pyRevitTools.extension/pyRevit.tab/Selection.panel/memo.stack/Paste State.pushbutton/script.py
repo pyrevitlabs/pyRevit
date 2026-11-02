@@ -28,24 +28,24 @@ RESOURCES = {
         "en_us": 'No available actions for this view or no saved data found. Use "Copy State" first.',
         "fr_fr": (
             "Aucune action disponible pour cette vue ou aucune donnée enregistrée trouvée."
-            ' Utilisez d’abord \"Copier l\'état\".'
+            'Utilisez d’abord \"Copier l\'état\".'
         ),
         "ru": (
             "Для этого вида нет доступных действий или не найдены сохранённые данные."
-            ' Сначала используйте "Копировать".'
+            'Сначала используйте "Копировать".'
         ),
         "chinese_s": '此视图没有可用的操作，或未找到已保存的数据。请先使用 "复制状态"',
         "es_es": (
             "No hay acciones disponibles para esta vista o no se encontraron datos guardados."
-            ' Utilice primero "Copiar estado".'
+            'Utilice primero "Copiar estado".'
         ),
         "de_de": (
             "Für diese Ansicht sind keine Aktionen verfügbar oder es wurden keine gespeicherten Daten gefunden."
-            ' Verwenden Sie zuerst "Zustand kopieren".'
+            'Verwenden Sie zuerst "Zustand kopieren".'
         ),
         "pt_br": (
             "Não há ações disponíveis para esta vista ou nenhum dado salvo foi encontrado."
-            ' Use primeiro "Copiar Estado".'
+            'Use primeiro "Copiar Estado".'
         ),
     },
 }
