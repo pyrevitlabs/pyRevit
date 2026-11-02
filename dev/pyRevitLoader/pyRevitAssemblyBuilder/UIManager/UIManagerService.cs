@@ -383,9 +383,13 @@ namespace pyRevitAssemblyBuilder.UIManager
                         .Where(IsStackChildVisible)
                         .ToList();
 
-                    if (visibleChildren.Count == 1)
+                    var itemChildren = visibleChildren
+                        .Where(child => child.Type != CommandComponentType.Separator)
+                        .ToList();
+
+                    if (itemChildren.Count == 1)
                     {
-                        HandleComponentBuilding(visibleChildren[0], parentPanel, tabName, assemblyInfo);
+                        HandleComponentBuilding(itemChildren[0], parentPanel, tabName, assemblyInfo);
                         break;
                     }
 
