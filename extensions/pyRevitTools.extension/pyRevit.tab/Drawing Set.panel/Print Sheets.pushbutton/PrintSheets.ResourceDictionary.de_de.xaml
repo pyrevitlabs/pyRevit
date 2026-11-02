@@ -6,6 +6,9 @@
     <system:String x:Key="Model">Modell</system:String>
     <system:String x:Key="LinkedPrefix">Verknüpft: </system:String>
     <system:String x:Key="SheetIndex">Blattindex</system:String>
+    <system:String x:Key="AllModels">&lt;Alle Modelle&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;Aktuelle Druckeinstellung jedes Modells&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Pläne verschiedener Modelle würden denselben Dateinamen erhalten. Verwenden Sie {proj_name} im Namensformat, um sie zu unterscheiden.</system:String>
     
     <system:String x:Key="SheetOrdering">Blattreihenfolge</system:String>
     <system:String x:Key="ReversePrintOrder">Druckreihenfolge umkehren</system:String>

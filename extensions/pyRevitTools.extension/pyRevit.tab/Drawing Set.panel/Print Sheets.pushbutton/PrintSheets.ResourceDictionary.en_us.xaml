@@ -6,6 +6,9 @@
     <system:String x:Key="Model">Model</system:String>
     <system:String x:Key="LinkedPrefix">Linked: </system:String>
     <system:String x:Key="SheetIndex">Sheet Index</system:String>
+    <system:String x:Key="AllModels">&lt;All Models&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;Current Print Setting Of Each Model&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Sheets of different models would get the same file name. Use {proj_name} in the naming format to tell them apart.</system:String>
     
     <system:String x:Key="SheetOrdering">Sheet Ordering</system:String>
     <system:String x:Key="ReversePrintOrder">Reverse Print Order</system:String>

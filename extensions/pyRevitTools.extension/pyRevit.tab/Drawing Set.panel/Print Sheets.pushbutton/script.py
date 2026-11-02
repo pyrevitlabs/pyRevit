@@ -38,13 +38,19 @@ from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.coreutils import pathtemplate
+from pyrevit.coreutils import applocales, pathtemplate
 
 
 get_elementid_value = get_elementid_value_func()
 
 logger = script.get_logger()
 config = script.get_config()
+
+PRINT_SHEETS_XAML = script.get_bundle_file("PrintSheets.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(PRINT_SHEETS_XAML, key)
 
 
 # Non Printable Char
@@ -497,6 +503,7 @@ class ViewSheetListItem(forms.Reactive):
         else:
             self._tblock_type = None
         self.name = self._sheet.Name
+        self.model_name = view_sheet.Document.Title
         self.number = (
             self._sheet.SheetNumber if hasattr(self._sheet, "SheetNumber") else ""
         )
@@ -633,6 +640,22 @@ class VariablePaperPrintSettingListItem(PrintSettingListItem):
     @property
     def allows_variable_paper(self):
         return True
+
+
+class EachModelPrintSettingListItem(PrintSettingListItem):
+    """Stands for the print setting each model currently has selected.
+
+    Shown while the All Models scope is active, where every sheet prints with
+    the current print setting of the model it belongs to.
+    """
+
+    def __init__(self):
+        PrintSettingListItem.__init__(self, None)
+        self.is_compatible = True
+
+    @property
+    def name(self):
+        return _t("EachModelPrintSetting")
 
 
 class EditNamingFormatsWindow(forms.WPFWindow):
@@ -981,7 +1004,6 @@ class PrintSheetsWindow(forms.WPFWindow):
         self._scheduled_sheets = []
         self._restoring_options = False
 
-        self.project_info = revit.query.get_project_info(doc=revit.doc)
         self.sheet_cat_id = revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
         self._setup_output_folder()
@@ -1101,7 +1123,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _sheet_lists_to_save(self):
         sheet_lists = _saved_sheet_lists()
-        if self.selected_doc and self.selected_sheetlist:
+        if self.selected_doc and self.selected_sheetlist and not self.is_all_models:
             sheet_lists[self._doc_key(self.selected_doc)] = self.selected_sheetlist.name
         return sheet_lists
 
@@ -1251,8 +1273,16 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     # doc and schedule
     @property
+    def is_all_models(self):
+        """True while the sheets of the host and every linked model are listed together."""
+        return self.documents_cb.SelectedItem.hash is None
+
+    @property
     def selected_doc(self):
+        """The model the window works on; the host model for All Models."""
         selected_doc = self.documents_cb.SelectedItem
+        if selected_doc.hash is None:
+            return revit.doc
         for opened_doc in revit.docs:
             if opened_doc.GetHashCode() == selected_doc.hash:
                 return opened_doc
@@ -1352,9 +1382,9 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         return [ScheduleSheetList(s) for s in schedules if self._is_sheet_index(s)]
 
-    def _get_printmanager(self):
+    def _get_printmanager(self, doc=None):
         try:
-            return self.selected_doc.PrintManager
+            return (doc or self.selected_doc).PrintManager
         except Exception as printerr:
             logger.critical(
                 "Error getting printer manager from document. "
@@ -1377,6 +1407,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     for x in revit.query.get_all_linkeddocs(doc=revit.doc)
                 ]
             )
+            if len(docs) > 1:
+                docs.append(AvailableDoc(name=_t("AllModels"), hash=None, linked=False))
             self.documents_cb.ItemsSource = docs
             self.documents_cb.SelectedIndex = 0
 
@@ -1422,6 +1454,14 @@ class PrintSheetsWindow(forms.WPFWindow):
         return psetting_items
 
     def _setup_print_settings(self):
+        if self.is_all_models:
+            each_model = EachModelPrintSettingListItem()
+            self.printsettings_cb.ItemsSource = [each_model]
+            self.printsettings_cb.SelectedItem = each_model
+            self.disable_element(self.printsettings_cb)
+            self._update_combine_option()
+            return
+
         psetting_items = self._get_psetting_items(
             doc=self.selected_doc, include_varsettings=not self.selected_doc.IsLinked
         )
@@ -1450,14 +1490,24 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _update_combine_option(self):
         self.enable_element(self.combine_cb)
-        if self.selected_doc.IsLinked or (
-            (self.selected_sheetlist and self.has_print_settings)
-            and self.selected_print_setting.allows_variable_paper
+        if (
+            self.is_all_models
+            or self.selected_doc.IsLinked
+            or (
+                (self.selected_sheetlist and self.has_print_settings)
+                and self.selected_print_setting.allows_variable_paper
+            )
         ):
             self.disable_element(self.combine_cb)
             self.combine_cb.IsChecked = False
 
     def _setup_sheet_list(self):
+        if self.is_all_models:
+            self.schedules_cb.ItemsSource = [AllSheetsList()]
+            self.schedules_cb.SelectedIndex = 0
+            self.disable_element(self.schedules_cb)
+            return
+
         sheet_indices = self._get_sheet_index_list()
         try:
             cl = DB.FilteredElementCollector(self.selected_doc)
@@ -1869,18 +1919,34 @@ class PrintSheetsWindow(forms.WPFWindow):
                                         sheet.number,
                                     )
 
-    def _print_linked_sheets_in_order(self, target_sheets, target_doc, dirPath):
-        WARNED_PAPER_SIZES.clear()
-        # make sure we can access the print config
-        print_mgr = self._get_printmanager()
+    def _configure_print_manager(self, doc):
+        print_mgr = self._get_printmanager(doc)
         print_mgr.PrintToFile = True
         if not (
             IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer"
         ):
             print_mgr.SelectNewPrintDriver(self.selected_printer)
         print_mgr.PrintRange = DB.PrintRange.Current
+        return print_mgr
 
-        doc = target_doc
+    def _sheet_print_params(self, sheet):
+        if self.is_all_models:
+            return sheet.print_settings.PrintParameters
+        return self.selected_print_setting.print_params
+
+    def _print_linked_sheets_in_order(self, target_sheets, dirPath):
+        """Print sheets one by one, each through the model it belongs to.
+
+        Handles a linked model and the All Models scope alike: the sheets of
+        every model are exported with that model's print manager, so the
+        output is one file per sheet. Combined files and DWG are not supported.
+        """
+        WARNED_PAPER_SIZES.clear()
+        print_managers = {}
+        for sheet in target_sheets:
+            doc = sheet.revit_sheet.Document
+            if doc.GetHashCode() not in print_managers:
+                print_managers[doc.GetHashCode()] = self._configure_print_manager(doc)
 
         if self.selected_printer == "Revit Internal Printer":
             PrintUtils.open_dir(dirPath)
@@ -1899,6 +1965,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     else:
                         if sheet.printable:
                             if sheet.print_filename:
+                                doc = sheet.revit_sheet.Document
+                                print_mgr = print_managers[doc.GetHashCode()]
                                 print_filepath = op.join(dirPath, sheet.print_filename)
                                 print_mgr.PrintToFileName = print_filepath
 
@@ -1914,7 +1982,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             == "Revit Internal Printer"
                                         ):
                                             optspdf = PrintUtils.pdf_opts(
-                                                print_params=self.selected_print_setting.print_params,
+                                                print_params=self._sheet_print_params(
+                                                    sheet
+                                                ),
                                                 sheets=[sheet.revit_sheet],
                                             )
                                             PrintUtils.export_sheet_pdf(
@@ -1976,7 +2046,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             template = re.sub(repl_pattern, "", template)
         return template
 
-    def _update_print_filename(self, template, sheet):
+    def _update_print_filename(self, template, sheet, project_info):
         # resolve sheet-level custom param values
         # get titleblock param values
         template = self._update_filename_template(
@@ -2037,12 +2107,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                 rev_number=sheet.revision.number if sheet.revision else "",
                 rev_desc=sheet.revision.desc if sheet.revision else "",
                 rev_date=sheet.revision.date if sheet.revision else "",
-                proj_name=self.project_info.name,
-                proj_number=self.project_info.number,
-                proj_building_name=self.project_info.building_name,
-                proj_issue_date=self.project_info.issue_date,
-                proj_org_name=self.project_info.org_name,
-                proj_status=self.project_info.status,
+                proj_name=project_info.name,
+                proj_number=project_info.number,
+                proj_building_name=project_info.building_name,
+                proj_issue_date=project_info.issue_date,
+                proj_org_name=project_info.org_name,
+                proj_status=project_info.status,
                 username=HOST_APP.username,
                 revit_version=HOST_APP.version,
             )
@@ -2054,31 +2124,40 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet.print_filename = output_fname
 
     def _update_print_filenames(self, sheet_list):
-        doc = self.selected_doc
         naming_fmt = self.selected_naming_format
-        if naming_fmt:
-            template = naming_fmt.template
-            # resolve project-level custom param values
-            # project info param values
-            template = self._update_filename_template(
-                template=template,
-                value_type="proj_param",
-                value_getter=lambda x: revit.query.get_param_value(
-                    doc.ProjectInformation.LookupParameter(x)
-                ),
-            )
+        if not naming_fmt:
+            return
+        sheets_by_doc = {}
+        for sheet in sheet_list:
+            doc = sheet.revit_sheet.Document
+            sheets_by_doc.setdefault(doc.GetHashCode(), (doc, []))[1].append(sheet)
+        for doc, doc_sheets in sheets_by_doc.values():
+            self._update_doc_print_filenames(doc, doc_sheets, naming_fmt)
 
-            # global param values
-            template = self._update_filename_template(
-                template=template,
-                value_type="glob_param",
-                value_getter=lambda x: revit.query.get_param_value(
-                    revit.query.get_global_parameter(x, doc=doc)
-                ),
-            )
+    def _update_doc_print_filenames(self, doc, sheet_list, naming_fmt):
+        project_info = revit.query.get_project_info(doc=doc)
+        template = naming_fmt.template
+        # resolve project-level custom param values
+        # project info param values
+        template = self._update_filename_template(
+            template=template,
+            value_type="proj_param",
+            value_getter=lambda x: revit.query.get_param_value(
+                doc.ProjectInformation.LookupParameter(x)
+            ),
+        )
 
-            for sheet in sheet_list:
-                self._update_print_filename(template, sheet)
+        # global param values
+        template = self._update_filename_template(
+            template=template,
+            value_type="glob_param",
+            value_getter=lambda x: revit.query.get_param_value(
+                revit.query.get_global_parameter(x, doc=doc)
+            ),
+        )
+
+        for sheet in sheet_list:
+            self._update_print_filename(template, sheet, project_info)
 
     def _find_sheet_tblock(self, revit_sheet, tblocks):
         for tblock in tblocks:
@@ -2147,12 +2226,46 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     # event handlers
     def doclist_changed(self, sender, args):
-        self.project_info = revit.query.get_project_info(doc=self.selected_doc)
         self._setup_printers()
         self._setup_print_settings()
         self._setup_sheet_list()
 
+    def _all_models_sheet_items(self):
+        sheet_items = []
+        models = [revit.doc] + list(revit.query.get_all_linkeddocs(doc=revit.doc))
+        for model in models:
+            tblocks = revit.query.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_TitleBlocks], doc=model
+            )
+            rev_cfg = DB.RevisionSettings.GetRevisionSettings(model)
+            current_setting = self._get_printmanager(
+                model
+            ).PrintSetup.CurrentPrintSetting
+            for sheet in self.selected_sheetlist.get_sheets(doc=model):
+                sheet_items.append(
+                    ViewSheetListItem(
+                        view_sheet=sheet,
+                        view_tblock=self._find_sheet_tblock(sheet, tblocks),
+                        print_settings=TitleBlockPrintSettings(
+                            psettings=[current_setting], set_by_param=False
+                        ),
+                        rev_settings=rev_cfg,
+                    )
+                )
+        return sheet_items
+
     def sheetlist_changed(self, sender, args):
+        if self.is_all_models:
+            if self.selected_sheetlist:
+                self.hide_element(self.varsizeguide)
+                self.hide_element(self.psettingcol)
+                self.show_element(self.modelcol)
+                self._scheduled_sheets = self._all_models_sheet_items()
+                self._update_combine_option()
+                self.options_changed(None, None)
+            return
+
+        self.hide_element(self.modelcol)
         print_settings = None
         tblocks = revit.query.get_elements_by_categories(
             [DB.BuiltInCategory.OST_TitleBlocks], doc=self.selected_doc
@@ -2226,7 +2339,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             self.show_element(self.pfilename)
             self.export_dwg.IsEnabled = True
 
-        if self.selected_doc.IsLinked:
+        if self.is_all_models or self.selected_doc.IsLinked:
             self.export_dwg.IsChecked = False
             self.export_dwg.IsEnabled = False
 
@@ -2254,6 +2367,18 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         # update sheet naming formats
         self._update_print_filenames(sheet_list)
+        self._check_models_share_filenames(sheet_list)
+
+    def _check_models_share_filenames(self, sheet_list):
+        if not self.is_all_models or self.has_errors:
+            return
+        sheets_by_filename = {}
+        for sheet in sheet_list:
+            if sheet.printable and sheet.print_filename:
+                key = sheet.print_filename.lower()
+                sheets_by_filename.setdefault(key, set()).add(sheet.model_name)
+        if any(len(models) > 1 for models in sheets_by_filename.values()):
+            self._set_error(_t("SameFileNameAcrossModels"))
 
     def set_sheet_printsettings(self, sender, args):
         if self.selected_printable_sheets:
@@ -2379,10 +2504,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                 self.Close()
                 if self.combine_print:
                     self._print_combined_sheets_in_order(target_sheets, dir_path)
-                elif self.selected_doc.IsLinked:
-                    self._print_linked_sheets_in_order(
-                        target_sheets, self.selected_doc, dir_path
-                    )
+                elif self.is_all_models or self.selected_doc.IsLinked:
+                    self._print_linked_sheets_in_order(target_sheets, dir_path)
                 else:
                     self._print_sheets_in_order(target_sheets, dir_path)
             finally:

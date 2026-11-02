@@ -6,6 +6,9 @@
     <system:String x:Key="Model">Модель</system:String>
     <system:String x:Key="LinkedPrefix">Связано: </system:String>
     <system:String x:Key="SheetIndex">Индекс листов</system:String>
+    <system:String x:Key="AllModels">&lt;Все модели&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;Текущие параметры печати каждой модели&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Листы разных моделей получили бы одинаковое имя файла. Используйте {proj_name} в формате именования, чтобы их различать.</system:String>
     
     <system:String x:Key="SheetOrdering">Порядок листов</system:String>
     <system:String x:Key="ReversePrintOrder">Обратить порядок печати</system:String>
