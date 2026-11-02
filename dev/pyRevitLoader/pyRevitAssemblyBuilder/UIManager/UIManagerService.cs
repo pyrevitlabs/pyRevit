@@ -379,15 +379,20 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Stack:
+                    var visibleChildren = (component.Children ?? Enumerable.Empty<ParsedComponent>())
+                        .Where(IsStackChildVisible)
+                        .ToList();
+
+                    if (visibleChildren.Count == 1)
+                    {
+                        HandleComponentBuilding(visibleChildren[0], parentPanel, tabName, assemblyInfo);
+                        break;
+                    }
+
                     _stackBuilder.BuildStack(component, parentPanel!, assemblyInfo);
                     // Mark all children in the stack as touched
-                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                    {
-                        if (!IsStackChildVisible(child))
-                            continue;
-
+                    foreach (var child in visibleChildren)
                         _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
-                    }
                     break;
 
                 case CommandComponentType.ComboBox:
