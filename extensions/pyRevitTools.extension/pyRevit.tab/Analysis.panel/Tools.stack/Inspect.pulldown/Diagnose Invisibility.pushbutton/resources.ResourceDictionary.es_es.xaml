@@ -23,8 +23,8 @@
     <sys:String x:Key="reason_view_filter">Oculto por el filtro de vista '{}'</sys:String>
     <sys:String x:Key="reason_section_box">El cuadro delimitador del elemento está completamente fuera de la caja de sección 3D activa de la vista</sys:String>
     <sys:String x:Key="reason_crop_box">El cuadro delimitador del elemento está completamente fuera de la región de recorte de la vista</sys:String>
-    <sys:String x:Key="reason_viewrange_above">El elemento está por encima del plano de corte superior del rango de vista (Z mín. del elemento {:.3f} ft &gt; superior {:.3f} ft)</sys:String>
-    <sys:String x:Key="reason_viewrange_below">El elemento está por debajo del límite inferior del rango de vista (plano de corte inferior / profundidad de vista) (Z máx. del elemento {:.3f} ft &lt; límite inferior {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_above">El elemento está por encima del plano de corte superior del rango de vista (Z mín. del elemento {} &gt; superior {})</sys:String>
+    <sys:String x:Key="reason_viewrange_below">El elemento está por debajo del límite inferior del rango de vista (plano de corte inferior / profundidad de vista) (Z máx. del elemento {} &lt; límite inferior {})</sys:String>
     <sys:String x:Key="reason_view_template">Se ha aplicado la plantilla de vista '{}'; algunos ajustes de visibilidad pueden estar bloqueados y deben modificarse en la plantilla</sys:String>
     <sys:String x:Key="reason_view_specific">El elemento es específico de una vista y pertenece a otra vista ('{}'), por lo que no puede aparecer aquí</sys:String>
     <sys:String x:Key="reason_view_discipline">La disciplina de la vista está establecida en '{}' - algunas categorías se muestran u ocultan automáticamente según la disciplina, independientemente de la configuración de visibilidad/gráficos</sys:String>
@@ -113,7 +113,7 @@
     <sys:String x:Key="code_view_template">Plantilla</sys:String>
     <sys:String x:Key="code_view_discipline">Disciplina</sys:String>
     <sys:String x:Key="code_unknown">Desconocido</sys:String>
-    <sys:String x:Key="reason_above_cut_plane">El elemento está completamente por encima del plano de corte (Z mín. del elemento {:.3f} ft &gt; corte {:.3f} ft). Entre el plano de corte y el superior, las vistas de planta solo muestran ventanas, mobiliario fijo, modelos genéricos y categorías no cortables; '{}' es cortable</sys:String>
+    <sys:String x:Key="reason_above_cut_plane">El elemento está completamente por encima del plano de corte (Z mín. del elemento {} &gt; corte {}). Entre el plano de corte y el superior, las vistas de planta solo muestran ventanas, mobiliario fijo, modelos genéricos y categorías no cortables; '{}' es cortable</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Subir el plano de corte sobre el elemento</sys:String>
     <sys:String x:Key="code_above_cut_plane">Sobre el corte</sys:String>
     <sys:String x:Key="reason_subcategory_drawn_hidden">La subcategoría '{}' está oculta en esta vista, y todo lo que el elemento dibuja aquí usa subcategorías ocultas</sys:String>

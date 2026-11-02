@@ -512,7 +512,9 @@ class PyRevitOutputWindow(object):
         """
         if not self._runtime_output().IsWindowReady:
             return False
-        return self._runtime_output().window.PostWebMessage(json.dumps(data))
+        return self._runtime_output().window.PostWebMessage(
+            json.dumps(data, ensure_ascii=False)
+        )
 
     def _dispatch_message(self, sender, args):
         """Decode one page message and schedule every handler in API context."""

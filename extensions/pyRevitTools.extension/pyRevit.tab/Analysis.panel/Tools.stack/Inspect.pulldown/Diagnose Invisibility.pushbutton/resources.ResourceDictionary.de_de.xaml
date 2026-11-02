@@ -23,8 +23,8 @@
     <sys:String x:Key="reason_view_filter">Durch Ansichtsfilter '{}' ausgeblendet</sys:String>
     <sys:String x:Key="reason_section_box">Die Begrenzungsbox des Elements liegt vollständig außerhalb der aktiven 3D-Schnittbox der Ansicht</sys:String>
     <sys:String x:Key="reason_crop_box">Die Begrenzungsbox des Elements liegt vollständig außerhalb des Ausschnittbereichs der Ansicht</sys:String>
-    <sys:String x:Key="reason_viewrange_above">Element liegt oberhalb der oberen Schnittebene des Ansichtsbereichs (min. Z des Elements {:.3f} ft &gt; oben {:.3f} ft)</sys:String>
-    <sys:String x:Key="reason_viewrange_below">Element liegt unterhalb der unteren Grenze des Ansichtsbereichs (untere Schnittebene / Ansichtstiefe) (max. Z des Elements {:.3f} ft &lt; untere Grenze {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_above">Element liegt oberhalb der oberen Schnittebene des Ansichtsbereichs (min. Z des Elements {} &gt; oben {})</sys:String>
+    <sys:String x:Key="reason_viewrange_below">Element liegt unterhalb der unteren Grenze des Ansichtsbereichs (untere Schnittebene / Ansichtstiefe) (max. Z des Elements {} &lt; untere Grenze {})</sys:String>
     <sys:String x:Key="reason_view_template">Ansichtsvorlage '{}' ist angewendet - einige Sichtbarkeitseinstellungen sind möglicherweise gesperrt und müssen in der Vorlage geändert werden</sys:String>
     <sys:String x:Key="reason_view_specific">Element ist ansichtsspezifisch und gehört zu einer anderen Ansicht ('{}'), kann hier also nicht erscheinen</sys:String>
     <sys:String x:Key="reason_view_discipline">Die Ansichtsdisziplin ist auf '{}' eingestellt - einige Kategorien werden abhängig von der Disziplin automatisch ein- oder ausgeblendet, unabhängig von den Sichtbarkeits-/Grafikeinstellungen</sys:String>
@@ -113,7 +113,7 @@
     <sys:String x:Key="code_view_template">Vorlage</sys:String>
     <sys:String x:Key="code_view_discipline">Disziplin</sys:String>
     <sys:String x:Key="code_unknown">Unbekannt</sys:String>
-    <sys:String x:Key="reason_above_cut_plane">Element liegt vollständig über der Schnittebene (Element min. Z {:.3f} ft &gt; Schnitt {:.3f} ft). Zwischen Schnittebene und Oberkante zeigen Grundrisse nur Fenster, Möbelsysteme/Einbauten, allgemeine Modelle und nicht schneidbare Kategorien; '{}' ist schneidbar</sys:String>
+    <sys:String x:Key="reason_above_cut_plane">Element liegt vollständig über der Schnittebene (Element min. Z {} &gt; Schnitt {}). Zwischen Schnittebene und Oberkante zeigen Grundrisse nur Fenster, Möbelsysteme/Einbauten, allgemeine Modelle und nicht schneidbare Kategorien; '{}' ist schneidbar</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Schnittebene über Element anheben</sys:String>
     <sys:String x:Key="code_above_cut_plane">Über Schnitt</sys:String>
     <sys:String x:Key="reason_subcategory_drawn_hidden">Unterkategorie '{}' ist in dieser Ansicht ausgeblendet, und alles, was das Element hier zeichnet, verwendet ausgeblendete Unterkategorien</sys:String>

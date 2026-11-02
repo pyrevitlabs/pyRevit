@@ -18,7 +18,13 @@ import re
 
 from pyrevit import DB
 
-from invisibility_checks import id_value, local_extents, resolve_view_range_elevation, t
+from invisibility_checks import (
+    format_length,
+    id_value,
+    local_extents,
+    resolve_view_range_elevation,
+    t,
+)
 
 
 MAX_SCENE_VERTICES = 60000
@@ -224,16 +230,6 @@ def _union_bbox(boxes):
         max(b.Max.Z for b in boxes),
     )
     return union
-
-
-def format_length(doc, feet):
-    """Format a length in feet with the project's length units."""
-    try:
-        return DB.UnitFormatUtils.Format(
-            doc.GetUnits(), DB.SpecTypeId.Length, feet, False
-        )
-    except Exception:
-        return "{:.2f} ft".format(feet)
 
 
 def _relative(point, origin):
@@ -555,5 +551,5 @@ def scene_to_json(scene):
             return [pack(v) for v in value]
         return value
 
-    skeleton = json.dumps(pack(scene))
+    skeleton = json.dumps(pack(scene), ensure_ascii=False)
     return _PACKED_TOKEN.sub(lambda match: packed[int(match.group(1))], skeleton)
