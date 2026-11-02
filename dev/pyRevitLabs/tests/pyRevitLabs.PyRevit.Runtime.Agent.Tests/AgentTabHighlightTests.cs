@@ -5,6 +5,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 
 namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
     /// <summary>Exercises the Revit-free lease, timing, failure and property ownership contracts.</summary>
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentTabHighlightTests {
         private sealed class Tab {
             internal readonly object Original = new object();
