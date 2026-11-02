@@ -50,8 +50,10 @@ RESOURCES = {
     },
 }
 
+
 def _ls(key):
     return applocales.get_locale_string(RESOURCES[key])
+
 
 # collect actions that are valid in this context
 available_actions = [
@@ -82,5 +84,5 @@ if available_actions:
         forms.alert(ex.msg)
 else:
     forms.alert(
-        _ls("selected_action_message")
+        _ls("available_actions_none")
     )
