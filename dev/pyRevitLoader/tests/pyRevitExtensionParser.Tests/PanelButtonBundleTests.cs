@@ -303,7 +303,7 @@ print('test')");
                     Assert.IsTrue(pushButton.ScriptPath.EndsWith("script.py"));
                     Assert.AreEqual("AVF", pushButton.DisplayName);
 
-                    Assert.That(pushButton.BundleFile, Does.EndWith("bundle.yaml"));
+                    Assert.That(pushButton.BundleFile, Is.Null);
 
                     // Test completed successfully
                     return;
