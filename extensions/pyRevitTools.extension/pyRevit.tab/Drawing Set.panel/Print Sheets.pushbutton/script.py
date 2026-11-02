@@ -22,21 +22,19 @@ to remain.
 """
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-import re
-import os.path as op
 import codecs
-import os
 import datetime
 import locale
+import os
+import os.path as op
+import re
 from collections import namedtuple
 
-from pyrevit import HOST_APP, EXEC_PARAMS
-from pyrevit import framework
+from pyrevit import forms, script  # helpers
+from pyrevit import HOST_APP, EXEC_PARAMS  # constants
+from pyrevit import revit, DB  # wrappers
+from pyrevit import coreutils, framework
 from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
-from pyrevit import coreutils
-from pyrevit import forms
-from pyrevit import revit, DB
-from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.coreutils import applocales, pathtemplate
 
@@ -45,13 +43,6 @@ get_elementid_value = get_elementid_value_func()
 
 logger = script.get_logger()
 config = script.get_config()
-
-PRINT_SHEETS_XAML = script.get_bundle_file("PrintSheets.xaml")
-
-
-def _t(key):
-    return applocales.get_locale_string_from_xaml(PRINT_SHEETS_XAML, key)
-
 
 # Non Printable Char
 NPC = u"\u200e"  # fmt: skip
@@ -63,6 +54,9 @@ EXPORT_ENCODING = "utf_8"
 IS_REVIT_2022_OR_NEWER = HOST_APP.is_newer_than(2021)
 
 DEFAULT_SUBFOLDER_FORMAT = "{date}_{time}_PRINT"
+
+PRINT_SHEETS_XAML = script.get_bundle_file("PrintSheets.xaml")
+
 
 COMBINED_PDF_NAME = "Ordered Sheet Set"
 
@@ -146,6 +140,10 @@ TitleBlockPrintSettings = namedtuple(
 )
 
 
+def _t(key):
+    return applocales.get_locale_string_from_xaml(PRINT_SHEETS_XAML, key)
+
+
 class PrintUtils:
     """Utility functions for printing and exporting sheets."""
 
@@ -167,8 +165,8 @@ class PrintUtils:
     def open_dir(dp):
         try:
             os.startfile(dp)
-        except Exception:
-            pass
+        except Exception as open_err:
+            logger.debug("Could not open %s: %s", dp, open_err)
         return dp
 
     @staticmethod
@@ -615,8 +613,8 @@ class PrintSettingListItem(forms.TemplateListItem):
         try:
             if self.print_params:
                 return self.print_params.PaperSize
-        except Exception:
-            pass
+        except Exception as paper_err:
+            logger.debug("Could not read the paper size: %s", paper_err)
 
     @property
     def allows_variable_paper(self):
@@ -1564,17 +1562,17 @@ class PrintSheetsWindow(forms.WPFWindow):
                     )
                     print_mgr.SelectNewPrintDriver(self.selected_printer)
                     print_mgr.PrintRange = DB.PrintRange.Select
-                except Exception as cpSetEx:
+                except Exception as set_print_error:
                     forms.alert(
                         "Print setting is incompatible with printer.",
-                        expanded=str(cpSetEx),
+                        expanded=str(set_print_error),
                     )
                     return
             # The OrderedViewList property was added to the IViewSheetSet
             # interface in Revit 2023 and makes the non-printable char
             # technique unnecessary.
-            supports_OrderedViewList = HOST_APP.is_newer_than(2022)
-            if supports_OrderedViewList:
+            supports_ordered_view_list = HOST_APP.is_newer_than(2022)
+            if supports_ordered_view_list:
                 sheet_list = List[DB.View]()
                 for sheet in target_sheets:
                     if sheet.printable:
@@ -1619,7 +1617,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             with revit.Transaction("Update Ordered Print Set", doc=self.selected_doc):
                 try:
                     viewsheet_settings = print_mgr.ViewSheetSetting
-                    if supports_OrderedViewList:
+                    if supports_ordered_view_list:
                         viewsheet_settings.CurrentViewSheetSet.IsAutomatic = False
                         viewsheet_settings.CurrentViewSheetSet.OrderedViewList = (
                             sheet_list
@@ -1659,7 +1657,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 DB.KeynoteTable.GetKeynoteTable(revit.doc).Reload(None)
             print_mgr.Apply()
             print_mgr.SubmitPrint()
-            if not supports_OrderedViewList:
+            if not supports_ordered_view_list:
                 # now fix the sheet names
                 with revit.Transaction("Restore Sheet Numbers", doc=self.selected_doc):
                     for sheet, sheetnum in zip(target_sheets, original_sheetnums):
@@ -1668,10 +1666,10 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             self._reset_psettings()
 
-    def _export_combined_pdf_internal(self, target_sheets, dirPath):
+    def _export_combined_pdf_internal(self, target_sheets, dir_path):
         WARNED_PAPER_SIZES.clear()
         doc = self.selected_doc
-        PrintUtils.open_dir(dirPath)
+        PrintUtils.open_dir(dir_path)
 
         sheet_ids = [x.revit_sheet.Id for x in target_sheets if x.printable]
         if not sheet_ids:
@@ -1689,11 +1687,11 @@ class PrintSheetsWindow(forms.WPFWindow):
                 title="Exporting combined PDF...", indeterminate=True
             ):
                 exported = PrintUtils.export_combined_pdf(
-                    dirPath, sheet_ids, optspdf, doc, COMBINED_PDF_NAME
+                    dir_path, sheet_ids, optspdf, doc, COMBINED_PDF_NAME
                 )
                 if exported:
                     self._completed_outputs.append(
-                        op.join(dirPath, COMBINED_PDF_NAME + ".pdf")
+                        op.join(dir_path, COMBINED_PDF_NAME + ".pdf")
                     )
         except Exception as e:
             logger.error("Failed to export combined PDF: %s", e)
@@ -1706,7 +1704,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 logger.error(message)
                 forms.alert(message)
 
-    def _print_sheets_in_order(self, target_sheets, dirPath):
+    def _print_sheets_in_order(self, target_sheets, dir_path):
         WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
@@ -1719,7 +1717,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             self.selected_printer == "Revit Internal Printer"
             or self.export_dwg.IsChecked
         ):
-            PrintUtils.open_dir(dirPath)
+            PrintUtils.open_dir(dir_path)
         with revit.Transaction("Reload Keynote File", doc=self.selected_doc):
             DB.KeynoteTable.GetKeynoteTable(self.selected_doc).Reload(None)
 
@@ -1735,9 +1733,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                 ):
                     print_mgr.SelectNewPrintDriver(self.selected_printer)
                 print_mgr.PrintRange = DB.PrintRange.Current
-            except Exception as cpSetEx:
+            except Exception as set_print_error:
                 forms.alert(
-                    "Print setting is incompatible with printer.", expanded=str(cpSetEx)
+                    "Print setting is incompatible with printer.",
+                    expanded=str(set_print_error),
                 )
                 return
             if target_sheets:
@@ -1747,8 +1746,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                         title="Exporting PDF & DWGs... " + "{value} of {max_value}",
                         cancellable=True,
                     ) as pb1:
-                        pbTotal1 = len(target_sheets) * 2
-                        pbCount1 = 1
+                        progress_total = len(target_sheets) * 2
+                        progress_count = 1
                         for sheet in target_sheets:
                             if pb1.cancelled:
                                 break
@@ -1756,7 +1755,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                 if sheet.printable:
                                     if sheet.print_filename:
                                         print_filepath = op.join(
-                                            dirPath, sheet.print_filename
+                                            dir_path, sheet.print_filename
                                         )
                                         print_mgr.PrintToFileName = print_filepath
 
@@ -1770,8 +1769,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             sheet.name, print_filepath
                                         ):
                                             try:
-                                                pb1.update_progress(pbCount1, pbTotal1)
-                                                pbCount1 += 1
+                                                pb1.update_progress(
+                                                    progress_count, progress_total
+                                                )
+                                                progress_count += 1
                                                 if (
                                                     IS_REVIT_2022_OR_NEWER
                                                     and self.selected_printer
@@ -1787,7 +1788,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                         sheets=[sheet.revit_sheet],
                                                     )
                                                     PrintUtils.export_sheet_pdf(
-                                                        dirPath,
+                                                        dir_path,
                                                         sheet.revit_sheet,
                                                         optspdf,
                                                         doc,
@@ -1808,11 +1809,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 )
 
                                             try:
-                                                pb1.update_progress(pbCount1, pbTotal1)
-                                                pbCount1 += 1
+                                                pb1.update_progress(
+                                                    progress_count, progress_total
+                                                )
+                                                progress_count += 1
                                                 optsdwg = PrintUtils.dwg_opts()
                                                 PrintUtils.export_sheet_dwg(
-                                                    dirPath,
+                                                    dir_path,
                                                     sheet.revit_sheet,
                                                     optsdwg,
                                                     doc,
@@ -1829,13 +1832,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                     e,
                                                 )
                                     else:
-                                        pbCount1 += 2
+                                        progress_count += 2
                                         logger.debug(
                                             "Sheet %s does not have a valid file name.",
                                             sheet.number,
                                         )
                                 else:
-                                    pbCount1 += 2
+                                    progress_count += 2
                                     logger.debug(
                                         "Sheet %s is not printable. Skipping print.",
                                         sheet.number,
@@ -1846,8 +1849,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                         title="Exporting PDFs... " + "{value} of {max_value}",
                         cancellable=True,
                     ) as pb1:
-                        pbTotal1 = len(target_sheets)
-                        pbCount1 = 1
+                        progress_total = len(target_sheets)
+                        progress_count = 1
                         for sheet in target_sheets:
                             if pb1.cancelled:
                                 break
@@ -1855,7 +1858,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                 if sheet.printable:
                                     if sheet.print_filename:
                                         print_filepath = op.join(
-                                            dirPath, sheet.print_filename
+                                            dir_path, sheet.print_filename
                                         )
 
                                         print_mgr.PrintToFileName = print_filepath
@@ -1869,8 +1872,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             sheet.name, print_filepath
                                         ):
                                             try:
-                                                pb1.update_progress(pbCount1, pbTotal1)
-                                                pbCount1 += 1
+                                                pb1.update_progress(
+                                                    progress_count, progress_total
+                                                )
+                                                progress_count += 1
                                                 if (
                                                     IS_REVIT_2022_OR_NEWER
                                                     and self.selected_printer
@@ -1886,7 +1891,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                         sheets=[sheet.revit_sheet],
                                                     )
                                                     PrintUtils.export_sheet_pdf(
-                                                        dirPath,
+                                                        dir_path,
                                                         sheet.revit_sheet,
                                                         optspdf,
                                                         doc,
@@ -1907,13 +1912,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 )
 
                                     else:
-                                        pbCount1 += 1
+                                        progress_count += 1
                                         logger.debug(
                                             "Sheet %s does not have a valid file name.",
                                             sheet.number,
                                         )
                                 else:
-                                    pbCount1 += 1
+                                    progress_count += 1
                                     logger.debug(
                                         "Sheet %s is not printable. Skipping print.",
                                         sheet.number,
@@ -1934,7 +1939,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             return sheet.print_settings.PrintParameters
         return self.selected_print_setting.print_params
 
-    def _print_linked_sheets_in_order(self, target_sheets, dirPath):
+    def _print_linked_sheets_in_order(self, target_sheets, dir_path):
         """Print sheets one by one, each through the model it belongs to.
 
         Handles a linked model and the All Models scope alike: the sheets of
@@ -1949,7 +1954,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 print_managers[doc.GetHashCode()] = self._configure_print_manager(doc)
 
         if self.selected_printer == "Revit Internal Printer":
-            PrintUtils.open_dir(dirPath)
+            PrintUtils.open_dir(dir_path)
 
         if target_sheets:
             with forms.ProgressBar(
@@ -1957,8 +1962,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                 title="Exporting Linked PDFs... " + "{value} of {max_value}",
                 cancellable=True,
             ) as pb1:
-                pbTotal1 = len(target_sheets)
-                pbCount1 = 1
+                progress_total = len(target_sheets)
+                progress_count = 1
                 for sheet in target_sheets:
                     if pb1.cancelled:
                         break
@@ -1967,15 +1972,17 @@ class PrintSheetsWindow(forms.WPFWindow):
                             if sheet.print_filename:
                                 doc = sheet.revit_sheet.Document
                                 print_mgr = print_managers[doc.GetHashCode()]
-                                print_filepath = op.join(dirPath, sheet.print_filename)
+                                print_filepath = op.join(dir_path, sheet.print_filename)
                                 print_mgr.PrintToFileName = print_filepath
 
                                 if self._verify_print_filename(
                                     sheet.name, print_filepath
                                 ):
                                     try:
-                                        pb1.update_progress(pbCount1, pbTotal1)
-                                        pbCount1 += 1
+                                        pb1.update_progress(
+                                            progress_count, progress_total
+                                        )
+                                        progress_count += 1
                                         if (
                                             IS_REVIT_2022_OR_NEWER
                                             and self.selected_printer
@@ -1988,7 +1995,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 sheets=[sheet.revit_sheet],
                                             )
                                             PrintUtils.export_sheet_pdf(
-                                                dirPath,
+                                                dir_path,
                                                 sheet.revit_sheet,
                                                 optspdf,
                                                 doc,
@@ -2006,13 +2013,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             e,
                                         )
                             else:
-                                pbCount1 += 1
+                                progress_count += 1
                                 logger.debug(
                                     "Sheet %s does not have a valid file name.",
                                     sheet.number,
                                 )
                         else:
-                            pbCount1 += 1
+                            progress_count += 1
                             logger.debug(
                                 "Sheet %s is not printable. Skipping print.",
                                 sheet.number,
@@ -2636,16 +2643,20 @@ def cleanup_sheetnumbers(doc):
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, "")
 
 
-# verify model is printable
-forms.check_modeldoc(exitscript=True)
-# ensure there is nothing selected
-revit.selection.get_selection().clear()
+def main():
+    # verify model is printable
+    forms.check_modeldoc(exitscript=True)
+    # ensure there is nothing selected
+    revit.selection.get_selection().clear()
 
-# TODO: add copy filenames to sheet list
-if EXEC_PARAMS.config_mode:
-    open_docs = forms.select_open_docs(check_more_than_one=False)
-    if open_docs:
-        for open_doc in open_docs:
-            cleanup_sheetnumbers(open_doc)
-else:
-    PrintSheetsWindow("PrintSheets.xaml").ShowDialog()
+    # TODO: add copy filenames to sheet list
+    if EXEC_PARAMS.config_mode:
+        open_docs = forms.select_open_docs(check_more_than_one=False)
+        if open_docs:
+            for open_doc in open_docs:
+                cleanup_sheetnumbers(open_doc)
+    else:
+        PrintSheetsWindow("PrintSheets.xaml").ShowDialog()
+
+
+main()
