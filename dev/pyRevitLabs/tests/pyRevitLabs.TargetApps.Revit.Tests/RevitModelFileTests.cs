@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
@@ -8,7 +8,7 @@ using OpenMcdf;
 
 using pyRevitLabs.TargetApps.Revit;
 
-namespace pyRevitLabs.UnitTests.RevitModelFiles {
+namespace pyRevitLabs.TargetApps.Revit.Tests {
     /// <summary>
     /// Covers how the Revit version of a model is read from its BasicFileInfo stream.
     /// </summary>
@@ -19,9 +19,10 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
     /// shared-build cases resolve against the host database this machine loads, and are
     /// inconclusive when it does not list that build for both years.
     /// </remarks>
-    [TestClass()]
-    [TestCategory("HostFree")]
-    [TestCategory("Integration")]
+    [TestFixture()]
+    [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
+    [Category("HostFree")]
+    [Category("Integration")]
     public class RevitModelFileVersionTests {
         private const string Revit2026SampleInfo =
             "Worksharing: Not enabled\r\n"
@@ -49,12 +50,12 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
 
         private string _modelPath;
 
-        [TestInitialize]
+        [SetUp]
         public void CreateModelPath() {
             _modelPath = Path.Combine(Path.GetTempPath(), "pyrevit-modelfile-" + Guid.NewGuid().ToString("N") + ".rvt");
         }
 
-        [TestCleanup]
+        [TearDown]
         public void DeleteModel() {
             if (File.Exists(_modelPath))
                 File.Delete(_modelPath);
@@ -75,25 +76,25 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
             return _modelPath;
         }
 
-        [TestMethod()]
+        [Test()]
         public void BuildWithoutDate_FallsBackToTheFormatYear() {
             var model = new RevitModelFile(WriteModel(Revit2026SampleInfo));
 
-            Assert.AreEqual(2026, model.FormatYear);
-            Assert.IsNotNull(model.RevitProduct);
-            Assert.AreEqual(2026, model.RevitProduct.ProductYear);
-            Assert.IsFalse(model.RevitProduct.IsListedInHostsDatabase);
-            Assert.AreEqual(@"C:\Autodesk\Snowdon Towers Sample Architectural.rvt", model.LastSavedPath);
+            Assert.That(model.FormatYear, Is.EqualTo(2026));
+            Assert.That(model.RevitProduct, Is.Not.Null);
+            Assert.That(model.RevitProduct.ProductYear, Is.EqualTo(2026));
+            Assert.That(model.RevitProduct.IsListedInHostsDatabase, Is.False);
+            Assert.That(model.LastSavedPath, Is.EqualTo(@"C:\Autodesk\Snowdon Towers Sample Architectural.rvt"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void UnlistedBuild_FallsBackToTheFormatYear_AndKeepsTheBuildNumber() {
             var model = new RevitModelFile(WriteModel(Revit2023SampleInfo));
 
-            Assert.IsNotNull(model.RevitProduct);
-            Assert.AreEqual(2023, model.RevitProduct.ProductYear);
-            Assert.AreEqual("20220108_1515", model.RevitProduct.BuildNumber);
-            Assert.IsFalse(model.RevitProduct.IsListedInHostsDatabase);
+            Assert.That(model.RevitProduct, Is.Not.Null);
+            Assert.That(model.RevitProduct.ProductYear, Is.EqualTo(2023));
+            Assert.That(model.RevitProduct.BuildNumber, Is.EqualTo("20220108_1515"));
+            Assert.That(model.RevitProduct.IsListedInHostsDatabase, Is.False);
         }
 
         private static void RequireSharedBuildInHostDatabase() {
@@ -105,9 +106,8 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
                 Assert.Inconclusive("The host database does not list build " + Shared2022And2023Build + " for both Revit 2022 and 2023");
         }
 
-        [DataTestMethod()]
-        [DataRow(2022, "22.1.80.32")]
-        [DataRow(2023, "23.1.60.36")]
+        [TestCase(2022, "22.1.80.32")]
+        [TestCase(2023, "23.1.60.36")]
         public void SharedListedBuild_UsesTheFormatYearToPickTheRecord(int formatYear, string expectedVersion) {
             RequireSharedBuildInHostDatabase();
 
@@ -116,42 +116,38 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
                 + "Format: " + formatYear + "\r\n"
                 + "Build: " + Shared2022And2023Build + "(x64)\r\n"));
 
-            Assert.IsNotNull(model.RevitProduct);
-            Assert.AreEqual(formatYear, model.RevitProduct.ProductYear);
-            Assert.AreEqual(expectedVersion, model.RevitProduct.Version.ToString());
-            Assert.IsTrue(model.RevitProduct.IsListedInHostsDatabase);
+            Assert.That(model.RevitProduct, Is.Not.Null);
+            Assert.That(model.RevitProduct.ProductYear, Is.EqualTo(formatYear));
+            Assert.That(model.RevitProduct.Version.ToString(), Is.EqualTo(expectedVersion));
+            Assert.That(model.RevitProduct.IsListedInHostsDatabase, Is.True);
         }
 
-        [TestMethod()]
+        [Test()]
         public void UnknownBuild_WithoutFormatYear_StaysUndetected() {
             var model = new RevitModelFile(WriteModel(NoFormatUnknownBuildInfo));
 
-            Assert.AreEqual(0, model.FormatYear);
-            Assert.IsNull(model.RevitProduct);
+            Assert.That(model.FormatYear, Is.EqualTo(0));
+            Assert.That(model.RevitProduct, Is.Null);
         }
 
-        [TestMethod()]
+        [Test()]
         public void UnlistedProduct_DescribesTheRecordedBuild() {
             var revit2026 = new RevitModelFile(WriteModel(Revit2026SampleInfo));
-            Assert.AreEqual(
-                "Autodesk Revit 2026 (build 1515(x64), not listed in pyrevit-hosts.json)",
-                revit2026.CreatedIn);
+            Assert.That(revit2026.CreatedIn, Is.EqualTo("Autodesk Revit 2026 (build 1515(x64), not listed in pyrevit-hosts.json)"));
 
             DeleteModel();
             var revit2023 = new RevitModelFile(WriteModel(Revit2023SampleInfo));
-            Assert.AreEqual(
-                "Autodesk Revit 2023 (build 20220108_1515(x64), not listed in pyrevit-hosts.json)",
-                revit2023.CreatedIn);
+            Assert.That(revit2023.CreatedIn, Is.EqualTo("Autodesk Revit 2023 (build 20220108_1515(x64), not listed in pyrevit-hosts.json)"));
         }
 
-        [TestMethod()]
+        [Test()]
         public void FromProductYear_IsAYearOnlyProduct() {
             var product = RevitProduct.FromProductYear(2025);
 
-            Assert.AreEqual(2025, product.ProductYear);
-            Assert.IsNull(product.Version);
-            Assert.AreEqual(string.Empty, product.BuildNumber);
-            Assert.IsFalse(product.IsListedInHostsDatabase);
+            Assert.That(product.ProductYear, Is.EqualTo(2025));
+            Assert.That(product.Version, Is.Null);
+            Assert.That(product.BuildNumber, Is.EqualTo(string.Empty));
+            Assert.That(product.IsListedInHostsDatabase, Is.False);
         }
     }
 }

@@ -18,6 +18,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\release\pyrevit-hosts.json" Link="pyrevit-hosts.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="pyRevitLabs.NLog" HintPath="..\..\..\libs\netfx\pyRevitLabs.NLog.dll" Private="true" />
     <Reference Include="pyRevitLabs.Json" HintPath="..\..\..\libs\netfx\pyRevitLabs.Json.dll" Private="true" />
