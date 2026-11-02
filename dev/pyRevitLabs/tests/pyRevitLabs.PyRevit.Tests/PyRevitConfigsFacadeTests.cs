@@ -73,6 +73,16 @@ namespace pyRevitLabs.PyRevit.Tests {
         }
 
         [Test]
+        public void AgentTabHighlight_DefaultsOn_AndDisablePersists() {
+            Assert.IsTrue(PyRevitConfigs.GetAgentTabHighlight());
+
+            PyRevitConfigs.SetAgentTabHighlight(false);
+
+            Assert.IsFalse(PyRevitConfigs.GetAgentTabHighlight());
+            StringAssert.Contains(PyRevitConsts.ConfigsAgentTabHighlightKey, File.ReadAllText(_path));
+        }
+
+        [Test]
         public void StartupLogTimeout_RoundTrips() {
             PyRevitConfigs.SetStartupLogTimeout(42);
 
