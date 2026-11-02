@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Copy/Paste State Actions"""
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
@@ -6,6 +7,7 @@ import math
 from pyrevit import PyRevitException
 from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit.framework import List
+from pyrevit.coreutils import applocales
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import moduleutils
 from pyrevit.coreutils import pyutils
@@ -14,6 +16,66 @@ from pyrevit import script
 
 from copypastestate import basetypes
 
+
+RESOURCES = {
+    "viewzoom_panstate_action_name": {
+        "en_us": "View Zoom/Pan State",
+        "fr_fr": "État du zoom/Panoramique de la vue",
+        "ru": "Состояние масштаба/Положения вида",
+        "chinese_s": "视图缩放/平移状态",
+        "es_es": "Estado del zoom/Desplazamiento de la vista",
+        "de_de": "Zoom-/Verschiebungsstatus der Ansicht",
+        "pt_br": "Estado de zoom/Deslocamento da vista",
+    },
+    "sectionbox_3Dstate_action_name": {
+        "en_us": "3D Section Box State",
+        "fr_fr": "État de la boîte de coupe 3D",
+        "ru": "Состояние Границы 3D вида",
+        "chinese_s": "3D剖面框状态",
+        "es_es": "Estado de la caja de sección 3D",
+        "de_de": "Status des 3D-Schnittbereichs",
+        "pt_br": "Estado da caixa de corte 3D",
+    },
+    "visibility_graphics_action_name": {
+        "en_us": "Visibility Graphics",
+        "fr_fr": "Visibilité/graphisme",
+        "ru": "Видимость/графика",
+        "chinese_s": "可见性/图形",
+        "es_es": "Visibilidad/gráficos",
+        "de_de": "Sichtbarkeit/Grafiken",
+        "pt_br": "Visibilidade/gráficos",
+    },
+    "crop_region_action_name": {
+        "en_us": "Crop Region",
+        "fr_fr": "Région de recadrage",
+        "ru": "Граница подрезки",
+        "chinese_s": "裁剪区域",
+        "es_es": "Región de recorte",
+        "de_de": "Zuschneidebereich",
+        "pt_br": "Região de corte",
+    },
+    "viewport_placement_action_name": {
+        "en_us": "Viewport Placement on Sheet",
+        "fr_fr": "Positionnement de la fenêtre sur la feuille",
+        "ru": "Положение видового экрана на листе",
+        "chinese_s": "视口在图纸上的位置",
+        "es_es": "Ubicación de la ventana gráfica en el plano",
+        "de_de": "Platzierung des Ansichtsfensters auf dem Plan",
+        "pt_br": "Posicionamento da janela de visualização na folha",
+    },
+    "filter_overrides_action_name": {
+        "en_us": "Filter Overrides",
+        "fr_fr": "Remplacements des filtres",
+        "ru": "Переопределения фильтров",
+        "chinese_s": "过滤器替换",
+        "es_es": "Modificaciones de filtros",
+        "de_de": "Filterüberschreibungen",
+        "pt_br": "Substituições de filtros",
+    },
+}
+
+def _ls(key):
+    return applocales.get_locale_string(RESOURCES[key])
 
 mlogger = logger.get_logger(__name__)
 
@@ -42,7 +104,7 @@ class ViewZoomPanStateData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
-    name = "View Zoom/Pan State"
+    name = _ls("viewzoom_panstate_action_name")
     invalid_context_msg = "Type of active view is not supported"
     this_project = False
 
@@ -122,7 +184,7 @@ class SectionBox3DStateData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
-    name = "3D Section Box State"
+    name = _ls("sectionbox_3Dstate_action_name")
     invalid_context_msg = "You must be on a 3D view to copy and paste 3D section box."
     this_project = False
 
@@ -168,7 +230,7 @@ class VisibilityGraphicsData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
-    name = "Visibility Graphics"
+    name = _ls("visibility_graphics_action_name")
     invalid_context_msg = "View does not support Visibility Graphics settings"
 
     def copy(self):
@@ -218,7 +280,7 @@ class CropRegionData(object):
 # TODO: correct so split crop regions can be copied as well
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class CropRegionAction(basetypes.CopyPasteStateAction):
-    name = "Crop Region"
+    name = _ls("crop_region_action_name")
     invalid_context_msg = "Activate a view or select at least one cropable viewport"
     this_project = False
 
@@ -329,7 +391,7 @@ class ViewportPlacementData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class ViewportPlacementAction(basetypes.CopyPasteStateAction):
-    name = "Viewport Placement on Sheet"
+    name = _ls("viewport_placement_action_name")
     invalid_context_msg = "At least one viewport must be selected"
     this_project = False
 
@@ -669,7 +731,7 @@ class FilterOverridesData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class FilterOverridesAction(basetypes.CopyPasteStateAction):
-    name = "Filter Overrides"
+    name = _ls("filter_overrides_action_name")
     invalid_context_msg = ""
 
     @staticmethod
