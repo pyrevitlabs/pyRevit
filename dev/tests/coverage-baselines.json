@@ -174,10 +174,10 @@
     "lines": 2046
   },
   "dotnet/pyRevitLabs.TargetApps.Revit/net10.0-windows": {
-    "branch": 0.11470588235294117,
-    "branches": 340,
-    "line": 0.15620827770360482,
-    "lines": 749
+    "branch": 0.10483870967741936,
+    "branches": 372,
+    "line": 0.14810126582278482,
+    "lines": 790
   },
   "dotnet/pyRevitLabs.TargetApps.Revit/net48": {
     "branch": 0.29705882352941176,
