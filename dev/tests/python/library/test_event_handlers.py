@@ -313,5 +313,74 @@ class EventHandlerCleanupTests(unittest.TestCase):
         )
 
 
+class _RaisingExternalEvent:
+    def Raise(self):
+        raise RuntimeError("raise failed")
+
+
+class ExecuteInRevitContextTests(unittest.TestCase):
+    """Report whether a callback was queued and run it only when it was."""
+
+    def setUp(self):
+        """Install the handler and event the IronPython import path creates."""
+        self.logger = _Logger()
+        self.events = load_events_module(
+            _AppDomain(), _HostApplication(), "context-exec", self.logger, "Accepted"
+        )
+        self.events._HANDLER = self.events._GenericExternalEventHandler()
+        self.external_event = _ExternalEvent(self.events._HANDLER)
+        self.events._EXTERNAL_EVENT = self.external_event
+        self.calls = []
+
+    def _callback(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+
+    def test_accepted_request_queues_and_runs_callback(self):
+        """An accepted request returns True and runs the callback on Execute."""
+        queued = self.events.execute_in_revit_context(self._callback, 1, key="value")
+
+        self.assertTrue(queued)
+        self.assertEqual(self.calls, [])
+        self.events._HANDLER.Execute(None)
+        self.assertEqual(self.calls, [((1,), {"key": "value"})])
+        self.assertEqual(self.logger.errors, [])
+
+    def test_denied_request_discards_callback(self):
+        """A denied request returns False and never runs the callback."""
+        self.external_event.response = "Denied"
+
+        queued = self.events.execute_in_revit_context(self._callback)
+
+        self.assertFalse(queued)
+        self.events._HANDLER.Execute(None)
+        self.assertEqual(self.calls, [])
+        self.assertTrue(self.logger.errors)
+
+    def test_raise_failure_discards_callback(self):
+        """A failing Raise returns False and never runs the callback."""
+        self.events._EXTERNAL_EVENT = _RaisingExternalEvent()
+
+        queued = self.events.execute_in_revit_context(self._callback)
+
+        self.assertFalse(queued)
+        self.events._HANDLER.Execute(None)
+        self.assertEqual(self.calls, [])
+        self.assertTrue(self.logger.errors)
+
+    def test_missing_external_event_returns_false(self):
+        """An ExternalEvent that cannot be created leaves nothing queued."""
+        self.events._EXTERNAL_EVENT = None
+        self.events.UI.ExternalEvent = types.SimpleNamespace(
+            Create=lambda handler: (_ for _ in ()).throw(RuntimeError("no context"))
+        )
+
+        queued = self.events.execute_in_revit_context(self._callback)
+
+        self.assertFalse(queued)
+        self.events._HANDLER.Execute(None)
+        self.assertEqual(self.calls, [])
+        self.assertTrue(self.logger.errors)
+
+
 if __name__ == "__main__":
     unittest.main()
