@@ -2239,10 +2239,11 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _all_models_sheet_items(self):
         sheet_items = []
-        models = {}
+        seen_models = set()
         for model in [revit.doc] + list(revit.query.get_all_linkeddocs(doc=revit.doc)):
-            models.setdefault(model.GetHashCode(), model)
-        for model in models.values():
+            if model.GetHashCode() in seen_models:
+                continue
+            seen_models.add(model.GetHashCode())
             tblocks = revit.query.get_elements_by_categories(
                 [DB.BuiltInCategory.OST_TitleBlocks], doc=model
             )
