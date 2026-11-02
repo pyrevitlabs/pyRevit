@@ -74,8 +74,10 @@ RESOURCES = {
     },
 }
 
+
 def _ls(key):
     return applocales.get_locale_string(RESOURCES[key])
+
 
 mlogger = logger.get_logger(__name__)
 
@@ -104,6 +106,11 @@ class ViewZoomPanStateData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
+    """Copies and restores the active view's zoom, pan, and orientation.
+
+    Supports plan, section, 3D, sheet, and drafting views.
+    For 3D and section views, also stores the view orientation.
+    """
     name = _ls("viewzoom_panstate_action_name")
     invalid_context_msg = "Type of active view is not supported"
     this_project = False
@@ -184,6 +191,7 @@ class SectionBox3DStateData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
+    """Copies and restores the section box and orientation of a 3D view."""
     name = _ls("sectionbox_3Dstate_action_name")
     invalid_context_msg = "You must be on a 3D view to copy and paste 3D section box."
     this_project = False
@@ -230,6 +238,10 @@ class VisibilityGraphicsData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
+    """Copies and applies visibility and graphics settings from another view.
+
+    Uses the source view's parameters to update the active view.
+    """
     name = _ls("visibility_graphics_action_name")
     invalid_context_msg = "View does not support Visibility Graphics settings"
 
@@ -280,6 +292,11 @@ class CropRegionData(object):
 # TODO: correct so split crop regions can be copied as well
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class CropRegionAction(basetypes.CopyPasteStateAction):
+    """Copies and restores the crop region of views.
+
+    Supports 3D views and other cropable views.
+    Can apply the copied crop region to multiple selected views.
+    """
     name = _ls("crop_region_action_name")
     invalid_context_msg = "Activate a view or select at least one cropable viewport"
     this_project = False
@@ -391,6 +408,11 @@ class ViewportPlacementData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class ViewportPlacementAction(basetypes.CopyPasteStateAction):
+    """Copies and restores viewport placement on sheets.
+
+    Supports alignment by crop box corners, center, and base point,
+    with optional axis constraints.
+    """
     name = _ls("viewport_placement_action_name")
     invalid_context_msg = "At least one viewport must be selected"
     this_project = False
@@ -731,6 +753,11 @@ class FilterOverridesData(object):
 
 @moduleutils.mark(basetypes.COPYPASTE_MARKER_PROPNAME)
 class FilterOverridesAction(basetypes.CopyPasteStateAction):
+    """Copies and applies filter graphic overrides to views or view templates.
+
+    Skips views where filter visibility and graphics are controlled
+    by the applied view template.
+    """
     name = _ls("filter_overrides_action_name")
     invalid_context_msg = ""
 
