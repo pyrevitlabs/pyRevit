@@ -31,7 +31,7 @@ for sheet in sorted(revised_sheets, key=lambda sheet: sheet.SheetNumber):
 
 - Titles, tooltips, icons and authorship belong in `bundle.yaml` next to `script.py` (see [Extensions](extensions.md)).
 - Module-level handles come first and are named the same everywhere: `logger`, `output`, and `selection` when needed. Don't invent alternatives.
-- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about ten lines (loops, several branches), put that flow in a `main()` called at the bottom of `script.py`.
+- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about thirty lines, or has several distinct stages (collect input, validate, modify, report), put that flow in a `main()` called at the bottom of `script.py`. Don't add `main()` just because a script has a helper function or two.
 - Logic that gets reused or tested on its own lives in small named functions.
 - Helpers a script outgrows go in separate modules next to `script.py` in the bundle folder (it is on `sys.path` automatically), rather than into one 1500-line file. A `lib/` subfolder is optional.
 
