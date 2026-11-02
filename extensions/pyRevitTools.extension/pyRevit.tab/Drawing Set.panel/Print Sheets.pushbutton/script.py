@@ -2374,18 +2374,14 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         # update sheet naming formats
         self._update_print_filenames(sheet_list)
-        self._check_models_share_filenames(sheet_list)
 
-    def _check_models_share_filenames(self, sheet_list):
-        if not self.is_all_models or self.has_errors:
-            return
+    def _models_share_filenames(self, sheet_list):
         sheets_by_filename = {}
         for sheet in sheet_list:
             if sheet.printable and sheet.print_filename:
                 key = sheet.print_filename.lower()
                 sheets_by_filename.setdefault(key, set()).add(sheet.model_name)
-        if any(len(models) > 1 for models in sheets_by_filename.values()):
-            self._set_error(_t("SameFileNameAcrossModels"))
+        return any(len(models) > 1 for models in sheets_by_filename.values())
 
     def set_sheet_printsettings(self, sender, args):
         if self.selected_printable_sheets:
@@ -2463,6 +2459,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                 selected_only = opts == "Only Selected Sheets"
 
             target_sheets = self.selected_sheets if selected_only else self.sheet_list
+
+            if self.is_all_models and self._models_share_filenames(target_sheets):
+                forms.alert(_t("SameFileNameAcrossModels"))
+                return
 
             if not self.combine_print:
                 # verify all sheets have print settings
