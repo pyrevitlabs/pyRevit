@@ -30,9 +30,9 @@ import os.path as op
 import re
 from collections import namedtuple
 
-from pyrevit import forms, script  # helpers
-from pyrevit import HOST_APP, EXEC_PARAMS  # constants
-from pyrevit import revit, DB  # wrappers
+from pyrevit import forms, script
+from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import revit, DB
 from pyrevit import coreutils, framework
 from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
 from pyrevit.compat import get_elementid_value_func
