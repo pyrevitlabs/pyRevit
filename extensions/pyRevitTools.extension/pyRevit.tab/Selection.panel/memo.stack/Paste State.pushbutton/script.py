@@ -20,6 +20,7 @@ RESOURCES = {
         "fr_fr": "Sélectionnez la propriété à coller",
         "ru": "Выберите параметр для вставки",
         "chinese_s": "选择要粘贴的属性",
+        "ko": "붙여넣을 속성을 선택하세요:",
         "es_es": "Seleccione la propiedad que desea pegar",
         "de_de": "Eigenschaft zum Einfügen auswählen",
         "pt_br": "Selecione a propriedade a ser colada",
@@ -28,24 +29,25 @@ RESOURCES = {
         "en_us": 'No available actions for this view or no saved data found. Use "Copy State" first.',
         "fr_fr": (
             "Aucune action disponible pour cette vue ou aucune donnée enregistrée trouvée."
-            'Utilisez d’abord \"Copier l\'état\".'
+            ' Utilisez d’abord \"Copier l\'état\".'
         ),
         "ru": (
             "Для этого вида нет доступных действий или не найдены сохранённые данные."
-            'Сначала используйте "Копировать".'
+            ' Сначала используйте "Копировать".'
         ),
         "chinese_s": '此视图没有可用的操作，或未找到已保存的数据。请先使用 "复制状态"',
+        "ko": '이 뷰에서 사용할 수 있는 작업이 없거나 저장된 데이터를 찾을 수 없습니다. 먼저 "상태 복사" 기능을 사용하세요.',
         "es_es": (
             "No hay acciones disponibles para esta vista o no se encontraron datos guardados."
-            'Utilice primero "Copiar estado".'
+            ' Utilice primero "Copiar estado".'
         ),
         "de_de": (
             "Für diese Ansicht sind keine Aktionen verfügbar oder es wurden keine gespeicherten Daten gefunden."
-            'Verwenden Sie zuerst "Zustand kopieren".'
+            ' Verwenden Sie zuerst "Zustand kopieren".'
         ),
         "pt_br": (
             "Não há ações disponíveis para esta vista ou nenhum dado salvo foi encontrado."
-            'Use primeiro "Copiar Estado".'
+            ' Use primeiro "Copiar Estado".'
         ),
     },
 }
