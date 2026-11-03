@@ -8,6 +8,8 @@ Note:
     This module must stay importable by IronPython 2.7.
 """
 
+import System
+
 from pyrevit import HOST_APP
 from pyrevit import framework, revit
 from pyrevit.coreutils.logger import get_logger
@@ -239,6 +241,15 @@ def setup_resources(wpf_ctrl, set_root_colors, resolve_theme, recognize_access_k
         wpf_ctrl.Foreground = res["pyRevitWindowForegroundBrush"]
 
 
+def _same_clr_object(first, second):
+    """Compare CLR objects by reference.
+
+    Python ``is`` works on IronPython, where a CLR object has one Python
+    identity, but pythonnet can wrap the same object twice.
+    """
+    return System.Object.ReferenceEquals(first, second)
+
+
 def apply_contrast_foregrounds(form):
     """Give every custom-background element a readable text color.
 
@@ -310,7 +321,7 @@ def apply_contrast_foregrounds(form):
             ):
                 contrast_style = managed.get(element)
                 if contrast_style is not None:
-                    if element.Style is contrast_style:
+                    if _same_clr_object(element.Style, contrast_style):
                         element.Style = contrast_style.BasedOn
                     del managed[element]
                 continue
@@ -320,8 +331,8 @@ def apply_contrast_foregrounds(form):
                 key=lambda candidate: _contrast_ratio(background, candidate.Color),
             )
             base_style = element.Style
-            if element in managed and base_style is managed[element]:
-                if base_style.Setters[0].Value is best:
+            if element in managed and _same_clr_object(base_style, managed[element]):
+                if _same_clr_object(base_style.Setters[0].Value, best):
                     continue
                 base_style = base_style.BasedOn
             contrast_style = framework.Windows.Style(element.GetType(), base_style)
