@@ -24,6 +24,8 @@ pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://g
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
 | **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches every supported Revit year, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
+| **`Extension catalog check`** | [`catalog-validate.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/catalog-validate.yml) | On PRs that touch `extensions/extensions.json`, runs `dev/scripts/check_extension_catalog.py`. |
+| **`Extension catalog publish`** | [`catalog-publish.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/catalog-publish.yml) | On `develop` pushes that change `extensions/extensions.json`, validates it and opens or updates a PR that copies only that file to `master`. See [Extension catalog publishing](#extension-catalog-publishing). |
 
 The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment. It `needs` both `build` and `wip`, so a failed WIP pack also holds back the notification.
 
@@ -76,6 +78,8 @@ Confirmed on a Windows 11 host with Revit 2021-2027 installed, using a self-sign
 
 - `.github/workflows/`, `build/`, `dev/`, `extensions/`, `pyrevitlib/`, `release/`, `site-packages/`
 
+`extensions/extensions.json` is excluded: nothing in the build reads it, and the [catalog sync PR](#extension-catalog-publishing) to `master` must not start a release-channel build. The **Extension catalog check** workflow covers it instead.
+
 It is triggered by:
 
 - **Push** to `develop`, `master`, or any `v*` tag (with the path filter above).
@@ -92,7 +96,25 @@ Doc-only or other out-of-scope changes skip CI entirely.
 
     The filter decides whether a change is verified at all. The host-free suites used to sit in a root `tests/`, outside the filter, so deleting the only two files under it triggered no run and the next build-touching push failed on `ImportError: Start directory is not importable: tests` — which on a `v*` tag also blocks `release.yml`, since it polls for that CI run. They now live under `dev/scripts`, which the filter already covers. When adding a step to the `build` job, add its inputs to both `paths:` lists in the same change.
 
-### Official repository vs forks
+### Extension catalog publishing
+
+The Extension Manager and `pyrevit extend` download `extensions/extensions.json` from `master`, so catalog entries reach users without a release:
+
+1. A contributor's PR adds an entry to `extensions/extensions.json` on `develop`. **Extension catalog check** validates it.
+2. After the merge, **Extension catalog publish** validates the file again and force-pushes the `catalog/sync-from-develop` branch: `master` plus that one file. It opens a PR to `master` with the added, removed and changed entry names, or updates the open one.
+3. A maintainer reviews and merges that PR. Because `ci.yml` ignores the file, the merge starts no build or release.
+
+If the file on `develop` already matches `master`, the workflow closes any open sync PR. To publish by hand, run the workflow with **`workflow_dispatch`** on `develop`.
+
+!!! warning "One-time repository setting"
+
+    The publish job opens the PR with `GITHUB_TOKEN`, which needs **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**. A PR opened this way does not trigger other workflows, so no check shows on it; the publish job has already validated the file.
+
+!!! note "Release merges"
+
+    `master` only ever receives exact copies of the `develop` catalog. Merge any open sync PR before a release merge from `develop`; if one is still open, a conflict on this file resolves to the `develop` version.
+
+
 
 The version, year, and product-data stamping modules only run when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is the main repo (`pyrevitlabs/pyRevit`). The downstream `wip` job and the whole `release.yml` workflow are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an **unsigned** product build via `ci.yml` (useful for PR validation). Unsigned builds (`Channel=none`) still seed `bin/pyrevit-products.json` from `release/` before the labs build so fork PR validation succeeds.
 
