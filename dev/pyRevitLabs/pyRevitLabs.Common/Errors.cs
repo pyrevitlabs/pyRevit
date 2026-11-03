@@ -50,6 +50,18 @@ namespace pyRevitLabs.Common {
         public PyRevitException(string message, Exception innerException) : base(message, innerException) { }
     }
 
+    /// <summary>Raised when a setting an administrator pinned is changed to a value the pin forbids.</summary>
+    public class PyRevitSettingManagedException : PyRevitException {
+        /// <summary>Creates the exception for <paramref name="settingName"/>.</summary>
+        public PyRevitSettingManagedException(string settingName)
+            : base($"\"{settingName}\" is managed by your administrator and cannot be changed.") {
+            SettingName = settingName;
+        }
+
+        /// <summary>The setting that is pinned.</summary>
+        public string SettingName { get; private set; }
+    }
+
     // resource exceptions
     public class pyRevitResourceMissingException : PyRevitException {
         public pyRevitResourceMissingException() { }
