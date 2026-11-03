@@ -1341,7 +1341,9 @@ class TemplateUserInputWindow(WPFWindow):
             self.Title = (
                 localized_title if isinstance(localized_title, str) else "User Input"
             )
-        self.Width = width
+        self._requested_width = width
+        if width is not None:
+            self.Width = width
         self.Height = height
 
         self._context = context
@@ -2023,6 +2025,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
         recognize_access_key (bool): recognize '_' as mark of access key
+        width (int): window width
 
     Returns:
         (str | tuple[str, dict]): name of selected option.
@@ -2064,12 +2067,13 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     xaml_source = "CommandSwitchWindow.xaml"
 
     RESOURCES = {
-        "cmdswitchwnd_width": {
+        "command_switch_window_width": {
             "en_us": DEFAULT_CMDSWITCHWND_WIDTH,
             "fr_fr": 700,
             "ru": 700,
             "chinese_s": DEFAULT_CMDSWITCHWND_WIDTH,
-            "es_es": 700,
+            "ko": 700,
+            "es_es": 750,
             "de_de": 700,
             "pt_br": 700,
         },
@@ -2080,7 +2084,6 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     def _setup(self, **kwargs):
         self.selected_switch = ""
-        self.Width = self._ls("cmdswitchwnd_width")
         self.Title = "Command Options"
 
         message = kwargs.get("message", None)
@@ -2102,6 +2105,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             "recognize_access_key", DEFAULT_RECOGNIZE_ACCESS_KEY
         )
 
+        if self._requested_width is None:
+            self.Width = self._ls("command_switch_window_width")
+
         # creates the switches first
         for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
@@ -2122,6 +2128,23 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self._setup_response()
         self.search_tb.Focus()
         self._filter_options()
+
+    @classmethod
+    def show(
+        cls,
+        context,
+        title=None,
+        width=None,
+        height=DEFAULT_INPUTWINDOW_HEIGHT,
+        **kwargs
+    ):
+        return super(CommandSwitchWindow, cls).show(
+            context,
+            title=title,
+            width=width,
+            height=height,
+            **kwargs
+        )
 
     @staticmethod
     def _set_config(item, config_dict):
