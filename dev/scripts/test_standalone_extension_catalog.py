@@ -59,6 +59,7 @@ class CheckExtensionCatalogTests(unittest.TestCase):
 
     def test_catalog_without_extensions_list_fails(self):
         self.assertTrue(self.checker.check_catalog({"extensions": {}}))
+        self.assertTrue(self.checker.check_catalog({"extensions": []}))
         self.assertTrue(self.checker.check_catalog([]))
 
     def test_missing_required_field_fails(self):

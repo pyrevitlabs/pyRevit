@@ -107,6 +107,8 @@ def check_catalog(catalog):
 
     entries = catalog["extensions"]
     problems = []
+    if not entries:
+        problems.append("catalog must contain at least one entry")
     for index, entry in enumerate(entries):
         problems.extend(_check_entry(index, entry))
 
