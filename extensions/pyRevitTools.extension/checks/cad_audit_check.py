@@ -45,14 +45,6 @@ def get_cad_site(cad_inst):
     return cad_inst.Name.replace("location", "-")
 
 
-class _CADAuditScopeWindow(forms.CommandSwitchWindow):
-    _binding_exclude = True
-
-    def _setup(self, **kwargs):
-        super(_CADAuditScopeWindow, self)._setup(**kwargs)
-        self.Title = _t("CADAuditTitle")
-
-
 def get_user_input():
     """Ask whether to audit only the active view instead of the whole model.
 
@@ -61,8 +53,9 @@ def get_user_input():
             cancels.
     """
     in_active_view = _t("CADAuditInActiveView")
-    choice = _CADAuditScopeWindow.show(
+    choice = forms.CommandSwitchWindow.show(
         [_t("CADAuditInProject"), in_active_view],
+        title=_t("CADAuditTitle"),
         message=_t("CADAuditInstances"),
     )
     if not choice:
