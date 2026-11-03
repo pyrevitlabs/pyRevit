@@ -58,6 +58,29 @@ public class TestMetadataTests {
             "class Tests { [TestMethod] public void Missing() {} }", "fixture.cs"));
     }
 
+    /// <summary>A misspelled override cannot fall back to the class's HostFree tag and reach CI.</summary>
+    [TestMethod]
+    public void MisspelledCategoryFailsClosed() {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => TestMetadata.Read("""
+            [Category("HostFree"), Category("Integration")]
+            class Tests {
+                [Test, Category("Revti")]
+                public void Hosted() { }
+            }
+            """, "fixture.cs"));
+        StringAssert.Contains(error.Message, "Revti");
+    }
+
+    /// <summary>Declared purpose categories sit beside the classification tags.</summary>
+    [TestMethod]
+    public void PurposeCategoryIsAllowed() {
+        var tests = TestMetadata.Read("""
+            [Category("HostFree"), Category("Integration"), Category("Regression")]
+            class Tests { [Test] public void Case() { } }
+            """, "fixture.cs");
+        Assert.AreEqual("HostFree", tests.Single().Environment);
+    }
+
     /// <summary>Only real method attributes contribute to the catalog.</summary>
     [TestMethod]
     public void CommentsAndStringContentsAreNotTests() {

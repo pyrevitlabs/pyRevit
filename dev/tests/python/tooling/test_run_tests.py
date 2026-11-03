@@ -158,6 +158,16 @@ class SelectionTests(unittest.TestCase):
         self.assertIn("-p:IronPythonVersion=IPY342", calls[1])
         self.assertEqual(["IPY2712PR", "IPY342"], [o["engine"] for o in outcomes])
 
+    def test_csharp_selection_requires_a_built_product(self):
+        """A fresh checkout fails fast with the build command, not with skipped cases."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaisesRegex(ValueError, "dotnet run -c Release -- ci"):
+                run_tests.require_built_product(root)
+            (root / "bin/netfx").mkdir(parents=True)
+            (root / "bin/netcore/engines").mkdir(parents=True)
+            run_tests.require_built_product(root)
+
     def test_hosted_module_is_classified_without_import(self):
         """A hosted suite can be inspected without executing its imports."""
         with tempfile.TemporaryDirectory() as directory:

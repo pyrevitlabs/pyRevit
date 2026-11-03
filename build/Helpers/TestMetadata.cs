@@ -12,6 +12,7 @@ internal static class TestMetadata {
     private static readonly HashSet<string> TestAttributes = ["Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod", "Fact", "Theory"];
     private static readonly HashSet<string> Levels = ["Unit", "Integration", "E2E", "Performance"];
     private static readonly HashSet<string> Environments = ["HostFree", "Revit"];
+    private static readonly HashSet<string> PurposeCategories = ["Regression"];
 
     internal static IReadOnlyList<ClassifiedTest> Read(string source, string path, IEnumerable<string>? defines = null) {
         var options = new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: defines);
@@ -21,8 +22,8 @@ internal static class TestMetadata {
             if (!method.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => TestAttributes.Contains(Name(attribute))))
                 continue;
             var type = method.Ancestors().OfType<ClassDeclarationSyntax>().First();
-            var defaults = ReadTags(type.AttributeLists.SelectMany(list => list.Attributes));
-            var overrides = ReadTags(method.AttributeLists.SelectMany(list => list.Attributes));
+            var defaults = ReadTags(type.AttributeLists.SelectMany(list => list.Attributes), path);
+            var overrides = ReadTags(method.AttributeLists.SelectMany(list => list.Attributes), path);
             string environment = overrides.GetValueOrDefault("Environment") ?? defaults.GetValueOrDefault("Environment") ?? "";
             string level = overrides.GetValueOrDefault("Level") ?? defaults.GetValueOrDefault("Level") ?? "";
             if (!Environments.Contains(environment) || !Levels.Contains(level))
@@ -36,7 +37,7 @@ internal static class TestMetadata {
 
     private static string Name(AttributeSyntax attribute) => attribute.Name.ToString().Split('.').Last().Replace("Attribute", "");
 
-    private static Dictionary<string, string> ReadTags(IEnumerable<AttributeSyntax> attributes) {
+    private static Dictionary<string, string> ReadTags(IEnumerable<AttributeSyntax> attributes, string path) {
         var tags = new Dictionary<string, string>();
         foreach (var attribute in attributes) {
             var values = attribute.ArgumentList?.Arguments
@@ -49,6 +50,8 @@ internal static class TestMetadata {
             if (Name(attribute) is "Category" or "TestCategory" && values.Length == 1) {
                 if (Environments.Contains(values[0])) AddTag(tags, "Environment", values[0]);
                 if (Levels.Contains(values[0])) AddTag(tags, "Level", values[0]);
+                if (!Environments.Contains(values[0]) && !Levels.Contains(values[0]) && !PurposeCategories.Contains(values[0]))
+                    throw new InvalidDataException($"{path}: unknown test category '{values[0]}'; use an Environment, a Level or a declared purpose category.");
             }
         }
         return tags;

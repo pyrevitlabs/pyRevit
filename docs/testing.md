@@ -12,7 +12,7 @@ python dev/tests/run_tests.py --list
 python dev/tests/run_tests.py
 ```
 
-Dependencies are pinned in `Pipfile.lock`. An existing development environment can use `pipenv run test`. Add `--language python` or `--language dotnet` for one language. `--list` inventories Revit suites without executing them.
+Dependencies are pinned in `Pipfile.lock`. An existing development environment can use `pipenv run test`. Add `--language python` or `--language dotnet` for one language. `--list` inventories Revit suites without executing them. Several C# suites test the deployed `bin` tree, so build the product (`cd build && dotnet run -c Release -- ci`) before running the C# selection; the runner stops with that instruction when `bin` is missing.
 
 CI uses the same runner: Python checks, product build, then C# tests. Product builds do not execute fixtures. Results, inventory and coverage go into a fresh `.test-results/<run>/` directory and are uploaded even on failure. See [CI/CD](ci-cd.md).
 
@@ -99,7 +99,7 @@ Every automated test needs literal Environment and Level metadata. Class/module 
 | xUnit | `[Trait("Environment", "HostFree")]`, `[Trait("Level", "Unit")]` |
 | Python | `TEST_ENVIRONMENT = "HostFree"`, `TEST_LEVEL = "Unit"` |
 
-Use `Revit` for any Revit dependency and one of the four levels above. A method cannot downgrade a Revit fixture to HostFree. HostFree Python modules must be safe to import; isolate API-dependent imports and fixture initialization. Hosted `unittest` modules use plain assignments without importing pytest. API-free pytest cases can override defaults with `@pytest.mark.environment(...)` and `@pytest.mark.level(...)`.
+Use `Revit` for any Revit dependency and one of the four levels above. A method cannot downgrade a Revit fixture to HostFree. A C# category must be an Environment, a Level or the `Regression` purpose; any other value, such as a misspelled `Revti`, fails discovery instead of silently inheriting the class defaults. HostFree Python modules must be safe to import; isolate API-dependent imports and fixture initialization. Hosted `unittest` modules use plain assignments without importing pytest. API-free pytest cases can override defaults with `@pytest.mark.environment(...)` and `@pytest.mark.level(...)`.
 
 - **C#:** evaluated `IsTestProject=true` projects under `dev/` and `build/`, all declared frameworks, and native discovery. No class/project allowlist.
 - **Python:** `test_*.py` under first-party `dev/`, `pyrevitlib/pyrevit/unittests/`, and `extensions/`, plus `*_tests.py` under `extensions/`. Metadata is read before imports; pytest runs eligible `unittest` cases too.

@@ -215,6 +215,26 @@ def engine_variants(project):
     return ENGINE_VARIANTS.get(Path(project["path"]).stem, (None,))
 
 
+def require_built_product(root=ROOT):
+    """Fail fast when the C# suites have no built product to test.
+
+    Renderer layout, shell engine and runtime suites read the deployed ``bin``
+    tree, so running them against a fresh checkout would only end in
+    inconclusive cases, which the runner rejects.
+    """
+    missing = [
+        path
+        for path in (root / "bin/netfx", root / "bin/netcore/engines")
+        if not path.is_dir()
+    ]
+    if missing:
+        raise ValueError(
+            "C# suites test the built product, which is missing ("
+            + ", ".join(str(path) for path in missing)
+            + "); build it first: cd build && dotnet run -c Release -- ci"
+        )
+
+
 def run_dotnet(project, results, engine=None):
     """Run all eligible classes through their native framework adapters.
 
@@ -409,6 +429,8 @@ def main():
     if options.list:
         print(json.dumps(inventory, indent=2))
         return
+    if options.language != "python":
+        require_built_product()
     if options.language != "dotnet":
         directory = results / "python"
         directory.mkdir(exist_ok=True)
