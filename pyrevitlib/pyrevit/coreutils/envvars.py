@@ -38,7 +38,6 @@ Examples:
     {'someconfig': True}
 """
 
-from pyrevit.compat import IRONPY
 from pyrevit.framework import AppDomain
 from pyrevit.labs import Common
 
@@ -121,14 +120,15 @@ def set_pyrevit_env_var(param_name, param_value):
         key's characters and, in a process with no IronPython context (the
         ``pyrevit run`` runner), raises ``NullReferenceException``. The
         ``Add(object, object)`` overload stores the plain string key and
-        replaces an existing entry.
+        replaces an existing entry. IronPython sees the same dictionary as a
+        native ``dict``.
     """
     # Get function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
     data_dict = get_pyrevit_env_vars()
     if data_dict is None:
         data_dict = {}
-    if IRONPY or isinstance(data_dict, dict):
+    if isinstance(data_dict, dict):
         data_dict[param_name] = param_value
     else:
         data_dict.Add(param_name, param_value)

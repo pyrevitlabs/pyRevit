@@ -90,7 +90,6 @@ internal static class CPythonEnvVarsHost {
                 ProductName = "pyRevit"
 
             _stub("pyrevit")
-            _stub("pyrevit.compat", IRONPY=False)
             _stub("pyrevit.framework", AppDomain=AppDomain)
             _stub("pyrevit.labs", Common=types.SimpleNamespace(PyRevitLabsConsts=_Consts))
 
