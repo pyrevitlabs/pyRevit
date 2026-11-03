@@ -457,8 +457,7 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void GetExtensionRoots_AllUsers_StandardUser_ReadsOnlyTheActiveConfig() {
-            if (PyRevitInstallScope.IsElevatedProcess())
-                Assert.Inconclusive("An elevated process resolves to the machine config.");
+            AssertRequiresNonElevatedWindowsProcess();
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -647,8 +646,7 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void GetExtensionRoots_AllUsers_StandardUser_PicksUpNewMachinePaths() {
-            if (PyRevitInstallScope.IsElevatedProcess())
-                Assert.Inconclusive("An elevated process resolves to the machine config.");
+            AssertRequiresNonElevatedWindowsProcess();
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -690,8 +688,7 @@ namespace pyRevitLabs.UnitTests {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 Assert.Inconclusive("File sharing violations are only enforced on Windows.");
-            if (PyRevitInstallScope.IsElevatedProcess())
-                Assert.Inconclusive("An elevated process resolves to the machine config.");
+            AssertRequiresNonElevatedWindowsProcess();
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -735,6 +732,7 @@ namespace pyRevitLabs.UnitTests {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+            AssertRequiresNonElevatedWindowsProcess();
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
