@@ -36,6 +36,22 @@ class ResultTests(TestCase):
             self.assertEqual(result["wall"]["id"], result["id"], engine)
             self.assertEqual([1, "a", None], result["items"], engine)
 
+    def test_transaction_tracking_keeps_module_comprehensions_intact(self):
+        """Tracking transactions must not clobber a module-level comprehension (CPython 3.12)."""
+        for engine in ENGINES:
+            response = run(
+                "label = 'transaction'\n"
+                "values = [10, 20, 30]\n"
+                "result = [\n"
+                "    value\n"
+                "    for value in values\n"
+                "    if value is not None\n"
+                "]\n",
+                engine=engine,
+            )
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual([10, 20, 30], response["result"], engine)
+
     def test_timeout_applies_while_serializing_an_iterable_result(self):
         """Result materialization cannot continue after the run deadline."""
         script = (

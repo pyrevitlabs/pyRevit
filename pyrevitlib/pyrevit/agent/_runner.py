@@ -167,7 +167,9 @@ def _guard_loop_headers(source):
     ``for`` loops and comprehensions iterate ``__agent_loop__((iterable))``
     and ``while`` conditions become ``__agent_tick__() and (condition)``.
     Only the header expressions change and every newline stays in place, so
-    line numbers and tracebacks still match the submitted source.
+    line numbers and tracebacks still match the submitted source. Closing
+    parentheses go right after the expression's last token, so columns on
+    the following lines stay put too.
 
     Raises:
         Exception: the source could not be tokenized; compile it unguarded.
@@ -183,12 +185,16 @@ def _guard_loop_headers(source):
     insertions = []
     open_headers = []
     depth = 0
+    last_end = None
     token_source = source.replace("\r\n", "\n").replace("\r", "\n")
     for token in tokenize.generate_tokens(StringIO(token_source).readline):
         token_type, text, start, end, _ = token
+        if token_type in _LAYOUT_TOKENS:
+            continue
         while open_headers and _ends_loop_header(open_headers[-1], token, depth):
             header = open_headers.pop()
-            insertions.append((offset_of(start), header["close"]))
+            insertions.append((offset_of(last_end), header["close"]))
+        last_end = end
         if token_type == tokenize.NAME:
             if text == "while":
                 insertions.append((offset_of(end), " __agent_tick__() and ("))
@@ -213,6 +219,15 @@ def _guard_loop_headers(source):
     for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
         source = source[:position] + text + source[position:]
     return source
+
+
+_LAYOUT_TOKENS = (
+    tokenize.NL,
+    tokenize.NEWLINE,
+    tokenize.COMMENT,
+    tokenize.INDENT,
+    tokenize.DEDENT,
+)
 
 
 def _ends_loop_header(header, token, depth):
@@ -285,13 +300,22 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
     """Build the ``sys.settrace`` function for one run.
 
     The module frame and the script's functions that name a transaction
-    (``code_lines``, from :func:`_transaction_code_lines`) are traced line
-    by line: on every event they record the Revit transactions in their
-    locals, so a transaction stays found even after its variable is rebound
-    or the frame unwinds. Every other frame, including all pyRevit, rpw and
-    workspace code, runs untraced. ``code_lines`` None means the source names
-    no transaction and nothing is tracked. With ``check_lines`` on, the other
-    script frames also get a per-line check of the watchdog's flag.
+    (``code_lines``, from :func:`_transaction_code_lines`) record the Revit
+    transactions they hold. The module frame does so on every line, through
+    its globals, so a transaction stays found even after its variable is
+    rebound. Functions do so when they return or an exception leaves them,
+    and on IronPython also on every line. Every other frame, including all
+    pyRevit, rpw and workspace code, runs untraced. ``code_lines`` None means
+    the source names no transaction and nothing is tracked. With
+    ``check_lines`` on, the other script frames also get a per-line check of
+    the watchdog's flag.
+
+    Warning:
+        Never read ``f_locals`` from a CPython line event. On CPython 3.12 a
+        trace function that reads it writes the locals back into the frame,
+        which clobbers the loop variable of an inlined comprehension (PEP
+        709): a module-level ``[v for v in values if v]`` silently came back
+        empty.
 
     Note:
         Line events are the dominant cost of a traced run: about 3 µs each on
@@ -300,17 +324,27 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
         loops are normally stopped by :func:`_guard_loop_headers` instead.
     """
     may_hold = {}
+    locals_on_lines = _implementation() != "cpython"
 
     def raise_if_timed_out(frame):
         if state["timed_out"]:
             _track_stack_transactions(frame, transactions)
             raise RunTimedOut(timeout_s)
 
-    def track_transactions(frame, event, arg):
-        _track_frame_transactions(frame, transactions)
+    def track_module(frame, event, arg):
+        _track_values(frame.f_globals, transactions)
         if event == "line":
             raise_if_timed_out(frame)
-        return track_transactions
+        return track_module
+
+    def track_function(frame, event, arg):
+        if event != "line":
+            _track_frame_transactions(frame, transactions)
+            return track_function
+        if locals_on_lines:
+            _track_frame_transactions(frame, transactions)
+        raise_if_timed_out(frame)
+        return track_function
 
     def check_deadline(frame, event, arg):
         if event == "line":
@@ -326,9 +360,16 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
             holds = may_hold[code] = code_lines is not None and _may_hold_transactions(
                 code, code_lines
             )
-        if holds:
-            return track_transactions
-        return check_deadline if check_lines else None
+        if not holds:
+            return check_deadline if check_lines else None
+        if code.co_name == "<module>":
+            return track_module
+        if not locals_on_lines and not check_lines:
+            try:
+                frame.f_trace_lines = False
+            except Exception:
+                pass
+        return track_function
 
     return trace_call
 
@@ -700,9 +741,21 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
 
 def _track_frame_transactions(frame, transactions):
     try:
-        if frame.f_code.co_filename != SOURCE_NAME:
+        code = frame.f_code
+        if code.co_filename != SOURCE_NAME:
             return
-        values = frame.f_locals.values()
+        if code.co_name == "<module>":
+            variables = frame.f_globals
+        else:
+            variables = frame.f_locals
+    except Exception:
+        return
+    _track_values(variables, transactions)
+
+
+def _track_values(variables, transactions):
+    try:
+        values = list(variables.values())
     except Exception:
         return
     for value in values:
