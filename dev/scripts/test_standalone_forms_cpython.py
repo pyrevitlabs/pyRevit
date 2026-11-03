@@ -803,6 +803,17 @@ class BindingRefreshTests(unittest.TestCase):
         self.assertEqual("changed", native["title"])
         self.assertEqual(["summary", "title"], sorted(self.reads))
 
+    def test_rebinding_refreshes_equal_values_of_another_type(self):
+        """0 to False, 1 to 1.0 and [1] to [True] reach WPF as the new type."""
+        model = self.Model()
+        model.flag, model.size, model.items = 0, 1, [1]
+        native = self.binding.binding_source(model)
+        model.flag, model.size, model.items = False, 1.0, [True]
+        self.binding.binding_source(model)
+        self.assertIs(False, native["flag"])
+        self.assertIs(float, type(native["size"]))
+        self.assertEqual([bool], [type(item) for item in native["items"]])
+
     def test_rebinding_refreshes_computed_list_item_properties(self):
         """Read-only properties backed by private state are current after rebind."""
 

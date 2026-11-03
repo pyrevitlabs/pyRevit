@@ -152,7 +152,14 @@ def _bindable(value):
 
 
 def _change_marker(value):
-    return tuple(value) if isinstance(value, (list, tuple)) else value
+    """Return what ``_unchanged`` compares: values with their exact types.
+
+    ``0 == False`` and ``1 == 1.0`` hold in Python, but WPF receives a
+    different CLR type for each, so a type change alone must refresh.
+    """
+    if isinstance(value, (list, tuple)):
+        return type(value), tuple(_change_marker(item) for item in value)
+    return type(value), value
 
 
 def _unchanged(previous, marker):
