@@ -1,6 +1,7 @@
 """Revit events handler management."""
 
 # pylint: disable=unused-argument
+import uuid
 from collections import deque
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
@@ -12,6 +13,17 @@ from pyrevit.coreutils.logger import get_logger
 
 
 mlogger = get_logger(__name__)
+
+_CLR_NAMESPACE = "pyrevit.revit.events._" + uuid.uuid4().hex
+"""CLR namespace for the handler types this execution of the module defines.
+
+Warning:
+    Unique per module execution, not per script execution: pythonnet emits a
+    CLR type for each class declaring ``__namespace__`` and refuses a type name
+    it already emitted, so re-executing this module in the same interpreter
+    (``importlib.reload``, a runner unloading modules) would fail with a fixed
+    name, and ``EXEC_PARAMS.exec_id`` repeats within one execution.
+"""
 
 
 def _get_registered_handlers():
@@ -34,7 +46,7 @@ def _get_registered_handlers():
 class FuncAsEventHandler(UI.IExternalEventHandler):
     """Turns a function into an event handler."""
 
-    __namespace__ = "pyrevit.revit.events"
+    __namespace__ = _CLR_NAMESPACE
 
     def __init__(self, handler_func, purge=True):
         self.name = "FuncAsEventHandler"
@@ -99,6 +111,21 @@ def _clr_event(event_name):
 
 
 def add_handler(event_name, handler_func):
+    """Subscribe a function to a Revit event.
+
+    Requires Revit API context. The delegate is attached through the CLR
+    ``EventInfo``, so ``remove_handler`` can detach it although Revit returns a
+    new ``Application`` wrapper on every access.
+
+    Args:
+        event_name (str): key such as ``doc-changed`` or ``selection-changed``.
+        handler_func (Callable): called with ``(sender, args)``.
+
+    Returns:
+        (EventHandler | None): the subscribed delegate to pass to
+            ``remove_handler``; None for an unknown event name, or for
+            ``selection-changed`` before Revit 2023, which also logs an error.
+    """
     if event_name not in _EVENT_SOURCES:
         return None
     if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
@@ -111,6 +138,15 @@ def add_handler(event_name, handler_func):
 
 
 def remove_handler(event_name, event_handler):
+    """Unsubscribe a delegate returned by ``add_handler``.
+
+    Requires Revit API context. Does nothing for an unknown event name, and
+    logs an error for ``selection-changed`` before Revit 2023.
+
+    Args:
+        event_name (str): the key the delegate was added under.
+        event_handler (EventHandler): the delegate ``add_handler`` returned.
+    """
     if event_name not in _EVENT_SOURCES:
         return
     if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
@@ -296,7 +332,7 @@ def stop_events():
 
 
 class _GenericExternalEventHandler(UI.IExternalEventHandler):
-    __namespace__ = "pyrevit.revit.events"
+    __namespace__ = _CLR_NAMESPACE
 
     def __init__(self):
         self._queue = deque()

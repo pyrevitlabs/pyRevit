@@ -42,6 +42,18 @@ public sealed class FreshAppWrapper {
 }
 
 /// <summary>
+/// Stands in for Revit's <c>IExternalEventHandler</c>, so the Python handler classes in
+/// <c>events.py</c> make pythonnet emit derived CLR types as they do in Revit.
+/// </summary>
+public interface IExternalEventHandler {
+    /// <summary>Runs the handler.</summary>
+    void Execute(object app);
+
+    /// <summary>Names the handler.</summary>
+    string GetName();
+}
+
+/// <summary>
 /// Loads <c>pyrevit/revit/events.py</c> into the CPython engine started by
 /// <see cref="CPythonEnvVarsHost"/>, with a <c>HOST_APP</c> whose <c>app</c> is a fresh
 /// <see cref="FreshAppWrapper"/> on every access.
@@ -84,6 +96,8 @@ internal static class CPythonEventsHost {
             import sys, types, logging, importlib.util
             import clr
             from System import AppDomain, EventArgs, EventHandler
+            clr.AddReference("{{typeof(IExternalEventHandler).Assembly.GetName().Name}}")
+            from {{typeof(IExternalEventHandler).Namespace}} import IExternalEventHandler
 
             def _stub(name, **attrs):
                 module = types.ModuleType(name)
@@ -104,9 +118,6 @@ internal static class CPythonEventsHost {
 
                 def is_older_than(self, version):
                     return False
-
-            class IExternalEventHandler(object):
-                pass
 
             def _no_external_event(handler):
                 raise RuntimeError("no Revit API context")

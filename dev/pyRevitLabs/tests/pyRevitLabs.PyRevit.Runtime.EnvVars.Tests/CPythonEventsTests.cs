@@ -64,4 +64,20 @@ public class CPythonEventsTests {
         Assert.IsType<PythonException>(failure);
         Assert.Equal(1, source.SubscriberCount);
     }
+
+    /// <summary>
+    /// A second execution of <c>events.py</c> in the same interpreter, as <c>importlib.reload</c>
+    /// or a runner unloading its modules causes, defines its CLR handler types again without
+    /// colliding with the types the first execution emitted.
+    /// </summary>
+    [Fact]
+    public void Module_ExecutesAgainInTheSameInterpreter() {
+        CPythonEventsHost.Exec(
+            "reloaded = importlib.util.module_from_spec(_spec)\n"
+            + "_spec.loader.exec_module(reloaded)");
+
+        Assert.Equal(
+            1,
+            CPythonEventsHost.EvalInt("int(reloaded.FuncAsEventHandler(None).GetName() == 'FuncAsEventHandler')"));
+    }
 }
