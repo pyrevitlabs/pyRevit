@@ -699,6 +699,22 @@ class PyRevitConfig(object):
     def agent_user_skills_enabled(self, state):
         PyRevit.PyRevitConfigs.SetAgentUserSkillsEnabled(bool(state))
 
+    def is_agent_setting_managed(self, key):
+        """Return whether an administrator pinned an agent setting.
+
+        A pinned setting reads as the administrator's value whatever the user
+        config says, and assigning the matching ``agent_*`` property raises
+        ``PyRevitSettingManagedException``. A pinned ``policy`` is a ceiling:
+        a stricter value can still be assigned.
+
+        Args:
+            key (str): ``enabled``, ``policy``, ``engine`` or ``user_skills``.
+
+        Returns:
+            (bool): True when the machine config pins the setting.
+        """
+        return PyRevit.PyRevitConfigs.IsAgentKeyManaged(key)
+
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
