@@ -154,21 +154,26 @@ public static class PyRevitConfigService {
                 break;
         }
 
+        var userService = CreateConfiguration(userConfig, false);
         if (adminExists && PyRevitInstallScope.IsAllUsersInstall())
-            SyncMachineExtensionPaths(userConfig, adminConfig);
-
-        return BuildWritable(userConfig);
+            SyncMachineExtensionPaths(userService.Configuration, adminConfig);
+        RunMigration(userService, userConfig);
+        return userService;
     }
 
     private const string CoreSectionName = "core";
     private const string UserExtensionsKeyName = "userextensions";
 
     /// <summary>
-    /// Records, in the per-user config, the machine config's extension search
-    /// paths as of the last sync. Paths in this list have already been offered
-    /// to the user, so their absence from the user's own list is a removal the
-    /// user made, not a path they have yet to receive.
+    /// Records, in the per-user config, every machine extension search path
+    /// ever offered to the user. Paths in this list have already been offered,
+    /// so their absence from the user's own list is a removal the user made,
+    /// not a path they have yet to receive.
     /// </summary>
+    /// <remarks>
+    /// Invariant: the list only grows. Pruning it when the administrator drops
+    /// a path would let a later re-add bring back a path the user removed.
+    /// </remarks>
     internal const string SyncedMachineExtensionsKeyName = "syncedmachineuserextensions";
 
     /// <summary>
@@ -187,54 +192,64 @@ public static class PyRevitConfigService {
     /// machine config gained after the user was seeded are not lost.
     /// Paths the administrator later drops from the machine config are left in
     /// the per-user config: the user may have added the same path themselves.
-    /// No-op when either file is missing, the user config is read-only, or the
-    /// machine list cannot be decoded.
+    /// <para>
+    /// Changes are applied to <paramref name="userConfig"/> in memory before
+    /// they are saved. When the save fails (the file is locked or not
+    /// writable), the in-memory config still carries the new paths, so they load
+    /// for this session, and the next build offers them again.
+    /// </para>
+    /// No-op when the machine config is missing or its list cannot be decoded.
     /// </remarks>
-    internal static void SyncMachineExtensionPaths(string userConfigPath, string machineConfigPath) {
-        if (!File.Exists(userConfigPath) || !File.Exists(machineConfigPath))
+    internal static void SyncMachineExtensionPaths(IConfiguration userConfig, string machineConfigPath) {
+        if (!File.Exists(machineConfigPath))
             return;
 
+        List<string> added;
         try {
             var machine = IniConfiguration.Create(machineConfigPath, true);
             List<string> machinePaths = ReadPathList(machine, UserExtensionsKeyName);
+            List<string> syncedPaths = ReadPathList(userConfig, SyncedMachineExtensionsKeyName);
+            List<string> userPaths = ReadPathList(userConfig, UserExtensionsKeyName);
 
-            var user = IniConfiguration.Create(userConfigPath);
-            if (user.ReadOnly)
-                return;
-
-            List<string> syncedPaths = ReadPathList(user, SyncedMachineExtensionsKeyName);
-            List<string> userPaths = ReadPathList(user, UserExtensionsKeyName);
-
-            var added = new List<string>();
+            added = new List<string>();
+            var newlySynced = new List<string>();
             foreach (string path in machinePaths) {
-                if (ContainsPath(syncedPaths, path) || ContainsPath(userPaths, path) || ContainsPath(added, path))
+                if (ContainsPath(syncedPaths, path) || ContainsPath(newlySynced, path))
                     continue;
-                added.Add(path);
+                newlySynced.Add(path);
+                if (!ContainsPath(userPaths, path))
+                    added.Add(path);
             }
 
-            bool changed = false;
+            if (newlySynced.Count == 0)
+                return;
+
             if (added.Count > 0) {
                 userPaths.AddRange(added);
-                user.SetValue(CoreSectionName, UserExtensionsKeyName, userPaths);
-                changed = true;
+                userConfig.SetValue(CoreSectionName, UserExtensionsKeyName, userPaths);
             }
 
-            if (!SamePaths(syncedPaths, machinePaths)) {
-                user.SetValue(CoreSectionName, SyncedMachineExtensionsKeyName, machinePaths);
-                changed = true;
-            }
-
-            if (!changed)
-                return;
-
-            user.SaveConfiguration();
-            foreach (string path in added)
-                ConfigurationDiagnostics.ReportInfo(
-                    "Added extension search path from the machine config: " + path);
+            syncedPaths.AddRange(newlySynced);
+            userConfig.SetValue(CoreSectionName, SyncedMachineExtensionsKeyName, syncedPaths);
         }
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not sync extension search paths from the machine config: " + ex.Message);
+            return;
+        }
+
+        foreach (string path in added)
+            ConfigurationDiagnostics.ReportInfo(
+                "Added extension search path from the machine config: " + path);
+
+        try {
+            userConfig.SaveConfiguration();
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not save the synced extension search paths to " + userConfig.ConfigurationPath
+                + "; they apply to this session only and will be offered again on the next load: "
+                + ex.Message);
         }
     }
 
@@ -248,16 +263,6 @@ public static class PyRevitConfigService {
 
     private static bool ContainsPath(IEnumerable<string> paths, string candidate) =>
         paths.Any(path => PathsEqual(path, candidate));
-
-    private static bool SamePaths(IReadOnlyList<string> left, IReadOnlyList<string> right) {
-        if (left.Count != right.Count)
-            return false;
-        for (int index = 0; index < left.Count; index++) {
-            if (!PathsEqual(left[index], right[index]))
-                return false;
-        }
-        return true;
-    }
 
     private static bool PathsEqual(string left, string right) =>
         string.Equals(TrimPath(left), TrimPath(right), StringComparison.OrdinalIgnoreCase);

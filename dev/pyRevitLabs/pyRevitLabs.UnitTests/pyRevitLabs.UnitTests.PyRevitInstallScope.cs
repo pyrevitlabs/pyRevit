@@ -686,6 +686,51 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void GetExtensionRoots_AllUsers_WriteBlockedUserConfig_StillLoadsNewMachinePaths() {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                    System.Runtime.InteropServices.OSPlatform.Windows))
+                Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+            if (PyRevitInstallScope.IsElevatedProcess())
+                Assert.Inconclusive("An elevated process resolves to the machine config.");
+
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+            ExtensionParser.ClearAllCaches();
+
+            string machineConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            string userConfigPath = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
+
+            string machineExtDir = Path.Combine(_tempRoot, "MachineExt");
+            string userExtDir = Path.Combine(_tempRoot, "UserExt");
+            Directory.CreateDirectory(machineExtDir);
+            Directory.CreateDirectory(userExtDir);
+
+            try {
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
+
+                using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (File.Open(userConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    var roots = ExtensionParser.GetExtensionRoots();
+
+                    CollectionAssert.Contains(roots, userExtDir);
+                    CollectionAssert.Contains(roots, machineExtDir,
+                        "a sync that cannot be saved must still apply for the session");
+                }
+            }
+            finally {
+                PyRevitInstallScope.ClearCachedInstallScope();
+                ExtensionParser.ClearAllCaches();
+            }
+        }
+
+        [TestMethod]
         public void GetExtensionRoots_AllUsers_FallbackWithoutMachineExtensions_ReturnsUserOnly() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))

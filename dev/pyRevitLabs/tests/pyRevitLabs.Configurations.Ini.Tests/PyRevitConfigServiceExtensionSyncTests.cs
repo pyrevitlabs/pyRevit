@@ -33,6 +33,9 @@ public class PyRevitConfigServiceExtensionSyncTests {
     private static List<string> Synced(string configPath) =>
         Read(configPath, PyRevitConfigService.SyncedMachineExtensionsKeyName);
 
+    private static void Sync(string userConfigPath, string machineConfigPath) =>
+        PyRevitConfigService.SyncMachineExtensionPaths(IniConfiguration.Create(userConfigPath), machineConfigPath);
+
     private static void Run(Action<string, string> test) {
         var dir = NewTempDir();
         try {
@@ -48,7 +51,7 @@ public class PyRevitConfigServiceExtensionSyncTests {
         File.WriteAllText(machine, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
         File.WriteAllText(user, "[core]\r\nuserextensions = " + Encode(UserExt) + "\r\n");
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Equal(new List<string> { UserExt, MachineExt }, UserExtensions(user));
         Assert.Equal(new List<string> { MachineExt }, Synced(user));
@@ -63,12 +66,12 @@ public class PyRevitConfigServiceExtensionSyncTests {
         File.WriteAllText(machine, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
         File.WriteAllText(user, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
         var config = IniConfiguration.Create(user);
         config.SetValue("core", "userextensions", new List<string>());
         config.SaveConfiguration();
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Empty(UserExtensions(user));
     });
@@ -80,7 +83,7 @@ public class PyRevitConfigServiceExtensionSyncTests {
             "[core]\r\nuserextensions = " + Encode(UserExt) + "\r\n"
             + PyRevitConfigService.SyncedMachineExtensionsKeyName + " = " + Encode(MachineExt) + "\r\n");
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Equal(new List<string> { UserExt, OtherMachineExt }, UserExtensions(user));
         Assert.Equal(new List<string> { MachineExt, OtherMachineExt }, Synced(user));
@@ -91,7 +94,7 @@ public class PyRevitConfigServiceExtensionSyncTests {
         File.WriteAllText(machine, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
         File.WriteAllText(user, "[core]\r\nuserextensions = " + Encode(MachineExt.ToUpperInvariant() + "\\") + "\r\n");
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Single(UserExtensions(user));
     });
@@ -103,10 +106,50 @@ public class PyRevitConfigServiceExtensionSyncTests {
             "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n"
             + PyRevitConfigService.SyncedMachineExtensionsKeyName + " = " + Encode(MachineExt) + "\r\n");
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Equal(new List<string> { MachineExt }, UserExtensions(user));
-        Assert.Empty(Synced(user));
+        Assert.Equal(new List<string> { MachineExt }, Synced(user));
+    });
+
+    /// <summary>
+    /// User removes the path, the admin drops it, then restores it: the user's
+    /// removal must still hold.
+    /// </summary>
+    [Fact]
+    public void Sync_DoesNotRestoreARemovedPathAfterTheAdminDropsAndReAddsIt() => Run((user, machine) => {
+        File.WriteAllText(machine, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
+        File.WriteAllText(user, "[core]\r\n");
+        Sync(user, machine);
+
+        var config = IniConfiguration.Create(user);
+        config.SetValue("core", "userextensions", new List<string>());
+        config.SaveConfiguration();
+
+        File.WriteAllText(machine, "[core]\r\nuserextensions = []\r\n");
+        Sync(user, machine);
+        File.WriteAllText(machine, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
+        Sync(user, machine);
+
+        Assert.Empty(UserExtensions(user));
+    });
+
+    [Fact]
+    public void Sync_KeepsTheNewPathsInMemoryWhenTheSaveFails() => Run((user, machine) => {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        File.WriteAllText(machine, "[core]\r\nuserextensions = " + Encode(MachineExt) + "\r\n");
+        File.WriteAllText(user, "[core]\r\nuserextensions = " + Encode(UserExt) + "\r\n");
+        var config = IniConfiguration.Create(user);
+
+        using (File.Open(user, FileMode.Open, FileAccess.Read, FileShare.Read))
+            PyRevitConfigService.SyncMachineExtensionPaths(config, machine);
+
+        Assert.Equal(
+            new List<string> { UserExt, MachineExt },
+            config.GetValue<List<string>>("core", "userextensions"));
+        Assert.Equal(new List<string> { UserExt }, UserExtensions(user));
     });
 
     [Fact]
@@ -115,7 +158,7 @@ public class PyRevitConfigServiceExtensionSyncTests {
         const string original = "[core]\r\nuserextensions = []\r\n";
         File.WriteAllText(user, original);
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Equal(original, File.ReadAllText(user));
     });
@@ -125,7 +168,7 @@ public class PyRevitConfigServiceExtensionSyncTests {
         const string original = "[core]\r\nuserextensions = []\r\n";
         File.WriteAllText(user, original);
 
-        PyRevitConfigService.SyncMachineExtensionPaths(user, machine);
+        Sync(user, machine);
 
         Assert.Equal(original, File.ReadAllText(user));
         Assert.False(File.Exists(machine));
