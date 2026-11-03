@@ -226,6 +226,55 @@ class XamlPreparationTests(unittest.TestCase):
             node = document.getElementsByTagName(tag)[0]
             self.assertEqual("{StaticResource k}", node.getAttribute("Value"), tag)
 
+    def test_keyed_resource_dictionary_is_wrapped_not_merged_into(self):
+        """Host dictionaries merge at window scope, not into a keyed entry."""
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<Window.Resources><ResourceDictionary x:Key="nested">'
+            '<Style x:Key="inner" TargetType="Button"/>'
+            "</ResourceDictionary></Window.Resources></Window>",
+            ["theme.xaml"],
+        )
+        document = minidom.parseString(markup)
+        resources = document.getElementsByTagName("Window.Resources")[0]
+        outer = [n for n in resources.childNodes if n.nodeType == n.ELEMENT_NODE]
+        self.assertEqual(1, len(outer))
+        self.assertFalse(outer[0].hasAttribute("x:Key"))
+        merged = outer[0].getElementsByTagName("ResourceDictionary.MergedDictionaries")
+        self.assertEqual(
+            ["theme.xaml"],
+            [n.getAttribute("Source") for n in merged[0].childNodes],
+        )
+        keyed = [
+            n
+            for n in outer[0].childNodes
+            if n.nodeType == n.ELEMENT_NODE and n.getAttribute("x:Key") == "nested"
+        ]
+        self.assertEqual(1, len(keyed))
+        self.assertEqual([], keyed[0].getElementsByTagName("ResourceDictionary"))
+
+    def test_resource_dictionary_beside_other_entries_is_wrapped(self):
+        """A dictionary entry among siblings is not taken as the resources root."""
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            '<Window.Resources><Style x:Key="a" TargetType="Button"/>'
+            '<ResourceDictionary x:Key="b"/></Window.Resources></Window>',
+            ["theme.xaml"],
+        )
+        resources = minidom.parseString(markup).getElementsByTagName(
+            "Window.Resources"
+        )[0]
+        outer = [n for n in resources.childNodes if n.nodeType == n.ELEMENT_NODE]
+        self.assertEqual(1, len(outer))
+        self.assertEqual("ResourceDictionary", outer[0].localName)
+        self.assertFalse(outer[0].hasAttribute("x:Key"))
+        self.assertEqual(
+            ["ResourceDictionary.MergedDictionaries", "Style", "ResourceDictionary"],
+            [n.localName for n in outer[0].childNodes if n.nodeType == n.ELEMENT_NODE],
+        )
+
     def test_icon_font_characters_are_not_rewritten(self):
         """Private-use characters stay text; only real line breaks are encoded."""
         markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(

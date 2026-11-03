@@ -207,6 +207,12 @@ def _wpf_prefix(root):
     return "pyrevitwpf"
 
 
+def _is_unkeyed_dictionary(node):
+    return node.localName == "ResourceDictionary" and not (
+        node.getAttributeNS(_XAML_NS, "Key") or node.getAttribute("x:Key")
+    )
+
+
 def _merge_resources(document, sources):
     if not sources:
         return
@@ -226,11 +232,9 @@ def _merge_resources(document, sources):
             root.namespaceURI, root.tagName + ".Resources"
         )
         root.insertBefore(resources, root.firstChild)
-    dictionaries = [
-        node for node in _children(resources) if node.localName == "ResourceDictionary"
-    ]
-    if dictionaries:
-        dictionary = dictionaries[0]
+    entries = _children(resources)
+    if len(entries) == 1 and _is_unkeyed_dictionary(entries[0]):
+        dictionary = entries[0]
     else:
         dictionary = wpf_element("ResourceDictionary")
         for node in list(resources.childNodes):
