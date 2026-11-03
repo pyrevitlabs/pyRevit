@@ -287,20 +287,26 @@ namespace pyRevitLabs.PyRevit {
         }
 
         /// <summary>
-        /// True when an administrator pinned <paramref name="key"/> (one of the
-        /// <c>PyRevitConsts.ConfigsAgent*Key</c> names) in the machine config.
-        /// A managed <c>policy</c> is a ceiling: users may still choose a stricter value.
+        /// The raw value an administrator pinned for <paramref name="key"/> (one of the
+        /// <c>PyRevitConsts.ConfigsAgent*Key</c> names) in the machine config, or null when it is
+        /// not pinned or is not a lockable key.
         /// </summary>
-        public static bool IsAgentKeyManaged(string key) {
+        public static string GetAgentPin(string key) {
             var admin = AgentAdminPolicy.Current;
             switch (key) {
-                case PyRevitConsts.ConfigsAgentEnabledKey: return admin.Enabled != null;
-                case PyRevitConsts.ConfigsAgentPolicyKey: return admin.Policy != null;
-                case PyRevitConsts.ConfigsAgentEngineKey: return admin.Engine != null;
-                case PyRevitConsts.ConfigsAgentUserSkillsEnabledKey: return admin.UserSkills != null;
-                default: return false;
+                case PyRevitConsts.ConfigsAgentEnabledKey: return admin.Enabled;
+                case PyRevitConsts.ConfigsAgentPolicyKey: return admin.Policy;
+                case PyRevitConsts.ConfigsAgentEngineKey: return admin.Engine;
+                case PyRevitConsts.ConfigsAgentUserSkillsEnabledKey: return admin.UserSkills;
+                default: return null;
             }
         }
+
+        /// <summary>
+        /// True when an administrator pinned <paramref name="key"/>. A managed <c>policy</c> is a
+        /// ceiling: users may still choose a stricter value.
+        /// </summary>
+        public static bool IsAgentKeyManaged(string key) => GetAgentPin(key) != null;
 
         /// <summary>
         /// The most permissive policy users may select, or null when no ceiling is pinned.
@@ -326,6 +332,7 @@ namespace pyRevitLabs.PyRevit {
         /// </remarks>
         /// <exception cref="PyRevitException"><paramref name="key"/> or <paramref name="value"/> is not valid.</exception>
         public static void LockAgentKey(string key, string value) {
+            EnsureLockableKey(key);
             AgentAdminPolicy.SetPin(key, NormalizeAgentLockValue(key, value));
         }
 
@@ -333,7 +340,7 @@ namespace pyRevitLabs.PyRevit {
         /// <inheritdoc cref="LockAgentKey" path="/remarks"/>
         /// <exception cref="PyRevitException"><paramref name="key"/> is not a lockable setting.</exception>
         public static void UnlockAgentKey(string key) {
-            NormalizeAgentLockValue(key, null);
+            EnsureLockableKey(key);
             AgentAdminPolicy.ClearPin(key);
         }
 
@@ -382,27 +389,29 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
+        private static void EnsureLockableKey(string key) {
+            if (key != PyRevitConsts.ConfigsAgentEnabledKey
+                && key != PyRevitConsts.ConfigsAgentPolicyKey
+                && key != PyRevitConsts.ConfigsAgentEngineKey
+                && key != PyRevitConsts.ConfigsAgentUserSkillsEnabledKey)
+                throw new PyRevitException($"\"{key}\" is not a lockable agent setting");
+        }
+
         private static string NormalizeAgentLockValue(string key, string value) {
             switch (key) {
-                case PyRevitConsts.ConfigsAgentEnabledKey:
-                case PyRevitConsts.ConfigsAgentUserSkillsEnabledKey:
-                    if (value == null) return null;
-                    if (bool.TryParse(value, out bool flag))
-                        return flag ? "true" : "false";
-                    throw new PyRevitException($"\"{key}\" must be true or false, not \"{value}\"");
                 case PyRevitConsts.ConfigsAgentPolicyKey:
-                    if (value == null) return null;
-                    var policy = NormalizeAgentPolicy(value, null);
-                    return policy ?? throw new PyRevitException($"Unknown agent policy \"{value}\"");
+                    return NormalizeAgentPolicy(value, null)
+                        ?? throw new PyRevitException($"Unknown agent policy \"{value}\"");
                 case PyRevitConsts.ConfigsAgentEngineKey:
-                    if (value == null) return null;
                     if (string.Equals(value, PyRevitConsts.ConfigsAgentEngineIronPython, StringComparison.OrdinalIgnoreCase))
                         return PyRevitConsts.ConfigsAgentEngineIronPython;
                     if (string.Equals(value, PyRevitConsts.ConfigsAgentEngineCPython, StringComparison.OrdinalIgnoreCase))
                         return PyRevitConsts.ConfigsAgentEngineCPython;
                     throw new PyRevitException($"Unknown agent engine \"{value}\"");
                 default:
-                    throw new PyRevitException($"\"{key}\" is not a lockable agent setting");
+                    if (bool.TryParse(value, out bool flag))
+                        return flag ? "true" : "false";
+                    throw new PyRevitException($"\"{key}\" must be true or false, not \"{value}\"");
             }
         }
 

@@ -363,8 +363,9 @@ namespace pyRevitCLI {
                 return entry;
             }
             try {
-                PyRevitAgentClient.Ping(instance);
+                var ping = PyRevitAgentClient.Ping(instance);
                 entry["responding"] = true;
+                entry["disabled_by_admin"] = ping?.Value<bool?>("disabled_by_admin") ?? false;
             }
             catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
                 entry["busy"] = true;

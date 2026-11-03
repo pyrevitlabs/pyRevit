@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -38,6 +39,12 @@ namespace pyRevitLabs.Common {
         public const string ConfigScopeEnvVar = "PYREVIT_CONFIG_SCOPE";
         public const string ConfigScopeAllUsers = "allusers";
         public const string ConfigScopePerUser = "peruser";
+
+        /// <summary>
+        /// INI section of the machine config where an administrator pins agent settings. It is
+        /// never copied into a per-user config.
+        /// </summary>
+        public const string AgentAdminSectionName = "agent.admin";
 
         private const string PyRevitfileName = "pyRevitfile";
         private const string ConfigIniRegexPattern = @".*(pyrevit|config).*\.ini";
@@ -172,6 +179,7 @@ namespace pyRevitLabs.Common {
             if (seedConfig != null) {
                 try {
                     File.Copy(seedConfig, userConfig, overwrite: false);
+                    RemoveSectionFromFile(userConfig, AgentAdminSectionName);
                     return;
                 }
                 catch {
@@ -183,6 +191,29 @@ namespace pyRevitLabs.Common {
                 return;
 
             TryCreateFile(userConfig);
+        }
+
+        private static void RemoveSectionFromFile(string configPath, string sectionName) {
+            try {
+                var header = "[" + sectionName + "]";
+                var kept = new List<string>();
+                bool inSection = false;
+                bool removed = false;
+                foreach (var line in File.ReadAllLines(configPath)) {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("[", StringComparison.Ordinal)) {
+                        inSection = trimmed.Equals(header, StringComparison.OrdinalIgnoreCase);
+                        removed |= inSection;
+                    }
+                    if (!inSection)
+                        kept.Add(line);
+                }
+                if (removed)
+                    File.WriteAllLines(configPath, kept);
+            }
+            catch {
+                // the copy still works; the stray section has no effect in a user config
+            }
         }
 
         /// <summary>True when the file carries the DOS ReadOnly attribute (deliberate admin lock).</summary>

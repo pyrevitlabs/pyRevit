@@ -164,6 +164,37 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
+    public void Load_AnUnreadableFile_FailsClosed()
+    {
+        string path = WriteConfig("[agent.admin]\r\nenabled = true\r\npolicy = auto\r\n");
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var policy = AgentAdminPolicy.Load(path);
+
+            Assert.True(policy.ReadFailed);
+            Assert.Equal("false", policy.Enabled);
+            Assert.Equal("readonly", policy.Policy);
+            Assert.Equal("false", policy.UserSkills);
+        }
+    }
+
+    [Fact]
+    public void Current_DoesNotCacheAFailedRead()
+    {
+        string path = WriteConfig("[agent.admin]\r\nenabled = true\r\n");
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Assert.True(AgentAdminPolicy.Current.ReadFailed);
+        }
+
+        var recovered = AgentAdminPolicy.Current;
+        Assert.False(recovered.ReadFailed);
+        Assert.Equal("true", recovered.Enabled);
+    }
+
+    [Fact]
     public void ResolveMachineConfigPath_IgnoresTheProgramDataOverride()
     {
         string? previous = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar);
