@@ -207,7 +207,7 @@ def select_revisions(
     )
 
     if filterfunc:
-        revisions = filter(filterfunc, revisions)
+        revisions = list(filter(filterfunc, revisions))
 
     # ask user for revisions
     selected_revs = SelectFromList.show(
@@ -269,7 +269,7 @@ def select_sheets(
     if use_selection:
         current_selected_sheets = revit.get_selection().include(DB.ViewSheet).elements
         if filterfunc:
-            current_selected_sheets = filter(filterfunc, current_selected_sheets)
+            current_selected_sheets = list(filter(filterfunc, current_selected_sheets))
 
         if not include_placeholder:
             current_selected_sheets = [
@@ -291,7 +291,7 @@ def select_sheets(
     )
 
     if filterfunc:
-        all_sheets = filter(filterfunc, all_sheets)
+        all_sheets = list(filter(filterfunc, all_sheets))
 
     if not include_placeholder:
         all_sheets = [x for x in all_sheets if not x.IsPlaceholder]
@@ -305,7 +305,7 @@ def select_sheets(
     for sheetset in sheetsets:
         sheetset_sheets = [x for x in sheetset.Views if isinstance(x, DB.ViewSheet)]
         if filterfunc:
-            sheetset_sheets = filter(filterfunc, sheetset_sheets)
+            sheetset_sheets = list(filter(filterfunc, sheetset_sheets))
         sheetset_ops = sorted(
             [SheetOption(x) for x in sheetset_sheets], key=lambda x: x.number
         )
@@ -378,7 +378,7 @@ def select_views(
     if use_selection:
         current_selected_views = revit.get_selection().include(DB.View).elements
         if filterfunc:
-            current_selected_views = filter(filterfunc, current_selected_views)
+            current_selected_views = list(filter(filterfunc, current_selected_views))
 
         if current_selected_views and ask_to_use_selected(
             "views", count=len(current_selected_views), multiple=multiple
@@ -389,7 +389,7 @@ def select_views(
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
-        all_graphviews = filter(filterfunc, all_graphviews)
+        all_graphviews = list(filter(filterfunc, all_graphviews))
 
     view_ops = sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name)
 
@@ -470,7 +470,7 @@ def select_levels(
         current_selected_levels = revit.get_selection().include(DB.Level).elements
 
         if filterfunc:
-            current_selected_levels = filter(filterfunc, current_selected_levels)
+            current_selected_levels = list(filter(filterfunc, current_selected_levels))
 
         if current_selected_levels and ask_to_use_selected(
             "levels", count=len(current_selected_levels), multiple=multiple
@@ -482,7 +482,7 @@ def select_levels(
     )
 
     if filterfunc:
-        all_levels = filter(filterfunc, all_levels)
+        all_levels = list(filter(filterfunc, all_levels))
 
     selected_levels = SelectFromList.show(
         sorted([LevelOption(x) for x in all_levels], key=lambda x: x.Elevation),
@@ -531,7 +531,7 @@ def select_viewtemplates(
     all_viewtemplates = revit.query.get_all_view_templates(doc=doc)
 
     if filterfunc:
-        all_viewtemplates = filter(filterfunc, all_viewtemplates)
+        all_viewtemplates = list(filter(filterfunc, all_viewtemplates))
 
     selected_viewtemplates = SelectFromList.show(
         sorted([ViewOption(x) for x in all_viewtemplates], key=lambda x: x.name),
@@ -581,7 +581,7 @@ def select_schedules(
     all_schedules = revit.query.get_all_schedules(doc=doc)
 
     if filterfunc:
-        all_schedules = filter(filterfunc, all_schedules)
+        all_schedules = list(filter(filterfunc, all_schedules))
 
     selected_schedules = SelectFromList.show(
         sorted([ViewOption(x) for x in all_schedules], key=lambda x: x.name),
@@ -871,7 +871,7 @@ def select_parameters(
         param_defs = [x for x in param_defs if not x.isreadonly]
 
     if filterfunc:
-        param_defs = filter(filterfunc, param_defs)
+        param_defs = list(filter(filterfunc, param_defs))
 
     param_defs = sorted(param_defs, key=lambda x: x.name)
 
@@ -960,7 +960,7 @@ def select_family_parameters(
     ]
 
     if filterfunc:
-        family_params = filter(filterfunc, family_params)
+        family_params = list(filter(filterfunc, family_params))
 
     param_defs = []
     get_elementid_value = get_elementid_value_func()
