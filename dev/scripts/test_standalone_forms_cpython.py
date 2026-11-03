@@ -871,6 +871,120 @@ class BindingRefreshTests(unittest.TestCase):
         self.assertEqual("same", native["untouched"])
 
 
+class _Event(object):
+    def __init__(self):
+        self.handlers = []
+
+    def __iadd__(self, handler):
+        self.handlers.append(handler)
+        return self
+
+    def __isub__(self, handler):
+        self.handlers.remove(handler)
+        return self
+
+    def raise_(self, sender):
+        for handler in list(self.handlers):
+            handler(sender, None)
+
+
+class _FrameworkElement(object):
+    def __init__(self):
+        self.Click = _Event()
+        self.Loaded = _Event()
+        self.Unloaded = _Event()
+
+
+def _load_events():
+    hooks = {}
+    windows = SimpleNamespace(
+        RoutedEventHandler=lambda callback: callback,
+        FrameworkElement=_FrameworkElement,
+        FrameworkContentElement=type("FrameworkContentElement", (), {}),
+    )
+    system = SimpleNamespace(
+        Object=SimpleNamespace(ReferenceEquals=lambda left, right: left is right),
+        Runtime=SimpleNamespace(
+            CompilerServices=SimpleNamespace(
+                RuntimeHelpers=SimpleNamespace(GetHashCode=id)
+            )
+        ),
+    )
+    framework = ModuleType("pyrevit.framework")
+    framework.Input = framework.Media = SimpleNamespace()
+    framework.System = system
+    framework.Windows = windows
+    pyrevit = ModuleType("pyrevit")
+    pyrevit.PyRevitException = _PyRevitException
+    pyrevit.framework = framework
+    logger = ModuleType("pyrevit.coreutils.logger")
+    logger.get_logger = lambda name: mock.Mock()
+    clr = ModuleType("clr")
+    clr.AddReference = lambda name: None
+    binding_assembly = ModuleType("PyRevitLabs.PyRevit.Forms.Binding")
+    binding_assembly.PythonEvents = SimpleNamespace(
+        Attach=hooks.__setitem__, Detach=lambda key: hooks.pop(key, None)
+    )
+    stubs = {
+        "clr": clr,
+        "pyrevit": pyrevit,
+        "pyrevit.framework": framework,
+        "pyrevit.coreutils": ModuleType("pyrevit.coreutils"),
+        "pyrevit.coreutils.logger": logger,
+        "PyRevitLabs": ModuleType("PyRevitLabs"),
+        "PyRevitLabs.PyRevit": ModuleType("PyRevitLabs.PyRevit"),
+        "PyRevitLabs.PyRevit.Forms": ModuleType("PyRevitLabs.PyRevit.Forms"),
+        "PyRevitLabs.PyRevit.Forms.Binding": binding_assembly,
+    }
+    with mock.patch.dict(sys.modules, stubs):
+        spec = importlib.util.spec_from_file_location(
+            "forms_events", FORMS / "backends" / "_events.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    return module, hooks
+
+
+class TemplateHookTests(unittest.TestCase):
+    """Popup template instances hold handlers only while they are loaded."""
+
+    def setUp(self):
+        """Hook one Click handler on a fresh registry."""
+        events, self.hooks = _load_events()
+        self.registry = events._EventRegistry()
+        self.clicks = []
+        events.hook_template_events(
+            self.registry, "k", [("Click", lambda s, a: self.clicks.append(s))]
+        )
+
+    def test_unloaded_instances_are_dropped_and_reloaded_ones_rebound(self):
+        """An unloaded instance loses its handler and gets it back on load."""
+        element = _FrameworkElement()
+        self.hooks["k"](element)
+        element.Loaded.raise_(element)
+        self.assertEqual(1, len(element.Click.handlers))
+        self.assertEqual([], self.registry._events)
+        element.Unloaded.raise_(element)
+        self.assertEqual([], element.Click.handlers)
+        element.Loaded.raise_(element)
+        element.Click.raise_(element)
+        self.assertEqual([element], self.clicks)
+
+    def test_release_detaches_loaded_instances_and_stops_rebinding(self):
+        """Release detaches live instances; unloaded ones never rebind."""
+        live, parked = _FrameworkElement(), _FrameworkElement()
+        self.hooks["k"](live)
+        self.hooks["k"](parked)
+        parked.Unloaded.raise_(parked)
+        self.registry.release()
+        self.assertNotIn("k", self.hooks)
+        self.assertEqual([], live.Click.handlers)
+        self.assertEqual([], live.Loaded.handlers + live.Unloaded.handlers)
+        parked.Loaded.raise_(parked)
+        self.assertEqual([], parked.Click.handlers)
+        self.assertTrue(self.registry.is_released)
+
+
 class FormsExportsTests(unittest.TestCase):
     """Keep accidental legacy exports compatible as well as the intended API."""
 

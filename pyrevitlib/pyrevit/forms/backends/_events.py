@@ -144,6 +144,11 @@ def hook_template_events(registry, key, handlers):
     guarded like any other form callback, and ``release`` stops delivery and
     detaches them.
 
+    Instances are tracked only while loaded: an instance that unloads drops
+    its handlers and is forgotten, and gets them back if it loads again, so
+    forms that are never released, such as dockable panels, do not retain
+    every instance a virtualized list or popup ever created.
+
     Args:
         registry (_EventRegistry): The form's registry.
         key (str): The element's hook key.
@@ -153,19 +158,80 @@ def hook_template_events(registry, key, handlers):
         callable: Stops delivery without detaching handlers already attached,
             for a load that failed before the form owns the markup.
     """
+    callbacks = [(name, registry.guard(handler)) for name, handler in handlers]
+    attached = {}
+    state = {"released": False}
 
-    def attach(element):
+    def find(element):
+        for entry in attached.get(_identity(element), ()):
+            if System.Object.ReferenceEquals(element, entry[0]):
+                return entry
+        return None
+
+    def bind(element):
+        if state["released"] or find(element) is not None:
+            return
+        bound = []
         try:
-            for event_name, handler in handlers:
-                registry.bind(element, event_name, handler)
+            for event_name, callback in callbacks:
+                event = getattr(element, event_name)
+                event += callback
+                bound.append((event_name, callback))
         except Exception as error:
             _report(error)
+        attached.setdefault(_identity(element), []).append((element, bound))
+
+    def unbind(entry):
+        element, bound = entry
+        for event_name, callback in reversed(bound):
+            event = getattr(element, event_name)
+            event -= callback
+
+    def forget(sender, args):
+        entry = find(sender)
+        if entry is None:
+            return
+        unbind(entry)
+        key = _identity(sender)
+        bucket = [known for known in attached[key] if known is not entry]
+        if bucket:
+            attached[key] = bucket
+        else:
+            del attached[key]
+
+    def reload(sender, args):
+        bind(sender)
+
+    loaded = Windows.RoutedEventHandler(reload)
+    unloaded = Windows.RoutedEventHandler(forget)
+
+    def is_loadable(element):
+        return isinstance(
+            element, (Windows.FrameworkElement, Windows.FrameworkContentElement)
+        )
+
+    def attach(element):
+        bind(element)
+        if is_loadable(element):
+            element.Loaded += loaded
+            element.Unloaded += unloaded
 
     def detach():
         PythonEvents.Detach(key)
 
+    def release():
+        state["released"] = True
+        for bucket in list(attached.values()):
+            for entry in bucket:
+                unbind(entry)
+                if is_loadable(entry[0]):
+                    entry[0].Loaded -= loaded
+                    entry[0].Unloaded -= unloaded
+        attached.clear()
+
     PythonEvents.Attach(key, attach)
     registry.on_release(detach)
+    registry.on_release(release)
     return detach
 
 
