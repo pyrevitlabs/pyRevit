@@ -334,6 +334,7 @@
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Description}"/>
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" FontStyle="Italic" Text="{DynamicResource Agent.Privacy}"/>
+                        <TextBlock x:Name="agent_managed_note" Visibility="Collapsed" TextWrapping="WrapWithOverflow" Margin="0,5,0,0" FontWeight="Medium" Text="{DynamicResource Agent.Managed}"/>
                         <StackPanel>
                             <WrapPanel Margin="0,15,0,0">
                                 <CheckBox x:Name="agent_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Agent.Check}"/>
