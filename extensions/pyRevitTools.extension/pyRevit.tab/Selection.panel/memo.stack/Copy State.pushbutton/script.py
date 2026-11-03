@@ -23,7 +23,22 @@ RESOURCES = {
         "de_de": "Eigenschaft auswählen, die in den Speicher kopiert werden soll:",
         "pt_br": "Selecione a propriedade a ser copiada para a memória:",
     },
+    "command_switch_window_width": {
+        "en_us": 650,
+        "fr_fr": 750,
+        "ru": 850,
+        "chinese_s": 600,
+        "ko": 750,
+        "es_es": 850,
+        "de_de": 850,
+        "pt_br": 700,
+    },
 }
+
+
+def _ls(key):
+    return applocales.get_locale_string(RESOURCES[key])
+
 
 # collect actions that are valid in this context
 available_actions = [x for x in copypastestate.get_actions() if x.validate_context()]
@@ -32,8 +47,9 @@ if available_actions:
     action_options = {x.name: x for x in available_actions}
     selected_action = forms.CommandSwitchWindow.show(
         action_options.keys(),
-        message=applocales.get_locale_string(RESOURCES["selected_action_message"]),
+        message=_ls("selected_action_message"),
         name_attr="name",
+        width=_ls("command_switch_window_width"),
     )
 
     if selected_action:
