@@ -18,7 +18,8 @@ namespace Build.Modules;
 /// checker's own unit tests.
 /// </summary>
 /// <remarks>
-/// The checker tests need a <c>python</c> 3 interpreter on <c>PATH</c>. The forms tests show real
+/// The checker tests need Python 3.10 or newer on <c>PATH</c> as <c>python</c>, <c>python3</c> or
+/// <c>py</c>, found by <see cref="ToolResolutionHelper.ResolvePythonExecutable"/>. The forms tests show real
 /// WPF windows, so the runner must have a desktop session.
 /// </remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
@@ -145,7 +146,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
         CancellationToken cancellationToken)
     {
         await context.Shell.Command.ExecuteCommandLineTool(
-            new GenericCommandLineToolOptions("python")
+            new GenericCommandLineToolOptions(ToolResolutionHelper.ResolvePythonExecutable())
             {
                 Arguments = ["-m", "unittest", "discover", "-s", Path.Combine("dev", "scripts"), "-p", pattern],
             },
