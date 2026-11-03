@@ -79,6 +79,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
+                        ["disabled_by_admin"] = IsDisabledByAdmin(),
                     };
                     if (AgentParams.Get<bool?>(parameters, "identity") == true && int.TryParse(AgentHost.RevitVersion, out var pingYear)) {
                         var identity = AgentSessionIdentity.Describe(pingYear);
@@ -180,13 +181,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static void RequireEnabled() {
             if (AgentHost.IsEnabled())
                 return;
-            var disabled = IsDisabledByAdmin()
+            var disabled = IsKnownToBeDisabledByAdmin()
                 ? new AgentException("disabled_by_admin",
                     "The pyRevit agent host is disabled by your administrator, so the request was not run.")
                 : new AgentException("agent_disabled",
                     "The pyRevit agent is disabled in the pyRevit settings, so the request was not run.");
             disabled.Details["outcome"] = "not_run";
             throw disabled;
+        }
+
+        private static bool IsKnownToBeDisabledByAdmin() {
+            try {
+                return IsDisabledByAdmin();
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not read the agent admin pin: {0}", ex.Message);
+                return false;
+            }
         }
 
         private static bool IsDisabledByAdmin() {

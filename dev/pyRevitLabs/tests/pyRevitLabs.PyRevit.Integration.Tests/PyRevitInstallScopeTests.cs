@@ -367,6 +367,25 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.ReadAllText(expectedUserConfig), Is.EqualTo(seedContent));
         }
 
+        /// <summary>A per-user install seeds its user config without the machine config's agent admin pins.</summary>
+        [Test]
+        public void GetActiveConfig_PerUser_SeedsUserConfigWithoutTheAgentAdminPins() {
+            string machineConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            File.WriteAllText(
+                machineConfig,
+                "[core]\r\nuserlocale = en_us\r\n\r\n[agent.admin]\r\nenabled = false\r\n\r\n[agent]\r\npolicy = ask\r\n");
+
+            var active = PyRevitInstallScope.GetActiveConfig();
+
+            string seeded = File.ReadAllText(active.ConfigPath);
+            Assert.That(seeded, Does.Contain("userlocale"));
+            Assert.That(seeded, Does.Contain("policy"));
+            Assert.That(seeded, Does.Not.Contain("agent.admin"));
+            Assert.That(File.ReadAllText(machineConfig), Does.Contain("agent.admin"));
+        }
+
         /// <summary>A read-only machine config takes precedence in a per-user install and is reported read-only.</summary>
         [Test]
         public void GetActiveConfig_PerUser_LockedMachineConfig_IsReadOnlyMachineConfig() {

@@ -677,15 +677,17 @@ public static class PyRevitConfigService {
 
     /// <summary>
     /// Copy the machine config to a per-user location, then drop the plaintext
-    /// credential keys.
+    /// credential keys and the administrator's agent pins.
     /// </summary>
     /// <remarks>
     /// A machine config written by a pre-sealing build can still hold a plaintext
     /// token, which the copy would carry verbatim into this user's config. The
     /// sealed key is left alone: it is bound to the profile that wrote it and
     /// means nothing here, and it is the admin's own copy to remove, not ours.
+    /// The <c>[agent.admin]</c> pins are read from the machine config only, so a copy
+    /// would have no effect, but it would look like a setting and outlive an unlock.
     /// </remarks>
-    private static void SeedToUserConfig(string sourceFile, string targetFile) {
+    internal static void SeedToUserConfig(string sourceFile, string targetFile) {
         try {
             string? dir = Path.GetDirectoryName(targetFile);
             if (!string.IsNullOrEmpty(dir))
@@ -699,6 +701,19 @@ public static class PyRevitConfigService {
         }
 
         StripPlaintextCredentialKeysFromFile(targetFile);
+        StripAgentAdminPinsFromFile(targetFile);
+    }
+
+    private static void StripAgentAdminPinsFromFile(string configPath) {
+        try {
+            var configuration = IniConfiguration.Create(configPath);
+            if (configuration.RemoveSection(AgentAdminPolicy.SectionName))
+                configuration.SaveConfiguration();
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not strip agent admin pins from " + configPath + ": " + ex.Message);
+        }
     }
 
     private static IConfigurationService CreateConfiguration(string configPath, bool readOnly) {
