@@ -243,8 +243,9 @@ namespace pyRevitCLI {
                 var entry = instance.ToJson();
                 revitGate.Wait();
                 try {
-                    PyRevitAgentClient.Call(instance, "ping");
+                    var ping = PyRevitAgentClient.Call(instance, "ping");
                     entry["responding"] = true;
+                    entry["disabled_by_admin"] = ping.Value<bool?>("disabled_by_admin") ?? false;
                 }
                 catch (AgentClientException) {
                     entry["responding"] = false;

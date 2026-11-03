@@ -87,6 +87,9 @@ class RevitVersionCB:
         self.IsEnabled = is_enabled  # Whether the checkbox is enabled
 
 
+_AGENT_POLICY_RANK = {"readonly": 0, "ask": 1, "auto": 2}
+
+
 def _get_agent_pipe_name():
     """Return the agent host's pipe name when it runs in this Revit, else None."""
     try:
@@ -478,32 +481,26 @@ class SettingsWindow(forms.WPFWindow):
         """Disable the agent controls an administrator has pinned.
 
         A pinned policy is a ceiling, so only the choices above it are
-        disabled and the user can still pick a stricter one.
+        disabled and the user can still pick a stricter one. What is pinned
+        is read again when saving, because an administrator can lock a
+        setting while this window is open.
         """
         configs = PyRevit.PyRevitConfigs
         consts = PyRevit.PyRevitConsts
-        self._agent_enabled_managed = configs.IsAgentKeyManaged(
-            consts.ConfigsAgentEnabledKey
-        )
-        self._agent_engine_managed = configs.IsAgentKeyManaged(
-            consts.ConfigsAgentEngineKey
-        )
-        self._agent_policy_ceiling = configs.GetAgentPolicyCeiling()
+        enabled_managed = configs.IsAgentKeyManaged(consts.ConfigsAgentEnabledKey)
+        engine_managed = configs.IsAgentKeyManaged(consts.ConfigsAgentEngineKey)
+        ceiling = configs.GetAgentPolicyCeiling()
         self._agent_policy_at_open = policy
 
-        self.agent_cb.IsEnabled = not self._agent_enabled_managed
-        self.agent_engine_ironpython_rb.IsEnabled = not self._agent_engine_managed
-        self.agent_engine_cpython_rb.IsEnabled = not self._agent_engine_managed
-        if self._agent_policy_ceiling in ("readonly", "ask"):
+        self.agent_cb.IsEnabled = not enabled_managed
+        self.agent_engine_ironpython_rb.IsEnabled = not engine_managed
+        self.agent_engine_cpython_rb.IsEnabled = not engine_managed
+        if ceiling in ("readonly", "ask"):
             self.agent_policy_auto_rb.IsEnabled = False
-        if self._agent_policy_ceiling == "readonly":
+        if ceiling == "readonly":
             self.agent_policy_ask_rb.IsEnabled = False
 
-        if (
-            self._agent_enabled_managed
-            or self._agent_engine_managed
-            or self._agent_policy_ceiling is not None
-        ):
+        if enabled_managed or engine_managed or ceiling is not None:
             self.show_element(self.agent_managed_note)
 
     def agent_install_client(self, sender, args):
@@ -516,7 +513,9 @@ class SettingsWindow(forms.WPFWindow):
                 sub_msg=output_text,
                 warn_icon=False,
             )
-            if not self._agent_enabled_managed:
+            if not PyRevit.PyRevitConfigs.IsAgentKeyManaged(
+                PyRevit.PyRevitConsts.ConfigsAgentEnabledKey
+            ):
                 self.agent_cb.IsChecked = True
         else:
             forms.alert(
@@ -1087,18 +1086,18 @@ class SettingsWindow(forms.WPFWindow):
         return request_reload
 
     def _save_agent(self):
+        configs = PyRevit.PyRevitConfigs
+        consts = PyRevit.PyRevitConsts
         request_reload = False
-        if not self._agent_enabled_managed:
+        if not configs.IsAgentKeyManaged(consts.ConfigsAgentEnabledKey):
             enabled = bool(self.agent_cb.IsChecked)
             if enabled != self._agent_enabled_at_open:
                 request_reload = forms.alert(
                     self.get_locale_string("Agent.Changed"), yes=True, no=True
                 )
-            PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
+            configs.SetAgentEnabled(enabled)
 
-        PyRevit.PyRevitConfigs.SetAgentTabHighlight(
-            bool(self.agent_tab_highlight_cb.IsChecked)
-        )
+        configs.SetAgentTabHighlight(bool(self.agent_tab_highlight_cb.IsChecked))
 
         if self.agent_policy_readonly_rb.IsChecked:
             policy = "readonly"
@@ -1106,14 +1105,15 @@ class SettingsWindow(forms.WPFWindow):
             policy = "auto"
         else:
             policy = "ask"
-        if (
-            self._agent_policy_ceiling is None
-            or policy != self._agent_policy_at_open
+        ceiling = configs.GetAgentPolicyCeiling()
+        if ceiling is None or (
+            policy != self._agent_policy_at_open
+            and _AGENT_POLICY_RANK[policy] <= _AGENT_POLICY_RANK[ceiling]
         ):
-            PyRevit.PyRevitConfigs.SetAgentPolicy(policy)
+            configs.SetAgentPolicy(policy)
 
-        if not self._agent_engine_managed:
-            PyRevit.PyRevitConfigs.SetAgentEngine(
+        if not configs.IsAgentKeyManaged(consts.ConfigsAgentEngineKey):
+            configs.SetAgentEngine(
                 "cpython" if self.agent_engine_cpython_rb.IsChecked else "ironpython"
             )
         return request_reload

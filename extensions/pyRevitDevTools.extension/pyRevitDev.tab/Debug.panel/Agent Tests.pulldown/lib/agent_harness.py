@@ -38,6 +38,7 @@ from System.Diagnostics import Process, ProcessStartInfo
 from pyrevit import DB, HOME_DIR, HOST_APP
 from pyrevit.coreutils import assmutils
 from pyrevit.labs import Common, PyRevit
+from pyRevitLabs.Configurations.Ini import AgentAdminPolicy
 from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
@@ -52,9 +53,7 @@ PROGRESS_LOG = op.join(tempfile.gettempdir(), "pyrevit-agent-tests.log")
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"
 )
-_ADMIN_POLICY_TYPE = System.Type.GetType(
-    "pyRevitLabs.Configurations.Ini.AgentAdminPolicy, pyRevitLabs.Configurations.Ini"
-)
+_ADMIN_POLICY_TYPE = clr.GetClrType(AgentAdminPolicy)
 _machine_config_stack = []
 _session = None
 

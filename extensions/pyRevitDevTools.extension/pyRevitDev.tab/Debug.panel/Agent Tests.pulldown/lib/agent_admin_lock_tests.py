@@ -17,7 +17,6 @@ CONFIGS = PyRevit.PyRevitConfigs
 CONSTS = PyRevit.PyRevitConsts
 
 
-
 class SettingsLockTests(TestCase):
     """How a pin changes what the settings read and what they accept."""
 
@@ -91,8 +90,10 @@ class HostLockTests(TestCase):
 
     def test_a_host_pinned_off_refuses_requests_but_still_answers_ping(self):
         """Every request except ping fails with disabled_by_admin while the pin holds."""
+        self.assertFalse(request("ping")["disabled_by_admin"])
         with admin_pins(enabled="false"):
             self.assertTrue(request("ping")["pong"])
+            self.assertTrue(request("ping")["disabled_by_admin"])
             with self.assertRaises(AgentRequestError) as raised:
                 request("get_context")
             self.assertEqual("disabled_by_admin", raised.exception.code)

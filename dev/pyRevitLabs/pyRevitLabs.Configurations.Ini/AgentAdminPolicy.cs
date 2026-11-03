@@ -1,6 +1,8 @@
+using System.Text.RegularExpressions;
+using IniParser.Model;
+using IniParser.Parser;
 using pyRevitLabs.Common;
 using pyRevitLabs.Configurations.Abstractions;
-using pyRevitLabs.Configurations.Ini.Extensions;
 
 namespace pyRevitLabs.Configurations.Ini;
 
@@ -15,7 +17,7 @@ namespace pyRevitLabs.Configurations.Ini;
 /// </remarks>
 public sealed class AgentAdminPolicy {
     /// <summary>INI section holding the pinned keys. Written only by the admin lock command.</summary>
-    public const string SectionName = "agent.admin";
+    public const string SectionName = PyRevitInstallScope.AgentAdminSectionName;
 
     /// <summary>Key pinning whether the agent host runs.</summary>
     public const string EnabledKey = "enabled";
@@ -53,6 +55,12 @@ public sealed class AgentAdminPolicy {
     public bool IsEmpty => Enabled == null && Policy == null && Engine == null && UserSkills == null;
 
     /// <summary>
+    /// True when the machine config exists but could not be read, so the pins are the strictest
+    /// ones rather than what the file says.
+    /// </summary>
+    public bool ReadFailed { get; private set; }
+
+    /// <summary>
     /// The pins currently in force, read from the machine config and cached by its
     /// modification time so a lock applied while Revit runs is seen on the next read.
     /// </summary>
@@ -60,19 +68,28 @@ public sealed class AgentAdminPolicy {
     /// Important: the machine config is located from the OS common-application-data folder,
     /// never from <c>PYREVIT_PROGRAMDATA_PATH_OVERRIDE</c>. Honoring that variable would let any
     /// user point the lock at an empty folder.
-    /// A missing or unreadable file pins nothing.
+    /// A missing file pins nothing. A file that exists but cannot be read, for example because
+    /// another process holds it open exclusively, fails closed (see <see cref="Load"/>) and is
+    /// not cached, so the next read tries again.
     /// </remarks>
     public static AgentAdminPolicy Current {
         get {
-            string path = pathOverride ?? ResolveMachineConfigPath();
+            string path = MachineConfigPath;
             DateTime stamp = SafeLastWriteUtc(path);
             lock (CacheLock) {
-                if (cached == null || cachedPath != path || cachedStamp != stamp) {
-                    cached = Load(path);
-                    cachedPath = path;
-                    cachedStamp = stamp;
+                if (cached != null && cachedPath == path && cachedStamp == stamp)
+                    return cached;
+
+                AgentAdminPolicy loaded = Load(path);
+                if (loaded.ReadFailed) {
+                    cached = null;
+                    return loaded;
                 }
-                return cached;
+
+                cached = loaded;
+                cachedPath = path;
+                cachedStamp = stamp;
+                return loaded;
             }
         }
     }
@@ -82,27 +99,61 @@ public sealed class AgentAdminPolicy {
     /// counts: a plain <c>[agent]</c> section in the machine config is a seeded copy of someone's
     /// settings, not a lock.
     /// </summary>
+    /// <remarks>
+    /// Important: a file that exists but cannot be read fails closed, as <c>enabled = false</c>,
+    /// <c>policy = readonly</c> and <c>user_skills = false</c>. Treating it as "nothing pinned"
+    /// would let anyone who can read the file but not write it, which is every standard user, lift
+    /// the lock by holding the file open while Revit starts.
+    /// </remarks>
     public static AgentAdminPolicy Load(string configPath) {
         var policy = new AgentAdminPolicy();
         if (string.IsNullOrEmpty(configPath) || !File.Exists(configPath))
             return policy;
 
         try {
-            IConfigurationService service = new ConfigurationBuilder(true)
-                .AddIniConfiguration(configPath, true)
-                .Build();
-            policy.Enabled = Read(service, EnabledKey);
-            policy.Policy = Read(service, PolicyKey);
-            policy.Engine = Read(service, EngineKey);
-            policy.UserSkills = Read(service, UserSkillsKey);
+            IniData data = ParseIni(ReadAllText(configPath));
+            policy.Enabled = Read(data, EnabledKey);
+            policy.Policy = Read(data, PolicyKey);
+            policy.Engine = Read(data, EngineKey);
+            policy.UserSkills = Read(data, UserSkillsKey);
         }
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not read agent admin settings from " + configPath + ": " + ex.Message);
-            return new AgentAdminPolicy();
+            return FailedRead();
         }
         return policy;
     }
+
+    /// <summary>
+    /// Reads the file text itself instead of going through <see cref="IniConfiguration"/>, which
+    /// treats a file it cannot read as empty. That fallback is right for a user config and wrong
+    /// here, where an empty read would lift the lock.
+    /// </summary>
+    private static string ReadAllText(string configPath) {
+        using var stream = new FileStream(
+            configPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream, IniConfiguration.DefaultFileEncoding, true);
+        return reader.ReadToEnd();
+    }
+
+    private static IniData ParseIni(string text) {
+        var parser = new IniDataParser();
+        parser.Configuration.CaseInsensitive = true;
+        parser.Configuration.CommentRegex = new Regex(@"^\s*[#;](.*)", RegexOptions.Compiled);
+        parser.Configuration.SkipInvalidLines = false;
+        parser.Configuration.AllowDuplicateSections = true;
+        parser.Configuration.AllowDuplicateKeys = true;
+        parser.Configuration.OverrideDuplicateKeys = true;
+        return parser.Parse(text);
+    }
+
+    private static AgentAdminPolicy FailedRead() => new AgentAdminPolicy {
+        Enabled = "false",
+        Policy = "readonly",
+        UserSkills = "false",
+        ReadFailed = true,
+    };
 
     /// <summary>The machine config path the lock is read from.</summary>
     public static string ResolveMachineConfigPath() {
@@ -179,9 +230,11 @@ public sealed class AgentAdminPolicy {
         }
     }
 
-    private static string? Read(IConfigurationService service, string key) {
-        string? value = service.GetSectionKeyValueOrDefault<string>(SectionName, key, null);
-        return value == null || value.Trim().Length == 0 ? null : value.Trim();
+    private static string? Read(IniData data, string key) {
+        if (!data.Sections.ContainsSection(SectionName))
+            return null;
+        string? value = data[SectionName][key]?.Trim().Trim('"').Trim();
+        return string.IsNullOrEmpty(value) ? null : value;
     }
 
     private static DateTime SafeLastWriteUtc(string path) {

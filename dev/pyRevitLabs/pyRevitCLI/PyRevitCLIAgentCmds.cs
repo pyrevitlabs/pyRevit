@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 
 using pyRevitLabs.Common;
-using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.PyRevit;
@@ -52,8 +51,10 @@ namespace pyRevitCLI {
             foreach (var instance in instances) {
                 string state;
                 try {
-                    PyRevitAgentClient.Call(instance, "ping");
-                    state = "responding";
+                    var ping = PyRevitAgentClient.Call(instance, "ping");
+                    state = ping.Value<bool?>("disabled_by_admin") == true
+                        ? "responding, but disabled by your administrator"
+                        : "responding";
                 }
                 catch (AgentClientException ex) {
                     state = "not responding (" + ex.Code + ")";
@@ -231,15 +232,10 @@ namespace pyRevitCLI {
         private static void PrintLocks() {
             var pinned = false;
             foreach (var key in LockableKeys) {
-                if (!PyRevitConfigs.IsAgentKeyManaged(key))
+                if (PyRevitConfigs.GetAgentPin(key) == null)
                     continue;
                 pinned = true;
-                var admin = AgentAdminPolicy.Current;
-                var raw = key == PyRevitConsts.ConfigsAgentEnabledKey ? admin.Enabled
-                    : key == PyRevitConsts.ConfigsAgentPolicyKey ? admin.Policy
-                    : key == PyRevitConsts.ConfigsAgentEngineKey ? admin.Engine
-                    : admin.UserSkills;
-                Console.WriteLine("{0} = {1}{2}", key, raw,
+                Console.WriteLine("{0} = {1}{2}", key, PyRevitConfigs.GetAgentPin(key),
                     key == PyRevitConsts.ConfigsAgentPolicyKey ? " (ceiling)" : string.Empty);
             }
             if (!pinned)

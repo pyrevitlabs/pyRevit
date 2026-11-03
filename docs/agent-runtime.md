@@ -110,7 +110,8 @@ read access, so a standard user cannot remove a pin.
 | `engine` | Fixed default engine for runs that don't name one. |
 | `user_skills` | Fixed. `false` stops the MCP server loading user-authored skills. |
 
-`tab_highlight` is cosmetic and can't be pinned.
+`tab_highlight` is cosmetic and can't be pinned. The pins are read from the machine config only, and
+the `[agent.admin]` section is not copied when that config seeds a new user's profile.
 
 What users see:
 
@@ -120,14 +121,17 @@ What users see:
 - Changing a pinned setting fails with `"<setting>" is managed by your administrator`, from the
   CLI, the Settings window and the `userconfig.agent_*` properties alike.
 - A running Revit sees a new pin on the next agent request, with no reload. With `enabled` pinned
-  to `false` the host answers `ping` and refuses everything else with `disabled_by_admin`; it
-  stops listening on the next pyRevit reload or Revit restart. A `policy` pin that caps at
-  `readonly` refuses modify runs with `policy_readonly`, naming the administrator.
+  to `false` the host answers `ping`, with `disabled_by_admin: true` so `pyrevit agent status` and
+  the MCP `list_revit_instances` tool show it up front, and refuses everything else with
+  `disabled_by_admin`; it stops listening on the next pyRevit reload or Revit restart. A `policy`
+  pin that caps at `readonly` refuses modify runs with `policy_readonly`, naming the administrator.
   `get_context` reports `agent.policy_managed`.
 
 Pins fail closed: an `enabled` or `user_skills` value that is not `true` or `false` reads as
 `false`, a `policy` that isn't one of the three values reads as `readonly`, and an unknown
-`engine` reads as `ironpython`.
+`engine` reads as `ironpython`. A machine config that exists but can't be read, for example
+because another process holds it open exclusively, locks everything in the same way (host off,
+policy `readonly`, no user skills) until it can be read again; a missing file pins nothing.
 
 Only `[agent.admin]` counts. A plain `[agent]` section in the machine config is a seeded default
 that users copy and then change, not a lock, so existing seeded configs are not locked by this

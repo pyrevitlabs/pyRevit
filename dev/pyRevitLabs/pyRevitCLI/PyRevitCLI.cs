@@ -869,7 +869,16 @@ namespace pyRevitCLI {
                         : null;
 
                     if (all("lock"))
-                        PyRevitCLIAgentCmds.ConfigureLock(lockKey, TryGetValue("<lock_value>"));
+                        PyRevitCLIAgentCmds.ConfigureLock(
+                            lockKey,
+                            arguments["true"].IsTrue ? "true"
+                            : arguments["false"].IsTrue ? "false"
+                            : arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
+                            : arguments["ask"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAsk
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAuto
+                            : arguments["ironpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineIronPython
+                            : arguments["cpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineCPython
+                            : null);
 
                     else if (all("unlock"))
                         PyRevitCLIAgentCmds.ConfigureUnlock(lockKey, arguments["--all"].IsTrue);

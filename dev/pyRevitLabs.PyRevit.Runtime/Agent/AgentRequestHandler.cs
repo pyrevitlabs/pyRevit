@@ -56,6 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["pid"] = Process.GetCurrentProcess().Id,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
+                        ["disabled_by_admin"] = IsDisabledByAdmin(),
                     };
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
@@ -105,6 +106,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Refuses every request except <c>ping</c> once an administrator has pinned the host off.
+        /// <c>ping</c> reports it as <c>disabled_by_admin</c> so a client can see it up front.
         /// </summary>
         /// <remarks>
         /// Invariant: the host keeps running until the next <see cref="AgentHost.Configure"/>, which
@@ -113,11 +115,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// off in their own config is not refused mid-session; only the administrator pin is.
         /// </remarks>
         private static void RefuseWhenDisabledByAdmin() {
-            if (PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey)
-                && !PyRevitConfigs.GetAgentEnabled())
+            if (IsDisabledByAdmin())
                 throw new AgentException(
                     "disabled_by_admin",
                     "The pyRevit agent host is disabled by your administrator.");
+        }
+
+        private static bool IsDisabledByAdmin() {
+            return PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey)
+                && !PyRevitConfigs.GetAgentEnabled();
         }
 
         private static void EnforcePolicy(AgentRunRequest request) {

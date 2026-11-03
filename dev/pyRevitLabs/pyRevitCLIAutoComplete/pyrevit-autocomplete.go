@@ -993,25 +993,83 @@ func main() {
 							"lock": complete.Command{
 								Sub: complete.Commands{
 									"enabled": complete.Command{
-										Sub: complete.Commands{},
+										Sub: complete.Commands{
+											"true": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+											"false": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+										},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,
 										},
 									},
 									"policy": complete.Command{
-										Sub: complete.Commands{},
+										Sub: complete.Commands{
+											"readonly": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+											"ask": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+											"auto": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+										},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,
 										},
 									},
 									"engine": complete.Command{
-										Sub: complete.Commands{},
+										Sub: complete.Commands{
+											"ironpython": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+											"cpython": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+										},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,
 										},
 									},
 									"skills": complete.Command{
-										Sub: complete.Commands{},
+										Sub: complete.Commands{
+											"true": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+											"false": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+										},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,
 										},
