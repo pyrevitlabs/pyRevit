@@ -50,6 +50,16 @@ RESOURCES = {
             ' Use primeiro "Copiar Estado".'
         ),
     },
+        "command_switch_window_width": {
+        "en_us": 600,
+        "fr_fr": 700,
+        "ru": 750,
+        "chinese_s": 600,
+        "ko": 750,
+        "es_es": 750,
+        "de_de": 750,
+        "pt_br": 700,
+    },
 }
 
 
@@ -72,6 +82,7 @@ if available_actions:
             action_options.keys(),
             message=_ls("selected_action_message"),
             name_attr="name",
+            width=_ls("command_switch_window_width"),
         )
         if selected_action:
             action = action_options[selected_action]
