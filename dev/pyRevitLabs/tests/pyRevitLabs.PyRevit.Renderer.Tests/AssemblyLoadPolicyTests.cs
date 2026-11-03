@@ -65,6 +65,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             Assert.IsTrue(decision.Skip, decision.Reason);
         }
 
+        /// <summary>Another year's per-year runtime is skipped, so CPython cannot resolve shared types from it.</summary>
         [TestMethod]
         public void ShouldSkip_RejectsTheRuntimeOfAnotherRevitYear() {
             foreach (var fileName in new[] { "pyRevitLabs.PyRevit.Runtime.2025.dll", "pyRevitLabs.PyRevit.Runtime.2027.dll" }) {
@@ -75,6 +76,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             }
         }
 
+        /// <summary>The host year's runtime and the shared runtime still load.</summary>
         [TestMethod]
         public void ShouldSkip_AllowsTheHostYearRuntimeAndSharedRuntime() {
             foreach (var fileName in new[] { "pyRevitLabs.PyRevit.Runtime.2026.dll", "pyRevitLabs.PyRevit.Runtime.Shared.dll" }) {
@@ -84,6 +86,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             }
         }
 
+        /// <summary>The year filter does not loosen the WebView2 isolation rule.</summary>
         [TestMethod]
         public void ShouldSkip_WithHostYearStillRejectsTheWebView2Stack() {
             var decision = AssemblyLoadPolicy.ShouldSkip("Microsoft.Web.WebView2.Core.dll", "2026");
@@ -91,6 +94,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             Assert.IsTrue(decision.Skip, decision.Reason);
         }
 
+        /// <summary>Without a runtime year the filter is off and every runtime loads.</summary>
         [TestMethod]
         public void ShouldSkip_WithoutRuntimeYearKeepsEveryRuntime() {
             foreach (var runtimeYear in new[] { null, "" }) {
@@ -100,6 +104,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             }
         }
 
+        /// <summary>Only <c>pyRevitLabs.PyRevit.Runtime.&lt;year&gt;</c> names yield a year, from a name or a path.</summary>
         [TestMethod]
         public void GetRuntimeYear_ReadsOnlyPerYearRuntimes() {
             Assert.AreEqual("2025", AssemblyLoadPolicy.GetRuntimeYear("pyRevitLabs.PyRevit.Runtime.2025"));
@@ -112,6 +117,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             Assert.IsNull(AssemblyLoadPolicy.GetRuntimeYear(null));
         }
 
+        /// <summary>The loader filters runtimes by the host Revit year.</summary>
         [TestMethod]
         public void Loader_FiltersRuntimesByHostYear() {
             var source = File.ReadAllText(
@@ -120,6 +126,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
             StringAssert.Contains(source, "ControlledApplication.VersionNumber");
         }
 
+        /// <summary>The runner filters by the runtime year it references, never the host year.</summary>
         [TestMethod]
         public void Runner_KeepsTheRuntimeItIsCompiledAgainst() {
             var source = File.ReadAllText(
