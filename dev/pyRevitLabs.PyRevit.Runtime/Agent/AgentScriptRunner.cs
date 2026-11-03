@@ -73,6 +73,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             ErrorMessage = message;
             ErrorTraceback = traceback;
         }
+
+        internal AgentRunTimings Timings { get; set; }
+
+        /// <summary>
+        /// Records how long one runner phase took; it appears under <c>timings_ms</c> in the
+        /// run record as <c>script.&lt;phase&gt;</c>.
+        /// </summary>
+        public void ReportTiming(string phase, double milliseconds) {
+            Timings?.Add("script." + phase, milliseconds);
+        }
     }
 
     /// <summary>

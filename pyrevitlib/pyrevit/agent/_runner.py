@@ -39,8 +39,10 @@ from pyrevit.compat import get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 
-_DEADLINE_CHECK_INTERVAL = 100
 _WATCHDOG_RETRY_SECONDS = 0.2
+_TRANSACTION_WORD = re.compile("transaction", re.IGNORECASE)
+
+_clock = getattr(time, "perf_counter", None) or time.time
 
 _elementid_value_raw = get_elementid_value_func()
 
@@ -159,13 +161,90 @@ def _narrow_source_handlers(source, handlers):
     return source
 
 
-def _compile_source(source):
+def _guard_loop_headers(source):
+    """Make every loop in the source check the run deadline on each iteration.
+
+    ``for`` loops and comprehensions iterate ``__agent_loop__((iterable))``
+    and ``while`` conditions become ``__agent_tick__() and (condition)``.
+    Only the header expressions change and every newline stays in place, so
+    line numbers and tracebacks still match the submitted source.
+
+    Raises:
+        Exception: the source could not be tokenized; compile it unguarded.
+    """
+    lines = _source_lines(source)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+
+    def offset_of(position):
+        return offsets[position[0] - 1] + position[1]
+
+    insertions = []
+    open_headers = []
+    depth = 0
+    token_source = source.replace("\r\n", "\n").replace("\r", "\n")
+    for token in tokenize.generate_tokens(StringIO(token_source).readline):
+        token_type, text, start, end, _ = token
+        while open_headers and _ends_loop_header(open_headers[-1], token, depth):
+            header = open_headers.pop()
+            insertions.append((offset_of(start), header["close"]))
+        if token_type == tokenize.NAME:
+            if text == "while":
+                insertions.append((offset_of(end), " __agent_tick__() and ("))
+                open_headers.append({"depth": depth, "close": ")", "iterating": True})
+            elif text == "for":
+                open_headers.append({"depth": depth, "close": "))", "iterating": False})
+            elif (
+                text == "in"
+                and open_headers
+                and not open_headers[-1]["iterating"]
+                and open_headers[-1]["depth"] == depth
+            ):
+                open_headers[-1]["iterating"] = True
+                insertions.append((offset_of(end), " __agent_loop__(("))
+        elif token_type == tokenize.OP:
+            if text in ("(", "[", "{"):
+                depth += 1
+            elif text in (")", "]", "}"):
+                depth -= 1
+    if open_headers:
+        raise SyntaxError("unterminated loop header")
+    for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
+        source = source[:position] + text + source[position:]
+    return source
+
+
+def _ends_loop_header(header, token, depth):
+    """True when ``token`` ends the guarded expression of an open loop header.
+
+    A statement header (depth 0) ends at its colon. A comprehension's
+    iterable ends at the next ``for``, ``if`` or ``async`` of the same
+    comprehension, or at the bracket that closes it.
+    """
+    if not header["iterating"] or depth != header["depth"]:
+        return False
+    token_type, text = token[0], token[1]
+    if header["depth"] == 0:
+        return token_type == tokenize.OP and text == ":"
+    if token_type == tokenize.NAME:
+        return text in ("for", "if", "async")
+    return token_type == tokenize.OP and text in (")", "]", "}")
+
+
+def _compile_source(source, guard_loops=False):
     """Compile the agent source with broad exception handlers narrowed.
 
+    Args:
+        source (str): the agent source.
+        guard_loops (bool): also rewrite loop headers with
+            :func:`_guard_loop_headers`.
+
     Returns:
-        tuple: the code object, and None or a description of why source rewriting
-        was skipped. If rewritten source does not compile, compile the narrowed
-        AST instead so broad handlers cannot swallow the timeout.
+        tuple: the code object, None or a description of why source rewriting
+        was skipped, and whether the loops are guarded. If rewritten source
+        does not compile, compile the narrowed AST instead so broad handlers
+        cannot swallow the timeout.
 
     Note:
         Prefer source text because IronPython reports every script frame as
@@ -175,65 +254,184 @@ def _compile_source(source):
     tree = ast.parse(source, SOURCE_NAME, "exec")
     narrower = _NarrowBroadHandlers()
     narrower.visit(tree)
-    if not narrower.narrowed:
-        return compile(source, SOURCE_NAME, "exec"), None
-    try:
-        narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
-        return compile(narrowed_source, SOURCE_NAME, "exec"), None
-    except Exception as ex:
-        return compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"), (
-            "{}: {}; compiled the narrowed AST instead; source line numbers "
-            "may be unavailable".format(type(ex).__name__, _safe_text(ex))
-        )
+    narrowed_source = source
+    if narrower.narrowed:
+        try:
+            narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
+            compile(narrowed_source, SOURCE_NAME, "exec")
+        except Exception as ex:
+            return (
+                compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"),
+                "{}: {}; compiled the narrowed AST instead; source line numbers "
+                "may be unavailable".format(type(ex).__name__, _safe_text(ex)),
+                False,
+            )
+    if guard_loops:
+        try:
+            guarded_source = _guard_loop_headers(narrowed_source)
+            return compile(guarded_source, SOURCE_NAME, "exec"), None, True
+        except Exception as ex:
+            return (
+                compile(narrowed_source, SOURCE_NAME, "exec"),
+                "{}: {}; loops check the deadline through line tracing instead".format(
+                    type(ex).__name__, _safe_text(ex)
+                ),
+                False,
+            )
+    return compile(narrowed_source, SOURCE_NAME, "exec"), None, False
 
 
-def _execution_tracer(timeout_s, state, transactions):
-    """Track script-local transactions and enforce the execution deadline."""
-    deadline = time.time() + timeout_s if timeout_s else None
-    events = [0]
+def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
+    """Build the ``sys.settrace`` function for one run.
 
-    def trace(frame, event, arg):
-        _track_frame_transactions(frame, transactions)
-        events[0] += 1
-        if (
-            deadline
-            and events[0] % _DEADLINE_CHECK_INTERVAL == 0
-            and time.time() > deadline
-        ):
-            state["timed_out"] = True
+    The module frame and the script's functions that name a transaction
+    (``code_lines``, from :func:`_transaction_code_lines`) are traced line
+    by line: on every event they record the Revit transactions in their
+    locals, so a transaction stays found even after its variable is rebound
+    or the frame unwinds. Every other frame, including all pyRevit, rpw and
+    workspace code, runs untraced. ``code_lines`` None means the source names
+    no transaction and nothing is tracked. With ``check_lines`` on, the other
+    script frames also get a per-line check of the watchdog's flag.
+
+    Note:
+        Line events are the dominant cost of a traced run: about 3 µs each on
+        IronPython, plus the cost of reading ``f_locals``. Tracing every line
+        of every frame made a 200k-step loop take seconds (issue #3815), so
+        loops are normally stopped by :func:`_guard_loop_headers` instead.
+    """
+    may_hold = {}
+
+    def raise_if_timed_out(frame):
+        if state["timed_out"]:
+            _track_stack_transactions(frame, transactions)
             raise RunTimedOut(timeout_s)
-        return trace
 
-    return trace
+    def track_transactions(frame, event, arg):
+        _track_frame_transactions(frame, transactions)
+        if event == "line":
+            raise_if_timed_out(frame)
+        return track_transactions
+
+    def check_deadline(frame, event, arg):
+        if event == "line":
+            raise_if_timed_out(frame)
+        return check_deadline
+
+    def trace_call(frame, event, arg):
+        code = frame.f_code
+        if code.co_filename != SOURCE_NAME:
+            return None
+        holds = may_hold.get(code)
+        if holds is None:
+            holds = may_hold[code] = code_lines is not None and _may_hold_transactions(
+                code, code_lines
+            )
+        if holds:
+            return track_transactions
+        return check_deadline if check_lines else None
+
+    return trace_call
+
+
+def _transaction_code_lines(source):
+    """Return the first lines of the script's functions that name a transaction.
+
+    Read from the AST because IronPython's code objects leave attribute
+    names such as ``DB.Transaction`` out of ``co_names``. Includes every line
+    that names a transaction too, which covers lambdas and comprehensions,
+    whose code objects start on the line of the expression.
+    """
+    lines = set()
+    for node in ast.walk(ast.parse(source, SOURCE_NAME, "exec")):
+        if not isinstance(node, (ast.FunctionDef, ast.Lambda)) and not (
+            type(node).__name__ == "AsyncFunctionDef"
+        ):
+            if _TRANSACTION_WORD.search(_node_name(node)):
+                lines.add(getattr(node, "lineno", 0))
+            continue
+        if any(_TRANSACTION_WORD.search(_node_name(inner)) for inner in ast.walk(node)):
+            lines.add(node.lineno)
+            for decorator in getattr(node, "decorator_list", ()):
+                lines.add(decorator.lineno)
+    return lines
+
+
+def _node_name(node):
+    for attribute in ("id", "attr", "arg", "name", "asname"):
+        value = getattr(node, attribute, None)
+        if isinstance(value, str):
+            return value
+    return ""
+
+
+def _may_hold_transactions(code, code_lines):
+    """True when a script code object may keep a transaction in its locals."""
+    if code.co_name == "<module>" or code.co_firstlineno in code_lines:
+        return True
+    for name in tuple(code.co_names) + tuple(code.co_varnames):
+        if _TRANSACTION_WORD.search(name):
+            return True
+    return False
+
+
+def _loop_guards(timeout_s, state, transactions):
+    """Return the ``__agent_tick__`` and ``__agent_loop__`` functions for one run.
+
+    Both raise ``RunTimedOut`` once the watchdog has set
+    ``state["timed_out"]``. They run in loop headers, outside any ``try`` in
+    the loop body, so the script cannot swallow the timeout and keep looping.
+    """
+
+    def raise_timed_out():
+        try:
+            _track_stack_transactions(sys._getframe(2), transactions)
+        except Exception:
+            pass
+        raise RunTimedOut(timeout_s)
+
+    def agent_tick():
+        if state["timed_out"]:
+            raise_timed_out()
+        return True
+
+    def agent_loop(iterable):
+        for item in iterable:
+            if state["timed_out"]:
+                raise_timed_out()
+            yield item
+
+    return agent_tick, agent_loop
 
 
 def _start_watchdog(timeout_s, state):
-    """Keep raising ``RunTimedOut`` in the script thread on CPython.
+    """Set ``state["timed_out"]`` once ``timeout_s`` passes.
 
-    CPython removes the trace function as soon as it raises, so a script that
-    catches the first ``RunTimedOut`` inside a loop would never be checked
-    again. Returns a function that stops the watchdog, waits for it to exit and
-    clears any injection still pending, or None on engines where the tracer
-    keeps working.
+    The loop guards, or the line tracer when loops are unguarded, raise
+    ``RunTimedOut`` when they next see the flag. On CPython the watchdog also
+    keeps raising ``RunTimedOut`` in the script thread itself, which stops
+    code the guards never see, such as a loop in a library function.
+
+    Warning:
+        An injection lands wherever the script happens to be, usually inside
+        a loop body, so a script that catches ``BaseException`` there through
+        an alias would swallow every one of them. Only the loop guards, which
+        raise in the loop header, can stop such a script.
+
+    Returns:
+        function: stops the watchdog and clears any injection still pending.
     """
-    if _implementation() != "cpython":
-        return None
-    try:
-        import ctypes
-
-        set_async_exc = ctypes.pythonapi.PyThreadState_SetAsyncExc
-    except (ImportError, AttributeError):
-        return None
-
-    thread_id = ctypes.c_ulong(threading.current_thread().ident)
     stopped = threading.Event()
+    set_async_exc = _async_exception_setter()
+    thread_id = threading.current_thread().ident
 
     def watch():
         if stopped.wait(timeout_s):
             return
+        state["timed_out"] = True
+        if set_async_exc is None:
+            return
         while not stopped.is_set():
-            state["timed_out"] = True
-            set_async_exc(thread_id, ctypes.py_object(RunTimedOut))
+            set_async_exc(thread_id, RunTimedOut)
             stopped.wait(_WATCHDOG_RETRY_SECONDS)
 
     thread = threading.Thread(target=watch)
@@ -241,9 +439,11 @@ def _start_watchdog(timeout_s, state):
     thread.start()
 
     def stop():
+        stopped.set()
+        if set_async_exc is None:
+            return
         while True:
             try:
-                stopped.set()
                 thread.join()
                 set_async_exc(thread_id, None)
                 return
@@ -251,6 +451,50 @@ def _start_watchdog(timeout_s, state):
                 pass
 
     return stop
+
+
+def _async_exception_setter():
+    """Return ``fn(thread_id, exc_type)`` that raises in another thread, or None.
+
+    Only CPython can raise an exception in a running thread from outside it;
+    IronPython has no equivalent on .NET Core.
+    """
+    if _implementation() != "cpython":
+        return None
+    try:
+        import ctypes
+
+        raw = ctypes.pythonapi.PyThreadState_SetAsyncExc
+    except (ImportError, AttributeError):
+        return None
+
+    def set_async_exc(thread_id, exc_type):
+        raw(
+            ctypes.c_ulong(thread_id),
+            ctypes.py_object(exc_type) if exc_type is not None else None,
+        )
+
+    return set_async_exc
+
+
+class _PhaseClock(object):
+    """Report runner phase durations through ``context.ReportTiming``.
+
+    Hosts built before ``ReportTiming`` existed get nothing reported.
+    """
+
+    def __init__(self, context):
+        self._report = getattr(context, "ReportTiming", None)
+        self._last = _clock()
+
+    def lap(self, phase):
+        now = _clock()
+        if self._report is not None:
+            try:
+                self._report(phase, (now - self._last) * 1000.0)
+            except Exception:
+                self._report = None
+        self._last = now
 
 
 def run(context):
@@ -265,20 +509,24 @@ def run(context):
         roll the run back.
 
     Note:
-        ``context.TimeoutSeconds`` is enforced with ``sys.settrace``, so it
-        stops Python code, including loops, but not a single blocking call
-        such as a long Revit API call or ``time.sleep``; the run fails with
-        ``timeout`` once that call returns.
+        ``context.TimeoutSeconds`` is enforced by a watchdog thread that sets
+        a flag every loop header of the agent source checks (see
+        :func:`_guard_loop_headers`); on CPython it also raises
+        ``RunTimedOut`` in the script thread. It stops Python code, including
+        loops, but not a single blocking call such as a long Revit API call or
+        ``time.sleep``, nor, on IronPython, a long loop inside a library or
+        workspace function the script calls; the run fails with ``timeout``
+        once that call returns.
 
     Warning:
-        Raising from the trace function ends tracing, so the script's own
-        handlers must not catch ``RunTimedOut``. The source is compiled with
-        every bare ``except`` and ``except BaseException`` narrowed to
-        ``except Exception``; a script can no longer catch ``KeyboardInterrupt``
-        or ``SystemExit`` that way. Suppression through an alias or
-        ``contextlib.suppress(BaseException)`` still bypasses this, and on
-        CPython the watchdog thread is the backstop.
+        The source is compiled with every bare ``except`` and ``except
+        BaseException`` narrowed to ``except Exception``, so a script cannot
+        swallow ``RunTimedOut`` there, and can no longer catch
+        ``KeyboardInterrupt`` or ``SystemExit`` that way. A script that
+        suppresses it some other way, such as through an alias, is stopped
+        again at its next loop header.
     """
+    phases = _PhaseClock(context)
     context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
     source = context.Source
     linecache.cache[SOURCE_NAME] = (
@@ -302,23 +550,47 @@ def run(context):
     try:
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
-        code, rewrite_problem = _compile_source(source)
+        guard_loops = bool(timeout_s)
+        if guard_loops:
+            (
+                namespace["__agent_tick__"],
+                namespace["__agent_loop__"],
+            ) = _loop_guards(timeout_s, state, tracked_transactions)
+        phases.lap("setup")
+        code, rewrite_problem, loops_guarded = _compile_source(source, guard_loops)
+        code_lines = (
+            _transaction_code_lines(source)
+            if _TRANSACTION_WORD.search(source)
+            else None
+        )
+        phases.lap("compile")
         if rewrite_problem:
             print(
-                "[pyRevit agent] Could not rewrite the script's handler "
-                "headers ({}).".format(rewrite_problem)
+                "[pyRevit agent] Could not rewrite the script's headers ({}).".format(
+                    rewrite_problem
+                )
             )
+        check_lines = (
+            guard_loops and not loops_guarded and _async_exception_setter() is None
+        )
         started = time.time()
         stop_watchdog = None
-        sys.settrace(_execution_tracer(timeout_s, state, tracked_transactions))
         if timeout_s:
             stop_watchdog = _start_watchdog(timeout_s, state)
+        if check_lines or code_lines is not None:
+            sys.settrace(
+                _execution_tracer(
+                    timeout_s, state, tracked_transactions, check_lines, code_lines
+                )
+            )
         try:
             script_exit = None
             try:
                 exec(code, namespace)
             except SystemExit as ex:
                 script_exit = ex
+            finally:
+                phases.lap("exec")
 
             if script_exit is not None:
                 if not _is_successful_exit(script_exit):
@@ -342,6 +614,7 @@ def run(context):
                         _safe_text(ex),
                         _format_script_traceback(),
                     )
+                phases.lap("result")
 
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
                 raise RunTimedOut(timeout_s)
@@ -365,10 +638,12 @@ def run(context):
     finally:
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
+        phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
         _leave_workspace(context.Workspace, workspace)
         context.SetOutput(captured.getvalue())
+        phases.lap("cleanup")
 
     if left_open and not failed:
         context.SetError(
@@ -434,24 +709,71 @@ def _track_frame_transactions(frame, transactions):
         _track_transaction(value, transactions)
 
 
+def _track_stack_transactions(frame, transactions):
+    while frame is not None:
+        _track_frame_transactions(frame, transactions)
+        frame = frame.f_back
+
+
 def _track_transaction(value, transactions):
-    for kind, rank in _TRANSACTION_ORDER:
+    if type(value) is _CELL_TYPE:
         try:
-            if isinstance(value, kind):
-                transactions[id(value)] = (rank, value)
-                return
+            value = value.cell_contents
+        except ValueError:
+            return
+    rank = _transaction_rank(type(value))
+    if rank is not None:
+        transactions[id(value)] = (rank, value)
+
+
+_TRANSACTION_RANKS = {}
+
+_CELL_TYPE = type((lambda value: lambda: value)(None).__closure__[0])
+"""IronPython with full frames reports function locals as closure cells."""
+
+
+def _transaction_rank(value_type):
+    """Rollback order of a transaction type, or None for any other type.
+
+    Cached per type because the tracer asks for every local on every traced
+    line, and ``isinstance`` against .NET types is slow on both engines.
+    """
+    try:
+        return _TRANSACTION_RANKS[value_type]
+    except KeyError:
+        pass
+    except TypeError:
+        return None
+    rank = None
+    for kind, kind_rank in _TRANSACTION_ORDER:
+        try:
+            if issubclass(value_type, kind):
+                rank = kind_rank
+                break
         except Exception:
             pass
+    _TRANSACTION_RANKS[value_type] = rank
+    return rank
 
 
 def _reachable_values(namespace):
+    """Yield script globals, and the items of global containers that hold a transaction.
+
+    A container's items are only walked when one of their types is a
+    transaction type, because a script often keeps every element of the
+    model in one list and walking it item by item costs about 3 µs per item
+    on IronPython.
+    """
     for value in list(namespace.values()):
         yield value
         if isinstance(value, dict):
-            for item in list(value.values()):
-                yield item
+            items = list(value.values())
         elif isinstance(value, (list, tuple)):
-            for item in value:
+            items = value
+        else:
+            continue
+        if any(_transaction_rank(kind) is not None for kind in set(map(type, items))):
+            for item in items:
                 yield item
 
 

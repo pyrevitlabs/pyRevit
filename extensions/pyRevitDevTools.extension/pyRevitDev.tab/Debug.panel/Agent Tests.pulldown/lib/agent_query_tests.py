@@ -83,6 +83,32 @@ class TimeoutTests(TestCase):
             )
             self.assertEqual("timeout", response["error"]["type"], engine)
 
+    def test_timeout_stops_a_loop_that_swallows_it_through_an_alias(self):
+        """A handler the runner can't narrow still can't keep a loop running past the timeout."""
+        for engine in ENGINES:
+            response = run(
+                "Base = BaseException\n"
+                "while True:\n"
+                "    try:\n"
+                "        for i in range(10 ** 9):\n"
+                "            pass\n"
+                "    except Base:\n"
+                "        pass\n",
+                engine=engine,
+                timeout=2,
+            )
+            self.assertEqual("timeout", response["error"]["type"], engine)
+
+    def test_timeout_guard_does_not_slow_a_tight_loop(self):
+        """A 200k-step loop stays fast under the timeout guard (issue #3815)."""
+        for engine in ENGINES:
+            response = run(
+                "s = 0\nfor i in range(200000):\n    s += i\nresult = s\n",
+                engine=engine,
+            )
+            self.assertEqual("ok", response["status"], engine)
+            self.assertLess(response["timings_ms"]["script.exec"], 2000, engine)
+
 
 class ModelGuardTests(TestCase):
     """Query runs must leave the model unchanged."""

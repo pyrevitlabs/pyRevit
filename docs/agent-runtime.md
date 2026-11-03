@@ -264,14 +264,21 @@ Rules the host enforces:
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
-  most 3600) is stopped and fails with `timeout`. The runner checks the deadline between
-  Python lines, so it stops loops. A single blocking call, such as a long Revit API call or
-  `time.sleep`, can't be interrupted; the run fails with `timeout` once it returns.
-- Python drops a trace function after it raises once, so the runner compiles the script with
-  every bare `except` and `except BaseException` narrowed to `except Exception`. A script
-  can't swallow its own timeout, and can't catch `KeyboardInterrupt` or `SystemExit` that
-  way. Suppression through an alias or `contextlib.suppress(BaseException)` still bypasses
-  this; on CPython a watchdog thread is the backstop.
+  most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
+  the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
+  check that flag on each iteration; only the header expressions change, so line numbers and
+  tracebacks still match the submitted source. On CPython the watchdog also raises the
+  timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
+  modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
+  only stopped once the call returns. A single blocking call, such as a long Revit API call
+  or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns.
+- The runner compiles the script with every bare `except` and `except BaseException`
+  narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
+  `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
+  other way, such as through an alias, is stopped again at its next loop header.
+- To roll back a transaction the script leaves open, the runner traces only the script's
+  own functions that name a transaction, and only when the source mentions one. Other code
+  runs without a trace function, which on IronPython makes it many times faster.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - Documents can't be saved or synchronized during a run.
@@ -350,6 +357,15 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `request.json`: title, mode, engine and inputs
 - `response.json`: status, decision, changes, failures, dialogs, output and result
 - `result.json`: present when the result was too large to return inline
+
+`response.json` (and `get_run`) also carries `timings_ms`, the run's wall-clock breakdown in
+milliseconds. Host phases, in order: `queue_wait` (request parsed to Revit main thread),
+`prepare`, `guard_arm`, `engine` (the whole script engine call), `changes`, `decide`,
+`approval` (only when the user was asked), `guard_release` (rollback or assimilation),
+`cleanup` and `outcome`, plus `total`. The `script.*` phases the runner reports (`setup`,
+`compile`, `exec`, `result`, `rollback`, `cleanup`) are nested in `engine`, so `engine` minus their sum is
+engine startup and runner import. The same breakdown is logged as a `[PERF] agent run` debug
+line.
 
 Run records and `capture_view` images older than 14 days are deleted when the host starts.
 

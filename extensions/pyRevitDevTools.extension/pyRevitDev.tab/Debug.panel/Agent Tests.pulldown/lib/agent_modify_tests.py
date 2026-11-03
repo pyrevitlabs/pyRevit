@@ -178,6 +178,39 @@ class RollbackTests(TestCase):
         self.assertEqual(before, harness.comment(_wall()))
         self.assertFalse(harness.session().project.IsModifiable)
 
+    def test_function_local_transaction_left_open_on_return_is_rolled_back(self):
+        """A helper that returns with its transaction still open cannot orphan it."""
+        before = harness.comment(_wall())
+        response = _modify(
+            "def change():\n"
+            "    transaction = DB.Transaction(doc, 'helper transaction')\n"
+            "    transaction.Start()\n"
+            "    doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-local')\n"
+            "change()\n".format(harness.COMMENTS),
+            inputs={"id": _wall()},
+        )
+        self.assertEqual("transaction_left_open", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+        self.assertFalse(harness.session().project.IsModifiable)
+
+    def test_timeout_in_a_helper_rolls_back_its_open_transaction(self):
+        """A timeout inside a helper still finds the transaction only that helper holds."""
+        before = harness.comment(_wall())
+        response = _modify(
+            "def change():\n"
+            "    transaction = DB.Transaction(doc, 'helper transaction')\n"
+            "    transaction.Start()\n"
+            "    doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-local')\n"
+            "    while True:\n"
+            "        pass\n"
+            "change()\n".format(harness.COMMENTS),
+            inputs={"id": _wall()},
+            timeout=2,
+        )
+        self.assertEqual("timeout", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+        self.assertFalse(harness.session().project.IsModifiable)
+
     def test_nonzero_system_exit_rolls_back_a_modify_run(self):
         """A failing explicit exit rolls the guarded run back."""
         before = harness.comment(_wall())
