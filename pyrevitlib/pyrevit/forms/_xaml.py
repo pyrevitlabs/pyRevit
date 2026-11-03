@@ -161,6 +161,13 @@ _ATTRIBUTE_WHITESPACE = (
     ("\r", _MARKER + "CR", "&#13;"),
     ("\t", _MARKER + "TAB", "&#9;"),
 )
+_NON_DEPENDENCY_VALUE_OWNERS = (
+    "Trigger",
+    "DataTrigger",
+    "MultiTrigger",
+    "MultiDataTrigger",
+    "Condition",
+)
 _STATIC_RESOURCE = re.compile(r"^\{StaticResource\s+(?:ResourceKey=)?([^\s{}]+)\s*\}$")
 
 
@@ -251,8 +258,17 @@ def _type_name(node):
 
 
 def _use_dynamic_resources(node, dynamic_keys):
+    """Rewrite ``{StaticResource key}`` for late host keys as dynamic lookups.
+
+    Note:
+        ``DynamicResource`` only works on dependency properties, so
+        ``BasedOn`` and the ``Value`` a trigger or condition compares against
+        keep their static lookup; ``Setter.Value`` is resolved by WPF.
+    """
     for attribute, value in list(node.attributes.items()):
-        if ":" in attribute:
+        if ":" in attribute or attribute == "BasedOn":
+            continue
+        if attribute == "Value" and node.localName in _NON_DEPENDENCY_VALUE_OWNERS:
             continue
         match = _STATIC_RESOURCE.match(value.strip())
         if match and match.group(1) in dynamic_keys:

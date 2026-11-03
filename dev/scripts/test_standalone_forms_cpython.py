@@ -199,6 +199,33 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertIn('Background="{DynamicResource pyRevitAccentBrush}"', markup)
         self.assertIn('BorderBrush="{StaticResource authored}"', markup)
 
+    def test_non_dependency_resource_targets_stay_static(self):
+        """Trigger values and BasedOn keep StaticResource; Setter values go dynamic."""
+        markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">'
+            '<Window.Resources><Style x:Key="s" TargetType="Border" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" '
+            'BasedOn="{StaticResource k}">'
+            '<Setter Property="Background" Value="{StaticResource k}"/>'
+            "<Style.Triggers>"
+            '<Trigger Property="IsEnabled" Value="{StaticResource k}"/>'
+            '<DataTrigger Binding="{Binding a}" Value="{StaticResource k}"/>'
+            "<MultiDataTrigger><MultiDataTrigger.Conditions>"
+            '<Condition Binding="{Binding a}" Value="{StaticResource k}"/>'
+            "</MultiDataTrigger.Conditions></MultiDataTrigger>"
+            "</Style.Triggers></Style></Window.Resources></Window>",
+            [],
+            dynamic_keys={"k"},
+        )
+        document = minidom.parseString(markup)
+        setter = document.getElementsByTagName("Setter")[0]
+        self.assertEqual("{DynamicResource k}", setter.getAttribute("Value"))
+        style = document.getElementsByTagName("Style")[0]
+        self.assertEqual("{StaticResource k}", style.getAttribute("BasedOn"))
+        for tag in ("Trigger", "DataTrigger", "Condition"):
+            node = document.getElementsByTagName(tag)[0]
+            self.assertEqual("{StaticResource k}", node.getAttribute("Value"), tag)
+
     def test_icon_font_characters_are_not_rewritten(self):
         """Private-use characters stay text; only real line breaks are encoded."""
         markup, _, _, _, _ = _load_xaml_helpers().prepare_xaml(
