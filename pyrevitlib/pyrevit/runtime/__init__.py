@@ -373,10 +373,17 @@ def _select_year_runtime(assemblies, name_of):
 
 
 def _find_loaded_year_runtime():
-    return _select_year_runtime(
+    year_runtime = _select_year_runtime(
         framework.AppDomain.CurrentDomain.GetAssemblies(),
         lambda asm: asm.GetName().Name,
     )
+    if year_runtime:
+        mlogger.debug(
+            "Interface types assembly in use is: %s (%s is not loaded)",
+            year_runtime[0].GetName().Name,
+            RUNTIME_ASSM_NAME,
+        )
+    return year_runtime
 
 
 def _get_runtime_asm():
