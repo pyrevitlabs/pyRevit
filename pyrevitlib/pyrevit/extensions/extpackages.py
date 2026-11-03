@@ -169,10 +169,8 @@ class ExtensionPackage:
         self.author = info_dict.get("author", self.author)
 
         self.author_profile = info_dict.get("author_profile", self.author_profile)
-        # update list dependencies
-        depends = info_dict.get("dependencies", [])
-        if depends:
-            self.dependencies.update(depends)
+        if "dependencies" in info_dict:
+            self.dependencies = set(info_dict["dependencies"] or [])
 
     def is_valid(self):
         return self.name is not None and self.url is not None
@@ -339,19 +337,19 @@ class ExtensionPackage:
 
 
 def _update_extpkgs(ext_def_file, loaded_pkgs):
-    with codecs.open(ext_def_file, "r", "utf-8") as extpkg_def_file:
-        try:
+    try:
+        with codecs.open(ext_def_file, "r", "utf-8") as extpkg_def_file:
             extpkg_dict = json.load(extpkg_def_file)
-            defined_exts_pkgs = [extpkg_dict]
-            if PLUGIN_EXT_DEF_MANIFEST_NAME in extpkg_dict.keys():
-                defined_exts_pkgs = extpkg_dict[PLUGIN_EXT_DEF_MANIFEST_NAME]
-        except Exception as def_file_err:
-            print(
-                "Can not parse plugin ext definition file: {} | {}".format(
-                    ext_def_file, def_file_err
-                )
+        defined_exts_pkgs = [extpkg_dict]
+        if PLUGIN_EXT_DEF_MANIFEST_NAME in extpkg_dict.keys():
+            defined_exts_pkgs = extpkg_dict[PLUGIN_EXT_DEF_MANIFEST_NAME]
+    except Exception as def_file_err:
+        print(
+            "Can not parse plugin ext definition file: {} | {}".format(
+                ext_def_file, def_file_err
             )
-            return
+        )
+        return
 
     for extpkg_def in defined_exts_pkgs:
         extpkg = ExtensionPackage(extpkg_def, ext_def_file)

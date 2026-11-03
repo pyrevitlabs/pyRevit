@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 import os.path as op
+import tempfile
 import time
 
 from pyrevit.coreutils.logger import get_logger
@@ -34,6 +35,16 @@ DOWNLOAD_TIMEOUT_MS = 5000
 CACHE_FILE_PREFIX = "pyRevit_extcatalog_"
 CATALOG_LIST_KEY = "extensions"
 SECURE_SCHEME = "https://"
+TEXT_FIELDS = (
+    "type",
+    "description",
+    "website",
+    "image",
+    "author",
+    "author_profile",
+)
+FLAG_FIELDS = ("builtin", "default_enabled", "rocket_mode_compatible")
+NAME_LIST_FIELDS = ("dependencies", "authusers", "authgroups")
 
 _last_failure_time = {}
 
@@ -60,6 +71,42 @@ def _is_secure_url(value):
     return hasattr(value, "lower") and value.strip().lower().startswith(SECURE_SCHEME)
 
 
+def _is_text(value):
+    return hasattr(value, "strip")
+
+
+def _is_name_list(value):
+    return isinstance(value, list) and all(_is_text(item) for item in value)
+
+
+def _is_usable_entry(entry):
+    """Tell whether `ExtensionPackage.update_info` can consume an entry safely.
+
+    Invariant:
+        Every field `update_info` reads must be type-checked here; a wrong type
+        that slips through raises while the Extension Manager builds its list,
+        outside any fallback.
+    """
+    if not isinstance(entry, dict):
+        return False
+    if not (_is_text(entry.get("name")) and entry["name"].strip()):
+        return False
+    if not _is_secure_url(entry.get("url")):
+        return False
+    for field in TEXT_FIELDS:
+        if field in entry and not _is_text(entry[field]):
+            return False
+    for field in FLAG_FIELDS:
+        if field in entry and not (
+            _is_text(entry[field]) or isinstance(entry[field], bool)
+        ):
+            return False
+    for field in NAME_LIST_FIELDS:
+        if field in entry and not _is_name_list(entry[field]):
+            return False
+    return True
+
+
 def parse_catalog(text):
     """Parse catalog text and drop entries an installed pyRevit must not offer.
 
@@ -67,8 +114,8 @@ def parse_catalog(text):
         text (str): downloaded catalog content.
 
     Returns:
-        (dict): `{"extensions": [...]}` holding only entries with a name and an
-            `https://` install URL.
+        (dict): `{"extensions": [...]}` holding only entries with a name, an
+            `https://` install URL and correctly typed fields.
 
     Raises:
         CatalogError: when the text is not a catalog or holds no usable entry,
@@ -90,12 +137,7 @@ def parse_catalog(text):
 
     entries = []
     for entry in catalog[CATALOG_LIST_KEY]:
-        if (
-            isinstance(entry, dict)
-            and hasattr(entry.get("name"), "strip")
-            and entry["name"].strip()
-            and _is_secure_url(entry.get("url"))
-        ):
+        if _is_usable_entry(entry):
             entries.append(entry)
         else:
             mlogger.debug("Skipping unusable catalog entry: %s", entry)
@@ -155,16 +197,42 @@ def _is_fresh(path, now):
     return op.isfile(path) and 0 <= now - op.getmtime(path) < CACHE_TTL_SECONDS
 
 
+def _replace_file(source, destination):
+    replace = getattr(os, "replace", None)
+    if replace:
+        replace(source, destination)
+        return
+    from pyrevit import framework
+
+    if framework.File.Exists(destination):
+        framework.File.Replace(source, destination, None)
+    else:
+        framework.File.Move(source, destination)
+
+
 def _write_cache(path, catalog):
+    """Write the cache so readers always see a whole file.
+
+    Each writer uses its own temporary file, then swaps it in with an atomic
+    replace, so concurrent Revit sessions never truncate each other's copy and
+    no reader finds the cache missing.
+    """
     folder = op.dirname(path)
     if not op.isdir(folder):
         os.makedirs(folder)
-    temp_path = path + ".tmp"
-    with open(temp_path, "w") as temp_file:
-        temp_file.write(json.dumps(catalog, indent=2))
-    if op.exists(path):
-        os.remove(path)
-    os.rename(temp_path, path)
+    handle, temp_path = tempfile.mkstemp(
+        prefix=op.basename(path) + ".", suffix=".tmp", dir=folder
+    )
+    try:
+        os.write(handle, json.dumps(catalog, indent=2).encode("utf-8"))
+    finally:
+        os.close(handle)
+    try:
+        _replace_file(temp_path, path)
+    except Exception:
+        if op.exists(temp_path):
+            os.remove(temp_path)
+        raise
 
 
 def resolve(

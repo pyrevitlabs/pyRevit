@@ -305,6 +305,22 @@ class ExtensionCatalogResolveTests(unittest.TestCase):
         text = _catalog_text("A", "B", B="http://example.com/b.git")
         self.assertEqual(["A"], self._cached_names(self._resolve(text, now=1000.0)))
 
+    def test_entries_with_wrong_field_types_are_dropped(self):
+        """Entries ExtensionPackage could not consume never reach the cache."""
+        catalog = json.loads(_catalog_text("Good", "Deps", "Auth", "Flag", "Text"))
+        catalog["extensions"][1]["dependencies"] = 5
+        catalog["extensions"][2]["authusers"] = [1]
+        catalog["extensions"][3]["builtin"] = ["True"]
+        catalog["extensions"][4]["description"] = {"en": "x"}
+        path = self._resolve(json.dumps(catalog), now=1000.0)
+        self.assertEqual(["Good"], self._cached_names(path))
+
+    def test_cache_write_leaves_no_temp_file(self):
+        """Each write uses its own temp file and swaps it in whole."""
+        self._resolve(_catalog_text("A"), now=1000.0)
+        self._resolve(_catalog_text("B"), now=1000.0, force=True)
+        self.assertEqual(1, len(os.listdir(self.cache_dir)))
+
     def test_cache_only_mode_never_downloads(self):
         """allow_download=False returns even a stale cache, offline."""
         path = self._resolve(_catalog_text("A"), now=1000.0)
@@ -438,6 +454,28 @@ class ExtensionCatalogSourcesTests(unittest.TestCase):
             self._write(os.path.join(self.root, "mine.json"), "Shared", Shared="mine")
         )
         self.assertEqual("mine", self._packages()["Shared"].description)
+
+    def test_later_source_replaces_dependencies(self):
+        """Dropping a dependency in the hosted catalog really drops it."""
+        bundled = os.path.join(self.ext_dir, "extensions.json")
+        with open(bundled, encoding="utf-8") as bundled_file:
+            catalog = json.load(bundled_file)
+        catalog["extensions"][0]["dependencies"] = ["Shared"]
+        with open(bundled, "w", encoding="utf-8") as bundled_file:
+            json.dump(catalog, bundled_file)
+        hosted = json.loads(_catalog_text("Bundled"))
+        hosted["extensions"][0]["dependencies"] = []
+        hosted_path = os.path.join(self.root, "hosted.json")
+        with open(hosted_path, "w", encoding="utf-8") as hosted_file:
+            json.dump(hosted, hosted_file)
+        self.hosted[DEFAULT_CATALOG_URL] = hosted_path
+        self.assertEqual(set(), self._packages()["Bundled"].dependencies)
+
+    def test_missing_catalog_file_is_skipped(self):
+        """A cache file removed between listing and reading does not raise."""
+        packages = []
+        self.extpackages._update_extpkgs(os.path.join(self.root, "gone.json"), packages)
+        self.assertEqual([], packages)
 
     def test_lookups_never_download(self):
         """Load and command paths read the cache only."""

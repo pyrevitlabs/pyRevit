@@ -34,6 +34,8 @@ REQUIRED_FIELDS = (
 )
 EXTENSION_TYPES = ("extension", "lib")
 BOOLEAN_STRINGS = ("True", "False", "true", "false")
+FLAG_FIELDS = ("builtin", "rocket_mode_compatible", "default_enabled")
+NAME_LIST_FIELDS = ("dependencies", "authusers", "authgroups")
 WEB_LINK_FIELDS = ("website", "image", "author_profile", "author-url")
 
 
@@ -66,23 +68,25 @@ def _check_entry(index, entry):
             "{}: 'type' must be one of {}".format(label, ", ".join(EXTENSION_TYPES))
         )
 
-    for field in ("builtin", "rocket_mode_compatible"):
+    for field in FLAG_FIELDS:
         if field in entry and entry[field] not in BOOLEAN_STRINGS:
             problems.append(
                 '{}: \'{}\' must be the string "True" or "False"'.format(label, field)
             )
 
-    dependencies = entry.get("dependencies")
-    if "dependencies" in entry and not (
-        isinstance(dependencies, list)
-        and all(isinstance(dep, str) for dep in dependencies)
-    ):
-        problems.append("{}: 'dependencies' must be a list of names".format(label))
+    for field in NAME_LIST_FIELDS:
+        value = entry.get(field)
+        if field in entry and not (
+            isinstance(value, list) and all(isinstance(item, str) for item in value)
+        ):
+            problems.append("{}: '{}' must be a list of names".format(label, field))
 
     for field in WEB_LINK_FIELDS:
-        value = entry.get(field)
-        if value and not (
-            isinstance(value, str) and value.startswith(("https://", "http://"))
+        if field not in entry:
+            continue
+        value = entry[field]
+        if not isinstance(value, str) or (
+            value and not value.startswith(("https://", "http://"))
         ):
             problems.append("{}: '{}' must be an http(s) link".format(label, field))
 

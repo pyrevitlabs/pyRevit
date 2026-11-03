@@ -80,6 +80,14 @@ class CheckExtensionCatalogTests(unittest.TestCase):
         self.assertTrue(self._problems(self._entry(builtin=False)))
         self.assertTrue(self._problems(self._entry(rocket_mode_compatible="yes")))
 
+    def test_list_fields_must_hold_names(self):
+        self.assertTrue(self._problems(self._entry(authusers="someone")))
+        self.assertTrue(self._problems(self._entry(dependencies=5)))
+
+    def test_link_fields_must_be_strings(self):
+        self.assertTrue(self._problems(self._entry(website=0)))
+        self.assertTrue(self._problems(self._entry(image=["a"])))
+
     def test_duplicate_names_fail_case_insensitively(self):
         problems = self._problems(self._entry(), self._entry(name="sample"))
         self.assertIn("duplicate name 'sample' (also 'Sample')", problems)

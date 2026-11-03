@@ -1,10 +1,5 @@
 name: Extension catalog publish
 
-# Copies extensions/extensions.json from develop to master through a pull
-# request, so the catalog reaches installed pyRevit versions without a release.
-# Only that one file is ever written to the sync branch, and ci.yml excludes it
-# from its path filter, so merging the PR does not start a build.
-
 on:
   push:
     branches: [develop]
