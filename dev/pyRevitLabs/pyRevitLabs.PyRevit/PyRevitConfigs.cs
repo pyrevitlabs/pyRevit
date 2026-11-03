@@ -286,7 +286,61 @@ namespace pyRevitLabs.PyRevit {
             cfg.SaveSection(new RoutesSection() { LoadCoreApi = state });
         }
 
+        /// <summary>
+        /// True when an administrator pinned <paramref name="key"/> (one of the
+        /// <c>PyRevitConsts.ConfigsAgent*Key</c> names) in the machine config.
+        /// A managed <c>policy</c> is a ceiling: users may still choose a stricter value.
+        /// </summary>
+        public static bool IsAgentKeyManaged(string key) {
+            var admin = AgentAdminPolicy.Current;
+            switch (key) {
+                case PyRevitConsts.ConfigsAgentEnabledKey: return admin.Enabled != null;
+                case PyRevitConsts.ConfigsAgentPolicyKey: return admin.Policy != null;
+                case PyRevitConsts.ConfigsAgentEngineKey: return admin.Engine != null;
+                case PyRevitConsts.ConfigsAgentUserSkillsEnabledKey: return admin.UserSkills != null;
+                default: return false;
+            }
+        }
+
+        /// <summary>
+        /// The most permissive policy users may select, or null when no ceiling is pinned.
+        /// A malformed ceiling reads as <c>readonly</c>.
+        /// </summary>
+        public static string GetAgentPolicyCeiling() {
+            var raw = AgentAdminPolicy.Current.Policy;
+            return raw == null ? null : NormalizeAgentPolicy(raw, PyRevitConsts.ConfigsAgentPolicyReadOnly);
+        }
+
+        private static string NormalizeAgentPolicy(string policy, string fallback) {
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyReadOnly, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyReadOnly;
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyAuto, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyAuto;
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyAsk, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyAsk;
+            return fallback;
+        }
+
+        private static int AgentPolicyRank(string policy) {
+            if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly) return 0;
+            if (policy == PyRevitConsts.ConfigsAgentPolicyAsk) return 1;
+            return 2;
+        }
+
+        private static bool ParseAdminFlag(string raw) => bool.TryParse(raw, out bool value) && value;
+
+        /// <summary>
+        /// Whether the agent host starts on the next pyRevit load.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a value pinned by an administrator wins over the user config. A malformed
+        /// pin reads as <c>false</c>.
+        /// </remarks>
         public static bool GetAgentEnabled() {
+            var admin = AgentAdminPolicy.Current.Enabled;
+            if (admin != null)
+                return ParseAdminFlag(admin);
+
             IConfigurationService cfg = GetConfigFile();
             return cfg.GetSectionKeyValueOrDefault(
                 PyRevitConsts.ConfigsAgentSection,
@@ -294,7 +348,11 @@ namespace pyRevitLabs.PyRevit {
                 PyRevitConsts.ConfigsAgentEnabledDefault);
         }
 
+        /// <exception cref="PyRevitSettingManagedException">An administrator pinned <c>enabled</c>.</exception>
         public static void SetAgentEnabled(bool state) {
+            if (IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey))
+                throw new PyRevitSettingManagedException(PyRevitConsts.ConfigsAgentEnabledKey);
+
             _logger.Debug("Setting agent host status to {@Status}...", state);
 
             IConfigurationService cfg = GetConfigFile();
@@ -322,24 +380,34 @@ namespace pyRevitLabs.PyRevit {
         /// <c>auto</c> commits modify runs without the approval prompt.
         /// Unknown values read as <c>ask</c>, so a typo never loosens the policy.
         /// </summary>
+        /// <remarks>
+        /// Invariant: an administrator's policy is a ceiling. The result is never more permissive
+        /// than <see cref="GetAgentPolicyCeiling"/>, whatever the user config says.
+        /// </remarks>
         public static string GetAgentPolicy() {
             IConfigurationService cfg = GetConfigFile();
-            var policy = cfg.GetSectionKeyValueOrDefault(
-                PyRevitConsts.ConfigsAgentSection,
-                PyRevitConsts.ConfigsAgentPolicyKey,
-                PyRevitConsts.ConfigsAgentPolicyDefault);
-            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyReadOnly, StringComparison.OrdinalIgnoreCase))
-                return PyRevitConsts.ConfigsAgentPolicyReadOnly;
-            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyAuto, StringComparison.OrdinalIgnoreCase))
-                return PyRevitConsts.ConfigsAgentPolicyAuto;
-            return PyRevitConsts.ConfigsAgentPolicyAsk;
+            var policy = NormalizeAgentPolicy(
+                cfg.GetSectionKeyValueOrDefault(
+                    PyRevitConsts.ConfigsAgentSection,
+                    PyRevitConsts.ConfigsAgentPolicyKey,
+                    PyRevitConsts.ConfigsAgentPolicyDefault),
+                PyRevitConsts.ConfigsAgentPolicyAsk);
+            var ceiling = GetAgentPolicyCeiling();
+            return ceiling != null && AgentPolicyRank(policy) > AgentPolicyRank(ceiling) ? ceiling : policy;
         }
 
+        /// <exception cref="PyRevitSettingManagedException">
+        /// <paramref name="policy"/> is more permissive than the administrator's ceiling.
+        /// </exception>
         public static void SetAgentPolicy(string policy) {
             if (policy != PyRevitConsts.ConfigsAgentPolicyReadOnly
                 && policy != PyRevitConsts.ConfigsAgentPolicyAsk
                 && policy != PyRevitConsts.ConfigsAgentPolicyAuto)
                 throw new PyRevitException($"Unknown agent policy \"{policy}\"");
+
+            var ceiling = GetAgentPolicyCeiling();
+            if (ceiling != null && AgentPolicyRank(policy) > AgentPolicyRank(ceiling))
+                throw new PyRevitSettingManagedException(PyRevitConsts.ConfigsAgentPolicyKey);
 
             IConfigurationService cfg = GetConfigFile();
             cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentPolicyKey, policy);
@@ -349,20 +417,28 @@ namespace pyRevitLabs.PyRevit {
         /// Script engine used for agent runs that don't name one. Unknown values read as
         /// <c>ironpython</c>.
         /// </summary>
+        /// <remarks>Invariant: a value pinned by an administrator wins over the user config.</remarks>
         public static string GetAgentEngine() {
-            IConfigurationService cfg = GetConfigFile();
-            var engine = cfg.GetSectionKeyValueOrDefault(
-                PyRevitConsts.ConfigsAgentSection,
-                PyRevitConsts.ConfigsAgentEngineKey,
-                PyRevitConsts.ConfigsAgentEngineDefault);
+            var engine = AgentAdminPolicy.Current.Engine;
+            if (engine == null) {
+                IConfigurationService cfg = GetConfigFile();
+                engine = cfg.GetSectionKeyValueOrDefault(
+                    PyRevitConsts.ConfigsAgentSection,
+                    PyRevitConsts.ConfigsAgentEngineKey,
+                    PyRevitConsts.ConfigsAgentEngineDefault);
+            }
             return string.Equals(engine, PyRevitConsts.ConfigsAgentEngineCPython, StringComparison.OrdinalIgnoreCase)
                 ? PyRevitConsts.ConfigsAgentEngineCPython
                 : PyRevitConsts.ConfigsAgentEngineIronPython;
         }
 
+        /// <exception cref="PyRevitSettingManagedException">An administrator pinned <c>engine</c>.</exception>
         public static void SetAgentEngine(string engine) {
             if (engine != PyRevitConsts.ConfigsAgentEngineIronPython && engine != PyRevitConsts.ConfigsAgentEngineCPython)
                 throw new PyRevitException($"Unknown agent engine \"{engine}\"");
+
+            if (IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEngineKey))
+                throw new PyRevitSettingManagedException(PyRevitConsts.ConfigsAgentEngineKey);
 
             IConfigurationService cfg = GetConfigFile();
             cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentEngineKey, engine);
@@ -370,8 +446,13 @@ namespace pyRevitLabs.PyRevit {
 
         /// <summary>
         /// Whether the MCP server loads user-authored skills from the current user's agent directory.
+        /// A value pinned by an administrator wins over the user config; a malformed pin reads as <c>false</c>.
         /// </summary>
         public static bool GetAgentUserSkillsEnabled() {
+            var admin = AgentAdminPolicy.Current.UserSkills;
+            if (admin != null)
+                return ParseAdminFlag(admin);
+
             IConfigurationService cfg = GetConfigFile();
             return cfg.GetSectionKeyValueOrDefault(
                 PyRevitConsts.ConfigsAgentSection,
@@ -382,7 +463,11 @@ namespace pyRevitLabs.PyRevit {
         /// <summary>
         /// Enables or disables user-authored MCP skills for the current user.
         /// </summary>
+        /// <exception cref="PyRevitSettingManagedException">An administrator pinned <c>user_skills</c>.</exception>
         public static void SetAgentUserSkillsEnabled(bool state) {
+            if (IsAgentKeyManaged(PyRevitConsts.ConfigsAgentUserSkillsEnabledKey))
+                throw new PyRevitSettingManagedException(PyRevitConsts.ConfigsAgentUserSkillsEnabledKey);
+
             IConfigurationService cfg = GetConfigFile();
             cfg.SetSectionKeyValue(
                 PyRevitConsts.ConfigsAgentSection,

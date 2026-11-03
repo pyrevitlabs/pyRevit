@@ -5,6 +5,7 @@ using System.Windows.Media;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Configurations.Security;
 
 namespace pyRevitLabs.PyRevit {
@@ -122,6 +123,7 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsConfigsLoadCoreAPIDefault = false;
 
         public const string ConfigsAgentSection = "agent";
+        public const string ConfigsAgentAdminSection = AgentAdminPolicy.SectionName;
         public const string ConfigsAgentEnabledKey = "enabled";
         public const bool ConfigsAgentEnabledDefault = false;
         public const string ConfigsAgentPolicyKey = "policy";
