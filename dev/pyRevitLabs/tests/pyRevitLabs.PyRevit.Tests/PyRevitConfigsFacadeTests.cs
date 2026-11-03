@@ -79,7 +79,10 @@ namespace pyRevitLabs.PyRevit.Tests {
             PyRevitConfigs.SetAgentTabHighlight(false);
 
             Assert.IsFalse(PyRevitConfigs.GetAgentTabHighlight());
-            StringAssert.Contains(PyRevitConsts.ConfigsAgentTabHighlightKey, File.ReadAllText(_path));
+            Assert.IsFalse(ReadFromDisk().GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentTabHighlightKey,
+                PyRevitConsts.ConfigsAgentTabHighlightDefault));
         }
 
         [Test]
