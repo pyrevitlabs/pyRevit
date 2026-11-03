@@ -46,6 +46,8 @@ namespace PyRevitRunner
                 if (year != null)
                     return year;
             }
+            System.Diagnostics.Trace.WriteLine(
+                "pyRevitRunner references no per-year pyRevit runtime; loading every year's runtime.");
             return null;
         }
 
