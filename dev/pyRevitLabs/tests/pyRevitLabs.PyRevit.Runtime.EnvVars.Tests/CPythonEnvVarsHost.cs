@@ -72,6 +72,7 @@ internal static class CPythonEnvVarsHost {
 
         CpyRuntime.PythonDLL = pythonDll;
         PythonEngine.Initialize();
+        PythonEngine.BeginAllowThreads();
         using Py.GILState gil = Py.GIL();
         var globals = new PyDict();
         PythonEngine.Exec($$"""
