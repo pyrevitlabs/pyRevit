@@ -20,6 +20,7 @@ ENVIRONMENTS = {"HostFree", "Revit"}
 EXCLUDED = {"modules", "bin", "obj", ".git", ".venv", "site-packages"}
 BASELINES = ROOT / "dev/tests/coverage-baselines.json"
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+ENGINE_VARIANTS = {"pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342")}
 
 
 def python_metadata(path):
@@ -209,11 +210,23 @@ def validate_trx(path):
     return dict(counters.attrib)
 
 
-def run_dotnet(project, results):
-    """Run all eligible classes through their native framework adapters."""
+def engine_variants(project):
+    """IronPython engines a suite must pass on; ``None`` means the project default."""
+    return ENGINE_VARIANTS.get(Path(project["path"]).stem, (None,))
+
+
+def run_dotnet(project, results, engine=None):
+    """Run all eligible classes through their native framework adapters.
+
+    Each engine variant reports to its own directory so one run cannot
+    overwrite another's evidence; their coverage merges into one module.
+    """
     if not any(test["Environment"] == "HostFree" for test in project["tests"]):
         return None
-    directory = results / Path(project["path"]).stem / project["framework"]
+    suite = Path(project["path"]).stem
+    directory = (
+        results / (f"{suite}.{engine}" if engine else suite) / project["framework"]
+    )
     directory.mkdir(parents=True, exist_ok=True)
     settings = directory / "coverage.runsettings"
     settings.write_text(
@@ -242,6 +255,7 @@ def run_dotnet(project, results):
             "-p:DebugType=portable",
             "-m:1",
             "-nr:false",
+            *([f"-p:IronPythonVersion={engine}"] if engine else []),
             "--filter",
             "(Environment=HostFree|TestCategory=HostFree)&Environment!=Revit&TestCategory!=Revit",
             "--logger",
@@ -260,7 +274,12 @@ def run_dotnet(project, results):
     reports = list(directory.glob("*/coverage.cobertura.xml"))
     if not reports:
         raise ValueError(f"Missing coverage report: {directory}")
-    return {"project": project["path"], "framework": project["framework"], **counters}
+    return {
+        "project": project["path"],
+        "framework": project["framework"],
+        **({"engine": engine} if engine else {}),
+        **counters,
+    }
 
 
 def check_baselines(measured, baseline):
@@ -422,9 +441,10 @@ def main():
             raise ValueError("Python run selected zero tests")
     summary = []
     for project in inventory["dotnet"]:
-        outcome = run_dotnet(project, results)
-        if outcome:
-            summary.append(outcome)
+        for engine in engine_variants(project):
+            outcome = run_dotnet(project, results, engine)
+            if outcome:
+                summary.append(outcome)
     (results / "summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
     )

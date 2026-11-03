@@ -6,7 +6,7 @@ Frameworks: `net10.0-windows`.
 
 Fixtures and helpers are owned by this suite. Tests drive the interactive shell against a real IronPython engine (`IPY2712PR` by default; pass `-p:IronPythonVersion=IPY342` for the other engine) and a WPF dispatcher; no Revit API assembly is used. The engines come from a built product in `bin/netcore/engines`, so build pyRevit before running this suite, or pass `-p:ShellEnginesDirectory=<path>`.
 
-From the repository root, run all API-free C# suites with shared discovery and coverage gates:
+From the repository root, run all API-free C# suites with shared discovery and coverage gates. The shared runner runs this suite once per engine, `IPY2712PR` and `IPY342`, each with its own report directory:
 
 ```powershell
 python dev/tests/run_tests.py --language dotnet

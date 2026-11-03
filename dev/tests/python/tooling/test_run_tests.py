@@ -112,6 +112,52 @@ class SelectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "did not pass"):
                 run_tests.validate_trx(path)
 
+    def test_shell_suite_runs_once_per_engine_with_separate_reports(self):
+        """Both IronPython engines run, and neither overwrites the other's evidence."""
+        project = {
+            "path": "dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Shell.Tests/"
+            "pyRevitLabs.PyRevit.Shell.Tests.csproj",
+            "framework": "net10.0-windows",
+            "tests": [{"Environment": "HostFree"}],
+        }
+        self.assertEqual(("IPY2712PR", "IPY342"), run_tests.engine_variants(project))
+        self.assertEqual(
+            (None,), run_tests.engine_variants({"path": "Other.Tests.csproj"})
+        )
+        calls = []
+
+        def fake_command(arguments):
+            calls.append(arguments)
+            reports = Path(arguments[arguments.index("--results-directory") + 1])
+            (reports / "run").mkdir(parents=True, exist_ok=True)
+            (reports / "run" / "coverage.cobertura.xml").write_text("<coverage/>")
+            (reports / "results.trx").write_text(
+                '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                '<Results><UnitTestResult outcome="Passed"/></Results>'
+                '<ResultSummary><Counters total="1" executed="1" failed="0"/>'
+                "</ResultSummary></TestRun>",
+                encoding="utf-8",
+            )
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(run_tests, "command", side_effect=fake_command),
+        ):
+            results = Path(directory)
+            outcomes = [
+                run_tests.run_dotnet(project, results, engine)
+                for engine in run_tests.engine_variants(project)
+            ]
+            self.assertTrue(
+                (results / "pyRevitLabs.PyRevit.Shell.Tests.IPY2712PR").is_dir()
+            )
+            self.assertTrue(
+                (results / "pyRevitLabs.PyRevit.Shell.Tests.IPY342").is_dir()
+            )
+        self.assertIn("-p:IronPythonVersion=IPY2712PR", calls[0])
+        self.assertIn("-p:IronPythonVersion=IPY342", calls[1])
+        self.assertEqual(["IPY2712PR", "IPY342"], [o["engine"] for o in outcomes])
+
     def test_hosted_module_is_classified_without_import(self):
         """A hosted suite can be inspected without executing its imports."""
         with tempfile.TemporaryDirectory() as directory:
