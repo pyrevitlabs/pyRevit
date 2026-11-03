@@ -17,7 +17,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     Keyword Args:
         context (list[str]): list of command options to choose from
         switches (list[str]): list of on/off switches
-        message (str): window title message
+        title (str): window title, "Command Options" when omitted
+        message (str): message shown above the options
         config (dict): dictionary of config dicts for options or switches
         recognize_access_key (bool): recognize '_' as mark of access key
 
@@ -61,10 +62,15 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     xaml_source = "CommandSwitchWindow.xaml"
     _binding_exclude = True
 
+    def __init__(self, context, title, width, height, **kwargs):
+        """Default the title to "Command Options" when none is given."""
+        TemplateUserInputWindow.__init__(
+            self, context, title or "Command Options", width, height, **kwargs
+        )
+
     def _setup(self, **kwargs):
         self.selected_switch = ""
         self.Width = DEFAULT_CMDSWITCHWND_WIDTH
-        self.Title = "Command Options"
 
         message = kwargs.get("message", None)
         self._switches = kwargs.get("switches", [])

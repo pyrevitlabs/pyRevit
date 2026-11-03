@@ -6,6 +6,7 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 
 FORMS = Path(__file__).resolve().parents[2] / "pyrevitlib" / "pyrevit" / "forms"
@@ -203,6 +204,44 @@ class ResetCallbackTests(unittest.TestCase):
         proxies = [_Proxy(object())]
         dialog = self._reset("_cpy", proxies, lambda values: None)
         self.assertIs(proxies, dialog.list_lb.ItemsSource)
+
+
+class CommandSwitchTitleTests(unittest.TestCase):
+    """CommandSwitchWindow keeps a caller's title and defaults otherwise."""
+
+    def _title(self, title):
+        class InputWindow(object):
+            def __init__(self, context, title, width, height, **kwargs):
+                self.Title = title
+                self._context = context
+                self._setup(**kwargs)
+
+            def __getattr__(self, name):
+                control = mock.MagicMock()
+                setattr(self, name, control)
+                return control
+
+        window_class = _load(
+            "commanddialog.py",
+            {"CommandSwitchWindow"},
+            {
+                "TemplateUserInputWindow": InputWindow,
+                "DEFAULT_CMDSWITCHWND_WIDTH": 1,
+                "DEFAULT_RECOGNIZE_ACCESS_KEY": True,
+                "framework": mock.MagicMock(),
+                "_backend": mock.MagicMock(),
+            },
+        )["CommandSwitchWindow"]
+        window_class._setup_response = window_class._filter_options = mock.Mock()
+        return window_class(["a"], title, 1, 1, message="m").Title
+
+    def test_given_title_is_kept(self):
+        """A ``title=`` passed to ``show`` is the window title."""
+        self.assertEqual("CAD Audit", self._title("CAD Audit"))
+
+    def test_missing_title_defaults_to_command_options(self):
+        """Without a title the window keeps its historical default."""
+        self.assertEqual("Command Options", self._title(None))
 
 
 class SharedBackendTests(unittest.TestCase):
