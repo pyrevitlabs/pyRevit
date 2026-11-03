@@ -412,6 +412,7 @@
     <system:String x:Key="Agent.Connect.Description">在所选客户端中注册 pyRevit MCP 服务器并启用智能体主机。之后请重新启动客户端。</system:String>
     <system:String x:Key="Agent.Running">智能体主机正在管道 {} 上监听</system:String>
     <system:String x:Key="Agent.NotRunning">智能体主机未运行</system:String>
+    <system:String x:Key="Agent.Managed">其中一些设置由您的管理员指定，无法更改。</system:String>
     <system:String x:Key="Agent.Changed">智能体主机设置已更改。需要重新加载 pyRevit 才能使更改生效。是否立即重新加载？</system:String>
     <system:String x:Key="Agent.InstallDone">已在 {} 中注册 pyRevit MCP 服务器。请重新启动它以开始使用 pyRevit 工具。</system:String>
     <system:String x:Key="Agent.InstallFailed">无法在 {} 中注册 pyRevit MCP 服务器。</system:String>

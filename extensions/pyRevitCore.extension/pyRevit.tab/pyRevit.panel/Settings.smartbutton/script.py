@@ -456,6 +456,7 @@ class SettingsWindow(forms.WPFWindow):
         cpython = PyRevit.PyRevitConfigs.GetAgentEngine() == "cpython"
         self.agent_engine_cpython_rb.IsChecked = cpython
         self.agent_engine_ironpython_rb.IsChecked = not cpython
+        self._setup_agent_admin_lock(policy)
 
         pipe_name = _get_agent_pipe_name()
         if pipe_name:
@@ -473,6 +474,38 @@ class SettingsWindow(forms.WPFWindow):
             self.agent_statusbox.Background = self.Resources["pyRevitDarkBrush"]
             self.agent_statusmsg.Text = self.get_locale_string("Agent.NotRunning")
 
+    def _setup_agent_admin_lock(self, policy):
+        """Disable the agent controls an administrator has pinned.
+
+        A pinned policy is a ceiling, so only the choices above it are
+        disabled and the user can still pick a stricter one.
+        """
+        configs = PyRevit.PyRevitConfigs
+        consts = PyRevit.PyRevitConsts
+        self._agent_enabled_managed = configs.IsAgentKeyManaged(
+            consts.ConfigsAgentEnabledKey
+        )
+        self._agent_engine_managed = configs.IsAgentKeyManaged(
+            consts.ConfigsAgentEngineKey
+        )
+        self._agent_policy_ceiling = configs.GetAgentPolicyCeiling()
+        self._agent_policy_at_open = policy
+
+        self.agent_cb.IsEnabled = not self._agent_enabled_managed
+        self.agent_engine_ironpython_rb.IsEnabled = not self._agent_engine_managed
+        self.agent_engine_cpython_rb.IsEnabled = not self._agent_engine_managed
+        if self._agent_policy_ceiling in ("readonly", "ask"):
+            self.agent_policy_auto_rb.IsEnabled = False
+        if self._agent_policy_ceiling == "readonly":
+            self.agent_policy_ask_rb.IsEnabled = False
+
+        if (
+            self._agent_enabled_managed
+            or self._agent_engine_managed
+            or self._agent_policy_ceiling is not None
+        ):
+            self.show_element(self.agent_managed_note)
+
     def agent_install_client(self, sender, args):
         """Register the pyRevit MCP server with the MCP client named by the button tag."""
         client = sender.Tag
@@ -483,7 +516,8 @@ class SettingsWindow(forms.WPFWindow):
                 sub_msg=output_text,
                 warn_icon=False,
             )
-            self.agent_cb.IsChecked = True
+            if not self._agent_enabled_managed:
+                self.agent_cb.IsChecked = True
         else:
             forms.alert(
                 self.get_locale_string("Agent.InstallFailed").format(sender.Content),
@@ -1054,25 +1088,34 @@ class SettingsWindow(forms.WPFWindow):
 
     def _save_agent(self):
         request_reload = False
-        enabled = bool(self.agent_cb.IsChecked)
-        if enabled != self._agent_enabled_at_open:
-            request_reload = forms.alert(
-                self.get_locale_string("Agent.Changed"), yes=True, no=True
-            )
+        if not self._agent_enabled_managed:
+            enabled = bool(self.agent_cb.IsChecked)
+            if enabled != self._agent_enabled_at_open:
+                request_reload = forms.alert(
+                    self.get_locale_string("Agent.Changed"), yes=True, no=True
+                )
+            PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
 
-        PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
         PyRevit.PyRevitConfigs.SetAgentTabHighlight(
             bool(self.agent_tab_highlight_cb.IsChecked)
         )
+
         if self.agent_policy_readonly_rb.IsChecked:
-            PyRevit.PyRevitConfigs.SetAgentPolicy("readonly")
+            policy = "readonly"
         elif self.agent_policy_auto_rb.IsChecked:
-            PyRevit.PyRevitConfigs.SetAgentPolicy("auto")
+            policy = "auto"
         else:
-            PyRevit.PyRevitConfigs.SetAgentPolicy("ask")
-        PyRevit.PyRevitConfigs.SetAgentEngine(
-            "cpython" if self.agent_engine_cpython_rb.IsChecked else "ironpython"
-        )
+            policy = "ask"
+        if (
+            self._agent_policy_ceiling is None
+            or policy != self._agent_policy_at_open
+        ):
+            PyRevit.PyRevitConfigs.SetAgentPolicy(policy)
+
+        if not self._agent_engine_managed:
+            PyRevit.PyRevitConfigs.SetAgentEngine(
+                "cpython" if self.agent_engine_cpython_rb.IsChecked else "ironpython"
+            )
         return request_reload
 
     def _save_telemetry(self):

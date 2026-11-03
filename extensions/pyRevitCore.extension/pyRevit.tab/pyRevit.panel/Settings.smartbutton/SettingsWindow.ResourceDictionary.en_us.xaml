@@ -414,6 +414,7 @@
     <system:String x:Key="Agent.Connect.Description">Registers the pyRevit MCP server with the selected client and enables the agent host. Restart the client afterwards.</system:String>
     <system:String x:Key="Agent.Running">Agent host is listening on pipe {}</system:String>
     <system:String x:Key="Agent.NotRunning">Agent host is not running</system:String>
+    <system:String x:Key="Agent.Managed">Some of these settings are set by your administrator and cannot be changed.</system:String>
     <system:String x:Key="Agent.Changed">Agent host setting has changed. Reloading pyRevit is required for this change to take effect. Do you want to reload now?</system:String>
     <system:String x:Key="Agent.InstallDone">Registered the pyRevit MCP server with {}. Restart it to start using pyRevit tools.</system:String>
     <system:String x:Key="Agent.InstallFailed">Could not register the pyRevit MCP server with {}.</system:String>

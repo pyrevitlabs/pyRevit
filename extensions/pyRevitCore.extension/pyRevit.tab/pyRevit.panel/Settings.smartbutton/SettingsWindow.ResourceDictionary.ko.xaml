@@ -408,6 +408,7 @@
     <system:String x:Key="Agent.Connect.Description">선택한 클라이언트에 pyRevit MCP 서버를 등록하고 에이전트 호스트를 활성화합니다. 그런 다음 클라이언트를 다시 시작하세요.</system:String>
     <system:String x:Key="Agent.Running">에이전트 호스트가 파이프 {}에서 대기 중입니다</system:String>
     <system:String x:Key="Agent.NotRunning">에이전트 호스트가 실행되고 있지 않습니다</system:String>
+    <system:String x:Key="Agent.Managed">이 설정 중 일부는 관리자가 지정하여 변경할 수 없습니다.</system:String>
     <system:String x:Key="Agent.Changed">에이전트 호스트 설정이 변경되었습니다. 변경 사항을 적용하려면 pyRevit을 다시 로드해야 합니다. 지금 다시 로드하시겠습니까?</system:String>
     <system:String x:Key="Agent.InstallDone">pyRevit MCP 서버를 {}에 등록했습니다. pyRevit 도구를 사용하려면 다시 시작하세요.</system:String>
     <system:String x:Key="Agent.InstallFailed">pyRevit MCP 서버를 {}에 등록하지 못했습니다.</system:String>
