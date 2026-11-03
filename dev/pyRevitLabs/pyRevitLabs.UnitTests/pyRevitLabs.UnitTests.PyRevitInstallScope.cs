@@ -456,7 +456,10 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
-        public void GetExtensionRoots_AllUsers_WritableMachine_MergesPerUserExtensions() {
+        public void GetExtensionRoots_AllUsers_StandardUser_ReadsOnlyTheActiveConfig() {
+            if (PyRevitInstallScope.IsElevatedProcess())
+                Assert.Inconclusive("An elevated process resolves to the machine config.");
+
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
                 PyRevitInstallScope.ConfigScopeAllUsers);
@@ -477,12 +480,16 @@ namespace pyRevitLabs.UnitTests {
 
             try {
                 SetUserExtensions(machineConfigPath, machineExtDir);
-                SetUserExtensions(userConfigPath, userExtDir);
+                File.WriteAllText(
+                    userConfigPath,
+                    "[core]\r\nuserextensions = [\"" + userExtDir.Replace("\\", "\\\\") + "\"]\r\n"
+                    + "syncedmachineuserextensions = [\"" + machineExtDir.Replace("\\", "\\\\") + "\"]\r\n");
 
                 var roots = ExtensionParser.GetExtensionRoots();
 
-                CollectionAssert.Contains(roots, machineExtDir);
                 CollectionAssert.Contains(roots, userExtDir);
+                CollectionAssert.DoesNotContain(roots, machineExtDir,
+                    "a machine path the user already removed must not come back from the machine config");
             }
             finally {
                 PyRevitInstallScope.ClearCachedInstallScope();
@@ -639,10 +646,9 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
-        public void GetExtensionRoots_AllUsers_UnwritableUserFallback_MergesMachineExtensions() {
-            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
-                    System.Runtime.InteropServices.OSPlatform.Windows))
-                Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+        public void GetExtensionRoots_AllUsers_StandardUser_PicksUpNewMachinePaths() {
+            if (PyRevitInstallScope.IsElevatedProcess())
+                Assert.Inconclusive("An elevated process resolves to the machine config.");
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -666,13 +672,12 @@ namespace pyRevitLabs.UnitTests {
                 SetUserExtensions(machineConfigPath, machineExtDir);
                 SetUserExtensions(userConfigPath, userExtDir);
 
-                using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (File.Open(userConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                    var roots = ExtensionParser.GetExtensionRoots();
+                var roots = ExtensionParser.GetExtensionRoots();
 
-                    CollectionAssert.Contains(roots, userExtDir);
-                    CollectionAssert.Contains(roots, machineExtDir);
-                }
+                CollectionAssert.Contains(roots, userExtDir);
+                CollectionAssert.Contains(roots, machineExtDir);
+                StringAssert.Contains(File.ReadAllText(userConfigPath), "MachineExt",
+                    "the machine path must land in the per-user config so Settings can show and remove it");
             }
             finally {
                 PyRevitInstallScope.ClearCachedInstallScope();
