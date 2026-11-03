@@ -82,6 +82,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Forms.Binding", "pyRevitLabs.PyRevit.Forms.Binding\pyRevitLabs.PyRevit.Forms.Binding.csproj", "{26B508DA-DA03-4CC6-A5B3-0D9E55E2D1BE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Forms.Binding.Tests", "tests\pyRevitLabs.PyRevit.Forms.Binding.Tests\pyRevitLabs.PyRevit.Forms.Binding.Tests.csproj", "{205FCDEC-3450-4A64-8D28-0191FD514D8A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.EnvVars.Tests", "tests\pyRevitLabs.PyRevit.Runtime.EnvVars.Tests\pyRevitLabs.PyRevit.Runtime.EnvVars.Tests.csproj", "{7709AB0F-FC09-472F-B580-A3CEC190746B}"
 EndProject
 Global
