@@ -440,7 +440,7 @@ namespace pyRevitCLI {
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "routes",                 "Routes configurations" },
-                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, reckless runs)" },
+                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, reckless runs, admin lock)" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },
                         },

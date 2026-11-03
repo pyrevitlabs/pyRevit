@@ -76,6 +76,94 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
+    public void SetPin_CreatesTheFileAndRoundTrips()
+    {
+        string path = Path.Combine(tempRoot, "pyRevit_config.ini");
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+
+        AgentAdminPolicy.SetPin(AgentAdminPolicy.EnabledKey, "false");
+        AgentAdminPolicy.SetPin(AgentAdminPolicy.PolicyKey, "ask");
+
+        Assert.Equal("false", AgentAdminPolicy.Current.Enabled);
+        Assert.Equal("ask", AgentAdminPolicy.Current.Policy);
+        Assert.Null(AgentAdminPolicy.Current.Engine);
+    }
+
+    [Fact]
+    public void SetPin_KeepsOtherSectionsIntact()
+    {
+        string path = WriteConfig("[core]\r\nuserlocale = en_us\r\n\r\n[agent]\r\nenabled = true\r\n");
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+
+        AgentAdminPolicy.SetPin(AgentAdminPolicy.EngineKey, "cpython");
+
+        string text = File.ReadAllText(path);
+        Assert.Contains("userlocale", text);
+        Assert.Contains("[agent]", text);
+        Assert.Equal("cpython", AgentAdminPolicy.Current.Engine);
+    }
+
+    [Fact]
+    public void ClearPin_RemovesOnlyThatKey()
+    {
+        AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig("[agent.admin]\r\nenabled = false\r\npolicy = ask\r\n"));
+
+        AgentAdminPolicy.ClearPin(AgentAdminPolicy.EnabledKey);
+
+        Assert.Null(AgentAdminPolicy.Current.Enabled);
+        Assert.Equal("ask", AgentAdminPolicy.Current.Policy);
+    }
+
+    [Fact]
+    public void ClearAllPins_LeavesNothingPinned()
+    {
+        AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig("[agent.admin]\r\nenabled = false\r\npolicy = ask\r\n"));
+
+        AgentAdminPolicy.ClearAllPins();
+
+        Assert.True(AgentAdminPolicy.Current.IsEmpty);
+    }
+
+    [Fact]
+    public void ClearPin_WhenTheFileIsMissing_DoesNotCreateIt()
+    {
+        string path = Path.Combine(tempRoot, "pyRevit_config.ini");
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+
+        AgentAdminPolicy.ClearPin(AgentAdminPolicy.EnabledKey);
+        AgentAdminPolicy.ClearAllPins();
+
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void SetPin_OnAReadOnlyConfig_WritesAndRestoresTheAttribute()
+    {
+        string path = WriteConfig("[core]\r\nuserlocale = en_us\r\n");
+        File.SetAttributes(path, FileAttributes.ReadOnly);
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+        try
+        {
+            AgentAdminPolicy.SetPin(AgentAdminPolicy.EnabledKey, "false");
+
+            Assert.Equal("false", AgentAdminPolicy.Current.Enabled);
+            Assert.True((File.GetAttributes(path) & FileAttributes.ReadOnly) != 0);
+        }
+        finally
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+    }
+
+    [Fact]
+    public void SetPin_UnknownKey_Throws()
+    {
+        AgentAdminPolicy.OverrideMachineConfigPath(Path.Combine(tempRoot, "pyRevit_config.ini"));
+
+        Assert.Throws<ArgumentException>(() => AgentAdminPolicy.SetPin("tab_highlight", "false"));
+    }
+
+    [Fact]
     public void ResolveMachineConfigPath_IgnoresTheProgramDataOverride()
     {
         string? previous = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar);
