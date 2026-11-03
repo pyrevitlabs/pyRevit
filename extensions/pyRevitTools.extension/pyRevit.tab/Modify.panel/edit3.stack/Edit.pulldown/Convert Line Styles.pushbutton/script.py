@@ -65,7 +65,7 @@ class StyleOption(object):
     def color_hex(self):
         if self.color:
             return "#{:02x}{:02x}{:02x}".format(
-                self.color.Red, self.color.Green, self.color.Blue
+                int(self.color.Red), int(self.color.Green), int(self.color.Blue)
             )
         else:
             return NO_COLOR_COLOR
