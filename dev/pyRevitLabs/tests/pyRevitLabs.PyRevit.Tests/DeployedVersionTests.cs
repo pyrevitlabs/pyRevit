@@ -12,7 +12,7 @@ namespace pyRevitLabs.PyRevit.Tests {
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class DeployedVersionTests {
         private const string VersionFileContent = "9.9.9.99999+9999";
         private const string BuiltAssemblyName = "pyRevitLabs.PyRevit.dll";

@@ -82,7 +82,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void FromAssemblyFile_ReadsStampFromDisk() {
             var assemblyPath = typeof(PyRevitBuildVersionTests).Assembly.Location;
 
@@ -93,7 +92,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void FromAssemblyFile_MissingFileReturnsNull() {
             Assert.That(PyRevitBuildVersion.FromAssemblyFile(null), Is.Null);
             Assert.That(PyRevitBuildVersion.FromAssemblyFile(string.Empty), Is.Null);
@@ -102,7 +100,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void FromAssemblyFile_NonAssemblyFileReturnsNull() {
             var notAnAssembly = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll");
             File.WriteAllText(notAnAssembly, "not a PE image");

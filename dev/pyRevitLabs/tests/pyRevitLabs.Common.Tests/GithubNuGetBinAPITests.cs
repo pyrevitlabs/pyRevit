@@ -6,7 +6,7 @@ namespace pyRevitLabs.Common.Tests {
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]
-    [Category("Unit")]
+    [Category("Integration")]
     public class GithubNuGetBinAPITests {
         [Test]
         public void BuildPackageVersion_Test() {

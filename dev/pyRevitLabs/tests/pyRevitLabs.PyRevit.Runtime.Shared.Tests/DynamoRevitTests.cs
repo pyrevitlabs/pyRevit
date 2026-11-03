@@ -16,13 +16,13 @@ namespace Dynamo.Applications {
 
     /// <summary>Stand-in for the Revit UI application handed to the fake Dynamo add-in.</summary>
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class FakeRevitUIApplication {
     }
 
     /// <summary>Stand-in Dynamo model whose state string the interop reads to decide whether the model is up.</summary>
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class FakeRevitDynamoModel {
         public string State { get; set; } = "StartedUI";
     }
@@ -40,7 +40,7 @@ namespace Dynamo.Applications {
     /// resolution finds it the same way it finds the real add-in.
     /// </summary>
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class DynamoRevitApp {
         public static readonly List<IDictionary<string, string>> ReceivedJournalData =
             new List<IDictionary<string, string>>();
@@ -78,7 +78,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class DynamoRevitInteropTests {
         private const string GraphPath = @"C:\scripts\report.dyn";
 

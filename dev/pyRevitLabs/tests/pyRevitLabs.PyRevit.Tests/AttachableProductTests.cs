@@ -123,7 +123,7 @@ namespace pyRevitLabs.PyRevit.Tests {
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class AttachableProductFilterTests {
         private const int BelowMinimumYear = 2017;
         private const int SupportedYear = 2025;

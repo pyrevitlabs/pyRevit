@@ -11,7 +11,7 @@ namespace pyRevitLabs.Common.Tests {
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class CommonUtilsPathTests {
         private string _tempRoot = null!;
         private string? _previousTemp;

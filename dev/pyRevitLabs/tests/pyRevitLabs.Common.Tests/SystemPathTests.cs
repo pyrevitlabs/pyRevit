@@ -167,7 +167,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void OpenKeyIsReturnedWhenItExists() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPathGuard\" + Guid.NewGuid().ToString("N");
             try {
@@ -181,7 +180,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void RawValueWriteKeepsExpandStringKindAndUnexpandedText() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
@@ -198,7 +196,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void RawValueWriteDoesNotDowngradeExistingStringKind() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
@@ -215,7 +212,6 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
-        [Category("Integration")]
         public void RawValueReadOfMissingValueIsNull() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {

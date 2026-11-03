@@ -9,7 +9,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
     [TestFixture()]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class RevitCachesTests {
         private string _tempRoot;
 
