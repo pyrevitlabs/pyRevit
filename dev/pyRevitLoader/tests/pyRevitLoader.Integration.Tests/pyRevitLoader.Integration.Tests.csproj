@@ -18,7 +18,7 @@
     <ProjectReference Include="..\..\pyRevitExtensionParser\pyRevitExtensionParser.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
     <ProjectReference Include="..\..\..\pyRevitLabs\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
     <ProjectReference Include="..\..\..\pyRevitLabs\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
-    <ProjectReference Include="..\..\..\pyRevitLabs\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
+    <ProjectReference Include="..\..\..\pyRevitLabs\pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
     <ProjectReference Include="..\..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
   </ItemGroup>
   <ItemGroup>

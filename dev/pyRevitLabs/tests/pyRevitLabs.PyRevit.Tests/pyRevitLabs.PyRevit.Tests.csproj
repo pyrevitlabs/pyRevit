@@ -13,7 +13,7 @@
     <NoWarn>$(NoWarn);NUnit2005;NUnit2006;NUnit1033;NUnit2048;NUnit2049</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
+    <ProjectReference Include="..\..\pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
     <ProjectReference Include="..\..\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
   </ItemGroup>
   <ItemGroup>
