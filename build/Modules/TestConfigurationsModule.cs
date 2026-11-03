@@ -50,6 +50,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
 
         await RunTestsAsync(
             context,
+            PyRevitPaths.EnvVarsRuntimeTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
             PyRevitPaths.AgentRuntimeTestProject,
             configuration,
             [],

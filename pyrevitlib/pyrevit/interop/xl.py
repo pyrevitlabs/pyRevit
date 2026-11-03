@@ -1,107 +1,17 @@
-"""Read and write Excel files on both Python engines.
+"""Read and Write Excel Files."""
 
-CPython reads and writes ``.xlsx`` workbooks with openpyxl and reads legacy
-``.xls`` workbooks with the vendored xlrd. IronPython keeps xlrd and
-xlsxwriter for every workbook.
-"""
-
-import os.path as op
-
-from pyrevit.compat import IRONPY
+# pylint: disable=import-error
+import xlrd
+import xlsxwriter
 
 
-if IRONPY:
-    import xlsxwriter
-else:
-    import openpyxl
-
-
-def _uses_openpyxl(xlfile):
-    return not IRONPY and op.splitext(str(xlfile))[1].lower() != ".xls"
-
-
-def _legacy_xlrd():
-    """Return xlrd, giving ``xlrd.book`` a ``time.clock`` where Python lacks it.
-
-    xlrd predates the ``time.clock`` removal in Python 3.8. On such Pythons
-    ``xlrd.book.time`` is replaced once, permanently, with a namespace that
-    adds ``clock``; other modules' ``time`` is untouched.
-
-    Note:
-        The check-and-assign is idempotent and never undone, so concurrent
-        readers cannot observe the shim being removed mid-read.
-    """
-    import time
-
-    import xlrd
-    import xlrd.book
-
-    if not hasattr(xlrd.book.time, "clock"):
-        import types
-
-        xlrd.book.time = types.SimpleNamespace(clock=time.perf_counter, time=time.time)
-    return xlrd
-
-
-def _openpyxl_cell_value(cell, epoch):
-    value = cell.value
-    if value is None:
-        return ""
-    if cell.data_type == "e":
-        return _XLRD_ERROR_CODES.get(value, value)
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(
-        value, (datetime.datetime, datetime.date, datetime.time, datetime.timedelta)
-    ):
-        from openpyxl.utils.datetime import to_excel
-
-        return float(to_excel(value, epoch=epoch))
-    return value
-
-
-def _openpyxl_sheet_rows(xlsheet):
-    rows = list(xlsheet.iter_rows())
-    if all(cell.value is None for row in rows for cell in row):
-        return []
-    epoch = xlsheet.parent.epoch
-    return [[_openpyxl_cell_value(cell, epoch) for cell in row] for row in rows]
-
-
-def _xlrd_sheet_rows(xlsheet):
-    return [[cell.value for cell in row] for row in xlsheet.get_rows()]
-
-
-def _open_sheets(xlfile, sheet_names=None):
-    """Return ``(name, rows)`` for each worksheet, in workbook order.
-
-    Picks the reader once per file. Rows are lists of xlrd-equivalent values
-    whatever the reader; ``sheet_names``, when given, skips the other sheets
-    before their rows are read.
-    """
-    if _uses_openpyxl(xlfile):
-        with open(str(xlfile), "rb") as xlstream:
-            xlwb = openpyxl.load_workbook(xlstream, data_only=True)
-        named_sheets = [(sheet.title, sheet) for sheet in xlwb.worksheets]
-        read_rows = _openpyxl_sheet_rows
-    else:
-        xlwb = _legacy_xlrd().open_workbook(str(xlfile))
-        named_sheets = [(sheet.name, sheet) for sheet in xlwb.sheets()]
-        read_rows = _xlrd_sheet_rows
-    return [
-        (name, read_rows(sheet))
-        for name, sheet in named_sheets
-        if not sheet_names or name in sheet_names
-    ]
-
-
-def _read_xlsheet(xlsheetrows, columns=None, datatype=None, headers=True):
-    columns = columns or []
-    xlsheetheader = xlsheetrows[0] if headers and xlsheetrows else []
+def _read_xlsheet(xlsheet, columns=[], datatype=None, headers=True):
     xlsheetdata = []
-    for drow in xlsheetrows[1 if headers else 0 :]:
+    xlsheetrows = list(xlsheet.get_rows())
+    skip = 1 if headers else 0
+    xlsheetheader = [x.value for x in xlsheetrows[0]] if headers else []
+    for xlsheetrow in xlsheetrows[skip:]:
+        drow = list([x.value for x in xlsheetrow])
         if columns:
             drow = dict([x for x in zip(columns, drow)])
         elif datatype:
@@ -128,58 +38,40 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
             Each worksheet is a dictionary with `headers` and `rows`.
 
     Note:
-        The file is closed before this returns, so it can be renamed or
-        deleted right away, whichever reader parses it.
+        The file is read into memory and closed before parsing, so it can be
+        renamed or deleted as soon as this returns. Opening it by path would
+        leave xlrd's zip handle on .xlsx files open until IronPython's GC runs.
     """
     xldata = {}
-    for xlsheet_name, xlsheetrows in _open_sheets(xlfile, sheets):
-        xldata[xlsheet_name] = _read_xlsheet(
-            xlsheetrows,
-            columns=columns,
-            datatype=datatype,
-            headers=headers,
-        )
+    with open(xlfile, "rb") as xlstream:
+        xlcontents = xlstream.read()
+    xlwb = xlrd.open_workbook(file_contents=xlcontents)
+    for xlsheet in xlwb.sheets():
+        if sheets:
+            if xlsheet.name in sheets:
+                xldata[xlsheet.name] = _read_xlsheet(
+                    xlsheet, columns=columns, datatype=datatype, headers=headers
+                )
+        else:
+            xldata[xlsheet.name] = _read_xlsheet(
+                xlsheet, columns=columns, datatype=datatype, headers=headers
+            )
     return xldata
-
-
-def _write_xlsxwriter(xlfile, datadict):
-    xlwb = xlsxwriter.Workbook(xlfile)
-    for xlsheetname, xlsheetdata in datadict.items():
-        xlsheet = xlwb.add_worksheet(xlsheetname)
-        for idx, data in enumerate(xlsheetdata):
-            xlsheet.write_row(idx, 0, data)
-    xlwb.close()
-
-
-def _write_openpyxl(xlfile, datadict):
-    xlwb = openpyxl.Workbook()
-    if datadict:
-        xlwb.remove(xlwb.active)
-    for xlsheetname, xlsheetdata in datadict.items():
-        xlsheet = xlwb.create_sheet(xlsheetname)
-        for data in xlsheetdata:
-            xlsheet.append(list(data))
-    xlwb.save(xlfile)
-
-
-def _writer_for(xlfile):
-    if IRONPY:
-        return _write_xlsxwriter
-    if _is_legacy_workbook(xlfile):
-        raise ValueError(
-            "Cannot write legacy .xls workbooks; save as .xlsx: {}".format(xlfile)
-        )
-    return _write_openpyxl
 
 
 def dump(xlfile, datadict):
     """Write data to Excel file.
 
-    Creates a worksheet for each item of the input dictionary. An empty
-    dictionary still produces a workbook with one empty worksheet.
+    Creates a worksheet for each item of the input dictionary.
 
     Args:
         xlfile (str): full path of the target excel file
         datadict (dict[str, list]): dictionary of worksheets names and data
     """
-    _writer_for(xlfile)(xlfile, datadict)
+    xlwb = xlsxwriter.Workbook(xlfile)
+    # bold = xlwb.add_format({'bold': True})
+    for xlsheetname, xlsheetdata in datadict.items():
+        xlsheet = xlwb.add_worksheet(xlsheetname)
+        for idx, data in enumerate(xlsheetdata):
+            xlsheet.write_row(idx, 0, data)
+    xlwb.close()
