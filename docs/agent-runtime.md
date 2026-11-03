@@ -85,6 +85,75 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 
 Run any of these commands without a value to print the current setting.
 
+### Admin lock
+
+An administrator can pin agent settings for every user of a machine, for example to keep the
+host off because model data must not leave the company. Pins live in the `[agent.admin]` section
+of the machine-wide config, `%ProgramData%\pyRevit\pyRevit_config.ini`, and override the user's
+`[agent]` values.
+
+```text
+pyrevit configs agent lock                          list the pinned settings
+pyrevit configs agent lock enabled (true | false)
+pyrevit configs agent lock policy (readonly | ask | auto)
+pyrevit configs agent lock engine (ironpython | cpython)
+pyrevit configs agent lock skills (true | false)
+pyrevit configs agent unlock (enabled | policy | engine | skills | --all)
+```
+
+`lock` and `unlock` need an elevated prompt. `lock` also limits the machine config to
+Administrators and SYSTEM for writes, makes Administrators its owner, and leaves everyone else
+read access, so a standard user cannot remove a pin.
+
+| Pin | Effect |
+|---|---|
+| `enabled` | Fixed. `false` keeps the host off whatever the user chose, `true` keeps it on. |
+| `policy` | A ceiling, not a fixed value. Users get the stricter of their own policy and the pin, so a pin of `ask` still lets a user choose `readonly`, but not `auto`. |
+| `engine` | Fixed default engine for runs that don't name one. |
+| `user_skills` | Fixed. `false` stops the MCP server loading user-authored skills. |
+
+`tab_highlight` is cosmetic and can't be pinned.
+
+What users see:
+
+- `pyrevit configs agent ...` and the Settings window show the effective value and that an
+  administrator set it. The Settings window disables the pinned controls (for a `policy` pin,
+  only the options above the ceiling) and skips them when saving.
+- Changing a pinned setting fails with `"<setting>" is managed by your administrator`, from the
+  CLI, the Settings window and the `userconfig.agent_*` properties alike.
+- A running Revit sees a new pin on the next agent request, with no reload. With `enabled` pinned
+  to `false` the host answers `ping` and refuses everything else with `disabled_by_admin`; it
+  stops listening on the next pyRevit reload or Revit restart. A `policy` pin that caps at
+  `readonly` refuses modify runs with `policy_readonly`, naming the administrator.
+  `get_context` reports `agent.policy_managed`.
+
+Pins fail closed: an `enabled` or `user_skills` value that is not `true` or `false` reads as
+`false`, a `policy` that isn't one of the three values reads as `readonly`, and an unknown
+`engine` reads as `ironpython`.
+
+Only `[agent.admin]` counts. A plain `[agent]` section in the machine config is a seeded default
+that users copy and then change, not a lock, so existing seeded configs are not locked by this
+feature.
+
+To roll a lock out without running the CLI on every machine (Intune, GPO, a deployment script),
+put the `[agent.admin]` section in the machine config and set the file permissions as
+`lock` does:
+
+```ini
+[agent.admin]
+enabled = false
+```
+
+!!! warning "What the lock is not"
+
+    It controls the official pyRevit build. It is not a security boundary against an
+    administrator, a modified pyRevit build, or another add-in that talks to Revit. It is only as
+    strong as the permissions on `%ProgramData%\pyRevit`: if standard users can delete or replace
+    files in that folder they can remove the pin, so check the folder's permissions too. The lock
+    is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`. A
+    machine config carrying the read-only attribute (`pyrevit configs seed --lock`) is a separate,
+    whole-config lock and works alongside the pins.
+
 ### Run document tab
 
 The document captured at the start of a run has an amber pyRevit accent tab with black text throughout execution and the Keep/Discard prompt.
@@ -105,7 +174,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `get_skill` | no | Task guidance in markdown (see [Skills](#skills)); the server's instructions tell agents which skill to read first |
 | `list_skills` | no | The available skills with their source and SHA-256 digest (see [Skills](#skills)) |
 | `list_revit_instances` | no | Running Revit sessions with the agent host |
-| `get_context` | no | Revit and pyRevit versions, agent policy (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels |
+| `get_context` | no | Revit and pyRevit versions, agent policy and whether an administrator set it (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements; a repeated id is described once |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member (`name`, up to 256 characters), reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums. Takes `name`, or `query` as an alias to match `lookup_pyrevit_api` |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. Up to 20000 integer ids and 100 distinct categories (a repeated category counts once), and the categories may match at most 20000 elements (`too_many_elements` otherwise); an id with no element is listed in `missing_ids`. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. `isolate` and `hide` leave out ids the active view doesn't show and list them in `not_in_view_ids`; `select` lists them there too but still selects them, so `zoom` can open a view that shows them; while a temporary isolate is on, the elements it hides count as not shown, so `reset` before isolating others. `view` is the view acted on; when zooming makes Revit open another view, `active_view` names it. |
@@ -978,7 +1047,8 @@ on .NET 8 and about twice that on .NET Framework, well inside the 30 second idle
 Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, `recording_start`,
 `recording_stop`, `recording_status`. Errors carry a stable
-`data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly` or
+`data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly`,
+`disabled_by_admin` or
 `invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
 wrong JSON type, or a `capture` width outside 320-2400, is `invalid_params`. Any other
 unexpected failure is `internal_error` with `data.outcome` `unknown`, because the work may

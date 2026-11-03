@@ -35,6 +35,7 @@ for _assembly in (
         pass
 
 import System
+import System.Reflection as Reflection
 from System.Diagnostics import Process, ProcessStartInfo
 
 from pyrevit import DB, HOME_DIR, HOST_APP
@@ -62,6 +63,10 @@ PROGRESS_LOG = op.join(tempfile.gettempdir(), "pyrevit-agent-tests.log")
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"
 )
+_ADMIN_POLICY_TYPE = System.Type.GetType(
+    "pyRevitLabs.Configurations.Ini.AgentAdminPolicy, pyRevitLabs.Configurations.Ini"
+)
+_machine_config_stack = []
 _session = None
 
 
@@ -261,6 +266,41 @@ def policy(name):
         PyRevit.PyRevitConfigs.SetAgentPolicy(previous)
 
 
+def _override_machine_config(path):
+    method = _ADMIN_POLICY_TYPE.GetMethod(
+        "OverrideMachineConfigPath",
+        Reflection.BindingFlags.Static | Reflection.BindingFlags.NonPublic,
+    )
+    method.Invoke(None, System.Array[System.Object]([path]))
+
+
+@contextmanager
+def admin_pins(**pins):
+    """Replace the machine config for the block with a scratch one holding these pins.
+
+    The agent settings read administrator pins from the machine config. Calling this
+    without pins gives the block an empty one, so a lock deployed on the machine running
+    the tests can't change their results. Blocks nest; leaving one restores the outer one.
+    The real ``%ProgramData%`` config is never written.
+    """
+    folder = tempfile.mkdtemp(prefix="pyrevit-agent-admin-")
+    path = op.join(folder, "pyRevit_config.ini")
+    with open(path, "w") as handle:
+        handle.write("[agent.admin]\n")
+        for key, value in pins.items():
+            handle.write("{} = {}\n".format(key, value))
+    _machine_config_stack.append(path)
+    _override_machine_config(path)
+    try:
+        yield
+    finally:
+        _machine_config_stack.pop()
+        _override_machine_config(
+            _machine_config_stack[-1] if _machine_config_stack else None
+        )
+        shutil.rmtree(folder, True)
+
+
 def _policy_in_force():
     return request("get_context")["agent"]["policy"]
 
@@ -305,7 +345,7 @@ def run_suites(modules):
     try:
         _session.open()
         in_force_before = _policy_in_force()
-        with answer_prompts(POLICY_PROMPT, YES):
+        with admin_pins(), answer_prompts(POLICY_PROMPT, YES):
             try:
                 with policy("auto"):
                     for module in modules:
