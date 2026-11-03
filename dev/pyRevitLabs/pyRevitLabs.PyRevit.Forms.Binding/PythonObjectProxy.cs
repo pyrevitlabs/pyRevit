@@ -22,7 +22,7 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// hash by the identity of that object, so unhashable Python objects work as WPF items.
     /// </para>
     /// </remarks>
-    public sealed class PythonObjectProxy : ICustomTypeDescriptor, IPythonValue {
+    public sealed class PythonObjectProxy : ICustomTypeDescriptor, INotifyPropertyChanged, IPythonValue {
         private static readonly Dictionary<IntPtr, WeakReference<PythonObjectProxy>> Live =
             new Dictionary<IntPtr, WeakReference<PythonObjectProxy>>();
         private static int pruneAt = 256;
@@ -38,6 +38,15 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         PyObject IPythonValue.Source => source;
+
+        /// <summary>Raised after a binding writes an attribute through this proxy.</summary>
+        /// <remarks>
+        /// Implementing this interface makes WPF listen through <c>PropertyChangedEventManager</c>,
+        /// which holds the proxy weakly, instead of <c>PropertyDescriptor.AddValueChanged</c>, whose
+        /// shared descriptors would keep every bound proxy alive. Changes made from Python are not
+        /// observed.
+        /// </remarks>
+        public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>Returns the live proxy for <paramref name="source"/>, creating it if needed.</summary>
         /// <remarks>Requires the GIL. Takes ownership of <paramref name="source"/>.</remarks>
@@ -87,6 +96,7 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 else
                     source.SetAttr(name, PythonBinding.ToPython(value));
             }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         internal bool HasAttribute(string name) {

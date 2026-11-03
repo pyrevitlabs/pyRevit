@@ -263,6 +263,25 @@ assert mirror.Text == 'synced'
 ");
     }
 
+    /// <summary>Writes through a proxy raise <c>PropertyChanged</c>, so WPF listens weakly instead of through shared descriptors.</summary>
+    [Fact]
+    public void ProxyWritesRaisePropertyChanged() {
+        host.Run(() => {
+            object proxy;
+            using (Py.GIL()) {
+                using var scope = Py.CreateScope();
+                scope.Exec(Common + "holder = System.Collections.ArrayList()\nholder.Add(Item('a', 1))\n");
+                proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+            }
+            var notifier = Assert.IsAssignableFrom<INotifyPropertyChanged>(proxy);
+            var changed = new List<string?>();
+            notifier.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+            TypeDescriptor.GetProperties(proxy)["name"]!.SetValue(proxy, "b");
+            Assert.Equal(new string?[] { "name" }, changed);
+            Assert.Equal("b", TypeDescriptor.GetProperties(proxy)["name"]!.GetValue(proxy));
+        });
+    }
+
     /// <summary>Data triggers compare against converted values as under IronPython.</summary>
     [Fact]
     public void DataTriggersCompareConvertedValues() {
