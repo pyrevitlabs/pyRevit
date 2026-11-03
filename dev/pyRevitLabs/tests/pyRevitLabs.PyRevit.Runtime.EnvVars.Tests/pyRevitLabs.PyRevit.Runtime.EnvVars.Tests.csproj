@@ -33,6 +33,9 @@
         <None Include="..\..\..\..\pyrevitlib\pyrevit\coreutils\envvars.py"
               Link="Sources\envvars.py"
               CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\..\..\pyrevitlib\pyrevit\revit\events.py"
+              Link="Sources\events.py"
+              CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -8,7 +8,9 @@ namespace PyRevitLabs.PyRevit.Runtime.EnvVars.Tests;
 /// <c>from pyrevit import revit</c> does through <c>output.set_stylesheet</c> under
 /// <c>pyrevit run</c>.
 /// </summary>
+[Collection(CPythonEngineCollection.Name)]
 public class CPythonEnvVarsTests {
+    /// <summary>Starts the engine and checks no IronPython context exists yet.</summary>
     public CPythonEnvVarsTests() {
         CPythonEnvVarsHost.EnsureStarted();
         Assert.False(
@@ -16,6 +18,10 @@ public class CPythonEnvVarsTests {
             "an IronPython context exists, so these tests no longer model the CPython-only runner");
     }
 
+    /// <summary>
+    /// A CPython-written env var lands in the seeded dictionary under its plain string key, so C#
+    /// readers such as <c>EnvDictionary</c> keep seeing it.
+    /// </summary>
     [Fact]
     public void SetEnvVar_StoresThePlainStringKey_WithoutAnIronPythonContext() {
         PythonDictionary envData = CPythonEnvVarsHost.SeedEnvDictionary();
@@ -27,6 +33,7 @@ public class CPythonEnvVarsTests {
         Assert.Same(envData, AppDomain.CurrentDomain.GetData(CPythonEnvVarsHost.EnvVarsDictKey));
     }
 
+    /// <summary>Writing an existing key replaces its value instead of adding a second entry.</summary>
     [Fact]
     public void SetEnvVar_ReplacesAnExistingEntry() {
         PythonDictionary envData = CPythonEnvVarsHost.SeedEnvDictionary();
@@ -38,6 +45,7 @@ public class CPythonEnvVarsTests {
         Assert.Equal(seededCount, envData.Count);
     }
 
+    /// <summary>Reads see both C#-seeded values and values CPython wrote; missing keys read as <c>None</c>.</summary>
     [Fact]
     public void GetEnvVar_ReadsSeededAndCPythonWrittenValues() {
         CPythonEnvVarsHost.SeedEnvDictionary();

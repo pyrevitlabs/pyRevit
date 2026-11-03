@@ -21,8 +21,10 @@ internal static class CPythonEnvVarsHost {
 
     private static readonly Lazy<PyDict> _globals = new(Start, LazyThreadSafetyMode.ExecutionAndPublication);
 
+    /// <summary>Starts the engine and loads <c>envvars.py</c> once per process.</summary>
     public static void EnsureStarted() => _ = _globals.Value;
 
+    /// <summary>Whether IronPython's process-wide default context has been created.</summary>
     public static bool IronPythonDefaultContextInitialized {
         get {
             FieldInfo? defaultContext = typeof(PythonDictionary).Assembly
@@ -47,12 +49,14 @@ internal static class CPythonEnvVarsHost {
         return envData;
     }
 
+    /// <summary>Runs Python statements where <c>envvars</c> is defined.</summary>
     public static void Exec(string code) {
         PyDict globals = _globals.Value;
         using Py.GILState gil = Py.GIL();
         PythonEngine.Exec(code, globals);
     }
 
+    /// <summary>Evaluates a Python expression that yields a string or <c>None</c>.</summary>
     public static string? EvalString(string expression) {
         PyDict globals = _globals.Value;
         using Py.GILState gil = Py.GIL();
