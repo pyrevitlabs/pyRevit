@@ -40,6 +40,7 @@ except TypeError:
     private readonly Thread thread;
     private readonly Dispatcher dispatcher;
 
+    /// <summary>Starts CPython and a WPF dispatcher on one STA thread, recording how an object converted before the codecs were registered behaves.</summary>
     public PythonWpfHost() {
         using var ready = new ManualResetEventSlim();
         Dispatcher? created = null;
@@ -101,12 +102,15 @@ except TypeError:
         });
     }
 
+    /// <summary>Shuts the dispatcher down; the CPython engine stays up for the process.</summary>
     public void Dispose() {
         dispatcher.InvokeShutdown();
     }
 }
 
+/// <summary>Shares one <see cref="PythonWpfHost"/> across the binding suites.</summary>
 [CollectionDefinition(Name)]
 public sealed class PythonWpfCollection : ICollectionFixture<PythonWpfHost> {
+    /// <summary>Collection name the binding suites join.</summary>
     public const string Name = "Python WPF host";
 }

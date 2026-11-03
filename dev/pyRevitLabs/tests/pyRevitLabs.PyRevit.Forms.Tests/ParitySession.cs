@@ -6,6 +6,7 @@ namespace PyRevitLabs.PyRevit.Forms.Testing;
 
 /// <summary>Outcome of one probe script or parity test inside a shared interpreter run.</summary>
 public sealed class CaseOutcome {
+    /// <summary>Records a case's final or current status and its detail text.</summary>
     public CaseOutcome(string status, string detail) {
         Status = status;
         Detail = detail;
@@ -14,8 +15,10 @@ public sealed class CaseOutcome {
     /// <summary><c>running</c>, <c>passed</c>, <c>failed</c> or <c>skipped</c>.</summary>
     public string Status { get; }
 
+    /// <summary>Failure message or skip reason; empty for a passing case.</summary>
     public string Detail { get; }
 
+    /// <summary>Whether the case passed or was deliberately skipped.</summary>
     public bool Succeeded => Status is "passed" or "skipped";
 }
 
@@ -27,22 +30,29 @@ public sealed class CaseLog {
     /// <summary>The interpreter's <c>sys.version</c>, set by the hosting fixture.</summary>
     public string Engine { get; set; } = "";
 
+    /// <summary>Name of the case started but not yet finished, if any.</summary>
     public string? Running { get; private set; }
 
+    /// <summary>Latest outcome per case name.</summary>
     public IReadOnlyDictionary<string, CaseOutcome> Outcomes => _outcomes;
 
+    /// <summary>Case names in the order they started.</summary>
     public IEnumerable<string> Order => _order;
 
+    /// <summary>Marks a case as running and records its start order.</summary>
     public void Start(string name) {
         Running = name;
         _order.Enqueue(name);
         _outcomes[name] = new CaseOutcome("running", "");
     }
 
+    /// <summary>Marks a case as passed.</summary>
     public void Pass(string name) => Finish(name, "passed", "");
 
+    /// <summary>Marks a case as failed with its failure detail.</summary>
     public void Fail(string name, string detail) => Finish(name, "failed", detail);
 
+    /// <summary>Marks a case as skipped with the reason.</summary>
     public void Skip(string name, string reason) => Finish(name, "skipped", reason);
 
     void Finish(string name, string status, string detail) {
@@ -70,6 +80,7 @@ public sealed class ParitySession {
 
     ParitySession() { }
 
+    /// <summary>Results the session's Python code recorded.</summary>
     public CaseLog Log => _log;
 
     /// <summary>Run <paramref name="body"/> once on a background STA thread and wait up to <paramref name="timeout"/>.</summary>
@@ -103,6 +114,7 @@ public sealed class ParitySession {
         }
     }
 
+    /// <summary>Returns a case's outcome, reporting cases still running as deadlocked or aborted and unrecorded ones as not reached.</summary>
     public CaseOutcome Outcome(string name) {
         if (_log.Outcomes.TryGetValue(name, out var outcome)) {
             if (outcome.Status == "running") {
@@ -131,6 +143,7 @@ public sealed class ParitySession {
         }
     }
 
+    /// <summary>Lists <c>Class.test_name</c> for every parity test in <c>test_forms_parity.py</c>, leaving out Revit-only classes.</summary>
     public static IEnumerable<string> DiscoverParityTests() {
         var path = Path.Combine(AppContext.BaseDirectory, "test_forms_parity.py");
         var classPattern = new Regex(@"^class (\w+)\(unittest\.TestCase\):");
@@ -153,6 +166,7 @@ public sealed class ParitySession {
         }
     }
 
+    /// <summary>Reads a probe script copied next to the test assembly.</summary>
     public static string Script(string name) =>
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, name));
 }

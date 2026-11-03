@@ -51,12 +51,14 @@ def shown(content):
         host.Exec(Common + code);
     }
 
+    /// <summary>Registering the codecs after a first conversion still changes how that object converts, and lists start passing as <c>IEnumerable</c>.</summary>
     [Fact]
     public void CodecsRegisteredLateReplaceCachedConversions() {
         Assert.True(host.EarlyListFailed);
         Assert.IsType<PythonObjectProxy>(host.EarlyHolderItem);
     }
 
+    /// <summary>Python ints passed as <c>object</c> become <c>Int32</c> or <c>Int64</c> by size; bools stay <c>Boolean</c>.</summary>
     [Fact]
     public void IntsPassedAsObjectsBecomeClrIntegers() {
         host.Run(() => {
@@ -96,6 +98,7 @@ finally:
 ");
     }
 
+    /// <summary>A list given as <c>ItemsSource</c> reads back as the same list, and <c>Items.Refresh</c> sees later edits.</summary>
     [Fact]
     public void ListSourceIsLiveAndReadsBackAsTheSamePythonList() {
         Python(@"
@@ -115,6 +118,7 @@ assert box.ItemsSource.index(items[0]) == 0
 ");
     }
 
+    /// <summary>Selections and selection events hand back the original Python objects.</summary>
     [Fact]
     public void ItemsGoBackToPythonAsTheOriginalObjects() {
         Python(@"
@@ -146,6 +150,7 @@ assert tagged.DataContext is items[1]
 ");
     }
 
+    /// <summary>Bindings read Python attributes as CLR values, including nested paths.</summary>
     [Fact]
     public void AttributesConvertToClrValuesForBindings() {
         Python(@"
@@ -206,6 +211,7 @@ assert read(Point(3, 4), 'y') == '4'
         });
     }
 
+    /// <summary>Two-way bindings write edits back to Python attributes and properties.</summary>
     [Fact]
     public void TwoWayBindingsWriteBackToPython() {
         Python(@"
@@ -257,6 +263,7 @@ assert mirror.Text == 'synced'
 ");
     }
 
+    /// <summary>Data triggers compare against converted values as under IronPython.</summary>
     [Fact]
     public void DataTriggersCompareConvertedValues() {
         Python(@"
@@ -286,6 +293,7 @@ for item, expected in cases:
 ");
     }
 
+    /// <summary>Sorting, filtering, <c>DisplayMemberPath</c> and <c>SelectedValuePath</c> read the proxied attribute values.</summary>
     [Fact]
     public void SortingFilteringAndPathsUseProxiedValues() {
         Python(@"
@@ -326,6 +334,7 @@ finally:
 ");
     }
 
+    /// <summary>Dict items can be selected and bind their keys as properties.</summary>
     [Fact]
     public void DictItemsAreSelectableAndBindTheirKeys() {
         Python(@"
@@ -356,6 +365,7 @@ assert items[1]['name'] == 'edited'
 ");
     }
 
+    /// <summary>Sets and generators are copied into a source; tuples bind read-only.</summary>
     [Fact]
     public void NonSequenceIterablesAreCopiedAndTuplesAreReadOnly() {
         Python(@"
@@ -374,6 +384,7 @@ assert box.Items[1] == 'b'
 ");
     }
 
+    /// <summary>Proxies take the GIL themselves when WPF calls them from code that released it.</summary>
     [Fact]
     public void ProxiesTakeTheGilForCallersThatReleasedIt() {
         IList? list = null;
@@ -399,6 +410,7 @@ assert box.Items[1] == 'b'
         Assert.True(worker.Wait(TimeSpan.FromSeconds(20)), "Proxy access without the GIL deadlocked.");
     }
 
+    /// <summary>Registered adapter hooks map Python models to native models and back.</summary>
     [Fact]
     public void AdapterHooksMapModelsBothWays() {
         Python(@"
@@ -430,6 +442,7 @@ finally:
 ");
     }
 
+    /// <summary>Registering the conversions a second time keeps the adapter hooks.</summary>
     [Fact]
     public void RegisteringConversionsAgainKeepsTheHooks() {
         Python(@"
@@ -460,6 +473,7 @@ finally:
 ");
     }
 
+    /// <summary>A controller converts to its native root wherever a typed WPF target expects one.</summary>
     [Fact]
     public void ControllersConvertToTheirNativeRootForTypedTargets() {
         Python(@"
@@ -511,6 +525,7 @@ finally:
 ");
     }
 
+    /// <summary>Elements carrying a <c>PythonEvents.Hook</c> reach their callback for every template instance, including ContextMenus.</summary>
     [Fact]
     public void HookedElementsReachTheirCallbackForEveryTemplateInstance() {
         Python(@"
