@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
+    <ProjectReference Include="..\..\pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
     <ProjectReference Include="..\..\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
     <ProjectReference Include="..\..\..\pyRevitLoader\pyRevitExtensionParser\pyRevitExtensionParser.csproj" AdditionalProperties="SkipPyRevitDeploy=true" />
   </ItemGroup>
