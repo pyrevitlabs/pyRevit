@@ -112,6 +112,8 @@ Usage:
 	pyrevit configs agent policy [(readonly | ask | auto)] [--log=<log_file>]
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs agent skills [(enable | disable)] [--log=<log_file>]
+	pyrevit configs agent lock [(enabled | policy | engine | skills) <lock_value>] [--log=<log_file>]
+	pyrevit configs agent unlock (enabled | policy | engine | skills | --all) [--log=<log_file>]
 	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]

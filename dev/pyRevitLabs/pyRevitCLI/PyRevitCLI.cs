@@ -169,6 +169,10 @@ namespace pyRevitCLI {
                     // now call methods based on inputs
                     ProcessArguments();
                 }
+                catch (PyRevitSettingManagedException ex) {
+                    System.Console.Error.WriteLine("Error: {0}", ex.Message);
+                    Environment.ExitCode = -1;
+                }
                 catch (ConfigurationReadOnlyException ex) {
                     System.Console.Error.WriteLine("Error: {0}", ex.Message);
                     Environment.ExitCode = -1;
@@ -857,7 +861,20 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("agent")) {
-                    if (all("skills"))
+                    var lockKey =
+                        arguments["enabled"].IsTrue ? PyRevitConsts.ConfigsAgentEnabledKey
+                        : arguments["policy"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyKey
+                        : arguments["engine"].IsTrue ? PyRevitConsts.ConfigsAgentEngineKey
+                        : arguments["skills"].IsTrue ? PyRevitConsts.ConfigsAgentUserSkillsEnabledKey
+                        : null;
+
+                    if (all("lock"))
+                        PyRevitCLIAgentCmds.ConfigureLock(lockKey, TryGetValue("<lock_value>"));
+
+                    else if (all("unlock"))
+                        PyRevitCLIAgentCmds.ConfigureUnlock(lockKey, arguments["--all"].IsTrue);
+
+                    else if (all("skills"))
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
 

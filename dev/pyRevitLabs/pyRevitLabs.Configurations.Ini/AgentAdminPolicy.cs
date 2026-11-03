@@ -113,6 +113,65 @@ public sealed class AgentAdminPolicy {
             ?? Path.Combine(directory, PyRevitLabsConsts.DefaultConfigsFileName);
     }
 
+    /// <summary>The machine config the lock is read from and written to.</summary>
+    public static string MachineConfigPath => pathOverride ?? ResolveMachineConfigPath();
+
+    /// <summary>
+    /// Pins <paramref name="key"/> to <paramref name="value"/> in the machine config, creating the
+    /// file when missing. The caller validates the value.
+    /// </summary>
+    /// <remarks>
+    /// Side effects: rewrites the machine config. A file carrying the ReadOnly attribute (a seeded
+    /// admin lock) is unlocked for the write and locked again afterwards.
+    /// The caller is responsible for requiring elevation.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is not a lockable key.</exception>
+    public static void SetPin(string key, string value) {
+        EnsureKnownKey(key);
+        EditPins(configuration => configuration.SetValue(SectionName, key, value));
+    }
+
+    /// <summary>Removes the pin on <paramref name="key"/>. Does nothing when it is not pinned.</summary>
+    /// <inheritdoc cref="SetPin" path="/remarks"/>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is not a lockable key.</exception>
+    public static void ClearPin(string key) {
+        EnsureKnownKey(key);
+        if (!File.Exists(MachineConfigPath))
+            return;
+        EditPins(configuration => configuration.RemoveOption(SectionName, key));
+    }
+
+    /// <summary>Removes every pin. Does nothing when the machine config does not exist.</summary>
+    /// <inheritdoc cref="SetPin" path="/remarks"/>
+    public static void ClearAllPins() {
+        if (!File.Exists(MachineConfigPath))
+            return;
+        EditPins(configuration => configuration.RemoveSection(SectionName));
+    }
+
+    private static void EnsureKnownKey(string key) {
+        if (key != EnabledKey && key != PolicyKey && key != EngineKey && key != UserSkillsKey)
+            throw new ArgumentException("Not a lockable agent setting: " + key, nameof(key));
+    }
+
+    private static void EditPins(Action<IConfiguration> edit) {
+        string path = MachineConfigPath;
+        bool wasReadOnly = PyRevitInstallScope.HasReadOnlyAttribute(path);
+        if (wasReadOnly)
+            File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
+        try {
+            IConfiguration configuration = IniConfiguration.Create(path);
+            edit(configuration);
+            configuration.SaveConfiguration();
+        }
+        finally {
+            if (wasReadOnly)
+                File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
+            lock (CacheLock)
+                cached = null;
+        }
+    }
+
     internal static void OverrideMachineConfigPath(string? path) {
         lock (CacheLock) {
             pathOverride = path;

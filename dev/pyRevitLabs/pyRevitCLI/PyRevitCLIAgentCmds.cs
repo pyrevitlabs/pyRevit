@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.PyRevit;
@@ -38,6 +39,10 @@ namespace pyRevitCLI {
                 PyRevitConfigs.GetAgentPolicy(),
                 PyRevitConfigs.GetAgentEngine(),
                 PyRevitConfigs.GetAgentUserSkillsEnabled() ? "enabled" : "disabled"));
+
+            var managed = LockableKeys.Where(PyRevitConfigs.IsAgentKeyManaged).ToList();
+            if (managed.Count > 0)
+                Console.WriteLine("Set by your administrator: " + string.Join(", ", managed));
 
             if (instances.Count == 0) {
                 Console.WriteLine("No running Revit with the agent host.");
@@ -134,6 +139,21 @@ namespace pyRevitCLI {
             }
         }
 
+        private static readonly string[] LockableKeys = {
+            PyRevitConsts.ConfigsAgentEnabledKey,
+            PyRevitConsts.ConfigsAgentPolicyKey,
+            PyRevitConsts.ConfigsAgentEngineKey,
+            PyRevitConsts.ConfigsAgentUserSkillsEnabledKey,
+        };
+
+        private static string ManagedNote(string key) {
+            if (!PyRevitConfigs.IsAgentKeyManaged(key))
+                return string.Empty;
+            return key == PyRevitConsts.ConfigsAgentPolicyKey
+                ? " (administrator ceiling: " + PyRevitConfigs.GetAgentPolicyCeiling() + ")"
+                : " (set by your administrator)";
+        }
+
         public static void ConfigureEnabled(bool? enable) {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentEnabled(enable.Value);
@@ -141,21 +161,25 @@ namespace pyRevitCLI {
                     enable.Value ? "enabled" : "disabled");
             }
             else
-                Console.WriteLine("Agent host is {0}", PyRevitConfigs.GetAgentEnabled() ? "Enabled" : "Disabled");
+                Console.WriteLine("Agent host is {0}{1}",
+                    PyRevitConfigs.GetAgentEnabled() ? "Enabled" : "Disabled",
+                    ManagedNote(PyRevitConsts.ConfigsAgentEnabledKey));
         }
 
         public static void ConfigurePolicy(string policy) {
             if (policy != null)
                 PyRevitConfigs.SetAgentPolicy(policy);
             else
-                Console.WriteLine("Agent policy: " + PyRevitConfigs.GetAgentPolicy());
+                Console.WriteLine("Agent policy: " + PyRevitConfigs.GetAgentPolicy()
+                    + ManagedNote(PyRevitConsts.ConfigsAgentPolicyKey));
         }
 
         public static void ConfigureEngine(string engine) {
             if (engine != null)
                 PyRevitConfigs.SetAgentEngine(engine);
             else
-                Console.WriteLine("Agent default engine: " + PyRevitConfigs.GetAgentEngine());
+                Console.WriteLine("Agent default engine: " + PyRevitConfigs.GetAgentEngine()
+                    + ManagedNote(PyRevitConsts.ConfigsAgentEngineKey));
         }
 
         public static void ConfigureUserSkills(bool? enable) {
@@ -164,7 +188,69 @@ namespace pyRevitCLI {
                 Console.WriteLine("Agent user skills {0}.", enable.Value ? "enabled" : "disabled");
             }
             else
-                Console.WriteLine("Agent user skills are {0}", PyRevitConfigs.GetAgentUserSkillsEnabled() ? "Enabled" : "Disabled");
+                Console.WriteLine("Agent user skills are {0}{1}",
+                    PyRevitConfigs.GetAgentUserSkillsEnabled() ? "Enabled" : "Disabled",
+                    ManagedNote(PyRevitConsts.ConfigsAgentUserSkillsEnabledKey));
+        }
+
+        /// <summary>
+        /// <c>pyrevit configs agent lock</c>: lists the pinned settings, or pins one for every user.
+        /// </summary>
+        /// <param name="key">The setting to pin, or null to list the current pins.</param>
+        /// <exception cref="PyRevitException">
+        /// A value is missing or invalid, or the process is not elevated.
+        /// </exception>
+        public static void ConfigureLock(string key, string value) {
+            if (key == null) {
+                PrintLocks();
+                return;
+            }
+
+            if (value == null)
+                throw new PyRevitException($"Give the value to lock \"{key}\" to.");
+
+            RequireElevation();
+            PyRevitConfigs.LockAgentKey(key, value);
+            PyRevitConfigs.RestrictAdminConfigAccess();
+            Console.WriteLine("Locked agent setting \"{0}\" for all users. Running Revit sessions pick it up on the next agent request.", key);
+        }
+
+        /// <summary>
+        /// <c>pyrevit configs agent unlock</c>: removes the pin on one setting, or on all of them.
+        /// </summary>
+        /// <exception cref="PyRevitException">The process is not elevated.</exception>
+        public static void ConfigureUnlock(string key, bool all) {
+            RequireElevation();
+            if (all)
+                PyRevitConfigs.UnlockAllAgentKeys();
+            else
+                PyRevitConfigs.UnlockAgentKey(key);
+            Console.WriteLine(all ? "Unlocked every agent setting." : $"Unlocked agent setting \"{key}\".");
+        }
+
+        private static void PrintLocks() {
+            var pinned = false;
+            foreach (var key in LockableKeys) {
+                if (!PyRevitConfigs.IsAgentKeyManaged(key))
+                    continue;
+                pinned = true;
+                var admin = AgentAdminPolicy.Current;
+                var raw = key == PyRevitConsts.ConfigsAgentEnabledKey ? admin.Enabled
+                    : key == PyRevitConsts.ConfigsAgentPolicyKey ? admin.Policy
+                    : key == PyRevitConsts.ConfigsAgentEngineKey ? admin.Engine
+                    : admin.UserSkills;
+                Console.WriteLine("{0} = {1}{2}", key, raw,
+                    key == PyRevitConsts.ConfigsAgentPolicyKey ? " (ceiling)" : string.Empty);
+            }
+            if (!pinned)
+                Console.WriteLine("No agent settings are locked.");
+        }
+
+        private static void RequireElevation() {
+            if (!PyRevitInstallScope.IsElevatedProcess())
+                throw new PyRevitException(
+                    "Locking agent settings changes the machine-wide config and needs an elevated "
+                    + "(administrator) command prompt.");
         }
 
         /// <summary>
@@ -183,6 +269,8 @@ namespace pyRevitCLI {
             Console.WriteLine($"Registered MCP server \"{McpServerName}\" ({command} mcp) with {client}.");
             if (PyRevitConfigs.GetAgentEnabled())
                 Console.WriteLine("Agent host remains enabled. Reload pyRevit or restart Revit, then restart the MCP client.");
+            else if (PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey))
+                Console.WriteLine("The agent host is disabled by your administrator, so the MCP server will not reach Revit.");
             else
                 Console.WriteLine("Enable the agent host with 'pyrevit configs agent enable', reload pyRevit or restart Revit, then restart the MCP client.");
         }
