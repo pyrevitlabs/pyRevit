@@ -5,6 +5,7 @@ using System.IO;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.TargetApps.Revit.Tests {
+    /// <summary>Pins the Revit add-ins folder and manifest paths for user and all-users installs on both sides of the Revit 2027 location change.</summary>
     [TestFixture()]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

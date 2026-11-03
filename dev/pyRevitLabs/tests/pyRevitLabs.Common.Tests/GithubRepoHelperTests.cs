@@ -2,6 +2,7 @@ using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Covers reading the owner/repository id from clone URLs, falling back to the upstream repository when a URL is missing or unrecognized.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

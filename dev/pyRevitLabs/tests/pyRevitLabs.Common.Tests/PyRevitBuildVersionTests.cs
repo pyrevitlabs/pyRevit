@@ -7,6 +7,7 @@ using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Covers normalizing build version stamps, which drops the SDK-appended commit hash but keeps channel and other metadata, and reading them from assemblies.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

@@ -6,6 +6,7 @@ using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Covers environment-variable expansion and the user temp directory, including the fallback when %TEMP% does not expand.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]

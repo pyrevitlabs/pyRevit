@@ -5,6 +5,7 @@ using System.IO;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.TargetApps.Revit.Tests {
+    /// <summary>Covers locating the BIM 360 cloud model cache: the default location, a custom path from Revit.ini on 2024 and later, and the fallback when that path is missing.</summary>
     [TestFixture()]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

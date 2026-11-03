@@ -10,6 +10,7 @@ using pyRevitLabs.PyRevit;
 using pyRevitExtensionParser;
 
 namespace pyRevitLabs.PyRevit.Integration.Tests {
+    /// <summary>Covers which config file per-user and all-users installs use, across elevation and missing, unreadable, locked or unwritable machine configs.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]

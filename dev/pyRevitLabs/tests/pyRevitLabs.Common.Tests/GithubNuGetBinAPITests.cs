@@ -2,6 +2,7 @@ using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Pins the package version and download URL used to fetch CI bins from the GitHub NuGet feed.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

@@ -2,6 +2,7 @@ using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Pins the release asset names and URLs used to fetch CI bins, including encoding of version tags.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

@@ -8,6 +8,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.PyRevit.Tests {
+    /// <summary>Covers how a clone's deployed version is read: from the built assembly for the requested framework, falling back to the trimmed version file.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]

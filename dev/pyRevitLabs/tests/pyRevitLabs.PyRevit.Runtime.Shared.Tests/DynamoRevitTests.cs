@@ -14,11 +14,13 @@ namespace Dynamo.Applications {
         Failed
     }
 
+    /// <summary>Stand-in for the Revit UI application handed to the fake Dynamo add-in.</summary>
     [Category("HostFree")]
     [Category("Integration")]
     public class FakeRevitUIApplication {
     }
 
+    /// <summary>Stand-in Dynamo model whose state string the interop reads to decide whether the model is up.</summary>
     [Category("HostFree")]
     [Category("Integration")]
     public class FakeRevitDynamoModel {
@@ -71,6 +73,7 @@ namespace Dynamo.Applications {
 }
 
 namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
+    /// <summary>Covers headless Dynamo runs through reflection-only interop: the model is started before the graph runs, the run reports by model state, and manual graphs are not run under automation.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]

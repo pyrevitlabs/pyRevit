@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Covers PATH editing: entries are matched case- and separator-insensitively, edits preserve existing text and order, and denied registry access raises instead of reading as empty.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [NonParallelizable]

@@ -5,6 +5,7 @@ using NUnit.Framework;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.Common.Tests {
+    /// <summary>Covers how CI bin artifacts are located, named, versioned and swapped into a clone, including restoring the old bin when a swap fails.</summary>
     [TestFixture]
     [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
     [Category("HostFree")]
