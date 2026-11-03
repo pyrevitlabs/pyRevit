@@ -128,9 +128,8 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
             Each worksheet is a dictionary with `headers` and `rows`.
 
     Note:
-        The file is read into memory and closed before parsing, so it can be
-        renamed or deleted as soon as this returns. Opening it by path would
-        leave xlrd's zip handle on .xlsx files open until IronPython's GC runs.
+        The file is closed before this returns, so it can be renamed or
+        deleted right away, whichever reader parses it.
     """
     xldata = {}
     for xlsheet_name, xlsheetrows in _open_sheets(xlfile, sheets):

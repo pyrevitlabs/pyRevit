@@ -200,6 +200,8 @@ PYTHON_ENGINE_CPYTHON = "cpython"
 PYTHON_ENGINE_IRONPYTHON = "ironpython"
 CPYTHON_FIRST_LINE_MARKERS = ("python3", "cpython")
 
+CLR_NAMED_INDEXERS = {"Parameter"}
+
 
 class Finding:
     """A source finding emitted by the Python 3 compatibility scan."""
@@ -922,6 +924,26 @@ def _clr_list(node, ctx):
         )
 
 
+def _is_named_indexer(node):
+    """Return True if node is a CLR named indexed property such as ``.Parameter``.
+
+    IronPython exposes named indexed properties as subscriptable attributes;
+    pythonnet does not, so ``el.Parameter[bip]`` raises on CPython while the
+    ``el.get_Parameter(bip)`` accessor works on every engine.
+    """
+    return isinstance(node, ast.Attribute) and node.attr in CLR_NAMED_INDEXERS
+
+
+def _clr_named_indexer(node, ctx):
+    if _is_named_indexer(node.value) and not _is_cpython_unreachable(node, ctx.parents):
+        yield (
+            "CLR-NAMED-INDEXER",
+            ".{0}[...] is an IronPython-only named indexer; use .get_{0}(...)".format(
+                node.value.attr
+            ),
+        )
+
+
 def _indexed_view(node, ctx):
     if _bare_py3_view(node.value):
         yield (
@@ -969,7 +991,7 @@ NODE_RULES = {
     ast.Import: (_py2_module_import,),
     ast.ImportFrom: (_py2_from_import,),
     ast.Call: (_py2_builtin_call, _sort_key, _clr_list),
-    ast.Subscript: (_indexed_view,),
+    ast.Subscript: (_clr_named_indexer, _indexed_view),
     ast.Return: (_returned_view,),
     ast.Yield: (_yielded_view,),
     ast.Assign: (_attribute_stored_view,),

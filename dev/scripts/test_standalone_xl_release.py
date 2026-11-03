@@ -7,13 +7,14 @@ reference drops, hiding the leak, so the tests keep every `zipfile.ZipFile`
 xlrd creates alive for the duration of the test, as IronPython effectively does.
 
 `xl.py` is loaded by path because importing the `pyrevit` package needs a Revit
-host. The vendored xlrd and xlsxwriter are loaded by path from the repo's
+host; a stub `pyrevit.compat` selects the IronPython reader path under test. The vendored xlrd and xlsxwriter are loaded by path from the repo's
 `site-packages` rather than through `sys.path`, so neither an installed copy nor
 the stdlib backports vendored there can stand in for them.
 """
 
 import importlib.util
 import os
+import types
 import shutil
 import sys
 import tempfile
@@ -45,10 +46,19 @@ xlrd = _load_vendored_package("xlrd")
 xlsxwriter = _load_vendored_package("xlsxwriter")
 
 
+def _ironpython_compat_modules():
+    pyrevit = types.ModuleType("pyrevit")
+    compat = types.ModuleType("pyrevit.compat")
+    compat.IRONPY = True
+    pyrevit.compat = compat
+    return {"pyrevit": pyrevit, "pyrevit.compat": compat}
+
+
 def _load_xl():
     spec = importlib.util.spec_from_file_location("pyrevit_xl_under_test", XL_PATH)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    with mock.patch.dict(sys.modules, _ironpython_compat_modules()):
+        spec.loader.exec_module(module)
     return module
 
 
@@ -91,7 +101,7 @@ class LoadReleasesWorkbookTests(unittest.TestCase):
 
     def test_vendored_libraries_are_under_test(self):
         """Exercise the repo's vendored xlrd and xlsxwriter, not installed copies."""
-        for module in (xlrd, xlsxwriter, xl.xlrd, xl.xlsxwriter, xlrd.book):
+        for module in (xlrd, xlsxwriter, xl._legacy_xlrd(), xl.xlsxwriter, xlrd.book):
             self.assertTrue(
                 os.path.abspath(module.__file__).startswith(SITE_PACKAGES + os.sep),
                 module.__file__,
