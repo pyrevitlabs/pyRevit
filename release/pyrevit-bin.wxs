@@ -131,9 +131,6 @@
             <Component Id="cmp165A1505F0A7BFAB25C9BF9A177E494A" Guid="*">
                 <File Id="fil15E26CAC11FE3F4922E225728E50CE05" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
             </Component>
-            <Component Id="cmpE1E1CC18AB3F8B1EFF24F57F6B4A1D9C" Guid="*">
-                <File Id="fil7377897D8A2A79474AB1FB7A2CF86350" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.UnitTests.dll" />
-            </Component>
             <Component Id="cmp8E4578AA65849C7E2B6B277F2CB3DA8B" Guid="*">
                 <File Id="fil806812B24D7899376C818ABC1521677E" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_cli.ico" />
             </Component>
@@ -227,7 +224,6 @@
             <ComponentRef Id="cmp587C2B24D8D4F42368199917A09070B4" />
             <ComponentRef Id="cmp772EB0C2F1F614E11229A2802087CC0D" />
             <ComponentRef Id="cmp165A1505F0A7BFAB25C9BF9A177E494A" />
-            <ComponentRef Id="cmpE1E1CC18AB3F8B1EFF24F57F6B4A1D9C" />
             <ComponentRef Id="cmp8E4578AA65849C7E2B6B277F2CB3DA8B" />
             <ComponentRef Id="cmp19265DA44B7D1772F8AD3E69BDF88DAD" />
             <ComponentRef Id="cmp432308C32657D6C1FDB7A83BAE3096AF" />
