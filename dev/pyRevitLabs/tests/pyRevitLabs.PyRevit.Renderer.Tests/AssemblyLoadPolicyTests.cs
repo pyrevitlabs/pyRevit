@@ -134,9 +134,7 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
 
             StringAssert.Contains(source, "GetReferencedAssemblies()");
             StringAssert.Contains(source, "AssemblyLoadPolicy.GetRuntimeYear");
-            Assert.IsFalse(
-                source.Contains("VersionNumber"),
-                "The runner binds to the runtime of the Revit year it was compiled against, not the host year.");
+            StringAssert.Contains(source, "LoadAssembliesInFolder(LoaderPath, runtimeYear)");
         }
 
         [TestMethod]
