@@ -252,7 +252,7 @@ class ExtensionsWindow(forms.WPFWindow):
         # Tracks whether install_custom_ext_b is acting as "Update" for an
         # already-installed custom extension.
         self._update_mode = False
-        self._setup_ext_pkg_ui(extpkgs.get_ext_packages())
+        self._setup_ext_pkg_ui(extpkgs.get_ext_packages(download_catalogs=True))
         self.custom_ext_install_path_tb.Text = _get_default_ext_dir()
         if self.selected_pkg:
             self._update_add_custom_section_for_selection(self.selected_pkg)
@@ -309,7 +309,7 @@ class ExtensionsWindow(forms.WPFWindow):
 
     def _refresh_extension_list(self):
         """Reload extension packages and refresh the grid (e.g. after installing)."""
-        ext_pkgs_list = extpkgs.get_ext_packages()
+        ext_pkgs_list = extpkgs.get_ext_packages(download_catalogs=True)
         self._setup_ext_pkg_ui(ext_pkgs_list)
         self._update_add_custom_section_for_new()
 

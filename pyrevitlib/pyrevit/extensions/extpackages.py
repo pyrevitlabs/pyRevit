@@ -6,7 +6,7 @@ import codecs
 import json
 from collections import defaultdict
 
-from pyrevit import PyRevitException, HOST_APP
+from pyrevit import PyRevitException, HOST_APP, PYREVIT_APP_DIR
 from pyrevit import labs
 from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
@@ -14,6 +14,7 @@ from pyrevit.coreutils import git, fully_remove_dir
 from pyrevit.userconfig import user_config
 
 from pyrevit import extensions as exts
+from pyrevit.extensions import extcatalog
 
 mlogger = get_logger(__name__)
 
@@ -41,6 +42,10 @@ class PyRevitPluginRemoveException(PyRevitException):
 
 PLUGIN_EXT_DEF_MANIFEST_NAME = "extensions"
 PLUGIN_EXT_DEF_FILE = PLUGIN_EXT_DEF_MANIFEST_NAME + exts.JSON_FILE_FORMAT
+
+CATALOG_URL_OPTION = "extcatalogurl"
+CATALOG_REMOTE_OPTION = "extcatalogremote"
+DISABLED_OPTION_VALUES = ("false", "0", "no", "off")
 
 EXTENSION_POSTFIXES = [x.POSTFIX for x in exts.ExtensionTypes.get_ext_types()]
 
@@ -473,35 +478,97 @@ def _find_internal_extpkgs(ext_dir):
     return internal_extpkg_def_files
 
 
-def get_ext_packages(authorized_only=True):
+def _remote_catalogs_enabled():
+    remote_option = user_config.core.get_option(CATALOG_REMOTE_OPTION, True)
+    return str(remote_option).strip().lower() not in DISABLED_OPTION_VALUES
+
+
+def get_hosted_catalog_url():
+    """Return the hosted catalog URL, or None when remote catalogs are off.
+
+    Defaults to `PyRevitConsts.ExtensionsDefinitionFileUri`, the same `master`
+    copy `pyrevit extend` reads, so the CLI and the Extension Manager list the
+    same extensions. `[core] extcatalogurl` points it at a mirror and
+    `[core] extcatalogremote = false` turns every remote catalog off, including
+    http(s) sources registered with the CLI, for locked-down networks.
+
+    Returns:
+        (str | None): catalog URL to download.
+    """
+    if not _remote_catalogs_enabled():
+        return None
+    configured_url = user_config.core.get_option(CATALOG_URL_OPTION, None)
+    if configured_url and str(configured_url).strip():
+        return str(configured_url).strip()
+    return labs.PyRevit.PyRevitConsts.ExtensionsDefinitionFileUri
+
+
+def _unique(items):
+    unique_items = []
+    for item in items:
+        if item not in unique_items:
+            unique_items.append(item)
+    return unique_items
+
+
+def _get_catalog_files(ext_root_dirs, download_catalogs):
+    """Return catalog files in increasing precedence, without duplicates.
+
+    `_update_extpkgs` lets a later file override an earlier one, so the bundled
+    catalogs come first, then the cached remote catalogs (hosted one first),
+    then the user's local source files.
+    """
+    bundled_files = [op.join(ext_dir, PLUGIN_EXT_DEF_FILE) for ext_dir in ext_root_dirs]
+    user_sources = user_config.get_ext_sources()
+    local_sources = [s for s in user_sources if not extcatalog.is_remote_source(s)]
+
+    remote_urls = []
+    hosted_url = get_hosted_catalog_url()
+    if hosted_url:
+        remote_urls.append(hosted_url)
+        remote_urls.extend(s for s in user_sources if extcatalog.is_remote_source(s))
+
+    downloaded_files = [
+        extcatalog.resolve(url, PYREVIT_APP_DIR, allow_download=download_catalogs)
+        for url in _unique(remote_urls)
+    ]
+    return _unique(bundled_files + [f for f in downloaded_files if f] + local_sources)
+
+
+def get_ext_packages(authorized_only=True, download_catalogs=False):
     """Returns the registered plugin extensions packages.
 
     Reads the list of registered plug-in extensions and returns a list of
     ExtensionPackage classes which contain information on the plug-in extension.
+    Entries come from the catalog bundled with pyRevit, the hosted catalog
+    (see `get_hosted_catalog_url`), the user's extra sources, and the
+    `extension.json` of installed extensions, each overriding the previous.
 
     Args:
         authorized_only (bool): Only return authorized extensions
+        download_catalogs (bool): Refresh stale remote catalogs over the
+            network. Only the Extension Manager passes True.
+
+    Important:
+        Keep `download_catalogs` False on load and command paths
+        (`get_ext_package_by_name` and friends): they run on every pyRevit
+        load and command, and must never wait on the network. They read the
+        last catalog the Extension Manager cached instead.
 
     Returns:
         (list[ExtensionPackage]): list of registered plugin extensions
     """
     extpkgs = []
-    for ext_dir in user_config.get_ext_root_dirs():
-        # make a list of all availabe extension definition sources
-        # default is under the extensions directory that ships with pyrevit
-        extpkg_def_files = {op.join(ext_dir, PLUGIN_EXT_DEF_FILE)}
-        # add other sources added by the user (using the cli)
-        extpkg_def_files.update(user_config.get_ext_sources())
-        for extpkg_def_file in extpkg_def_files:
-            mlogger.debug("Looking for %s", extpkg_def_file)
-            # check for external ext def file
-            if op.exists(extpkg_def_file):
-                mlogger.debug("Found %s", extpkg_def_file)
-                _update_extpkgs(extpkg_def_file, extpkgs)
-            # check internals now
-            internal_extpkg_defs = _find_internal_extpkgs(ext_dir)
-            for int_def_file in internal_extpkg_defs:
-                _update_extpkgs(int_def_file, extpkgs)
+    ext_root_dirs = user_config.get_ext_root_dirs()
+    for extpkg_def_file in _get_catalog_files(ext_root_dirs, download_catalogs):
+        mlogger.debug("Looking for %s", extpkg_def_file)
+        if op.exists(extpkg_def_file):
+            mlogger.debug("Found %s", extpkg_def_file)
+            _update_extpkgs(extpkg_def_file, extpkgs)
+
+    for ext_dir in ext_root_dirs:
+        for int_def_file in _find_internal_extpkgs(ext_dir):
+            _update_extpkgs(int_def_file, extpkgs)
 
     if authorized_only:
         return [x for x in extpkgs if x.user_has_access]

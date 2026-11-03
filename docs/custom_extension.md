@@ -38,6 +38,43 @@ Once you submit the PR, we'll review your extension and its metadata against the
 add it to the directory so others can easily find and use it. It's worth running
 through the list before you open your PR, since it's what we'll be doing too.
 
+The **Extension catalog check** runs on your PR and flags missing fields, a
+non-`https` install URL, duplicate names and unknown dependencies. You can run the
+same check locally:
+
+```bash
+python dev/scripts/check_extension_catalog.py
+```
+
+### When users see your extension
+
+You don't need to wait for a pyRevit release. Once your PR is merged into
+`develop`, a maintainer approves the catalog sync pull request to `master`
+(see [Extension catalog publishing](ci-cd.md#extension-catalog-publishing)).
+From then on:
+
+- `pyrevit extend` finds it on every installed version.
+- The Extension Manager lists it the next time it is opened, on pyRevit versions
+  that include the hosted catalog. It refreshes its copy at most once a day.
+  Older versions only list it after an upgrade; their users can install it with
+  `pyrevit extend ui <name> <url>` meanwhile.
+
+### Hosted catalog settings
+
+The Extension Manager downloads the catalog from
+`https://github.com/pyrevitlabs/pyRevit/raw/master/extensions/extensions.json`,
+the same file the CLI reads, and caches it in the pyRevit app data folder. If it
+can't, it uses the last cached copy, then the catalog bundled with the install.
+Only the Extension Manager goes online: loading pyRevit and running commands read
+the cached copy only.
+
+Two options in the `[core]` section of the pyRevit configuration change this:
+
+| Option | Default | Effect |
+|--------|---------|--------|
+| `extcatalogremote` | `true` | `false` disables every remote catalog, including `https` sources added with `pyrevit extensions sources add`. |
+| `extcatalogurl` | the `master` URL above | Downloads the catalog from another `https` URL, such as an internal mirror. |
+
 ### Acceptance Criteria
 
 To keep the catalog safe and reliable for everyone, every listed extension needs to

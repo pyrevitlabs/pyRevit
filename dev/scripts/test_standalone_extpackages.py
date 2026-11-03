@@ -5,12 +5,16 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import types
 import unittest
 from unittest.mock import patch
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 PYREVIT_ROOT = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit")
+DEFAULT_CATALOG_URL = (
+    "https://github.com/pyrevitlabs/pyRevit/raw/master/extensions/extensions.json"
+)
 
 
 def _load_module(name, path):
@@ -44,7 +48,13 @@ def _load_extpackages():
     pyrevit = types.ModuleType("pyrevit")
     pyrevit.PyRevitException = Exception
     pyrevit.HOST_APP = types.SimpleNamespace(username="test-user")
+    pyrevit.PYREVIT_APP_DIR = tempfile.gettempdir()
     pyrevit.labs = types.ModuleType("pyrevit.labs")
+    pyrevit.labs.PyRevit = types.SimpleNamespace(
+        PyRevitConsts=types.SimpleNamespace(
+            ExtensionsDefinitionFileUri=DEFAULT_CATALOG_URL
+        )
+    )
     coreutils = types.ModuleType("pyrevit.coreutils")
     coreutils.git = types.SimpleNamespace()
     coreutils.fully_remove_dir = lambda path: None
@@ -76,6 +86,12 @@ def _load_extpackages():
             "_test_configparser",
             os.path.join(PYREVIT_ROOT, "coreutils", "configparser.py"),
         )
+        extcatalog = _load_module(
+            "_test_extcatalog",
+            os.path.join(PYREVIT_ROOT, "extensions", "extcatalog.py"),
+        )
+        extensions.extcatalog = extcatalog
+        sys.modules["pyrevit.extensions.extcatalog"] = extcatalog
         extpackages = _load_module(
             "_test_extpackages",
             os.path.join(PYREVIT_ROOT, "extensions", "extpackages.py"),
@@ -189,6 +205,252 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
         self.assertNotIn("private_repo", section)
         self.assertTrue(self.package.is_enabled)
         self.assertEqual(1, len(self.saved))
+
+
+def _catalog_text(*names, **urls):
+    return json.dumps(
+        {
+            "extensions": [
+                {
+                    "name": name,
+                    "type": "extension",
+                    "url": urls.get(name, "https://example.com/{}.git".format(name)),
+                }
+                for name in names
+            ]
+        }
+    )
+
+
+class ExtensionCatalogResolveTests(unittest.TestCase):
+    """Remote catalogs are cached, validated and never break the manager."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the catalog module with host dependencies replaced."""
+        extpackages, _ = _load_extpackages()
+        cls.extcatalog = extpackages.extcatalog
+
+    def setUp(self):
+        """Give each test an empty cache and a fresh failure memory."""
+        self.cache_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.cache_dir, True))
+        self.extcatalog._last_failure_time.clear()
+        self.calls = []
+        self.url = DEFAULT_CATALOG_URL
+
+    def _download(self, text):
+        def download(url, timeout_ms):
+            self.calls.append(url)
+            if isinstance(text, Exception):
+                raise text
+            return text
+
+        return download
+
+    def _resolve(self, text, now, force=False):
+        return self.extcatalog.resolve(
+            self.url,
+            self.cache_dir,
+            download=self._download(text),
+            now=now,
+            force=force,
+        )
+
+    def _cached_names(self, path):
+        with open(path, encoding="utf-8") as cached:
+            return [e["name"] for e in json.load(cached)["extensions"]]
+
+    def test_download_is_cached(self):
+        """A good download is written to the cache and returned."""
+        path = self._resolve(_catalog_text("A"), now=1000.0)
+        self.assertEqual(["A"], self._cached_names(path))
+
+    def test_fresh_cache_skips_download(self):
+        """A cache younger than the TTL is used without a network call."""
+        path = self._resolve(_catalog_text("A"), now=None)
+        self.calls.clear()
+        self.assertEqual(path, self._resolve(_catalog_text("B"), now=None))
+        self.assertEqual([], self.calls)
+
+    def test_failed_download_keeps_stale_cache(self):
+        """Offline: the last good copy is returned, not None."""
+        path = self._resolve(_catalog_text("A"), now=None)
+        stale = self._resolve(IOError("offline"), now=None, force=True)
+        self.assertEqual(path, stale)
+        self.assertEqual(["A"], self._cached_names(stale))
+
+    def test_failure_without_cache_returns_none(self):
+        """No copy at all: the caller falls back to the bundled catalog."""
+        self.assertIsNone(self._resolve(IOError("offline"), now=1000.0))
+
+    def test_failure_is_not_retried_immediately(self):
+        """An offline session does not wait on every catalog read."""
+        self._resolve(IOError("offline"), now=1000.0)
+        self._resolve(IOError("offline"), now=1001.0)
+        self.assertEqual(1, len(self.calls))
+        retry_at = 1000.0 + self.extcatalog.RETRY_AFTER_FAILURE_SECONDS
+        self._resolve(IOError("offline"), now=retry_at)
+        self.assertEqual(2, len(self.calls))
+
+    def test_invalid_catalog_does_not_replace_cache(self):
+        """A broken publish never overwrites the last good copy."""
+        path = self._resolve(_catalog_text("A"), now=None)
+        self._resolve("<html>not json</html>", now=None, force=True)
+        self._resolve(json.dumps({"extensions": []}), now=None, force=True)
+        self.assertEqual(["A"], self._cached_names(path))
+
+    def test_entries_without_https_url_are_dropped(self):
+        """Only https install URLs reach the Extension Manager."""
+        text = _catalog_text("A", "B", B="http://example.com/b.git")
+        self.assertEqual(["A"], self._cached_names(self._resolve(text, now=1000.0)))
+
+    def test_cache_only_mode_never_downloads(self):
+        """allow_download=False returns even a stale cache, offline."""
+        path = self._resolve(_catalog_text("A"), now=1000.0)
+        self.calls.clear()
+        later = 1000.0 + 10 * self.extcatalog.CACHE_TTL_SECONDS
+        cached = self.extcatalog.resolve(
+            self.url,
+            self.cache_dir,
+            download=self._download(_catalog_text("B")),
+            now=later,
+            allow_download=False,
+        )
+        self.assertEqual(path, cached)
+        self.assertEqual([], self.calls)
+
+    def test_non_https_catalog_url_is_ignored(self):
+        """A plain-http catalog is never downloaded."""
+        self.url = "http://example.com/extensions.json"
+        self.assertIsNone(self._resolve(_catalog_text("A"), now=1000.0))
+        self.assertEqual([], self.calls)
+
+    def test_remote_source_detection(self):
+        """URLs are remote sources, file paths are not."""
+        self.assertTrue(self.extcatalog.is_remote_source("HTTPS://example.com/x.json"))
+        self.assertFalse(self.extcatalog.is_remote_source(r"C:\\catalogs\\x.json"))
+        self.assertFalse(self.extcatalog.is_remote_source(None))
+
+
+class ExtensionCatalogSourcesTests(unittest.TestCase):
+    """The Extension Manager merges bundled, hosted and user catalogs."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load production modules with only host dependencies replaced."""
+        cls.extpackages, _ = _load_extpackages()
+
+    def setUp(self):
+        """Point the bundled catalog and the cache at temporary folders."""
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.root, True))
+        self.ext_dir = os.path.join(self.root, "extensions")
+        os.makedirs(self.ext_dir)
+        self._write(os.path.join(self.ext_dir, "extensions.json"), "Bundled", "Shared")
+        self.options = {}
+        self.sources = []
+        self.resolved = []
+        self.downloads_allowed = []
+        core = types.SimpleNamespace(
+            get_option=lambda name, default=None: self.options.get(name, default)
+        )
+        user_config = types.SimpleNamespace(
+            core=core,
+            get_ext_root_dirs=lambda: [self.ext_dir],
+            get_ext_sources=lambda: list(self.sources),
+        )
+        for target, value in (
+            ("user_config", user_config),
+            ("PYREVIT_APP_DIR", os.path.join(self.root, "cache")),
+        ):
+            patcher = patch.object(self.extpackages, target, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.hosted = {}
+        resolve_patch = patch.object(
+            self.extpackages.extcatalog, "resolve", side_effect=self._fake_resolve
+        )
+        resolve_patch.start()
+        self.addCleanup(resolve_patch.stop)
+
+    def _write(self, path, *names, **descriptions):
+        catalog = json.loads(_catalog_text(*names))
+        for entry in catalog["extensions"]:
+            entry["description"] = descriptions.get(entry["name"], "from " + path)
+        with open(path, "w", encoding="utf-8") as catalog_file:
+            json.dump(catalog, catalog_file)
+        return path
+
+    def _fake_resolve(self, url, cache_dir, allow_download):
+        self.resolved.append(url)
+        self.downloads_allowed.append(allow_download)
+        return self.hosted.get(url)
+
+    def _packages(self, download_catalogs=True):
+        packages = self.extpackages.get_ext_packages(
+            authorized_only=False, download_catalogs=download_catalogs
+        )
+        return {p.name: p for p in packages}
+
+    def test_hosted_catalog_adds_and_overrides_entries(self):
+        """New hosted entries appear and hosted info wins over bundled info."""
+        self.hosted[DEFAULT_CATALOG_URL] = self._write(
+            os.path.join(self.root, "hosted.json"), "Shared", "New", Shared="hosted"
+        )
+        packages = self._packages()
+        self.assertEqual({"Bundled", "Shared", "New"}, set(packages))
+        self.assertEqual("hosted", packages["Shared"].description)
+
+    def test_unreachable_hosted_catalog_keeps_bundled(self):
+        """No network and no cache: the bundled list still shows."""
+        self.assertEqual({"Bundled", "Shared"}, set(self._packages()))
+        self.assertEqual([DEFAULT_CATALOG_URL], self.resolved)
+
+    def test_remote_switch_off_skips_every_download(self):
+        """extcatalogremote=false keeps the manager fully offline."""
+        self.options["extcatalogremote"] = False
+        self.sources.append("https://example.com/extra.json")
+        self.assertEqual({"Bundled", "Shared"}, set(self._packages()))
+        self.assertEqual([], self.resolved)
+
+    def test_configured_url_replaces_default(self):
+        """extcatalogurl points the manager at a mirror."""
+        self.options["extcatalogurl"] = "https://mirror.example.com/extensions.json"
+        self._packages()
+        self.assertEqual(["https://mirror.example.com/extensions.json"], self.resolved)
+
+    def test_cli_registered_url_sources_are_downloaded(self):
+        """URL sources added with the CLI are no longer silently ignored."""
+        extra_url = "https://example.com/extra.json"
+        self.sources.append(extra_url)
+        self.hosted[extra_url] = self._write(
+            os.path.join(self.root, "extra.json"), "Extra"
+        )
+        self.assertIn("Extra", self._packages())
+
+    def test_local_sources_override_hosted(self):
+        """A user's own file source has the last word."""
+        self.hosted[DEFAULT_CATALOG_URL] = self._write(
+            os.path.join(self.root, "hosted.json"), "Shared", Shared="hosted"
+        )
+        self.sources.append(
+            self._write(os.path.join(self.root, "mine.json"), "Shared", Shared="mine")
+        )
+        self.assertEqual("mine", self._packages()["Shared"].description)
+
+    def test_lookups_never_download(self):
+        """Load and command paths read the cache only."""
+        self.hosted[DEFAULT_CATALOG_URL] = self._write(
+            os.path.join(self.root, "hosted.json"), "New"
+        )
+        self.assertIsNotNone(self.extpackages.get_ext_package_by_name("New"))
+        self.assertEqual([False], self.downloads_allowed)
+
+    def test_manager_listing_allows_download(self):
+        """The Extension Manager is the one caller that refreshes catalogs."""
+        self._packages(download_catalogs=True)
+        self.assertEqual([True], self.downloads_allowed)
 
 
 if __name__ == "__main__":
