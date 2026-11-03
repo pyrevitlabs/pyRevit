@@ -18,6 +18,7 @@ RESOURCES = {
         "fr_fr": "Sélectionnez la propriété à copier en mémoire:",
         "ru": "Выберите параметр для копирования в память:",
         "chinese_s": "选择要复制到内存的属性:",
+        "ko": "메모리에 복사할 속성을 선택하세요.",
         "es_es": "Seleccione la propiedad que desea copiar a la memoria:",
         "de_de": "Eigenschaft auswählen, die in den Speicher kopiert werden soll:",
         "pt_br": "Selecione a propriedade a ser copiada para a memória:",
