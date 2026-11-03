@@ -311,6 +311,101 @@ namespace pyRevitLabs.PyRevit {
             return raw == null ? null : NormalizeAgentPolicy(raw, PyRevitConsts.ConfigsAgentPolicyReadOnly);
         }
 
+        /// <summary>
+        /// Pins an agent setting for every user of the machine by writing it to the machine config.
+        /// </summary>
+        /// <param name="key">One of the <c>PyRevitConsts.ConfigsAgent*Key</c> names.</param>
+        /// <param name="value">
+        /// <c>true</c> or <c>false</c> for <c>enabled</c> and <c>user_skills</c>; a policy for
+        /// <c>policy</c> (the most permissive one users may select); an engine for <c>engine</c>.
+        /// </param>
+        /// <remarks>
+        /// Side effects: rewrites the machine config. Requires an elevated process in practice
+        /// (checked by the caller); pair with <see cref="RestrictAdminConfigAccess"/> so
+        /// standard users cannot edit the pin.
+        /// </remarks>
+        /// <exception cref="PyRevitException"><paramref name="key"/> or <paramref name="value"/> is not valid.</exception>
+        public static void LockAgentKey(string key, string value) {
+            AgentAdminPolicy.SetPin(key, NormalizeAgentLockValue(key, value));
+        }
+
+        /// <summary>Removes the administrator pin on <paramref name="key"/>.</summary>
+        /// <inheritdoc cref="LockAgentKey" path="/remarks"/>
+        /// <exception cref="PyRevitException"><paramref name="key"/> is not a lockable setting.</exception>
+        public static void UnlockAgentKey(string key) {
+            NormalizeAgentLockValue(key, null);
+            AgentAdminPolicy.ClearPin(key);
+        }
+
+        /// <summary>Removes every administrator pin on the agent settings.</summary>
+        /// <inheritdoc cref="LockAgentKey" path="/remarks"/>
+        public static void UnlockAllAgentKeys() {
+            AgentAdminPolicy.ClearAllPins();
+        }
+
+        /// <summary>
+        /// Limits who can modify the machine config to Administrators and SYSTEM, leaving everyone
+        /// else read access, and makes Administrators its owner.
+        /// </summary>
+        /// <remarks>
+        /// Important: without this, the account that first created the machine config owns it and can
+        /// rewrite its own ACL, which would make an admin pin advisory. Does not harden the containing
+        /// folder; its inherited rights decide whether standard users can replace the file.
+        /// Requires an elevated process.
+        /// </remarks>
+        /// <exception cref="PyRevitException">The permissions could not be changed.</exception>
+        public static void RestrictAdminConfigAccess() {
+            string path = AgentAdminPolicy.MachineConfigPath;
+            if (!File.Exists(path))
+                return;
+
+            try {
+                var info = new FileInfo(path);
+                var security = info.GetAccessControl();
+                security.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
+                security.SetAccessRuleProtection(true, false);
+                foreach (FileSystemAccessRule rule in security.GetAccessRules(true, false, typeof(SecurityIdentifier)))
+                    security.RemoveAccessRule(rule);
+                security.AddAccessRule(new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+                    FileSystemRights.FullControl, AccessControlType.Allow));
+                security.AddAccessRule(new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+                    FileSystemRights.FullControl, AccessControlType.Allow));
+                security.AddAccessRule(new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
+                    FileSystemRights.ReadAndExecute, AccessControlType.Allow));
+                info.SetAccessControl(security);
+            }
+            catch (Exception ex) {
+                throw new PyRevitException($"Could not restrict permissions on \"{path}\"", ex);
+            }
+        }
+
+        private static string NormalizeAgentLockValue(string key, string value) {
+            switch (key) {
+                case PyRevitConsts.ConfigsAgentEnabledKey:
+                case PyRevitConsts.ConfigsAgentUserSkillsEnabledKey:
+                    if (value == null) return null;
+                    if (bool.TryParse(value, out bool flag))
+                        return flag ? "true" : "false";
+                    throw new PyRevitException($"\"{key}\" must be true or false, not \"{value}\"");
+                case PyRevitConsts.ConfigsAgentPolicyKey:
+                    if (value == null) return null;
+                    var policy = NormalizeAgentPolicy(value, null);
+                    return policy ?? throw new PyRevitException($"Unknown agent policy \"{value}\"");
+                case PyRevitConsts.ConfigsAgentEngineKey:
+                    if (value == null) return null;
+                    if (string.Equals(value, PyRevitConsts.ConfigsAgentEngineIronPython, StringComparison.OrdinalIgnoreCase))
+                        return PyRevitConsts.ConfigsAgentEngineIronPython;
+                    if (string.Equals(value, PyRevitConsts.ConfigsAgentEngineCPython, StringComparison.OrdinalIgnoreCase))
+                        return PyRevitConsts.ConfigsAgentEngineCPython;
+                    throw new PyRevitException($"Unknown agent engine \"{value}\"");
+                default:
+                    throw new PyRevitException($"\"{key}\" is not a lockable agent setting");
+            }
+        }
+
         private static string NormalizeAgentPolicy(string policy, string fallback) {
             if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyReadOnly, StringComparison.OrdinalIgnoreCase))
                 return PyRevitConsts.ConfigsAgentPolicyReadOnly;

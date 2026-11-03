@@ -163,6 +163,50 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void LockAgentKey_PinsTheValueForGetters() {
+            WriteUserConfig("[agent]\r\nenabled = true\r\nengine = cpython\r\n");
+
+            PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "False");
+            PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEngineKey, "IronPython");
+
+            Assert.IsFalse(PyRevitConfigs.GetAgentEnabled());
+            Assert.AreEqual("ironpython", PyRevitConfigs.GetAgentEngine());
+        }
+
+        [TestMethod]
+        public void LockAgentKey_InvalidValue_Throws() {
+            Assert.ThrowsException<PyRevitException>(() => PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "maybe"));
+            Assert.ThrowsException<PyRevitException>(() => PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentPolicyKey, "yolo"));
+            Assert.ThrowsException<PyRevitException>(() => PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEngineKey, "lua"));
+            Assert.ThrowsException<PyRevitException>(() => PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentTabHighlightKey, "false"));
+            Assert.IsFalse(File.Exists(_adminConfig));
+        }
+
+        [TestMethod]
+        public void UnlockAgentKey_RestoresTheUserValue() {
+            WriteUserConfig("[agent]\r\nenabled = true\r\n");
+            PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "false");
+            Assert.IsFalse(PyRevitConfigs.GetAgentEnabled());
+
+            PyRevitConfigs.UnlockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey);
+
+            Assert.IsTrue(PyRevitConfigs.GetAgentEnabled());
+            Assert.IsFalse(PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey));
+        }
+
+        [TestMethod]
+        public void UnlockAllAgentKeys_ClearsEveryPin() {
+            WriteUserConfig("[agent]\r\nenabled = true\r\n");
+            PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "false");
+            PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentPolicyKey, "readonly");
+
+            PyRevitConfigs.UnlockAllAgentKeys();
+
+            Assert.IsTrue(PyRevitConfigs.GetAgentEnabled());
+            Assert.IsNull(PyRevitConfigs.GetAgentPolicyCeiling());
+        }
+
+        [TestMethod]
         public void SetAgentPolicy_AtOrBelowTheCeiling_IsSaved() {
             WriteUserConfig("[agent]\r\n");
             WriteAdminConfig("[agent.admin]\r\npolicy = ask\r\n");
