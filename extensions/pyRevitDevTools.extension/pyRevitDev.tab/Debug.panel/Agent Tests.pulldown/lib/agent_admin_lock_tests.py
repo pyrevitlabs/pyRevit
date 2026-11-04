@@ -108,7 +108,9 @@ class HostLockTests(TestCase):
             with self.assertRaises(AgentRequestError) as raised:
                 harness.run("result = 1", engine="cpython")
             self.assertEqual("engine_locked", raised.exception.code)
-            self.assertEqual("ok", harness.run("result = 1", engine="ironpython")["status"])
+            self.assertEqual(
+                "ok", harness.run("result = 1", engine="ironpython")["status"]
+            )
             self.assertEqual("ok", harness.run("result = 1")["status"])
 
     def test_a_host_pinned_on_does_not_refuse(self):
