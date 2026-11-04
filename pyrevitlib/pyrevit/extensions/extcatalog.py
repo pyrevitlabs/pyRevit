@@ -32,6 +32,8 @@ mlogger = get_logger(__name__)
 CACHE_TTL_SECONDS = 24 * 60 * 60
 RETRY_AFTER_FAILURE_SECONDS = 10 * 60
 DOWNLOAD_TIMEOUT_MS = 5000
+MAX_DOWNLOAD_MS = 15000
+MAX_CATALOG_BYTES = 5 * 1024 * 1024
 CACHE_FILE_PREFIX = "pyRevit_extcatalog_"
 CATALOG_LIST_KEY = "extensions"
 SECURE_SCHEME = "https://"
@@ -165,14 +167,20 @@ def cache_file_path(url, cache_dir):
 def download_text(url, timeout_ms=DOWNLOAD_TIMEOUT_MS):
     """Download a URL as UTF-8 text with .NET, honouring the system proxy.
 
+    Redirects are followed but must stay on https. The body is read in chunks
+    and abandoned past `MAX_CATALOG_BYTES` or `MAX_DOWNLOAD_MS` in total, so a
+    slow or oversized response cannot hold Revit's UI thread.
+
     Args:
-        url (str): URL to download; redirects are followed.
-        timeout_ms (int): connect and read timeout in milliseconds.
+        url (str): URL to download.
+        timeout_ms (int): connect and per-read timeout in milliseconds.
 
     Returns:
         (str): response body.
 
     Raises:
+        CatalogError: on a non-https redirect, an oversized body or a body
+            slower than `MAX_DOWNLOAD_MS`.
         Exception: any network or HTTP error from .NET.
     """
     from pyrevit import framework
@@ -180,15 +188,38 @@ def download_text(url, timeout_ms=DOWNLOAD_TIMEOUT_MS):
     request = framework.WebRequest.Create(url)
     request.Timeout = timeout_ms
     request.ReadWriteTimeout = timeout_ms
+    stopwatch = framework.Stopwatch.StartNew()
     response = request.GetResponse()
     try:
-        reader = framework.IO.StreamReader(
-            response.GetResponseStream(), framework.Encoding.UTF8
-        )
+        final_uri = response.ResponseUri
+        if str(final_uri.Scheme).lower() != "https":
+            raise CatalogError("redirected to a non-https URL: {}".format(final_uri))
+        if response.ContentLength > MAX_CATALOG_BYTES:
+            raise CatalogError(
+                "catalog is larger than {} bytes".format(MAX_CATALOG_BYTES)
+            )
+
+        stream = response.GetResponseStream()
+        body = framework.IO.MemoryStream()
+        chunk = framework.Array.CreateInstance(framework.Byte, 64 * 1024)
         try:
-            return reader.ReadToEnd()
+            while True:
+                read_count = stream.Read(chunk, 0, chunk.Length)
+                if read_count <= 0:
+                    break
+                body.Write(chunk, 0, read_count)
+                if body.Length > MAX_CATALOG_BYTES:
+                    raise CatalogError(
+                        "catalog is larger than {} bytes".format(MAX_CATALOG_BYTES)
+                    )
+                if stopwatch.ElapsedMilliseconds > MAX_DOWNLOAD_MS:
+                    raise CatalogError(
+                        "download took longer than {} ms".format(MAX_DOWNLOAD_MS)
+                    )
+            return framework.Encoding.UTF8.GetString(body.ToArray())
         finally:
-            reader.Dispose()
+            body.Dispose()
+            stream.Dispose()
     finally:
         response.Close()
 
@@ -224,10 +255,8 @@ def _write_cache(path, catalog):
         prefix=op.basename(path) + ".", suffix=".tmp", dir=folder
     )
     try:
-        os.write(handle, json.dumps(catalog, indent=2).encode("utf-8"))
-    finally:
-        os.close(handle)
-    try:
+        with os.fdopen(handle, "wb") as temp_file:
+            temp_file.write(json.dumps(catalog, indent=2).encode("utf-8"))
         _replace_file(temp_path, path)
     except Exception:
         if op.exists(temp_path):
