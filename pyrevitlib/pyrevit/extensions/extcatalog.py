@@ -34,6 +34,8 @@ RETRY_AFTER_FAILURE_SECONDS = 10 * 60
 DOWNLOAD_TIMEOUT_MS = 5000
 MAX_DOWNLOAD_MS = 15000
 MAX_CATALOG_BYTES = 5 * 1024 * 1024
+MAX_REDIRECTS = 5
+REDIRECT_STATUS_CODES = (301, 302, 303, 307, 308)
 CACHE_FILE_PREFIX = "pyRevit_extcatalog_"
 CATALOG_LIST_KEY = "extensions"
 SECURE_SCHEME = "https://"
@@ -164,12 +166,41 @@ def cache_file_path(url, cache_dir):
     return op.join(cache_dir, CACHE_FILE_PREFIX + digest + ".json")
 
 
+def _open_following_https_redirects(framework, url, timeout_ms):
+    """Send the request, following each redirect only once it is checked.
+
+    Automatic redirects are off: every hop's `Location` must be https before
+    the next request goes out, so an https -> http -> https chain is refused
+    instead of passing a check on the final URL.
+    """
+    current_uri = framework.Uri(url)
+    for _ in range(MAX_REDIRECTS + 1):
+        if str(current_uri.Scheme).lower() != "https":
+            raise CatalogError("redirected to a non-https URL: {}".format(current_uri))
+        request = framework.WebRequest.Create(current_uri)
+        request.AllowAutoRedirect = False
+        request.Timeout = timeout_ms
+        request.ReadWriteTimeout = timeout_ms
+        response = request.GetResponse()
+        if int(response.StatusCode) not in REDIRECT_STATUS_CODES:
+            return response
+        location = response.Headers["Location"]
+        response.Close()
+        if not location:
+            raise CatalogError(
+                "redirect without a Location from {}".format(current_uri)
+            )
+        current_uri = framework.Uri(current_uri, location)
+    raise CatalogError("more than {} redirects from {}".format(MAX_REDIRECTS, url))
+
+
 def download_text(url, timeout_ms=DOWNLOAD_TIMEOUT_MS):
     """Download a URL as UTF-8 text with .NET, honouring the system proxy.
 
-    Redirects are followed but must stay on https. The body is read in chunks
-    and abandoned past `MAX_CATALOG_BYTES` or `MAX_DOWNLOAD_MS` in total, so a
-    slow or oversized response cannot hold Revit's UI thread.
+    Redirects are followed one hop at a time and every hop must be https. The
+    body is read in chunks and abandoned past `MAX_CATALOG_BYTES` or
+    `MAX_DOWNLOAD_MS` in total, so a slow or oversized response cannot hold
+    Revit's UI thread.
 
     Args:
         url (str): URL to download.
@@ -179,21 +210,15 @@ def download_text(url, timeout_ms=DOWNLOAD_TIMEOUT_MS):
         (str): response body.
 
     Raises:
-        CatalogError: on a non-https redirect, an oversized body or a body
-            slower than `MAX_DOWNLOAD_MS`.
+        CatalogError: on a non-https redirect hop, too many redirects, an
+            oversized body or a body slower than `MAX_DOWNLOAD_MS`.
         Exception: any network or HTTP error from .NET.
     """
     from pyrevit import framework
 
-    request = framework.WebRequest.Create(url)
-    request.Timeout = timeout_ms
-    request.ReadWriteTimeout = timeout_ms
     stopwatch = framework.Stopwatch.StartNew()
-    response = request.GetResponse()
+    response = _open_following_https_redirects(framework, url, timeout_ms)
     try:
-        final_uri = response.ResponseUri
-        if str(final_uri.Scheme).lower() != "https":
-            raise CatalogError("redirected to a non-https URL: {}".format(final_uri))
         if response.ContentLength > MAX_CATALOG_BYTES:
             raise CatalogError(
                 "catalog is larger than {} bytes".format(MAX_CATALOG_BYTES)

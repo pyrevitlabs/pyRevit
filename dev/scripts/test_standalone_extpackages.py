@@ -349,6 +349,104 @@ class ExtensionCatalogResolveTests(unittest.TestCase):
         self.assertFalse(self.extcatalog.is_remote_source(None))
 
 
+class _FakeUri:
+    def __init__(self, base, relative=None):
+        from urllib.parse import urljoin, urlsplit
+
+        self.text = urljoin(str(base), relative) if relative else str(base)
+        self.Scheme = urlsplit(self.text).scheme
+
+    def __str__(self):
+        return self.text
+
+
+class _FakeResponse:
+    def __init__(self, status, location=None):
+        self.StatusCode = status
+        self.Headers = {"Location": location}
+        self.closed = False
+
+    def Close(self):
+        self.closed = True
+
+
+class _FakeWeb:
+    """Stands in for `pyrevit.framework`, serving a fixed redirect table."""
+
+    def __init__(self, routes):
+        self.routes = routes
+        self.requested = []
+        self.Uri = _FakeUri
+        self.WebRequest = types.SimpleNamespace(Create=self._create)
+
+    def _create(self, uri):
+        web = self
+        request = types.SimpleNamespace()
+
+        def get_response():
+            web.requested.append((str(uri), request.AllowAutoRedirect))
+            status, location = web.routes[str(uri)]
+            return _FakeResponse(status, location)
+
+        request.GetResponse = get_response
+        return request
+
+
+class ExtensionCatalogRedirectTests(unittest.TestCase):
+    """Every redirect hop is checked before it is followed."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the catalog module with host dependencies replaced."""
+        extpackages, _ = _load_extpackages()
+        cls.extcatalog = extpackages.extcatalog
+
+    def _open(self, routes, url="https://a.example/x.json"):
+        web = _FakeWeb(routes)
+        response = self.extcatalog._open_following_https_redirects(web, url, 1000)
+        return web, response
+
+    def test_https_redirects_are_followed(self):
+        """A GitHub-style https redirect reaches the catalog."""
+        web, response = self._open(
+            {
+                "https://a.example/x.json": (302, "https://b.example/x.json"),
+                "https://b.example/x.json": (200, None),
+            }
+        )
+        self.assertEqual(200, response.StatusCode)
+        self.assertEqual([False, False], [auto for _, auto in web.requested])
+
+    def test_relative_redirect_is_resolved(self):
+        """A relative Location stays on the same https host."""
+        web, _ = self._open(
+            {
+                "https://a.example/x.json": (301, "/y.json"),
+                "https://a.example/y.json": (200, None),
+            }
+        )
+        self.assertEqual("https://a.example/y.json", web.requested[-1][0])
+
+    def test_http_hop_is_refused_before_request(self):
+        """https -> http -> https fails without ever requesting the http hop."""
+        routes = {
+            "https://a.example/x.json": (302, "http://b.example/x.json"),
+            "http://b.example/x.json": (302, "https://c.example/x.json"),
+        }
+        web = _FakeWeb(routes)
+        with self.assertRaises(self.extcatalog.CatalogError):
+            self.extcatalog._open_following_https_redirects(
+                web, "https://a.example/x.json", 1000
+            )
+        self.assertEqual(["https://a.example/x.json"], [u for u, _ in web.requested])
+
+    def test_redirect_loop_is_bounded(self):
+        """A redirect loop stops after MAX_REDIRECTS hops."""
+        routes = {"https://a.example/x.json": (302, "https://a.example/x.json")}
+        with self.assertRaises(self.extcatalog.CatalogError):
+            self._open(routes)
+
+
 class ExtensionCatalogSourcesTests(unittest.TestCase):
     """The Extension Manager merges bundled, hosted and user catalogs."""
 
