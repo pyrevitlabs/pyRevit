@@ -9,9 +9,7 @@ from collections import defaultdict
 from pyrevit import script
 from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.coreutils import applocales
-
-from outputtext import escape_for_output
+from pyrevit.coreutils import applocales, escape_for_output
 
 logger = script.get_logger()
 output = script.get_output()
