@@ -399,5 +399,51 @@ class AgentRunnerLinesTests(unittest.TestCase):
         )
 
 
+class AgentRunnerWorkspaceTests(unittest.TestCase):
+    """Which modules a workspace unloads from the shared engine."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _unloaded(self, workspace, path, files):
+        modules = {
+            name: types.SimpleNamespace(__file__=file) for name, file in files.items()
+        }
+        with (
+            mock.patch.object(sys, "path", path),
+            mock.patch.dict(sys.modules, modules),
+        ):
+            self.runner._unload_modules_under(workspace)
+            return sorted(name for name in modules if name not in sys.modules)
+
+    def test_workspace_modules_are_unloaded(self):
+        """A module imported from the workspace is dropped so the next run re-imports it."""
+        workspace = os.path.abspath("work")
+        unloaded = self._unloaded(
+            workspace,
+            [workspace],
+            {"house_ws": os.path.join(workspace, "house.py")},
+        )
+        self.assertEqual(["house_ws"], unloaded)
+
+    def test_library_folders_inside_the_workspace_stay_loaded(self):
+        """A drive-root workspace doesn't unload the stdlib or pyrevitlib."""
+        root = os.path.abspath(os.sep)
+        stdlib = os.path.join(root, "python", "Lib")
+        library = os.path.join(root, "pyRevit", "pyrevitlib")
+        unloaded = self._unloaded(
+            root,
+            [root, stdlib, library],
+            {
+                "json_ws": os.path.join(stdlib, "json", "__init__.py"),
+                "pyrevit_ws": os.path.join(library, "pyrevit", "__init__.py"),
+                "scratch_ws": os.path.join(root, "scratch.py"),
+            },
+        )
+        self.assertEqual(["scratch_ws"], unloaded)
+
+
 if __name__ == "__main__":
     unittest.main()

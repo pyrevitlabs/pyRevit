@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -269,7 +270,7 @@ namespace pyRevitCLI {
             var sent = false;
             string responseLine;
             try {
-                using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut)) {
+                using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Identification)) {
                     pipe.Connect(ConnectTimeoutMs);
                     RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };

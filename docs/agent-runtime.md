@@ -77,8 +77,8 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 
 | Setting | Command | Values |
 |---|---|---|
-| `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
-| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
+| `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. Disabling also refuses every later request with `agent_disabled` at once. The host never starts in a Revit running as administrator. |
+| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. A stricter policy applies at the next request. A looser one applies only after you confirm it in a Revit prompt; No keeps the stricter one until Revit restarts. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
 
 Run any of these commands without a value to print the current setting.
@@ -237,6 +237,8 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
+- A run started from inside another run (through `AgentHost.HandleRequest`) is refused with
+  `nested_run`.
 - `run_modify` requires an active document and is refused before the script runs when none is
   active. The other tools (`capture_view`, `inspect_elements`, `show_elements`) also require an
   active document.
@@ -246,8 +248,10 @@ Rules the host enforces:
   active.
   `get_context.open_documents` lists every open document and marks the background ones.
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
-  save-as, synchronize-with-central, file-export and view-export events. The response lists a
-  cancelled operation in `blocked`.
+  save-as, synchronize-with-central, file-export, view-export and printing events. The response
+  lists a cancelled operation in `blocked`. APIs that write files without raising one of these
+  events, such as `ViewSchedule.Export`, shared parameter file edits and
+  `TransmissionData.WriteTransmissionData`, are not blocked.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
@@ -336,7 +340,8 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
                                            entries that point at another pyRevit install
 ```
 
-`--timeout` defaults to 300 and is capped at 3600. `--workspace` must be an existing folder.
+`--timeout` defaults to 300 and is capped at 3600. `--workspace` must be an existing local folder;
+network (UNC) paths are refused.
 
 The `agent` and `mcp` commands ship with the pyRevit CLI of the same build. An older `pyrevit`
 on `PATH` doesn't know them and prints the global usage; upgrade the CLI or call the one from
@@ -556,7 +561,8 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
     - **modify** with policy `readonly`: the policy is read before the script and again here,
       and the stricter value (`readonly`, then `ask`, then `auto`) decides. A run queued before
       the switch to `readonly` rolls back with `policy_readonly` instead of committing, and a
-      script that rewrites the policy can't loosen it for its own run.
+      script that rewrites the policy can't loosen it for its own run, nor, without the user
+      confirming it in Revit, for later runs.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says
       `approval: auto`.
     - **modify** with policy `ask`: while the group is still open, select and temporarily
@@ -578,6 +584,10 @@ Honest limits:
   changes the model or answers the approval prompt after the guard has ended. Those changes
   are neither approved nor recorded. Approval and `readonly` stop an agent's mistakes, not a
   hostile script: connect only agents you trust, and don't feed them untrusted content.
+- Script engines are reused between runs. Whatever a run changes in the interpreter, such as
+  `sys.modules`, patched pyRevit functions, builtins or environment variables, stays for later
+  runs, and on CPython also for the user's CPython buttons, which share the one interpreter.
+  Rolling back the model doesn't undo it.
 - Revit serves one agent request at a time. While one session's run is executing, which can
   last until its `timeout_s`, a second agent session can't connect and gets `revit_busy`
   after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
@@ -649,7 +659,7 @@ Validated on Revit 2024 (build 24.1.11.26), IronPython 3.4.2, Snowdon Towers sam
 | `DocumentChanged` inside a `TransactionGroup` | Fires for every inner commit, so query detection and change sets work |
 | Query and dry-run rollback | Verified in the model afterwards |
 | Warning capture | Overlap warning recorded and removed, no popup |
-| Dialog capture | API `TaskDialog` dismissed and reported. `DialogBoxShowing` fires for API dialogs too, so the host disarms it before its own prompt. |
+| Dialog capture | API `TaskDialog` dismissed and reported. `DialogBoxShowing` fires for API dialogs too, so the approval prompt is a native Windows message box that the event can't answer. |
 | Save blocking | Revit itself refuses to save while an API transaction group is open; the `DocumentSaving` cancel covers runs without a group |
 | Script error | Rolled back, traceback points at the script line |
 | Transaction left open | Detected; Revit cleans up the open transaction |

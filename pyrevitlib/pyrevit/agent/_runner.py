@@ -509,10 +509,34 @@ def _is_under(module_file, root):
         return False
 
 
+def _folder_prefix(folder):
+    return op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+
+
 def _unload_modules_under(folder):
-    root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+    """Unload the modules imported from ``folder``.
+
+    Invariant:
+        A module that also sits under another ``sys.path`` folder inside the
+        workspace belongs to that folder and stays loaded, so a workspace such
+        as a drive root or the pyRevit clone never unloads the standard library,
+        pyrevitlib or this runner from the shared engine.
+    """
+    root = _folder_prefix(folder)
+    nested = [
+        prefix
+        for prefix in (
+            _folder_prefix(entry)
+            for entry in sys.path
+            if isinstance(entry, str) and entry
+        )
+        if prefix != root and prefix.startswith(root)
+    ]
     for name, module in list(sys.modules.items()):
-        if _is_under(getattr(module, "__file__", None), root):
+        module_file = getattr(module, "__file__", None)
+        if _is_under(module_file, root) and not any(
+            _is_under(module_file, prefix) for prefix in nested
+        ):
             del sys.modules[name]
 
 
