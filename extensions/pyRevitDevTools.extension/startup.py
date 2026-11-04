@@ -40,7 +40,7 @@ print("lib/ import works in startup.py")
 # test code for creating event handlers =======================================
 # define event handler
 def docopen_eventhandler(sender, args):
-    forms.alert("Document Opened: {}".format(args.PathName))
+    forms.toast("Document Opened: {}".format(args.PathName), title="pyRevitDevTools")
 
 
 DOCOPEN_HANDLER_SLOT = "pyRevitDevTools.DocumentOpeningHandler"
