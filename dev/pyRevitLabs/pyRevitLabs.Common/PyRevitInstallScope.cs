@@ -211,9 +211,7 @@ namespace pyRevitLabs.Common {
                 if (removed)
                     File.WriteAllLines(configPath, kept);
             }
-            catch {
-                // the copy still works; the stray section has no effect in a user config
-            }
+            catch { }
         }
 
         /// <summary>True when the file carries the DOS ReadOnly attribute (deliberate admin lock).</summary>
