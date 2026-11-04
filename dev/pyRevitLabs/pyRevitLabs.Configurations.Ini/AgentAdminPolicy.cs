@@ -88,7 +88,7 @@ public sealed class AgentAdminPolicy {
                 return FailedRead();
             }
 
-            string key = string.Join("|", paths.Select(path => path + "@" + SafeLastWriteUtc(path).Ticks));
+            string key = string.Join("|", paths.Select(path => path + "@" + SafeStamp(path)));
             lock (CacheLock) {
                 if (cached != null && cachedKey == key)
                     return cached;
@@ -328,16 +328,31 @@ public sealed class AgentAdminPolicy {
         }
     }
 
+    /// <summary>
+    /// Applies <paramref name="edit"/> and swaps the result in with a single replace, so a reader
+    /// never sees a half-written file: a truncated one would parse as "nothing pinned".
+    /// </summary>
+    /// <remarks>
+    /// <see cref="File.Replace(string, string, string?)"/> keeps the replaced file's permissions and
+    /// attributes, which is what keeps the restricted ACL <c>lock</c> applied.
+    /// </remarks>
     private static void EditFile(string path, Action<IConfiguration> edit) {
         bool wasReadOnly = PyRevitInstallScope.HasReadOnlyAttribute(path);
         if (wasReadOnly)
             File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
+        string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try {
             IConfiguration configuration = IniConfiguration.Create(path);
             edit(configuration);
-            configuration.SaveConfiguration();
+            configuration.SaveConfiguration(temporary);
+            if (File.Exists(path))
+                File.Replace(temporary, path, null);
+            else
+                File.Move(temporary, path);
         }
         finally {
+            if (File.Exists(temporary))
+                File.Delete(temporary);
             if (wasReadOnly)
                 File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
             lock (CacheLock)
@@ -367,12 +382,18 @@ public sealed class AgentAdminPolicy {
         return (data[SectionName][key] ?? string.Empty).Trim().Trim('"').Trim();
     }
 
-    private static DateTime SafeLastWriteUtc(string path) {
+    /// <summary>
+    /// Modification time and length, so a read that lands between a writer's truncate and its last
+    /// write, and so sees a shorter file, can't be cached under the key of the finished file.
+    /// </summary>
+    private static string SafeStamp(string path) {
         try {
-            return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+            return File.Exists(path)
+                ? File.GetLastWriteTimeUtc(path).Ticks + ":" + new FileInfo(path).Length
+                : "missing";
         }
         catch {
-            return DateTime.MinValue;
+            return "unknown";
         }
     }
 }

@@ -346,7 +346,7 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "<script_file>",          "Python script to run" },
                             { "--mode=<run_mode>",      "query (default), dry_run or modify" },
-                            { "--engine=<engine_name>", "ironpython or cpython (default: configured agent engine)" },
+                            { "--engine=<engine_name>", "ironpython or cpython (default: configured agent engine; refused if an administrator locked another)" },
                             { "--title=<run_title>",    "Run title; used as the undo name for modify runs" },
                             { "--inputs=<inputs_json>", "JSON object exposed to the script as `inputs`" },
                             { "--revit=<revit_year>",   "Target Revit year or process id when several are running" },

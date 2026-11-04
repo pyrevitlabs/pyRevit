@@ -95,13 +95,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <remarks>
+        /// Invariant: an engine an administrator pinned is not only the default. A request that names
+        /// a different one is refused with <c>engine_locked</c>.
+        /// </remarks>
         private static AgentEngine ParseEngine(string engine) {
-            switch ((engine ?? PyRevitConfigs.GetAgentEngine()).ToLowerInvariant()) {
-                case "ironpython": return AgentEngine.IronPython;
-                case "cpython": return AgentEngine.CPython;
-                default:
-                    throw new AgentException("invalid_params", "'engine' must be ironpython or cpython.");
-            }
+            var name = (engine ?? PyRevitConfigs.GetAgentEngine()).ToLowerInvariant();
+            if (name != "ironpython" && name != "cpython")
+                throw new AgentException("invalid_params", "'engine' must be ironpython or cpython.");
+
+            if (PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEngineKey)
+                && name != PyRevitConfigs.GetAgentEngine())
+                throw new AgentException(
+                    "engine_locked",
+                    "The pyRevit agent engine is locked to '" + PyRevitConfigs.GetAgentEngine()
+                    + "' by your administrator.");
+
+            return name == "cpython" ? AgentEngine.CPython : AgentEngine.IronPython;
         }
     }
 }

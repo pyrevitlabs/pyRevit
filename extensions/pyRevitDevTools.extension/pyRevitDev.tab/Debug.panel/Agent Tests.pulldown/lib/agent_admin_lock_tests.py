@@ -102,6 +102,15 @@ class HostLockTests(TestCase):
             self.assertEqual("disabled_by_admin", raised.exception.code)
         self.assertIn("document", request("get_context"))
 
+    def test_a_pinned_engine_refuses_runs_that_name_another(self):
+        """With the engine locked, a run naming the other engine fails with engine_locked."""
+        with admin_pins(engine="ironpython"):
+            with self.assertRaises(AgentRequestError) as raised:
+                harness.run("result = 1", engine="cpython")
+            self.assertEqual("engine_locked", raised.exception.code)
+            self.assertEqual("ok", harness.run("result = 1", engine="ironpython")["status"])
+            self.assertEqual("ok", harness.run("result = 1")["status"])
+
     def test_a_host_pinned_on_does_not_refuse(self):
         """Pinning enabled to true does not trigger the refusal."""
         with admin_pins(enabled="true"):

@@ -439,7 +439,7 @@ namespace pyRevitCLI {
             return new JObject {
                 ["type"] = "string",
                 ["enum"] = new JArray("ironpython", "cpython"),
-                ["description"] = "Script engine. Defaults to get_context.scripting.default_engine; see scripting.engines for each engine's Python version and syntax limits.",
+                ["description"] = "Script engine. Defaults to get_context.scripting.default_engine; see scripting.engines for each engine's Python version and syntax limits. An administrator can lock the engine, and a run that names another one is refused with engine_locked.",
             };
         }
 

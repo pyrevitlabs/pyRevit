@@ -107,7 +107,7 @@ read access, so a standard user cannot remove a pin.
 |---|---|
 | `enabled` | Fixed. `false` keeps the host off whatever the user chose, `true` keeps it on. |
 | `policy` | A ceiling, not a fixed value. Users get the stricter of their own policy and the pin, so a pin of `ask` still lets a user choose `readonly`, but not `auto`. |
-| `engine` | Fixed default engine for runs that don't name one. |
+| `engine` | Fixed. Also the default for runs that don't name one, and a run that names the other engine is refused with `engine_locked`. |
 | `user_skills` | Fixed. `false` stops the MCP server loading user-authored skills. |
 
 `tab_highlight` is cosmetic and can't be pinned. The pins are read from the machine config only, and
@@ -168,7 +168,9 @@ enabled = false
       may rely on its permissions. The default `%ProgramData%` permissions don't allow it unless a
       standard user created the folder.
 
-    The lock is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`.
+    The lock is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`,
+    which `pyrevit configs seed` and the normal config lookup do honor. A site that sets the override
+    seeds one folder and locks another, so put the pins in the real `%ProgramData%\pyRevit`.
     A machine config carrying the read-only attribute (`pyrevit configs seed --lock`) is a separate,
     whole-config lock and works alongside the pins.
 
@@ -584,7 +586,7 @@ Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one con
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly`,
-`disabled_by_admin` or `invalid_params`.
+`disabled_by_admin`, `engine_locked` or `invalid_params`.
 
 ### What became of a request that got no answer
 
