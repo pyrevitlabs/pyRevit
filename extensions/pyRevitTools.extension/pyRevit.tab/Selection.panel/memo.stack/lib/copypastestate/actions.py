@@ -313,6 +313,8 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def get_cropable_views():
+        """Return selected views that support crop regions."""
+
         # py3 returns a filter object but py2 returns filtered list
         # list() makes it consistent
         # py2 filter does not support keyword arguments
