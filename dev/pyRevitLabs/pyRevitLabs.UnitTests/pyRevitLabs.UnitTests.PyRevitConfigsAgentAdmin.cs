@@ -79,6 +79,25 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void BlankPins_FailClosed() {
+            WriteUserConfig("[agent]\r\nenabled = true\r\npolicy = auto\r\nengine = cpython\r\nuser_skills = true\r\n");
+            WriteAdminConfig("[agent.admin]\r\nenabled =\r\npolicy =\r\nengine =\r\nuser_skills =\r\n");
+
+            Assert.IsFalse(PyRevitConfigs.GetAgentEnabled());
+            Assert.AreEqual("readonly", PyRevitConfigs.GetAgentPolicy());
+            Assert.AreEqual("ironpython", PyRevitConfigs.GetAgentEngine());
+            Assert.IsFalse(PyRevitConfigs.GetAgentUserSkillsEnabled());
+            Assert.IsTrue(PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey));
+        }
+
+        [TestMethod]
+        public void GetAdminConfigFolderRisk_WhenTheFolderDoesNotExist_ReturnsNull() {
+            AgentAdminPolicy.OverrideMachineConfigPath(Path.Combine(_tempRoot, "absent", "pyRevit_config.ini"));
+
+            Assert.IsNull(PyRevitConfigs.GetAdminConfigFolderRisk());
+        }
+
+        [TestMethod]
         public void PinnedEngine_BeatsUserEngine() {
             WriteUserConfig("[agent]\r\nengine = cpython\r\n");
             WriteAdminConfig("[agent.admin]\r\nengine = ironpython\r\n");
