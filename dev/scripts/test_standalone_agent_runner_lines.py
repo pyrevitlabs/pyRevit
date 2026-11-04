@@ -518,15 +518,21 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
             "while True:\n"
             "    count += 1\n"
             "    try:\n"
-            "        for i in range(10):\n"
-            "            pass\n"
+            "        trip()\n"
             "    except Base:\n"
             "        pass\n"
         )
         code, problem, guarded = self.runner._compile_source(source, True)
-        state, scope = self._guards(timed_out=True)
+        state, scope = self._guards()
+
+        def trip():
+            state["timed_out"] = True
+            raise self.runner.RunTimedOut(5)
+
+        scope["trip"] = trip
         with self.assertRaises(self.runner.RunTimedOut):
             exec(code, scope)
+        self.assertEqual(1, scope["count"])
 
     def test_generator_expression_iterates_its_source_immediately(self):
         """Create the outermost iterator when the generator expression is built."""
