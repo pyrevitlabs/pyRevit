@@ -14,8 +14,8 @@ pyRevit ships two maintained libraries that agent scripts can import on every en
 - `lookup_pyrevit_api(query="section box")` searches names and docstrings.
 - `lookup_pyrevit_api(query="create_gable_roof")` returns the signature, the full docstring and the import line.
 - `lookup_pyrevit_api(query="pyrevit.revit.db.create")` lists a module.
-- `list_automation(offset=0, limit=25)` lists reviewed APIs with stable IDs, effects, context and transaction requirements. Use an ID with `lookup_pyrevit_api` to read its full contract.
-- `run_automation(id=..., inputs=...)` runs a small reviewed subset through the existing guarded query path. It currently accepts `pyrevit.units.parse-length` and `pyrevit.units.parse-slope`, each with `{"value": ...}`; `pyrevit.levels.resolve` with `{"name": ...}`; and `pyrevit.elements.by-category` with `{"categories": ["OST_Walls"], "limit": 50}`. The document-bound operations require an active document.
+- `list_automation(offset=0, limit=25)` lists reviewed APIs with stable IDs, effects, context and transaction requirements. Entries with `invocable: true` run through `run_automation`, and most list the `inputs` they take. Use an ID with `lookup_pyrevit_api` to read its full contract.
+- `run_automation(id=..., inputs=...)` runs an invocable operation through the guarded query path, so nothing it does is kept. Pass the listed inputs by name; an `element` input is an element id number, and an optional input is left out rather than set to null. For example `run_automation(id="pyrevit.elements.name", inputs={"element": 316542})` or `run_automation(id="pyrevit.sheets.list", inputs={"include_placeholders": false})`. List results come back as `value` with `total` and `truncated`. Four operations predate input declarations and take fixed inputs: `pyrevit.units.parse-length` and `pyrevit.units.parse-slope` with `{"value": ...}`, `pyrevit.levels.resolve` with `{"name": ...}`, and `pyrevit.elements.by-category` with `{"categories": ["OST_Walls"], "limit": 50}`. The document-bound operations require an active document.
 
 When a script fails on a name from these libraries, the error hint lists similar names.
 

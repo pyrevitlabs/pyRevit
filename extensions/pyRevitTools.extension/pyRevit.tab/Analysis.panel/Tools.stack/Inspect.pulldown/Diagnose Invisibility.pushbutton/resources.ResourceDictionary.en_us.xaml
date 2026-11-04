@@ -23,8 +23,8 @@
     <sys:String x:Key="reason_view_filter">Hidden by view filter '{}'</sys:String>
     <sys:String x:Key="reason_section_box">Element bounding box is entirely outside the view's active 3D section box</sys:String>
     <sys:String x:Key="reason_crop_box">Element bounding box is entirely outside the view crop region</sys:String>
-    <sys:String x:Key="reason_viewrange_above">Element is above the view range top clip plane (element min Z {:.3f} ft &gt; top {:.3f} ft)</sys:String>
-    <sys:String x:Key="reason_viewrange_below">Element is below the view range's lower bound (bottom clip / view depth) (element max Z {:.3f} ft &lt; lower bound {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_above">Element is above the view range top clip plane (element min Z {} &gt; top {})</sys:String>
+    <sys:String x:Key="reason_viewrange_below">Element is below the view range's lower bound (bottom clip / view depth) (element max Z {} &lt; lower bound {})</sys:String>
     <sys:String x:Key="reason_view_template">View template '{}' is applied - some visibility settings may be locked and must be changed in the template</sys:String>
     <sys:String x:Key="reason_view_specific">Element is view-specific and belongs to another view ('{}'), so it cannot appear here</sys:String>
     <sys:String x:Key="reason_view_discipline">View discipline is set to '{}' - some categories are shown or hidden automatically based on discipline, independent of Visibility/Graphics settings</sys:String>
@@ -113,7 +113,7 @@
     <sys:String x:Key="code_view_template">Template</sys:String>
     <sys:String x:Key="code_view_discipline">Discipline</sys:String>
     <sys:String x:Key="code_unknown">Unknown</sys:String>
-    <sys:String x:Key="reason_above_cut_plane">Element is entirely above the cut plane (element min Z {:.3f} ft &gt; cut {:.3f} ft). Between the cut plane and the top, plan views only draw windows, casework, generic models and non-cuttable categories; '{}' is cuttable</sys:String>
+    <sys:String x:Key="reason_above_cut_plane">Element is entirely above the cut plane (element min Z {} &gt; cut {}). Between the cut plane and the top, plan views only draw windows, casework, generic models and non-cuttable categories; '{}' is cuttable</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">Raise cut plane above element</sys:String>
     <sys:String x:Key="code_above_cut_plane">Above cut</sys:String>
     <sys:String x:Key="reason_subcategory_drawn_hidden">Subcategory '{}' is hidden in this view, and everything the element draws here uses hidden subcategories</sys:String>

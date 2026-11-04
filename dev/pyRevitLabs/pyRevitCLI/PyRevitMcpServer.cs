@@ -544,7 +544,8 @@ namespace pyRevitCLI {
                     arguments => PyRevitLibraryIndex.Lookup(arguments.Value<string>("query"))),
 
                 new McpTool("list_automation", readOnly: true, new string[0],
-                    () => ("List the reviewed pyRevit and rpw automation APIs by stable identifier. Results are paginated and work without Revit.",
+                    () => ("List the reviewed pyRevit and rpw automation APIs by stable identifier. An entry with invocable true runs through run_automation, "
+                        + "taking the inputs it lists (element = an element id). Results are paginated and work without Revit.",
                         new JObject {
                             ["offset"] = new JObject { ["type"] = "integer", ["minimum"] = 0, ["description"] = "Zero-based result offset." },
                             ["limit"] = new JObject { ["type"] = "integer", ["minimum"] = 1, ["maximum"] = 50, ["description"] = "Results to return, default 25." },
@@ -554,7 +555,8 @@ namespace pyRevitCLI {
                         arguments.Value<int?>("limit") ?? 25)),
 
                 new McpTool("run_automation", readOnly: true, new[] { "id", "inputs" },
-                    () => ("Run a reviewed read-only automation operation with its bounded JSON input. This does not accept Python source, module names or callable names.",
+                    () => ("Run a reviewed read-only automation operation (invocable in list_automation) with the inputs it lists. "
+                        + "Runs as a query, so model changes are rolled back. This does not accept Python source, module names or callable names.",
                         new JObject {
                             ["id"] = new JObject { ["type"] = "string", ["description"] = "Invocable automation identifier, such as pyrevit.units.parse-length." },
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },

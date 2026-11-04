@@ -32,6 +32,12 @@ namespace pyRevitCLI {
         public List<string> Effects { get; set; }
         public string Context { get; set; }
         public string Transaction { get; set; }
+
+        /// <summary>
+        /// The marker's <c>inputs</c> declaration, or null when it declares none. An empty
+        /// list is an operation that takes no inputs.
+        /// </summary>
+        public List<AutomationInput> Inputs { get; set; }
     }
 
     /// <summary>
@@ -51,6 +57,7 @@ namespace pyRevitCLI {
         private static readonly Regex AutomationId = new Regex(@"^\s*(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex AutomationValue = new Regex(@"(?:^|,)\s*(?<name>PlainEnglish|mode|context|transaction)\s*=\s*(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex AutomationEffects = new Regex(@"(?:^|,)\s*effects\s*=\s*\((?<values>.*?)\)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex AutomationInputs = new Regex(@"(?:^|,)\s*inputs\s*=\s*\((?<values>.*?)\)", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex QuotedValue = new Regex(@"(?:""(?<double>(?:\\.|[^""])*)""|'(?<single>(?:\\.|[^'])*)')", RegexOptions.Compiled | RegexOptions.Singleline);
 
         internal static List<LibrarySymbol> ParseFile(string root, string file) {
@@ -166,6 +173,10 @@ namespace pyRevitCLI {
                 : new List<string>();
             if (string.IsNullOrEmpty(id) || !values.ContainsKey("PlainEnglish"))
                 throw new AgentClientException("invalid_automation_marker", "A Python automation marker needs a stable id and PlainEnglish value.");
+            var inputs = AutomationInputs.Match(arguments);
+            var inputValues = inputs.Success
+                ? AutomationInput.ParseAll(QuotedValue.Matches(inputs.Groups["values"].Value).Cast<Match>().Select(ReadString))
+                : null;
             return new AutomationMetadata {
                 Id = id,
                 PlainEnglish = values["PlainEnglish"],
@@ -173,6 +184,7 @@ namespace pyRevitCLI {
                 Effects = effectValues,
                 Context = values.ContainsKey("context") ? values["context"] : isType ? "none" : "document",
                 Transaction = values.ContainsKey("transaction") ? values["transaction"] : "none",
+                Inputs = inputValues,
             };
         }
 

@@ -130,6 +130,27 @@ def format_value(value, spec, doc=None):
         value=value,
         maxAccuracy=False,
         forEditing=False,
+def _format_in_document_units(
+    value, doc, spec_name, legacy_unit_type_name, append_symbol
+):
+    doc = doc or DOCS.doc
+    options = DB.FormatValueOptions()
+    options.AppendUnitSymbol = append_symbol
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            specTypeId=getattr(DB.SpecTypeId, spec_name),
+            value=value,
+            forEditing=False,
+            formatValueOptions=options,
+        )
+    return DB.UnitFormatUtils.Format(
+        units=doc.GetUnits(),
+        unitType=getattr(DB.UnitType, legacy_unit_type_name),
+        value=value,
+        maxAccuracy=False,
+        forEditing=False,
+        formatValueOptions=options,
     )
 
 
@@ -138,33 +159,21 @@ def format_value(value, spec, doc=None):
     PlainEnglish="Format an internal area value using the project's display units.",
     mode="query",
     effects=("model.read",),
+    inputs=("area_value: number", "append_symbol: boolean?"),
 )
-def format_area(area_value, doc=None):
+def format_area(area_value, doc=None, append_symbol=False):
     """Return formatted area value in document units.
 
     Args:
-        area_value (float): area value
+        area_value (float): area value in Revit internal units (square feet)
         doc (DB.Document, optional): Revit document, defaults to current
+        append_symbol (bool, optional): append the unit symbol even when the
+            project's area format does not show one
 
     Returns:
         (str): formatted value
     """
-    doc = doc or DOCS.doc
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(
-            units=doc.GetUnits(),
-            specTypeId=DB.SpecTypeId.Area,
-            value=area_value,
-            forEditing=False,
-        )
-    else:
-        return DB.UnitFormatUtils.Format(
-            units=doc.GetUnits(),
-            unitType=DB.UnitType.UT_Area,
-            value=area_value,
-            maxAccuracy=False,
-            forEditing=False,
-        )
+    return _format_in_document_units(area_value, doc, "Area", "UT_Area", append_symbol)
 
 
 @automation.operation(
@@ -172,33 +181,24 @@ def format_area(area_value, doc=None):
     PlainEnglish="Format an internal length value using the project's display units.",
     mode="query",
     effects=("model.read",),
+    inputs=("length_value: number", "append_symbol: boolean?"),
 )
-def format_length(length_value, doc=None):
+def format_length(length_value, doc=None, append_symbol=False):
     """Return formatted length value in document units.
 
     Args:
-        length_value (float): length value
+        length_value (float): length value in Revit internal units (feet)
         doc (DB.Document, optional): Revit document, defaults to current
+        append_symbol (bool, optional): append the unit symbol even when the
+            project's length format does not show one, e.g. "1804 mm" instead
+            of "1804" for a metric project
 
     Returns:
         (str): formatted value
     """
-    doc = doc or DOCS.doc
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(
-            units=doc.GetUnits(),
-            specTypeId=DB.SpecTypeId.Length,
-            value=length_value,
-            forEditing=False,
-        )
-    else:
-        return DB.UnitFormatUtils.Format(
-            units=doc.GetUnits(),
-            unitType=DB.UnitType.UT_Length,
-            value=length_value,
-            maxAccuracy=False,
-            forEditing=False,
-        )
+    return _format_in_document_units(
+        length_value, doc, "Length", "UT_Length", append_symbol
+    )
 
 
 @automation.operation(
@@ -206,33 +206,23 @@ def format_length(length_value, doc=None):
     PlainEnglish="Format a rise-over-run slope using the project's display units.",
     mode="query",
     effects=("model.read",),
+    inputs=("slope_value: number", "append_symbol: boolean?"),
 )
-def format_slope(slope_value, doc=None):
+def format_slope(slope_value, doc=None, append_symbol=False):
     """Return formatted slope value in document units.
 
     Args:
-        slope_value (float): slope value
+        slope_value (float): slope value in Revit internal units (rise over run)
         doc (DB.Document, optional): Revit document, defaults to current
+        append_symbol (bool, optional): append the unit symbol even when the
+            project's slope format does not show one
 
     Returns:
         (str): formatted value
     """
-    doc = doc or DOCS.doc
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(
-            units=doc.GetUnits(),
-            specTypeId=DB.SpecTypeId.Slope,
-            value=slope_value,
-            forEditing=False,
-        )
-    else:
-        return DB.UnitFormatUtils.Format(
-            units=doc.GetUnits(),
-            unitType=DB.UnitType.UT_Slope,
-            value=slope_value,
-            maxAccuracy=False,
-            forEditing=False,
-        )
+    return _format_in_document_units(
+        slope_value, doc, "Slope", "UT_Slope", append_symbol
+    )
 
 
 def _create_view_plane(view):

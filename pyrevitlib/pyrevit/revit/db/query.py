@@ -2,6 +2,7 @@
 """Helper functions to query info and elements from Revit."""
 
 # pylint: disable=W0703,C0103,too-many-lines
+import numbers
 from collections import namedtuple
 from os.path import basename, splitext
 
@@ -10,7 +11,12 @@ from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework
 from pyrevit import automation
-from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
+from pyrevit.compat import (
+    PY3,
+    safe_strtype,
+    get_elementid_value_func,
+    get_elementid_from_value_func,
+)
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -73,6 +79,7 @@ ElementHistory = namedtuple("ElementHistory", ["creator", "owner", "last_changed
     "pyrevit.elements.name",
     PlainEnglish="Read an element name, including a view title on a sheet when requested.",
     effects=("model.read",),
+    inputs=("element: element", "title_on_sheet: boolean?"),
 )
 def get_name(element, title_on_sheet=False):
     """
@@ -88,15 +95,11 @@ def get_name(element, title_on_sheet=False):
         str: The name of the element. For views, it may return the view's title
              on the sheet if `title_on_sheet` is True and the title is available.
     """
-    if isinstance(element, DB.View):
-        view_name = None
-        if title_on_sheet:
-            titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
-            view_name = titleos_param.AsString()
+    if isinstance(element, DB.View) and title_on_sheet:
+        titleos_param = element.get_Parameter(DB.BuiltInParameter.VIEW_DESCRIPTION)
+        view_name = titleos_param.AsString()
         if view_name:
             return view_name
-        else:
-            return element.Name
     if PY3:
         return element.Name
     try:
@@ -109,6 +112,7 @@ def get_name(element, title_on_sheet=False):
     "pyrevit.elements.type",
     PlainEnglish="Get the element type for a Revit element.",
     effects=("model.read",),
+    inputs=("element: element",),
 )
 def get_type(element):
     """Get element type.
@@ -127,6 +131,7 @@ def get_type(element):
     "pyrevit.elements.symbol-name",
     PlainEnglish="Read the family symbol name used by an element.",
     effects=("model.read",),
+    inputs=("element: element",),
 )
 def get_symbol_name(element):
     """
@@ -145,6 +150,7 @@ def get_symbol_name(element):
     "pyrevit.elements.family-name",
     PlainEnglish="Read the family name used by an element.",
     effects=("model.read",),
+    inputs=("element: element",),
 )
 def get_family_name(element):
     """
@@ -473,6 +479,7 @@ def get_value_range(param_name, doc=None, elements=None):
     "pyrevit.elements.by-parameter",
     PlainEnglish="Find elements whose named parameter matches a supplied value.",
     effects=("model.read",),
+    inputs=("param_name: string", "param_value: scalar", "partial: boolean?"),
 )
 def get_elements_by_parameter(
     param_name, param_value, doc=None, partial=False, view_id=None
@@ -495,7 +502,14 @@ def get_elements_by_parameter(
 
     Returns:
         list: A list of elements that match the specified parameter name and value.
+
+    Raises:
+        PyRevitException: when partial is True and param_value is not a string.
     """
+    if partial and not isinstance(param_value, str):
+        raise PyRevitException(
+            "A partial match needs a text value, not {!r}.".format(param_value)
+        )
     doc = doc or DOCS.doc
     elements = (
         DB.FilteredElementCollector(doc, view_id).ToElements()
@@ -761,6 +775,7 @@ def get_noteblock_families(doc=None):
     "pyrevit.elements.by-family",
     PlainEnglish="Find placed elements whose family name exactly matches a supplied name.",
     effects=("model.read",),
+    inputs=("family_name: string",),
 )
 def get_elements_by_family(family_name, doc=None):
     """
@@ -1134,6 +1149,7 @@ def get_phases_names(doc=None):
     "pyrevit.revisions.list",
     PlainEnglish="List revision elements in the current document.",
     effects=("model.read",),
+    inputs=(),
 )
 def get_revisions(doc=None):
     """
@@ -1184,6 +1200,7 @@ def get_current_sheet_revision(sheet):
     "pyrevit.sheets.list",
     PlainEnglish="List sheets, with optional placeholder and project-browser filtering.",
     effects=("model.read",),
+    inputs=("include_placeholders: boolean?", "include_noappear: boolean?"),
 )
 def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     """
@@ -1435,6 +1452,7 @@ def compare_revisions(src_rev, dest_rev, case_sensitive=False):
     "pyrevit.views.list",
     PlainEnglish="List Revit views with optional type and graphical-view filtering.",
     effects=("model.read",),
+    inputs=("include_nongraphical: boolean?",),
 )
 def get_all_views(doc=None, view_types=None, include_nongraphical=False):
     """
@@ -1575,6 +1593,7 @@ def is_schedule(view):
     "pyrevit.schedules.list",
     PlainEnglish="List schedule views that can be placed on a sheet.",
     effects=("model.read",),
+    inputs=(),
 )
 def get_all_schedules(doc=None):
     """
@@ -3587,11 +3606,11 @@ def find_level(level_name=None, doc=None):
         active_level = getattr(doc.ActiveView, "GenLevel", None)
         return active_level if active_level is not None else levels[0]
     for level in levels:
-        if level.Name == level_name:
+        if get_name(level) == level_name:
             return level
     raise PyRevitException(
         "No level named {!r}. Levels: {}.".format(
-            level_name, _name_listing(level.Name for level in levels)
+            level_name, _name_listing(get_name(level) for level in levels)
         )
     )
 
@@ -3633,6 +3652,7 @@ def find_type(type_class, type_name, doc=None):
     "pyrevit.family-symbols.resolve",
     PlainEnglish="Find a family type by name, family and optional category.",
     effects=("model.read",),
+    inputs=("symbol_name: string", "family_name: string?", "category: string?"),
 )
 def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     """Return a family type by name, or raise listing the family types.
@@ -3698,6 +3718,7 @@ def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     "pyrevit.views.resolve",
     PlainEnglish="Find a Revit view by name or id.",
     effects=("model.read",),
+    inputs=("view_name_or_id: scalar",),
 )
 def find_view(view_name_or_id, doc=None):
     """Return a view (or view template) by name or id, or raise listing similar names.
@@ -3714,24 +3735,33 @@ def find_view(view_name_or_id, doc=None):
     """
     if isinstance(view_name_or_id, DB.View):
         return view_name_or_id
-    doc = doc or DOCS.doc
-    if isinstance(view_name_or_id, (int, DB.ElementId)):
-        element_id = (
-            view_name_or_id
-            if isinstance(view_name_or_id, DB.ElementId)
-            else DB.ElementId(view_name_or_id)
+    if isinstance(view_name_or_id, bool):
+        raise PyRevitException(
+            "A view name or id is required, not {}.".format(view_name_or_id)
         )
+    doc = doc or DOCS.doc
+    if isinstance(view_name_or_id, (numbers.Integral, DB.ElementId)):
+        try:
+            element_id = (
+                view_name_or_id
+                if isinstance(view_name_or_id, DB.ElementId)
+                else get_elementid_from_value_func()(view_name_or_id)
+            )
+        except (OverflowError, TypeError, ValueError):
+            raise PyRevitException("No view with id {}.".format(view_name_or_id))
         view = doc.GetElement(element_id)
         if isinstance(view, DB.View):
             return view
         raise PyRevitException("No view with id {}.".format(view_name_or_id))
     views = DB.FilteredElementCollector(doc).OfClass(DB.View).ToElements()
     for view in views:
-        if view.Name == view_name_or_id:
+        if get_name(view) == view_name_or_id:
             return view
     words = [word for word in str(view_name_or_id).lower().split() if len(word) > 2]
     similar = [
-        view.Name for view in views if any(w in view.Name.lower() for w in words)
+        name
+        for name in (get_name(view) for view in views)
+        if any(w in name.lower() for w in words)
     ]
     raise PyRevitException(
         "No view named {!r}. Similar: {}.".format(
@@ -3744,6 +3774,7 @@ def find_view(view_name_or_id, doc=None):
     "pyrevit.plan-views.resolve",
     PlainEnglish="Find a floor plan for a level.",
     effects=("model.read",),
+    inputs=("level: string",),
 )
 def find_plan_view(level, doc=None):
     """Return a floor plan of a level, or raise when the level has none.
@@ -3770,7 +3801,7 @@ def find_plan_view(level, doc=None):
             return view
     raise PyRevitException(
         "Level {!r} has no floor plan; create one with "
-        "create.create_plan_view(level).".format(level.Name)
+        "create.create_plan_view(level).".format(get_name(level))
     )
 
 
