@@ -493,6 +493,9 @@ class SettingsWindow(forms.WPFWindow):
         self._agent_policy_at_open = policy
 
         self.agent_cb.IsEnabled = not enabled_managed
+        self.agent_connect_gb.IsEnabled = not (
+            enabled_managed and not configs.GetAgentEnabled()
+        )
         self.agent_engine_ironpython_rb.IsEnabled = not engine_managed
         self.agent_engine_cpython_rb.IsEnabled = not engine_managed
         if ceiling in ("readonly", "ask"):
