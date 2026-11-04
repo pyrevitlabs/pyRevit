@@ -6,9 +6,10 @@ there. A malformed entry would therefore reach every installed pyRevit at once,
 so this check gates both the pull request and the publish job.
 
 Invariant:
-    The rules here must stay a superset of what
-    `pyrevit.extensions.extcatalog.parse_catalog` accepts on the client, so a
-    catalog that passes CI is never rejected by an installed pyRevit.
+    Every catalog this check accepts must also be accepted by
+    `pyrevit.extensions.extcatalog.parse_catalog` on the client: this check
+    may be stricter, never looser, so a catalog that passes CI is never
+    rejected by an installed pyRevit.
 
 Exit code is 0 when the catalog is valid, 1 otherwise; every problem found is
 printed, one per line.

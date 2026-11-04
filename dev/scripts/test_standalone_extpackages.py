@@ -321,6 +321,28 @@ class ExtensionCatalogResolveTests(unittest.TestCase):
         self._resolve(_catalog_text("B"), now=1000.0, force=True)
         self.assertEqual(1, len(os.listdir(self.cache_dir)))
 
+    def test_cache_folder_created_concurrently_is_tolerated(self):
+        """Another session creating the cache folder first is not an error."""
+        folder = os.path.join(self.cache_dir, "new")
+        real_makedirs = os.makedirs
+
+        def makedirs_after_other_session(path):
+            real_makedirs(path)
+            raise OSError(17, "File exists")
+
+        with patch.object(self.extcatalog.os, "makedirs", makedirs_after_other_session):
+            self.extcatalog._ensure_folder(folder)
+        self.assertTrue(os.path.isdir(folder))
+
+    def test_cache_folder_error_is_raised(self):
+        """A real failure to create the folder still surfaces."""
+        folder = os.path.join(self.cache_dir, "denied")
+        with patch.object(
+            self.extcatalog.os, "makedirs", side_effect=OSError(13, "Access denied")
+        ):
+            with self.assertRaises(OSError):
+                self.extcatalog._ensure_folder(folder)
+
     def test_cache_only_mode_never_downloads(self):
         """allow_download=False returns even a stale cache, offline."""
         path = self._resolve(_catalog_text("A"), now=1000.0)

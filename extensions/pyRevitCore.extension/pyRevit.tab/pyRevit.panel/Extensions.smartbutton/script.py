@@ -85,11 +85,12 @@ def _list_ext_packages():
     The catalog download runs on Revit's UI thread before the window shows, so
     the cursor is the only feedback the user gets while it runs.
     """
+    previous_cursor = framework.Input.Mouse.OverrideCursor
     framework.Input.Mouse.OverrideCursor = framework.Input.Cursors.Wait
     try:
         return extpkgs.get_ext_packages(download_catalogs=True)
     finally:
-        framework.Input.Mouse.OverrideCursor = None
+        framework.Input.Mouse.OverrideCursor = previous_cursor
 
 
 def _get_default_ext_dir():

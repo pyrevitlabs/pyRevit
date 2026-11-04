@@ -276,6 +276,15 @@ def _replace_file(source, destination):
         framework.File.Move(source, destination)
 
 
+def _ensure_folder(folder):
+    """Create the cache folder, tolerating another session creating it first."""
+    try:
+        os.makedirs(folder)
+    except OSError:
+        if not op.isdir(folder):
+            raise
+
+
 def _write_cache(path, catalog):
     """Write the cache so readers always see a whole file.
 
@@ -284,8 +293,7 @@ def _write_cache(path, catalog):
     no reader finds the cache missing.
     """
     folder = op.dirname(path)
-    if not op.isdir(folder):
-        os.makedirs(folder)
+    _ensure_folder(folder)
     handle, temp_path = tempfile.mkstemp(
         prefix=op.basename(path) + ".", suffix=".tmp", dir=folder
     )
