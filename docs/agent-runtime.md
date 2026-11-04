@@ -279,7 +279,9 @@ Rules the host enforces:
 - To roll back a transaction the script leaves open, the runner traces the script's own
   frames, but only when the source mentions a transaction, calls `.Start(`, or the run uses
   a `workspace`. Other runs have no trace function, which on IronPython makes them many
-  times faster.
+  times faster, but also means nothing checks the deadline outside loop headers: unbounded
+  recursion, or a callback passed to `map`, `filter` or `sorted` over an endless iterable,
+  is not stopped on IronPython.
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
   builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
   the deadline on every line of every frame, which is slower but still stops it.

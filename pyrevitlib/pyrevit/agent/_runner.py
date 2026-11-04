@@ -567,7 +567,10 @@ def run(context):
         loops, but not a single blocking call such as a long Revit API call or
         ``time.sleep``, nor, on IronPython, a long loop inside a library or
         workspace function the script calls; the run fails with ``timeout``
-        once that call returns.
+        once that call returns. On IronPython, a run with no trace function
+        (see ``docs/agent-runtime.md``) has no check outside loop headers, so
+        unbounded recursion or a callback passed to ``map``, ``filter`` or
+        ``sorted`` over an endless iterable is not stopped.
 
     Warning:
         The source is compiled with every bare ``except`` and ``except
