@@ -23,8 +23,8 @@
     <sys:String x:Key="reason_view_filter">被视图过滤器“{}”隐藏</sys:String>
     <sys:String x:Key="reason_section_box">图元的边界框完全位于视图当前激活的三维剖切框之外</sys:String>
     <sys:String x:Key="reason_crop_box">图元的边界框完全位于视图裁剪区域之外</sys:String>
-    <sys:String x:Key="reason_viewrange_above">图元位于视图范围顶部剖切面之上（图元最小 Z 值 {:.3f} ft &gt; 顶部 {:.3f} ft）</sys:String>
-    <sys:String x:Key="reason_viewrange_below">图元位于视图范围下边界（底部剖切面/视图深度）之下（图元最大 Z 值 {:.3f} ft &lt; 下边界 {:.3f} ft）</sys:String>
+    <sys:String x:Key="reason_viewrange_above">图元位于视图范围顶部剖切面之上（图元最小 Z 值 {} &gt; 顶部 {}）</sys:String>
+    <sys:String x:Key="reason_viewrange_below">图元位于视图范围下边界（底部剖切面/视图深度）之下（图元最大 Z 值 {} &lt; 下边界 {}）</sys:String>
     <sys:String x:Key="reason_view_template">已应用视图样板“{}”——部分可见性设置可能被锁定，需要在样板中修改</sys:String>
     <sys:String x:Key="reason_view_specific">该图元为视图专属图元，属于另一个视图（“{}”），因此无法在此显示</sys:String>
     <sys:String x:Key="reason_view_discipline">视图专业已设置为“{}”——部分类别会根据专业自动显示或隐藏，与可见性/图形设置无关</sys:String>
@@ -113,7 +113,7 @@
     <sys:String x:Key="code_view_template">样板</sys:String>
     <sys:String x:Key="code_view_discipline">规程</sys:String>
     <sys:String x:Key="code_unknown">未知</sys:String>
-    <sys:String x:Key="reason_above_cut_plane">图元完全位于剖切面之上（图元最小 Z {:.3f} ft &gt; 剖切面 {:.3f} ft）。在剖切面与顶部之间，平面视图只显示窗、橱柜、常规模型和不可剖切的类别；“{}”可剖切</sys:String>
+    <sys:String x:Key="reason_above_cut_plane">图元完全位于剖切面之上（图元最小 Z {} &gt; 剖切面 {}）。在剖切面与顶部之间，平面视图只显示窗、橱柜、常规模型和不可剖切的类别；“{}”可剖切</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">将剖切面抬高到图元上方</sys:String>
     <sys:String x:Key="code_above_cut_plane">剖切面上方</sys:String>
     <sys:String x:Key="reason_subcategory_drawn_hidden">子类别“{}”在此视图中被隐藏，且该图元在此绘制的所有内容都使用隐藏的子类别</sys:String>
