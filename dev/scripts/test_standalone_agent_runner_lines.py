@@ -407,12 +407,12 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
         """Load the shared runner against isolated host doubles."""
         cls.runner = _load_runner()
 
-    def _unloaded(self, workspace, path, files):
+    def _unloaded(self, workspace, libraries, files):
         modules = {
             name: types.SimpleNamespace(__file__=file) for name, file in files.items()
         }
         with (
-            mock.patch.object(sys, "path", path),
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", libraries),
             mock.patch.dict(sys.modules, modules),
         ):
             self.runner._unload_modules_under(workspace)
@@ -443,6 +443,18 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
             },
         )
         self.assertEqual(["scratch_ws"], unloaded)
+
+    def test_helper_folders_the_agent_adds_to_sys_path_are_reloaded(self):
+        """A workspace subfolder on sys.path that isn't a library folder is still unloaded."""
+        workspace = os.path.abspath("work")
+        helpers = os.path.join(workspace, "helpers")
+        with mock.patch.object(sys, "path", [workspace, helpers]):
+            unloaded = self._unloaded(
+                workspace,
+                [],
+                {"helper_ws": os.path.join(helpers, "helper.py")},
+            )
+        self.assertEqual(["helper_ws"], unloaded)
 
     def test_modules_without_an_absolute_python_source_stay_loaded(self):
         """Relative stdlib paths, assembly names and .NET modules are never unloaded."""

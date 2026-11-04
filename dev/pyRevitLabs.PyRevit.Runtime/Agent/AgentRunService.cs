@@ -59,50 +59,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return policy == PyRevitConsts.ConfigsAgentPolicyAuto ? AgentPolicy.Auto : AgentPolicy.Ask;
         }
 
-        private static AgentPolicy? policyInForce;
-        private static AgentPolicy? declinedPolicy;
-
-        /// <summary>
-        /// The policy a run starts under: the configured one, unless it is looser than the policy
-        /// in force and the user hasn't confirmed the change.
-        /// </summary>
-        /// <remarks>
-        /// The first policy read in the Revit session is trusted. A declined policy isn't asked
-        /// about again until the config names a different one. Main thread only.
-        /// </remarks>
-        private static AgentPolicy PolicyInForce(UIApplication app) {
-            AgentHost.RefreshConfigIfChanged();
-            var configured = ReadPolicy();
-            if (policyInForce == null || AgentRunDecision.Stricter(configured, policyInForce.Value) == configured) {
-                policyInForce = configured;
-                declinedPolicy = null;
-            }
-            else if (configured != declinedPolicy) {
-                if (AgentApproval.ConfirmLoosening(app.MainWindowHandle, policyInForce.Value, configured)) {
-                    policyInForce = configured;
-                    declinedPolicy = null;
-                }
-                else {
-                    declinedPolicy = configured;
-                }
-            }
-            return policyInForce.Value;
-        }
+        private static readonly AgentPolicyInForce policyInForce = new AgentPolicyInForce();
 
         /// <summary>
         /// The policy the next run starts under unless the user confirms a looser one; never
         /// prompts. Main thread only.
         /// </summary>
         internal static string PolicyNameInForce() {
-            var configured = ReadPolicy();
-            var policy = policyInForce == null ? configured : AgentRunDecision.Stricter(configured, policyInForce.Value);
-            return AgentApproval.Name(policy);
-        }
-
-        internal static AgentException ReadOnlyRefusal() {
-            return new AgentException(
-                "policy_readonly",
-                "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+            return AgentApproval.Name(policyInForce.Current(ReadPolicy()));
         }
 
         private static AgentRunVerdict CarryOut(
@@ -190,9 +154,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc != null && doc.IsModifiable)
                 throw AgentException.NotRun("Another transaction is open in the active document.");
 
-            var policyAtStart = PolicyInForce(app);
+            AgentHost.RefreshConfigIfChanged();
+            var policyAtStart = policyInForce.Start(ReadPolicy(),
+                (inForce, configured) => AgentApproval.ConfirmLoosening(app.MainWindowHandle, inForce, configured));
             if (request.Mode == AgentRunMode.Modify && policyAtStart == AgentPolicy.ReadOnly)
-                throw ReadOnlyRefusal();
+                throw new AgentException(
+                    "policy_readonly",
+                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
 
             var highlight = AgentHost.BeginTabHighlight(app, doc, request.Title);
             try {
@@ -243,7 +211,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
                             ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
                             HasChanges = !guard.Changes.IsEmpty,
-                            Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
+                            Policy = AgentRunDecision.Stricter(policyAtStart, policyInForce.Tighten(ReadPolicy())),
                         });
                         verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight);
 

@@ -1,3 +1,5 @@
+using System;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal enum AgentRunMode {
         Query,
@@ -49,6 +51,56 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// failure or a change to another open document always rolls back before mode or policy
     /// is considered, and only a modify run with changes can reach a commit.
     /// </remarks>
+    /// <summary>
+    /// The agent policy in force for the Revit session, which only loosens with the user's
+    /// confirmation.
+    /// </summary>
+    /// <remarks>
+    /// Invariant: every stricter policy the host acts on is recorded through
+    /// <see cref="Start"/> or <see cref="Tighten"/>, so loosening from it later is always
+    /// confirmed. The first policy recorded is trusted. A declined policy isn't asked about
+    /// again until the config names a different one. Not thread-safe; the host uses it on the
+    /// Revit main thread only.
+    /// </remarks>
+    internal sealed class AgentPolicyInForce {
+        private AgentPolicy? inForce;
+        private AgentPolicy? declined;
+
+        /// <summary>
+        /// Records <paramref name="configured"/> when it is at least as strict as the policy in
+        /// force, and returns the policy in force.
+        /// </summary>
+        public AgentPolicy Tighten(AgentPolicy configured) {
+            if (inForce == null || AgentRunDecision.Stricter(configured, inForce.Value) == configured) {
+                inForce = configured;
+                declined = null;
+            }
+            return inForce.Value;
+        }
+
+        /// <summary>
+        /// The policy a run starts under. A looser <paramref name="configured"/> policy is
+        /// adopted only when <paramref name="confirmLoosening"/>, called with the policy in force
+        /// and the configured one, returns true.
+        /// </summary>
+        public AgentPolicy Start(AgentPolicy configured, Func<AgentPolicy, AgentPolicy, bool> confirmLoosening) {
+            var current = Tighten(configured);
+            if (current == configured || configured == declined)
+                return current;
+            if (!confirmLoosening(current, configured)) {
+                declined = configured;
+                return current;
+            }
+            inForce = configured;
+            declined = null;
+            return configured;
+        }
+
+        public AgentPolicy Current(AgentPolicy configured) {
+            return inForce == null ? configured : AgentRunDecision.Stricter(configured, inForce.Value);
+        }
+    }
+
     internal static class AgentRunDecision {
         public static AgentPolicy Stricter(AgentPolicy first, AgentPolicy second) {
             return first <= second ? first : second;

@@ -5,7 +5,6 @@ using System.Linq;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -61,7 +60,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
-                    EnforcePolicy(runRequest);
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
                     runRequest.RequestId = id?.ToString(Formatting.None).Trim('"');
@@ -118,12 +116,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 "The pyRevit agent is disabled in the pyRevit settings, so the request was not run.");
             disabled.Details["outcome"] = "not_run";
             throw disabled;
-        }
-
-        private static void EnforcePolicy(AgentRunRequest request) {
-            if (request.Mode == AgentRunMode.Modify
-                && PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyReadOnly)
-                throw AgentRunService.ReadOnlyRefusal();
         }
 
         /// <summary>

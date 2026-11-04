@@ -514,24 +514,24 @@ def _folder_prefix(folder):
     return op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
 
 
+_LIBRARY_PATHS = [entry for entry in sys.path if isinstance(entry, str) and entry]
+
+
 def _unload_modules_under(folder):
     """Unload the modules imported from ``folder``.
 
     Invariant:
-        Only Python source modules are unloaded, and one that also sits under
-        another ``sys.path`` folder inside the workspace belongs to that folder
-        and stays loaded. A workspace such as a drive root or the pyRevit clone
-        never unloads the standard library, .NET namespace modules, pyrevitlib
-        or this runner from the shared engine.
+        Only Python source modules are unloaded, and one under a library
+        folder (a ``sys.path`` entry from when this runner loaded) inside the
+        workspace stays loaded. A workspace such as a drive root or the pyRevit
+        clone never unloads the standard library, .NET namespace modules,
+        pyrevitlib or this runner from the shared engine, while a folder the
+        agent's own scripts put on ``sys.path`` is still reloaded.
     """
     root = _folder_prefix(folder)
     nested = [
         prefix
-        for prefix in (
-            _folder_prefix(entry)
-            for entry in sys.path
-            if isinstance(entry, str) and entry
-        )
+        for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
         if prefix != root and prefix.startswith(root)
     ]
     for name, module in list(sys.modules.items()):
