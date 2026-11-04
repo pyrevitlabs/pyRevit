@@ -401,9 +401,12 @@ class ExtensionCatalogRedirectTests(unittest.TestCase):
         extpackages, _ = _load_extpackages()
         cls.extcatalog = extpackages.extcatalog
 
-    def _open(self, routes, url="https://a.example/x.json"):
+    def _open(self, routes, url="https://a.example/x.json", elapsed_ms=0):
         web = _FakeWeb(routes)
-        response = self.extcatalog._open_following_https_redirects(web, url, 1000)
+        stopwatch = types.SimpleNamespace(ElapsedMilliseconds=elapsed_ms)
+        response = self.extcatalog._open_following_https_redirects(
+            web, url, 1000, stopwatch
+        )
         return web, response
 
     def test_https_redirects_are_followed(self):
@@ -434,11 +437,25 @@ class ExtensionCatalogRedirectTests(unittest.TestCase):
             "http://b.example/x.json": (302, "https://c.example/x.json"),
         }
         web = _FakeWeb(routes)
+        stopwatch = types.SimpleNamespace(ElapsedMilliseconds=0)
         with self.assertRaises(self.extcatalog.CatalogError):
             self.extcatalog._open_following_https_redirects(
-                web, "https://a.example/x.json", 1000
+                web, "https://a.example/x.json", 1000, stopwatch
             )
         self.assertEqual(["https://a.example/x.json"], [u for u, _ in web.requested])
+
+    def test_non_success_status_is_refused(self):
+        """A 300 or other non-2xx answer is never treated as the catalog."""
+        with self.assertRaises(self.extcatalog.CatalogError):
+            self._open({"https://a.example/x.json": (300, None)})
+
+    def test_spent_time_budget_stops_before_request(self):
+        """Redirects cannot stretch the wait past MAX_DOWNLOAD_MS."""
+        with self.assertRaises(self.extcatalog.CatalogError):
+            self._open(
+                {"https://a.example/x.json": (200, None)},
+                elapsed_ms=self.extcatalog.MAX_DOWNLOAD_MS,
+            )
 
     def test_redirect_loop_is_bounded(self):
         """A redirect loop stops after MAX_REDIRECTS hops."""

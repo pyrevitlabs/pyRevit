@@ -166,26 +166,36 @@ def cache_file_path(url, cache_dir):
     return op.join(cache_dir, CACHE_FILE_PREFIX + digest + ".json")
 
 
-def _open_following_https_redirects(framework, url, timeout_ms):
+def _open_following_https_redirects(framework, url, timeout_ms, stopwatch):
     """Send the request, following each redirect only once it is checked.
 
     Automatic redirects are off: every hop's `Location` must be https before
     the next request goes out, so an https -> http -> https chain is refused
-    instead of passing a check on the final URL.
+    instead of passing a check on the final URL. Each request gets at most the
+    time left in `MAX_DOWNLOAD_MS`, so redirects cannot stretch the wait, and
+    only a 2xx response is returned.
     """
     current_uri = framework.Uri(url)
     for _ in range(MAX_REDIRECTS + 1):
         if str(current_uri.Scheme).lower() != "https":
             raise CatalogError("redirected to a non-https URL: {}".format(current_uri))
+        remaining_ms = MAX_DOWNLOAD_MS - stopwatch.ElapsedMilliseconds
+        if remaining_ms <= 0:
+            raise CatalogError(
+                "download took longer than {} ms".format(MAX_DOWNLOAD_MS)
+            )
         request = framework.WebRequest.Create(current_uri)
         request.AllowAutoRedirect = False
-        request.Timeout = timeout_ms
-        request.ReadWriteTimeout = timeout_ms
+        request.Timeout = int(min(timeout_ms, remaining_ms))
+        request.ReadWriteTimeout = int(min(timeout_ms, remaining_ms))
         response = request.GetResponse()
-        if int(response.StatusCode) not in REDIRECT_STATUS_CODES:
+        status = int(response.StatusCode)
+        if 200 <= status < 300:
             return response
         location = response.Headers["Location"]
         response.Close()
+        if status not in REDIRECT_STATUS_CODES:
+            raise CatalogError("HTTP {} from {}".format(status, current_uri))
         if not location:
             raise CatalogError(
                 "redirect without a Location from {}".format(current_uri)
@@ -217,7 +227,7 @@ def download_text(url, timeout_ms=DOWNLOAD_TIMEOUT_MS):
     from pyrevit import framework
 
     stopwatch = framework.Stopwatch.StartNew()
-    response = _open_following_https_redirects(framework, url, timeout_ms)
+    response = _open_following_https_redirects(framework, url, timeout_ms, stopwatch)
     try:
         if response.ContentLength > MAX_CATALOG_BYTES:
             raise CatalogError(
