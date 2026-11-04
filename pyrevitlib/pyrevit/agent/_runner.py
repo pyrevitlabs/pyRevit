@@ -169,7 +169,8 @@ def _guard_loop_headers(source):
     Only the header expressions change and every newline stays in place, so
     line numbers and tracebacks still match the submitted source. Closing
     parentheses go right after the expression's last token, so columns on
-    the following lines stay put too.
+    the following lines stay put too. ``async for`` loops are left alone:
+    only CPython runs them, and its watchdog interrupts them.
 
     Raises:
         Exception: the source could not be tokenized; compile it unguarded.
@@ -186,21 +187,29 @@ def _guard_loop_headers(source):
     open_headers = []
     depth = 0
     last_end = None
-    token_source = source.replace("\r\n", "\n").replace("\r", "\n")
-    for token in tokenize.generate_tokens(StringIO(token_source).readline):
+    previous = None
+    for token in _significant_tokens(source):
         token_type, text, start, end, _ = token
-        if token_type in _LAYOUT_TOKENS:
-            continue
         while open_headers and _ends_loop_header(open_headers[-1], token, depth):
             header = open_headers.pop()
-            insertions.append((offset_of(last_end), header["close"]))
+            if header["guarded"]:
+                insertions.append((offset_of(last_end), header["close"]))
         last_end = end
         if token_type == tokenize.NAME:
             if text == "while":
                 insertions.append((offset_of(end), " __agent_tick__() and ("))
-                open_headers.append({"depth": depth, "close": ")", "iterating": True})
+                open_headers.append(
+                    {"depth": depth, "close": ")", "iterating": True, "guarded": True}
+                )
             elif text == "for":
-                open_headers.append({"depth": depth, "close": "))", "iterating": False})
+                open_headers.append(
+                    {
+                        "depth": depth,
+                        "close": "))",
+                        "iterating": False,
+                        "guarded": previous != "async",
+                    }
+                )
             elif (
                 text == "in"
                 and open_headers
@@ -208,18 +217,47 @@ def _guard_loop_headers(source):
                 and open_headers[-1]["depth"] == depth
             ):
                 open_headers[-1]["iterating"] = True
-                insertions.append((offset_of(end), " __agent_loop__(("))
+                if open_headers[-1]["guarded"]:
+                    insertions.append((offset_of(end), " __agent_loop__(("))
         elif token_type == tokenize.OP:
             if text in ("(", "[", "{"):
                 depth += 1
             elif text in (")", "]", "}"):
                 depth -= 1
+        previous = text
     if open_headers:
         raise SyntaxError("unterminated loop header")
     for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
         source = source[:position] + text + source[position:]
     return source
 
+
+def _significant_tokens(source):
+    token_source = source.replace("\r\n", "\n").replace("\r", "\n")
+    for token in tokenize.generate_tokens(StringIO(token_source).readline):
+        if token[0] not in _LAYOUT_TOKENS:
+            yield token
+
+
+def _runs_dynamic_code(source):
+    """True when the source can compile and run code at run time.
+
+    Code passed to ``exec``, ``eval``, ``execfile`` or the ``compile``
+    builtin is never seen by :func:`_guard_loop_headers`, and IronPython 2.7's
+    ``exec`` statement can't be intercepted, so such a run falls back to
+    checking the deadline on every line of every frame. ``re.compile`` and
+    other attribute calls named ``compile`` don't count.
+    """
+    previous = None
+    for token in _significant_tokens(source):
+        if token[0] == tokenize.NAME and token[1] in _DYNAMIC_CODE_NAMES:
+            if token[1] != "compile" or previous != ".":
+                return True
+        previous = token[1]
+    return False
+
+
+_DYNAMIC_CODE_NAMES = ("exec", "eval", "execfile", "compile")
 
 _LAYOUT_TOKENS = (
     tokenize.NL,
@@ -296,19 +334,28 @@ def _compile_source(source, guard_loops=False):
     return compile(narrowed_source, SOURCE_NAME, "exec"), None, False
 
 
-def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
+def _needs_transaction_tracking(source, workspace):
+    """True when script frames may hold a Revit transaction worth tracking.
+
+    A transaction reaches a script frame either from code that names one or
+    from a workspace helper. Scripts with neither run without a trace
+    function, which on IronPython makes every Python call several times
+    faster.
+    """
+    return bool(workspace) or _TRANSACTION_WORD.search(source) is not None
+
+
+def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     """Build the ``sys.settrace`` function for one run.
 
-    The module frame and the script's functions that name a transaction
-    (``code_lines``, from :func:`_transaction_code_lines`) record the Revit
-    transactions they hold. The module frame does so on every line, through
+    With ``track`` on, every frame running the agent source records the Revit
+    transactions it holds. The module frame does so on every line, through
     its globals, so a transaction stays found even after its variable is
     rebound. Functions do so when they return or an exception leaves them,
-    and on IronPython also on every line. Every other frame, including all
-    pyRevit, rpw and workspace code, runs untraced. ``code_lines`` None means
-    the source names no transaction and nothing is tracked. With
-    ``check_lines`` on, the other script frames also get a per-line check of
-    the watchdog's flag.
+    and on IronPython also on every line. pyRevit, rpw and workspace code
+    runs untraced. With ``check_lines`` on, every frame, the script's own and
+    any code it compiles at run time or calls, also checks the watchdog's
+    flag on each line.
 
     Warning:
         Never read ``f_locals`` from a CPython line event. On CPython 3.12 a
@@ -323,7 +370,6 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
         of every frame made a 200k-step loop take seconds (issue #3815), so
         loops are normally stopped by :func:`_guard_loop_headers` instead.
     """
-    may_hold = {}
     locals_on_lines = _implementation() != "cpython"
 
     def raise_if_timed_out(frame):
@@ -353,14 +399,7 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
 
     def trace_call(frame, event, arg):
         code = frame.f_code
-        if code.co_filename != SOURCE_NAME:
-            return None
-        holds = may_hold.get(code)
-        if holds is None:
-            holds = may_hold[code] = code_lines is not None and _may_hold_transactions(
-                code, code_lines
-            )
-        if not holds:
+        if not track or code.co_filename != SOURCE_NAME:
             return check_deadline if check_lines else None
         if code.co_name == "<module>":
             return track_module
@@ -372,47 +411,6 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, code_lines):
         return track_function
 
     return trace_call
-
-
-def _transaction_code_lines(source):
-    """Return the first lines of the script's functions that name a transaction.
-
-    Read from the AST because IronPython's code objects leave attribute
-    names such as ``DB.Transaction`` out of ``co_names``. Includes every line
-    that names a transaction too, which covers lambdas and comprehensions,
-    whose code objects start on the line of the expression.
-    """
-    lines = set()
-    for node in ast.walk(ast.parse(source, SOURCE_NAME, "exec")):
-        if not isinstance(node, (ast.FunctionDef, ast.Lambda)) and not (
-            type(node).__name__ == "AsyncFunctionDef"
-        ):
-            if _TRANSACTION_WORD.search(_node_name(node)):
-                lines.add(getattr(node, "lineno", 0))
-            continue
-        if any(_TRANSACTION_WORD.search(_node_name(inner)) for inner in ast.walk(node)):
-            lines.add(node.lineno)
-            for decorator in getattr(node, "decorator_list", ()):
-                lines.add(decorator.lineno)
-    return lines
-
-
-def _node_name(node):
-    for attribute in ("id", "attr", "arg", "name", "asname"):
-        value = getattr(node, attribute, None)
-        if isinstance(value, str):
-            return value
-    return ""
-
-
-def _may_hold_transactions(code, code_lines):
-    """True when a script code object may keep a transaction in its locals."""
-    if code.co_name == "<module>" or code.co_firstlineno in code_lines:
-        return True
-    for name in tuple(code.co_names) + tuple(code.co_varnames):
-        if _TRANSACTION_WORD.search(name):
-            return True
-    return False
 
 
 def _loop_guards(timeout_s, state, transactions):
@@ -436,7 +434,10 @@ def _loop_guards(timeout_s, state, transactions):
         return True
 
     def agent_loop(iterable):
-        for item in iterable:
+        return guarded(iter(iterable))
+
+    def guarded(iterator):
+        for item in iterator:
             if state["timed_out"]:
                 raise_timed_out()
             yield item
@@ -599,11 +600,8 @@ def run(context):
             ) = _loop_guards(timeout_s, state, tracked_transactions)
         phases.lap("setup")
         code, rewrite_problem, loops_guarded = _compile_source(source, guard_loops)
-        code_lines = (
-            _transaction_code_lines(source)
-            if _TRANSACTION_WORD.search(source)
-            else None
-        )
+        track = _needs_transaction_tracking(source, context.Workspace)
+        unguarded_code = not loops_guarded or _runs_dynamic_code(source)
         phases.lap("compile")
         if rewrite_problem:
             print(
@@ -612,16 +610,16 @@ def run(context):
                 )
             )
         check_lines = (
-            guard_loops and not loops_guarded and _async_exception_setter() is None
+            guard_loops and unguarded_code and _async_exception_setter() is None
         )
         started = time.time()
         stop_watchdog = None
         if timeout_s:
             stop_watchdog = _start_watchdog(timeout_s, state)
-        if check_lines or code_lines is not None:
+        if check_lines or track:
             sys.settrace(
                 _execution_tracer(
-                    timeout_s, state, tracked_transactions, check_lines, code_lines
+                    timeout_s, state, tracked_transactions, check_lines, track
                 )
             )
         try:

@@ -4,6 +4,7 @@ import ast
 import builtins
 import importlib.util
 import os
+import re
 import sys
 import traceback
 import types
@@ -70,7 +71,7 @@ class AgentRunnerLinesTests(unittest.TestCase):
 
     def _traceback_frames(self, source, exception_frames=None):
         """Capture yield frames before CPython contextlib removes them on rethrow."""
-        code, problem = self.runner._compile_source(source)
+        code, problem, _ = self.runner._compile_source(source)
         self.assertIsNone(problem)
 
         def trace(frame, event, arg):
@@ -231,7 +232,7 @@ class AgentRunnerLinesTests(unittest.TestCase):
             return original_compile(source, *args, **kwargs)
 
         with mock.patch("builtins.compile", side_effect=compile_source):
-            code, problem = self.runner._compile_source(
+            code, problem, _ = self.runner._compile_source(
                 "try:\n    raise ValueError()\nexcept BaseException:\n    result = 1\n"
             )
         self.assertIsNone(problem)
@@ -264,7 +265,7 @@ class AgentRunnerLinesTests(unittest.TestCase):
                     source, narrower.narrowed
                 )
                 self.assertEqual(source.count("\n"), rewritten.count("\n"))
-                code, problem = self.runner._compile_source(source)
+                code, problem, _ = self.runner._compile_source(source)
                 self.assertIsNone(problem)
                 namespace = {}
                 exec(code, namespace)
@@ -308,7 +309,7 @@ class AgentRunnerLinesTests(unittest.TestCase):
             "    raise ValueError('handler')\n"
         )
         self.assertEqual([("<module>", 7)], self._traceback_frames(source))
-        code, problem = self.runner._compile_source(
+        code, problem, _ = self.runner._compile_source(
             source.replace("ValueError('caught')", "SystemExit()")
         )
         self.assertIsNone(problem)
@@ -324,13 +325,13 @@ class AgentRunnerLinesTests(unittest.TestCase):
             "try: raise ValueError()\n"
             "except: result += 3\n"
         )
-        code, problem = self.runner._compile_source(source)
+        code, problem, _ = self.runner._compile_source(source)
         self.assertIsNone(problem)
         namespace = {}
         exec(code, namespace)
         self.assertEqual(4, namespace["result"])
         for exception in ("SystemExit", "RunTimedOut"):
-            code, problem = self.runner._compile_source(
+            code, problem, _ = self.runner._compile_source(
                 source.replace("ValueError()", exception + "()")
             )
             self.assertIsNone(problem)
@@ -366,7 +367,7 @@ class AgentRunnerLinesTests(unittest.TestCase):
                     [("<module>", 7), ("work", 4)],
                     self._traceback_frames(source),
                 )
-                code, problem = self.runner._compile_source(
+                code, problem, _ = self.runner._compile_source(
                     source.replace("ValueError('original line')", "RunTimedOut()")
                 )
                 self.assertIsNone(problem)
@@ -379,7 +380,7 @@ class AgentRunnerLinesTests(unittest.TestCase):
         with mock.patch.object(
             self.runner, "_narrow_source_handlers", return_value="except ("
         ):
-            code, problem = self.runner._compile_source(source)
+            code, problem, _ = self.runner._compile_source(source)
         self.assertIn("SyntaxError", problem)
         self.assertIn("compiled the narrowed AST instead", problem)
         self.assertIn("source line numbers may be unavailable", problem)
@@ -397,6 +398,250 @@ class AgentRunnerLinesTests(unittest.TestCase):
         self.assertEqual(
             "try:\n    pass\nexcept (Exception) , error:\n    pass\n", rewritten
         )
+
+    def test_compile_reports_whether_loops_are_guarded(self):
+        """Guard loops only when asked, and report it."""
+        source = "for item in range(2):\n    pass\n"
+        self.assertFalse(self.runner._compile_source(source)[2])
+        code, problem, guarded = self.runner._compile_source(source, True)
+        self.assertIsNone(problem)
+        self.assertTrue(guarded)
+
+
+LOOP_SHAPES = {
+    "simple_for": "s = 0\nfor i in range(5):\n    s += i\nresult = s\n",
+    "tuple_target": "s = []\nfor (a, b) in [(1, 2), (3, 4)]:\n    s.append(a * b)\nresult = s\n",
+    "bare_tuple_iter": "s = []\nfor x in 1, 2, 3:\n    s.append(x)\nresult = s\n",
+    "ternary_iter": "c = False\ns = []\nfor x in [1] if c else [2, 3]:\n    s.append(x)\nresult = s\n",
+    "slice_iter": "s = []\nfor x in [1, 2, 3, 4][1:]:\n    s.append(x)\nresult = s\n",
+    "in_inside_iter": "s = []\nfor x in (1 in [1], 2 in [3]):\n    s.append(x)\nresult = s\n",
+    "for_else": "s = 0\nfor x in []:\n    s = 1\nelse:\n    s = 2\nresult = s\n",
+    "one_line_for": "s = 0\nfor x in range(3): s += x\nresult = s\n",
+    "multiline_iter": "s = []\nfor x in (1,  # comment\n          2):\n    s.append(x)\nresult = s\n",
+    "backslash_iter": "s = []\nfor x in 1, \\\n        2:\n    s.append(x)\nresult = s\n",
+    "no_space_in": "s = []\nfor x in(1, 2):\n    s.append(x)\nresult = s\n",
+    "while": "i = 0\nwhile i < 5:\n    i += 1\nresult = i\n",
+    "while_or": "i = 0\nwhile i < 3 or False:\n    i += 1\nresult = i\n",
+    "while_one_line": "i = 0\nwhile i < 3: i += 1\nresult = i\n",
+    "while_not": "i = 0\nwhile not i >= 4:\n    i += 1\nresult = i\n",
+    "while_comment_colon": "i = 0\nwhile i < 2:  # note: colon\n    i += 1\nresult = i\n",
+    "while_break_else": (
+        "i = 0\nwhile True:\n    i += 1\n    if i > 2:\n        break\n"
+        "else:\n    i = -1\nresult = i\n"
+    ),
+    "list_comp": "result = [x * 2 for x in range(4)]\n",
+    "list_comp_if": "result = [x for x in range(6) if x % 2]\n",
+    "comp_if_next_line": "data = [1, 2, 3]\nresult = [\n    x\n    for x in data\n    if x > 1\n]\n",
+    "nested_comp": "result = [(x, y) for x in range(3) for y in range(x) if y]\n",
+    "comp_in_iter": "result = [y for y in [x for x in range(3)]]\n",
+    "dict_comp": "result = {k: v for k, v in [('a', 1), ('b', 2)]}\n",
+    "set_comp": "result = sorted({x % 3 for x in range(9)})\n",
+    "gen_arg": "result = sum(x for x in range(5))\n",
+    "gen_with_kw": "result = sorted((x for x in [3, 1, 2]), reverse=True)\n",
+    "ternary_element": "result = [x if x else -1 for x in [0, 1, 2]]\n",
+    "lambda_in_comp": "result = [f(2) for f in [lambda v: v + 1, lambda v: v * 3]]\n",
+    "keywords_in_strings": "s = 'for x in y: while'  # for while in\nresult = [c for c in s if c == 'w']\n",
+    "nested_loops_in_function": (
+        "def f(n):\n    out = []\n    for i in range(n):\n        j = 0\n"
+        "        while j < i:\n            out.append((i, j))\n            j += 1\n"
+        "    return out\nresult = f(4)\n"
+    ),
+    "class_body": (
+        "class A:\n    items = [x for x in range(3)]\n    for k in range(2):\n"
+        "        pass\nresult = A.items\n"
+    ),
+    "crlf": "s = 0\r\nfor i in range(3):\r\n    s += i\r\nresult = s\r\n",
+    "unicode": "s = 'Привет мир'\nresult = [c for c in s if c in 'ир']\n",
+}
+
+
+class AgentRunnerLoopGuardTests(unittest.TestCase):
+    """Loop-header guards, timeout tracking and tracer scope, without Revit."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _guards(self, timed_out=False):
+        state = {"timed_out": timed_out}
+        tick, loop = self.runner._loop_guards(5, state, {})
+        return state, {"__agent_tick__": tick, "__agent_loop__": loop}
+
+    def _run_guarded(self, source, namespace=None):
+        code, problem, guarded = self.runner._compile_source(source, True)
+        self.assertIsNone(problem)
+        self.assertTrue(guarded)
+        scope = self._guards()[1]
+        scope.update(namespace or {})
+        exec(code, scope)
+        return scope
+
+    def test_loop_shapes_keep_results_and_lines(self):
+        """Every loop shape behaves the same, gets one guard, and keeps its lines."""
+        for name, source in sorted(LOOP_SHAPES.items()):
+            with self.subTest(shape=name):
+                guarded = self.runner._guard_loop_headers(source)
+                expected = {}
+                exec(compile(source, "<original>", "exec"), expected)
+                actual = self._run_guarded(source)
+                self.assertEqual(expected["result"], actual["result"])
+                self.assertEqual(
+                    len(self.runner._source_lines(source)),
+                    len(self.runner._source_lines(guarded)),
+                )
+                guards = guarded.count("__agent_tick__") + guarded.count(
+                    "__agent_loop__"
+                )
+                loops = sum(
+                    1
+                    for token in self.runner._significant_tokens(source)
+                    if token[1] in ("for", "while")
+                )
+                self.assertEqual(loops, guards)
+                for before, after in zip(source.splitlines(), guarded.splitlines()):
+                    if before == after:
+                        continue
+                    closer_only = any(
+                        after.replace(closer, "", 1) == before for closer in ("))", ")")
+                    )
+                    self.assertTrue(
+                        closer_only or re.search(r"\b(for|while)\b", before),
+                        (before, after),
+                    )
+
+    def test_guards_stop_a_loop_that_swallows_the_timeout(self):
+        """A handler the runner can't narrow still can't keep the loop running."""
+        source = (
+            "Base = BaseException\n"
+            "count = 0\n"
+            "while True:\n"
+            "    count += 1\n"
+            "    try:\n"
+            "        for i in range(10):\n"
+            "            pass\n"
+            "    except Base:\n"
+            "        pass\n"
+        )
+        code, problem, guarded = self.runner._compile_source(source, True)
+        state, scope = self._guards(timed_out=True)
+        with self.assertRaises(self.runner.RunTimedOut):
+            exec(code, scope)
+
+    def test_generator_expression_iterates_its_source_immediately(self):
+        """Create the outermost iterator when the generator expression is built."""
+        source = "d = {1: 1}\ng = (k for k in d)\nd.clear()\nresult = list(g)\n"
+        with self.assertRaises(RuntimeError):
+            exec(compile(source, "<original>", "exec"), {})
+        with self.assertRaises(RuntimeError):
+            self._run_guarded(source)
+
+    @unittest.skipIf(sys.version_info < (3, 7), "Requires asyncio.run")
+    def test_async_loops_are_left_alone(self):
+        """Leave async for loops to the CPython watchdog instead of breaking them."""
+        source = (
+            "import asyncio\n"
+            "async def numbers():\n"
+            "    for value in range(3):\n"
+            "        yield value\n"
+            "async def collect():\n"
+            "    found = [value async for value in numbers()]\n"
+            "    async for value in numbers():\n"
+            "        found.append(value)\n"
+            "    return found\n"
+            "result = asyncio.run(collect())\n"
+        )
+        guarded = self.runner._guard_loop_headers(source)
+        self.assertIn("[value async for value in numbers()]", guarded)
+        self.assertIn("    async for value in numbers():", guarded)
+        self.assertEqual([0, 1, 2, 0, 1, 2], self._run_guarded(source)["result"])
+
+    def test_dynamic_code_is_detected(self):
+        """Spot code compiled at run time, but not attribute calls named compile."""
+        for source in (
+            "exec(inputs['code'])\n",
+            "value = eval('1 + 1')\n",
+            "code = compile('x = 1', '<s>', 'exec')\n",
+        ):
+            with self.subTest(source=source):
+                self.assertTrue(self.runner._runs_dynamic_code(source))
+        for source in (
+            "import re\npattern = re.compile('a+')\n",
+            "text = 'exec eval compile'  # exec\n",
+        ):
+            with self.subTest(source=source):
+                self.assertFalse(self.runner._runs_dynamic_code(source))
+
+    def test_transaction_tracking_needs_a_mention_or_a_workspace(self):
+        """Skip the tracer only for scripts that can't reach a transaction."""
+        needs = self.runner._needs_transaction_tracking
+        self.assertTrue(needs("T = DB.Transaction\n", None))
+        self.assertTrue(needs("result = helpers.run()\n", r"C:\work"))
+        self.assertFalse(needs("result = [1, 2]\n", None))
+
+    def _tracked(self, source):
+        transactions = {}
+        tracer = self.runner._execution_tracer(
+            5, {"timed_out": False}, transactions, False, True
+        )
+        code, problem, guarded = self.runner._compile_source(source, True)
+        scope = self._guards()[1]
+        scope["DB"] = self.runner.DB
+        previous = sys.gettrace()
+        sys.settrace(tracer)
+        try:
+            exec(code, scope)
+        finally:
+            sys.settrace(previous)
+        return sorted(
+            getattr(value, "label", "?") for _, value in transactions.values()
+        )
+
+    def test_helpers_that_never_name_a_transaction_are_tracked(self):
+        """Find transactions held under aliases, factory results and parameters."""
+        source = (
+            "class Labelled(DB.Transaction):\n"
+            "    def __init__(self, label):\n"
+            "        self.label = label\n"
+            "T = Labelled\n"
+            "def make(label):\n"
+            "    return T(label)\n"
+            "def aliased():\n"
+            "    t = T('alias')\n"
+            "def from_factory():\n"
+            "    txn = make('factory')\n"
+            "def start(txn):\n"
+            "    pass\n"
+            "aliased()\n"
+            "from_factory()\n"
+            "start(make('parameter'))\n"
+        )
+        self.assertEqual(["alias", "factory", "parameter"], self._tracked(source))
+
+    def test_tracking_keeps_module_comprehensions_intact(self):
+        """Reading frame locals must not clobber inlined comprehension variables."""
+        source = (
+            "label = 'transaction'\n"
+            "values = [10, 20, 30]\n"
+            "result = [\n"
+            "    value\n"
+            "    for value in values\n"
+            "    if value is not None\n"
+            "]\n"
+        )
+        transactions = {}
+        tracer = self.runner._execution_tracer(
+            5, {"timed_out": False}, transactions, False, True
+        )
+        code, problem, guarded = self.runner._compile_source(source, True)
+        scope = self._guards()[1]
+        previous = sys.gettrace()
+        sys.settrace(tracer)
+        try:
+            exec(code, scope)
+        finally:
+            sys.settrace(previous)
+        self.assertEqual([10, 20, 30], scope["result"])
 
 
 if __name__ == "__main__":

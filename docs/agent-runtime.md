@@ -276,9 +276,12 @@ Rules the host enforces:
   narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
   `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
   other way, such as through an alias, is stopped again at its next loop header.
-- To roll back a transaction the script leaves open, the runner traces only the script's
-  own functions that name a transaction, and only when the source mentions one. Other code
-  runs without a trace function, which on IronPython makes it many times faster.
+- To roll back a transaction the script leaves open, the runner traces the script's own
+  frames, but only when the source mentions a transaction or the run uses a `workspace`.
+  Other runs have no trace function, which on IronPython makes them many times faster.
+- Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
+  builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
+  the deadline on every line of every frame, which is slower but still stops it.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - Documents can't be saved or synchronized during a run.
