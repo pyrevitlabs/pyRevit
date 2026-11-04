@@ -11,6 +11,8 @@ layout:
 - Logs
 - -----
 - Unit Tests
+- ">>>"
+- Log Output Tests[title:Log Output\nTests]
 - Engine Tests
 - Agent Tests
 - Bundle Tests
@@ -19,7 +21,6 @@ layout:
 - Misc Tests[title:Third-Party\nUnit Tests]
 - Debug Dialog Config
 - WebView2 Check
-- -----
 - Test ComboBox
 
 template_test: Bundle liquid templating works (https://www.youtube.com/watch?v=)

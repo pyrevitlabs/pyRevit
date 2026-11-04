@@ -29,6 +29,9 @@ import unittest
 from pyrevit.coreutils.configparser import ConfigSection, ConfigSections
 from pyrevit.userconfig import _SectionCompatWrapper
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
 
 def _load_ini_backend():
     """Return the real IniConfiguration type, or None when it cannot be loaded.
