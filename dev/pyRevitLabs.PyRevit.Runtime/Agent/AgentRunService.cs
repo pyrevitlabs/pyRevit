@@ -66,8 +66,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The policy the next run starts under unless the user confirms a looser one; never
         /// prompts. Main thread only.
         /// </summary>
+        /// <remarks>
+        /// Records a stricter configured policy, like every other place the host acts on one,
+        /// so a policy reported as in force can't be loosened later without confirmation.
+        /// </remarks>
         internal static string PolicyNameInForce() {
-            return AgentApproval.Name(policyInForce.Current(ReadPolicy()));
+            return AgentApproval.Name(policyInForce.Tighten(ReadPolicy()));
         }
 
         private static AgentRunVerdict CarryOut(
@@ -440,12 +444,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static string BuildSummary(string title, JObject changes, JArray failures, string previewDescription) {
             var summary = new StringBuilder();
-            summary.AppendLine("Operation: " + title);
             summary.AppendLine(string.Format(
                 "Added: {0}   Modified: {1}   Deleted: {2}",
                 changes.Value<int>("added_count"),
                 changes.Value<int>("modified_count"),
                 changes.Value<int>("deleted_count")));
+            summary.AppendLine("Operation: " + title);
 
             var byCategory = changes["by_category"] as JObject;
             if (byCategory != null && byCategory.Count > 0) {

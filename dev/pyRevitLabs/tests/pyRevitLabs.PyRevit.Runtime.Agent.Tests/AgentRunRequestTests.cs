@@ -14,11 +14,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Theory]
-        [InlineData(@"\server\share")]
+        [InlineData(@"\\server\share")]
         [InlineData("//server/share")]
         [InlineData(@"\/server/share")]
         [InlineData(@"/\server\share")]
-        [InlineData(@"\?\C:\Windows")]
+        [InlineData(@"\\?\C:\Windows")]
         public void NetworkAndDeviceWorkspacesAreRefused(string workspace) {
             var refused = Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: workspace)));
 

@@ -538,7 +538,7 @@ def _unload_modules_under(folder):
         module_file = getattr(module, "__file__", None)
         if (
             _is_under(module_file, root)
-            and module_file.lower().endswith((".py", ".pyc"))
+            and module_file.lower().endswith((".py", ".pyw", ".pyc"))
             and not any(_is_under(module_file, prefix) for prefix in nested)
         ):
             del sys.modules[name]

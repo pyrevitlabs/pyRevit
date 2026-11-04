@@ -424,9 +424,12 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
         unloaded = self._unloaded(
             workspace,
             [workspace],
-            {"house_ws": os.path.join(workspace, "house.py")},
+            {
+                "house_ws": os.path.join(workspace, "house.py"),
+                "tool_ws": os.path.join(workspace, "tool.pyw"),
+            },
         )
-        self.assertEqual(["house_ws"], unloaded)
+        self.assertEqual(["house_ws", "tool_ws"], unloaded)
 
     def test_library_folders_inside_the_workspace_stay_loaded(self):
         """A drive-root workspace doesn't unload the stdlib or pyrevitlib."""

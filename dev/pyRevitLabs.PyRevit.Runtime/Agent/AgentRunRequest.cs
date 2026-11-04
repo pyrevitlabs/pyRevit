@@ -26,7 +26,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         /// <remarks>
         /// Invariant: holds no line breaks or other control and format characters, so a title
-        /// can't fake the change counts printed below it in the prompt.
+        /// can't add lines that pass for the change counts in the prompt.
         /// </remarks>
         public string Title { get; private set; }
         public AgentRunMode Mode { get; private set; }

@@ -65,14 +65,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void CurrentReportsTheStricterOfConfiguredAndInForce() {
+        public void TightenReportsTheStricterOfConfiguredAndInForce() {
             var policy = new AgentPolicyInForce();
-            Assert.Equal(AgentPolicy.Auto, policy.Current(AgentPolicy.Auto));
-
             policy.Start(AgentPolicy.ReadOnly, Refuse);
 
-            Assert.Equal(AgentPolicy.ReadOnly, policy.Current(AgentPolicy.Auto));
-            Assert.Equal(AgentPolicy.ReadOnly, policy.Current(AgentPolicy.ReadOnly));
+            Assert.Equal(AgentPolicy.ReadOnly, policy.Tighten(AgentPolicy.Auto));
+            Assert.Equal(AgentPolicy.ReadOnly, policy.Tighten(AgentPolicy.ReadOnly));
         }
     }
 }

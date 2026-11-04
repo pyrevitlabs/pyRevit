@@ -95,10 +95,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             declined = null;
             return configured;
         }
-
-        public AgentPolicy Current(AgentPolicy configured) {
-            return inForce == null ? configured : AgentRunDecision.Stricter(configured, inForce.Value);
-        }
     }
 
     internal static class AgentRunDecision {
