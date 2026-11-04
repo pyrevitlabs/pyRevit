@@ -130,6 +130,9 @@ def format_value(value, spec, doc=None):
         value=value,
         maxAccuracy=False,
         forEditing=False,
+    )
+
+
 def _format_in_document_units(
     value, doc, spec_name, legacy_unit_type_name, append_symbol
 ):
