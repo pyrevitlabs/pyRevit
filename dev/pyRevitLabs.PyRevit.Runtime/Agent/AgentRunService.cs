@@ -89,6 +89,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return policyInForce.Value;
         }
 
+        /// <summary>
+        /// The policy the next run starts under unless the user confirms a looser one; never
+        /// prompts. Main thread only.
+        /// </summary>
+        internal static string PolicyNameInForce() {
+            var configured = ReadPolicy();
+            var policy = policyInForce == null ? configured : AgentRunDecision.Stricter(configured, policyInForce.Value);
+            return AgentApproval.Name(policy);
+        }
+
         internal static AgentException ReadOnlyRefusal() {
             return new AgentException(
                 "policy_readonly",
@@ -435,7 +445,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return MessageBox(owner, text, "pyRevit Agent policy", YesNoQuestionDefaultNo) == Yes;
         }
 
-        private static string Name(AgentPolicy policy) => policy.ToString().ToLowerInvariant();
+        internal static string Name(AgentPolicy policy) => policy.ToString().ToLowerInvariant();
 
         public static bool Ask(UIDocument uidoc, string title, AgentChangeSet changeSet, JObject changes, JArray failures) {
             var previousSelection = uidoc.Selection.GetElementIds();

@@ -444,6 +444,24 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
         )
         self.assertEqual(["scratch_ws"], unloaded)
 
+    def test_modules_without_an_absolute_python_source_stay_loaded(self):
+        """Relative stdlib paths, assembly names and .NET modules are never unloaded."""
+        root = os.path.abspath(os.sep)
+        unloaded = self._unloaded(
+            root,
+            [root],
+            {
+                "abc_ws": "abc.py",
+                "revitapi_ws": "RevitAPI, Version=26.0.0.0, Culture=neutral",
+                "clr_ws": "unknown",
+                "autodesk_ws": os.path.join(
+                    root, "Program Files", "Autodesk", "RevitAPI.dll"
+                ),
+                "scratch_ws": os.path.join(root, "scratch.py"),
+            },
+        )
+        self.assertEqual(["scratch_ws"], unloaded)
+
 
 if __name__ == "__main__":
     unittest.main()

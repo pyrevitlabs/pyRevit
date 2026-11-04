@@ -497,11 +497,12 @@ def _enter_workspace(workspace):
 def _is_under(module_file, root):
     """True when a module's file is inside ``root``.
 
-    Loaded modules can have a ``__file__`` that isn't a file path (built-in
-    and dynamically created modules, assemblies); ``op.abspath`` raises on
-    those in IronPython, so they are treated as outside the workspace.
+    Loaded modules can have a ``__file__`` that isn't an absolute file path
+    (built-in and dynamically created modules, assembly names, IronPython's
+    relative stdlib paths); those are treated as outside the workspace, since
+    ``op.abspath`` would resolve them against the current directory.
     """
-    if not isinstance(module_file, str) or not module_file:
+    if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
@@ -517,10 +518,11 @@ def _unload_modules_under(folder):
     """Unload the modules imported from ``folder``.
 
     Invariant:
-        A module that also sits under another ``sys.path`` folder inside the
-        workspace belongs to that folder and stays loaded, so a workspace such
-        as a drive root or the pyRevit clone never unloads the standard library,
-        pyrevitlib or this runner from the shared engine.
+        Only Python source modules are unloaded, and one that also sits under
+        another ``sys.path`` folder inside the workspace belongs to that folder
+        and stays loaded. A workspace such as a drive root or the pyRevit clone
+        never unloads the standard library, .NET namespace modules, pyrevitlib
+        or this runner from the shared engine.
     """
     root = _folder_prefix(folder)
     nested = [
@@ -534,8 +536,10 @@ def _unload_modules_under(folder):
     ]
     for name, module in list(sys.modules.items()):
         module_file = getattr(module, "__file__", None)
-        if _is_under(module_file, root) and not any(
-            _is_under(module_file, prefix) for prefix in nested
+        if (
+            _is_under(module_file, root)
+            and module_file.lower().endswith((".py", ".pyc"))
+            and not any(_is_under(module_file, prefix) for prefix in nested)
         ):
             del sys.modules[name]
 
