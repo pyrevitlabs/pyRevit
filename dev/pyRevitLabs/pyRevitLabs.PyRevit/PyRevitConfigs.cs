@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Principal;
 using System.Security.AccessControl;
@@ -386,6 +387,76 @@ namespace pyRevitLabs.PyRevit {
             }
             catch (Exception ex) {
                 throw new PyRevitException($"Could not restrict permissions on \"{path}\"", ex);
+            }
+        }
+
+        /// <summary>
+        /// Describes how standard users could still remove an admin pin through the permissions of the
+        /// machine config folder, or returns null when none is found.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="RestrictAdminConfigAccess"/> only hardens the file. A folder that standard users
+        /// own, or on which they hold delete or permission-change rights, lets them delete or rename the
+        /// file regardless. Merely being able to create files does not: every config-named ini in the
+        /// folder is read and the strictest pin wins. Reports instead of changing the folder, because
+        /// pyRevit and other tools may rely on its current permissions.
+        /// </remarks>
+        public static string GetAdminConfigFolderRisk() {
+            string folder = Path.GetDirectoryName(AgentAdminPolicy.MachineConfigPath);
+            if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+                return null;
+
+            try {
+                var security = new DirectoryInfo(folder).GetAccessControl();
+                var problems = new List<string>();
+
+                var owner = security.GetOwner(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                bool trustedOwner = owner != null
+                    && (owner.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid)
+                        || owner.IsWellKnown(WellKnownSidType.LocalSystemSid)
+                        || owner.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal));
+                if (!trustedOwner)
+                    problems.Add("it is owned by " + DescribeSid(owner) + ", who can change its permissions");
+
+                const FileSystemRights removeRights = FileSystemRights.DeleteSubdirectoriesAndFiles
+                    | FileSystemRights.Delete
+                    | FileSystemRights.ChangePermissions
+                    | FileSystemRights.TakeOwnership;
+                foreach (FileSystemAccessRule rule in security.GetAccessRules(true, true, typeof(SecurityIdentifier))) {
+                    if (rule.AccessControlType != AccessControlType.Allow
+                        || (rule.PropagationFlags & PropagationFlags.InheritOnly) != 0
+                        || (rule.FileSystemRights & removeRights) == 0)
+                        continue;
+
+                    var sid = (SecurityIdentifier)rule.IdentityReference;
+                    if (sid.IsWellKnown(WellKnownSidType.BuiltinUsersSid)
+                        || sid.IsWellKnown(WellKnownSidType.WorldSid)
+                        || sid.IsWellKnown(WellKnownSidType.AuthenticatedUserSid))
+                        problems.Add(DescribeSid(sid) + " can delete files in it or change its permissions");
+                }
+
+                if (problems.Count == 0)
+                    return null;
+
+                return $"Standard users can still remove the lock, because {string.Join(" and ", problems)}. "
+                    + $"Restrict \"{folder}\" to administrators for writing, for example: "
+                    + $"icacls \"{folder}\" /inheritance:r /grant:r \"SYSTEM:(OI)(CI)F\" "
+                    + "\"Administrators:(OI)(CI)F\" \"Users:(OI)(CI)RX\" /setowner Administrators "
+                    + "(first check that nothing needs users to write there).";
+            }
+            catch (Exception ex) {
+                return $"Could not check the permissions of \"{folder}\": {ex.Message}";
+            }
+        }
+
+        private static string DescribeSid(SecurityIdentifier sid) {
+            if (sid == null)
+                return "an unknown account";
+            try {
+                return sid.Translate(typeof(NTAccount)).Value;
+            }
+            catch {
+                return sid.Value;
             }
         }
 
