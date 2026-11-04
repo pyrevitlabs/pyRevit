@@ -160,6 +160,7 @@ class _DryTransactionGroup(object):
 LINE_PATTERN_ELEMENT = type("LinePatternElement", (), {})
 FILL_PATTERN_ELEMENT = type("FillPatternElement", (), {})
 SHARED_PARAMETER_ELEMENT = type("SharedParameterElement", (), {})
+VIEW = type("View", (), {})
 PROJECTION = 1
 CUT = 2
 
@@ -167,18 +168,78 @@ CUT = 2
 class _RecordingLogger(object):
     def __init__(self):
         self.debug_calls = []
+        self.warning_calls = []
 
     def debug(self, message, *args):
         self.debug_calls.append(message % args)
 
+    def warning(self, message, *args):
+        self.warning_calls.append(message % args)
+
 
 class _Category(object):
-    def __init__(self, projection_pattern_id, cut_pattern_id=-1, subcategories=()):
+    def __init__(
+        self,
+        projection_pattern_id,
+        cut_pattern_id=-1,
+        subcategories=(),
+        category_id=None,
+    ):
         self._pattern_ids = {PROJECTION: projection_pattern_id, CUT: cut_pattern_id}
         self.SubCategories = list(subcategories)
+        self.Id = category_id
 
     def GetLinePatternId(self, style_type):
         return self._pattern_ids[style_type]
+
+
+def _overrides(**pattern_ids):
+    values = {name: -1 for name in OVERRIDE_PATTERN_PROPERTIES}
+    values.update(pattern_ids)
+    return types.SimpleNamespace(**values)
+
+
+OVERRIDE_PATTERN_PROPERTIES = (
+    "ProjectionLinePatternId",
+    "CutLinePatternId",
+    "SurfaceForegroundPatternId",
+    "SurfaceBackgroundPatternId",
+    "CutForegroundPatternId",
+    "CutBackgroundPatternId",
+)
+
+
+class _View(object):
+    def __init__(
+        self,
+        category_overrides=None,
+        filter_overrides=None,
+        overrides_allowed=True,
+        overridable_category_ids=None,
+    ):
+        self._category_overrides = category_overrides or {}
+        self._filter_overrides = filter_overrides or {}
+        self._overrides_allowed = overrides_allowed
+        self._overridable = overridable_category_ids
+
+    def AreGraphicsOverridesAllowed(self):
+        return self._overrides_allowed
+
+    def GetFilters(self):
+        if not self._overrides_allowed:
+            raise AssertionError("GetFilters called on a view without overrides")
+        return list(self._filter_overrides)
+
+    def GetFilterOverrides(self, filter_id):
+        return self._filter_overrides[filter_id]
+
+    def IsCategoryOverridable(self, category_id):
+        return self._overridable is None or category_id in self._overridable
+
+    def GetCategoryOverrides(self, category_id):
+        if not self.IsCategoryOverridable(category_id):
+            raise AssertionError("category {} is not overridable".format(category_id))
+        return self._category_overrides.get(category_id, _overrides())
 
 
 def _collector_doc(categories=(), elements_by_class=None, bound_definitions=()):
@@ -196,6 +257,16 @@ def _line_pattern(element_id):
     return types.SimpleNamespace(Id=element_id, Name="pattern {}".format(element_id))
 
 
+def _fill_pattern(element_id):
+    return types.SimpleNamespace(
+        Id=element_id,
+        Name="fill {}".format(element_id),
+        GetFillPattern=lambda: types.SimpleNamespace(
+            IsSolidFill=False, Target="Drafting"
+        ),
+    )
+
+
 def _shared_parameter(element_id):
     return types.SimpleNamespace(
         Id=element_id,
@@ -211,12 +282,15 @@ def _load_probe():
         FailureProcessingResult=types.SimpleNamespace(
             Continue="Continue", ProceedWithRollBack="ProceedWithRollBack"
         ),
-        Events=types.SimpleNamespace(DocumentChangedEventArgs=object),
-        UndoOperation=types.SimpleNamespace(TransactionCommitted=COMMITTED),
+        Events=types.SimpleNamespace(
+            DocumentChangedEventArgs=object,
+            UndoOperation=types.SimpleNamespace(TransactionCommitted=COMMITTED),
+        ),
         GraphicsStyleType=types.SimpleNamespace(Projection=PROJECTION, Cut=CUT),
         LinePatternElement=LINE_PATTERN_ELEMENT,
         FillPatternElement=FILL_PATTERN_ELEMENT,
         SharedParameterElement=SHARED_PARAMETER_ELEMENT,
+        View=VIEW,
     )
     revit = types.ModuleType("pyrevit.revit")
     revit.Transaction = _Transaction
@@ -319,6 +393,37 @@ class FindUnusedTests(unittest.TestCase):
         doc = _FakeDoc({10: {}})
         self.assertEqual(self.probe.find_unused(doc, [self._candidate(10)]), [])
 
+    def test_commits_without_any_change_event_are_warned_about(self):
+        doc = _FakeDoc({10: {}, 11: {}})
+        self.probe.logger.warning_calls[:] = []
+        self.probe.find_unused(doc, [self._candidate(10), self._candidate(11)])
+        self.assertEqual(len(self.probe.logger.warning_calls), 1)
+        self.assertIn("2 checks", self.probe.logger.warning_calls[0])
+
+    def test_no_warning_once_a_change_event_is_seen(self):
+        doc = _FakeDoc({10: {}, 11: {"deleted": [11]}})
+        self.probe.logger.warning_calls[:] = []
+        self.probe.find_unused(doc, [self._candidate(10), self._candidate(11)])
+        self.assertEqual(self.probe.logger.warning_calls, [])
+
+    def test_no_warning_when_every_delete_is_refused(self):
+        doc = _FakeDoc({10: {"raises": True}})
+        self.probe.logger.warning_calls[:] = []
+        self.probe.find_unused(doc, [self._candidate(10)])
+        self.assertEqual(self.probe.logger.warning_calls, [])
+
+    def test_line_style_is_unused_when_only_its_graphics_styles_are_deleted(self):
+        doc = _FakeDoc({5: {"deleted": [21, 22]}})
+        candidate = self._candidate(5, companions=[21, 22])
+        self.assertEqual(self.probe.find_unused(doc, [candidate]), [candidate])
+
+    def test_rollback_events_are_not_taken_for_commits(self):
+        doc = _FakeDoc({10: {}})
+        recorder = self.probe._ChangeRecorder(doc)
+        recorder.record(None, _ChangedArgs(doc, [10], [], [], GROUP_ROLLED_BACK))
+        self.assertFalse(recorder.changed)
+        self.assertFalse(recorder.commit_seen)
+
     def test_changes_in_other_documents_are_ignored(self):
         doc = _FakeDoc({10: {"deleted": [10]}})
         other = _FakeDoc({})
@@ -353,6 +458,9 @@ class CollectorTests(unittest.TestCase):
     def setUpClass(cls):
         cls.probe = _load_probe()
 
+    def _collect(self, collector, doc):
+        return collector(doc, self.probe._PatternUsage(doc))
+
     def test_line_patterns_set_in_object_styles_are_not_candidates(self):
         doc = _collector_doc(
             categories=[
@@ -362,8 +470,66 @@ class CollectorTests(unittest.TestCase):
                 LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102, 103, -5)]
             },
         )
-        candidates = self.probe._collect_line_patterns(doc)
+        candidates = self._collect(self.probe._collect_line_patterns, doc)
         self.assertEqual([x.element_id for x in candidates], [103])
+
+    def test_patterns_in_view_category_overrides_are_not_candidates(self):
+        view = _View(
+            category_overrides={
+                1: _overrides(ProjectionLinePatternId=101),
+                2: _overrides(
+                    SurfaceForegroundPatternId=301, CutBackgroundPatternId=302
+                ),
+            }
+        )
+        doc = _collector_doc(
+            categories=[
+                _Category(
+                    -1, category_id=1, subcategories=[_Category(-1, category_id=2)]
+                )
+            ],
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102)],
+                FILL_PATTERN_ELEMENT: [_fill_pattern(x) for x in (301, 302, 303)],
+                VIEW: [view],
+            },
+        )
+        lines = self._collect(self.probe._collect_line_patterns, doc)
+        fills = self._collect(self.probe._collect_fill_patterns, doc)
+        self.assertEqual([x.element_id for x in lines], [102])
+        self.assertEqual([x.element_id for x in fills], [303])
+
+    def test_patterns_in_view_filter_overrides_are_not_candidates(self):
+        template = _View(
+            filter_overrides={
+                900: _overrides(CutLinePatternId=101, CutForegroundPatternId=301)
+            }
+        )
+        doc = _collector_doc(
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102)],
+                FILL_PATTERN_ELEMENT: [_fill_pattern(x) for x in (301, 302)],
+                VIEW: [template],
+            },
+        )
+        lines = self._collect(self.probe._collect_line_patterns, doc)
+        fills = self._collect(self.probe._collect_fill_patterns, doc)
+        self.assertEqual([x.element_id for x in lines], [102])
+        self.assertEqual([x.element_id for x in fills], [302])
+
+    def test_views_without_overrides_and_unoverridable_categories_are_skipped(self):
+        doc = _collector_doc(
+            categories=[_Category(-1, category_id=1), _Category(-1, category_id=2)],
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(101)],
+                VIEW: [
+                    _View(overrides_allowed=False),
+                    _View(overridable_category_ids={2}),
+                ],
+            },
+        )
+        lines = self._collect(self.probe._collect_line_patterns, doc)
+        self.assertEqual([x.element_id for x in lines], [101])
 
     def test_bound_shared_parameters_are_not_candidates(self):
         doc = _collector_doc(
@@ -372,7 +538,7 @@ class CollectorTests(unittest.TestCase):
             },
             bound_definitions={"definition-201"},
         )
-        candidates = self.probe._collect_shared_parameters(doc)
+        candidates = self._collect(self.probe._collect_shared_parameters, doc)
         self.assertEqual([x.element_id for x in candidates], [202])
         self.assertEqual(candidates[0].detail, "guid-202")
 

@@ -8,8 +8,14 @@ A candidate is unused when the deletion removed only the candidate itself
 and changed nothing else.
 
 Some usages raise no `DocumentChanged` entry, so they are excluded up front:
-line patterns set in Object Styles and shared parameters bound as project
-parameters are never offered.
+line patterns set in Object Styles, line and fill patterns set in the
+category or filter overrides of any view or view template, and shared
+parameters bound as project parameters are never offered. Deleting a pattern
+used by a category override in the active view is not reliably reported.
+
+Note:
+    Patterns used only by per-element graphic overrides are not scanned up
+    front, so their detection relies on `DocumentChanged` alone.
 """
 
 from collections import namedtuple
@@ -64,7 +70,7 @@ def _is_user_defined(element_id):
     return get_elementid_value(element_id) > 0
 
 
-def _collect_line_styles(doc):
+def _collect_line_styles(doc, _pattern_usage):
     candidates = []
     for subcategory in query.get_line_categories(doc=doc):
         if not _is_user_defined(subcategory.Id):
@@ -101,21 +107,91 @@ def _get_object_style_line_pattern_ids(doc):
     return pattern_ids
 
 
-def _collect_line_patterns(doc):
-    object_style_pattern_ids = _get_object_style_line_pattern_ids(doc)
+OVERRIDE_PATTERN_PROPERTIES = (
+    "ProjectionLinePatternId",
+    "CutLinePatternId",
+    "SurfaceForegroundPatternId",
+    "SurfaceBackgroundPatternId",
+    "CutForegroundPatternId",
+    "CutBackgroundPatternId",
+)
+
+
+def _get_override_pattern_ids(overrides):
+    return {
+        get_elementid_value(getattr(overrides, name))
+        for name in OVERRIDE_PATTERN_PROPERTIES
+    }
+
+
+def _iter_view_overrides(view, category_ids):
+    for filter_id in view.GetFilters():
+        yield view.GetFilterOverrides(filter_id)
+    for category_id in category_ids:
+        if view.IsCategoryOverridable(category_id):
+            yield view.GetCategoryOverrides(category_id)
+
+
+def _get_view_override_pattern_ids(doc):
+    category_ids = [
+        style_category.Id
+        for category in doc.Settings.Categories
+        for style_category in [category] + list(category.SubCategories)
+    ]
+    pattern_ids = set()
+    for view in query.get_elements_by_class(DB.View, doc=doc):
+        if not view.AreGraphicsOverridesAllowed():
+            continue
+        for overrides in _iter_view_overrides(view, category_ids):
+            pattern_ids.update(_get_override_pattern_ids(overrides))
+    return pattern_ids
+
+
+class _PatternUsage(object):
+    """Pattern ids referenced in ways `DocumentChanged` does not reveal.
+
+    The view scan visits every category of every view, so it runs at most
+    once per collection and only when a pattern kind is collected.
+    """
+
+    def __init__(self, doc):
+        self._doc = doc
+        self._view_override_ids = None
+
+    @property
+    def view_override_ids(self):
+        if self._view_override_ids is None:
+            self._view_override_ids = _get_view_override_pattern_ids(self._doc)
+        return self._view_override_ids
+
+    @property
+    def line_pattern_ids(self):
+        return _get_object_style_line_pattern_ids(self._doc) | self.view_override_ids
+
+    @property
+    def fill_pattern_ids(self):
+        return self.view_override_ids
+
+
+def _collect_line_patterns(doc, pattern_usage):
+    used_pattern_ids = pattern_usage.line_pattern_ids
     return [
         _make_candidate(LINE_PATTERNS, x.Id, query.get_name(x))
         for x in query.get_elements_by_class(DB.LinePatternElement, doc=doc)
-        if _is_user_defined(x.Id)
-        and get_elementid_value(x.Id) not in object_style_pattern_ids
+        if _is_user_defined(x.Id) and get_elementid_value(x.Id) not in used_pattern_ids
     ]
 
 
-def _collect_fill_patterns(doc):
+def _collect_fill_patterns(doc, pattern_usage):
     candidates = []
+    used_pattern_ids = pattern_usage.fill_pattern_ids
     for element in query.get_elements_by_class(DB.FillPatternElement, doc=doc):
         pattern = element.GetFillPattern()
-        if pattern.IsSolidFill or not _is_user_defined(element.Id):
+        if (
+            pattern.IsSolidFill
+            or not _is_user_defined(element.Id)
+            or get_elementid_value(element.Id) in used_pattern_ids
+        ):
             continue
         candidates.append(
             _make_candidate(
@@ -128,7 +204,7 @@ def _collect_fill_patterns(doc):
     return candidates
 
 
-def _collect_shared_parameters(doc):
+def _collect_shared_parameters(doc, _pattern_usage):
     bindings = doc.ParameterBindings
     return [
         _make_candidate(
@@ -161,8 +237,9 @@ def collect_candidates(doc, kinds=None):
         (list[tuple[str, list[PurgeCandidate]]]): kind and its candidates,
             sorted by name.
     """
+    pattern_usage = _PatternUsage(doc)
     return [
-        (kind, sorted(collector(doc), key=lambda x: x.name.lower()))
+        (kind, sorted(collector(doc, pattern_usage), key=lambda x: x.name.lower()))
         for kind, collector in COLLECTORS
         if kinds is None or kind in kinds
     ]
@@ -192,6 +269,7 @@ class PurgeProbeFailureRecorder(DB.IFailuresPreprocessor):
 class _ChangeRecorder(object):
     def __init__(self, doc):
         self._doc = doc
+        self.commit_seen = False
         self.reset()
 
     def reset(self):
@@ -200,11 +278,12 @@ class _ChangeRecorder(object):
         self.touched = set()
 
     def record(self, sender, args):  # pylint: disable=unused-argument
-        if args.Operation != DB.UndoOperation.TransactionCommitted:
+        if args.Operation != DB.Events.UndoOperation.TransactionCommitted:
             return
         if not args.GetDocument().Equals(self._doc):
             return
         self.changed = True
+        self.commit_seen = True
         self.deleted.update(get_elementid_value(x) for x in args.GetDeletedElementIds())
         for element_ids in (
             args.GetDeletedElementIds(),
@@ -226,7 +305,7 @@ def _delete_and_roll_back(doc, candidate, failures):
             doc.Delete(candidate.element_id)
 
 
-def _is_unused(doc, candidate, recorder):
+def _is_unused(doc, candidate, recorder, committed_checks):
     recorder.reset()
     failures = PurgeProbeFailureRecorder()
     try:
@@ -239,10 +318,13 @@ def _is_unused(doc, candidate, recorder):
             check_error,
         )
         return False
-    if failures.failed or not recorder.changed:
+    if failures.failed:
+        return False
+    committed_checks.append(candidate)
+    if not recorder.changed:
         return False
     return (
-        get_elementid_value(candidate.element_id) in recorder.deleted
+        get_elementid_value(candidate.witness_id) in recorder.deleted
         and recorder.touched <= candidate.own_ids
     )
 
@@ -266,21 +348,33 @@ def find_unused(doc, candidates, progress_bar=None):
     Invariant:
         The document is unchanged afterwards, and the `DocumentChanged`
         handler is removed even when a check raises.
+
+    Warning:
+        Logs a warning when checks committed but no `DocumentChanged` event
+        was ever recorded, since then every candidate silently counts as in
+        use (for example when the handler itself raises).
     """
     recorder = _ChangeRecorder(doc)
     handler = events.create_handler(recorder.record, DB.Events.DocumentChangedEventArgs)
     doc.Application.DocumentChanged += handler
     unused = []
+    committed_checks = []
     try:
         for index, candidate in enumerate(candidates, 1):
             if progress_bar:
                 if progress_bar.cancelled:
                     break
                 progress_bar.update_progress(index, len(candidates))
-            if _is_unused(doc, candidate, recorder):
+            if _is_unused(doc, candidate, recorder, committed_checks):
                 unused.append(candidate)
     finally:
         doc.Application.DocumentChanged -= handler
+    if committed_checks and not recorder.commit_seen:
+        logger.warning(
+            "Deep Purge committed %d checks but recorded no change event; "
+            "every item was treated as in use.",
+            len(committed_checks),
+        )
     return unused
 
 
