@@ -129,9 +129,17 @@ What users see:
 
 Pins fail closed: an `enabled` or `user_skills` value that is not `true` or `false` reads as
 `false`, a `policy` that isn't one of the three values reads as `readonly`, and an unknown
-`engine` reads as `ironpython`. A machine config that exists but can't be read, for example
-because another process holds it open exclusively, locks everything in the same way (host off,
-policy `readonly`, no user skills) until it can be read again; a missing file pins nothing.
+`engine` reads as `ironpython`. A key that is present but blank, such as `enabled =` left by an
+unset template variable in a hand-deployed file, counts as a pin with an invalid value, not as
+no pin. A machine config that exists but can't be read or parsed, for example because another
+process holds it open exclusively, locks everything in the same way (host off, policy `readonly`,
+no user skills) until it can be read again; a missing file pins nothing.
+
+Every config-named `.ini` in `%ProgramData%\pyRevit` is read, not only the one pyRevit would load,
+and the strictest value per key wins: `false` over `true`, the lower policy, and `ironpython` when
+files disagree on the engine. A file added next to the real one can therefore only tighten the lock.
+`lock` and `unlock` update every file, and `lock` refuses to touch a machine config it can't parse
+rather than rewrite it and lose its other settings.
 
 Only `[agent.admin]` counts. A plain `[agent]` section in the machine config is a seeded default
 that users copy and then change, not a lock, so existing seeded configs are not locked by this
@@ -150,10 +158,18 @@ enabled = false
 
     It controls the official pyRevit build. It is not a security boundary against an
     administrator, a modified pyRevit build, or another add-in that talks to Revit. It is only as
-    strong as the permissions on `%ProgramData%\pyRevit`: if standard users can delete or replace
-    files in that folder they can remove the pin, so check the folder's permissions too. The lock
-    is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`. A
-    machine config carrying the read-only attribute (`pyrevit configs seed --lock`) is a separate,
+    strong as the permissions on `%ProgramData%\pyRevit`:
+
+    - A user who can only create files there can't loosen a pin, but can add a file that makes it
+      stricter or, with a file that doesn't parse, locks the agent off for everyone on the machine.
+    - A user who owns the folder, or holds delete or change-permissions rights on it, can delete or
+      rename the file and so remove the pin. `lock` checks the folder and prints a warning with an
+      `icacls` example when it finds this; it doesn't change the folder itself, because other tools
+      may rely on its permissions. The default `%ProgramData%` permissions don't allow it unless a
+      standard user created the folder.
+
+    The lock is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`.
+    A machine config carrying the read-only attribute (`pyrevit configs seed --lock`) is a separate,
     whole-config lock and works alongside the pins.
 
 ### Run document tab

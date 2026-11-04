@@ -298,6 +298,33 @@ namespace pyRevitLabs.Common {
             return null;
         }
 
+        /// <summary>
+        /// Every config-named ini in <paramref name="directory"/>, whichever tier pyRevit would pick.
+        /// Includes the per-Revit-version configs that <see cref="FindConfigIniInDirectory"/> skips.
+        /// </summary>
+        /// <remarks>
+        /// For callers that must not depend on which file wins the lookup, such as a lock that a user
+        /// could otherwise hide by adding a file the lookup prefers. Unlike
+        /// <see cref="FindConfigIniInDirectory"/> it lets a directory-listing failure propagate, so a
+        /// caller that fails closed can tell "no configs" from "could not look".
+        /// </remarks>
+        public static IReadOnlyList<string> FindAllConfigIniInDirectory(string directory) {
+            var found = new List<string>();
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return found;
+
+            var configMatcher = new Regex(ConfigIniRegexPattern, RegexOptions.IgnoreCase);
+            foreach (var fullPath in Directory.GetFiles(directory, "*.ini", SearchOption.TopDirectoryOnly)) {
+                var fileName = Path.GetFileName(fullPath);
+                bool isIni = string.Equals(Path.GetExtension(fileName), ".ini", StringComparison.OrdinalIgnoreCase);
+                if (isIni && configMatcher.IsMatch(fileName))
+                    found.Add(fullPath);
+            }
+
+            found.Sort(StringComparer.OrdinalIgnoreCase);
+            return found;
+        }
+
         /// <summary>Clears cached install-scope detection (for tests and reload).</summary>
         public static void ClearCachedInstallScope() {
             _isInstallAllUsers = null;

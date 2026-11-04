@@ -214,6 +214,7 @@ namespace pyRevitCLI {
             PyRevitConfigs.LockAgentKey(key, value);
             PyRevitConfigs.RestrictAdminConfigAccess();
             Console.WriteLine("Locked agent setting \"{0}\" for all users. Running Revit sessions pick it up on the next agent request.", key);
+            WarnAboutFolderPermissions();
         }
 
         /// <summary>
@@ -238,8 +239,16 @@ namespace pyRevitCLI {
                 Console.WriteLine("{0} = {1}{2}", key, PyRevitConfigs.GetAgentPin(key),
                     key == PyRevitConsts.ConfigsAgentPolicyKey ? " (ceiling)" : string.Empty);
             }
-            if (!pinned)
+            if (pinned)
+                WarnAboutFolderPermissions();
+            else
                 Console.WriteLine("No agent settings are locked.");
+        }
+
+        private static void WarnAboutFolderPermissions() {
+            var risk = PyRevitConfigs.GetAdminConfigFolderRisk();
+            if (risk != null)
+                Console.WriteLine("Warning: " + risk);
         }
 
         private static void RequireElevation() {
