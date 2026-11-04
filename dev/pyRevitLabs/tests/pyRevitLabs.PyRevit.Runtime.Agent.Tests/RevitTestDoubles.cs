@@ -289,6 +289,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 namespace pyRevitLabs.PyRevit {
     internal static class PyRevitConfigs {
         public static string GetAgentEngine() => "ironpython";
+        public static bool IsAgentKeyManaged(string key) => false;
+    }
+    internal static class PyRevitConsts {
+        public const string ConfigsAgentEngineKey = "engine";
     }
 }
 namespace pyRevitLabs.NLog {

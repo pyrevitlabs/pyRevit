@@ -109,7 +109,7 @@ read access, so a standard user cannot remove a pin.
 |---|---|
 | `enabled` | Fixed. `false` keeps the host off whatever the user chose, `true` keeps it on. |
 | `policy` | A ceiling, not a fixed value. Users get the stricter of their own policy and the pin, so a pin of `ask` still lets a user choose `readonly`, but not `auto`. |
-| `engine` | Fixed default engine for runs that don't name one. |
+| `engine` | Fixed. Also the default for runs that don't name one, and a run that names the other engine is refused with `engine_locked`. |
 | `user_skills` | Fixed. `false` stops the MCP server loading user-authored skills. |
 
 `tab_highlight` is cosmetic and can't be pinned. The pins are read from the machine config only, and
@@ -170,7 +170,9 @@ enabled = false
       may rely on its permissions. The default `%ProgramData%` permissions don't allow it unless a
       standard user created the folder.
 
-    The lock is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`.
+    The lock is read from the OS ProgramData folder and ignores `PYREVIT_PROGRAMDATA_PATH_OVERRIDE`,
+    which `pyrevit configs seed` and the normal config lookup do honor. A site that sets the override
+    seeds one folder and locks another, so put the pins in the real `%ProgramData%\pyRevit`.
     A machine config carrying the read-only attribute (`pyrevit configs seed --lock`) is a separate,
     whole-config lock and works alongside the pins.
 
@@ -1068,7 +1070,7 @@ Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, `recording_start`,
 `recording_stop`, `recording_status`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly`,
-`disabled_by_admin` or
+`disabled_by_admin`, `agent_disabled`, `engine_locked` or
 `invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
 wrong JSON type, or a `capture` width outside 320-2400, is `invalid_params`. Any other
 unexpected failure is `internal_error` with `data.outcome` `unknown`, because the work may
