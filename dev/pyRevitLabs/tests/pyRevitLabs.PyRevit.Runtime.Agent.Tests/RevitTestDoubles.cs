@@ -221,4 +221,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentIds {
         public static long ToValue(ElementId id) => 1;
     }
+    internal sealed class AgentException : Exception {
+        public AgentException(string code, string message) : base(message) { Code = code; }
+        public string Code { get; }
+    }
+}
+namespace pyRevitLabs.PyRevit {
+    internal static class PyRevitConfigs {
+        public static string GetAgentEngine() => "ironpython";
+    }
 }
