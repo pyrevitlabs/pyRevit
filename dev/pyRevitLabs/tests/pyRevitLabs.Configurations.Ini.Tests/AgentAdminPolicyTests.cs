@@ -195,6 +195,36 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
+    public void SetPin_ReplacesTheFileAtomicallyAndLeavesNoTemporaryFile()
+    {
+        string path = WriteConfig("[core]\r\nuserlocale = en_us\r\n");
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+
+        AgentAdminPolicy.SetPin(AgentAdminPolicy.EnabledKey, "false");
+        AgentAdminPolicy.ClearPin(AgentAdminPolicy.EnabledKey);
+
+        Assert.Equal(new[] { path }, Directory.GetFiles(tempRoot));
+    }
+
+    [Fact]
+    public void Current_ATruncatedFileWithTheSameTimestampIsNotCachedOverTheFinishedOne()
+    {
+        const string finished = "[agent.admin]\r\nenabled = false\r\n";
+        string path = WriteConfig(finished);
+        DateTime stamp = File.GetLastWriteTimeUtc(path);
+        AgentAdminPolicy.OverrideMachineConfigPath(path);
+        Assert.Equal("false", AgentAdminPolicy.Current.Enabled);
+
+        File.WriteAllText(path, string.Empty);
+        File.SetLastWriteTimeUtc(path, stamp);
+        Assert.True(AgentAdminPolicy.Current.IsEmpty);
+
+        File.WriteAllText(path, finished);
+        File.SetLastWriteTimeUtc(path, stamp);
+        Assert.Equal("false", AgentAdminPolicy.Current.Enabled);
+    }
+
+    [Fact]
     public void Load_ABlankPin_IsPresentRatherThanAbsent()
     {
         var policy = AgentAdminPolicy.Load(WriteConfig("[agent.admin]\r\nenabled =\r\npolicy = \"\"\r\n"));
