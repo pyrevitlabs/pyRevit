@@ -1,29 +1,23 @@
 title:
-  en_us: >-
+  en_us: |-
     Preflight
-
     Checks
   ko: 사전 점검
-  fr_fr: >-
+  fr_fr: |-
     Preflight
-
     Checks
-  ru: >-
+  ru: |-
     Пред
-
     проверки
   chinese_s: "预检\n检查"
-  es_es: >-
+  es_es: |-
     Verificaciones
-
     previas
-  de_de: >-
+  de_de: |-
     Modell
-
     Checks
-  pt_br: >-
+  pt_br: |-
     Preflight
-    
     Checks
 tooltip:
   en_us: |-
@@ -44,7 +38,7 @@ tooltip:
   ru: |-
     Запускает встроенные или пользовательские предварительные проверки текущей модели.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Выбрать проверки критических предупреждений и настроить экспорт собранных данных.
   chinese_s: |-
     在当前模型上运行内置或自定义的预检。

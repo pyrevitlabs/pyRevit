@@ -32,7 +32,7 @@ tooltip:
   ru: |-
     Экспортирует выделенные спецификации в CSV файлы.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Выберите путь экспорта по умолчанию.
   chinese_s: |-
     将选定的明细表导出为 CSV 文件。
@@ -45,20 +45,18 @@ tooltip:
     Mayús-clic:
 
     Elegir de ubicaciones de salida predeterminadas
-  de_de: >-
+  de_de: |-
     Es erscheint ein Dialogfenster, um den Speicherort festzulegen.  Danach erscheint ein weiteres Dialogfenster, um die Bauteillisten
     auszuwählen, die exportiert werden sollen. Anschließend werden die
     ausgewählten Bauteillisten in CSV Dateien exportiert. CSV Dateien
     sind Textdateien, wobei die Werte mit Kommas voneinander getrennt sind.
 
     Bei gedrückter Umschalttaste klicken:
-
     Es erscheint ein Dialog in dem man häufig genutzte Speichereorte auswählen kann,  z.B. Desktop, Projektspeicherort, Downloads usw. Zudem kann man angeben,  ob die CSV Datei nach dem Speichern geöffnet werden soll und ob die Kopfzeile  übertragen werden soll.
-  pt_br: >-
+  pt_br: |-
     Exporta tabelas selecionadas para arquivos CSV
     
     Clique mantendo a tecla Shift pressionada:
-    
     Escolher locais de saída padrão
 context:
   - doc-project

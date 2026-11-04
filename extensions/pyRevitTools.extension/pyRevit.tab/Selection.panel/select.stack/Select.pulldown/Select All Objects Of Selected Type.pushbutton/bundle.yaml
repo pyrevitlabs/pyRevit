@@ -18,55 +18,42 @@ tooltip:
 
     Shift 키를 누르고 클릭:
     일치하는 요소를 선택하면서 결과에 요소 ID와 세부 정보를 출력합니다.
-  fr_fr: >-
+  fr_fr: |-
     Sélectionnez tous les éléments du même type que l'élément sélectionné
-
     et rapporte leurs identifiants (triés par la vue propriétaire s'ils
-
     sont des objets spécifiques à la vue)
 
     Maj+clic :
-
     Montrer les résultats
-  ru: >-
+  ru: |-
     Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
-
     и печатает их идентификаторы (отсортированные по владельцу вида
-
     если они могут отображаться на видах).
 
-    Щелчок с удержанием клавиши Shift:
-
+    Shift + Щелчок:
     Показать результаты.
   chinese_s: "选择与选定图元类型相同的所有图元，并报告其ID（如果它们是视图专有图元，则按所属视图排序）
 
     按住 Shift 键单击：
 
     显示结果"
-  es_es: >-
+  es_es: |-
     Seleccionar todos los elementos del mismo tipo que el elemento seleccionado
-
     y reporta sus IDs (ordenados por la vista propietaria si son
-
     objetos específicos de vista)
 
     Mayús-clic:
-
     Mostrar resultados
-  de_de: >-
+  de_de: |-
     Wählen Sie zunächst ein Element aus und danach starten  Sie das Skript. Es werden dann alle Elemente des gleichen  Typs ausgewählt. 
-        
-    Bei gedrückter Umschalttaste klicken:
 
+    Bei gedrückter Umschalttaste klicken:
     Die durch das Skript ausgewählten Elemente werden in der  Konsole mit anklickbaren IDs angezeigt. Zudem werden IDs  der Exemplare angezeigt. Sortiert werden die Elemente  nach der Ansicht, wenn es sich um ansichtsspezifische  Elemente handelt.
-  pt_br: >-
+  pt_br: |-
     Seleciona todos os elementos do mesmo tipo que o elemento selecionado
-    
     e relata seus IDs (ordenados pela vista proprietária se forem
-    
     objetos específicos da vista)
-    
+
     Clique mantendo a tecla Shift pressionada:
-    
     Mostrar resultados
 context: selection
