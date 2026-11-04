@@ -41,6 +41,8 @@ SOURCE_NAME = "<agent-script>"
 
 _WATCHDOG_RETRY_SECONDS = 0.2
 _TRANSACTION_WORD = re.compile("transaction", re.IGNORECASE)
+_START_CALL = re.compile(r"\.\s*Start\s*\(")
+_CO_OPTIMIZED = 0x1
 
 _clock = getattr(time, "perf_counter", None) or time.time
 
@@ -337,32 +339,38 @@ def _compile_source(source, guard_loops=False):
 def _needs_transaction_tracking(source, workspace):
     """True when script frames may hold a Revit transaction worth tracking.
 
-    A transaction reaches a script frame either from code that names one or
-    from a workspace helper. Scripts with neither run without a trace
-    function, which on IronPython makes every Python call several times
-    faster.
+    A transaction stays open only if something starts it: code that names a
+    transaction, any ``.Start(`` call (which also covers a transaction held
+    under an alias), or a workspace helper. Scripts with none of these run
+    without a trace function, which on IronPython makes every Python call
+    several times faster.
     """
-    return bool(workspace) or _TRANSACTION_WORD.search(source) is not None
+    return (
+        bool(workspace)
+        or _TRANSACTION_WORD.search(source) is not None
+        or _START_CALL.search(source) is not None
+    )
 
 
 def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     """Build the ``sys.settrace`` function for one run.
 
     With ``track`` on, every frame running the agent source records the Revit
-    transactions it holds. The module frame does so on every line, through
-    its globals, so a transaction stays found even after its variable is
-    rebound. Functions do so when they return or an exception leaves them,
-    and on IronPython also on every line. pyRevit, rpw and workspace code
-    runs untraced. With ``check_lines`` on, every frame, the script's own and
-    any code it compiles at run time or calls, also checks the watchdog's
-    flag on each line.
+    transactions it holds on every line, so a transaction stays found even
+    after its variable is rebound or deleted. The module frame does so
+    through its globals. pyRevit, rpw and workspace code runs untraced. With
+    ``check_lines`` on, every frame, the script's own and any code it
+    compiles at run time or calls, also checks the watchdog's flag on each
+    line.
 
     Warning:
-        Never read ``f_locals`` from a CPython line event. On CPython 3.12 a
-        trace function that reads it writes the locals back into the frame,
-        which clobbers the loop variable of an inlined comprehension (PEP
-        709): a module-level ``[v for v in values if v]`` silently came back
-        empty.
+        On CPython 3.12, never read ``f_locals`` from a line event of a frame
+        whose locals are a plain dict: the module or a class body. The trace
+        machinery writes the locals back into the frame, which clobbers the
+        loop variable of an inlined comprehension (PEP 709); a module-level
+        ``[v for v in values if v]`` silently came back empty. Function
+        frames (``CO_OPTIMIZED``) are safe, so class bodies are read only
+        when they return or an exception leaves them.
 
     Note:
         Line events are the dominant cost of a traced run: about 3 µs each on
@@ -370,7 +378,7 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
         of every frame made a 200k-step loop take seconds (issue #3815), so
         loops are normally stopped by :func:`_guard_loop_headers` instead.
     """
-    locals_on_lines = _implementation() != "cpython"
+    dict_locals_on_lines = _implementation() != "cpython"
 
     def raise_if_timed_out(frame):
         if state["timed_out"]:
@@ -383,14 +391,18 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
             raise_if_timed_out(frame)
         return track_module
 
-    def track_function(frame, event, arg):
-        if event != "line":
+    def track_every_line(frame, event, arg):
+        _track_frame_transactions(frame, transactions)
+        if event == "line":
+            raise_if_timed_out(frame)
+        return track_every_line
+
+    def track_on_exit(frame, event, arg):
+        if event == "line":
+            raise_if_timed_out(frame)
+        else:
             _track_frame_transactions(frame, transactions)
-            return track_function
-        if locals_on_lines:
-            _track_frame_transactions(frame, transactions)
-        raise_if_timed_out(frame)
-        return track_function
+        return track_on_exit
 
     def check_deadline(frame, event, arg):
         if event == "line":
@@ -403,12 +415,9 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
             return check_deadline if check_lines else None
         if code.co_name == "<module>":
             return track_module
-        if not locals_on_lines and not check_lines:
-            try:
-                frame.f_trace_lines = False
-            except Exception:
-                pass
-        return track_function
+        if dict_locals_on_lines or code.co_flags & _CO_OPTIMIZED:
+            return track_every_line
+        return track_on_exit
 
     return trace_call
 
@@ -677,6 +686,7 @@ def run(context):
     finally:
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
+        _TRANSACTION_RANKS.clear()
         phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
@@ -788,6 +798,11 @@ def _transaction_rank(value_type):
 
     Cached per type because the tracer asks for every local on every traced
     line, and ``isinstance`` against .NET types is slow on both engines.
+
+    Invariant:
+        :func:`run` clears the cache when the run ends. The engine is reused
+        between runs, and a cached script class would keep that run's whole
+        namespace alive through its methods' globals.
     """
     try:
         return _TRANSACTION_RANKS[value_type]

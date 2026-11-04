@@ -577,6 +577,7 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         needs = self.runner._needs_transaction_tracking
         self.assertTrue(needs("T = DB.Transaction\n", None))
         self.assertTrue(needs("result = helpers.run()\n", r"C:\work"))
+        self.assertTrue(needs("t = getattr(DB, name)(doc)\nt.Start()\n", None))
         self.assertFalse(needs("result = [1, 2]\n", None))
 
     def _tracked(self, source):
@@ -587,6 +588,11 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         code, problem, guarded = self.runner._compile_source(source, True)
         scope = self._guards()[1]
         scope["DB"] = self.runner.DB
+        scope["Labelled"] = type(
+            "Labelled",
+            (self.runner.DB.Transaction,),
+            {"__init__": lambda self, label: setattr(self, "label", label)},
+        )
         previous = sys.gettrace()
         sys.settrace(tracer)
         try:
@@ -600,9 +606,6 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
     def test_helpers_that_never_name_a_transaction_are_tracked(self):
         """Find transactions held under aliases, factory results and parameters."""
         source = (
-            "class Labelled(DB.Transaction):\n"
-            "    def __init__(self, label):\n"
-            "        self.label = label\n"
             "T = Labelled\n"
             "def make(label):\n"
             "    return T(label)\n"
@@ -642,6 +645,60 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         finally:
             sys.settrace(previous)
         self.assertEqual([10, 20, 30], scope["result"])
+
+    def test_helpers_that_rebind_or_delete_a_transaction_are_tracked(self):
+        """Keep a transaction found after its only variable is rebound or deleted."""
+        source = (
+            "def rebound():\n"
+            "    t = Labelled('rebound')\n"
+            "    t = None\n"
+            "def deleted():\n"
+            "    t = Labelled('deleted')\n"
+            "    del t\n"
+            "rebound()\n"
+            "deleted()\n"
+        )
+        self.assertEqual(["deleted", "rebound"], self._tracked(source))
+
+    def test_tracking_keeps_class_body_comprehensions_intact(self):
+        """Class bodies have dict locals too; tracking must not clobber them."""
+        source = (
+            "label = 'transaction'\n"
+            "class A:\n"
+            "    values = [10, 20, 30]\n"
+            "    picked = [\n"
+            "        value\n"
+            "        for value in values\n"
+            "        if value > 10\n"
+            "    ]\n"
+            "result = A.picked\n"
+        )
+        tracer = self.runner._execution_tracer(5, {"timed_out": False}, {}, False, True)
+        code, problem, guarded = self.runner._compile_source(source, True)
+        scope = self._guards()[1]
+        previous = sys.gettrace()
+        sys.settrace(tracer)
+        try:
+            exec(code, scope)
+        finally:
+            sys.settrace(previous)
+        self.assertEqual([20, 30], scope["result"])
+
+    def test_rank_cache_is_cleared_after_a_run(self):
+        """Never keep a run's script classes, and through them its namespace."""
+        context = types.SimpleNamespace(
+            Source="class Holder(object):\n    pass\nkeep = Holder()\nresult = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertEqual({}, self.runner._TRANSACTION_RANKS)
 
 
 if __name__ == "__main__":
