@@ -17,7 +17,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// request never occupies the Revit main thread.
     /// </summary>
     internal sealed class AgentRunRequest {
-        private static readonly Regex TitleBreaks = new Regex(@"[\p{C}\p{Zl}\p{Zp}]+");
+        private static readonly Regex TitleBreaks = new Regex(@"[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+");
 
         public string Script { get; private set; }
 
@@ -89,7 +89,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// and sends it the user's Windows credentials.
         /// </remarks>
         private static bool IsNetworkOrDevicePath(string path) {
-            return path.StartsWith(@"\\", StringComparison.Ordinal) || path.StartsWith("//", StringComparison.Ordinal);
+            return path.Length >= 2 && IsSeparator(path[0]) && IsSeparator(path[1]);
+        }
+
+        private static bool IsSeparator(char character) {
+            return character == Path.DirectorySeparatorChar || character == Path.AltDirectorySeparatorChar;
         }
 
         public JObject ToJson() {

@@ -30,7 +30,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A looser policy than the one in force applies only after the user confirms it in
-    /// Revit, so a script that rewrites the policy can't loosen it for later runs either.</item>
+    /// Revit, so a script that rewrites the policy can't loosen it for later runs either. Only
+    /// a modify run asks; a query or dry run never waits on the prompt.</item>
     /// <item>A script error always rolls back.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
@@ -155,8 +156,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw AgentException.NotRun("Another transaction is open in the active document.");
 
             AgentHost.RefreshConfigIfChanged();
-            var policyAtStart = policyInForce.Start(ReadPolicy(),
-                (inForce, configured) => AgentApproval.ConfirmLoosening(app.MainWindowHandle, inForce, configured));
+            var policyAtStart = request.Mode == AgentRunMode.Modify
+                ? policyInForce.Start(ReadPolicy(),
+                    (inForce, configured) => AgentApproval.ConfirmLoosening(app.MainWindowHandle, inForce, configured))
+                : policyInForce.Tighten(ReadPolicy());
             if (request.Mode == AgentRunMode.Modify && policyAtStart == AgentPolicy.ReadOnly)
                 throw new AgentException(
                     "policy_readonly",

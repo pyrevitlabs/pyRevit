@@ -193,16 +193,33 @@ def answer_prompts(title, button):
 
     The host's approval and policy prompts are native Windows message boxes,
     which Revit's dialog event can't answer, so a helper thread presses them.
+    Only boxes owned by this Revit process are pressed, never another Revit's.
     Yields the list of presses.
     """
     user32 = ctypes.windll.user32
-    user32.FindWindowW.restype = ctypes.c_void_p
+    user32.FindWindowExW.restype = ctypes.c_void_p
+    revit_pid = os.getpid()
     pressed = []
     stop = threading.Event()
 
+    def own_prompt():
+        window = None
+        while True:
+            window = user32.FindWindowExW(
+                None, ctypes.c_void_p(window) if window else None, "#32770", title
+            )
+            if not window:
+                return None
+            owner = ctypes.c_ulong()
+            user32.GetWindowThreadProcessId(
+                ctypes.c_void_p(window), ctypes.byref(owner)
+            )
+            if owner.value == revit_pid:
+                return window
+
     def press():
         while not stop.is_set():
-            window = user32.FindWindowW("#32770", title)
+            window = own_prompt()
             if window:
                 user32.PostMessageW(ctypes.c_void_p(window), 0x0111, button, 0)
                 pressed.append(button)

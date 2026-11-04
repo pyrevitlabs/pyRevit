@@ -1,6 +1,6 @@
 ---
 name: revit-files
-description: Revit file types and working with files. Covers what .rvt, .rte, .rfa and .rft files are, where templates and libraries live, and opening documents. Guarded runs cannot save, export or print documents. Use it for "open this model", "find the mechanical template", and similar tasks.
+description: Revit file types and working with files. Covers what .rvt, .rte, .rfa and .rft files are, where templates and libraries live, and opening documents. Guarded runs cancel the save, export and print operations Revit lets them cancel. Use it for "open this model", "find the mechanical template", and similar tasks.
 ---
 
 # Revit files
