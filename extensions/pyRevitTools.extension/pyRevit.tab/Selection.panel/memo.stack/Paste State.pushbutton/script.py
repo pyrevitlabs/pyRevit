@@ -50,7 +50,7 @@ RESOURCES = {
             ' Use primeiro "Copiar Estado".'
         ),
     },
-        "command_switch_window_width": {
+    "command_switch_window_width": {
         "en_us": 600,
         "fr_fr": 700,
         "ru": 750,
@@ -96,6 +96,4 @@ if available_actions:
     except PyRevitException as ex:
         forms.alert(ex.msg)
 else:
-    forms.alert(
-        _ls("available_actions_none")
-    )
+    forms.alert(_ls("available_actions_none"))
