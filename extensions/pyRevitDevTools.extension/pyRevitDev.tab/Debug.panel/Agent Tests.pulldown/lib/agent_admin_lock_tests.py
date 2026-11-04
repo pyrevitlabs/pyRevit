@@ -105,13 +105,15 @@ class HostLockTests(TestCase):
     def test_a_pinned_engine_refuses_runs_that_name_another(self):
         """With the engine locked, a run naming the other engine fails with engine_locked."""
         with admin_pins(engine="ironpython"):
+            for other in ("cpython", "CPython"):
+                with self.assertRaises(AgentRequestError) as raised:
+                    harness.run("result = 1", engine=other)
+                self.assertEqual("engine_locked", raised.exception.code)
             with self.assertRaises(AgentRequestError) as raised:
-                harness.run("result = 1", engine="cpython")
-            self.assertEqual("engine_locked", raised.exception.code)
-            self.assertEqual(
-                "ok", harness.run("result = 1", engine="ironpython")["status"]
-            )
-            self.assertEqual("ok", harness.run("result = 1")["status"])
+                harness.run("result = 1", engine="lua")
+            self.assertEqual("invalid_params", raised.exception.code)
+            scripting = request("get_context")["scripting"]
+            self.assertEqual("ironpython", scripting["default_engine"])
 
     def test_a_host_pinned_on_does_not_refuse(self):
         """Pinning enabled to true does not trigger the refusal."""
