@@ -19,7 +19,7 @@
     <system:String x:Key="StrictLabel">1° (Строгий)</system:String>
     <system:String x:Key="PermissiveLabel">40° (Допустимый)</system:String>
     <system:String x:Key="HowThisWorks">Как это работает</system:String>
-    <system:String x:Key="HowThisWorksDescription">Управляет тем, насколько точно оси должны выравниваться с выбранной системой координат. Низкие значения = только прямые оси. Высокие значения = включает угловые оси.</system:String>
+    <system:String x:Key="HowThisWorksDescription">Управляет тем, насколько точно оси должны выравниваться с выбранной системой координат. Низкие значения = только прямые оси. Высокие значения = включая угловые оси.</system:String>
     
     <system:String x:Key="AngleDescription1">Очень строгий - только идеально выровненные оси</system:String>
     <system:String x:Key="AngleDescription5">Плотный - хорошо для точных компоновок осей</system:String>
