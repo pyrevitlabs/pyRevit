@@ -271,12 +271,22 @@ Rules the host enforces:
   tracebacks still match the submitted source. On CPython the watchdog also raises the
   timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
   modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
-  only stopped once the call returns. A single blocking call, such as a long Revit API call
-  or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns.
+  only stopped once the call returns. A single blocking call, such as a long Revit API call,
+  `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
+  interrupted on any engine; the run fails with `timeout` once it returns. If such a call is
+  still blocking 30 seconds after the deadline, the request fails with `run_hung` (outcome
+  `unknown`) so the caller stops waiting. The run itself keeps Revit busy until the call
+  returns, then ends and is recorded as usual, so look it up with `get_run` before sending
+  it again; meanwhile later requests fail with `revit_busy`, and the message says an
+  earlier run is stuck past its time limit. Time spent waiting for approval doesn't count.
 - The runner compiles the script with every bare `except` and `except BaseException`
-  narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
-  `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
-  other way, such as through an alias, is stopped again at its next loop header. On
+  (also spelled as an attribute, such as `except builtins.BaseException`) narrowed to
+  `except Exception`, so a script can't swallow its own timeout, and can't catch
+  `KeyboardInterrupt` or `SystemExit` that way. If a handler can't be rewritten in the
+  source, the run compiles the narrowed syntax tree instead, at the cost of line numbers,
+  rather than keep the broad handler. A script that suppresses the timeout some
+  other way, such as through an alias, `except tuple(...)`, a library's bare `except`, or
+  `sys.settrace(None)`, is stopped again at its next loop header. On
   CPython 3.12 and later, a run still going a second after its deadline is also stopped at
   the end of every loop iteration it reaches, which covers `async for` loops and code
   compiled at run time.
@@ -300,7 +310,10 @@ Rules the host enforces:
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
   builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
   the deadline on every line of every frame, which is slower but still stops it, unless
-  that code catches the timeout in its own loop.
+  that code catches the timeout in its own loop, or the script removes that check with
+  `sys.settrace(None)` first.
+- Threads the script starts are not stopped. They keep running after the run returns, with
+  no timeout, outside the guard (see the limits under [The guarded run](#the-guarded-run)).
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - Documents can't be saved or synchronized during a run.
@@ -594,7 +607,7 @@ use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what 
 |---|---|---|
 | `not_sent` | The request never reached the host: nobody was listening, another client held the pipe, or the pipe belongs to another process. | Send it again. |
 | `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
-| `unknown` | The request was sent and the answer was lost (the connection broke or closed). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
+| `unknown` | The request was sent and the answer was lost (the connection broke or closed), or the host stopped waiting for a run stuck past its time limit (`run_hung`). It may have run, may still be running or waiting to run, or may never run. | Look it up by request id before sending it again. |
 
 Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
 run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
@@ -666,7 +679,8 @@ Honest limits:
   are neither approved nor recorded. Approval and `readonly` stop an agent's mistakes, not a
   hostile script: connect only agents you trust, and don't feed them untrusted content.
 - Revit serves one agent request at a time. While one session's run is executing, which can
-  last until its `timeout_s`, a second agent session can't connect and gets `revit_busy`
+  last until its `timeout_s` (plus 30 seconds before a stuck run fails with `run_hung`), a
+  second agent session can't connect and gets `revit_busy`
   after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
