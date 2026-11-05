@@ -1,4 +1,5 @@
 using pyRevitCLI;
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 
@@ -120,6 +121,16 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(-32700, responses[1]["error"].Value<int>("code"));
         Assert.Equal(JTokenType.Null, responses[1]["id"].Type);
         Assert.Equal(2, responses[2].Value<int>("id"));
+    }
+
+    /// <summary>A request line past the 16 MB limit is refused without ending the session (issue #3922).</summary>
+    [Fact]
+    public void OverLongRequestLineIsRefusedAndTheSessionContinues() {
+        var responses = Serve(new string('x', BoundedLineReader.DefaultMaxLineChars + 2), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(-32700, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
     }
 
     [Theory]

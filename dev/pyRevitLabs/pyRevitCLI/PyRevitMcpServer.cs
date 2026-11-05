@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
@@ -63,13 +64,24 @@ namespace pyRevitCLI {
             new PyRevitMcpServer(defaultRevit).Run(input, output);
         }
 
+        private string ReadRequestLine(BoundedLineReader lines) {
+            try {
+                return lines.ReadLine();
+            }
+            catch (InvalidDataException ex) {
+                Write(Error(null, -32700, "Parse error: " + ex.Message));
+                return string.Empty;
+            }
+        }
+
         private void Run(TextReader input, TextWriter output) {
             LogManager.Configuration = new LoggingConfiguration();
             this.output = output;
 
             var inFlight = new List<Task>();
+            var lines = new BoundedLineReader(input);
             string line;
-            while ((line = input.ReadLine()) != null) {
+            while ((line = ReadRequestLine(lines)) != null) {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
