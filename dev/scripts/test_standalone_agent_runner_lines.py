@@ -1228,6 +1228,41 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual([4, 8, 7], self._script_lines(text))
 
 
+class AgentRunnerOutputTests(unittest.TestCase):
+    """Printed output is capped while the script runs (issue #3922)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def test_output_is_capped_while_printing(self):
+        """Keep one character past the host cap so it still reports truncation."""
+        outputs = []
+        context = types.SimpleNamespace(
+            Source="import sys\nfor _ in range(200):\n    print('x' * 4096)\n"
+            "sys.stderr.write('tail')\nresult = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=outputs.append,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertEqual([self.runner._MAX_OUTPUT_CHARS + 1], [len(o) for o in outputs])
+        self.assertEqual(64 * 1024, self.runner._MAX_OUTPUT_CHARS)
+
+    def test_writes_past_the_cap_are_dropped(self):
+        """Print and writelines both stop at the cap."""
+        captured = self.runner._CappedOutput(10)
+        print("abc", file=captured)
+        captured.writelines(["de", "fghijkl"])
+        self.assertEqual("abc\ndefghi", captured.getvalue())
+
+
 class AgentRunnerSourceTests(unittest.TestCase):
     """Constraints on the runner file itself."""
 

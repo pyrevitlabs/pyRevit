@@ -46,6 +46,7 @@ _WATCHDOG_ESCALATE_SECONDS = 1.0
 _ESCALATION_TOOL_IDS = (4, 3)
 _START_RECORDER = "__agent_start__"
 _CO_OPTIMIZED = 0x1
+_MAX_OUTPUT_CHARS = 64 * 1024
 
 _clock = getattr(time, "perf_counter", None) or time.time
 
@@ -73,6 +74,27 @@ class RunTimedOut(BaseException):
     as one reached through an alias, is stopped at the next rewritten loop
     header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
+
+
+class _CappedOutput(StringIO):
+    """Captured stdout/stderr that keeps only the first ``limit`` characters.
+
+    Invariant:
+        Keeps one character past the host's 64 KB output cap
+        (``AgentRunService.MaxOutputChars``), so the host still sees the
+        output as truncated; anything later is dropped as it is written.
+    """
+
+    def __init__(self, limit):
+        StringIO.__init__(self)
+        self._room = limit
+
+    def write(self, text):
+        if self._room > 0:
+            kept = text[: self._room]
+            self._room -= len(kept)
+            StringIO.write(self, kept)
+        return len(text)
 
 
 class _NarrowBroadHandlers(ast.NodeTransformer):
@@ -863,7 +885,7 @@ def run(context):
         _source_lines(source),
         SOURCE_NAME,
     )
-    captured = StringIO()
+    captured = _CappedOutput(_MAX_OUTPUT_CHARS + 1)
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
     sys.stdout = captured
