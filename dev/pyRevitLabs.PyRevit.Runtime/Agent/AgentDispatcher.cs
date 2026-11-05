@@ -21,7 +21,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly object queueLock = new object();
         private readonly Queue<AgentWorkItem> queue = new Queue<AgentWorkItem>();
         private ExternalEvent externalEvent;
-        private DateTime? runningSince;
+        private long runningSinceTicks;
 
         public void Attach(ExternalEvent ev) {
             externalEvent = ev;
@@ -59,7 +59,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentWorkItem item;
             while (TryDequeue(out item)) {
                 item.Started.Set();
-                runningSince = DateTime.UtcNow;
+                Interlocked.Exchange(ref runningSinceTicks, DateTime.UtcNow.Ticks);
                 try {
                     item.Completion.TrySetResult(item.Work(app));
                 }
@@ -67,18 +67,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     item.Completion.TrySetException(ex);
                 }
                 finally {
-                    runningSince = null;
+                    Interlocked.Exchange(ref runningSinceTicks, 0);
                 }
             }
         }
 
         private string BusyMessage(TimeSpan startTimeout) {
             var message = string.Format("Revit did not become idle within {0:0}s.", startTimeout.TotalSeconds);
-            var since = runningSince;
-            if (since.HasValue)
+            var since = Interlocked.Read(ref runningSinceTicks);
+            if (since != 0)
                 message += string.Format(
                     " An earlier agent request has been running for {0:0}s; it may be waiting on a dialog.",
-                    (DateTime.UtcNow - since.Value).TotalSeconds);
+                    TimeSpan.FromTicks(DateTime.UtcNow.Ticks - since).TotalSeconds);
             var dialogs = AgentWindows.OpenDialogs();
             if (dialogs.Count > 0)
                 message += " Open Revit windows: " + string.Join(", ", dialogs)
