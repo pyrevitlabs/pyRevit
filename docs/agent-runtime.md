@@ -135,7 +135,15 @@ and adds a warning. The corresponding `get_run` record can be incomplete or unav
 
 Every tool that talks to Revit accepts an optional `revit` argument (a year such as
 `"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
-sets a default.
+sets a default, which an empty or `null` `revit` also uses.
+
+The MCP server sends one call at a time to each Revit, since the host serves one connection at a
+time; calls to different Revit sessions don't wait for each other. `list_revit_instances` never
+waits: it reports `busy: true` for a Revit that still has a call from this server open instead of
+pinging it, and a ping that gets no answer within 5 seconds reports `responding: false`
+(`pyrevit agent status` uses the same ping). A client's `notifications/cancelled` frees the call's
+turn. A call cancelled while it waited for its turn was not sent; one cancelled while waiting for
+Revit's answer keeps running in Revit, so its outcome is `unknown`.
 
 ### Automation operations
 
@@ -507,7 +515,7 @@ use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what 
 |---|---|---|
 | `not_sent` | The request never reached the host: nobody was listening, another client held the pipe, or the pipe belongs to another process. | Send it again. |
 | `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
-| `unknown` | The request was sent and the answer was lost (the connection broke or closed). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
+| `unknown` | The request was sent and the answer was lost (the connection broke or closed, or the client stopped waiting). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
 
 Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
 run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
@@ -522,7 +530,8 @@ pyrevit agent show req-0123456789ab
 The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
 `outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
 queued has no record yet, and one that never arrived has none at all. Only a pipe error after
-sending, or an answer that cannot be read, leaves the outcome `unknown`.
+sending, an answer that cannot be read, or a client that stops waiting after sending (a cancelled
+call, or a ping with no answer in time: `no_answer`) leaves the outcome `unknown`.
 
 A missing record does not prove that resending is safe. A request waits to start for
 `start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and

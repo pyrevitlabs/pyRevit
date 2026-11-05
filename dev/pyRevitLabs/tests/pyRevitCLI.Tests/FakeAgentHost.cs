@@ -17,11 +17,12 @@ internal sealed class FakeAgentHost : IDisposable {
     private readonly List<JObject> requests = new List<JObject>();
     private readonly string previousAgentDir = PyRevitAgentClient.AgentDirOverride;
     private readonly int previousConnectTimeout = PyRevitAgentClient.ConnectTimeoutMs;
+    private readonly int previousPingTimeout = PyRevitAgentClient.PingTimeoutMs;
     private readonly Func<System.Diagnostics.Process, string> previousProcessNameReader = PyRevitAgentClient.ProcessNameReader;
     private readonly Func<System.Diagnostics.Process, DateTime> previousProcessStartTimeReader = PyRevitAgentClient.ProcessStartTimeReader;
     private readonly Func<string, bool> previousPipeExists = PyRevitAgentClient.PipeExists;
     private readonly Action<int> previousDiscoveryDelay = PyRevitAgentClient.DiscoveryDelay;
-    private readonly Task serving;
+    private readonly List<Task> serving = new List<Task>();
 
     public FakeAgentHost(string revitVersion = "2090", bool register = true) {
         AgentDir = Directory.CreateTempSubdirectory("pyrevit-agent-fake-").FullName;
@@ -31,7 +32,18 @@ internal sealed class FakeAgentHost : IDisposable {
         PipeName = "pyrevit-fake-" + Guid.NewGuid().ToString("N");
         if (register)
             Register(revitVersion, Environment.ProcessId, DateTime.UtcNow);
-        serving = Task.Run(Serve);
+        serving.Add(Task.Run(() => Serve(PipeName)));
+    }
+
+    /// <summary>
+    /// Registers another Revit of this process with its own pipe, served by the same
+    /// <see cref="Handler"/>, and returns the pipe name.
+    /// </summary>
+    public string AddInstance(string revitVersion) {
+        var pipeName = "pyrevit-fake-" + Guid.NewGuid().ToString("N");
+        Register(revitVersion, Environment.ProcessId, DateTime.UtcNow, revitVersion + "-extra.json", pipeName);
+        serving.Add(Task.Run(() => Serve(pipeName)));
+        return pipeName;
     }
 
     public string AgentDir { get; }
@@ -95,10 +107,10 @@ internal sealed class FakeAgentHost : IDisposable {
         return directory;
     }
 
-    private async Task Serve() {
+    private async Task Serve(string pipeName) {
         while (!stop.IsCancellationRequested) {
             try {
-                using var server = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
                 await server.WaitForConnectionAsync(stop.Token);
                 var reader = new StreamReader(server, Utf8);
                 var writer = new StreamWriter(server, Utf8) { AutoFlush = true, NewLine = "\n" };
@@ -127,13 +139,14 @@ internal sealed class FakeAgentHost : IDisposable {
     public void Dispose() {
         stop.Cancel();
         try {
-            serving.Wait(TimeSpan.FromSeconds(5));
+            Task.WaitAll(serving.ToArray(), TimeSpan.FromSeconds(5));
         }
         catch (AggregateException) {
         }
         stop.Dispose();
         PyRevitAgentClient.AgentDirOverride = previousAgentDir;
         PyRevitAgentClient.ConnectTimeoutMs = previousConnectTimeout;
+        PyRevitAgentClient.PingTimeoutMs = previousPingTimeout;
         PyRevitAgentClient.ProcessNameReader = previousProcessNameReader;
         PyRevitAgentClient.ProcessStartTimeReader = previousProcessStartTimeReader;
         PyRevitAgentClient.PipeExists = previousPipeExists;

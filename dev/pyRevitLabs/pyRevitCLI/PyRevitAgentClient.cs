@@ -116,7 +116,7 @@ namespace pyRevitCLI {
     /// </summary>
     /// <remarks>
     /// Each call opens its own pipe connection. The host serves one connection at a time,
-    /// so callers that may overlap (the MCP server) must serialize their calls.
+    /// so callers that may overlap (the MCP server) must serialize their calls to each host.
     /// </remarks>
     internal static class PyRevitAgentClient {
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
@@ -129,6 +129,11 @@ namespace pyRevitCLI {
         internal static int ConnectTimeoutMs = 10000;
 
         /// <summary>
+        /// How long <see cref="Ping"/> waits for the answer once connected. Shortened by tests.
+        /// </summary>
+        internal static int PingTimeoutMs = 5000;
+
+        /// <summary>
         /// Replaces the folder that holds host registrations and run records. Set by tests so
         /// they never read or write the real user profile.
         /// </summary>
@@ -136,7 +141,17 @@ namespace pyRevitCLI {
 
         internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
         internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;
-        internal static Func<string, bool> PipeExists = pipeName => File.Exists(@"\\.\pipe\" + pipeName);
+        /// <summary>
+        /// Whether a pipe exists, read from the pipe namespace listing.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: never open the pipe to check it. Opening it, as <c>File.Exists</c> does,
+        /// connects to the host's only server instance and can lock a real client out.
+        /// </remarks>
+        internal static Func<string, bool> PipeExists = pipeName => Directory.EnumerateFiles(PipeRoot)
+            .Any(path => string.Equals(path, PipeRoot + pipeName, StringComparison.OrdinalIgnoreCase));
+
+        private const string PipeRoot = @"\\.\pipe\";
         internal static Action<int> DiscoveryDelay = Thread.Sleep;
 
         private enum InstanceLiveness {
@@ -249,15 +264,33 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Sends one request and waits for its response. There is no read timeout: a modify
-        /// run legitimately waits for the user to answer the approval prompt in Revit.
+        /// Pings a host, waiting at most <see cref="PingTimeoutMs"/> for its answer, so a Revit
+        /// that accepted the connection but never answers can't hang a status check.
+        /// </summary>
+        /// <exception cref="AgentClientException">See <see cref="Call"/>; <c>no_answer</c> on timeout.</exception>
+        public static void Ping(AgentInstance instance) {
+            Call(instance, "ping", answerTimeoutMs: PingTimeoutMs);
+        }
+
+        /// <summary>
+        /// Sends one request and waits for its response. By default there is no read timeout:
+        /// a modify run legitimately waits for the user to answer the approval prompt in Revit.
         /// </summary>
         /// <remarks>
         /// The request goes out under a fresh <see cref="NewRequestId"/>, which the host keeps in
         /// the run record. A failure carries an <see cref="AgentClientException.Outcome"/>: a
         /// request that was never sent, one the host refused, or one whose answer was lost.
+        /// Important: giving up on the answer, through <paramref name="cancellation"/> or
+        /// <paramref name="answerTimeoutMs"/>, only closes the connection. A request already sent
+        /// keeps running in Revit, so its outcome is <see cref="AgentOutcome.Unknown"/>.
         /// </remarks>
-        public static JToken Call(AgentInstance instance, string method, JObject parameters = null) {
+        /// <exception cref="AgentClientException">
+        /// <c>cancelled</c> when <paramref name="cancellation"/> fires and <c>no_answer</c> when
+        /// <paramref name="answerTimeoutMs"/> passes, besides the connection and host errors.
+        /// </exception>
+        public static JToken Call(
+            AgentInstance instance, string method, JObject parameters = null,
+            CancellationToken cancellation = default, int? answerTimeoutMs = null) {
             var requestId = NewRequestId();
             var request = new JObject {
                 ["jsonrpc"] = "2.0",
@@ -269,15 +302,33 @@ namespace pyRevitCLI {
             var sent = false;
             string responseLine;
             try {
-                using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut)) {
-                    pipe.Connect(ConnectTimeoutMs);
+                using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut, PipeOptions.Asynchronous))
+                using (var answer = CancellationTokenSource.CreateLinkedTokenSource(cancellation)) {
+                    pipe.ConnectAsync(ConnectTimeoutMs, cancellation).GetAwaiter().GetResult();
                     RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
                     var reader = new StreamReader(pipe, Utf8);
                     writer.WriteLine(request.ToString(Formatting.None));
                     sent = true;
-                    responseLine = reader.ReadLine();
+                    if (answerTimeoutMs.HasValue)
+                        answer.CancelAfter(answerTimeoutMs.Value);
+                    responseLine = reader.ReadLineAsync(answer.Token).AsTask().GetAwaiter().GetResult();
                 }
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) {
+                throw new AgentClientException(
+                    "cancelled",
+                    "The call was cancelled." + LostAnswerNotice(sent),
+                    sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+            }
+            catch (OperationCanceledException) {
+                throw new AgentClientException(
+                    "no_answer",
+                    $"Revit {instance.RevitVersion} (pid {instance.ProcessId}) accepted the connection but did not answer "
+                    + $"within {answerTimeoutMs / 1000.0:0.#}s." + LostAnswerNotice(sent),
+                    AgentOutcome.Unknown,
+                    requestId);
             }
             catch (TimeoutException) {
                 throw new AgentClientException(
