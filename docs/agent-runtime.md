@@ -215,6 +215,7 @@ to return data. It is serialized to JSON:
 - `Element` becomes `{id, category, name, class}`.
 - `XYZ` becomes `[x, y, z]`.
 - .NET numbers become numbers, and collections become lists.
+- `bytes` and `bytearray` become text, decoded as UTF-8.
 
 Printed output is captured and returned too.
 
@@ -272,7 +273,8 @@ Rules the host enforces:
   timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
   modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
   only stopped once the call returns. A single blocking call, such as a long Revit API call
-  or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns.
+  or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns,
+  and returns no `result`.
 - The runner compiles the script with every bare `except` and `except BaseException`
   narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
   `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
@@ -582,7 +584,10 @@ Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one con
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
-`invalid_params`.
+`invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
+wrong JSON type, or a `capture` width outside 320-2400, is `invalid_params`. Any other
+unexpected failure is `internal_error` with `data.outcome` `unknown`, because the work may
+already have run.
 
 ### What became of a request that got no answer
 
@@ -608,8 +613,11 @@ pyrevit agent show req-0123456789ab
 
 The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
 `outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
-queued has no record yet, and one that never arrived has none at all. Only a pipe error after
-sending, or an answer that cannot be read, leaves the outcome `unknown`.
+queued has no record yet, and one that never arrived has none at all. A pipe error after
+sending, an answer that cannot be read, a host `internal_error`, or an MCP `server_error` raised
+while processing the host's answer leaves the outcome `unknown`. The MCP server checks tool
+arguments against each tool's `inputSchema` before it sends anything, so an `invalid_params`
+from it means the request never reached Revit.
 
 A missing record does not prove that resending is safe. A request waits to start for
 `start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and
