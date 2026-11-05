@@ -1016,6 +1016,26 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 (source, False), self.runner._record_transaction_starts(source)
             )
 
+    def test_start_hidden_in_one_string_token_falls_back(self):
+        """IronPython 3.4 tokenizes an f-string, calls included, as one string."""
+        source = "def helper():\n    msg = f'{t.Start()}'\nhelper()\n"
+        tokens_without_the_call = list(
+            self.runner._significant_tokens(
+                "def helper():\n    msg = '...'\nhelper()\n"
+            )
+        )
+        with mock.patch.object(
+            self.runner, "_significant_tokens", return_value=tokens_without_the_call
+        ):
+            self.assertEqual(
+                (source, False), self.runner._record_transaction_starts(source)
+            )
+
+    def test_start_only_in_text_needs_no_tracer(self):
+        """A Start that is no call, as in a comment or a message, changes nothing."""
+        source = "# Start here\nmessage = 'Start the work'\n"
+        self.assertEqual((source, True), self.runner._record_transaction_starts(source))
+
     def _run(self, source, timeout_s=5, workspace=None):
         created = []
         errors = []

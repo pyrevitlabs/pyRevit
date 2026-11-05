@@ -364,7 +364,10 @@ def _record_transaction_starts(source):
     Invariant:
         The rewrite is checked against the AST: the rewritten source must
         parse to the original tree with each ``.Start`` call's object wrapped
-        in ``__agent_start__(...)``, and nothing else changed.
+        in ``__agent_start__(...)``, and nothing else changed. The check also
+        runs when the tokens show no ``Start`` call but the source contains
+        the word, because IronPython 3.4 keeps an f-string, calls included,
+        as one string token.
     """
     try:
         tokens = list(_significant_tokens(source))
@@ -398,7 +401,7 @@ def _record_transaction_starts(source):
             return source, False
         insertions.append((offset_of(tokens[first][2]), _START_RECORDER + "("))
         insertions.append((offset_of(tokens[index - 2][3]), ")"))
-    if not insertions:
+    if not insertions and "Start" not in source:
         return source, complete
     rewritten = source
     for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
