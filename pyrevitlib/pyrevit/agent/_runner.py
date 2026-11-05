@@ -830,7 +830,7 @@ def run(context):
         transactions runs as fast as one that doesn't. A line tracer is only
         installed when that can't see every start: a ``workspace`` run, code
         compiled at run time, or ``Start`` reached other than by a direct
-        call.
+        call. Reported tracebacks leave out this module's frames.
 
     Warning:
         When ``context.Reckless`` is true (``[agent] reckless``, see
@@ -1332,10 +1332,46 @@ def _clr_exception(ex):
 
 
 def _format_script_traceback():
+    """Format the exception being handled without this module's frames.
+
+    The runner's frames (``run`` itself, the loop guards, the tracer) say
+    nothing about the script, and a timeout raised inside one of them, such
+    as one CPython injects as ``__agent_tick__`` is entered, would otherwise
+    point at the runner instead of the script line that was running.
+    """
     exc_type, exc_value, exc_tb = sys.exc_info()
-    if exc_tb is not None:
-        exc_tb = exc_tb.tb_next
-    return "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    summary_type = getattr(traceback, "TracebackException", None)
+    if summary_type is not None:
+        summary = summary_type(exc_type, exc_value, exc_tb)
+        _drop_runner_frames(summary, set())
+        return "".join(summary.format())
+    entries = [
+        entry for entry in traceback.extract_tb(exc_tb) if entry[0] != _RUNNER_FILENAME
+    ]
+    lines = traceback.format_exception_only(exc_type, exc_value)
+    if entries:
+        lines = (
+            ["Traceback (most recent call last):\n"]
+            + traceback.format_list(entries)
+            + lines
+        )
+    return "".join(lines)
+
+
+def _drop_runner_frames(summary, seen):
+    if summary is None or id(summary) in seen:
+        return
+    seen.add(id(summary))
+    summary.stack = traceback.StackSummary.from_list(
+        [frame for frame in summary.stack if frame.filename != _RUNNER_FILENAME]
+    )
+    _drop_runner_frames(summary.__cause__, seen)
+    _drop_runner_frames(summary.__context__, seen)
+    for nested in getattr(summary, "exceptions", None) or ():
+        _drop_runner_frames(nested, seen)
+
+
+_RUNNER_FILENAME = _format_script_traceback.__code__.co_filename
 
 
 def _safe_text(value):

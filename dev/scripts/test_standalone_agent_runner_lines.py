@@ -1114,6 +1114,100 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertEqual(["transaction_left_open"], errors)
 
 
+class AgentRunnerTracebackTests(unittest.TestCase):
+    """Reported tracebacks show the script, not the runner."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _run(self, source, timeout_s=5):
+        errors = []
+        context = types.SimpleNamespace(
+            Source=source,
+            Workspace=None,
+            TimeoutSeconds=timeout_s,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: errors.append(args),
+        )
+        with mock.patch.object(self.runner, "_WATCHDOG_ESCALATE_SECONDS", 0.2):
+            self.runner.run(context)
+        self.assertEqual(1, len(errors))
+        return errors[0]
+
+    def _script_lines(self, text):
+        return [
+            int(match)
+            for match in re.findall(r'File "<agent-script>", line (\d+)', text)
+        ]
+
+    def test_timeout_traceback_ends_at_the_script_line(self):
+        """A timeout names the script's frames only, ending in the running loop."""
+        source = "def spin():\n    while True:\n        pass\nspin()\n"
+        error_type, _, text = self._run(source, timeout_s=0.2)
+        self.assertEqual("timeout", error_type)
+        self.assertNotIn(RUNNER_PATH, text)
+        self.assertNotIn("_runner.py", text)
+        lines = self._script_lines(text)
+        self.assertEqual(4, lines[0])
+        self.assertIn(lines[-1], (2, 3))
+
+    def test_guard_raised_timeout_points_at_the_loop_header(self):
+        """A timeout raised inside __agent_tick__ reports the while line."""
+        state = {"timed_out": True}
+        tick, loop = self.runner._loop_guards(5, state, {})
+        code, _, _ = self.runner._compile_source("x = 1\nwhile x:\n    x = 2\n", True)
+        try:
+            exec(code, {"__agent_tick__": tick, "__agent_loop__": loop})
+        except self.runner.RunTimedOut:
+            text = self.runner._format_script_traceback()
+        else:
+            self.fail("The guard did not raise")
+        self.assertNotIn("_runner.py", text)
+        self.assertNotIn("in agent_tick", text)
+        self.assertEqual([2], self._script_lines(text))
+        self.assertTrue(text.startswith("Traceback (most recent call last):\n"))
+        self.assertTrue(text.rstrip().endswith("RunTimedOut: 5"))
+
+    def test_error_traceback_keeps_the_script_frames(self):
+        """A script error still names each script frame and the error."""
+        source = "def fail():\n    raise ValueError('boom')\nfail()\n"
+        error_type, _, text = self._run(source)
+        self.assertEqual("ValueError", error_type)
+        self.assertNotIn("_runner.py", text)
+        self.assertEqual([3, 2], self._script_lines(text))
+        self.assertIn("ValueError: boom", text)
+
+    def test_chained_exceptions_drop_runner_frames_too(self):
+        """Frames of the runner are dropped from every exception in the chain."""
+        source = (
+            "x = 1\n"
+            "def spin():\n"
+            "    try:\n"
+            "        while x:\n"
+            "            pass\n"
+            "    finally:\n"
+            "        raise ValueError('after')\n"
+            "spin()\n"
+        )
+        tick, loop = self.runner._loop_guards(5, {"timed_out": True}, {})
+        code, _, _ = self.runner._compile_source(source, True)
+        try:
+            exec(code, {"__agent_tick__": tick, "__agent_loop__": loop})
+        except ValueError:
+            text = self.runner._format_script_traceback()
+        else:
+            self.fail("The script did not raise")
+        self.assertNotIn("_runner.py", text)
+        self.assertIn("RunTimedOut", text)
+        self.assertEqual([4, 8, 7], self._script_lines(text))
+
+
 class AgentRunnerSourceTests(unittest.TestCase):
     """Constraints on the runner file itself."""
 

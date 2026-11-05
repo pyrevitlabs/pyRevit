@@ -294,6 +294,9 @@ Rules the host enforces:
   `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
   transaction a library function starts and returns to the script is only found if the
   script still holds it in a global when the run ends.
+- Tracebacks of errors and timeouts show the script's frames and the library code it
+  called, never the runner's own frames, so a timeout points at the script line that was
+  running.
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
   builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
   the deadline on every line of every frame, which is slower but still stops it, unless
