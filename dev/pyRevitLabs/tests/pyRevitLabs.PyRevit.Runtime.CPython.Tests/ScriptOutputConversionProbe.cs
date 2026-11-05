@@ -31,10 +31,11 @@ internal static class ScriptOutputConversionProbe {
     public const string EmptyTable = "empty-table";
     public const string FilledTable = "filled-table";
     public const string ReleasedGil = "released-gil";
+    public const string ProxiedRows = "proxied-rows";
 
     private static readonly string[] Keys = [
         NoneCells, NoneListItems, StringRows, StringTable, ScalarTable, StringList, RaisingRows, RaisingCells,
-        Dictionary, SequenceRows, SequenceCells, EmptyTable, FilledTable, ReleasedGil,
+        Dictionary, SequenceRows, SequenceCells, EmptyTable, FilledTable, ReleasedGil, ProxiedRows,
     ];
 
     private const string Fixtures = """
@@ -60,7 +61,27 @@ internal static class ScriptOutputConversionProbe {
 
         sequence_rows = Sequence(Sequence("a", 1), Sequence("b", None))
         sequence_cells = Sequence("x", 2)
+
+        from collections import namedtuple
+        Table = namedtuple("Table", "first second")
+        namedtuple_rows = Table(("a", 1), ("b", None))
         """;
+
+    private const string ProxyStub = """
+        namespace PyRevitLabs.PyRevit.Forms.Binding {
+            internal interface IPythonValue {
+                Python.Runtime.PyObject Source { get; }
+            }
+
+            public sealed class ObjectProxyStub : IPythonValue {
+                private readonly Python.Runtime.PyObject source;
+                public ObjectProxyStub(Python.Runtime.PyObject source) { this.source = source; }
+                Python.Runtime.PyObject IPythonValue.Source => source;
+            }
+        }
+        """;
+
+    private const string ProxyStubType = "PyRevitLabs.PyRevit.Forms.Binding.ObjectProxyStub";
 
     private const string FixtureType = "PyRevitLabs.PyRevit.Runtime.PythonTableData";
 
@@ -95,6 +116,7 @@ internal static class ScriptOutputConversionProbe {
         observations[EmptyTable] = Observe(() => Warning(fixture, scope.Eval("[]")));
         observations[FilledTable] = Observe(() => Warning(fixture, scope.Eval("[[1]]")));
         observations[ReleasedGil] = Observe(() => WithoutGil(fixture, scope));
+        observations[ProxiedRows] = Observe(() => Proxied(fixture, scope.Get("namedtuple_rows")));
         return observations;
     }
 
@@ -113,6 +135,14 @@ internal static class ScriptOutputConversionProbe {
         }
         finally {
             PythonEngine.EndAllowThreads(state);
+        }
+    }
+
+    private static string Proxied(Type fixture, PyObject value) {
+        using (value) {
+            var proxy = Activator.CreateInstance(fixture.Assembly.GetType(ProxyStubType, throwOnError: true)!, value)!;
+            var rows = (List<List<string>>)Invoke(fixture, "ToRows", proxy)!;
+            return string.Join(";", rows.Select(row => string.Join("|", row)));
         }
     }
 
@@ -173,7 +203,7 @@ internal static class ScriptOutputConversionProbe {
             .Append(typeof(PyObject).Assembly.Location)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(reference => MetadataReference.CreateFromFile(reference));
-        var compilation = CSharpCompilation.Create("ScriptOutputConversionFixture", [CSharpSyntaxTree.ParseText(source)],
+        var compilation = CSharpCompilation.Create("ScriptOutputConversionFixture", [CSharpSyntaxTree.ParseText(source), CSharpSyntaxTree.ParseText(ProxyStub)],
             references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         using var assemblyStream = new MemoryStream();
         var result = compilation.Emit(assemblyStream);

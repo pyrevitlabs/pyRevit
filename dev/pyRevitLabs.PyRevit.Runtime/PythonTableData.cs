@@ -23,6 +23,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>Markdown printed instead of a table when the table data yields no rows.</summary>
         public const string NoRowsWarning = "### :warning: No table_data list";
 
+        private const string PythonValueContract = "PyRevitLabs.PyRevit.Forms.Binding.IPythonValue";
+
         /// <summary>
         /// Returns the markdown to print instead of the table when <paramref name="rows"/> is empty,
         /// or <c>null</c> when the table should be rendered.
@@ -32,6 +34,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static List<List<string>> ToRows(object value) {
+            value = PythonSourceOf(value);
             var rows = new List<List<string>>();
             if (value == null || value is string)
                 return rows;
@@ -56,6 +59,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static List<string> ToCells(object value) {
+            value = PythonSourceOf(value);
             var items = new List<string>();
             if (value == null)
                 return items;
@@ -143,6 +147,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns the Python object behind a forms binding proxy, or <paramref name="value"/> itself.
+        /// </summary>
+        /// <remarks>
+        /// The forms binding conversions hand class instances and namedtuples passed as
+        /// <see cref="object"/> to the CLR as proxies implementing its internal
+        /// <c>IPythonValue</c>. The assembly is loaded by reflection, so the contract is found by name.
+        /// The returned object stays owned by the proxy and must not be disposed.
+        /// </remarks>
+        private static object PythonSourceOf(object value) {
+            var contract = value?.GetType().GetInterface(PythonValueContract);
+            return contract?.GetProperty("Source")?.GetValue(value) ?? value;
         }
 
         private static bool IsIterable(PyObject value) {

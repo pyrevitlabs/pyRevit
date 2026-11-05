@@ -55,6 +55,15 @@ public class ScriptOutputConversionTests {
     }
 
     /// <summary>
+    /// A namedtuple passed as <c>object</c> reaches the CLR as a forms binding proxy; its rows still
+    /// render instead of the empty-table warning.
+    /// </summary>
+    [Fact]
+    public void BindingProxies_ConvertAsTheirPythonObject() {
+        Assert.Equal("a|1;b|", Observed(ScriptOutputConversionProbe.ProxiedRows));
+    }
+
+    /// <summary>
     /// Objects iterable only through the <c>__len__</c>/<c>__getitem__</c> sequence protocol convert
     /// item by item, as Python's <c>iter()</c> would, for both rows and cells.
     /// </summary>
