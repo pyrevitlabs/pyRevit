@@ -2,3 +2,4 @@ author: '{{author}}'
 context: zero-doc
 engine:
   persistent: true
+inherit_icon: false

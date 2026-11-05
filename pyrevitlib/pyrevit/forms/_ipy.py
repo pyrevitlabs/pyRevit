@@ -30,6 +30,7 @@ if not IRONPY:
 
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import applocales
 from pyrevit.coreutils import colors
 from pyrevit.coreutils import envvars
 
@@ -1340,7 +1341,9 @@ class TemplateUserInputWindow(WPFWindow):
             self.Title = (
                 localized_title if isinstance(localized_title, str) else "User Input"
             )
-        self.Width = width
+        self._requested_width = width
+        if width is not None:
+            self.Width = width
         self.Height = height
 
         self._context = context
@@ -2022,6 +2025,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
         recognize_access_key (bool): recognize '_' as mark of access key
+        width (int): window width
 
     Returns:
         (str | tuple[str, dict]): name of selected option.
@@ -2062,9 +2066,24 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     xaml_source = "CommandSwitchWindow.xaml"
 
+    RESOURCES = {
+        "command_switch_window_width": {
+            "en_us": DEFAULT_CMDSWITCHWND_WIDTH,
+            "fr_fr": 700,
+            "ru": 700,
+            "chinese_s": DEFAULT_CMDSWITCHWND_WIDTH,
+            "ko": 700,
+            "es_es": 750,
+            "de_de": 700,
+            "pt_br": 700,
+        },
+    }
+
+    def _ls(self, key):
+        return applocales.get_locale_string(self.RESOURCES[key])
+
     def _setup(self, **kwargs):
         self.selected_switch = ""
-        self.Width = DEFAULT_CMDSWITCHWND_WIDTH
         self.Title = "Command Options"
 
         message = kwargs.get("message", None)
@@ -2074,11 +2093,20 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         configs = kwargs.get("config", None)
 
-        self.message_label.Content = message if message else "Pick a command option:"
+        self.message_label.Content = (
+            message
+            if message
+            else self.get_locale_string(
+                "CommandSwitchWindow.MessageLabel.Content", "Pick a command option:"
+            )
+        )
 
         self.Resources["pyRevitRecognizesAccessKey"] = kwargs.get(
             "recognize_access_key", DEFAULT_RECOGNIZE_ACCESS_KEY
         )
+
+        if self._requested_width is None:
+            self.Width = self._ls("command_switch_window_width")
 
         # creates the switches first
         for switch, state in self._switches.items():
@@ -2100,6 +2128,23 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self._setup_response()
         self.search_tb.Focus()
         self._filter_options()
+
+    @classmethod
+    def show(
+        cls,
+        context,
+        title=None,
+        width=None,
+        height=DEFAULT_INPUTWINDOW_HEIGHT,
+        **kwargs
+    ):
+        return super(CommandSwitchWindow, cls).show(
+            context,
+            title=title,
+            width=width,
+            height=height,
+            **kwargs
+        )
 
     @staticmethod
     def _set_config(item, config_dict):
@@ -2125,7 +2170,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 else:
                     button.Visibility = WPF_VISIBLE
         else:
-            self.search_tb.Tag = (
+            self.search_tb.Tag = self.get_locale_string(
+                "CommandSwitchWindow.SearchTextBox.Tag",
                 "Type to Filter / Tab to Select / Enter or Click to Run"
             )
             for button in self.button_list.Children:
