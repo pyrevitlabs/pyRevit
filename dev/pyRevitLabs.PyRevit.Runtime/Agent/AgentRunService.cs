@@ -166,7 +166,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     try {
                         guard.Arm("Agent: " + request.Title);
                         timings.Lap("guard_arm");
-                        var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
+                        int exitCode;
+                        using (reckless ? null : AgentHost.Dispatcher?.BeginScript(TimeSpan.FromSeconds(request.TimeoutSeconds)))
+                            exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
                         timings.Lap("engine");
 
                         var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;

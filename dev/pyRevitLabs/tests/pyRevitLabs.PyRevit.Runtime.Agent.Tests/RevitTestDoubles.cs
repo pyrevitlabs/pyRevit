@@ -204,6 +204,15 @@ namespace Autodesk.Revit.UI {
         public Document Document { get; }
         public List<int> GetOpenUIViews() => Document.HasView ? new List<int> { 1 } : new List<int>();
     }
+    internal enum ExternalEventRequest { Accepted, Pending, Denied, TimedOut }
+    internal interface IExternalEventHandler {
+        void Execute(UIApplication app);
+        string GetName();
+    }
+    internal sealed class ExternalEvent {
+        public Func<ExternalEventRequest> OnRaise { get; set; }
+        public ExternalEventRequest Raise() => OnRaise();
+    }
 }
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentDialogCapture {
