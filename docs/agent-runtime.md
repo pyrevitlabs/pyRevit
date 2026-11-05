@@ -439,7 +439,8 @@ Revit main thread),
 engine startup and runner import. The same breakdown is logged as a `[PERF] agent run` debug
 line.
 
-Run records and `capture_view` images older than 14 days are deleted when the host starts.
+Run records and `capture_view` images older than 14 days are deleted when the host starts, and
+again at most once a day when a run is recorded.
 
 ### Testing agent skills and library changes through MCP
 
