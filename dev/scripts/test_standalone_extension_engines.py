@@ -200,6 +200,12 @@ class ExtensionEngineTests(unittest.TestCase):
         self.assertIsNone(exts.get_bundle_engine_type({"engine": "cpython"}))
         self.assertIsNone(exts.get_bundle_engine_type(None))
 
+    def test_bundle_engine_type_is_trimmed(self):
+        """Padding around ``engine.type`` does not hide the declaration."""
+        self.assertEqual(
+            "cpython", exts.get_bundle_engine_type({"engine": {"type": " cpython "}})
+        )
+
 
 class EngineConfigPrecedenceTests(unittest.TestCase):
     """The Python command generator matches C# BuildEngineConfigs precedence."""

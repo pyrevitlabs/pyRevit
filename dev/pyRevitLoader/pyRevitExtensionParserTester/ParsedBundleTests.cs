@@ -682,6 +682,32 @@ is_beta: true
             }
         }
 
+        [Test]
+        public void TestPaddedEngineTypeIsTrimmed()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypePadded_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.panel", "Cmd.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), "print('ok')\n");
+                File.WriteAllText(Path.Combine(bundleDir, "bundle.yaml"), "engine:\n  type: \" CPython \"\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
+                var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
+
+                Assert.That(generatedCode, Does.Contain("\\\"type\\\":\\\"CPython\\\""),
+                    "A padded engine.type should be emitted trimmed.");
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
         [TestCase("{ \"engine\": \"CPython\" }", "cpython")]
         [TestCase("{ \"engine\": { \"type\": \"cpython\", \"clean\": true } }", "cpython")]
         [TestCase("{ \"engine\": \"IronPython\" }", "ironpython")]

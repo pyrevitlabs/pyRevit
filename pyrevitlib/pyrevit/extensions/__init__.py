@@ -191,11 +191,11 @@ def _engine_type_of(engine_meta):
         engine_meta = engine_meta.get(MDATA_ENGINE_TYPE)
     if not hasattr(engine_meta, "strip"):
         return None
-    return engine_meta
+    return engine_meta.strip()
 
 
 def get_declared_engine_type(metadata):
-    """Return the raw engine type an extension manifest declares, if any.
+    """Return the engine type an extension manifest declares, if any, trimmed.
 
     Accepts ``"engine": "cpython"`` and the bundle-style mapping
     ``"engine": {"type": "cpython", ...}`` that the C# loader also reads. A
@@ -208,7 +208,7 @@ def get_declared_engine_type(metadata):
 
 
 def get_bundle_engine_type(metadata):
-    """Return the raw ``engine.type`` of a bundle's metadata, if any.
+    """Return the ``engine.type`` of a bundle's metadata, if any, trimmed.
 
     Unlike an extension manifest, a bundle declares its engine only through
     the ``engine:`` mapping; a scalar ``engine:`` is ignored, as the C#
