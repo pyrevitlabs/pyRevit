@@ -60,6 +60,34 @@ class AgentRunnerOutcomeTests(unittest.TestCase):
             errors, _ = self._run("raise RunTimedOut(1)\n", None)
         self.assertEqual(["RunTimedOut"], [error[0] for error in errors])
 
+    def test_a_script_raised_timeout_before_the_deadline_is_a_script_error(self):
+        """Only a deadline that passed is a timeout, not the exception type alone."""
+        with mock.patch.object(
+            builtins, "RunTimedOut", self.runner.RunTimedOut, create=True
+        ):
+            errors, _ = self._run("raise RunTimedOut(0)\n", 300)
+        self.assertEqual(["RunTimedOut"], [error[0] for error in errors])
+
+    def test_an_empty_message_has_no_leading_space_before_the_net_details(self):
+        """IronPython's KeyboardInterrupt has no text of its own, only the .NET cause."""
+        clr_type = types.SimpleNamespace(
+            FullName="Microsoft.Scripting.KeyboardInterruptException",
+            Name="KeyboardInterruptException",
+        )
+        clr_exception = types.SimpleNamespace(
+            GetType=lambda: clr_type, Message="KeyboardInterrupt", InnerException=None
+        )
+        interrupt = KeyboardInterrupt()
+        interrupt.clsException = clr_exception
+        self.assertEqual(
+            (
+                "KeyboardInterrupt",
+                "[.NET: Microsoft.Scripting.KeyboardInterruptException: "
+                "KeyboardInterrupt]",
+            ),
+            self.runner._describe_error(interrupt),
+        )
+
     def test_sys_exit_with_a_message_reports_the_message(self):
         """sys.exit('msg') is not an exit code."""
         errors, _ = self._run("import sys\nsys.exit('missing level')\n")

@@ -936,7 +936,9 @@ def run(context):
                     context.SetError(
                         "SystemExit", _system_exit_message(script_exit), ""
                     )
-            if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
+            if timeout_s and time.time() - started > timeout_s:
+                state["timed_out"] = True
+            if state["timed_out"]:
                 raise RunTimedOut(timeout_s)
             if not failed and "result" in namespace:
                 try:
@@ -961,7 +963,7 @@ def run(context):
             sys.settrace(None)
     except BaseException as ex:
         failed = True
-        if isinstance(ex, RunTimedOut) and timeout_s:
+        if isinstance(ex, RunTimedOut) and state["timed_out"]:
             context.SetError(
                 "timeout",
                 "The script ran longer than its {:g} second limit and was stopped; its "
@@ -1320,7 +1322,7 @@ def _describe_error(ex):
         error_type = clr_exception.GetType().Name
     details = " <- ".join(chain)
     if details and details not in message:
-        message = "%s [.NET: %s]" % (message, details)
+        message = " ".join(part for part in (message, "[.NET: %s]" % details) if part)
     return error_type, message
 
 
