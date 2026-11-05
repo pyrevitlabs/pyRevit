@@ -18,6 +18,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
     /// <c>data.type</c> carries the <see cref="AgentException.Code"/> and whose other <c>data</c>
     /// fields come from <see cref="AgentException.Details"/> (for example <c>outcome</c>).
+    /// Only a line that is not JSON is a <c>parse_error</c>; a parameter of the wrong JSON type is
+    /// <c>invalid_params</c>, and any other failure is an <c>internal_error</c> with <c>outcome</c>
+    /// <c>unknown</c>, since the work may already have run.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -25,10 +28,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const double MaxStartTimeoutSeconds = 3600;
 
         public static string Handle(string line) {
-            JToken id = null;
+            JObject request;
             try {
-                var request = JObject.Parse(line);
-                id = request["id"];
+                request = JObject.Parse(line);
+            }
+            catch (JsonException ex) {
+                return Failure(null, -32700, ex.Message, "parse_error");
+            }
+
+            var id = request["id"];
+            try {
                 var method = request.Value<string>("method") ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
                 return Success(id, Dispatch(method, parameters, id));
@@ -36,12 +45,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (AgentException ex) {
                 return Failure(id, -32000, ex.Message, ex.Code, ex.Details);
             }
-            catch (JsonException ex) {
-                return Failure(id, -32700, ex.Message, "parse_error");
-            }
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
-                return Failure(id, -32603, ex.Message, "internal_error");
+                return Failure(id, -32603, ex.Message, "internal_error", new JObject { ["outcome"] = "unknown" });
             }
         }
 
@@ -58,28 +64,54 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":
-                    var runRequest = AgentRunRequest.FromJson(parameters);
+                    var runRequest = ParseParameters(() => AgentRunRequest.FromJson(parameters));
                     EnforcePolicy(runRequest);
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
-                    runRequest.RequestId = id?.ToString(Formatting.None).Trim('"');
+                    runRequest.RequestId = RequestIdOf(id);
                     return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
-                    var ids = AgentInspector.ParseIds(parameters);
-                    var includeParameters = parameters.Value<bool?>("parameters") ?? true;
+                    var ids = ParseParameters(() => AgentInspector.ParseIds(parameters));
+                    var includeParameters = ParseParameters(() => parameters.Value<bool?>("parameters") ?? true);
                     return InvokeCapturingDialogs((app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters);
                 case "show":
-                    var showRequest = AgentPresenter.Parse(parameters);
+                    var showRequest = ParseParameters(() => AgentPresenter.Parse(parameters));
                     return InvokeCapturingDialogs((app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters);
                 case "capture":
-                    var captureRequest = AgentCapture.Parse(parameters);
+                    var captureRequest = ParseParameters(() => AgentCapture.Parse(parameters));
                     return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters);
                 case "lookup_api":
-                    var query = parameters.Value<string>("name");
+                    var query = ParseParameters(() => parameters.Value<string>("name"));
                     return AgentApiLookup.Lookup(query);
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
             }
+        }
+
+        /// <summary>
+        /// Runs a request's parameter parsing, turning a value of the wrong JSON type into
+        /// <c>invalid_params</c>.
+        /// </summary>
+        /// <remarks>
+        /// Only for parsing that happens before any work starts: once the request has run, these
+        /// conversion errors no longer mean the parameters were wrong.
+        /// </remarks>
+        private static T ParseParameters<T>(Func<T> parse) {
+            try {
+                return parse();
+            }
+            catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException) {
+                throw new AgentException("invalid_params", "A parameter has the wrong type or is out of range: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The client's JSON-RPC id as the text it sent: a string id unescaped, a number as written.
+        /// </summary>
+        internal static string RequestIdOf(JToken id) {
+            if (id == null || id.Type == JTokenType.Null)
+                return null;
+            return id.Type == JTokenType.String ? id.Value<string>() : id.ToString(Formatting.None);
         }
 
         /// <summary>
@@ -145,7 +177,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
-            var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
+            var startTimeoutSeconds = ParseParameters(() => parameters.Value<double?>("start_timeout_s"));
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",

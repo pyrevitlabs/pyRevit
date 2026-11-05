@@ -141,13 +141,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'mode' must be export, viewport or screen.");
 
             var width = parameters.Value<int?>("width") ?? DefaultWidth;
+            if (width < MinWidth || width > MaxWidth)
+                throw new AgentException("invalid_params", $"'width' must be from {MinWidth} to {MaxWidth} pixels.");
             var direction = parameters.Value<string>("direction") ?? "southeast";
             if (!Directions.ContainsKey(direction))
                 throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
             var request = new Request {
                 View = string.IsNullOrWhiteSpace(parameters.Value<string>("view")) ? "active" : parameters.Value<string>("view").Trim(),
                 Mode = mode,
-                Width = Math.Max(MinWidth, Math.Min(MaxWidth, width)),
+                Width = width,
                 Direction = direction,
                 Elements = (parameters["elements"] as JArray)?.Select(id => AgentIds.FromValue(id.Value<long>())).ToList(),
                 DetailLevel = ParseChoice(parameters, "detail_level", DetailLevels.Keys),
