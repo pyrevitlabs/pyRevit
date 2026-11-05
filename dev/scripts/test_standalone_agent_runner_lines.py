@@ -10,6 +10,8 @@ import types
 import unittest
 from unittest import mock
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RUNNER_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "agent", "_runner.py")
