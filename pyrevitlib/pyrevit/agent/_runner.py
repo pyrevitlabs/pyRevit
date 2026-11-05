@@ -65,20 +65,23 @@ class RunTimedOut(BaseException):
     """Raised inside the agent script once its time limit has passed.
 
     Derives from ``BaseException`` so a script's ``except Exception`` can't
-    swallow it. Python drops a trace function after its first raise on every
-    engine, so a handler that caught it would end the deadline checks. The
-    runner therefore narrows every bare ``except`` and ``except
+    swallow it. The runner narrows every bare ``except`` and ``except
     BaseException`` in the script to ``except Exception`` before compiling,
-    and also records that the deadline passed so :func:`run` fails the run
-    even if the script then ends normally.
+    and records that the deadline passed so :func:`run` fails the run even
+    if the script then ends normally. A handler that still catches it, such
+    as one reached through an alias, is stopped at the next rewritten loop
+    header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
 
 
 class _NarrowBroadHandlers(ast.NodeTransformer):
     """Turn handlers that would catch ``RunTimedOut`` into ``except Exception``.
 
-    A script that catches the timeout inside a loop can't be stopped again,
-    because Python removes the trace function once it has raised.
+    Narrowing keeps ``RunTimedOut`` away from the handlers the runner can
+    see. Code it does not rewrite, such as runtime-compiled code, relies on
+    the jump escalation on CPython 3.12+ and on the trace function on
+    IronPython, which Python removes once it has raised; a loop there that
+    catches the timeout can't be stopped again.
     """
 
     def __init__(self):
