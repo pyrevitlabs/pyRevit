@@ -67,9 +67,10 @@ class RunTimedOut(BaseException):
 
     Derives from ``BaseException`` so a script's ``except Exception`` can't
     swallow it. The runner narrows every bare ``except`` and ``except
-    BaseException`` in the script to ``except Exception`` before compiling,
-    and records that the deadline passed so :func:`run` fails the run even
-    if the script then ends normally. A handler that still catches it, such
+    BaseException`` (or ``except builtins.BaseException``) in the script to
+    ``except Exception`` before compiling, and records that the deadline
+    passed so :func:`run` fails the run even if the script then ends
+    normally. A handler that still catches it, such
     as one reached through an alias, is stopped at the next rewritten loop
     header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
@@ -105,6 +106,8 @@ def _catches_base_exception(handler_type):
         return True
     if isinstance(handler_type, ast.Name):
         return handler_type.id == "BaseException"
+    if isinstance(handler_type, ast.Attribute):
+        return handler_type.attr == "BaseException"
     if isinstance(handler_type, ast.Tuple):
         return any(_catches_base_exception(item) for item in handler_type.elts)
     return False
@@ -129,6 +132,11 @@ def _narrow_source_handlers(source, handlers):
     are populated. Keep the original source and its newline count instead,
     including multiline exception tuples and Python 2 exception bindings.
     Preserve the star in exception group handlers while narrowing their types.
+
+    Raises:
+        ValueError: not every handler header was found in the source; the
+            caller then compiles the narrowed AST instead of source that would
+            still catch the timeout.
     """
     positions = set((node.lineno, node.col_offset) for node in handlers)
     lines = _source_lines(source)
@@ -164,6 +172,10 @@ def _narrow_source_handlers(source, handlers):
                 depth += 1
             elif text in (")", "]", "}"):
                 depth -= 1
+    if len(replacements) != len(positions):
+        raise ValueError(
+            "rewrote {} of {} handler headers".format(len(replacements), len(positions))
+        )
     for first, last, replacement in reversed(replacements):
         source = source[:first] + replacement + source[last:]
     return source
