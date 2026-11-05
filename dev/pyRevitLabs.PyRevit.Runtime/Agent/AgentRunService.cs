@@ -40,6 +40,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>Background documents the run created or opened are closed without saving when it
     /// ends, whatever its outcome, and listed in <c>closed_documents</c>. The guard blocks their
     /// save and save-as operations while the run is active.</item>
+    /// <item>A host error reports <c>committed</c> only when the change set was already kept,
+    /// and <c>rollback_incomplete</c> when its rollback failed.</item>
     /// </list>
     /// The host attempts to write <c>script.py</c>, <c>request.json</c> and <c>response.json</c>
     /// under <c>%APPDATA%\pyRevit\agent\runs\</c>. A failure to persist an outcome never
@@ -211,13 +213,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         logger.Error(ex, "Agent run {0} failed in the host", runId);
                         context.SetError("host_error", ex.Message, ex.ToString());
                         response["status"] = "error";
-                        response["decision"] = "rolled_back";
+                        response["decision"] = guard.Committed ? "committed" : "rolled_back";
                         response["failures"] = guard.Failures;
                         response["dialogs"] = guard.Dialogs;
                         response["blocked"] = guard.Blocked;
                     }
                 }
                 timings.Lap("guard_release");
+                if (guard.RollbackFailed) {
+                    response["status"] = "error";
+                    response["decision"] = "rollback_incomplete";
+                    SetErrorIfMissing(context, "rollback_incomplete",
+                        "The host could not roll back the run, so its changes may remain in the active document. "
+                        + "Ask the user to undo them in Revit or close the document without saving.");
+                }
 
                 if (doc != null && response.Value<string>("decision") != "committed") {
                     var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
@@ -504,17 +513,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Turns the isolation off again.
+        /// </summary>
+        /// <exception cref="Exception">
+        /// Revit refused the transaction. The caller must not keep the run then: assimilating the
+        /// group would put the isolation into the user's undo entry and leave the view isolated.
+        /// </exception>
         public void End() {
             if (view == null)
                 return;
-            try {
-                using (var transaction = new Transaction(doc, TransactionName)) {
-                    transaction.Start();
-                    view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
-                    transaction.Commit();
-                }
-            }
-            catch (Exception) {
+            using (var transaction = new Transaction(doc, TransactionName)) {
+                transaction.Start();
+                view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+                if (transaction.Commit() != TransactionStatus.Committed)
+                    throw new InvalidOperationException("Revit did not end the approval preview's temporary isolation.");
             }
         }
     }
