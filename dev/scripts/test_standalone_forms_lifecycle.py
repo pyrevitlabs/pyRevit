@@ -227,7 +227,9 @@ class CommandSwitchTitleTests(unittest.TestCase):
             {
                 "TemplateUserInputWindow": InputWindow,
                 "DEFAULT_CMDSWITCHWND_WIDTH": 1,
+                "DEFAULT_INPUTWINDOW_HEIGHT": 1,
                 "DEFAULT_RECOGNIZE_ACCESS_KEY": True,
+                "applocales": mock.MagicMock(),
                 "framework": mock.MagicMock(),
                 "_backend": mock.MagicMock(),
             },

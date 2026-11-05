@@ -142,6 +142,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         height=DEFAULT_INPUTWINDOW_HEIGHT,
         **kwargs
     ):  # fmt: skip
+        """Show the dialog; without ``width`` it uses the locale's default width."""
         return super(CommandSwitchWindow, cls).show(
             context, title=title, width=width, height=height, **kwargs
         )
