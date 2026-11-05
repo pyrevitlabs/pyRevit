@@ -77,7 +77,7 @@ from .native import (
     save_excel_file,
     ask_for_color,
 )
-from .reactive import (
+from ._reactive import (
     Reactive,
     reactive,
     TemplateListItem,

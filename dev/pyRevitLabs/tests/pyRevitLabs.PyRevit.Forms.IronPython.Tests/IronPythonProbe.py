@@ -12,7 +12,7 @@ forms = module("pyrevit.forms", __path__=[os.path.join(fixture_root, "forms")])
 host.forms = forms
 for name in (
     "base",
-    "reactive",
+    "_reactive",
     "dialogs",
     "native",
     "commanddialog",

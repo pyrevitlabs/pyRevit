@@ -63,7 +63,7 @@ def items_source(values):
 def list_source(values):
     """Return an observable snapshot of list models for an ``ItemsSource``."""
     from pyrevit.framework import ObservableCollection
-    from ..reactive import TemplateListItem
+    from .._reactive import TemplateListItem
 
     return ObservableCollection[TemplateListItem](values)
 

@@ -6,8 +6,8 @@ from .base import DEFAULT_INPUTWINDOW_WIDTH
 from .base import XAML_FILES_DIR
 from .listdialog import SelectFromList
 from .native import alert
-from .reactive import ParamDef
-from .reactive import TemplateListItem
+from ._reactive import ParamDef
+from ._reactive import TemplateListItem
 from collections import OrderedDict
 from pyrevit import DB
 from pyrevit import DOCS

@@ -35,7 +35,7 @@ def _load_classes():
         "toggle_all",
     }
     selected = []
-    for module in ("reactive.py", "listdialog.py"):
+    for module in ("_reactive.py", "listdialog.py"):
         with open(os.path.join(FORMS, module), encoding="utf-8-sig") as source:
             tree = ast.parse(source.read())
         for node in tree.body:
