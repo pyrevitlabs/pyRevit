@@ -56,6 +56,12 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void RecklessRunsAreMarkedAndCheckedRunsAreNot() {
+            Assert.Null(PyRevitMcpRunResults.Compact(Run())["reckless"]);
+            Assert.True(PyRevitMcpRunResults.Compact(Run(extra: new JObject { ["reckless"] = true }))["reckless"].Value<bool>());
+        }
+
+        [Fact]
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 

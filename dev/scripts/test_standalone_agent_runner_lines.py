@@ -758,5 +758,136 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         self.assertEqual({}, self.runner._TRANSACTION_RANKS)
 
 
+LOOP_PAST_TIMEOUT = (
+    "import time\n"
+    "deadline = time.time() + 0.4\n"
+    "count = 0\n"
+    "while time.time() < deadline:\n"
+    "    count += 1\n"
+    "result = count\n"
+)
+
+
+class AgentRunnerRecklessTests(unittest.TestCase):
+    """Reckless runs (issue #3815) skip the in-script checks; default runs keep them."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _run(self, source, reckless, timeout_s=5):
+        errors = []
+        results = []
+        context = types.SimpleNamespace(
+            Source=source,
+            Workspace=None,
+            TimeoutSeconds=timeout_s,
+            Reckless=reckless,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=results.append,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: errors.append(args[0]),
+        )
+        with mock.patch.object(self.runner, "_WATCHDOG_ESCALATE_SECONDS", 0.2):
+            self.runner.run(context)
+        return errors, results
+
+    def _trace_functions_installed(self, source, reckless):
+        with mock.patch.object(sys, "settrace", wraps=sys.settrace) as settrace:
+            errors, _ = self._run(source, reckless)
+        self.assertEqual([], errors)
+        return [call.args[0] for call in settrace.call_args_list if call.args[0]]
+
+    def test_reckless_runs_the_source_unrewritten(self):
+        """No loop-header guards and no handler narrowing touch the source."""
+        runner = self.runner
+        with (
+            mock.patch.object(
+                runner, "_compile_source", wraps=runner._compile_source
+            ) as compile_source,
+            mock.patch.object(
+                runner, "_guard_loop_headers", wraps=runner._guard_loop_headers
+            ) as guard_loops,
+        ):
+            errors, results = self._run(
+                "names = [n for n in globals() if n.startswith('__agent')]\n"
+                "for _ in range(2):\n    pass\n"
+                "try:\n    pass\nexcept:\n    pass\n"
+                "result = names\n",
+                reckless=True,
+            )
+        self.assertEqual([], errors)
+        self.assertEqual(["[]"], results)
+        compile_source.assert_not_called()
+        guard_loops.assert_not_called()
+
+    def test_reckless_installs_no_trace_function(self):
+        """A script that names a transaction still runs with no tracer at all."""
+        source = "label = 'DB.Transaction'\nresult = [v for v in range(3)]\n"
+        self.assertEqual([], self._trace_functions_installed(source, reckless=True))
+
+    def test_default_run_still_traces_a_script_that_names_a_transaction(self):
+        """The checked default keeps tracking transactions line by line."""
+        source = "label = 'DB.Transaction'\nresult = [v for v in range(3)]\n"
+        self.assertNotEqual([], self._trace_functions_installed(source, reckless=False))
+
+    def test_reckless_does_not_stop_a_loop_past_its_timeout(self):
+        """The timeout is not enforced: no watchdog, no timeout error."""
+        with mock.patch.object(
+            self.runner, "_start_watchdog", wraps=self.runner._start_watchdog
+        ) as watchdog:
+            errors, results = self._run(LOOP_PAST_TIMEOUT, True, timeout_s=0.05)
+        self.assertEqual([], errors)
+        self.assertEqual(1, len(results))
+        watchdog.assert_not_called()
+
+    def test_default_run_still_stops_a_loop_past_its_timeout(self):
+        """Checked execution stays the default and still enforces the timeout."""
+        errors, results = self._run(LOOP_PAST_TIMEOUT, False, timeout_s=0.05)
+        self.assertEqual(["timeout"], errors)
+        self.assertEqual([], results)
+
+    def test_reckless_still_rolls_back_transactions_left_open_in_globals(self):
+        """The end-of-run cleanup of script globals runs in reckless mode too."""
+        created = []
+
+        class OpenTransaction(self.runner.DB.Transaction):
+            def __init__(self):
+                self.started = False
+                self.rolled_back = False
+                created.append(self)
+
+            def Start(self):
+                self.started = True
+
+            def HasStarted(self):
+                return self.started
+
+            def HasEnded(self):
+                return self.rolled_back
+
+            def RollBack(self):
+                self.rolled_back = True
+
+        doubles = types.ModuleType("reckless_doubles")
+        doubles.OpenTransaction = OpenTransaction
+        with mock.patch.dict(sys.modules, {"reckless_doubles": doubles}):
+            errors, _ = self._run(
+                "from reckless_doubles import OpenTransaction\n"
+                "kept = [OpenTransaction()]\n"
+                "kept[0].Start()\n"
+                "t = OpenTransaction()\n"
+                "t.Start()\n"
+                "result = 1\n",
+                reckless=True,
+            )
+        self.assertEqual(["transaction_left_open"], errors)
+        self.assertEqual(2, len(created))
+        self.assertTrue(all(transaction.rolled_back for transaction in created))
+
+
 if __name__ == "__main__":
     unittest.main()
