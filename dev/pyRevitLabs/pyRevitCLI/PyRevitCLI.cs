@@ -861,6 +861,10 @@ namespace pyRevitCLI {
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
 
+                    else if (all("reckless"))
+                        PyRevitCLIAgentCmds.ConfigureReckless(
+                            any("enable", "disable") ? arguments["enable"].IsTrue : null);
+
                     else if (all("policy"))
                         PyRevitCLIAgentCmds.ConfigurePolicy(
                             arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly

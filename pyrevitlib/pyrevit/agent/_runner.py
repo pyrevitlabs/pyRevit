@@ -646,6 +646,16 @@ def run(context):
         ``sorted`` over an endless iterable is not stopped.
 
     Warning:
+        When ``context.Reckless`` is true (``[agent] reckless``, see
+        ``docs/agent-runtime.md``), none of the above applies: the source is
+        compiled as submitted, no watchdog starts, no trace function is
+        installed, and ``context.TimeoutSeconds`` is not enforced at all, so a
+        runaway loop blocks Revit until the process is ended. Transactions
+        left open are still rolled back, but only those reachable from the
+        script's globals; one left open inside a function is not found and
+        can crash Revit when it is finalized.
+
+    Warning:
         The source is compiled with every bare ``except`` and ``except
         BaseException`` narrowed to ``except Exception``, so a script cannot
         swallow ``RunTimedOut`` there, and can no longer catch
@@ -672,7 +682,8 @@ def run(context):
     workspace = None
     namespace = None
     left_open = 0
-    timeout_s = getattr(context, "TimeoutSeconds", None)
+    reckless = bool(getattr(context, "Reckless", False))
+    timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {"timed_out": False}
     tracked_transactions = {}
     try:
@@ -685,9 +696,13 @@ def run(context):
                 namespace["__agent_loop__"],
             ) = _loop_guards(timeout_s, state, tracked_transactions)
         phases.lap("setup")
-        code, rewrite_problem, loops_guarded = _compile_source(source, guard_loops)
-        track = _needs_transaction_tracking(source, context.Workspace)
-        unguarded_code = not loops_guarded or _runs_dynamic_code(source)
+        if reckless:
+            code = compile(source, SOURCE_NAME, "exec")
+            rewrite_problem, track, unguarded_code = None, False, False
+        else:
+            code, rewrite_problem, loops_guarded = _compile_source(source, guard_loops)
+            track = _needs_transaction_tracking(source, context.Workspace)
+            unguarded_code = not loops_guarded or _runs_dynamic_code(source)
         phases.lap("compile")
         if rewrite_problem:
             print(
@@ -805,7 +820,8 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
     object is later finalized off the main thread, which crashes Revit. The
     runner records transactions reachable from script-local frames while the
     script executes, then also inspects script globals and their immediate
-    containers.
+    containers. A reckless run records nothing while it executes, so only the
+    globals are inspected.
 
     Returns:
         int: how many transactions were rolled back.

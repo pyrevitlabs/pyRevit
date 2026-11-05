@@ -15,9 +15,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     public sealed class AgentScriptContext {
         public AgentScriptContext(
             UIApplication uiApp, string runId, string mode, string source, string inputsJson, string workspace,
-            double timeoutSeconds) {
+            double timeoutSeconds, bool reckless = false) {
             UIApp = uiApp;
             TimeoutSeconds = timeoutSeconds;
+            Reckless = reckless;
             Workspace = workspace;
             RunId = runId;
             Mode = mode;
@@ -41,6 +42,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Seconds the runner lets the script run before raising a timeout inside it.
         /// </summary>
         public double TimeoutSeconds { get; }
+
+        /// <summary>
+        /// Whether the runner skips its in-script checks for this run: no timeout, no loop or
+        /// handler rewriting, no trace function. Set by the host from <c>[agent] reckless</c>
+        /// before the script starts, so a script can't turn it on for its own run.
+        /// </summary>
+        public bool Reckless { get; }
 
         public string ResultJson { get; private set; }
         public string Output { get; private set; } = string.Empty;

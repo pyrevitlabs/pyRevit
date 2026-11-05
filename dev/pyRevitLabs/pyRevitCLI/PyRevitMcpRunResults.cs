@@ -85,6 +85,8 @@ namespace pyRevitCLI {
             if (run["engine"] is JObject engine)
                 compact["engine"] = engine["implementation"] + " " + engine["python"];
             compact["elapsed_ms"] = run["elapsed_ms"];
+            if (run.Value<bool?>("reckless") == true)
+                compact["reckless"] = true;
             return compact;
         }
 

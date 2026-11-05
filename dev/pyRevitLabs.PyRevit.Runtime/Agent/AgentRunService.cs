@@ -29,6 +29,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
+    /// <item><c>[agent] reckless</c> is read once before the script starts and only turns off
+    /// the Python runner's in-script checks (timeout, per-line transaction tracking). Every
+    /// guarantee in this list still holds for a reckless run, which the response marks with
+    /// <c>"reckless": true</c>.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
@@ -141,9 +145,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
                 AgentHost.RefreshConfigIfChanged();
                 var policyAtStart = ReadPolicy();
+                var reckless = PyRevitConfigs.GetAgentReckless();
 
                 var stopwatch = Stopwatch.StartNew();
-                var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds) {
+                var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
                     Timings = timings,
                 };
                 var response = new JObject {
@@ -258,6 +263,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython", warnings);
                 response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;
                 timings.Lap("outcome");
+                if (reckless)
+                    response["reckless"] = true;
                 response["timings_ms"] = timings.ToJson();
                 logger.Debug("[PERF] agent run {0} ({1}, {2}): {3}", runId, request.ModeName, response["engine"]?["implementation"], timings.Describe());
 

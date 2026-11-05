@@ -463,7 +463,8 @@ namespace pyRevitCLI {
             return new JObject {
                 ["type"] = "number",
                 ["description"] = "Seconds the script may run before it is stopped and rolled back with error 'timeout' (default 300, max 3600). "
-                    + "Stops Python code, not a single long Revit API call.",
+                    + "Stops Python code, not a single long Revit API call. Not enforced when get_context shows "
+                    + "agent.reckless: true; then a script that never ends hangs Revit.",
             };
         }
 
