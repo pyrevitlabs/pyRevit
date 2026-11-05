@@ -22,11 +22,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariant: a connection that sends no line for <see cref="IdleTimeout"/> is closed, so a
     /// stalled client can't hold the only server instance and lock every other client out.
     /// The timeout covers waiting for a request only, never the time a request takes to run.
+    /// After <see cref="MaxCreateFailures"/> failed attempts in a row to create the pipe, the
+    /// server stops and <see cref="IsListening"/> turns false, instead of retrying forever.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
         private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
+        private const int MaxCreateFailures = 10;
 
         private readonly string pipeName;
         private readonly Func<string, string> handleLine;
@@ -34,11 +37,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly object pipeLock = new object();
         private NamedPipeServerStream currentPipe;
         private Thread thread;
+        private volatile bool listening = true;
 
         public AgentPipeServer(string pipeName, Func<string, string> handleLine) {
             this.pipeName = pipeName;
             this.handleLine = handleLine;
         }
+
+        public bool IsListening => listening;
 
         public void Start() {
             thread = new Thread(Listen) {
@@ -57,9 +63,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void Listen() {
+            var createFailures = 0;
             while (!stopping.IsCancellationRequested) {
+                NamedPipeServerStream created;
                 try {
-                    using (var pipe = CreatePipe()) {
+                    created = CreatePipe();
+                    createFailures = 0;
+                }
+                catch (Exception ex) {
+                    if (stopping.IsCancellationRequested)
+                        return;
+                    if (++createFailures >= MaxCreateFailures) {
+                        logger.Error("Agent pipe server stopped: could not create pipe '{0}': {1}", pipeName, ex.Message);
+                        listening = false;
+                        return;
+                    }
+                    logger.Warn("Could not create agent pipe: {0}", ex.Message);
+                    Thread.Sleep(500);
+                    continue;
+                }
+                try {
+                    using (var pipe = created) {
                         lock (pipeLock)
                             currentPipe = pipe;
                         pipe.WaitForConnectionAsync(stopping.Token).GetAwaiter().GetResult();
