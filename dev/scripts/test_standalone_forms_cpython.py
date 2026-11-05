@@ -4,6 +4,7 @@ Native WPF loading and modal interaction are covered by the in-host suite.
 """
 
 import ast
+import gc
 import datetime
 import enum
 import importlib.util
@@ -657,6 +658,9 @@ class CPythonFacadeTests(unittest.TestCase):
         self.assertEqual(1, find_spec.call_count)
 
 
+_UNSET = object()
+
+
 class _Expando(object):
     def __init__(self):
         self.values = {}
@@ -666,12 +670,17 @@ class _Expando(object):
         return self.values[name]
 
     def __setitem__(self, name, value):
+        previous = self.values.get(name, _UNSET)
         self.values[name] = value
-        for handler in list(self.handlers):
-            handler(self, SimpleNamespace(PropertyName=name))
+        if previous is not value:
+            self.Notify(name)
 
     def edit(self, name, value):
         self[name] = value
+
+    def Notify(self, name):
+        for handler in list(self.handlers):
+            handler(self, SimpleNamespace(PropertyName=name))
 
 
 class _Notifier(object):
@@ -857,6 +866,36 @@ class BindingRefreshTests(unittest.TestCase):
         native.edit("title", "new")
         self.assertEqual(["summary", "title"], self.reads)
         self.assertEqual("new", model.title)
+
+    def test_explicit_notification_announces_an_object_edited_in_place(self):
+        """OnPropertyChanged re-announces a name whose object did not change."""
+        model = self.Model()
+        model.current = {"Name": "old"}
+        native = self.binding.binding_source(model)
+        announced = []
+        native.handlers.append(lambda sender, args: announced.append(args.PropertyName))
+        model.current["Name"] = "new"
+        model.OnPropertyChanged("current")
+        self.assertEqual(["current"], announced)
+
+    def test_nested_models_stay_alive_while_their_parent_is_bound(self):
+        """Fresh nested models from a computed property are not collected."""
+        binding = self.binding
+
+        class Row(binding.Reactive):
+            pass
+
+        class Parent(binding.Reactive):
+            @property
+            def rows(self):
+                return [Row(), Row()]
+
+        parent = Parent()
+        native = binding.binding_source(parent)
+        gc.collect()
+        self.assertEqual(
+            2, sum(binding.model_of(row) is not None for row in native["rows"])
+        )
 
     def test_two_way_edit_copies_plain_attributes_the_setter_changed(self):
         """A setter's side effect on a plain attribute reaches WPF too."""

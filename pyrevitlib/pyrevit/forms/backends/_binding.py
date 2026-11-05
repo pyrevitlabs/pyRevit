@@ -69,8 +69,14 @@ class Reactive(object):
 
         Only ``prop_name`` is copied to the native model, matching WPF's
         per-property notification; an empty name refreshes every property.
+        A named property is re-announced to WPF even when its value is the
+        same object, so in-place edits such as ``self.current.Name = 'x'``
+        reach bindings like ``{Binding current.Name}`` as on IronPython.
         """
-        _refresh(self, [prop_name] if prop_name else None)
+        if prop_name:
+            _refresh(self, [prop_name], forced=(prop_name,))
+        else:
+            _refresh(self)
         args = ComponentModel.PropertyChangedEventArgs(prop_name)
         for handler in list(self.PropertyChanged.handlers):
             handler(self, args)
@@ -138,16 +144,18 @@ def _property_names(controller):
     return _public(controller, names)
 
 
-def _bindable(value):
+def _bindable(value, children):
     """Return a value WPF can bind: nested models and lists become managed too.
 
     A namedtuple stays a single value, so paths such as ``rev.is_set`` read
-    its fields as they do on IronPython.
+    its fields as they do on IronPython. Every nested ``Reactive`` model is
+    appended to ``children`` so the parent can keep it alive.
     """
     if isinstance(value, Reactive):
+        children.append(value)
         return binding_source(value)
     if isinstance(value, (list, tuple)) and not hasattr(value, "_fields"):
-        return to_clr_list(System.Object, [_bindable(item) for item in value])
+        return to_clr_list(System.Object, [_bindable(item, children) for item in value])
     return value
 
 
@@ -171,7 +179,13 @@ def _unchanged(previous, marker):
         return False
 
 
-def _refresh(controller, names=None):
+def _refresh(controller, names=None, forced=()):
+    """Copy changed values of ``names``, or of every property, to the native model.
+
+    Names in ``forced`` are copied and announced even when unchanged. Nested
+    models are kept strongly in ``_binding_children`` because their native
+    models hold them only weakly.
+    """
     state = controller.__dict__
     values = state.get("_binding_values")
     if values is None:
@@ -181,8 +195,10 @@ def _refresh(controller, names=None):
             state["_binding_pending_all"] = True
         else:
             state.setdefault("_binding_pending", set()).update(names)
+            state.setdefault("_binding_forced", set()).update(forced)
         return
     markers = state.setdefault("_binding_markers", {})
+    nested = state.setdefault("_binding_children", {})
     state["_binding_updating"] = True
     try:
         for name in _property_names(controller) if names is None else names:
@@ -194,10 +210,18 @@ def _refresh(controller, names=None):
                 continue
             marker = _change_marker(value)
             previous = markers.get(name, _MISSING)
-            if previous is not _MISSING and _unchanged(previous, marker):
+            unchanged = previous is not _MISSING and _unchanged(previous, marker)
+            if unchanged and name not in forced:
                 continue
             markers[name] = marker
-            values[name] = _bindable(value)
+            children = []
+            values[name] = _bindable(value, children)
+            if children:
+                nested[name] = children
+            else:
+                nested.pop(name, None)
+            if unchanged:
+                values.Notify(name)
     finally:
         state["_binding_updating"] = False
 
@@ -249,11 +273,13 @@ def binding_source(controller):
         finally:
             state["_binding_updating"] = False
         notified = state.pop("_binding_pending", set())
+        forced = state.pop("_binding_forced", set())
+        forced.discard(name)
         notified.add(name)
         if state.pop("_binding_pending_all", False):
-            _refresh(target)
+            _refresh(target, forced=forced)
             return
-        _refresh(target, sorted(notified))
+        _refresh(target, sorted(notified), forced=forced)
         _refresh(target, _plain_names(target))
 
     model.PropertyChanged += changed

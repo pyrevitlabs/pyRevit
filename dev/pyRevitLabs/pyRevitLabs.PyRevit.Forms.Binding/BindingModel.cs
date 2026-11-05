@@ -52,6 +52,12 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             }
         }
 
+        /// <summary>Raises <see cref="PropertyChanged"/> for <paramref name="name"/> even when its value is unchanged.</summary>
+        /// <remarks>Lets WPF re-read a binding path below a value that was edited in place.</remarks>
+        public void Notify(string name) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
         /// <summary>True when <paramref name="name"/> was stored.</summary>
         public bool Contains(string name) {
             lock (values)
