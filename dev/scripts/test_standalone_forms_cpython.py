@@ -566,6 +566,9 @@ def _load_cpython_facade(package_dir):
     (package_dir / "_legacy_exports.py").write_text(
         (FORMS / "_legacy_exports.py").read_text(encoding="utf-8"), encoding="utf-8"
     )
+    (package_dir / "_cpy.py").write_text(
+        (FORMS / "_cpy.py").read_text(encoding="utf-8"), encoding="utf-8"
+    )
     (package_dir / "extra.py").write_text("VALUE = 1\n", encoding="utf-8")
     (package_dir / "broken.py").write_text(
         "import pyrevit_missing_dependency\n", encoding="utf-8"
@@ -575,6 +578,11 @@ def _load_cpython_facade(package_dir):
     pyrevit.PyRevitCPythonNotSupported = _NotSupported
     compat = ModuleType("pyrevit.compat")
     compat.IRONPY = False
+    logger = ModuleType("pyrevit.coreutils.logger")
+    logger.deprecations = []
+    logger.get_logger = lambda name: SimpleNamespace(
+        deprecate=logger.deprecations.append
+    )
     common = ModuleType("pyrevit.forms._common")
     common.__all__ = ["ProgressBar"]
     common.ProgressBar = object
@@ -588,6 +596,8 @@ def _load_cpython_facade(package_dir):
         {
             "pyrevit": pyrevit,
             "pyrevit.compat": compat,
+            "pyrevit.coreutils": ModuleType("pyrevit.coreutils"),
+            "pyrevit.coreutils.logger": logger,
             "pyrevit.forms": module,
             "pyrevit.forms._common": common,
         }
@@ -649,6 +659,15 @@ class CPythonFacadeTests(unittest.TestCase):
         self.assertIsInstance(raised.exception, AttributeError)
         self.assertEqual("pyrevit.forms.broken", raised.exception.feature_name)
         self.assertIsInstance(raised.exception.__cause__, ImportError)
+
+    def test_legacy_backend_alias_reexports_and_warns(self):
+        """``pyrevit.forms._cpy`` still imports, with a deprecation message."""
+        legacy = importlib.import_module("pyrevit.forms._cpy")
+        self.assertIs(object, legacy.ProgressBar)
+        self.assertEqual(["ProgressBar"], legacy.__all__)
+        deprecations = sys.modules["pyrevit.coreutils.logger"].deprecations
+        self.assertEqual(1, len(deprecations))
+        self.assertIn("pyrevit.forms._cpy", deprecations[0])
 
     def test_submodule_lookups_are_cached(self):
         """Repeated misses do not search the package again."""
