@@ -368,8 +368,9 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `response.json`: status, decision, changes, failures, dialogs, output and result
 - `result.json`: present when the result was too large to return inline
 
-`response.json` (and `get_run`) also carries `timings_ms`, the run's wall-clock breakdown in
-milliseconds. Host phases, in order: `queue_wait` (request parsed to Revit main thread),
+For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's
+wall-clock breakdown in milliseconds. Host phases, in order: `queue_wait` (request parsed to
+Revit main thread),
 `prepare`, `guard_arm`, `engine` (the whole script engine call), `changes`, `decide`,
 `approval` (only when the user was asked), `guard_release` (rollback or assimilation),
 `cleanup` and `outcome`, plus `total`. The `script.*` phases the runner reports (`setup`,
