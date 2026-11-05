@@ -63,6 +63,13 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void ANewerProtocolVersionIsAnsweredWithTheImplementedOne() {
+        var newer = Single(Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-11-25" }));
+
+        Assert.Equal("2025-06-18", newer["result"].Value<string>("protocolVersion"));
+    }
+
+    [Fact]
     public void InitializeNegotiatesTheProtocolVersionAndDescribesTheServer() {
         var supported = Single(Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-03-26" }));
         var unsupported = Single(Request(1, "initialize", new JObject { ["protocolVersion"] = "1999-01-01" }));

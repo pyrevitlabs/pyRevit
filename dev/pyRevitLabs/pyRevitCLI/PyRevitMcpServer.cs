@@ -31,7 +31,7 @@ namespace pyRevitCLI {
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
         private static readonly string[] SupportedProtocolVersions = {
-            "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05",
+            "2025-06-18", "2025-03-26", "2024-11-05",
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
@@ -77,7 +77,6 @@ namespace pyRevitCLI {
                 try {
                     using var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None };
                     message = JObject.Load(reader);
-                    // Match JObject.Parse's check for trailing content.
                     while (reader.Read()) { }
                 }
                 catch (JsonException) {
@@ -462,6 +461,8 @@ namespace pyRevitCLI {
         private static JObject TimeoutProperty() {
             return new JObject {
                 ["type"] = "number",
+                ["exclusiveMinimum"] = 0,
+                ["maximum"] = 3600,
                 ["description"] = "Seconds the script may run before it is stopped and rolled back with error 'timeout' (default 300, max 3600). "
                     + "Stops Python code, not a single long Revit API call. Not enforced when get_context shows "
                     + "agent.reckless: true; then a script that never ends hangs Revit.",
@@ -561,8 +562,8 @@ namespace pyRevitCLI {
                         new JObject {
                             ["id"] = new JObject { ["type"] = "string", ["description"] = "Invocable automation identifier, such as pyrevit.units.parse-length." },
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
-                            ["engine"] = new JObject { ["type"] = "string", ["enum"] = new JArray("ironpython", "cpython") },
-                            ["timeout_s"] = new JObject { ["type"] = "number", ["minimum"] = 0.001, ["maximum"] = 3600 },
+                            ["engine"] = EngineProperty(),
+                            ["timeout_s"] = TimeoutProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     RunAutomation),
