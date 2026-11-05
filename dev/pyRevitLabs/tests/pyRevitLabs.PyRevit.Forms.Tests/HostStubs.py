@@ -261,6 +261,10 @@ framework.SolidColorBrush = Media.SolidColorBrush
 sys.modules["pyrevit.coreutils"].configparser = module(
     "pyrevit.coreutils.configparser", open_config_file=lambda path: None
 )
+sys.modules["pyrevit.coreutils"].applocales = module(
+    "pyrevit.coreutils.applocales",
+    get_locale_string=lambda values: values.get("en_us"),
+)
 sys.modules["pyrevit.coreutils"].appdata = module(
     "pyrevit.coreutils.appdata", get_universal_data_file=lambda **kwargs: None
 )
