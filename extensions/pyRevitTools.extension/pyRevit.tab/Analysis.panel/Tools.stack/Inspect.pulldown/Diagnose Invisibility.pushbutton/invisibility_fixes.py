@@ -16,6 +16,7 @@ Warning:
 """
 
 from pyrevit import DB
+from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import List
 
 from invisibility_checks import (
@@ -26,6 +27,8 @@ from invisibility_checks import (
     t,
 )
 
+
+get_elementid_from_value = get_elementid_from_value_func()
 
 _MARGIN_FT = 1.0
 
@@ -55,7 +58,7 @@ class FixError(Exception):
 
 
 def _element_id(value):
-    return DB.ElementId(int(value))
+    return get_elementid_from_value(int(value))
 
 
 def _category_template_parameter(doc, category_id):

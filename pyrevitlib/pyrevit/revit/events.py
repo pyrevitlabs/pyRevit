@@ -1,17 +1,29 @@
 """Revit events handler management."""
 
 # pylint: disable=unused-argument
+import uuid
 from collections import deque
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
-from pyrevit import compat, PyRevitCPythonNotSupported
+from pyrevit import compat
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 
 
 mlogger = get_logger(__name__)
+
+_CLR_NAMESPACE = "pyrevit.revit.events._" + uuid.uuid4().hex
+"""CLR namespace for the handler types this execution of the module defines.
+
+Warning:
+    Unique per module execution, not per script execution: pythonnet emits a
+    CLR type for each class declaring ``__namespace__`` and refuses a type name
+    it already emitted, so re-executing this module in the same interpreter
+    (``importlib.reload``, a runner unloading modules) would fail with a fixed
+    name, and ``EXEC_PARAMS.exec_id`` repeats within one execution.
+"""
 
 
 def _get_registered_handlers():
@@ -34,7 +46,7 @@ def _get_registered_handlers():
 class FuncAsEventHandler(UI.IExternalEventHandler):
     """Turns a function into an event handler."""
 
-    __namespace__ = EXEC_PARAMS.exec_id
+    __namespace__ = _CLR_NAMESPACE
 
     def __init__(self, handler_func, purge=True):
         self.name = "FuncAsEventHandler"
@@ -56,55 +68,92 @@ def create_handler(handler_func, handler_args_type):
     return framework.EventHandler[handler_args_type](handler_func)
 
 
+_EVENT_SOURCES = {
+    "doc-changed": (DB.Events, "DocumentChangedEventArgs", "app", "DocumentChanged"),
+    "doc-closed": (DB.Events, "DocumentClosedEventArgs", "app", "DocumentClosed"),
+    "doc-opened": (DB.Events, "DocumentOpenedEventArgs", "app", "DocumentOpened"),
+    "view-activated": (
+        UI.Events,
+        "ViewActivatedEventArgs",
+        "uiapp",
+        "ViewActivated",
+    ),
+    "selection-changed": (
+        UI.Events,
+        "SelectionChangedEventArgs",
+        "uiapp",
+        "SelectionChanged",
+    ),
+}
+
+
+def _event_args_type(event_name):
+    """Resolve the event-args type only when a handler is attached.
+
+    Note:
+        ``SelectionChangedEventArgs`` exists only in Revit 2023+, so resolving
+        it at import time would break ``pyrevit.revit`` on older hosts.
+    """
+    namespace, type_name, _, _ = _EVENT_SOURCES[event_name]
+    return getattr(namespace, type_name)
+
+
+def _clr_event(event_name):
+    """Return the event source object and its CLR ``EventInfo``.
+
+    Handlers are added and removed through ``EventInfo`` so the delegate itself
+    is subscribed. Revit returns a new ``Application`` wrapper on every access,
+    and CPython's ``-=`` only finds handlers added through the same wrapper.
+    """
+    _, _, source_name, clr_event_name = _EVENT_SOURCES[event_name]
+    source = getattr(HOST_APP, source_name)
+    return source, source.GetType().GetEvent(clr_event_name)
+
+
 def add_handler(event_name, handler_func):
-    event_handler = None
+    """Subscribe a function to a Revit event.
 
-    if event_name == "doc-changed":
-        event_handler = create_handler(handler_func, DB.Events.DocumentChangedEventArgs)
-        HOST_APP.app.DocumentChanged += event_handler
+    Requires Revit API context. The delegate is attached through the CLR
+    ``EventInfo``, so ``remove_handler`` can detach it although Revit returns a
+    new ``Application`` wrapper on every access.
 
-    elif event_name == "doc-closed":
-        event_handler = create_handler(handler_func, DB.Events.DocumentClosedEventArgs)
-        HOST_APP.app.DocumentClosed += event_handler
+    Args:
+        event_name (str): key such as ``doc-changed`` or ``selection-changed``.
+        handler_func (Callable): called with ``(sender, args)``.
 
-    elif event_name == "doc-opened":
-        event_handler = create_handler(handler_func, DB.Events.DocumentOpenedEventArgs)
-        HOST_APP.app.DocumentOpened += event_handler
-
-    elif event_name == "view-activated":
-        event_handler = create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
-        HOST_APP.uiapp.ViewActivated += event_handler
-
-    elif event_name == "selection-changed":
-        if HOST_APP.is_older_than(2023):
-            mlogger.error("Not available in this Revit Version")
-            return
-        event_handler = create_handler(
-            handler_func, UI.Events.SelectionChangedEventArgs
-        )
-        HOST_APP.uiapp.SelectionChanged += event_handler
-
+    Returns:
+        (EventHandler | None): the subscribed delegate to pass to
+            ``remove_handler``; None for an unknown event name, or for
+            ``selection-changed`` before Revit 2023, which also logs an error.
+    """
+    if event_name not in _EVENT_SOURCES:
+        return None
+    if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
+        mlogger.error("Not available in this Revit Version")
+        return None
+    event_handler = create_handler(handler_func, _event_args_type(event_name))
+    source, clr_event = _clr_event(event_name)
+    clr_event.AddEventHandler(source, event_handler)
     return event_handler
 
 
 def remove_handler(event_name, event_handler):
-    if event_name == "doc-changed":
-        HOST_APP.app.DocumentChanged -= event_handler
+    """Unsubscribe a delegate returned by ``add_handler``.
 
-    elif event_name == "doc-closed":
-        HOST_APP.app.DocumentClosed -= event_handler
+    Requires Revit API context. Does nothing for an unknown event name, and
+    logs an error for ``selection-changed`` before Revit 2023.
 
-    elif event_name == "doc-opened":
-        HOST_APP.app.DocumentOpened -= event_handler
-
-    elif event_name == "view-activated":
-        HOST_APP.uiapp.ViewActivated -= event_handler
-
-    elif event_name == "selection-changed":
-        if HOST_APP.is_older_than(2023):
-            mlogger.error("Not available in this Revit Version")
-            return
-        HOST_APP.uiapp.SelectionChanged -= event_handler
+    Args:
+        event_name (str): the key the delegate was added under.
+        event_handler (EventHandler): the delegate ``add_handler`` returned.
+    """
+    if event_name not in _EVENT_SOURCES:
+        return
+    if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
+        mlogger.error("Not available in this Revit Version")
+        return
+    source, clr_event = _clr_event(event_name)
+    clr_event.RemoveEventHandler(source, event_handler)
 
 
 def register_handler(event_name, handler_func, handler_group_id):
@@ -283,6 +332,8 @@ def stop_events():
 
 
 class _GenericExternalEventHandler(UI.IExternalEventHandler):
+    __namespace__ = _CLR_NAMESPACE
+
     def __init__(self):
         self._queue = deque()
 
@@ -308,13 +359,12 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
             return False
 
 
-if compat.IRONPY:
-    _HANDLER = _GenericExternalEventHandler()
-    # Import can occur outside API context, so event creation may be deferred.
-    try:
-        _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
-    except Exception:
-        _EXTERNAL_EVENT = None
+_HANDLER = _GenericExternalEventHandler()
+# Import can occur outside API context, so event creation may be deferred.
+try:
+    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+except Exception:
+    _EXTERNAL_EVENT = None
 
 
 def _get_execute_extevent():
@@ -366,9 +416,6 @@ def execute_in_revit_context(func, *args, **kwargs):
         This function does not return values from the executed function.
         For return values, use callbacks or shared mutable objects.
     """
-    if not compat.IRONPY:
-        PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
-
     # Snapshot module-level imports from the function's globals at scheduling
     # time. When the ExternalEvent fires asynchronously, the IronPython engine
     # may have cleared the script scope (non-persistent engines) or module
