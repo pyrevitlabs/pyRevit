@@ -732,6 +732,18 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(0, beyond["result_page"].Value<int>("length"));
     }
 
+    /// <summary>A page is cut by characters even across read buffers and multi-byte text (issue #3922).</summary>
+    [Fact]
+    public void ResultPagesSpanningReadBuffersKeepCharacterOffsets() {
+        var result = new string('é', 65530) + "0123456789" + new string('x', 70000);
+        host.AddRun("abc123def456", response: "{}", result: result);
+
+        var page = Payload(Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "abc123def456", ["offset"] = 65528, ["length"] = 14 })))["result_page"];
+
+        Assert.Equal(result.Substring(65528, 14), page.Value<string>("text"));
+        Assert.Equal(result.Length, page.Value<int>("total_length"));
+    }
+
     [Theory]
     [InlineData("000000000000")]
     [InlineData("*")]

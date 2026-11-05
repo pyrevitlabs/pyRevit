@@ -353,18 +353,33 @@ namespace pyRevitCLI {
 
             var resultPath = Path.Combine(runDir, "result.json");
             if (File.Exists(resultPath)) {
-                var full = File.ReadAllText(resultPath);
                 var offset = Math.Max(0, arguments.Value<int?>("offset") ?? 0);
                 var length = Math.Min(MaxRunResultPage, Math.Max(1, arguments.Value<int?>("length") ?? MaxRunResultPage));
-                var page = offset < full.Length ? full.Substring(offset, Math.Min(length, full.Length - offset)) : string.Empty;
-                run["result_page"] = new JObject {
-                    ["offset"] = offset,
-                    ["length"] = page.Length,
-                    ["total_length"] = full.Length,
-                    ["text"] = page,
-                };
+                run["result_page"] = ReadResultPage(resultPath, offset, length);
             }
             return run;
+        }
+
+        private static JObject ReadResultPage(string path, int offset, int length) {
+            var page = new StringBuilder();
+            var buffer = new char[64 * 1024];
+            long total = 0;
+            using (var reader = new StreamReader(path)) {
+                int read;
+                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0) {
+                    var from = Math.Max(offset, total);
+                    var to = Math.Min((long)offset + length, total + read);
+                    if (to > from)
+                        page.Append(buffer, (int)(from - total), (int)(to - from));
+                    total += read;
+                }
+            }
+            return new JObject {
+                ["offset"] = offset,
+                ["length"] = page.Length,
+                ["total_length"] = total,
+                ["text"] = page.ToString(),
+            };
         }
 
         private static string ReadIfExists(string path) {
