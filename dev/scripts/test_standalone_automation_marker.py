@@ -5,7 +5,9 @@ import io
 import os
 import os.path as op
 import re
+import shutil
 import sys
+import tempfile
 import unittest
 
 
@@ -268,6 +270,22 @@ class AutomationInvokeTests(unittest.TestCase):
         compat.get_elementid_from_value_func = lambda: lambda value: value
         package = types.ModuleType("pyrevit")
         package.__path__ = []
+        package_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, package_dir)
+        package.__file__ = op.join(package_dir, "__init__.py")
+        marked_ids = (
+            "test.elements.name",
+            "test.items.list",
+            "test.units.parse",
+            "test.walls.delete",
+            "test.views.list",
+            "test.items.stream",
+            "test.marker.none",
+        )
+        with io.open(op.join(package_dir, "fixtures.py"), "w", encoding="utf-8") as f:
+            f.write("".join('"{}"\n'.format(marked) for marked in marked_ids))
+        with io.open(op.join(package_dir, "sideeffect.py"), "w", encoding="utf-8") as f:
+            f.write("raise AssertionError('imported')\n")
         patcher = mock.patch.dict(
             sys.modules,
             {
@@ -346,6 +364,35 @@ class AutomationInvokeTests(unittest.TestCase):
             self.invoke(
                 "list_items", "test.items.list", {"count": 2, "doc": "x"}, self.doc
             )
+
+    def test_a_module_that_does_not_mark_the_operation_is_never_imported(self):
+        """An unmarked module's import side effects never run."""
+        from unittest import mock
+
+        with mock.patch.object(
+            self.operations.importlib,
+            "import_module",
+            wraps=self.operations.importlib.import_module,
+        ) as import_module:
+            with self.assertRaises(self.operations.OperationError):
+                self.invoke(
+                    "anything", "test.elements.name", {}, module="pyrevit.sideeffect"
+                )
+        self.assertNotIn(
+            "pyrevit.sideeffect",
+            [call.args[0] for call in import_module.call_args_list],
+        )
+
+    def test_a_marker_without_an_id_is_refused(self):
+        """A marker id of None is refused, not an AttributeError."""
+
+        def unnamed():
+            raise AssertionError("must never run")
+
+        unnamed.__pyrevit_automation__ = {"id": None}
+        sys.modules["pyrevit.fixtures"].unnamed = unnamed
+        with self.assertRaises(self.operations.OperationError):
+            self.invoke("unnamed", "test.marker.none", {})
 
     def test_only_marked_invocable_operations_run(self):
         for function, automation_id, module in (

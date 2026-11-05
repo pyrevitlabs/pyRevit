@@ -12,18 +12,23 @@ change and blocks saves and exports.
 
 import importlib
 import inspect
+import io
+import os.path as op
+import re
 
 import pyrevit_automation as automation
 
 
-#: Packages an operation can be imported from.
 ALLOWED_PACKAGES = ("pyrevit.", "rpw.")
+"""Packages an operation can be imported from."""
 
-#: Modes ``run_automation`` may call; every other mode needs run_modify.
 INVOCABLE_MODES = ("query", "pure")
+"""Modes ``run_automation`` may call; every other mode needs run_modify."""
 
-#: Items returned from a list result; ``total`` and ``truncated`` say the rest.
 MAX_ITEMS = 200
+"""Items returned from a list result; ``total`` and ``truncated`` say the rest."""
+
+_MODULE_NAME = re.compile(r"^(?:pyrevit|rpw)(?:\.[A-Za-z_][A-Za-z0-9_]*)+$")
 
 
 class OperationError(Exception):
@@ -39,12 +44,44 @@ def _parameter_names(function):
         return list(code.co_varnames[: code.co_argcount])
 
 
+def _module_source(module_name):
+    """Source text of a pyrevitlib or rpw module, read without importing it.
+
+    Returns None when the module has no source file in its package folder.
+    """
+    package_name, _, submodule = module_name.partition(".")
+    package = importlib.import_module(package_name)
+    base = op.join(op.dirname(package.__file__), *submodule.split("."))
+    for path in (base + ".py", op.join(base, "__init__.py")):
+        if op.isfile(path):
+            with io.open(path, encoding="utf-8") as source:
+                return source.read()
+    return None
+
+
 def _marked_function(operation):
+    """Import the operation's module and return its marked function and marker.
+
+    Important:
+        The module's source must name the operation id before it is imported,
+        so a request naming any other pyrevitlib or rpw module never runs that
+        module's import side effects.
+    """
     module_name = operation.get("module") or ""
     function_name = operation.get("function") or ""
     automation_id = operation.get("id") or ""
-    if not module_name.startswith(ALLOWED_PACKAGES):
+    if not module_name.startswith(ALLOWED_PACKAGES) or not _MODULE_NAME.match(
+        module_name
+    ):
         raise OperationError("'{}' is not in pyrevitlib or rpw.".format(module_name))
+    source = (_module_source(module_name) or "").lower()
+    if not automation_id or (
+        '"{}"'.format(automation_id.lower()) not in source
+        and "'{}'".format(automation_id.lower()) not in source
+    ):
+        raise OperationError(
+            "{} does not mark an operation '{}'.".format(module_name, automation_id)
+        )
     module = importlib.import_module(module_name)
     function = getattr(module, function_name, None)
     marker = getattr(function, "__pyrevit_automation__", None)
@@ -54,7 +91,7 @@ def _marked_function(operation):
                 module_name, function_name
             )
         )
-    if marker.get("id", "").lower() != automation_id.lower():
+    if (marker.get("id") or "").lower() != automation_id.lower():
         raise OperationError(
             "{}.{} is marked as '{}', not '{}'.".format(
                 module_name, function_name, marker.get("id"), automation_id
