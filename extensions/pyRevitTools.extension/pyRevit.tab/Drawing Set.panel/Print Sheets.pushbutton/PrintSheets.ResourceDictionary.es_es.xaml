@@ -8,7 +8,7 @@
     <system:String x:Key="SheetIndex">Índice de Hojas</system:String>
     <system:String x:Key="AllModels">&lt;Todos los modelos&gt;</system:String>
     <system:String x:Key="EachModelPrintSetting">&lt;Configuración de impresión actual de cada modelo&gt;</system:String>
-    <system:String x:Key="SameFileNameAcrossModels">Hojas de distintos modelos tendrían el mismo nombre de archivo. Use {proj_name} en el formato de nombres para diferenciarlas.</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Hojas de distintos modelos tendrían el mismo nombre de archivo. Añada {index} o {proj_number} al formato de nombres para diferenciarlas.</system:String>
     
     <system:String x:Key="SheetOrdering">Orden de Hojas</system:String>
     <system:String x:Key="ReversePrintOrder">Invertir Orden de Impresión</system:String>

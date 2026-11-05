@@ -8,7 +8,7 @@
     <system:String x:Key="SheetIndex">시트 인덱스</system:String>
     <system:String x:Key="AllModels">&lt;모든 모델&gt;</system:String>
     <system:String x:Key="EachModelPrintSetting">&lt;각 모델의 현재 인쇄 설정&gt;</system:String>
-    <system:String x:Key="SameFileNameAcrossModels">서로 다른 모델의 시트가 같은 파일 이름을 가지게 됩니다. 이름 형식에 {proj_name}을(를) 사용하여 구분하세요.</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">서로 다른 모델의 시트가 같은 파일 이름을 가지게 됩니다. 이름 형식에 {index} 또는 {proj_number}을(를) 추가하여 구분하세요.</system:String>
 
     <system:String x:Key="SheetOrdering">시트 순서</system:String>
     <system:String x:Key="ReversePrintOrder">인쇄 순서 반전</system:String>

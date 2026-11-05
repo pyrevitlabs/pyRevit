@@ -1000,6 +1000,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         self._init_psettings = None
         self._scheduled_sheets = []
+        self._all_sheets_list = []
         self._restoring_options = False
 
         self.sheet_cat_id = revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
@@ -1010,10 +1011,6 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         self._apply_projectinfo_naming_format_default()
         self._restore_options()
-
-        self._all_sheets_list = (
-            list(self.sheets_lb.ItemsSource) if self.sheets_lb.ItemsSource else []
-        )
 
     @staticmethod
     def _doc_key(doc):
@@ -1107,12 +1104,28 @@ class PrintSheetsWindow(forms.WPFWindow):
             ("reverse_order", lambda: bool(self.reverse_print)),
             ("show_placeholders", lambda: bool(self.show_placeholders)),
             ("include_placeholders", lambda: bool(self.include_placeholders)),
-            ("combine", lambda: bool(self.combine_print)),
-            ("export_dwg", lambda: bool(self.export_dwg.IsChecked)),
+            (
+                "combine",
+                lambda: self._unlocked_option_to_save("combine", self.combine_cb),
+            ),
+            (
+                "export_dwg",
+                lambda: self._unlocked_option_to_save("export_dwg", self.export_dwg),
+            ),
             ("index_digits", lambda: self.index_digits),
             ("index_start", lambda: self.index_start),
             ("sheet_lists", self._sheet_lists_to_save),
         ]
+
+    def _unlocked_option_to_save(self, option_name, checkbox):
+        """Return the checkbox state, or the saved choice while All Models locks it.
+
+        All Models unchecks and disables the export options, so their state
+        there says nothing about what the user chose for a single model.
+        """
+        if self.is_all_models:
+            return bool(config.get_option(option_name, False))
+        return bool(checkbox.IsChecked)
 
     def _naming_format_to_save(self):
         if self.selected_naming_format:
@@ -1254,6 +1267,15 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.namingformat_cb.SelectedItem = selected_item
 
     def sheet_search_changed(self, sender, args):
+        self._apply_sheet_search()
+
+    def _apply_sheet_search(self):
+        """Show the sheets of the current list that match the search box.
+
+        Note:
+            `_all_sheets_list` must hold the unfiltered list `options_changed`
+            last built, or the search runs on sheets of a previous model.
+        """
         search_text = self.sheetsearch_tb.Text.strip().lower()
         if not self._all_sheets_list:
             return
@@ -2380,6 +2402,9 @@ class PrintSheetsWindow(forms.WPFWindow):
             self._update_print_indices(sheet_list)
             # Show all sheets
             self.sheet_list = sheet_list
+
+        self._all_sheets_list = list(self.sheet_list)
+        self._apply_sheet_search()
 
         # update sheet naming formats
         self._update_print_filenames(sheet_list)
