@@ -18,7 +18,13 @@ import re
 
 from pyrevit import DB
 
-from invisibility_checks import id_value, local_extents, resolve_view_range_elevation, t
+from invisibility_checks import (
+    format_length_with_symbol,
+    id_value,
+    local_extents,
+    resolve_view_range_elevation,
+    t,
+)
 
 
 MAX_SCENE_VERTICES = 60000
@@ -226,16 +232,6 @@ def _union_bbox(boxes):
     return union
 
 
-def format_length(doc, feet):
-    """Format a length in feet with the project's length units."""
-    try:
-        return DB.UnitFormatUtils.Format(
-            doc.GetUnits(), DB.SpecTypeId.Length, feet, False
-        )
-    except Exception:
-        return "{:.2f} ft".format(feet)
-
-
 def _relative(point, origin):
     return [point.X - origin.X, point.Y - origin.Y, point.Z - origin.Z]
 
@@ -334,7 +330,10 @@ def _plan_overlays(view, scene_bbox, origin):
         offset = view_range.GetOffset(plane)
         sign = "+" if offset >= 0 else "-"
         label = "{}: {} {} {}".format(
-            name, level.Name if level else "?", sign, format_length(doc, abs(offset))
+            name,
+            level.Name if level else "?",
+            sign,
+            format_length_with_symbol(doc, abs(offset)),
         )
         corners = [DB.XYZ(c.X, c.Y, z) for c in plane_corners]
         overlays["planes"].append(_quad(kind, label, corners, origin))
@@ -385,7 +384,7 @@ def _section_overlays(view, scene_bbox, origin):
                 "far",
                 "{}: {}".format(
                     t("plane_far", "Far clip"),
-                    format_length(view.Document, crop.Max.Z - crop.Min.Z),
+                    format_length_with_symbol(view.Document, crop.Max.Z - crop.Min.Z),
                 ),
                 plane_at(crop.Min.Z),
                 origin,
@@ -539,6 +538,11 @@ def scene_to_json(scene):
     over a minute on IronPython, and even ``json.dumps`` escaping megabytes
     of base64 takes seconds, so packed strings are spliced into the encoded
     skeleton by token; base64 never needs JSON escaping.
+
+    Note:
+        Non-ASCII text such as element names is kept as is, not escaped as
+        unicode sequences: IronPython 2's ASCII-escaping ``json.dumps`` raises
+        on names that mix Cyrillic with Latin-1 characters such as guillemets.
     """
     packed = []
 
@@ -555,5 +559,5 @@ def scene_to_json(scene):
             return [pack(v) for v in value]
         return value
 
-    skeleton = json.dumps(pack(scene))
+    skeleton = json.dumps(pack(scene), ensure_ascii=False)
     return _PACKED_TOKEN.sub(lambda match: packed[int(match.group(1))], skeleton)

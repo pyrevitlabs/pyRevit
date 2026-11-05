@@ -11,10 +11,8 @@ from pyrevit import forms, script
 from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit.compat import safe_strtype
-from pyrevit.coreutils import applocales, pyutils
-from pyrevit.revit import query
-
-from outputtext import escape_for_output
+from pyrevit.coreutils import applocales, escape_for_output, pyutils
+from pyrevit.revit import query, units
 
 logger = script.get_logger()
 output = script.get_output()
@@ -76,35 +74,6 @@ def read_numeric_value(element, param_name):
     return float(value) if isinstance(value, (int, float)) else 0.0
 
 
-def is_measurable(param_def):
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitUtils.IsMeasurableSpec(param_def.type)
-    return param_def.type != DB.UnitType.UT_Undefined
-
-
-def display_unit_label(param_def):
-    """Return the name of the project's display unit, or "" for unitless parameters."""
-    if not is_measurable(param_def):
-        return ""
-    format_options = revit.doc.GetUnits().GetFormatOptions(param_def.type)
-    if HOST_APP.is_newer_than(2021):
-        return DB.LabelUtils.GetLabelForUnit(format_options.GetUnitTypeId())
-    return DB.LabelUtils.GetLabelFor(format_options.DisplayUnits)
-
-
-def format_value(value, param_def):
-    """Format an internal value in the display units of the project.
-
-    Parameters without a unit, such as integers, are shown as plain numbers.
-    """
-    if not is_measurable(param_def):
-        return str(int(value)) if value == int(value) else "{:.2f}".format(value)
-    units = revit.doc.GetUnits()
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units, param_def.type, value, False)
-    return DB.UnitFormatUtils.Format(units, param_def.type, value, False, False)
-
-
 def find_shared_params(element_list):
     """Return the numeric parameters present on every selected element or its type."""
     param_sets = []
@@ -157,7 +126,7 @@ def report(groups, param_def):
         )
         for group_name, element_list in groups.items()
     )
-    unit_label = display_unit_label(param_def)
+    unit_label = units.display_unit_label(param_def.type)
     unit_suffix = " [{}]".format(escape_for_output(unit_label)) if unit_label else ""
     output.print_md(
         "### {}".format(
@@ -169,7 +138,7 @@ def report(groups, param_def):
             [
                 escape_for_output(group_name),
                 len(values),
-                format_value(sum(value for _, value in values), param_def),
+                units.format_value(sum(value for _, value in values), param_def.type),
             ]
             for group_name, values in values_by_group.items()
         ],
@@ -184,11 +153,14 @@ def report(groups, param_def):
     )
     for group_name, values in values_by_group.items():
         rows = [
-            [output.linkify(element.Id), format_value(value, param_def)]
+            [output.linkify(element.Id), units.format_value(value, param_def.type)]
             for element, value in values
         ]
         rows.append(
-            [_t("total"), format_value(sum(value for _, value in values), param_def)]
+            [
+                _t("total"),
+                units.format_value(sum(value for _, value in values), param_def.type),
+            ]
         )
         output.print_html_table(
             table_data=rows,

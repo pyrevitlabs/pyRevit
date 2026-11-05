@@ -64,25 +64,43 @@ class _EventHook:
         return self
 
 
-class _Application:
+class _EventInfo:
+    def __init__(self, name):
+        self.name = name
+
+    def AddEventHandler(self, source, handler):
+        hook = getattr(source, self.name)
+        hook += handler
+
+    def RemoveEventHandler(self, source, handler):
+        hook = getattr(source, self.name)
+        hook -= handler
+
+
+class _EventSourceType:
+    def GetEvent(self, name):
+        return _EventInfo(name)
+
+
+class _EventSource:
+    def GetType(self):
+        return _EventSourceType()
+
+
+class _Application(_EventSource):
     def __init__(self):
         self.DocumentChanged = _EventHook()
         self.DocumentClosed = _EventHook()
         self.DocumentOpened = _EventHook()
 
 
-class _UIApplication:
+class _UIApplication(_EventSource):
     def __init__(self):
         self.ViewActivated = _EventHook()
         self.SelectionChanged = _EventHook()
 
 
 class _HostApplication:
-    def __init__(self):
-        self._api_context = True
-        self._app = _Application()
-        self._uiapp = _UIApplication()
-
     @property
     def has_api_context(self):
         return self._api_context
@@ -95,8 +113,14 @@ class _HostApplication:
     def uiapp(self):
         return self._uiapp if self._api_context else None
 
+    def __init__(self, revit_year=2026):
+        self.revit_year = revit_year
+        self._api_context = True
+        self._app = _Application()
+        self._uiapp = _UIApplication()
+
     def is_older_than(self, version):
-        return False
+        return self.revit_year < version
 
 
 class _ExternalEvent:
@@ -134,8 +158,20 @@ def _module(name, **values):
     return result
 
 
-def load_events_module(app_domain, host, exec_id, logger, external_event_response):
+def load_events_module(
+    app_domain,
+    host,
+    exec_id,
+    logger,
+    external_event_response,
+    has_selection_changed_args=True,
+):
     """Import the production events module with isolated host and CLR doubles."""
+    ui_events = types.SimpleNamespace(
+        ViewActivatedEventArgs=type("ViewActivatedArgs", (), {})
+    )
+    if has_selection_changed_args:
+        ui_events.SelectionChangedEventArgs = type("SelectionChangedArgs", (), {})
     system_collections = _module(
         "System.Collections", ArrayList=_ArrayList, Hashtable=_Hashtable
     )
@@ -155,10 +191,7 @@ def load_events_module(app_domain, host, exec_id, logger, external_event_respons
         ),
         UI=types.SimpleNamespace(
             IExternalEventHandler=type("IExternalEventHandler", (), {}),
-            Events=types.SimpleNamespace(
-                ViewActivatedEventArgs=type("ViewActivatedArgs", (), {}),
-                SelectionChangedEventArgs=type("SelectionChangedArgs", (), {}),
-            ),
+            Events=ui_events,
             ExternalEvent=_ExternalEventFactory,
             ExternalEventRequest=types.SimpleNamespace(
                 Denied="Denied", TimedOut="TimedOut"
@@ -313,6 +346,35 @@ class EventHandlerCleanupTests(unittest.TestCase):
         )
 
 
+class PreSelectionChangedHostTests(unittest.TestCase):
+    """Revit 2021/2022 lack ``UI.Events.SelectionChangedEventArgs``."""
+
+    def setUp(self):
+        """Load the events module against a Revit 2022 API surface."""
+        self.logger = _Logger()
+        self.host = _HostApplication(revit_year=2022)
+        self.events = load_events_module(
+            _AppDomain(),
+            self.host,
+            "revit-2022",
+            self.logger,
+            "Accepted",
+            has_selection_changed_args=False,
+        )
+
+    def test_selection_changed_is_refused_with_an_error(self):
+        """Attaching the missing event logs instead of raising."""
+        self.assertIsNone(self.events.add_handler("selection-changed", print))
+        self.events.remove_handler("selection-changed", print)
+        self.assertEqual(2, len(self.logger.errors))
+        self.assertEqual([], self.host._uiapp.SelectionChanged.handlers)
+
+    def test_other_events_still_attach(self):
+        """Events that exist on older hosts keep working."""
+        handler = self.events.add_handler("view-activated", print)
+        self.assertIn(handler, self.host._uiapp.ViewActivated.handlers)
+
+
 class _RaisingExternalEvent:
     def Raise(self):
         raise RuntimeError("raise failed")
@@ -341,6 +403,7 @@ class ExecuteInRevitContextTests(unittest.TestCase):
 
         self.assertTrue(queued)
         self.assertEqual(self.calls, [])
+        self.events._HANDLER.Execute(None)
         self.events._HANDLER.Execute(None)
         self.assertEqual(self.calls, [((1,), {"key": "value"})])
         self.assertEqual(self.logger.errors, [])
