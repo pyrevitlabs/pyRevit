@@ -574,7 +574,7 @@ namespace pyRevitCLI {
                         }),
                     arguments => CallRevit(arguments, "lookup_api", new JObject { ["name"] = arguments["name"] })),
 
-                new McpTool("show_elements", readOnly: true, new string[0],
+                new McpTool("show_elements", readOnly: false, destructive: false, new string[0],
                     () => ("Show elements to the user in the active view, without an approval prompt and without changing model elements: "
                         + "select them, temporarily isolate or hide them (Revit's temporary hide/isolate), or reset that mode. "
                         + "Target element ids and/or whole categories (resolved to the elements visible in the active view). "
@@ -605,7 +605,7 @@ namespace pyRevitCLI {
                         ["zoom"] = arguments["zoom"] ?? false,
                     })),
 
-                new McpTool("navigate_revit_link", readOnly: true, new[] { "link" },
+                new McpTool("navigate_revit_link", readOnly: false, destructive: false, new[] { "link" },
                     () => ("Navigate an element link returned by inspect_elements. The active Revit document must still match the link; stale links return an actionable error. This selects or temporarily presents elements only.",
                         new JObject {
                             ["link"] = new JObject { ["type"] = "object", ["description"] = "An element link from inspect_elements." },
@@ -615,7 +615,7 @@ namespace pyRevitCLI {
                         }),
                     NavigateRevitLink),
 
-                new McpTool("capture_view", readOnly: true, new string[0],
+                new McpTool("capture_view", readOnly: false, destructive: false, new string[0],
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
                         + "through Revit and works for any view by name or id. mode 'viewport' renders an open view through Revit "
                         + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
@@ -732,15 +732,23 @@ namespace pyRevitCLI {
 
         private sealed class McpTool {
             private readonly bool readOnly;
+            private readonly bool destructive;
             private readonly string[] required;
             private readonly Func<(string Description, JObject Properties)> schema;
             private readonly Func<JObject, JToken> handler;
 
             public McpTool(
                 string name, bool readOnly, string[] required,
+                Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler)
+                : this(name, readOnly, !readOnly, required, schema, handler) {
+            }
+
+            public McpTool(
+                string name, bool readOnly, bool destructive, string[] required,
                 Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler) {
                 Name = name;
                 this.readOnly = readOnly;
+                this.destructive = destructive;
                 this.required = required;
                 this.schema = schema;
                 this.handler = handler;
@@ -764,7 +772,7 @@ namespace pyRevitCLI {
                     },
                     ["annotations"] = new JObject {
                         ["readOnlyHint"] = readOnly,
-                        ["destructiveHint"] = !readOnly,
+                        ["destructiveHint"] = destructive,
                         ["openWorldHint"] = false,
                     },
                 };

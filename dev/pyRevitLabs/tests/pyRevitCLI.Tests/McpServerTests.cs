@@ -8,8 +8,10 @@ namespace pyRevitCLI.Tests;
 public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
         "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
-        "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "get_run",
+        "run_automation", "lookup_revit_api", "get_run",
     };
+
+    private static readonly string[] PresentationTools = { "show_elements", "navigate_revit_link", "capture_view" };
 
     private readonly FakeAgentHost host = new FakeAgentHost();
 
@@ -362,7 +364,7 @@ public partial class McpServerTests : IDisposable {
                 Assert.True(properties[required.Value<string>()] != null, name + " requires an undeclared property");
             var readOnly = ReadOnlyTools.Contains(name);
             Assert.Equal(readOnly, tool["annotations"].Value<bool>("readOnlyHint"));
-            Assert.Equal(!readOnly, tool["annotations"].Value<bool>("destructiveHint"));
+            Assert.Equal(!readOnly && !PresentationTools.Contains(name), tool["annotations"].Value<bool>("destructiveHint"));
         }
     }
 
