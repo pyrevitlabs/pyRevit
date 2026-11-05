@@ -89,17 +89,21 @@ class _EventRegistry(object):
         self._detachers.append(detach)
 
     def release(self):
-        """Detach every recorded callback and run the release hooks."""
+        """Detach every recorded callback and run the release hooks.
+
+        A step that raises is logged and the remaining steps still run, so
+        one failure never leaves other callbacks attached; this runs from
+        the unguarded ``Closed`` handler.
+        """
         detachers, self._detachers = self._detachers, []
         for detach in detachers:
-            detach()
+            _attempt(detach)
         routed, self._routed = self._routed, []
         for element, routed_event, delegate in routed:
-            element.RemoveHandler(routed_event, delegate)
+            _attempt(element.RemoveHandler, routed_event, delegate)
         events, self._events = self._events, []
         for control, event_name, handler in reversed(events):
-            event = getattr(control, event_name)
-            event -= handler
+            _attempt(_remove_handler, control, event_name, handler)
 
     def guard(self, handler):
         """Wrap ``handler`` so its errors surface where IronPython raises them.
@@ -107,7 +111,8 @@ class _EventRegistry(object):
         The error propagates when Python code is below the WPF event on this
         thread, which then receives it as under IronPython. Otherwise the
         event came from the dispatcher alone, and the error is logged rather
-        than left to the dispatcher.
+        than left to the dispatcher; ``SystemExit``, as raised by
+        ``alert(exitscript=True)``, just ends the callback.
         """
 
         def invoke(sender, args):
@@ -116,10 +121,24 @@ class _EventRegistry(object):
             except BaseException as error:
                 if _has_python_caller(sys._getframe().f_back):
                     raise
+                if isinstance(error, SystemExit):
+                    return
                 _report(error)
 
         _DISPATCH_CODES.add(invoke.__code__)
         return invoke
+
+
+def _remove_handler(control, event_name, handler):
+    event = getattr(control, event_name)
+    event -= handler
+
+
+def _attempt(step, *args):
+    try:
+        step(*args)
+    except Exception as error:
+        _report(error)
 
 
 def _has_python_caller(frame):
@@ -213,8 +232,11 @@ def hook_template_events(registry, key, handlers):
     def attach(element):
         bind(element)
         if is_loadable(element):
-            element.Loaded += loaded
-            element.Unloaded += unloaded
+            try:
+                element.Loaded += loaded
+                element.Unloaded += unloaded
+            except Exception as error:
+                _report(error)
 
     def detach():
         PythonEvents.Detach(key)

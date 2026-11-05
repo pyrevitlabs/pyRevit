@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using Python.Runtime;
 
 namespace PyRevitLabs.PyRevit.Forms.Binding {
@@ -82,11 +83,18 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 try {
                     value = isDict ? source.GetItem(name) : source.GetAttr(name);
                 }
-                catch (PythonException) {
+                catch (PythonException ex) {
+                    if (!IsMissingAttribute(ex))
+                        Trace.TraceWarning("Python binding read of '{0}' failed: {1}", name, ex.Message);
                     return null;
                 }
                 return PythonBinding.ToClr(value);
             }
+        }
+
+        private static bool IsMissingAttribute(PythonException error) {
+            var type = error.Type?.Name;
+            return type == "AttributeError" || type == "KeyError";
         }
 
         internal void SetAttribute(string name, object value) {

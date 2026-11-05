@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
 using Python.Runtime;
 
@@ -17,8 +18,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// </para>
     /// <para>
     /// The callbacks live here rather than in a Python module so they survive a reload of
-    /// <c>pyrevit.forms</c> while their windows stay open. Every callback takes the GIL itself
-    /// and must not raise.
+    /// <c>pyrevit.forms</c> while their windows stay open. Every callback runs under the GIL; a
+    /// Python error it raises is traced and ignored so WPF can finish building the template.
     /// </para>
     /// </remarks>
     public static class PythonEvents {
@@ -74,9 +75,15 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 if (!Callbacks.TryGetValue(key, out callback))
                     return;
             }
-            using (Py.GIL())
-            using (var target = element.ToPython())
-                callback.Invoke(target).Dispose();
+            using (Py.GIL()) {
+                try {
+                    using (var target = element.ToPython())
+                        callback.Invoke(target).Dispose();
+                }
+                catch (PythonException ex) {
+                    Trace.TraceWarning("PythonEvents hook '{0}' failed: {1}", key, ex.Message);
+                }
+            }
         }
     }
 }
