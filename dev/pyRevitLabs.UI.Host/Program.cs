@@ -150,7 +150,7 @@ static UiMessage CreateHostInfoResponse(UiMessage request) =>
 static HostInfo CreateHostInfo() => new(
     UiProtocol.Version,
     Environment.ProcessId,
-    typeof(HostInfo).Assembly.GetName().Version?.ToString() ?? "unknown");
+    typeof(HostLog).Assembly.GetName().Version?.ToString() ?? "unknown");
 
 static UiMessage CreateErrorResponse(UiMessage request, string code, string message) =>
     new("error", request.Id, request.Method, JsonSerializer.SerializeToElement(new { code, message }));

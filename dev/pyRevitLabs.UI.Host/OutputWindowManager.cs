@@ -146,7 +146,9 @@ internal sealed class OutputWindowManager : IDisposable
     public Task<string> GetTextAsync(string windowId) =>
         WithWindowResultAsync(windowId, window => window.GetTextAsync());
     public Task<string> ReadInputAsync(string windowId, string mode, string? value) =>
-        WithWindowResultAsync(windowId, window => window.ReadInputAsync(mode, value));
+        InvokeAsync(() => _windows.TryGetValue(windowId, out var window)
+            ? window.ReadInputAsync(mode, value)
+            : Task.FromResult(string.Empty));
 
     private async Task WithWindowAsync(
         string windowId,
