@@ -810,8 +810,9 @@ def run(context):
 
     Note:
         Never raises. Script errors, including a failure to serialize
-        ``result``, are reported through ``context.SetError`` so the host can
-        roll the run back.
+        ``result`` and a ``BaseException`` such as ``KeyboardInterrupt``, are
+        reported through ``context.SetError`` so the host can roll the run
+        back. A run that passed its time limit reports no ``result``.
 
     Note:
         ``context.TimeoutSeconds`` is enforced by a watchdog thread that sets
@@ -935,6 +936,8 @@ def run(context):
                     context.SetError(
                         "SystemExit", _system_exit_message(script_exit), ""
                     )
+            if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
+                raise RunTimedOut(timeout_s)
             if not failed and "result" in namespace:
                 try:
                     context.SetResult(
@@ -952,26 +955,23 @@ def run(context):
                         _format_script_traceback(),
                     )
                 phases.lap("result")
-
-            if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
-                raise RunTimedOut(timeout_s)
         finally:
             if stop_watchdog:
                 stop_watchdog()
             sys.settrace(None)
-    except RunTimedOut:
+    except BaseException as ex:
         failed = True
-        context.SetError(
-            "timeout",
-            "The script ran longer than its {:g} second limit and was stopped; its "
-            "changes were rolled back. Pass a larger timeout_s if the work needs "
-            "more time.".format(timeout_s),
-            _format_script_traceback(),
-        )
-    except Exception as ex:
-        failed = True
-        error_type, message = _describe_error(ex)
-        context.SetError(error_type, message, _format_script_traceback())
+        if isinstance(ex, RunTimedOut) and timeout_s:
+            context.SetError(
+                "timeout",
+                "The script ran longer than its {:g} second limit and was stopped; its "
+                "changes were rolled back. Pass a larger timeout_s if the work needs "
+                "more time.".format(timeout_s),
+                _format_script_traceback(),
+            )
+        else:
+            error_type, message = _describe_error(ex)
+            context.SetError(error_type, message, _format_script_traceback())
     finally:
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
@@ -1002,7 +1002,9 @@ def _is_successful_exit(error):
 
 
 def _system_exit_message(error):
-    return "The script exited with code {}".format(error.code)
+    if isinstance(error.code, int):
+        return "The script exited with code {}".format(error.code)
+    return "The script exited: {}".format(_safe_text(error.code))
 
 
 _TRANSACTION_ORDER = (
@@ -1254,6 +1256,8 @@ def _elementid_value(element_id):
 
 
 def _to_jsonable(value):
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("utf-8", "replace")
     if isinstance(value, _NET_INTEGER_TYPES):
         return int(value)
     if isinstance(value, _NET_FLOAT_TYPES):
