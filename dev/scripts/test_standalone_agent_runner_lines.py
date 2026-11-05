@@ -6,6 +6,7 @@ import importlib.util
 import os
 import re
 import sys
+import time
 import traceback
 import types
 import unittest
@@ -689,6 +690,56 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         finally:
             sys.settrace(previous)
         self.assertEqual([20, 30], scope["result"])
+
+    def _run_with_timeout(self, source, timeout_s):
+        errors = []
+        context = types.SimpleNamespace(
+            Source=source,
+            Workspace=None,
+            TimeoutSeconds=timeout_s,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: errors.append(args[0]),
+        )
+        with mock.patch.object(self.runner, "_WATCHDOG_ESCALATE_SECONDS", 0.2):
+            self.runner.run(context)
+        return errors
+
+    @unittest.skipUnless(
+        hasattr(sys, "monitoring"), "Escalation needs CPython 3.12+ sys.monitoring"
+    )
+    def test_escalation_stops_loops_the_guards_never_see(self):
+        """Stop swallowing loops in async for and in code compiled at run time."""
+        sources = {
+            "exec": (
+                "exec('while True:\\n    try:\\n        for i in range(10 ** 9):\\n"
+                "            pass\\n    except:\\n        pass\\n')\n"
+            ),
+            "async_for": (
+                "import asyncio\n"
+                "Base = BaseException\n"
+                "async def forever():\n"
+                "    while True:\n"
+                "        yield 1\n"
+                "async def main():\n"
+                "    async for value in forever():\n"
+                "        try:\n"
+                "            await asyncio.sleep(0)\n"
+                "        except Base:\n"
+                "            pass\n"
+                "asyncio.run(main())\n"
+            ),
+        }
+        for name, source in sorted(sources.items()):
+            with self.subTest(loop=name):
+                started = time.time()
+                self.assertEqual(["timeout"], self._run_with_timeout(source, 0.2))
+                self.assertLess(time.time() - started, 5)
+                for tool_id in self.runner._ESCALATION_TOOL_IDS:
+                    self.assertIsNone(sys.monitoring.get_tool(tool_id))
 
     def test_rank_cache_is_cleared_after_a_run(self):
         """Never keep a run's script classes, and through them its namespace."""

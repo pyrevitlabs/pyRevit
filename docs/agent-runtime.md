@@ -275,7 +275,10 @@ Rules the host enforces:
 - The runner compiles the script with every bare `except` and `except BaseException`
   narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
   `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
-  other way, such as through an alias, is stopped again at its next loop header.
+  other way, such as through an alias, is stopped again at its next loop header. On
+  CPython 3.12 and later, a run still going a second after its deadline is also stopped at
+  the end of every loop iteration it reaches, which covers `async for` loops and code
+  compiled at run time.
 - To roll back a transaction the script leaves open, the runner traces the script's own
   frames, but only when the source mentions a transaction, calls `.Start(`, or the run uses
   a `workspace`. Other runs have no trace function, which on IronPython makes them many
@@ -284,7 +287,8 @@ Rules the host enforces:
   is not stopped on IronPython.
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
   builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
-  the deadline on every line of every frame, which is slower but still stops it.
+  the deadline on every line of every frame, which is slower but still stops it, unless
+  that code catches the timeout in its own loop.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - Documents can't be saved or synchronized during a run.

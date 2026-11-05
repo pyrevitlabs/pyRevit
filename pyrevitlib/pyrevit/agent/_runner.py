@@ -40,6 +40,8 @@ from pyrevit.compat import get_elementid_value_func
 SOURCE_NAME = "<agent-script>"
 
 _WATCHDOG_RETRY_SECONDS = 0.2
+_WATCHDOG_ESCALATE_SECONDS = 1.0
+_ESCALATION_TOOL_IDS = (4, 3)
 _TRANSACTION_WORD = re.compile("transaction", re.IGNORECASE)
 _START_CALL = re.compile(r"\.\s*Start\s*\(")
 _CO_OPTIMIZED = 0x1
@@ -462,11 +464,13 @@ def _start_watchdog(timeout_s, state):
     keeps raising ``RunTimedOut`` in the script thread itself, which stops
     code the guards never see, such as a loop in a library function.
 
-    Warning:
-        An injection lands wherever the script happens to be, usually inside
-        a loop body, so a script that catches ``BaseException`` there through
-        an alias would swallow every one of them. Only the loop guards, which
-        raise in the loop header, can stop such a script.
+    An injection lands wherever the script happens to be, usually inside a
+    loop body, so a handler the runner could not narrow, such as one
+    reached through an alias or one in code compiled at run time, can
+    swallow every one of them. If the run is still going
+    ``_WATCHDOG_ESCALATE_SECONDS`` after the deadline, the watchdog arms a
+    :class:`_JumpEscalation`, which raises at every backward jump: the end
+    of a loop body, outside any ``try`` inside that body.
 
     Returns:
         function: stops the watchdog and clears any injection still pending.
@@ -474,6 +478,7 @@ def _start_watchdog(timeout_s, state):
     stopped = threading.Event()
     set_async_exc = _async_exception_setter()
     thread_id = threading.current_thread().ident
+    escalation = _JumpEscalation(thread_id, timeout_s)
 
     def watch():
         if stopped.wait(timeout_s):
@@ -481,8 +486,11 @@ def _start_watchdog(timeout_s, state):
         state["timed_out"] = True
         if set_async_exc is None:
             return
+        escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
         while not stopped.is_set():
             set_async_exc(thread_id, RunTimedOut)
+            if _clock() >= escalate_at:
+                escalation.arm()
             stopped.wait(_WATCHDOG_RETRY_SECONDS)
 
     thread = threading.Thread(target=watch)
@@ -490,6 +498,7 @@ def _start_watchdog(timeout_s, state):
     thread.start()
 
     def stop():
+        escalation.halted = True
         stopped.set()
         if set_async_exc is None:
             return
@@ -497,11 +506,72 @@ def _start_watchdog(timeout_s, state):
             try:
                 thread.join()
                 set_async_exc(thread_id, None)
+                escalation.release()
                 return
             except RunTimedOut:
                 pass
 
     return stop
+
+
+class _JumpEscalation(object):
+    """Raise ``RunTimedOut`` at every backward jump of one thread (CPython 3.12+).
+
+    Every loop iteration ends in a backward jump that sits after the loop
+    body, so a ``try`` inside the body can't catch what is raised there. An
+    enclosing loop that catches it hits its own backward jump next, so
+    nothing that keeps looping can keep the run alive: not an aliased
+    ``BaseException`` handler, an ``async for``, nor code compiled at run
+    time. Uses a ``sys.monitoring`` tool id, so it costs nothing until it is
+    armed and does nothing when no id is free or the engine lacks
+    ``sys.monitoring``.
+
+    Invariant:
+        Set ``halted`` before the runner's own code runs again after the
+        script: from then on the callback never raises, and :meth:`arm` does
+        nothing. :meth:`release` must follow once the watchdog has stopped.
+    """
+
+    def __init__(self, thread_id, timeout_s):
+        self.halted = False
+        self._thread_id = thread_id
+        self._timeout_s = timeout_s
+        self._tool_id = None
+        self._lock = threading.Lock()
+
+    def arm(self):
+        monitoring = getattr(sys, "monitoring", None)
+        with self._lock:
+            if monitoring is None or self.halted or self._tool_id is not None:
+                return
+            for tool_id in _ESCALATION_TOOL_IDS:
+                if monitoring.get_tool(tool_id) is None:
+                    break
+            else:
+                return
+            monitoring.use_tool_id(tool_id, "pyRevit agent timeout")
+            self._tool_id = tool_id
+            monitoring.register_callback(tool_id, monitoring.events.JUMP, self._on_jump)
+            monitoring.set_events(tool_id, monitoring.events.JUMP)
+
+    def release(self):
+        self.halted = True
+        with self._lock:
+            tool_id, self._tool_id = self._tool_id, None
+            if tool_id is None:
+                return
+            monitoring = sys.monitoring
+            monitoring.set_events(tool_id, 0)
+            monitoring.register_callback(tool_id, monitoring.events.JUMP, None)
+            monitoring.free_tool_id(tool_id)
+
+    def _on_jump(self, code, offset, destination):
+        if (
+            not self.halted
+            and destination < offset
+            and threading.get_ident() == self._thread_id
+        ):
+            raise RunTimedOut(self._timeout_s)
 
 
 def _async_exception_setter():
@@ -578,7 +648,8 @@ def run(context):
         swallow ``RunTimedOut`` there, and can no longer catch
         ``KeyboardInterrupt`` or ``SystemExit`` that way. A script that
         suppresses it some other way, such as through an alias, is stopped
-        again at its next loop header.
+        again at its next loop header, and on CPython 3.12+ at the end of
+        any loop it is still in a second later (see :func:`_start_watchdog`).
     """
     phases = _PhaseClock(context)
     context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
