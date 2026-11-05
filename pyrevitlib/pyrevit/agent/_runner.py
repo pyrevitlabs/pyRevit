@@ -37,7 +37,7 @@ except ImportError:
 import System
 
 from pyrevit.api import DB, UI
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import IRONPY, get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 
@@ -978,6 +978,8 @@ def run(context):
         _TRANSACTION_RANKS.clear()
         _UNTRACKED_TYPES.clear()
         _TRACKED_TYPES.clear()
+        _ATTRIBUTE_HOLDERS.clear()
+        linecache.cache.pop(SOURCE_NAME, None)
         phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
@@ -1020,9 +1022,10 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
     runner records every transaction the script starts through
     ``__agent_start__`` (see :func:`_record_transaction_starts`), or, when
     that rewrite can't see every start, the transactions script frames hold
-    while it executes; it then also inspects script globals and their
-    immediate containers. A reckless run records nothing while it executes,
-    so only the globals are inspected.
+    while it executes; it then also inspects script globals, their immediate
+    containers and the attributes of objects found there, such as
+    ``pyrevit.revit.Transaction``. A reckless run records nothing while it
+    executes, so only the globals are inspected.
 
     Returns:
         int: how many transactions were rolled back.
@@ -1066,7 +1069,7 @@ def _track_values(variables, transactions):
                 value = value.cell_contents
             except ValueError:
                 continue
-        if type(value) not in _UNTRACKED_TYPES:
+        if type(value) not in _UNTRACKED_TYPES or _holds_attributes(value):
             _track_transaction(value, transactions)
 
 
@@ -1098,14 +1101,55 @@ def _track_stack_transactions(frame, transactions):
 
 
 def _track_transaction(value, transactions):
+    """Record ``value`` if it is a transaction, else the transactions it holds.
+
+    A Python object's own attributes are checked one level deep, which finds
+    the transaction inside ``pyrevit.revit.Transaction``, the rpw wrappers
+    and the script's own classes. Modules and classes are skipped: walking
+    their namespaces on every traced line would cost too much.
+    """
     if type(value) is _CELL_TYPE:
         try:
             value = value.cell_contents
         except ValueError:
             return
+    if _record_transaction(value, transactions) or not _holds_attributes(value):
+        return
+    attributes = getattr(value, "__dict__", None)
+    if type(attributes) is dict:
+        for attribute in list(attributes.values()):
+            _record_transaction(attribute, transactions)
+
+
+def _holds_attributes(value):
+    """Whether ``value`` is an object whose attributes may hold a transaction.
+
+    Cached per type like :func:`_transaction_rank`, and cleared with it, so a
+    .NET object costs one dictionary lookup per traced line.
+    """
+    value_type = type(value)
+    try:
+        return _ATTRIBUTE_HOLDERS[value_type]
+    except KeyError:
+        pass
+    except TypeError:
+        return False
+    try:
+        holds = not issubclass(value_type, (type, _MODULE_TYPE)) and hasattr(
+            value, "__dict__"
+        )
+    except Exception:
+        holds = False
+    _ATTRIBUTE_HOLDERS[value_type] = holds
+    return holds
+
+
+def _record_transaction(value, transactions):
     rank = _transaction_rank(type(value))
-    if rank is not None:
-        transactions[id(value)] = (rank, value)
+    if rank is None:
+        return False
+    transactions[id(value)] = (rank, value)
+    return True
 
 
 _TRANSACTION_RANKS = {}
@@ -1117,8 +1161,12 @@ _TRACKED_TYPES = set()
 Cleared with ``_TRANSACTION_RANKS`` for the same reason.
 """
 
+_ATTRIBUTE_HOLDERS = {}
+
 _CELL_TYPE = type((lambda value: lambda: value)(None).__closure__[0])
 """IronPython with full frames reports function locals as closure cells."""
+
+_MODULE_TYPE = type(sys)
 
 
 def _transaction_rank(value_type):
@@ -1176,10 +1224,7 @@ def _reachable_values(namespace):
 
 
 def _implementation():
-    implementation = getattr(sys, "implementation", None)
-    if implementation is not None:
-        return implementation.name
-    return "ironpython" if "IronPython" in sys.version else "cpython"
+    return "ironpython" if IRONPY else "cpython"
 
 
 def _build_namespace(context):

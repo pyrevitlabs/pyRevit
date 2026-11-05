@@ -3,6 +3,7 @@
 import ast
 import builtins
 import importlib.util
+import linecache
 import os
 import re
 import sys
@@ -47,6 +48,7 @@ def _load_runner():
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: int
+    compat.IRONPY = False
     modules = {
         "System": system,
         "pyrevit": pyrevit,
@@ -756,6 +758,36 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         )
         self.runner.run(context)
         self.assertEqual({}, self.runner._TRANSACTION_RANKS)
+        self.assertEqual({}, self.runner._ATTRIBUTE_HOLDERS)
+
+    def test_the_script_source_leaves_linecache_after_a_run(self):
+        """Never keep the last script's source alive in the shared engine."""
+        context = types.SimpleNamespace(
+            Source="result = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertNotIn(self.runner.SOURCE_NAME, linecache.cache)
+
+    def test_transactions_held_in_object_attributes_are_tracked(self):
+        """Find the transaction inside a wrapper such as pyrevit.revit.Transaction."""
+        source = (
+            "class Wrapper(object):\n"
+            "    def __init__(self, label):\n"
+            "        self._rvtxn = Labelled(label)\n"
+            "def helper():\n"
+            "    held = Wrapper('local')\n"
+            "helper()\n"
+            "kept = Wrapper('global')\n"
+        )
+        self.assertEqual(["global", "local"], self._tracked(source))
 
 
 LOOP_PAST_TIMEOUT = (
