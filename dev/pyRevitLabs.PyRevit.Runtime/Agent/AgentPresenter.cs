@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal static class AgentPresenter {
         private const int MaxIds = 20000;
+        private const int MaxCategories = 100;
         private static readonly string[] Actions = { "select", "isolate", "hide", "reset" };
 
         public sealed class Request {
@@ -52,12 +53,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             if (parameters["categories"] is JArray categories) {
+                if (categories.Count > MaxCategories)
+                    throw new AgentException("invalid_params", $"At most {MaxCategories} categories per call.");
                 foreach (var token in categories) {
                     var name = token.Value<string>() ?? string.Empty;
                     var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
                     if (!Enum.TryParse(enumName, true, out BuiltInCategory category))
                         throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
-                    request.Categories.Add(category);
+                    if (!request.Categories.Contains(category))
+                        request.Categories.Add(category);
                 }
             }
 
@@ -201,6 +205,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (seen.Add(AgentIds.ToValue(id)))
                         targets.Add(id);
                 }
+                if (targets.Count > MaxIds)
+                    throw new AgentException("too_many_elements",
+                        $"The categories match more than {MaxIds} elements in the active view; pass fewer categories or ids.");
             }
 
             return targets;

@@ -46,6 +46,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int DefaultWidth = 1280;
         private const int MinWidth = 320;
         private const int MaxWidth = 2400;
+        private const int MaxElements = 20000;
 
         private const double SectionBoxPadding = 2.0;
         private const double DirectionTolerance = 1e-3;
@@ -149,7 +150,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Mode = mode,
                 Width = Math.Max(MinWidth, Math.Min(MaxWidth, width)),
                 Direction = direction,
-                Elements = (parameters["elements"] as JArray)?.Select(id => AgentIds.FromValue(id.Value<long>())).ToList(),
+                Elements = ParseElements(parameters["elements"]),
                 DetailLevel = ParseChoice(parameters, "detail_level", DetailLevels.Keys),
                 DisplayStyle = ParseChoice(parameters, "display_style", DisplayStyles.Keys),
                 Eye = ParsePoint(parameters["eye"], "eye"),
@@ -173,6 +174,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'eye', 'target' and 'section' need mode 'export'.");
             if (request.OverridesDisplay && request.Mode == "screen")
                 throw new AgentException("invalid_params", "'detail_level' and 'display_style' don't apply to mode 'screen', which copies the window as it is.");
+        }
+
+        private static List<ElementId> ParseElements(JToken token) {
+            if (!(token is JArray ids))
+                return null;
+            if (ids.Count > MaxElements)
+                throw new AgentException("invalid_params", $"At most {MaxElements} 'elements' per call.");
+            try {
+                return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
+            }
+            catch (Exception) {
+                throw new AgentException("invalid_params", "'elements' must contain integer element ids.");
+            }
         }
 
         private static string ParseChoice(JObject parameters, string name, IEnumerable<string> choices) {
