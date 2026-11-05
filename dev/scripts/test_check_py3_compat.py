@@ -466,6 +466,86 @@ class NativeFormUseTests(unittest.TestCase):
         self.assertTrue(_is_tracked_extension_finding(finding))
 
 
+class ClrRuleScopeTests(unittest.TestCase):
+    """CLR collection and namespace rules respect engine guards and CLR values."""
+
+    def _codes(self, source):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "sample.py"
+            path.write_text(textwrap.dedent(source), encoding="utf-8")
+            return [finding.code for finding in check_file(path)]
+
+    def test_ironpython_only_branches_are_not_flagged(self):
+        """Code under ``if PY2:`` or ``if IRONPY:`` never runs on CPython."""
+        self.assertEqual(
+            [],
+            self._codes(
+                """
+                if PY2:
+                    ids = List[DB.ElementId](element_ids)
+                    class Handler(UI.IExternalEventHandler):
+                        pass
+                if IRONPY:
+                    ids = List[DB.ElementId](element_ids)
+                    class Provider(UI.IDockablePaneProvider):
+                        pass
+                """
+            ),
+        )
+
+    def test_names_bound_to_clr_values_or_capacities_are_not_flagged(self):
+        """CLR results and counts passed by name are not Python iterables."""
+        self.assertEqual(
+            [],
+            self._codes(
+                """
+                def build(uidoc, items):
+                    current = uidoc.Selection.GetElementIds()
+                    count = len(items)
+                    capacity = 10
+                    return (
+                        List[DB.ElementId](current),
+                        List[DB.ElementId](count),
+                        List[DB.ElementId](capacity),
+                    )
+                """
+            ),
+        )
+
+    def test_names_bound_to_python_values_are_flagged(self):
+        """A name assigned a Python list, or by a Python helper, is reported."""
+        self.assertEqual(
+            ["CLR-LIST", "CLR-LIST", "CLR-LIST"],
+            self._codes(
+                """
+                def build(curves, element_ids):
+                    ids = []
+                    ordered = sort_curves(curves)
+                    return (
+                        List[DB.ElementId](ids),
+                        List[DB.Curve](ordered),
+                        List[DB.ElementId](element_ids),
+                    )
+                """
+            ),
+        )
+
+    def test_callback_interfaces_need_a_namespace(self):
+        """Reload-sensitive Revit and WPF callback interfaces are covered."""
+        for interface in (
+            "DB.IUpdater",
+            "UI.IExternalCommand",
+            "UI.IDockablePaneProvider",
+            "Data.IValueConverter",
+            "DB.IExportContext",
+        ):
+            with self.subTest(interface=interface):
+                self.assertEqual(
+                    ["CLR-NAMESPACE"],
+                    self._codes("class Callback({}):\n    pass\n".format(interface)),
+                )
+
+
 class NamedIndexerTests(unittest.TestCase):
     """CLR named indexers must use the accessor that pythonnet exposes."""
 

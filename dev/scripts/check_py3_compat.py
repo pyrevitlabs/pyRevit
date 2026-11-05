@@ -423,12 +423,13 @@ def _is_generic_list_type(node):
     return isinstance(target, ast.Attribute) and target.attr == "List"
 
 
-def _is_python_iterable(node):
+def _is_python_iterable(node, clr_names=frozenset()):
     """Return whether node is clearly a Python iterable rather than a CLR value.
 
     Literal containers, comprehensions, generators, calls to the iterable
     builtins and bare names count; int capacities, attributes and other call
-    results (e.g. ``uidoc.Selection.GetElementIds()``) are left alone.
+    results (e.g. ``uidoc.Selection.GetElementIds()``) are left alone, and so
+    are bare names listed in ``clr_names``.
     """
     if isinstance(
         node,
@@ -439,22 +440,55 @@ def _is_python_iterable(node):
         return (
             isinstance(node.func, ast.Name) and node.func.id in PYTHON_ITERABLE_BUILTINS
         )
-    return isinstance(node, ast.Name)
+    return isinstance(node, ast.Name) and node.id not in clr_names
 
 
-def _is_generic_list_constructor(node):
+def _is_generic_list_constructor(node, clr_names=frozenset()):
     """Return whether node constructs a CLR List from a Python iterable.
 
     Matches ``List[T](...)`` and attribute-qualified forms such as
-    ``framework.List[T](...)`` or ``Generic.List[T](...)``.
+    ``framework.List[T](...)`` or ``Generic.List[T](...)``. A bare-name
+    argument in ``clr_names`` is taken to be a CLR value or a capacity.
     """
     return (
         isinstance(node, ast.Call)
         and len(node.args) == 1
         and not node.keywords
         and _is_generic_list_type(node.func)
-        and _is_python_iterable(node.args[0])
+        and _is_python_iterable(node.args[0], clr_names)
     )
+
+
+def _is_clr_value(node):
+    """Return whether an assigned value is surely a CLR member's result or a capacity.
+
+    Numbers, ``len(...)`` and PascalCase members such as ``sel.GetElementIds()``
+    or ``view.Elements`` count; Python helpers may return lists, so they do not.
+    """
+    if isinstance(node, ast.Constant):
+        return isinstance(node.value, int) and not isinstance(node.value, bool)
+    if isinstance(node, ast.Call):
+        if isinstance(node.func, ast.Name):
+            return node.func.id == "len"
+        node = node.func
+    return isinstance(node, ast.Attribute) and node.attr[:1].isupper()
+
+
+def _clr_value_names(scopes):
+    """Return names whose every assignment in ``scopes`` is a CLR value or number.
+
+    Names that are never assigned there, such as parameters, are not included.
+    """
+    verdicts = {}
+    for scope in scopes:
+        for node in ast.walk(scope):
+            if not isinstance(node, ast.Assign):
+                continue
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    is_clr = _is_clr_value(node.value)
+                    verdicts[target.id] = verdicts.get(target.id, True) and is_clr
+    return frozenset(name for name, is_clr in verdicts.items() if is_clr)
 
 
 CLR_NAMESPACE_INTERFACES = {
@@ -463,6 +497,11 @@ CLR_NAMESPACE_INTERFACES = {
     "IFailuresPreprocessor",
     "IFamilyLoadOptions",
     "IDuplicateTypeNamesHandler",
+    "IUpdater",
+    "IExternalCommand",
+    "IDockablePaneProvider",
+    "IValueConverter",
+    "IExportContext",
 }
 
 
@@ -764,6 +803,17 @@ class _FileContext:
     def is_engine_guarded(self, node):
         return _is_engine_guarded(node, self.parents)
 
+    def clr_value_names(self, node):
+        """Return names assigned only CLR values or numbers in node's enclosing scopes."""
+        scopes = []
+        current = node
+        while current in self.parents:
+            current = self.parents[current]
+            if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                scopes.append(current)
+        scopes.append(self.tree)
+        return _clr_value_names(scopes)
+
 
 def _is_listed(path, repo_paths):
     return any(path == REPO_ROOT.joinpath(*entry.split("/")) for entry in repo_paths)
@@ -853,7 +903,17 @@ def _py2_next(node, ctx):
         )
 
 
+def _is_off_cpython(node, ctx):
+    """Return whether node is guarded off IronPython 3 or off CPython.
+
+    The pythonnet-specific CLR rules skip both kinds of engine branch.
+    """
+    return ctx.is_engine_guarded(node) or _is_cpython_unreachable(node, ctx.parents)
+
+
 def _clr_namespace(node, ctx):
+    if _is_off_cpython(node, ctx):
+        return
     if any(
         _is_clr_interface_base(base) for base in node.bases
     ) and not _has_stable_clr_namespace(node):
@@ -916,7 +976,9 @@ def _sort_key(node, ctx):
 
 
 def _clr_list(node, ctx):
-    if _is_generic_list_constructor(node):
+    if not _is_generic_list_constructor(node) or _is_off_cpython(node, ctx):
+        return
+    if _is_generic_list_constructor(node, ctx.clr_value_names(node)):
         yield (
             "CLR-LIST",
             "List[T](python_iterable) relies on IronPython coercion; "

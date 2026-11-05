@@ -117,6 +117,8 @@ def make_pane_provider(panel, default_visible):
 
 
 class _PaneProvider(UI.IDockablePaneProvider):
+    __namespace__ = "pyrevit.forms.backends._ipy"
+
     def __init__(self, panel, default_visible):
         self._panel = panel
         self._default_visible = default_visible
