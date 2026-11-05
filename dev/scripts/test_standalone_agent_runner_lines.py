@@ -579,13 +579,13 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertFalse(self.runner._runs_dynamic_code(source))
 
-    def test_transaction_tracking_needs_a_mention_or_a_workspace(self):
-        """Skip the tracer only for scripts that can't reach a transaction."""
+    def test_transaction_tracking_needs_an_unrecorded_start_or_a_workspace(self):
+        """Skip the tracer only when every start the script can reach is recorded."""
         needs = self.runner._needs_transaction_tracking
-        self.assertTrue(needs("T = DB.Transaction\n", None))
-        self.assertTrue(needs("result = helpers.run()\n", r"C:\work"))
-        self.assertTrue(needs("t = getattr(DB, name)(doc)\nt.Start()\n", None))
-        self.assertFalse(needs("result = [1, 2]\n", None))
+        self.assertFalse(needs(None, True, False))
+        self.assertTrue(needs(r"C:\work", True, False))
+        self.assertTrue(needs(None, False, False))
+        self.assertTrue(needs(None, True, True))
 
     def _tracked(self, source):
         transactions = {}
@@ -829,9 +829,9 @@ class AgentRunnerRecklessTests(unittest.TestCase):
         source = "label = 'DB.Transaction'\nresult = [v for v in range(3)]\n"
         self.assertEqual([], self._trace_functions_installed(source, reckless=True))
 
-    def test_default_run_still_traces_a_script_that_names_a_transaction(self):
-        """The checked default keeps tracking transactions line by line."""
-        source = "label = 'DB.Transaction'\nresult = [v for v in range(3)]\n"
+    def test_default_run_traces_a_script_that_reaches_start_indirectly(self):
+        """The checked default traces when a start could bypass the recorder."""
+        source = "name = 'Start'\nresult = [v for v in range(3)]\n"
         self.assertNotEqual([], self._trace_functions_installed(source, reckless=False))
 
     def test_reckless_does_not_stop_a_loop_past_its_timeout(self):
@@ -887,6 +887,231 @@ class AgentRunnerRecklessTests(unittest.TestCase):
         self.assertEqual(["transaction_left_open"], errors)
         self.assertEqual(2, len(created))
         self.assertTrue(all(transaction.rolled_back for transaction in created))
+
+
+START_SHAPES = {
+    "name": ("t.Start()\n", "__agent_start__(t).Start()\n"),
+    "attribute_chain": (
+        "self.tx.Start('x')\n",
+        "__agent_start__(self.tx).Start('x')\n",
+    ),
+    "constructed": (
+        "DB.Transaction(doc, 'a').Start()\n",
+        "__agent_start__(DB.Transaction(doc, 'a')).Start()\n",
+    ),
+    "subscript": ("make()[0].Start()\n", "__agent_start__(make()[0]).Start()\n"),
+    "parenthesized": ("(t).Start()\n", "__agent_start__((t)).Start()\n"),
+    "after_keyword": (
+        "def f():\n    return (t).Start()\n",
+        "def f():\n    return __agent_start__((t)).Start()\n",
+    ),
+    "ternary": (
+        "x = a if c else b.Start()\n",
+        "x = a if c else __agent_start__(b).Start()\n",
+    ),
+    "chained": (
+        "a.Start().Start()\n",
+        "__agent_start__(__agent_start__(a).Start()).Start()\n",
+    ),
+    "spaced": ("t . Start ()\n", "__agent_start__(t) . Start ()\n"),
+    "continued": (
+        "x = t \\\n    .Start()\n",
+        "x = __agent_start__(t) \\\n    .Start()\n",
+    ),
+    "multiline_object": (
+        "(DB.Transaction(doc,\n    'x')).Start()\n",
+        "__agent_start__((DB.Transaction(doc,\n    'x'))).Start()\n",
+    ),
+    "comprehension": (
+        "s = [t.Start() for t in ts]\n",
+        "s = [__agent_start__(t).Start() for t in ts]\n",
+    ),
+    "comparison": (
+        "ok = t.Start() == DB.TransactionStatus.Started\n",
+        "ok = __agent_start__(t).Start() == DB.TransactionStatus.Started\n",
+    ),
+    "not": ("ok = not t.Start()\n", "ok = not __agent_start__(t).Start()\n"),
+    "lambda": ("f = lambda: t.Start()\n", "f = lambda: __agent_start__(t).Start()\n"),
+    "argument": ("print(t.Start())\n", "print(__agent_start__(t).Start())\n"),
+    "getattr_type": (
+        "getattr(DB, 'Trans' + 'action')(doc, 'x').Start()\n",
+        "__agent_start__(getattr(DB, 'Trans' + 'action')(doc, 'x')).Start()\n",
+    ),
+    "string_object": ("'a'.Start()\n", "__agent_start__('a').Start()\n"),
+    "crlf": (
+        "t.Start()\r\nu.Start()\r\n",
+        "__agent_start__(t).Start()\r\n__agent_start__(u).Start()\r\n",
+    ),
+}
+
+
+def _transaction_double(runner, created):
+    class OpenTransaction(runner.DB.Transaction):
+        def __init__(self, *args):
+            self.started = False
+            self.rolled_back = False
+            created.append(self)
+
+        def Start(self, *args):
+            self.started = True
+
+        def Commit(self):
+            self.rolled_back = True
+
+        def HasStarted(self):
+            return self.started
+
+        def HasEnded(self):
+            return self.rolled_back
+
+        def RollBack(self):
+            self.rolled_back = True
+
+    return OpenTransaction
+
+
+class AgentRunnerStartRecorderTests(unittest.TestCase):
+    """Recording transaction starts without a trace function."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def test_start_calls_are_wrapped_in_place(self):
+        """Wrap only the object of each .Start( call and keep every line."""
+        for name, (source, expected) in sorted(START_SHAPES.items()):
+            with self.subTest(shape=name):
+                rewritten, complete = self.runner._record_transaction_starts(source)
+                self.assertEqual(expected, rewritten)
+                self.assertTrue(complete)
+                self.assertEqual(
+                    len(self.runner._source_lines(source)),
+                    len(self.runner._source_lines(rewritten)),
+                )
+
+    def test_source_without_start_is_left_alone(self):
+        """A script that never calls Start needs no rewrite and no tracer."""
+        source = "label = 'DB.Transaction'\nresult = [1, 2]\n"
+        self.assertEqual((source, True), self.runner._record_transaction_starts(source))
+
+    def test_starts_the_rewrite_cannot_see_are_reported(self):
+        """Report a Start reached any way other than a direct call."""
+        for source in (
+            "getattr(t, 'Start')()\n",
+            "start = t.Start\nstart()\n",
+            "class A(object):\n    def Start(self):\n        pass\n",
+            'from operator import methodcaller\nmethodcaller("Start")(t)\n',
+        ):
+            with self.subTest(source=source):
+                self.assertFalse(self.runner._record_transaction_starts(source)[1])
+
+    def test_unprovable_rewrites_fall_back_to_the_source(self):
+        """Keep the source unchanged when the rewrite can't be checked."""
+        with mock.patch.object(
+            self.runner, "_primary_start", side_effect=lambda tokens, index: index
+        ):
+            source = "a.b.Start()\n"
+            self.assertEqual(
+                (source, False), self.runner._record_transaction_starts(source)
+            )
+
+    def _run(self, source, timeout_s=5, workspace=None):
+        created = []
+        errors = []
+        traces = []
+        OpenTransaction = _transaction_double(self.runner, created)
+        doubles = types.ModuleType("start_doubles")
+        doubles.OpenTransaction = OpenTransaction
+        context = types.SimpleNamespace(
+            Source=source,
+            Workspace=workspace,
+            TimeoutSeconds=timeout_s,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: errors.append(args[:2]),
+        )
+        with (
+            mock.patch.dict(sys.modules, {"start_doubles": doubles}),
+            mock.patch.object(self.runner.DB, "Transaction", OpenTransaction),
+            mock.patch.object(sys, "settrace", wraps=sys.settrace) as settrace,
+            mock.patch.object(self.runner, "_WATCHDOG_ESCALATE_SECONDS", 0.2),
+        ):
+            self.runner.run(context)
+        traces = [call.args[0] for call in settrace.call_args_list if call.args[0]]
+        return [error[0] for error in errors], created, traces
+
+    def test_transactions_left_open_are_found_without_a_tracer(self):
+        """The cases verified in Revit stay covered with no trace function."""
+        prefix = "from start_doubles import OpenTransaction as T\n"
+        sources = {
+            "helper": "def change():\n    t = T()\n    t.Start()\nchange()\n",
+            "factory": (
+                "def make():\n    return T()\n"
+                "def change():\n    t = make()\n    t.Start()\nchange()\n"
+            ),
+            "rebound": "def change():\n    t = T()\n    t.Start()\n    t = None\nchange()\n",
+            "deleted": "def change():\n    t = T()\n    t.Start()\n    del t\nchange()\n",
+            "getattr_type": (
+                "def change():\n"
+                "    t = getattr(DB, 'Trans' + 'action')(doc, 'x')\n"
+                "    t.Start()\n"
+                "change()\n"
+            ),
+            "unbound": "def change():\n    t = T()\n    DB.Transaction.Start(t)\nchange()\n",
+            "comprehension": "def change():\n    [T().Start() for _ in range(2)]\nchange()\n",
+        }
+        for name, body in sorted(sources.items()):
+            with self.subTest(case=name):
+                errors, created, traces = self._run(prefix + body)
+                self.assertEqual(["transaction_left_open"], errors)
+                self.assertTrue(created)
+                self.assertTrue(all(t.rolled_back for t in created if t.started))
+                self.assertEqual([], traces)
+
+    def test_timeout_in_a_helper_rolls_back_its_transaction(self):
+        """A timeout inside a helper still rolls back what only it held."""
+        errors, created, _ = self._run(
+            "from start_doubles import OpenTransaction as T\n"
+            "def change():\n"
+            "    t = T()\n"
+            "    t.Start()\n"
+            "    t = None\n"
+            "    while True:\n"
+            "        pass\n"
+            "change()\n",
+            timeout_s=0.2,
+        )
+        self.assertEqual(["timeout"], errors)
+        self.assertEqual(1, len(created))
+        self.assertTrue(created[0].rolled_back)
+
+    def test_committed_transactions_are_not_reported(self):
+        """A transaction the script ends is neither reported nor touched."""
+        errors, created, traces = self._run(
+            "from start_doubles import OpenTransaction as T\n"
+            "def change():\n    t = T()\n    t.Start()\n    t.Commit()\n"
+            "change()\nresult = 1\n"
+        )
+        self.assertEqual([], errors)
+        self.assertEqual(1, len(created))
+        self.assertEqual([], traces)
+
+    def test_workspace_and_indirect_starts_keep_the_tracer(self):
+        """Starts the rewrite can't see still get the trace function."""
+        source = "from start_doubles import OpenTransaction as T\nresult = 1\n"
+        self.assertNotEqual([], self._run(source, workspace=os.getcwd())[2])
+        indirect = (
+            "from start_doubles import OpenTransaction as T\n"
+            "def change():\n    t = T()\n    getattr(t, 'Start')()\n    t = None\n"
+            "change()\n"
+        )
+        errors, created, traces = self._run(indirect)
+        self.assertNotEqual([], traces)
+        self.assertEqual(["transaction_left_open"], errors)
 
 
 class AgentRunnerSourceTests(unittest.TestCase):

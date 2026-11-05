@@ -18,6 +18,7 @@ Invariant:
 
 import ast
 import json
+import keyword
 import linecache
 import os.path as op
 import re
@@ -26,6 +27,7 @@ import threading
 import time
 import tokenize
 import traceback
+from itertools import compress
 
 try:
     from StringIO import StringIO
@@ -42,8 +44,7 @@ SOURCE_NAME = "<agent-script>"
 _WATCHDOG_RETRY_SECONDS = 0.2
 _WATCHDOG_ESCALATE_SECONDS = 1.0
 _ESCALATION_TOOL_IDS = (4, 3)
-_TRANSACTION_WORD = re.compile("transaction", re.IGNORECASE)
-_START_CALL = re.compile(r"\.\s*Start\s*\(")
+_START_RECORDER = "__agent_start__"
 _CO_OPTIMIZED = 0x1
 
 _clock = getattr(time, "perf_counter", None) or time.time
@@ -341,26 +342,201 @@ def _compile_source(source, guard_loops=False):
     return compile(narrowed_source, SOURCE_NAME, "exec"), None, False
 
 
-def _needs_transaction_tracking(source, workspace):
-    """True when script frames may hold a Revit transaction worth tracking.
+def _record_transaction_starts(source):
+    """Route every ``<expr>.Start(...)`` call through ``__agent_start__``.
 
-    A transaction stays open only if something starts it: code that names a
-    transaction, any ``.Start(`` call (which also covers a transaction held
-    under an alias), or a workspace helper. Scripts with none of these run
-    without a trace function, which on IronPython makes every Python call
-    several times faster.
+    ``t.Start()`` becomes ``__agent_start__(t).Start()``, which records ``t``
+    if it is a Revit transaction before starting it. The object a start is
+    called on is recorded whatever name, alias, factory or ``getattr`` it
+    came from, and stays recorded after its variable is rebound, so these
+    runs need no trace function to find a transaction left open. Only the
+    object expression is wrapped and no newline is added, so line numbers
+    still match the submitted source.
+
+    Returns:
+        tuple: the rewritten source, and whether every ``Start`` in the source
+        is a wrapped call. It is False, and the source is returned unchanged,
+        when the rewrite could not be proven to wrap exactly the ``.Start(``
+        calls the parser sees; it is also False when ``Start`` appears any
+        other way (``getattr(t, "Start")``, ``start = t.Start``, a name), since
+        a start through it would not be recorded.
+
+    Invariant:
+        The rewrite is checked against the AST: the rewritten source must
+        parse to the original tree with each ``.Start`` call's object wrapped
+        in ``__agent_start__(...)``, and nothing else changed.
     """
-    return (
-        bool(workspace)
-        or _TRANSACTION_WORD.search(source) is not None
-        or _START_CALL.search(source) is not None
-    )
+    try:
+        tokens = list(_significant_tokens(source))
+    except Exception:
+        return source, False
+    lines = _source_lines(source)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+
+    def offset_of(position):
+        return offsets[position[0] - 1] + position[1]
+
+    insertions = []
+    complete = True
+    for index, token in enumerate(tokens):
+        token_type, text = token[0], token[1]
+        if token_type == tokenize.STRING and _is_start_literal(text):
+            complete = False
+        if token_type != tokenize.NAME or text != "Start":
+            continue
+        if not (
+            0 < index < len(tokens) - 1
+            and _is_op(tokens[index - 1], ".")
+            and _is_op(tokens[index + 1], "(")
+        ):
+            complete = False
+            continue
+        first = _primary_start(tokens, index - 2)
+        if first is None:
+            return source, False
+        insertions.append((offset_of(tokens[first][2]), _START_RECORDER + "("))
+        insertions.append((offset_of(tokens[index - 2][3]), ")"))
+    if not insertions:
+        return source, complete
+    rewritten = source
+    for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
+        rewritten = rewritten[:position] + text + rewritten[position:]
+    try:
+        expected = _WrapStartCalls().visit(ast.parse(source, SOURCE_NAME, "exec"))
+        if ast.dump(expected) != ast.dump(ast.parse(rewritten, SOURCE_NAME, "exec")):
+            return source, False
+    except Exception:
+        return source, False
+    return rewritten, complete
+
+
+class _WrapStartCalls(ast.NodeTransformer):
+    """The AST :func:`_record_transaction_starts` must produce, built from the tree."""
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "Start":
+            recorder = ast.parse(_START_RECORDER + "(target)", mode="eval").body
+            recorder.args[0] = node.func.value
+            node.func.value = recorder
+        return node
+
+
+def _is_op(token, text):
+    return token[0] == tokenize.OP and token[1] == text
+
+
+def _is_start_literal(text):
+    return text.lstrip("rRbBuUfF").strip("\"'") == "Start"
+
+
+_CLOSING_BRACKETS = {")": "(", "]": "[", "}": "{"}
+
+
+def _primary_start(tokens, index):
+    """Index of the first token of the primary expression ending at ``index``.
+
+    Walks back over names, attribute dots, strings and bracket groups: a
+    group preceded by a name, a string or another group is a call or a
+    subscript of it, while one preceded by a keyword or an operator starts
+    the expression. Returns None for anything else.
+    """
+    while index >= 0:
+        token_type, text = tokens[index][0], tokens[index][1]
+        if token_type == tokenize.OP and text in _CLOSING_BRACKETS:
+            index = _matching_bracket(tokens, index)
+            if index is None:
+                return None
+            if index > 0 and _continues_primary(tokens[index - 1]):
+                index -= 1
+                continue
+            return index
+        if token_type == tokenize.NAME and not keyword.iskeyword(text):
+            if index > 1 and _is_op(tokens[index - 1], "."):
+                index -= 2
+                continue
+            return index
+        if token_type == tokenize.STRING:
+            while index > 0 and tokens[index - 1][0] == tokenize.STRING:
+                index -= 1
+            return index
+        return None
+    return None
+
+
+def _matching_bracket(tokens, index):
+    depth = 0
+    while index >= 0:
+        token_type, text = tokens[index][0], tokens[index][1]
+        if token_type == tokenize.OP:
+            if text in _CLOSING_BRACKETS:
+                depth += 1
+            elif text in ("(", "[", "{"):
+                depth -= 1
+                if depth == 0:
+                    return index
+        index -= 1
+    return None
+
+
+def _continues_primary(token):
+    token_type, text = token[0], token[1]
+    if token_type == tokenize.NAME:
+        return not keyword.iskeyword(text)
+    if token_type == tokenize.OP:
+        return text in _CLOSING_BRACKETS
+    return token_type == tokenize.STRING
+
+
+def _needs_transaction_tracking(workspace, starts_recorded, dynamic_code):
+    """True when transactions left open must be found by tracing script frames.
+
+    A run whose every ``.Start(`` call goes through ``__agent_start__`` (see
+    :func:`_record_transaction_starts`) needs no trace function. Tracing stays
+    for starts the rewrite can't see: workspace helpers that return a
+    started transaction, code compiled at run time, and ``Start`` reached
+    any other way than a direct call.
+    """
+    return bool(workspace) or not starts_recorded or dynamic_code
+
+
+def _start_recorder(transactions):
+    """Return the ``__agent_start__`` function for one run.
+
+    It records its argument in ``transactions`` when it is a Revit
+    transaction and returns it, so the wrapped ``.Start(...)`` runs on the
+    same object. Called on a transaction class itself, as in
+    ``DB.Transaction.Start(t)``, it returns a stand-in whose ``Start``
+    records ``t`` instead.
+    """
+
+    def agent_start(target):
+        if isinstance(target, type) and _transaction_rank(target) is not None:
+            return _UnboundStart(target, transactions)
+        _track_transaction(target, transactions)
+        return target
+
+    return agent_start
+
+
+class _UnboundStart(object):
+    def __init__(self, kind, transactions):
+        self._kind = kind
+        self._transactions = transactions
+
+    def Start(self, transaction, *args):
+        _track_transaction(transaction, self._transactions)
+        return self._kind.Start(transaction, *args)
 
 
 def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     """Build the ``sys.settrace`` function for one run.
 
-    With ``track`` on, every frame running the agent source records the Revit
+    With ``track`` on, which :func:`run` only asks for when
+    :func:`_needs_transaction_tracking` says the start recorder can't see
+    every start, every frame running the agent source records the Revit
     transactions it holds on every line, so a transaction stays found even
     after its variable is rebound or deleted. The module frame does so
     through its globals. pyRevit, rpw and workspace code runs untraced. With
@@ -380,9 +556,10 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     Note:
         Line events are the dominant cost of a traced run: about 3
         microseconds each on IronPython, plus the cost of reading
-        ``f_locals``. Tracing every line
-        of every frame made a 200k-step loop take seconds (issue #3815), so
-        loops are normally stopped by :func:`_guard_loop_headers` instead.
+        ``f_locals``. Tracing every line of every frame made a 200k-step
+        loop take seconds (issue #3815), so loops are normally stopped by
+        :func:`_guard_loop_headers` instead, and the module frame's globals
+        are checked by type (see :func:`_track_globals`).
     """
     dict_locals_on_lines = _implementation() != "cpython"
 
@@ -392,7 +569,7 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
             raise RunTimedOut(timeout_s)
 
     def track_module(frame, event, arg):
-        _track_values(frame.f_globals, transactions)
+        _track_globals(frame.f_globals, transactions)
         if event == "line":
             raise_if_timed_out(frame)
         return track_module
@@ -646,6 +823,15 @@ def run(context):
         unbounded recursion or a callback passed to ``map``, ``filter`` or
         ``sorted`` over an endless iterable is not stopped.
 
+    Note:
+        Transactions the script leaves open are found by rewriting each
+        ``<expr>.Start(...)`` call to record its object first (see
+        :func:`_record_transaction_starts`), so a script that opens
+        transactions runs as fast as one that doesn't. A line tracer is only
+        installed when that can't see every start: a ``workspace`` run, code
+        compiled at run time, or ``Start`` reached other than by a direct
+        call.
+
     Warning:
         When ``context.Reckless`` is true (``[agent] reckless``, see
         ``docs/agent-runtime.md``), none of the above applies: the source is
@@ -701,9 +887,16 @@ def run(context):
             code = compile(source, SOURCE_NAME, "exec")
             rewrite_problem, track, unguarded_code = None, False, False
         else:
-            code, rewrite_problem, loops_guarded = _compile_source(source, guard_loops)
-            track = _needs_transaction_tracking(source, context.Workspace)
-            unguarded_code = not loops_guarded or _runs_dynamic_code(source)
+            namespace[_START_RECORDER] = _start_recorder(tracked_transactions)
+            recorded_source, starts_recorded = _record_transaction_starts(source)
+            code, rewrite_problem, loops_guarded = _compile_source(
+                recorded_source, guard_loops
+            )
+            dynamic_code = _runs_dynamic_code(source)
+            track = _needs_transaction_tracking(
+                context.Workspace, starts_recorded, dynamic_code
+            )
+            unguarded_code = not loops_guarded or dynamic_code
         phases.lap("compile")
         if rewrite_problem:
             print(
@@ -780,6 +973,8 @@ def run(context):
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
         _TRANSACTION_RANKS.clear()
+        _UNTRACKED_TYPES.clear()
+        _TRACKED_TYPES.clear()
         phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
@@ -819,10 +1014,12 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
 
     Revit keeps such a transaction open after the run, and the abandoned
     object is later finalized off the main thread, which crashes Revit. The
-    runner records transactions reachable from script-local frames while the
-    script executes, then also inspects script globals and their immediate
-    containers. A reckless run records nothing while it executes, so only the
-    globals are inspected.
+    runner records every transaction the script starts through
+    ``__agent_start__`` (see :func:`_record_transaction_starts`), or, when
+    that rewrite can't see every start, the transactions script frames hold
+    while it executes; it then also inspects script globals and their
+    immediate containers. A reckless run records nothing while it executes,
+    so only the globals are inspected.
 
     Returns:
         int: how many transactions were rolled back.
@@ -861,6 +1058,33 @@ def _track_values(variables, transactions):
     except Exception:
         return
     for value in values:
+        if type(value) is _CELL_TYPE:
+            try:
+                value = value.cell_contents
+            except ValueError:
+                continue
+        if type(value) not in _UNTRACKED_TYPES:
+            _track_transaction(value, transactions)
+
+
+def _track_globals(variables, transactions):
+    """Record the transactions among the module's globals on a traced line.
+
+    Globals hold the whole run namespace, so walking them value by value on
+    every line of a module-level loop was the main cost of a traced run.
+    Their types are compared with the types already classified in builtins
+    instead, and only values of a transaction type are visited.
+    """
+    try:
+        values = list(variables.values())
+        kinds = set(map(type, values))
+    except Exception:
+        return
+    for kind in kinds.difference(_UNTRACKED_TYPES, _TRACKED_TYPES):
+        _transaction_rank(kind)
+    if kinds.isdisjoint(_TRACKED_TYPES):
+        return
+    for value in compress(values, map(_TRACKED_TYPES.__contains__, map(type, values))):
         _track_transaction(value, transactions)
 
 
@@ -882,6 +1106,13 @@ def _track_transaction(value, transactions):
 
 
 _TRANSACTION_RANKS = {}
+
+_UNTRACKED_TYPES = set()
+_TRACKED_TYPES = set()
+"""Types :func:`_transaction_rank` found not to be, or to be, transactions.
+
+Cleared with ``_TRANSACTION_RANKS`` for the same reason.
+"""
 
 _CELL_TYPE = type((lambda value: lambda: value)(None).__closure__[0])
 """IronPython with full frames reports function locals as closure cells."""
@@ -913,6 +1144,10 @@ def _transaction_rank(value_type):
         except Exception:
             pass
     _TRANSACTION_RANKS[value_type] = rank
+    if rank is None:
+        _UNTRACKED_TYPES.add(value_type)
+    else:
+        _TRACKED_TYPES.add(value_type)
     return rank
 
 

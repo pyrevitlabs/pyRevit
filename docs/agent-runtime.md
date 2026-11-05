@@ -80,7 +80,7 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 | `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
 | `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
-| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no per-line transaction tracking. See [Reckless mode](#reckless-mode) for the risks. |
+| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. See [Reckless mode](#reckless-mode) for the risks. |
 
 Run any of these commands without a value to print the current setting.
 
@@ -280,12 +280,20 @@ Rules the host enforces:
   CPython 3.12 and later, a run still going a second after its deadline is also stopped at
   the end of every loop iteration it reaches, which covers `async for` loops and code
   compiled at run time.
-- To roll back a transaction the script leaves open, the runner traces the script's own
-  frames, but only when the source mentions a transaction, calls `.Start(`, or the run uses
-  a `workspace`. Other runs have no trace function, which on IronPython makes them many
-  times faster, but also means nothing checks the deadline outside loop headers: unbounded
-  recursion, or a callback passed to `map`, `filter` or `sorted` over an endless iterable,
-  is not stopped on IronPython.
+- To roll back a transaction the script leaves open, the runner rewrites every
+  `<expr>.Start(...)` call in the script to `__agent_start__(<expr>).Start(...)`, which
+  records the object if it is a Revit transaction before starting it. That finds a
+  transaction however it was created or named, in a helper, after its variable is rebound,
+  or when a timeout stops the script, so scripts that open transactions run at full speed.
+  Only the object expression is wrapped, so line numbers still match the submitted source.
+  The runner falls back to tracing the script's own frames line by line when the rewrite
+  can't see every start: the run uses a `workspace`, compiles code at run time, or reaches
+  `Start` another way (`getattr(t, "Start")`, `start = t.Start`). Other runs have no trace
+  function, which on IronPython makes them many times faster, but also means nothing checks
+  the deadline outside loop headers: unbounded recursion, or a callback passed to `map`,
+  `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
+  transaction a library function starts and returns to the script is only found if the
+  script still holds it in a global when the run ends.
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
   builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
   the deadline on every line of every frame, which is slower but still stops it, unless
@@ -296,8 +304,9 @@ Rules the host enforces:
   Closing is blocked for documents open when the run started.
   The script may close documents it creates or opens during the run.
 
-The timeout, loop rewriting, handler narrowing and transaction tracing above are skipped
-when [reckless mode](#reckless-mode) is on. Every other rule in this section still applies.
+The timeout, loop rewriting, handler narrowing, start recording and transaction tracing
+above are skipped when [reckless mode](#reckless-mode) is on. Every other rule in this
+section still applies.
 
 The MCP server's instructions teach agents these conventions, plus units (internal
 feet) and `ElementId.Value` on Revit 2024+.
@@ -329,8 +338,9 @@ What a reckless run skips:
 - The timeout. `timeout_s` is accepted but not enforced: no watchdog thread, no loop-header
   rewriting, no deadline checks, and no `timeout` error.
 - Handler narrowing. Bare `except` and `except BaseException` stay as written.
-- Transaction tracing. No `sys.settrace` function is installed, so transactions are not
-  recorded while the script runs.
+- Transaction tracking. `.Start(` calls are not rewritten to record their transaction, and
+  no `sys.settrace` function is installed, so transactions are not recorded while the
+  script runs.
 
 Risks:
 
