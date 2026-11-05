@@ -36,7 +36,8 @@ namespace Autodesk.Revit.DB {
                 IsValidObject = false;
             return CloseSucceeds;
         }
-        public Element GetElement(ElementId id) => new Element();
+        public HashSet<ElementId> Deleted { get; } = new HashSet<ElementId>();
+        public Element GetElement(ElementId id) => Deleted.Contains(id) ? null : new Element();
     }
     internal sealed class TransactionGroup : IDisposable {
         private readonly Document document;
