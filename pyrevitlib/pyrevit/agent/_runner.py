@@ -378,8 +378,9 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
         when they return or an exception leaves them.
 
     Note:
-        Line events are the dominant cost of a traced run: about 3 µs each on
-        IronPython, plus the cost of reading ``f_locals``. Tracing every line
+        Line events are the dominant cost of a traced run: about 3
+        microseconds each on IronPython, plus the cost of reading
+        ``f_locals``. Tracing every line
         of every frame made a 200k-step loop take seconds (issue #3815), so
         loops are normally stopped by :func:`_guard_loop_headers` instead.
     """
@@ -920,8 +921,8 @@ def _reachable_values(namespace):
 
     A container's items are only walked when one of their types is a
     transaction type, because a script often keeps every element of the
-    model in one list and walking it item by item costs about 3 µs per item
-    on IronPython.
+    model in one list and walking it item by item costs about 3
+    microseconds per item on IronPython.
     """
     for value in list(namespace.values()):
         yield value

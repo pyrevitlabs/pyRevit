@@ -889,5 +889,20 @@ class AgentRunnerRecklessTests(unittest.TestCase):
         self.assertTrue(all(transaction.rolled_back for transaction in created))
 
 
+class AgentRunnerSourceTests(unittest.TestCase):
+    """Constraints on the runner file itself."""
+
+    def test_runner_source_is_ascii_for_ironpython_two(self):
+        """IronPython 2.7 refuses a non-ASCII module without a coding line."""
+        with open(RUNNER_PATH, "rb") as runner_file:
+            source = runner_file.read()
+        offending = [
+            number
+            for number, line in enumerate(source.splitlines(), 1)
+            if any(byte > 127 for byte in line)
+        ]
+        self.assertEqual([], offending)
+
+
 if __name__ == "__main__":
     unittest.main()
