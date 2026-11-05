@@ -256,9 +256,10 @@ namespace pyRevitCLI {
         /// The request goes out under a fresh <see cref="NewRequestId"/>, which the host keeps in
         /// the run record. A failure carries an <see cref="AgentClientException.Outcome"/>: a
         /// request that was never sent, one the host refused, or one whose answer was lost.
+        /// A caller that must name the request in its own errors passes <paramref name="requestId"/>.
         /// </remarks>
-        public static JToken Call(AgentInstance instance, string method, JObject parameters = null) {
-            var requestId = NewRequestId();
+        public static JToken Call(AgentInstance instance, string method, JObject parameters = null, string requestId = null) {
+            requestId ??= NewRequestId();
             var request = new JObject {
                 ["jsonrpc"] = "2.0",
                 ["id"] = requestId,
@@ -332,7 +333,7 @@ namespace pyRevitCLI {
             return "req-" + Guid.NewGuid().ToString("N").Substring(0, 12);
         }
 
-        private static string LostAnswerNotice(bool sent) {
+        internal static string LostAnswerNotice(bool sent) {
             return sent
                 ? " The request was sent and its outcome is unknown: it may have run or may still run. "
                     + "Look it up by its request id before sending it again."
