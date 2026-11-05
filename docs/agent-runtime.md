@@ -216,7 +216,8 @@ to return data. It is serialized to JSON:
 - `XYZ` becomes `[x, y, z]`.
 - .NET numbers become numbers, and collections become lists.
 
-Printed output is captured and returned too.
+Printed output is captured and returned too, up to its first 64 KB (`output_truncated: true`
+when there was more; the rest is dropped while the script prints).
 
 ```python
 walls = DB.FilteredElementCollector(doc).OfClass(DB.Wall).WhereElementIsNotElementType()
