@@ -31,6 +31,10 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
     - A small server (written in Go) that tracks usage data of pyRevit tools.
     - Stores data in MongoDB or PostgreSQL for business intelligence.
 
+6. **Agent runtime** (experimental) — `dev/pyRevitLabs.PyRevit.Runtime/Agent/`, `pyrevitlib/pyrevit/agent/`, `pyrevit mcp`
+    - Lets MCP-capable coding agents run Python in a live Revit session through a local named pipe, with every model change approved in Revit.
+    - See [Agent runtime](agent-runtime.md).
+
 Command execution itself lives in a separate component, **PyRevit.Runtime** (`dev/pyRevitLabs.PyRevit.Runtime/`) — see [How pyRevit Commands run](#how-pyrevit-commands-run).
 
 ## How pyRevit Loads in Revit
@@ -72,7 +76,7 @@ There are multiple versions of `pyRevitLoader.dll` to support:
 
 They share the same source code, but are _compiled against_ the different .net runtimes and IronPython versions.
 
-The legacy pure-Python loader (which supported pre-2021 Revit versions) has been removed; the C# loader requires Revit 2021+.
+The legacy pure-Python loader (which supported pre-2021 Revit versions) has been removed; the C# loader requires Revit 2021+. That floor is also why `release/pyrevit-hosts.json` carries no pre-2021 record — see [Which Revit versions are listed](adding-revit-version.md#which-revit-versions-are-listed).
 
 !!! note
 
@@ -136,3 +140,21 @@ In turn, the code in `ScriptExecutor.cs` calls the appropriate script engine bas
     - `CLREngine.cs` — C#/VB.NET execution.
     - `DynamoBIMEngine.cs` — Dynamo graphs.
     - `GrasshopperEngine.cs` — Grasshopper definitions.
+
+### Engine cache and Reload
+
+Engines are cached per session in AppDomain data, keyed by engine type id, and a Reload clears that
+cache through `ScriptEngineManager.ClearEngines`. `ScriptEngine.Shutdown()` is therefore a
+*cache eviction*, not a process teardown: it runs on Reload and on Refresh Engine, and it must
+leave anything process-wide alone.
+
+`CPythonEngine` is the one engine whose host is a process-wide singleton. The CPython interpreter
+and its pythonnet metatype are started on the first CPython command of the process and stay up
+until Revit exits, so a Reload just drops the engine object and the next `#! python3` command
+re-attaches to the live interpreter. pythonnet's own `PythonEngine.Shutdown` is deliberately never
+called mid-session: it is a soft shutdown that stashes the CLR metatype state into the still-running
+interpreter as a `BinaryFormatter` blob, and that blob cannot be read back once Revit's Reload has
+duplicated assemblies into its assembly load context. A side effect is that `engine: clean` on a
+`python3` bundle yields a fresh engine object but not a fresh interpreter, so `sys.modules` entries
+imported before a Reload survive it. The contract is asserted by the tests in
+`dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.CPython.Tests/`.

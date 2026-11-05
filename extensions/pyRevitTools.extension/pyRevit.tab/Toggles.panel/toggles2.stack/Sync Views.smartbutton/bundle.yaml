@@ -47,3 +47,5 @@ tooltip:
     vistas de Planta e Planta de Forro, esta ferramenta manterá as vistas na mesma área de zoom para 
     que você possa continuar trabalhando na mesma área sem a necessidade de fazer zoom e pan novamente. 
     Esta ferramenta funciona melhor quando as vistas estão maximizadas
+context:
+  - doc-project

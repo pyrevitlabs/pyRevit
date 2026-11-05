@@ -6,6 +6,7 @@ running the tool to colorize the group types in all of them at once
 Note:
 Groups with only 1 instance on views will be colored in gray
 """
+
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import itertools
 from collections import defaultdict
@@ -109,18 +110,14 @@ def filter_group_types(groups_dict):
     )
     if not picked_group_types:
         script.exit()
-    picked_group_type_ids = [
-        keys_map[group_name] for group_name in picked_group_types
-    ]
+    picked_group_type_ids = [keys_map[group_name] for group_name in picked_group_types]
     return {k: v for k, v in groups_dict.items() if k in picked_group_type_ids}
 
 
 def prepare_colors(groups_dict):
     """Prepare a list of vg overrides for each group type"""
     groups_colors = {}
-    count = sum(
-        [len(groups) for groups in groups_dict.values() if len(groups) > 1]
-    )
+    count = sum([len(groups) for groups in groups_dict.values() if len(groups) > 1])
     colors = [DB.Color(x[0], x[1], x[2]) for x in generate_colors(count)]
     color_gray = DB.Color(128, 128, 128)
     j = 0
@@ -158,9 +155,8 @@ def colorize_grouptypes_in_view(view, groups_colors):
 def colorize_grouptypes_in_views(views):
     """Colorize groups by type in given views"""
     view_names = [x.Name for x in views]
-    text = (
-        "Do you want to colorize groups by type on these views:\n\n"
-        + "\n".join(view_names)
+    text = "Do you want to colorize groups by type on these views:\n\n" + "\n".join(
+        view_names
     )
 
     if not forms.alert(text, yes=True, cancel=True, no=False):
@@ -179,8 +175,7 @@ def colorize_grouptypes_in_views(views):
             colorize_grouptypes_in_view(view, groups_colors)
 
 
-target_views = [v for v in revit.get_selection().elements
-                if isinstance(v, DB.View)]
+target_views = [v for v in revit.get_selection().elements if isinstance(v, DB.View)]
 if not target_views:
     target_views = [revit.active_view]
 colorize_grouptypes_in_views(target_views)

@@ -14,6 +14,10 @@ namespace PyRevitLabs.PyRevit.Shell {
             Set(root, "ShellScrollTrack", useDarkTheme, 0x1F2D3D, 0xF5F5F5);
             Set(root, "ShellScrollThumb", useDarkTheme, 0x46586B, 0xC8C8C8);
             Set(root, "ShellScrollThumbHover", useDarkTheme, 0x5C7188, 0xA0A0A0);
+            Set(root, "ShellWindowBorder", useDarkTheme, 0x39495C, 0x8A8A8A);
+            Set(root, "ShellPopupBackground", useDarkTheme, 0x2A3847, 0xFFFFFF);
+            Set(root, "ShellPopupForeground", useDarkTheme, 0xD4D4D4, 0x1E1E1E);
+            Set(root, "ShellPopupSelection", useDarkTheme, 0x094771, 0xCCE8FF);
             Set(root, "ShellTitleBarBackground", useDarkTheme, 0x16202C, 0xF0F0F0);
             Set(root, "ShellTitleBarForeground", useDarkTheme, 0xD4D4D4, 0x1E1E1E);
             Set(root, "ShellTitleBarButtonHover", useDarkTheme, 0x2A3847, 0xD9D9D9);

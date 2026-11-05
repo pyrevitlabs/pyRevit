@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Erro ao Salvar Esquema</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Erro ao Carregar Esquema</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">O arquivo não existe.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">Armazenar esquema de cores em:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">Escolha onde o esquema de cores é salvo e de onde é carregado.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">Arquivo</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">Salvar em ou carregar de um arquivo .cschn.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">Vista ativa</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">Vista ativa (nenhum esquema salvo)</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">Salvar em ou carregar da vista ativa. Uma vista armazena um esquema de cores; salvar o substitui.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">Esquema de cores salvo na vista: {0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">Colorir Elementos por Parâmetro</system:String>

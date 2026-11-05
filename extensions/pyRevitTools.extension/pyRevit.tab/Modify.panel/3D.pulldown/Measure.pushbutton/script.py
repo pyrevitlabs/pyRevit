@@ -2,6 +2,7 @@
 from collections import deque
 from math import pi, atan, sqrt, acos
 from pyrevit import revit, forms, script
+from pyrevit.revit.units import get_unit_info, format_length, format_slope
 from pyrevit import DB
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
@@ -9,22 +10,9 @@ logger = script.get_logger()
 
 doc = revit.doc
 uidoc = revit.uidoc
-# Length
-length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-length_unit = length_format_options.GetUnitTypeId()
-length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
-length_unit_symbol = length_format_options.GetSymbolTypeId()
-length_unit_symbol_label = None
-if not length_unit_symbol.Empty():
-    length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
-# Slope
-slope_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Slope)
-slope_unit = slope_format_options.GetUnitTypeId()
-slope_unit_label = DB.LabelUtils.GetLabelForUnit(slope_unit)
-slope_unit_symbol = slope_format_options.GetSymbolTypeId()
-slope_unit_symbol_label = None
-if not slope_unit_symbol.Empty():
-    slope_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(slope_unit_symbol)
+
+length_unit, length_unit_label, _, length_unit_symbol_label = get_unit_info(DB.SpecTypeId.Length, doc)
+slope_unit, slope_unit_label, _, slope_unit_symbol_label = get_unit_info(DB.SpecTypeId.Slope, doc)
 
 # Global variables
 measure_window = None
@@ -56,7 +44,7 @@ def calculate_distances(point1, point2):
     dz = abs(point2.Z - point1.Z)
     diagonal = point1.DistanceTo(point2)
 
-    horizontal = sqrt(dx ** 2 + dy ** 2)
+    horizontal = sqrt(dx**2 + dy**2)
 
     if horizontal == 0:
         slope = pi / 2.0  # 90 degrees (vertical)
@@ -64,24 +52,6 @@ def calculate_distances(point1, point2):
         slope = atan(dz / horizontal)
 
     return dx, dy, dz, diagonal, slope
-
-
-def format_distance(value_internal):
-    return DB.UnitFormatUtils.Format(
-        doc.GetUnits(),
-        DB.SpecTypeId.Length,
-        value_internal,
-        False,
-    )
-
-
-def format_slope(value_internal):
-    return DB.UnitFormatUtils.Format(
-        doc.GetUnits(),
-        DB.SpecTypeId.Slope,
-        value_internal,
-        False,
-    )
 
 
 def format_point(point):
@@ -133,7 +103,9 @@ def create_and_show_point_mesh(point1):
     global dc3d_server
     try:
         new_meshes = []
-        new_meshes.append(create_cone_mesh(point1, CONE_SCALE, CONE_COLOR, doc.ActiveView))
+        new_meshes.append(
+            create_cone_mesh(point1, CONE_SCALE, CONE_COLOR, doc.ActiveView)
+        )
         if dc3d_server:
             existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
             dc3d_server.meshes = existing_meshes + new_meshes
@@ -211,15 +183,27 @@ def perform_measurement():
 
         dx, dy, dz, diagonal, slope = calculate_distances(point1, point2)
 
-        measure_window.point1_text.Text = measure_window.get_locale_string("Point1Format").format(format_point(point1))
-        measure_window.point2_text.Text = measure_window.get_locale_string("Point2Format").format(format_point(point2))
-        measure_window.dx_text.Text = measure_window.get_locale_string("DeltaXFormat").format(format_distance(dx))
-        measure_window.dy_text.Text = measure_window.get_locale_string("DeltaYFormat").format(format_distance(dy))
-        measure_window.dz_text.Text = measure_window.get_locale_string("DeltaZFormat").format(format_distance(dz))
-        measure_window.diagonal_text.Text = measure_window.get_locale_string("DiagonalFormat").format(
-            format_distance(diagonal)
-        )
-        measure_window.slope_text.Text = measure_window.get_locale_string("SlopeFormat").format(format_slope(slope))
+        measure_window.point1_text.Text = measure_window.get_locale_string(
+            "Point1Format"
+        ).format(format_point(point1))
+        measure_window.point2_text.Text = measure_window.get_locale_string(
+            "Point2Format"
+        ).format(format_point(point2))
+        measure_window.dx_text.Text = measure_window.get_locale_string(
+            "DeltaXFormat"
+        ).format(format_length(dx, doc))
+        measure_window.dy_text.Text = measure_window.get_locale_string(
+            "DeltaYFormat"
+        ).format(format_length(dy, doc))
+        measure_window.dz_text.Text = measure_window.get_locale_string(
+            "DeltaZFormat"
+        ).format(format_length(dz, doc))
+        measure_window.diagonal_text.Text = measure_window.get_locale_string(
+            "DiagonalFormat"
+        ).format(format_length(diagonal, doc))
+        measure_window.slope_text.Text = measure_window.get_locale_string(
+            "SlopeFormat"
+        ).format(format_slope(slope, doc))
 
         # Add to history
         history_entry = (
@@ -228,11 +212,11 @@ def perform_measurement():
                 len(measurement_history) + 1,
                 format_point(point1),
                 format_point(point2),
-                format_distance(dx),
-                format_distance(dy),
-                format_distance(dz),
-                format_distance(diagonal),
-                format_slope(slope),
+                format_length(dx, doc),
+                format_length(dy, doc),
+                format_length(dz, doc),
+                format_length(diagonal, doc),
+                format_slope(slope, doc),
             )
             .lstrip()
         )
@@ -263,6 +247,8 @@ def perform_measurement():
 class MeasureWindow(forms.WPFWindow):
     """Modeless WPF window for 3D measurement tool."""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True)
         self.point1_text.Text = self.get_locale_string("Point1NotSelected")
@@ -282,9 +268,14 @@ class MeasureWindow(forms.WPFWindow):
             self.Height = self.Height + 20
         if not slope_unit_symbol_label:
             self.show_element(self.project_unit_text)
-            self.project_unit_text.Text = self.project_unit_text.Text + (
-                "\n" + self.get_locale_string("ProjectUnitSlopeUnits") + slope_unit_label
-            ).lstrip()
+            self.project_unit_text.Text = (
+                self.project_unit_text.Text
+                + (
+                    "\n"
+                    + self.get_locale_string("ProjectUnitSlopeUnits")
+                    + slope_unit_label
+                ).lstrip()
+            )
             self.Height = self.Height + 20
 
         # Handle window close event

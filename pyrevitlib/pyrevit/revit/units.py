@@ -1,79 +1,231 @@
 """Unit conversion utilities for Revit."""
 
+import math
+import re
+
 from pyrevit import DOCS, HOST_APP
 from pyrevit import DB
+from pyrevit import PyRevitException
+from pyrevit import automation
+
+_FEET_INCHES = re.compile(
+    r"^\s*(?:(?P<feet>-?\d+(?:\.\d+)?)\s*')?\s*-?\s*"
+    r"(?:(?P<inches>\d+(?:\.\d+)?)?\s*(?:(?P<num>\d+)\s*/\s*(?P<den>\d+))?\s*\")?\s*$"
+)
+_METRIC = re.compile(r"^\s*(?P<value>-?\d+(?:\.\d+)?)\s*(?P<unit>mm|cm|m)\s*$")
+_SLOPE_RATIO = re.compile(
+    r"^\s*(?P<rise>\d+(?:\.\d+)?)\s*(?::|/|\s+in\s+)\s*(?P<run>\d+(?:\.\d+)?)\s*$"
+)
+_SLOPE_DEGREES = re.compile(r"^\s*(?P<deg>\d+(?:\.\d+)?)\s*deg(?:rees)?\s*$")
 
 
-def format_area(area_value, doc=None):
+def _to_internal_length(value, unit):
+    if HOST_APP.is_newer_than(2021):
+        unit_ids = {
+            "ft": DB.UnitTypeId.Feet,
+            "in": DB.UnitTypeId.Inches,
+            "mm": DB.UnitTypeId.Millimeters,
+            "cm": DB.UnitTypeId.Centimeters,
+            "m": DB.UnitTypeId.Meters,
+        }
+    else:
+        unit_ids = {
+            "ft": DB.DisplayUnitType.DUT_DECIMAL_FEET,
+            "in": DB.DisplayUnitType.DUT_DECIMAL_INCHES,
+            "mm": DB.DisplayUnitType.DUT_MILLIMETERS,
+            "cm": DB.DisplayUnitType.DUT_CENTIMETERS,
+            "m": DB.DisplayUnitType.DUT_METERS,
+        }
+    return DB.UnitUtils.ConvertToInternalUnits(float(value), unit_ids[unit])
+
+
+def get_unit_info(spec_type_id, doc=None):
+    """Return unit information for a spec in document units.
+
+    Args:
+        spec_type_id (DB.SpecTypeId): spec type identifier
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (tuple): unit, unit label, symbol, symbol label
+    """
+    if HOST_APP.is_older_than(2022):
+        raise PyRevitException("get_unit_info() requires Revit 2022 or newer.")
+
+    doc = doc or DOCS.doc
+
+    format_options = doc.GetUnits().GetFormatOptions(spec_type_id)
+
+    unit = format_options.GetUnitTypeId()
+    unit_label = DB.LabelUtils.GetLabelForUnit(unit)
+
+    symbol = format_options.GetSymbolTypeId()
+    symbol_label = None
+    if not symbol.Empty():
+        symbol_label = DB.LabelUtils.GetLabelForSymbol(symbol)
+
+    return unit, unit_label, symbol, symbol_label
+
+
+def is_measurable(spec):
+    """Tell whether a parameter spec carries a unit.
+
+    Args:
+        spec (DB.ForgeTypeId or DB.UnitType): Revit 2022+ takes the parameter
+            data type (``Definition.GetDataType()``), Revit 2021 takes
+            ``Definition.UnitType``
+
+    Returns:
+        (bool): False for unitless specs such as integers, text or yes/no
+    """
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitUtils.IsMeasurableSpec(spec)
+    return spec != DB.UnitType.UT_Undefined
+
+
+def display_unit_label(spec, doc=None):
+    """Return the name of the display unit that a document uses for a spec.
+
+    The name is read from the unit and not from the unit symbol, because the
+    symbol can be empty in a project.
+
+    Args:
+        spec (DB.ForgeTypeId or DB.UnitType): see :func:`is_measurable`
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (str): unit name, or an empty string for unitless specs
+    """
+    if not is_measurable(spec):
+        return ""
+    doc = doc or DOCS.doc
+    format_options = doc.GetUnits().GetFormatOptions(spec)
+    if HOST_APP.is_newer_than(2021):
+        return DB.LabelUtils.GetLabelForUnit(format_options.GetUnitTypeId())
+    return DB.LabelUtils.GetLabelFor(format_options.DisplayUnits)
+
+
+def format_value(value, spec, doc=None):
+    """Format an internal value in the display units of a document.
+
+    Args:
+        value (float): internal value
+        spec (DB.ForgeTypeId or DB.UnitType): see :func:`is_measurable`
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (str): value in display units. Unitless specs are shown as plain
+            numbers, with two decimals unless the value is whole.
+    """
+    if not is_measurable(spec):
+        return str(int(value)) if value == int(value) else "{:.2f}".format(value)
+    units = (doc or DOCS.doc).GetUnits()
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(
+            units=units, specTypeId=spec, value=value, forEditing=False
+        )
+    return DB.UnitFormatUtils.Format(
+        units=units,
+        unitType=spec,
+        value=value,
+        maxAccuracy=False,
+        forEditing=False,
+    )
+
+
+def _format_in_document_units(
+    value, doc, spec_name, legacy_unit_type_name, append_symbol
+):
+    doc = doc or DOCS.doc
+    options = DB.FormatValueOptions()
+    options.AppendUnitSymbol = append_symbol
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            specTypeId=getattr(DB.SpecTypeId, spec_name),
+            value=value,
+            forEditing=False,
+            formatValueOptions=options,
+        )
+    return DB.UnitFormatUtils.Format(
+        units=doc.GetUnits(),
+        unitType=getattr(DB.UnitType, legacy_unit_type_name),
+        value=value,
+        maxAccuracy=False,
+        forEditing=False,
+        formatValueOptions=options,
+    )
+
+
+@automation.operation(
+    "pyrevit.units.format-area",
+    PlainEnglish="Format an internal area value using the project's display units.",
+    mode="query",
+    effects=("model.read",),
+    inputs=("area_value: number", "append_symbol: boolean?"),
+)
+def format_area(area_value, doc=None, append_symbol=False):
     """Return formatted area value in document units.
 
     Args:
-        area_value (float): area value
+        area_value (float): area value in Revit internal units (square feet)
         doc (DB.Document, optional): Revit document, defaults to current
+        append_symbol (bool, optional): append the unit symbol even when the
+            project's area format does not show one
 
     Returns:
         (str): formatted value
     """
-    doc = doc or DOCS.doc
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         specTypeId=DB.SpecTypeId.Area,
-                                         value=area_value,
-                                         forEditing=False)
-    else:
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Area,
-                                         value=area_value,
-                                         maxAccuracy=False,
-                                         forEditing=False)
+    return _format_in_document_units(area_value, doc, "Area", "UT_Area", append_symbol)
 
 
-def format_length(length_value, doc=None):
+@automation.operation(
+    "pyrevit.units.format-length",
+    PlainEnglish="Format an internal length value using the project's display units.",
+    mode="query",
+    effects=("model.read",),
+    inputs=("length_value: number", "append_symbol: boolean?"),
+)
+def format_length(length_value, doc=None, append_symbol=False):
     """Return formatted length value in document units.
 
     Args:
-        area_value (float): area value
+        length_value (float): length value in Revit internal units (feet)
         doc (DB.Document, optional): Revit document, defaults to current
+        append_symbol (bool, optional): append the unit symbol even when the
+            project's length format does not show one, e.g. "1804 mm" instead
+            of "1804" for a metric project
 
     Returns:
         (str): formatted value
     """
-    doc = doc or DOCS.doc
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         specTypeId=DB.SpecTypeId.Length,
-                                         value=length_value,
-                                         forEditing=False)
-    else:
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Length,
-                                         value=length_value,
-                                         maxAccuracy=False,
-                                         forEditing=False)
+    return _format_in_document_units(
+        length_value, doc, "Length", "UT_Length", append_symbol
+    )
 
 
-def format_slope(slope_value, doc=None):
+@automation.operation(
+    "pyrevit.units.format-slope",
+    PlainEnglish="Format a rise-over-run slope using the project's display units.",
+    mode="query",
+    effects=("model.read",),
+    inputs=("slope_value: number", "append_symbol: boolean?"),
+)
+def format_slope(slope_value, doc=None, append_symbol=False):
     """Return formatted slope value in document units.
 
     Args:
-        slope_value (float): slope value
+        slope_value (float): slope value in Revit internal units (rise over run)
         doc (DB.Document, optional): Revit document, defaults to current
+        append_symbol (bool, optional): append the unit symbol even when the
+            project's slope format does not show one
 
     Returns:
         (str): formatted value
     """
-    doc = doc or DOCS.doc
-    if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         specTypeId=DB.SpecTypeId.Slope,
-                                         value=slope_value,
-                                         forEditing=False)
-    else:
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Slope,
-                                         value=slope_value,
-                                         maxAccuracy=False,
-                                         forEditing=False)
+    return _format_in_document_units(
+        slope_value, doc, "Slope", "UT_Slope", append_symbol
+    )
 
 
 def _create_view_plane(view):
@@ -86,7 +238,8 @@ def _create_view_plane(view):
         DB.Plane: result plane
     """
     return DB.Plane.CreateByOriginAndBasis(
-        view.Origin, view.RightDirection, view.UpDirection)
+        view.Origin, view.RightDirection, view.UpDirection
+    )
 
 
 def project_to_viewport(xyz, view):
@@ -132,8 +285,7 @@ def get_spec_name(forge_id):
     Returns:
         (str): Spec name
     """
-    if HOST_APP.is_newer_than(2021) \
-            and DB.UnitUtils.IsMeasurableSpec(forge_id):
+    if HOST_APP.is_newer_than(2021) and DB.UnitUtils.IsMeasurableSpec(forge_id):
         return DB.UnitUtils.GetTypeCatalogStringForSpec(forge_id)
     return ""
 
@@ -147,7 +299,101 @@ def get_unit_name(forge_id):
     Returns:
         (str): Unit name
     """
-    if HOST_APP.is_newer_than(2021) \
-            and DB.UnitUtils.IsUnit(forge_id):
+    if HOST_APP.is_newer_than(2021) and DB.UnitUtils.IsUnit(forge_id):
         return DB.UnitUtils.GetTypeCatalogStringForUnit(forge_id)
     return ""
+
+
+@automation.operation(
+    "pyrevit.units.parse-length",
+    PlainEnglish="Convert a written length to Revit internal feet.",
+    mode="pure",
+    context="none",
+)
+def parse_length(value):
+    """Convert a length written the way drawings write it to Revit internal feet.
+
+    Args:
+        value (float | int | str): feet as a number, or a string such as
+            ``32'-6"``, ``32' 6 1/2"``, ``6"``, ``12'``, ``900mm``, ``90cm``
+            or ``2.5m``.
+
+    Returns:
+        (float): length in feet, Revit's internal length unit.
+
+    Raises:
+        PyRevitException: when the string is not a length in a known format.
+
+    Note:
+        Parses text independently of the document's units, then delegates
+        conversion of the parsed double value to ``DB.UnitUtils``.
+    """
+    if isinstance(value, (int, float)):
+        return _to_internal_length(value, "ft")
+    text = str(value).strip()
+    metric = _METRIC.match(text)
+    if metric:
+        return _to_internal_length(metric.group("value"), metric.group("unit"))
+    imperial = _FEET_INCHES.match(text)
+    if imperial and ("'" in text or '"' in text):
+        feet = float(imperial.group("feet") or 0.0)
+        inches = float(imperial.group("inches") or 0.0)
+        if imperial.group("num"):
+            inches += float(imperial.group("num")) / float(imperial.group("den"))
+        sign = -1.0 if text.startswith("-") else 1.0
+        return sign * (
+            _to_internal_length(abs(feet), "ft") + _to_internal_length(inches, "in")
+        )
+    try:
+        return _to_internal_length(text, "ft")
+    except ValueError:
+        raise PyRevitException(
+            "Can't read length {!r}. Use feet as a number, 32'-6\", 6\", "
+            "900mm or 2.5m.".format(value)
+        )
+
+
+@automation.operation(
+    "pyrevit.units.parse-slope",
+    PlainEnglish="Convert a written roof pitch to rise over run.",
+    mode="pure",
+    context="none",
+)
+def parse_slope(value):
+    """Convert a roof pitch to rise over run, the value Revit's slope APIs take.
+
+    Args:
+        value (float | int | str): ``"8:12"``, ``"8/12"`` or ``"8 in 12"``
+            (0.667), ``"30deg"`` (tan of 30 degrees), or a rise/run number.
+
+    Returns:
+        (float): rise over run.
+
+    Raises:
+        PyRevitException: when the string is not a pitch in a known format,
+            or its run is zero.
+
+    Important:
+        ``FootPrintRoof.set_SlopeAngle`` and the ``ROOF_SLOPE`` parameter
+        take rise over run, not degrees or radians. Passing 33.69 for an
+        8:12 roof builds a roof hundreds of feet tall.
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    try:
+        return float(text)
+    except ValueError:
+        pass
+    ratio = _SLOPE_RATIO.match(text)
+    if ratio:
+        run = float(ratio.group("run"))
+        if run == 0:
+            raise PyRevitException("Pitch {!r} has a run of zero.".format(value))
+        return float(ratio.group("rise")) / run
+    degrees = _SLOPE_DEGREES.match(text)
+    if degrees:
+        return math.tan(math.radians(float(degrees.group("deg"))))
+    raise PyRevitException(
+        "Can't read pitch {!r}. Use '8:12', '30deg' or a rise/run number.".format(value)
+    )

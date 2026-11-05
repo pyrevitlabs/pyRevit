@@ -1,2 +1,8 @@
+title: Modeless ●
+tooltip: |-
+    Launch modeless, bring up when minimized, max 1 window.
+
+    Shift-click:
+    Bypass max 1 window guard.
 engine:
   persistent: true

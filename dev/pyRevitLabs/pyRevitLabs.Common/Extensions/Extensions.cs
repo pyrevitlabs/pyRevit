@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -91,7 +91,7 @@ namespace pyRevitLabs.Common.Extensions {
         private static Regex GuidFinder = new Regex(@".*(?<guid>[0-9A-Fa-f]{8}[-]" +
                                                         "[0-9A-Fa-f]{4}[-]" +
                                                         "[0-9A-Fa-f]{4}[-]" +
-                                                        "[0-9A-Fa-f]{4}[-]" + 
+                                                        "[0-9A-Fa-f]{4}[-]" +
                                                         "[0-9A-Fa-f]{12}).*");
 
         public static string GetDisplayPath(this string sourceString) {
@@ -127,25 +127,29 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static string NormalizeAsPath(this string path) {
-            logger.Debug("Normalizing \"{0}\"", path);
-            
             // determine if we are dealing with a uri or local path
             if (path.IsLocalPath()) {
                 // if this is not a remote uri, normalize
-                    var normedPath =
+                string normedPath;
+                try {
+                    normedPath =
                         Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                    var match = DriveLetterFinder.Match(normedPath);
-                    if (match.Success) {
-                        var driveLetter = match.Groups["drive"].Value + ":";
-                        normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpperInvariant());
-                    }
+                }
+                catch (Exception ex) {
+                    logger.Error("Can not normalize path \"{0}\" | {1}", path, ex.Message);
+                    throw;
+                }
+                var match = DriveLetterFinder.Match(normedPath);
+                if (match.Success) {
+                    var driveLetter = match.Groups["drive"].Value + ":";
+                    normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpperInvariant());
+                }
 
-                    logger.Debug("Normalized as \"{0}\"", normedPath);
-                    return normedPath;
+                return normedPath;
             }
-            
+
             logger.Debug("Path is not local. Skipping normalization \"{0}\"", path);
-            return path;   
+            return path;
         }
 
         public static Version ExtractVersion(this string version) {
@@ -181,7 +185,8 @@ namespace pyRevitLabs.Common.Extensions {
                     var guid = new Guid(m.Groups["guid"].Value);
                     if (guid != zeroGuid)
                         return guid;
-                } catch {
+                }
+                catch {
                     return zeroGuid;
                 }
             }
@@ -197,7 +202,7 @@ namespace pyRevitLabs.Common.Extensions {
         public static List<string> GetLines(this string sourceString) {
             return new List<string>(sourceString.Split(Environment.NewLine.ToCharArray()));
         }
-        
+
         public static string Indent(this string sourceString, int indentLevel) {
             var indentedString = string.Empty;
             foreach (var line in sourceString.GetLines())

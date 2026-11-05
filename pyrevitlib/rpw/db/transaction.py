@@ -27,10 +27,10 @@ class Transaction(BaseObjectWrapper):
 
     _revit_object_class = DB.Transaction
 
-    def __init__(self, name=None, doc=revit.doc):
+    def __init__(self, name=None, doc=None):
         if name is None:
             name = 'RPW Transaction'
-        super(Transaction, self).__init__(DB.Transaction(doc, name))
+        super(Transaction, self).__init__(DB.Transaction(doc or revit.doc, name))
         self.transaction = self._revit_object
 
     def __enter__(self):
@@ -103,7 +103,7 @@ class TransactionGroup(BaseObjectWrapper):
 
     _revit_object_class = DB.TransactionGroup
 
-    def __init__(self, name=None, assimilate=True, doc=revit.doc):
+    def __init__(self, name=None, assimilate=True, doc=None):
         """
             Args:
                 name (str): Name of the Transaction
@@ -112,7 +112,7 @@ class TransactionGroup(BaseObjectWrapper):
         """
         if name is None:
             name = 'RPW Transaction Group'
-        super(TransactionGroup, self).__init__(DB.TransactionGroup(doc, name))
+        super(TransactionGroup, self).__init__(DB.TransactionGroup(doc or revit.doc, name))
         self.transaction_group = self._revit_object
         self.assimilate = assimilate
 

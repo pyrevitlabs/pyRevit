@@ -11,7 +11,4 @@ mlogger = logger.get_logger(__name__)
 
 
 def get_actions():
-    return moduleutils.collect_marked(
-        actions,
-        basetypes.COPYPASTE_MARKER_PROPNAME
-        )
+    return moduleutils.collect_marked(actions, basetypes.COPYPASTE_MARKER_PROPNAME)

@@ -21,6 +21,7 @@ Please add a filter to a view and try again.</system:String>
     <system:String x:Key="Settings_Section_Behavior">Behavior</system:String>
     <system:String x:Key="Settings_SortAlpha">Sort Filters Alphabetically</system:String>
     <system:String x:Key="Settings_OpenLegend">Open Last Created Legend</system:String>
+    <system:String x:Key="Settings_TrackLegend">Track &amp; Update Existing Legends</system:String>
 
     <system:String x:Key="Header_FilterName">Filter Name</system:String>
     <system:String x:Key="Header_Parameter">Parameter</system:String>
@@ -28,6 +29,8 @@ Please add a filter to a view and try again.</system:String>
     <system:String x:Key="Value_NA">N/A</system:String>
 
     <system:String x:Key="Msg_Done">Created {0} legend view(s).</system:String>
+    <system:String x:Key="Msg_Updated">Updated {0} legend view(s).</system:String>
+    <system:String x:Key="Msg_DoneMixed">Created {0} legend view(s), updated {1}.</system:String>
     <system:String x:Key="Msg_Failed">No legend views could be created. Check the log for details.</system:String>
 
 </ResourceDictionary>

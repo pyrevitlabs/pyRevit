@@ -21,4 +21,6 @@ tooltip:
     Vista de corte do componente de legenda !!! 
     Nem todos os componentes de legenda suportam qualquer tipo de orientação de vista !!!
 author: Jean-Marc Couffin
-context: selection
+context:
+  - doc-project
+  - selection

@@ -186,13 +186,12 @@ Wrapper to interact with the output window.
 
 ##### `renderer``property`
 
-Return html renderer inside output window.
+Raise: the legacy IE ``WebBrowser`` renderer was removed.
 
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `WebBrowser` | HTML renderer |
+The output window now renders with Microsoft Edge WebView2 (Chromium).
+There is no live DOM object to reach for; use :func:`inject_to_head`,
+:func:`inject_to_body`, :func:`inject_script`, :func:`add_style`, and
+:func:`print_html` instead.
 
 ##### `output_id``property`
 
@@ -2121,7 +2120,7 @@ from pyrevit import EXEC_PARAMS
 
 ### `ADDIN_DIR = op.join(LOADER_DIR, 'addin')``module-attribute`
 
-### `ENGINES_DIR = op.join(BIN_DIR, 'engines', eng.EngineVersion)``module-attribute`
+### `ENGINES_DIR = eng.EnginePath``module-attribute`
 
 ### `PYREVIT_CLI_PATH = op.join(HOME_DIR, 'bin', PYREVIT_CLI_NAME)``module-attribute`
 

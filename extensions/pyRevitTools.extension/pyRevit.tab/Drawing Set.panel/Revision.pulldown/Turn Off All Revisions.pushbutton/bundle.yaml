@@ -16,3 +16,5 @@ tooltip:
   es_es: Establece el parámetro de visibilidad de revisión en Ninguno para todas las revisiones
   de_de: Setzt im Dialog Planausgabe/Änderungen bei allen Änderungen den Sichtbarkeitsparameter "Anzeigen" auf "Keine"
   pt_br: Define o parâmetro de visibilidade da revisão como Nenhum para todas as revisões
+context:
+  - doc-project

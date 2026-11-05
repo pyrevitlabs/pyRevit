@@ -15,6 +15,7 @@ Exits nonzero (after leaving the formatted files in the working tree) if any
 file was changed, so the commit stops for review - the same pattern ruff's
 own formatting hook uses.
 """
+
 import subprocess
 import sys
 from pathlib import Path
@@ -25,7 +26,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # dlr, NLog, Python.Net, MahApps.Metro, Newtonsoft.Json) are excluded on purpose.
 SOLUTIONS = [
     REPO_ROOT / "dev" / "pyRevitLabs" / "pyRevitLabs.sln",
-    REPO_ROOT / "dev" / "pyRevitLabs.PyRevit.Runtime" / "pyRevitLabs.PyRevit.Runtime.sln",
+    REPO_ROOT
+    / "dev"
+    / "pyRevitLabs.PyRevit.Runtime"
+    / "pyRevitLabs.PyRevit.Runtime.sln",
     REPO_ROOT / "dev" / "pyRevitLoader" / "pyRevitLoader.sln",
     REPO_ROOT / "dev" / "pyRevitWPFForms" / "pyRevitWPFForms.sln",
 ]
@@ -73,8 +77,11 @@ def main(argv):
         before = {f: f.read_bytes() for f in files}
         relative_files = [str(f.relative_to(REPO_ROOT)) for f in files]
         cmd = [
-            "dotnet", "format", str(solution.relative_to(REPO_ROOT)),
-            "--include", *relative_files,
+            "dotnet",
+            "format",
+            str(solution.relative_to(REPO_ROOT)),
+            "--include",
+            *relative_files,
         ]
         result = subprocess.run(cmd, cwd=REPO_ROOT)
         if result.returncode != 0:
@@ -87,7 +94,9 @@ def main(argv):
                 print(f"formatted: {f.relative_to(REPO_ROOT)}")
 
     if changed:
-        print("format_staged_csharp: files were reformatted - review and re-stage them.")
+        print(
+            "format_staged_csharp: files were reformatted - review and re-stage them."
+        )
         return 1
 
     return 0

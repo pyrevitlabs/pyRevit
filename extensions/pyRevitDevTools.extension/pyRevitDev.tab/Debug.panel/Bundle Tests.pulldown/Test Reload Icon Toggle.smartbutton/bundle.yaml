@@ -1,0 +1,11 @@
+title: >-
+  Test Reload
+
+  Icon Toggle
+tooltip: >-
+  SmartButton that mirrors Update.smartbutton: click to toggle a state
+  stored in the user config ini; __selfinit__ applies the orange dot icon
+  when the state is on and leaves the default bundle icon when off. After a
+  reload the icon must match the stored state - default shown while on
+  means __selfinit__ was not re-run in this pulldown, orange shown while
+  off means the loader failed to restore the bundle icon.

@@ -223,7 +223,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 {
                     // Find the module DLL using binary paths
                     var modulePath = extension.FindModuleDll(moduleName, cmd);
-                    
+
                     if (string.IsNullOrEmpty(modulePath))
                         continue;
 
@@ -329,7 +329,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             using var fs = new FileStream(outputPath, FileMode.Create);
             var result = compilation.Emit(fs);
-            
+
             if (!result.Success)
             {
                 _logger.Error($"Roslyn compilation failed for: {extension.Name}");
@@ -418,7 +418,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         // Bump CommandTypeGeneratorSchema when generation logic changes without a
         // pyRevit version bump. Library-extension directories are hashed separately
         // in strategySeed so adding/removing a .lib or nested lib/ also invalidates.
-        private const string CommandTypeGeneratorSchema = "lib-root-1";
+        private const string CommandTypeGeneratorSchema = "lib-root-2";
 
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 

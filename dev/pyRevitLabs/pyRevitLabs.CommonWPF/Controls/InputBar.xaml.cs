@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -48,10 +48,10 @@ namespace pyRevitLabs.CommonWPF.Controls {
             inputTb.Focus();
             // see inputTb_KeyUp handler for history notes
             _historyPointer = _history.Count;
-            
+
             // start waiting
             _waiting = true;
-            
+
             // show input control
             do {
                 // pass control to dispatcher to update ui
@@ -152,7 +152,7 @@ namespace pyRevitLabs.CommonWPF.Controls {
                         else
                             _historyPointer = 0;
                     break;
-                
+
                 case Key.Down:
                     _historyPointer++;
                     if (_historyPointer >= 0)
@@ -162,7 +162,7 @@ namespace pyRevitLabs.CommonWPF.Controls {
                             _historyPointer = _history.Count;
                             inputTb.Text = string.Empty;
                         }
-                            
+
                     break;
 
                 default:

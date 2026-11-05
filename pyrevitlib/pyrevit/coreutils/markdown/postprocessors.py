@@ -53,17 +53,16 @@ class RawHtmlPostprocessor(Postprocessor):
         for i in range(self.markdown.htmlStash.html_counter):
             html, safe = self.markdown.htmlStash.rawHtmlBlocks[i]
             if self.markdown.safeMode and not safe:
-                if util.text_type(self.markdown.safeMode).lower() == 'escape':
+                if util.text_type(self.markdown.safeMode).lower() == "escape":
                     html = self.escape(html)
-                elif util.text_type(self.markdown.safeMode).lower() == 'remove':
-                    html = ''
+                elif util.text_type(self.markdown.safeMode).lower() == "remove":
+                    html = ""
                 else:
                     html = self.markdown.html_replacement_text
-            if (self.isblocklevel(html) and
-               (safe or not self.markdown.safeMode)):
-                replacements["<p>%s</p>" %
-                             (self.markdown.htmlStash.get_placeholder(i))] = \
-                    html + "\n"
+            if self.isblocklevel(html) and (safe or not self.markdown.safeMode):
+                replacements[
+                    "<p>%s</p>" % (self.markdown.htmlStash.get_placeholder(i))
+                ] = html + "\n"
             replacements[self.markdown.htmlStash.get_placeholder(i)] = html
 
         if replacements:
@@ -74,15 +73,15 @@ class RawHtmlPostprocessor(Postprocessor):
 
     def escape(self, html):
         """Basic html escaping."""
-        html = html.replace('&', '&amp;')
-        html = html.replace('<', '&lt;')
-        html = html.replace('>', '&gt;')
-        return html.replace('"', '&quot;')
+        html = html.replace("&", "&amp;")
+        html = html.replace("<", "&lt;")
+        html = html.replace(">", "&gt;")
+        return html.replace('"', "&quot;")
 
     def isblocklevel(self, html):
-        m = re.match(r'^\<\/?([^ >]+)', html)
+        m = re.match(r"^\<\/?([^ >]+)", html)
         if m:
-            if m.group(1)[0] in ('!', '?', '@', '%'):
+            if m.group(1)[0] in ("!", "?", "@", "%"):
                 # Comment, php etc...
                 return True
             return util.isBlockLevel(m.group(1))
@@ -100,7 +99,7 @@ class AndSubstitutePostprocessor(Postprocessor):
 class UnescapePostprocessor(Postprocessor):
     """Restore escaped chars."""
 
-    RE = re.compile(r'%s(\d+)%s' % (util.STX, util.ETX))
+    RE = re.compile(r"%s(\d+)%s" % (util.STX, util.ETX))
 
     def unescape(self, m):
         return util.int2str(int(m.group(1)))

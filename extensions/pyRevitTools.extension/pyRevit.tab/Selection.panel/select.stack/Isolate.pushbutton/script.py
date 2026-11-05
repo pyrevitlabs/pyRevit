@@ -1,5 +1,6 @@
 """Isolates specific elements in current view and
 put the view in isolate element mode"""
+
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit.framework import List
 from pyrevit import forms
@@ -106,7 +107,7 @@ def ask_for_options():
     selected_switch = forms.CommandSwitchWindow.show(
         select_options,
         title="Isolate Elements",
-        message="Temporarily isolate elements of type:"
+        message="Temporarily isolate elements of type:",
     )
 
     if selected_switch:

@@ -1,4 +1,5 @@
 """Testing toast64 module."""
+
 from pyrevit import forms
 
 forms.toast(
@@ -7,6 +8,7 @@ forms.toast(
     appid="MyAPP",
     click="https://pyrevitlabs.github.io/pyRevit/",
     actions={
-        "Open Google":"https://google.com",
-        "Open Toast64":"https://github.com/go-toast/toast"
-        })
+        "Open Google": "https://google.com",
+        "Open Toast64": "https://github.com/go-toast/toast",
+    },
+)

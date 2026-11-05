@@ -9,11 +9,12 @@ Examples:
         ```
         'python RAD Environment for Autodesk Revit®'a.copyright'© 2014-2026 Ehsan Iran-Nejad'
 """
+
 from collections import namedtuple
 
 
 # FIXME: tuple attrs have duplicate docs
-PyRevitAbout = namedtuple('PyRevitAbout', ['subtitle', 'madein', 'copyright'])
+PyRevitAbout = namedtuple("PyRevitAbout", ["subtitle", "madein", "copyright"])
 """pyRevit project info tuple.
 
 Attributes:
@@ -29,6 +30,8 @@ def get_pyrevit_about():
     Returns:
         (PyRevitAbout): pyRevit project info tuple
     """
-    return PyRevitAbout(subtitle='python RAD Environment for Autodesk Revit®',
-                        madein="['pdx', 'hio', 'rno', 'sea']",
-                        copyright='© 2014-2026 Ehsan Iran-Nejad')
+    return PyRevitAbout(
+        subtitle="python RAD Environment for Autodesk Revit®",
+        madein="['pdx', 'hio', 'rno', 'sea']",
+        copyright="© 2014-2026 Ehsan Iran-Nejad",
+    )

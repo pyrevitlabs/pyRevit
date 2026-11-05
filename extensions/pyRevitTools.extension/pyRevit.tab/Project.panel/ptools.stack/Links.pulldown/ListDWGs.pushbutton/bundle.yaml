@@ -17,3 +17,5 @@ tooltip:
   de_de: Es werden alle verknüpften und importierten DWG Instanzen aufgelistet mit Bearbeitungsbereich und Ersteller
   pt_br: Lista todas as instâncias DWG vinculadas e importadas com worksets e criador
 author: 'Frederic Beaupere'
+context:
+  - doc-project

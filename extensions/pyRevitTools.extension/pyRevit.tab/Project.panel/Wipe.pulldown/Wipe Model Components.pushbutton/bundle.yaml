@@ -22,3 +22,5 @@ tooltip:
     Dieses Werkzeug hilft Ihnen dabei, unnötige Informationen aus  dem Modell zu entfernen, z.B. wenn Sie das Modell an einen  Auftragnehmer oder Berater weitergeben möchten.  Führen Sie das Skript aus und wählen Sie die Kategorien, die   aus dem Modell entfernt werden sollen. Klicken Sie dann auf  den Button "Wipe Model" um die Auswahl zu bestätigen.  Anschließend startet der Prozess und löscht die gewählten Elemente.  Möglicherweise werden einige Fehler oder Warnungen von Revit  angezeigt (da es sich um einen sehr zerstörerischen Prozess handelt),  aber das Skript sollte normalerweise nicht abstürzen.
   pt_br: >-
     Esta ferramenta ajuda a remover informações extras desnecessárias no modelo ao enviar para um empreiteiro ou consultor. Execute as ferramentas e selecione as categorias que você gostaria de remover do modelo. Em seguida, clique em "Remover Modelo" e o processo passará por cada categoria e as removerá. Você pode ver alguns erros ou avisos do Revit (já que este é um processo muito destrutivo), mas geralmente eles não devem travar o script.
+context:
+  - doc-project

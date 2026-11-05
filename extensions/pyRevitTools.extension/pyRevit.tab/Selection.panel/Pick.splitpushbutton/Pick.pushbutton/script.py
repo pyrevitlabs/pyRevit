@@ -3,6 +3,7 @@
 Shift-Click:
 Pick favorites from all available categories
 """
+
 # pylint: disable=E0401,W0703,C0103
 from collections import namedtuple
 
@@ -18,18 +19,18 @@ logger = script.get_logger()
 my_config = script.get_config()
 
 
-CategoryOption = namedtuple('CategoryOption', ['name', 'revit_cat'])
+CategoryOption = namedtuple("CategoryOption", ["name", "revit_cat"])
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
     """Selection filter implementation"""
+
     def __init__(self, category_opt):
         self.category_opt = category_opt
 
     def AllowElement(self, element):
         """Is element allowed to be selected?"""
-        if element.Category \
-                and self.category_opt.revit_cat.Id == element.Category.Id:
+        if element.Category and self.category_opt.revit_cat.Id == element.Category.Id:
             return True
         else:
             return False
@@ -57,17 +58,18 @@ source_categories = pick_config.load_configs()
 
 # ask user to select a category to select by
 if source_categories:
-    category_opts = [CategoryOption(name=x.Name, revit_cat=x)
-                     for x in source_categories]
-    selected_category = \
-        forms.CommandSwitchWindow.show(
-            sorted([x.name for x in category_opts]),
-            title='Pick only elements of type:',
-            message='Pick only elements of type:'
-        )
+    category_opts = [
+        CategoryOption(name=x.Name, revit_cat=x) for x in source_categories
+    ]
+    selected_category = forms.CommandSwitchWindow.show(
+        sorted([x.name for x in category_opts]),
+        title="Pick only elements of type:",
+        message="Pick only elements of type:",
+    )
 
     if selected_category:
-        selected_category_opt = \
-            next(x for x in category_opts if x.name == selected_category)
+        selected_category_opt = next(
+            x for x in category_opts if x.name == selected_category
+        )
         logger.debug(selected_category_opt)
         pick_by_category(selected_category_opt)

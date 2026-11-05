@@ -1,6 +1,6 @@
 """Run revit module unit tests from pyrevit.unittests."""
 
 from pyrevit.unittests import test_revit_module
-from pyrevit.unittests.runner import run_module_tests
+from pyrevit.unittests.runner import assert_module_tests_successful
 
-run_module_tests(test_revit_module)
+assert_module_tests_successful(test_revit_module)

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using pyRevitLabs.Common;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
@@ -232,7 +233,9 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Clears all static caches to force re-parsing of extensions.
         /// This should be called before reloading pyRevit to ensure newly installed
-        /// or enabled extensions are discovered.
+        /// or enabled extensions are discovered. Also resets locale tracking, so the
+        /// next parse does not read this as a locale change and re-enter this method
+        /// mid-parse.
         /// </summary>
         public static void ClearAllCaches()
         {
@@ -245,6 +248,8 @@ namespace pyRevitExtensionParser
             _readScriptMetadataCache = null;
             BundleParser.BundleYamlParser.ClearCache();
             ExtensionRegistryAuth.ClearCache();
+            _localeInitialized = false;
+            _cachedLocale = null;
         }
 
         internal static List<string> GetExtensionRootsForAuthLookup()
@@ -337,14 +342,14 @@ namespace pyRevitExtensionParser
                     var fullPath = Path.GetFullPath(extDir);
                     if (discoveredExtensions.Add(fullPath))
                     {
-                        var sw = Stopwatch.StartNew();
+                        var parseStart = Stopwatch.GetTimestamp();
                         var parsed = ParseExtension(extDir, revitYear);
                         // Only record timing for extensions actually parsed; disabled or
                         // version-incompatible ones return null after a near-zero config check
                         // and shouldn't appear in the [PERF] breakdown or inflate the count.
                         if (parsed != null)
                         {
-                            RecordParseTiming(extDir, "ui", sw.ElapsedMilliseconds);
+                            RecordParseSpan(extDir, parseStart);
                             yield return parsed;
                         }
                     }
@@ -366,11 +371,11 @@ namespace pyRevitExtensionParser
                     var fullPath = Path.GetFullPath(libDir);
                     if (discoveredExtensions.Add(fullPath))
                     {
-                        var sw = Stopwatch.StartNew();
+                        var parseStart = Stopwatch.GetTimestamp();
                         var parsed = ParseExtension(libDir, revitYear);
                         if (parsed != null)
                         {
-                            RecordParseTiming(libDir, "lib", sw.ElapsedMilliseconds);
+                            RecordParseSpan(libDir, parseStart);
                             yield return parsed;
                         }
                     }
@@ -378,32 +383,12 @@ namespace pyRevitExtensionParser
             }
         }
 
-        // Per-extension parse timings collected as ParseInstalledExtensions iterates. Read and
-        // cleared by SessionManagerService after the .ToList() call that consumes the enumerator.
-        private static readonly object _parseStatsLock = new object();
-        private static readonly List<(string Name, string Kind, long ElapsedMs)> _parseTimings = new List<(string, string, long)>();
-
-        private static void RecordParseTiming(string extDir, string kind, long elapsedMs)
+        // Records the parse as a span named after the bundle directory (its .extension or .lib
+        // suffix tells UI and library extensions apart) under the innermost open step of the
+        // active session load. Outside a load nothing is recorded.
+        private static void RecordParseSpan(string bundleDir, long parseStartTimestamp)
         {
-            lock (_parseStatsLock)
-            {
-                _parseTimings.Add((Path.GetFileName(extDir), kind, elapsedMs));
-            }
-        }
-
-        /// <summary>
-        /// Returns per-extension parse timings collected since the last call and clears them.
-        /// Used by per-session instrumentation to attribute <c>ParseAllExtensions</c> cost to
-        /// individual <c>.extension</c> / <c>.lib</c> bundles.
-        /// </summary>
-        public static List<(string Name, string Kind, long ElapsedMs)> ResetAndGetParseStats()
-        {
-            lock (_parseStatsLock)
-            {
-                var snapshot = _parseTimings.ToList();
-                _parseTimings.Clear();
-                return snapshot;
-            }
+            LoadTimeline.Active?.RecordSpan(Path.GetFileName(bundleDir), parseStartTimestamp, Stopwatch.GetTimestamp());
         }
 
         /// <summary>
@@ -492,9 +477,8 @@ namespace pyRevitExtensionParser
 
             // skip disabled extensions before walking the component tree
             var extConfig = GetConfig().ParseExtensionByName(extName);
-            if (extConfig != null && extConfig.Disabled)
-                return null;
-            if (extConfig == null && !IsExtensionDefaultEnabled(extDir))
+            var disabled = extConfig?.Disabled ?? !IsExtensionDefaultEnabled(extDir);
+            if (disabled)
                 return null;
 
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
@@ -872,7 +856,19 @@ namespace pyRevitExtensionParser
             }
         }
 
-        private static List<string> GetExtensionRoots()
+        /// <summary>
+        /// Returns the directories searched for extensions: the clone's shipped
+        /// extensions, the per-user third-party default, then the user extension
+        /// paths of the active config.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: user extension paths come from the active config alone, the
+        /// same file the Settings window writes. Reading a second config here would
+        /// load paths the user can neither see nor remove (#3908). Machine paths
+        /// reach standard users of an all-users install through
+        /// <c>PyRevitConfigService.SyncMachineExtensionPaths</c> instead.
+        /// </remarks>
+        internal static List<string> GetExtensionRoots()
         {
             var roots = new List<string>();
 
@@ -898,7 +894,10 @@ namespace pyRevitExtensionParser
                 roots.Add(thirdPartyExtensionsPath);
             }
 
-            var userExtensions = GetConfig().UserExtensionsList;
+            var userExtensions = GetConfig().UserExtensionsList
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             var userExtensionsCount = 0;
             var userExtensionsAdded = 0;
             foreach (var extPath in userExtensions)
@@ -1081,6 +1080,7 @@ namespace pyRevitExtensionParser
                             scriptPath = bundleDirFiles.FirstOrDefault(f =>
                                 (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
                                  (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) &&
+                                  !string.Equals(Path.GetFileName(f), $"config{scriptExt}", StringComparison.OrdinalIgnoreCase) &&
                                   !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
                             if (scriptPath != null)
                                 break;
@@ -1437,6 +1437,9 @@ namespace pyRevitExtensionParser
                     PanelBackground = bundleInComponent?.PanelBackground,
                     TitleBackground = bundleInComponent?.TitleBackground,
                     SlideoutBackground = bundleInComponent?.SlideoutBackground,
+                    DarkPanelBackground = bundleInComponent?.DarkPanelBackground,
+                    DarkTitleBackground = bundleInComponent?.DarkTitleBackground,
+                    DarkSlideoutBackground = bundleInComponent?.DarkSlideoutBackground,
                     Icons = ParseIconsForComponent(dir),
                     TargetAssembly = bundleInComponent?.Assembly,
                     CommandClass = bundleInComponent?.CommandClass,

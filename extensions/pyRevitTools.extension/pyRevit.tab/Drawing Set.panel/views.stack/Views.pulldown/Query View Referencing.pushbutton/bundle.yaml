@@ -28,3 +28,4 @@ tooltip:
     Es erscheint ein Auswahldialog mit den verfügbaren Ansichten im aktiven Projekt.  Die ausgewählten Ansichten werden daraufhin untersucht, ob diese referenziert werden  (z.B. in einem Detailausschnitt mit referenzierter Ansicht oder eine Ansichtsreferenz  Beschriftung) oder nicht. Achtung: Die Ausführung von diesem Befehl kann nicht  unterbrochen werden und dauert unter Umständen lange!
   pt_br: |-
     Checka todas as vistas selecionadas e determina se são referenciadas ou não
+context: doc-project

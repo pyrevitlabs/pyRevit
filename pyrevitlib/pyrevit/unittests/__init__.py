@@ -23,4 +23,5 @@ class TestWithIndependentOutput(TestCase):
 
 import warnings
 from pyrevit.unittests.runner import run_module_tests
+
 warnings.filterwarnings("ignore")

@@ -21,6 +21,7 @@
     <system:String x:Key="Settings_Section_Behavior">동작</system:String>
     <system:String x:Key="Settings_SortAlpha">필터 알파벳순 정렬</system:String>
     <system:String x:Key="Settings_OpenLegend">마지막으로 생성된 범례 열기</system:String>
+    <system:String x:Key="Settings_TrackLegend">기존 범례 추적 및 업데이트</system:String>
 
     <system:String x:Key="Header_FilterName">필터 이름</system:String>
     <system:String x:Key="Header_Parameter">매개변수</system:String>
@@ -28,6 +29,8 @@
     <system:String x:Key="Value_NA">해당 없음</system:String>
 
     <system:String x:Key="Msg_Done">범례 뷰 {0}개를 생성했습니다.</system:String>
+    <system:String x:Key="Msg_Updated">범례 뷰 {0}개를 업데이트했습니다.</system:String>
+    <system:String x:Key="Msg_DoneMixed">범례 뷰 {0}개를 생성하고 {1}개를 업데이트했습니다.</system:String>
     <system:String x:Key="Msg_Failed">범례 뷰를 생성하지 못했습니다. 자세한 내용은 로그를 확인하세요.</system:String>
 
 </ResourceDictionary>

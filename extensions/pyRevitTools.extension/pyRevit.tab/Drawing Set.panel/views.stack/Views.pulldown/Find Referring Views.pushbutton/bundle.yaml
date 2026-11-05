@@ -29,3 +29,4 @@ tooltip:
     Achtung: Die Ausführung dieses Befehls kann sehr lange dauern und kann nicht unterbrochen werden!
   pt_br: |-
     Listar todas as vistas que estão referenciando as viewports selecionadas ou a vista ativa
+context: doc-project

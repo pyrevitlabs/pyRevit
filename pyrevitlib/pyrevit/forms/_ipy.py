@@ -22,6 +22,7 @@ from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit.compat import IRONPY
 from pyrevit.compat import safe_strtype, get_elementid_value_func
 from pyrevit._perf import mark as _perfmark
+
 _perfmark("pyrevit.forms._ipy:entry")
 
 if not IRONPY:
@@ -29,7 +30,10 @@ if not IRONPY:
 
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import applocales
 from pyrevit.coreutils import colors
+from pyrevit.coreutils import envvars
+
 _perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
 from pyrevit.framework import System
@@ -41,25 +45,33 @@ from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
 from pyrevit.framework import Uri, UriKind, ResourceDictionary
+
 _perfmark("pyrevit.forms._ipy:after framework re-imports")
 from pyrevit.api import AdWindows
+
 _perfmark("pyrevit.forms._ipy:after pyrevit.api.AdWindows")
 from pyrevit.labs import Common
 from pyrevit import revit, UI, DB
+
 _perfmark("pyrevit.forms._ipy:after `from pyrevit import revit, UI, DB`")
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
+
 _perfmark("pyrevit.forms._ipy:after forms.utils + forms.toaster")
 from pyrevit import versionmgr
+
 _perfmark("pyrevit.forms._ipy:after pyrevit.versionmgr")
 from pyrevit.userconfig import user_config
+
 _perfmark("pyrevit.forms._ipy:after `from pyrevit.userconfig import user_config`")
 
 import pyevent
+
 _perfmark("pyrevit.forms._ipy:after pyevent")
 
 import Autodesk.Windows.ComponentManager
 import Autodesk.Internal.InfoCenter
+
 _perfmark("pyrevit.forms._ipy:after Autodesk.Windows/Internal")
 
 
@@ -82,52 +94,62 @@ XAML_FILES_DIR = op.dirname(__file__)
 THEME_XAML_FILE = op.join(XAML_FILES_DIR, "Theme.xaml")
 
 
-_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)
-_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)
-_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)
+_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)  # dark blue-gray
+_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)  # darker blue-gray
+_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)  # amber
 
 _PALETTE_LIGHT = {
-    "WindowBackground": (0xFF, 0xFF, 0xFF, 0xFF),
-    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),
-    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),
-    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),
-    "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),
-    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),
-    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),
-    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),
-    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),
-    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),
-    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
-    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
-    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),
-    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),
-    "Icon": (0xFF, 0x00, 0x00, 0x00),
-    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),
-    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),
-    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),
-    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),
+    "WindowBackground": (0xFF, 0xF3, 0xF4, 0xF6),  # off white
+    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),  # black
+    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),  # light gray
+    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),  # white
+    "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),  # whitesmoke
+    "ContrastBackground": (0xFF, 0x2C, 0x3E, 0x50),  # dark blue-gray
+    "ContrastForeground": (0xFF, 0xFF, 0xFF, 0xFF),  # white
+    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),  # light gray
+    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),  # light gray
+    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),  # light gray
+    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),  # translucent black
+    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),  # translucent black
+    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),  # gray
+    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),  # dim gray
+    "DangerForeground": (0xFF, 0xB4, 0x23, 0x18),  # brick red
+    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),  # misty rose
+    "WarningForeground": (0xFF, 0x9A, 0x63, 0x00),  # dark amber
+    "WarningBackground": (0xFF, 0xFD, 0xF0, 0xD5),  # pale amber
+    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),  # pale green
+    "Icon": (0xFF, 0x00, 0x00, 0x00),  # black
+    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),  # pale blue
+    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),  # black
+    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),  # light gray
+    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),  # dark gray
 }
 
 _PALETTE_DARK = {
-    "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),
-    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),
-    "ChromeBackground": (0xFF, 0x22, 0x29, 0x33),
-    "ControlBackground": (0xFF, 0x22, 0x29, 0x33),
-    "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),
-    "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),
-    "ControlHover": (0xFF, 0x45, 0x4F, 0x61),
-    "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),
-    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),
-    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),
-    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
-    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
-    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),
-    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),
-    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
-    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),
-    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),
-    "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),
-    "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),
+    "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),  # charcoal blue
+    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "ChromeBackground": (0xFF, 0x39, 0x42, 0x4F),  # dark slate
+    "ControlBackground": (0xFF, 0x22, 0x29, 0x33),  # charcoal
+    "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),  # charcoal
+    "ContrastBackground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "ContrastForeground": (0xFF, 0x2C, 0x3E, 0x50),  # dark blue-gray
+    "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
+    "ControlHover": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
+    "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),  # steel blue
+    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),  # translucent white
+    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),  # translucent white
+    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),  # gray
+    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),  # muted blue-gray
+    "DangerForeground": (0xFF, 0xFF, 0x6B, 0x61),  # coral
+    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),  # dark red
+    "WarningForeground": (0xFF, 0xF0, 0xAD, 0x4E),  # amber
+    "WarningBackground": (0xFF, 0x5C, 0x48, 0x2E),  # dark amber
+    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),  # dark green
+    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),  # dark blue
+    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
+    "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),  # steel blue
 }
 
 
@@ -244,7 +266,7 @@ def _walk_logical_tree(root):
                 pending.append(child)
 
 
-def _is_dark_theme():
+def is_dark_theme():
     """Return True if Revit's active UI theme is Dark.
 
     Always False on Revit <2024, which has no UITheme concept.
@@ -252,6 +274,7 @@ def _is_dark_theme():
     try:
         if HOST_APP.is_newer_than(2024, True):
             from Autodesk.Revit.UI import UITheme
+
             return revit.ui.get_current_theme() == UITheme.Dark
     except Exception:
         pass
@@ -395,13 +418,12 @@ class _WPFMixin(object):
     # ------------------------------------------------------------------ resources
 
     @staticmethod
-    def setup_resources(wpf_ctrl, set_root_colors=True):
+    def setup_resources(wpf_ctrl, set_root_colors=True, resolve_theme=False):
         """Set pyRevit colour resources on any WPF control.
 
         Injects the brand palette (constant, used by HUD-style overlays)
-        and the semantic light/dark palette (resolved from Revit's active
-        UI theme) as DynamicResource-able brushes. Safe to call again on
-        an already-loaded control to re-theme it in place.
+        and the semantic light/dark palette as DynamicResource-able brushes.
+        Theme resolution is opt-in so forms default to the light palette.
 
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
@@ -411,6 +433,8 @@ class _WPFMixin(object):
                 transparent HUD-style overlays) must be able to override this
                 afterwards. Live theme-change refreshes pass False so an
                 already-open HUD window is not forced opaque.
+            resolve_theme (bool): resolve the palette from Revit's active UI
+                theme. Defaults to False.
 
         Note:
             The root colours are assigned directly rather than left to the
@@ -434,7 +458,7 @@ class _WPFMixin(object):
             res["pyRevitButtonColor"]
         )
 
-        is_dark = _is_dark_theme()
+        is_dark = resolve_theme and is_dark_theme()
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
@@ -458,7 +482,7 @@ class _WPFMixin(object):
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
         """
-        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False)
+        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False, resolve_theme=True)
 
     def apply_contrast_foregrounds(self):
         """Give every custom-background element a readable text color.
@@ -474,14 +498,24 @@ class _WPFMixin(object):
         Elements that declare their own Foreground are left untouched, and so
         are theme-brush backgrounds, which already pair with the theme
         foreground. Translucent backgrounds are left untouched because their
-        effective color depends on the surface below them. Safe to call again
-        to re-evaluate after a theme change.
+        effective color depends on the surface below them. Contrast is supplied
+        by a style setter so disabled-state triggers remain authoritative,
+        including when IsEnabled changes after the window opens. Safe to call
+        again after a theme change; unchanged brushes reuse the managed style.
+        Previously managed elements that stop qualifying regain their original
+        style, unless a local Foreground has been authored. Detached elements
+        are dropped from tracking on the next pass, and a failed element does
+        not prevent the remaining controls from updating.
         """
         res = self.Resources
         try:
             candidates = [
-                res["pyRevitWindowForegroundBrush"],
-                res["pyRevitWindowBackgroundBrush"],
+                b
+                for b in [
+                    res["pyRevitWindowForegroundBrush"],
+                    res["pyRevitWindowBackgroundBrush"],
+                ]
+                if b is not None and b.Color is not None
             ]
             theme_argbs = set(
                 _argb(res[key]) for key in list(res.Keys) if str(key).endswith("Color")
@@ -489,38 +523,59 @@ class _WPFMixin(object):
         except Exception:
             return
 
-        managed = getattr(self, "_contrast_managed", None)
-        if managed is None:
-            managed = set()
-            self._contrast_managed = managed
+        if not candidates:
+            return
+
+        previous_managed = getattr(self, "_contrast_managed", {})
+        managed = {}
+        self._contrast_managed = managed
 
         for element in _walk_logical_tree(self):
-            fore_prop = _foreground_property(element)
-            back_prop = _background_property(element)
-            if fore_prop is None or back_prop is None:
+            try:
+                if element in previous_managed:
+                    managed[element] = previous_managed[element]
+                fore_prop = _foreground_property(element)
+                back_prop = _background_property(element)
+                if fore_prop is None or back_prop is None:
+                    continue
+                if (
+                    element.ReadLocalValue(fore_prop)
+                    != framework.Windows.DependencyProperty.UnsetValue
+                ):
+                    continue
+                brush = (
+                    element.GetValue(back_prop)
+                    if _is_authored_value(element, back_prop)
+                    else None
+                )
+                if (
+                    not isinstance(brush, Media.SolidColorBrush)
+                    or brush.Color.A != 0xFF
+                    or _argb(brush.Color) in theme_argbs
+                ):
+                    contrast_style = managed.get(element)
+                    if contrast_style is not None:
+                        if element.Style is contrast_style:
+                            element.Style = contrast_style.BasedOn
+                        del managed[element]
+                    continue
+                background = brush.Color
+                best = max(
+                    candidates,
+                    key=lambda candidate: _contrast_ratio(background, candidate.Color),
+                )
+                base_style = element.Style
+                if element in managed and base_style is managed[element]:
+                    if base_style.Setters[0].Value is best:
+                        continue
+                    base_style = base_style.BasedOn
+                contrast_style = framework.Windows.Style(element.GetType(), base_style)
+                contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
+                element.Style = contrast_style
+                managed[element] = contrast_style
+            except Exception as contrast_error:
+                mlogger.debug("Could not apply contrast foreground: %s", contrast_error)
                 continue
-            if not _is_authored_value(element, back_prop):
-                continue
-            brush = element.GetValue(back_prop)
-            if not isinstance(brush, Media.SolidColorBrush):
-                continue
-            background = brush.Color
-            if background.A != 0xFF:
-                continue
-            if _argb(background) in theme_argbs:
-                continue
-            if (
-                element.ReadLocalValue(fore_prop)
-                != framework.Windows.DependencyProperty.UnsetValue
-                and element not in managed
-            ):
-                continue
-            best = max(
-                candidates,
-                key=lambda candidate: _contrast_ratio(background, candidate.Color),
-            )
-            element.SetValue(fore_prop, best)
-            managed.add(element)
 
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
@@ -530,7 +585,11 @@ class _WPFMixin(object):
 
     def _on_theme_refresh(self):
         """Re-theme resources and, for windows, the native title bar."""
-        _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
+        _WPFMixin.setup_resources(
+            self,
+            set_root_colors=self._live_refresh_root_colors,
+            resolve_theme=True,
+        )
         self.apply_contrast_foregrounds()
         self._apply_dark_titlebar()
         self._refresh_icon()
@@ -548,9 +607,7 @@ class _WPFMixin(object):
         except Exception:
             self._on_theme_changed = None
 
-    def _unsubscribe_theme_changed(
-        self, sender=None, args=None
-    ):  # pylint: disable=unused-argument
+    def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
         """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
         handler = getattr(self, "_on_theme_changed", None)
         if handler is None:
@@ -777,6 +834,10 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         handle_esc (bool): handle Escape button and close the window
         set_owner (bool): set the owner of window to host app window
 
+    Optional class attributes:
+        resolve_theme (bool):
+            resolve the palette from Revit's active UI theme. Defaults to False.
+
     Examples:
         ```python
         from pyrevit import forms
@@ -792,8 +853,14 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         ```
     """
 
+    resolve_theme = False
+
     def __init__(
-        self, xaml_source, literal_string=False, handle_esc=True, set_owner=True
+        self,
+        xaml_source,
+        literal_string=False,
+        handle_esc=True,
+        set_owner=True,
     ):
         """Initialize WPF window and resources."""
         # load xaml
@@ -805,7 +872,11 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         )
 
     def load_xaml(
-        self, xaml_source, literal_string=False, handle_esc=True, set_owner=True
+        self,
+        xaml_source,
+        literal_string=False,
+        handle_esc=True,
+        set_owner=True,
     ):
         """Load the window XAML file.
 
@@ -821,7 +892,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
-        _WPFMixin.setup_resources(self)
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
@@ -840,8 +911,9 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.setup_icon()
         if handle_esc:
             self.setup_default_handlers()
-        self._apply_dark_titlebar()
-        self._subscribe_theme_changed()
+        if self.resolve_theme:
+            self._apply_dark_titlebar()
+            self._subscribe_theme_changed()
         self.Closed += self._unsubscribe_theme_changed
 
     def setup_owner(self):
@@ -872,7 +944,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         try:
             wih = Interop.WindowInteropHelper(self)
             hwnd = wih.EnsureHandle()
-            is_dark = _is_dark_theme()
+            is_dark = is_dark_theme()
             Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
             palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
             caption_color = _colorref(palette["ChromeBackground"])
@@ -892,10 +964,15 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
     def setup_icon(self):
         """Setup default window icon, following the bundle icon convention.
 
-        Picks up pyrevit_settings.dark.png under a dark UI theme, the same
-        <name>.dark.png lookup that extension bundle icons use.
+        If required, picks up pyrevit_settings.dark.png under a dark UI theme,
+        the same <name>.dark.png lookup that extension bundle icons use.
         """
-        icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        if self.resolve_theme:
+            icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        else:
+            icon_file = op.join(BIN_DIR, "pyrevit_settings.png")
+            if not op.exists(icon_file):
+                icon_file = None
         if icon_file:
             self.set_icon(icon_file)
 
@@ -919,13 +996,62 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         return WindowToggler(self)
 
 
+def activate_open_window(envvar):
+    """Bring a modeless window left open by an earlier run to the front.
+
+    Single-instance guard for modeless tools: the tool stores its window
+    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
+    this on every run before creating a new one. A minimized window is
+    restored before activation; a hidden one is left hidden.
+
+    Openness is judged by the window's native handle, which WPF releases on
+    close, not by ``IsLoaded``, which stays True after ``Close()``. Callers
+    therefore need not clear ``envvar`` in their ``Closed`` handler.
+
+    Args:
+        envvar (str): pyRevit environment variable holding the window.
+
+    Returns:
+        (bool): True when a window already exists, meaning the caller must
+            not open another. It does not promise the window is now in front:
+            Windows may refuse the foreground request, and a hidden window
+            stays hidden. False otherwise; a stale (closed) reference is
+            cleared.
+
+    Examples:
+        ```python
+        from pyrevit import forms, script
+
+        if not forms.activate_open_window("MYTOOL_WINDOW"):
+            window = MyToolWindow("MyTool.xaml")
+            script.set_envvar("MYTOOL_WINDOW", window)
+            window.show()
+        ```
+    """
+    window = envvars.get_pyrevit_env_var(envvar)
+    if window is None:
+        return False
+    try:
+        is_open = Interop.WindowInteropHelper(window).Handle != framework.IntPtr.Zero
+    except Exception:
+        is_open = False
+    if not is_open:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if window.IsVisible:
+        if window.WindowState == framework.Windows.WindowState.Minimized:
+            window.WindowState = framework.Windows.WindowState.Normal
+        window.Activate()
+    return True
+
+
 class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     r"""WPF panel base class for all pyRevit dockable panels.
 
         Subclass this, set the three required class attributes, then register
         and open the panel through the module-level helpers.
 
-        Use self.logger and self.output instead of using script.get_logger() and script.get_output() 
+        Use self.logger and self.output instead of using script.get_logger() and script.get_output()
         to ensure correct titles in the output window.
 
         Required class attributes:
@@ -940,6 +1066,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
                 how the panel behaves while an editor is active.
             contextual_help (UI.ContextualHelp):
                 F1 help associated with the pane.
+            resolve_theme (bool):
+                resolve the palette from Revit's active UI theme. Defaults to False.
 
         Examples:
     ```python
@@ -971,6 +1099,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     initial_state = None
     editor_interaction = None
     contextual_help = None
+    resolve_theme = False
 
     _live_refresh_root_colors = True
 
@@ -995,7 +1124,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             xaml_source (str): XAML content string or file path.
             literal_string (bool): True when xaml_source is raw content.
         """
-        _WPFMixin.setup_resources(self)
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
@@ -1007,13 +1136,15 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
         self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
-        self._subscribe_theme_changed()
+        if self.resolve_theme:
+            self._subscribe_theme_changed()
 
     def _get_panel_output(self):
         """Get current output window and keep its title in sync with panel_title."""
-        out = getattr(self, '_output', None)
+        out = getattr(self, "_output", None)
         try:
             from pyrevit import script as _script
+
             current_out = _script.get_output()
             if current_out:
                 self._output = current_out
@@ -1210,7 +1341,9 @@ class TemplateUserInputWindow(WPFWindow):
             self.Title = (
                 localized_title if isinstance(localized_title, str) else "User Input"
             )
-        self.Width = width
+        self._requested_width = width
+        if width is not None:
+            self.Width = width
         self.Height = height
 
         self._context = context
@@ -1509,10 +1642,9 @@ class SelectFromList(TemplateUserInputWindow):
 
     """
 
-    in_check = False
-    in_uncheck = False
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
+    resolve_theme = True
 
     @property
     def use_regex(self):
@@ -1677,9 +1809,12 @@ class SelectFromList(TemplateUserInputWindow):
             return
 
         if isinstance(ctx, dict):
+            seen_ids = set()
             for group_items in ctx.values():
                 for item in group_items:
-                    yield item
+                    if id(item) not in seen_ids:
+                        seen_ids.add(id(item))
+                        yield item
         elif isinstance(ctx, (list, tuple, set)):
             for item in ctx:
                 yield item
@@ -1793,23 +1928,17 @@ class SelectFromList(TemplateUserInputWindow):
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
-    def check_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as checked."""
-        if not self.in_check:
-            try:
-                self.in_check = True
-                self._set_states(state=True, selected=True)
-            finally:
-                self.in_check = False
+    def checkbox_clicked(self, sender, args):  # pylint: disable=W0613
+        """Apply user toggles without treating binding updates as user input.
 
-    def uncheck_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as unchecked."""
-        if not self.in_uncheck:
-            try:
-                self.in_uncheck = True
-                self._set_states(state=False, selected=True)
-            finally:
-                self.in_uncheck = False
+        Checked and Unchecked also fire when filtering rebuilds the item
+        containers. Only Click should propagate a toggle to selected rows.
+        """
+        state = bool(sender.IsChecked)
+        item = sender.DataContext
+        if isinstance(item, TemplateListItem):
+            item.checked = state
+        self._set_states(state=state, selected=True)
 
     def button_reset(self, sender, args):  # pylint: disable=W0613
         """Handle reset button click."""
@@ -1896,6 +2025,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
         recognize_access_key (bool): recognize '_' as mark of access key
+        width (int): window width
 
     Returns:
         (str | tuple[str, dict]): name of selected option.
@@ -1936,9 +2066,24 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     xaml_source = "CommandSwitchWindow.xaml"
 
+    RESOURCES = {
+        "command_switch_window_width": {
+            "en_us": DEFAULT_CMDSWITCHWND_WIDTH,
+            "fr_fr": 700,
+            "ru": 700,
+            "chinese_s": DEFAULT_CMDSWITCHWND_WIDTH,
+            "ko": 700,
+            "es_es": 750,
+            "de_de": 700,
+            "pt_br": 700,
+        },
+    }
+
+    def _ls(self, key):
+        return applocales.get_locale_string(self.RESOURCES[key])
+
     def _setup(self, **kwargs):
         self.selected_switch = ""
-        self.Width = DEFAULT_CMDSWITCHWND_WIDTH
         self.Title = "Command Options"
 
         message = kwargs.get("message", None)
@@ -1948,11 +2093,20 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         configs = kwargs.get("config", None)
 
-        self.message_label.Content = message if message else "Pick a command option:"
+        self.message_label.Content = (
+            message
+            if message
+            else self.get_locale_string(
+                "CommandSwitchWindow.MessageLabel.Content", "Pick a command option:"
+            )
+        )
 
         self.Resources["pyRevitRecognizesAccessKey"] = kwargs.get(
             "recognize_access_key", DEFAULT_RECOGNIZE_ACCESS_KEY
         )
+
+        if self._requested_width is None:
+            self.Width = self._ls("command_switch_window_width")
 
         # creates the switches first
         for switch, state in self._switches.items():
@@ -1974,6 +2128,23 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self._setup_response()
         self.search_tb.Focus()
         self._filter_options()
+
+    @classmethod
+    def show(
+        cls,
+        context,
+        title=None,
+        width=None,
+        height=DEFAULT_INPUTWINDOW_HEIGHT,
+        **kwargs
+    ):
+        return super(CommandSwitchWindow, cls).show(
+            context,
+            title=title,
+            width=width,
+            height=height,
+            **kwargs
+        )
 
     @staticmethod
     def _set_config(item, config_dict):
@@ -1999,7 +2170,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 else:
                     button.Visibility = WPF_VISIBLE
         else:
-            self.search_tb.Tag = (
+            self.search_tb.Tag = self.get_locale_string(
+                "CommandSwitchWindow.SearchTextBox.Tag",
                 "Type to Filter / Tab to Select / Enter or Click to Run"
             )
             for button in self.button_list.Children:
@@ -2069,6 +2241,7 @@ class GetValueWindow(TemplateUserInputWindow):
     """
 
     xaml_source = "GetValueWindow.xaml"
+    resolve_theme = True
 
     def _setup(self, **kwargs):
         self.Width = 400
@@ -2754,6 +2927,14 @@ class SheetOption(TemplateListItem):
         return self.item.SheetNumber
 
 
+def _get_view_type_label(view):
+    view_type_el = view.Document.GetElement(view.GetTypeId())
+    family_name = getattr(view_type_el, "FamilyName", None)
+    if family_name:
+        return family_name
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", str(view.ViewType))
+
+
 class ViewOption(TemplateListItem):
     """View wrapper for :func:`select_views`."""
 
@@ -2763,7 +2944,10 @@ class ViewOption(TemplateListItem):
     @property
     def name(self):
         """View name."""
-        return "{} ({})".format(revit.query.get_name(self.item), self.item.ViewType)
+        return "{} ({})".format(
+            revit.query.get_name(self.item),
+            _get_view_type_label(self.item),
+        )
 
 
 class LevelOption(TemplateListItem):
@@ -2781,7 +2965,9 @@ class LevelOption(TemplateListItem):
 class FamilyParamOption(TemplateListItem):
     """Level wrapper for :func:`select_family_parameters`."""
 
-    def __init__(self, fparam, builtin=False, labeled=False, associated=False, checked=False):
+    def __init__(
+        self, fparam, builtin=False, labeled=False, associated=False, checked=False
+    ):
         super(FamilyParamOption, self).__init__(fparam, checked=checked)
         self.isbuiltin = builtin
         self.islabeled = labeled
@@ -2966,8 +3152,13 @@ def select_views(
     filterfunc=None,
     doc=None,
     use_selection=False,
+    group_by_view_type=True,
 ):
     """Standard form for selecting views.
+
+    Views are grouped by view type and the type can be selected from a
+    drop down box at the top of window. Type names are localized using
+    Revit's own labels.
 
     Args:
         title (str, optional): list window title
@@ -2981,6 +3172,9 @@ def select_views(
             source document for views; defaults to active document
         use_selection (bool, optional):
             ask if user wants to use currently selected views.
+        group_by_view_type (bool, optional):
+            show a view type drop down with an "All Views" entry first.
+            Defaults to True
 
     Returns:
         (list[DB.View]): list of selected views
@@ -3012,8 +3206,33 @@ def select_views(
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
 
+    view_ops = sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name)
+
+    if group_by_view_type:
+        ops_by_type = {}
+        for view_op in view_ops:
+            type_label = _get_view_type_label(view_op.item)
+            ops_by_type.setdefault(type_label, []).append(view_op)
+
+        all_ops = OrderedDict()
+        all_ops["All Views"] = view_ops
+        for type_label in sorted(ops_by_type):
+            all_ops[type_label] = ops_by_type[type_label]
+
+        return SelectFromList.show(
+            all_ops,
+            title=title,
+            group_selector_title="View Type:",
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True,
+            default_group="All Views",
+            sort_groups="unsorted",
+        )
+
     selected_views = SelectFromList.show(
-        sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name),
+        view_ops,
         title=title,
         button_name=button_name,
         width=width,
@@ -3628,6 +3847,7 @@ def alert(
     no=False,
     retry=False,
     warn_icon=True,
+    icon="",
     options=None,
     exitscript=False,
 ):
@@ -3644,7 +3864,9 @@ def alert(
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
-        warn_icon (bool, optional): show warning icon
+        warn_icon (bool, optional): show "warning" icon. Ignored if `icon` is used. Defaults to True
+        icon (str, optional): icon to show, from one of "warning", "shield", "information", "error".
+            When provided (non-empty), this takes full precedence over `warn_icon` and `warn_icon` is ignored.
         options (list[str], optional): list of command link titles in order
         exitscript (bool, optional): exit if cancel or no, defaults to False
 
@@ -3704,11 +3926,30 @@ def alert(
     tdlg.TitleAutoPrefix = False
 
     # set icon
-    tdlg.MainIcon = (
-        UI.TaskDialogIcon.TaskDialogIconWarning
-        if warn_icon
-        else UI.TaskDialogIcon.TaskDialogIconNone
-    )
+    icon_map = {
+        "warning": UI.TaskDialogIcon.TaskDialogIconWarning,
+        "shield": UI.TaskDialogIcon.TaskDialogIconShield,
+        "information": UI.TaskDialogIcon.TaskDialogIconInformation,
+        "error": UI.TaskDialogIcon.TaskDialogIconError,
+    }
+
+    if icon:
+        # `icon` takes precedence if provided
+        key = icon.lower()
+        if key not in icon_map:
+            mlogger.warning(
+                "Unknown icon %r; falling back to no icon. Valid icons: %s",
+                icon,
+                ", ".join(sorted(icon_map)),
+            )
+        tdlg.MainIcon = icon_map.get(key, UI.TaskDialogIcon.TaskDialogIconNone)
+    else:
+        # else fall back to legacy `warn_icon` behavior to prevent breaking of existing scripts
+        tdlg.MainIcon = (
+            UI.TaskDialogIcon.TaskDialogIconWarning
+            if warn_icon
+            else UI.TaskDialogIcon.TaskDialogIconNone
+        )
 
     # tdlg.VerificationText = 'verif'
 
@@ -3787,12 +4028,13 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         return alert(msg, *args, **kwargs)
 
 
-def pick_folder(title=None, owner=None):
+def pick_folder(title=None, owner=None, init_dir=""):
     """Show standard windows pick folder dialog.
 
     Args:
         title (str, optional): title for the window
         owner (object, optional): owner of the dialog
+        init_dir (str, optional): initial directory
 
     Returns:
         (str): folder path
@@ -3802,6 +4044,8 @@ def pick_folder(title=None, owner=None):
         fb_dlg.IsFolderPicker = True
         if title:
             fb_dlg.Title = title
+        if init_dir:
+            fb_dlg.InitialDirectory = init_dir
 
         res = CPDialogs.CommonFileDialogResult.Cancel
         if owner:
@@ -3815,6 +4059,8 @@ def pick_folder(title=None, owner=None):
         fb_dlg = Forms.FolderBrowserDialog()
         if title:
             fb_dlg.Description = title
+        if init_dir:
+            fb_dlg.SelectedPath = init_dir
         if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
             return fb_dlg.SelectedPath
 
@@ -4000,7 +4246,7 @@ def pick_excel_file(save=False, title=None):
     if save:
         return save_file(file_ext="xlsx")
     return pick_file(
-        files_filter="Excel Workbook (*.xlsx)|*.xlsx|" "Excel 97-2003 Workbook|*.xls",
+        files_filter="Excel Workbook (*.xlsx)|*.xlsx|Excel 97-2003 Workbook|*.xls",
         title=title,
     )
 

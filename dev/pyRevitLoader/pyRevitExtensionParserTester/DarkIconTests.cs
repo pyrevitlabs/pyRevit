@@ -44,13 +44,13 @@ namespace pyRevitExtensionParserTest
                 CreateTestIcon(iconPath, 32, 32);
 
                 var icon = new ComponentIcon(iconPath);
-                
+
                 TestContext.Out.WriteLine($"Testing: {testCase.Key}");
                 TestContext.Out.WriteLine($"  Expected Dark: {testCase.Value}");
                 TestContext.Out.WriteLine($"  Actual Dark: {icon.IsDark}");
                 TestContext.Out.WriteLine($"  Icon Type: {icon.Type}");
-                
-                Assert.AreEqual(testCase.Value, icon.IsDark, 
+
+                Assert.AreEqual(testCase.Value, icon.IsDark,
                     $"Icon '{testCase.Key}' dark detection failed. Expected: {testCase.Value}, Actual: {icon.IsDark}");
             }
 
@@ -87,13 +87,13 @@ namespace pyRevitExtensionParserTest
                 CreateTestIcon(iconPath, 32, 32);
 
                 var icon = new ComponentIcon(iconPath);
-                
+
                 TestContext.Out.WriteLine($"Testing: {testCase.Key}");
                 TestContext.Out.WriteLine($"  Expected Type: {testCase.Value}");
                 TestContext.Out.WriteLine($"  Actual Type: {icon.Type}");
                 TestContext.Out.WriteLine($"  Is Dark: {icon.IsDark}");
-                
-                Assert.AreEqual(testCase.Value, icon.Type, 
+
+                Assert.AreEqual(testCase.Value, icon.Type,
                     $"Icon '{testCase.Key}' type classification failed. Expected: {testCase.Value}, Actual: {icon.Type}");
             }
 
@@ -110,7 +110,7 @@ namespace pyRevitExtensionParserTest
             // Create light and dark icons
             var iconPath = Path.Combine(TestTempDir, "icon.png");
             var darkIconPath = Path.Combine(TestTempDir, "icon.dark.png");
-            
+
             CreateTestIcon(iconPath, 32, 32, Color.Blue);
             CreateTestIcon(darkIconPath, 32, 32, Color.Orange);
 
@@ -131,7 +131,7 @@ namespace pyRevitExtensionParserTest
             // Test primary icons
             var primaryIcon = collection.PrimaryIcon;
             var primaryDarkIcon = collection.PrimaryDarkIcon;
-            
+
             TestContext.Out.WriteLine($"Primary icon: {primaryIcon?.FileName} (Type: {primaryIcon?.Type})");
             TestContext.Out.WriteLine($"Primary dark icon: {primaryDarkIcon?.FileName} (Type: {primaryDarkIcon?.Type})");
 
@@ -150,26 +150,26 @@ namespace pyRevitExtensionParserTest
         public void TestDarkIconsInRealExtension()
         {
             TestContext.Out.WriteLine("=== Testing Dark Icons in Real Extension ===");
-            
+
             var testBundlePath = TestConfiguration.TestExtensionPath;
-            
+
             // Parse the extension to find components with existing dark icons
             TestContext.Out.WriteLine($"Parsing extension from: {testBundlePath}");
             var extensions = ParseInstalledExtensions(new[] { testBundlePath });
             var extension = extensions.First();
-            
+
             TestContext.Out.WriteLine($"Extension parsed: {extension.Name}");
-            
+
             // Search for all components and check which ones have icons
             var allComponents = GetAllComponentsFlat(extension);
             TestContext.Out.WriteLine($"Total components found: {allComponents.Count}");
-            
+
             var componentsWithIcons = allComponents.Where(c => c.Icons.Count > 0).ToList();
             TestContext.Out.WriteLine($"Components with icons: {componentsWithIcons.Count}");
-            
+
             var componentsWithDarkIcons = allComponents.Where(c => c.Icons.HasDarkIcons).ToList();
             TestContext.Out.WriteLine($"Components with dark icons: {componentsWithDarkIcons.Count}");
-            
+
             // List all components with icons
             foreach (var component in componentsWithIcons)
             {
@@ -177,13 +177,13 @@ namespace pyRevitExtensionParserTest
                 TestContext.Out.WriteLine($"  Type: {component.Type}");
                 TestContext.Out.WriteLine($"  Total icons: {component.Icons.Count}");
                 TestContext.Out.WriteLine($"  Has dark icons: {component.Icons.HasDarkIcons}");
-                
+
                 foreach (var icon in component.Icons)
                 {
                     TestContext.Out.WriteLine($"    - {icon.FileName} (Type: {icon.Type}, Dark: {icon.IsDark})");
                 }
             }
-            
+
             // Validate dark icons if found
             if (componentsWithDarkIcons.Count > 0)
             {
@@ -196,7 +196,7 @@ namespace pyRevitExtensionParserTest
                         Assert.AreEqual(IconType.DarkStandard, primaryDarkIcon.Type, "Primary dark icon should be DarkStandard type");
                     }
                 }
-                
+
                 Assert.Pass($"Found {componentsWithDarkIcons.Count} component(s) with dark icons.");
             }
             else
@@ -205,7 +205,7 @@ namespace pyRevitExtensionParserTest
                 Assert.Inconclusive("No dark icons found in the extension. Test skipped.");
             }
         }
-        
+
         [Test]
         public void TestThemeAwareIconSelection()
         {
@@ -216,7 +216,7 @@ namespace pyRevitExtensionParserTest
             // Create light and dark icons
             var iconPath = Path.Combine(TestTempDir, "icon.png");
             var darkIconPath = Path.Combine(TestTempDir, "icon.dark.png");
-            
+
             CreateTestIcon(iconPath, 32, 32, Color.Blue);
             CreateTestIcon(darkIconPath, 32, 32, Color.Orange);
 
@@ -244,7 +244,7 @@ namespace pyRevitExtensionParserTest
         private List<ParsedComponent> GetAllComponentsFlat(ParsedComponent root)
         {
             var result = new List<ParsedComponent> { root };
-            
+
             if (root.Children != null)
             {
                 foreach (var child in root.Children)
@@ -252,7 +252,7 @@ namespace pyRevitExtensionParserTest
                     result.AddRange(GetAllComponentsFlat(child));
                 }
             }
-            
+
             return result;
         }
 
@@ -260,7 +260,7 @@ namespace pyRevitExtensionParserTest
         private void CreateTestIcon(string filePath, int width, int height, Color? backgroundColor = null)
         {
             var bgColor = backgroundColor ?? Color.Blue;
-            
+
             using (var bitmap = new Bitmap(width, height))
             using (var graphics = Graphics.FromImage(bitmap))
             {
@@ -269,7 +269,7 @@ namespace pyRevitExtensionParserTest
                 {
                     graphics.DrawRectangle(pen, 1, 1, width - 3, height - 3);
                 }
-                
+
                 // Add dark indicator for dark icons
                 var fileName = Path.GetFileName(filePath).ToLowerInvariant();
                 if (fileName == "icon.dark.png" || fileName == "icon.dark.ico")
@@ -280,7 +280,7 @@ namespace pyRevitExtensionParserTest
                         graphics.DrawString("D", font, brush, 2, 2);
                     }
                 }
-                
+
                 bitmap.Save(filePath, ImageFormat.Png);
             }
         }

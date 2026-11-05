@@ -1,4 +1,4 @@
-﻿"""pyrevit.forms facade.
+"""pyrevit.forms facade.
 
 Imports the engine-specific forms backend for the active Python engine.
 """

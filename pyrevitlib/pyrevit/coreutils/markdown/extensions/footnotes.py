@@ -26,9 +26,9 @@ from ..treeprocessors import Treeprocessor
 
 FN_BACKLINK_TEXT = util.STX + "zz1337820767766393qq" + util.ETX
 NBSP_PLACEHOLDER = util.STX + "qq3936677670287331zz" + util.ETX
-DEF_RE = re.compile(r'[ ]{0,3}\[\^([^\]]*)\]:\s*(.*)')
-TABBED_RE = re.compile(r'((\t)|(    ))(.*)')
-RE_REF_ID = re.compile(r'(fnref)(\d+)')
+DEF_RE = re.compile(r"[ ]{0,3}\[\^([^\]]*)\]:\s*(.*)")
+TABBED_RE = re.compile(r"((\t)|(    ))(.*)")
+RE_REF_ID = re.compile(r"(fnref)(\d+)")
 
 
 class FootnoteExtension(Extension):
@@ -37,17 +37,18 @@ class FootnoteExtension(Extension):
     def __init__(self, *args, **kwargs):
         """Setup configs."""
         self.config = {
-            'PLACE_MARKER':
-                ["///Footnotes Go Here///",
-                 "The text string that marks where the footnotes go"],
-            'UNIQUE_IDS':
-                [False,
-                 "Avoid name collisions across "
-                 "multiple calls to reset()."],
-            "BACKLINK_TEXT":
-                ["&#8617;",
-                 "The text string that links from the footnote "
-                 "to the reader's place."]
+            "PLACE_MARKER": [
+                "///Footnotes Go Here///",
+                "The text string that marks where the footnotes go",
+            ],
+            "UNIQUE_IDS": [
+                False,
+                "Avoid name collisions across multiple calls to reset().",
+            ],
+            "BACKLINK_TEXT": [
+                "&#8617;",
+                "The text string that links from the footnote to the reader's place.",
+            ],
         }
         super(FootnoteExtension, self).__init__(*args, **kwargs)
 
@@ -64,27 +65,23 @@ class FootnoteExtension(Extension):
         self.parser = md.parser
         self.md = md
         # Insert a preprocessor before ReferencePreprocessor
-        md.preprocessors.add(
-            "footnote", FootnotePreprocessor(self), "<reference"
-        )
+        md.preprocessors.add("footnote", FootnotePreprocessor(self), "<reference")
         # Insert an inline pattern before ImageReferencePattern
-        FOOTNOTE_RE = r'\[\^([^\]]*)\]'  # blah blah [^1] blah
+        FOOTNOTE_RE = r"\[\^([^\]]*)\]"  # blah blah [^1] blah
         md.inlinePatterns.add(
             "footnote", FootnotePattern(FOOTNOTE_RE, self), "<reference"
         )
         # Insert a tree-processor that would actually add the footnote div
         # This must be before all other treeprocessors (i.e., inline and
         # codehilite) so they can run on the the contents of the div.
-        md.treeprocessors.add(
-            "footnote", FootnoteTreeprocessor(self), "_begin"
-        )
+        md.treeprocessors.add("footnote", FootnoteTreeprocessor(self), "_begin")
 
         # Insert a tree-processor that will run after inline is done.
         # In this tree-processor we want to check our duplicate footnote tracker
         # And add additional backrefs to the footnote pointing back to the
         # duplicated references.
         md.treeprocessors.add(
-            "footnote-duplicate", FootnotePostTreeprocessor(self), '>inline'
+            "footnote-duplicate", FootnotePostTreeprocessor(self), ">inline"
         )
 
         # Insert a postprocessor after amp_substitute oricessor
@@ -109,9 +106,14 @@ class FootnoteExtension(Extension):
             ref, rest = reference.split(self.get_separator(), 1)
             m = RE_REF_ID.match(ref)
             if m:
-                reference = '%s%d%s%s' % (m.group(1), int(m.group(2))+1, self.get_separator(), rest)
+                reference = "%s%d%s%s" % (
+                    m.group(1),
+                    int(m.group(2)) + 1,
+                    self.get_separator(),
+                    rest,
+                )
             else:
-                reference = '%s%d%s%s' % (ref, 2, self.get_separator(), rest)
+                reference = "%s%d%s%s" % (ref, 2, self.get_separator(), rest)
 
         self.used_refs.add(reference)
         if original_ref in self.found_refs:
@@ -122,6 +124,7 @@ class FootnoteExtension(Extension):
 
     def findFootnotesPlaceholder(self, root):
         """Return ElementTree Element that contains Footnote placeholder."""
+
         def finder(element):
             for child in element:
                 if child.text:
@@ -143,23 +146,25 @@ class FootnoteExtension(Extension):
         self.footnotes[id] = text
 
     def get_separator(self):
-        if self.md.output_format in ['html5', 'xhtml5']:
-            return '-'
-        return ':'
+        if self.md.output_format in ["html5", "xhtml5"]:
+            return "-"
+        return ":"
 
     def makeFootnoteId(self, id):
         """Return footnote link id."""
         if self.getConfig("UNIQUE_IDS"):
-            return 'fn%s%d-%s' % (self.get_separator(), self.unique_prefix, id)
+            return "fn%s%d-%s" % (self.get_separator(), self.unique_prefix, id)
         else:
-            return 'fn%s%s' % (self.get_separator(), id)
+            return "fn%s%s" % (self.get_separator(), id)
 
     def makeFootnoteRefId(self, id, found=False):
         """Return footnote back-link id."""
         if self.getConfig("UNIQUE_IDS"):
-            return self.unique_ref('fnref%s%d-%s' % (self.get_separator(), self.unique_prefix, id), found)
+            return self.unique_ref(
+                "fnref%s%d-%s" % (self.get_separator(), self.unique_prefix, id), found
+            )
         else:
-            return self.unique_ref('fnref%s%s' % (self.get_separator(), id), found)
+            return self.unique_ref("fnref%s%s" % (self.get_separator(), id), found)
 
     def makeFootnotesDiv(self, root):
         """Return div of footnotes as et Element."""
@@ -167,7 +172,7 @@ class FootnoteExtension(Extension):
             return None
 
         div = util.etree.Element("div")
-        div.set('class', 'footnote')
+        div.set("class", "footnote")
         util.etree.SubElement(div, "hr")
         ol = util.etree.SubElement(div, "ol")
         surrogate_parent = util.etree.Element("div")
@@ -184,13 +189,12 @@ class FootnoteExtension(Extension):
                 surrogate_parent.remove(el)
             backlink = util.etree.Element("a")
             backlink.set("href", "#" + self.makeFootnoteRefId(id))
-            if self.md.output_format not in ['html5', 'xhtml5']:
+            if self.md.output_format not in ["html5", "xhtml5"]:
                 backlink.set("rev", "footnote")  # Invalid in HTML5
             backlink.set("class", "footnote-backref")
             backlink.set(
                 "title",
-                "Jump back to footnote %d in the text" %
-                (self.footnotes.index(id)+1)
+                "Jump back to footnote %d in the text" % (self.footnotes.index(id) + 1),
             )
             backlink.text = FN_BACKLINK_TEXT
 
@@ -226,13 +230,13 @@ class FootnotePreprocessor(Preprocessor):
         while True:
             m = DEF_RE.match(lines[i])
             if m:
-                fn, _i = self.detectTabbed(lines[i+1:])
+                fn, _i = self.detectTabbed(lines[i + 1 :])
                 fn.insert(0, m.group(2))
-                i += _i-1  # skip past footnote
+                i += _i - 1  # skip past footnote
                 self.footnotes.setFootnote(m.group(1), "\n".join(fn))
             else:
                 newlines.append(lines[i])
-            if len(lines) > i+1:
+            if len(lines) > i + 1:
                 i += 1
             else:
                 break
@@ -270,7 +274,7 @@ class FootnotePreprocessor(Preprocessor):
                     i += 1
                     continue
                 else:
-                    return items, i+1
+                    return items, i + 1
 
             else:  # Blank line: _maybe_ we are done.
                 blank_line = True
@@ -308,11 +312,11 @@ class FootnotePattern(Pattern):
         if id in self.footnotes.footnotes.keys():
             sup = util.etree.Element("sup")
             a = util.etree.SubElement(sup, "a")
-            sup.set('id', self.footnotes.makeFootnoteRefId(id, found=True))
-            a.set('href', '#' + self.footnotes.makeFootnoteId(id))
-            if self.footnotes.md.output_format not in ['html5', 'xhtml5']:
-                a.set('rel', 'footnote')  # invalid in HTML5
-            a.set('class', 'footnote-ref')
+            sup.set("id", self.footnotes.makeFootnoteRefId(id, found=True))
+            a.set("href", "#" + self.footnotes.makeFootnoteId(id))
+            if self.footnotes.md.output_format not in ["html5", "xhtml5"]:
+                a.set("rel", "footnote")  # invalid in HTML5
+            a.set("class", "footnote-ref")
             a.text = util.text_type(self.footnotes.footnotes.index(id) + 1)
             return sup
         else:
@@ -327,16 +331,21 @@ class FootnotePostTreeprocessor(Treeprocessor):
 
     def add_duplicates(self, li, duplicates):
         """Adjust current li and add the duplicates: fnref2, fnref3, etc."""
-        for link in li.iter('a'):
+        for link in li.iter("a"):
             # Find the link that needs to be duplicated.
-            if link.attrib.get('class', '') == 'footnote-backref':
-                ref, rest = link.attrib['href'].split(self.footnotes.get_separator(), 1)
+            if link.attrib.get("class", "") == "footnote-backref":
+                ref, rest = link.attrib["href"].split(self.footnotes.get_separator(), 1)
                 # Duplicate link the number of times we need to
                 # and point the to the appropriate references.
                 links = []
                 for index in range(2, duplicates + 1):
                     sib_link = copy.deepcopy(link)
-                    sib_link.attrib['href'] = '%s%d%s%s' % (ref, index, self.footnotes.get_separator(), rest)
+                    sib_link.attrib["href"] = "%s%d%s%s" % (
+                        ref,
+                        index,
+                        self.footnotes.get_separator(),
+                        rest,
+                    )
                     links.append(sib_link)
                     self.offset += 1
                 # Add all the new duplicate links.
@@ -347,8 +356,8 @@ class FootnotePostTreeprocessor(Treeprocessor):
 
     def get_num_duplicates(self, li):
         """Get the number of duplicate refs of the footnote."""
-        fn, rest = li.attrib.get('id', '').split(self.footnotes.get_separator(), 1)
-        link_id = '%sref%s%s' % (fn, self.footnotes.get_separator(), rest)
+        fn, rest = li.attrib.get("id", "").split(self.footnotes.get_separator(), 1)
+        link_id = "%sref%s%s" % (fn, self.footnotes.get_separator(), rest)
         return self.footnotes.found_refs.get(link_id, 0)
 
     def handle_duplicates(self, parent):
@@ -363,11 +372,11 @@ class FootnotePostTreeprocessor(Treeprocessor):
     def run(self, root):
         """Crawl the footnote div and add missing duplicate footnotes."""
         self.offset = 0
-        for div in root.iter('div'):
-            if div.attrib.get('class', '') == 'footnote':
+        for div in root.iter("div"):
+            if div.attrib.get("class", "") == "footnote":
                 # Footnotes shoul be under the first orderd list under
                 # the footnote div.  So once we find it, quit.
-                for ol in div.iter('ol'):
+                for ol in div.iter("ol"):
                     self.handle_duplicates(ol)
                     break
 
@@ -397,13 +406,12 @@ class FootnoteTreeprocessor(Treeprocessor):
 
 class FootnotePostprocessor(Postprocessor):
     """Replace placeholders with html entities."""
+
     def __init__(self, footnotes):
         self.footnotes = footnotes
 
     def run(self, text):
-        text = text.replace(
-            FN_BACKLINK_TEXT, self.footnotes.getConfig("BACKLINK_TEXT")
-        )
+        text = text.replace(FN_BACKLINK_TEXT, self.footnotes.getConfig("BACKLINK_TEXT"))
         return text.replace(NBSP_PLACEHOLDER, "&#160;")
 
 

@@ -115,16 +115,16 @@ def dissect_parameter_filter(doc, filter_element, lightweight=False):
                     spec = param_elem.GetDataType()
                 else:
                     try:
-                        collector = query.get_elements_by_categories(result["categories"], doc=doc)
+                        collector = query.get_elements_by_categories(
+                            result["categories"], doc=doc
+                        )
                         elem = next(iter(collector), None)
                         param = query.get_param(elem, param_id) if elem else None
                         if param:
                             spec = param.Definition.GetDataType()
                     except Exception:
                         pass
-                display = DB.UnitFormatUtils.Format(
-                    doc.GetUnits(), spec, val, False
-                )
+                display = DB.UnitFormatUtils.Format(doc.GetUnits(), spec, val, False)
             except Exception:
                 display = str(val)
             result["display_value"] = display
@@ -393,9 +393,7 @@ def get_ogs_from_prop_in_view(doc, view, prop):
             # 4. Category match
             if prop.categories:
                 prop_cat_ids = set(
-                    get_elementid_value(c.Id)
-                    for c in prop.categories
-                    if c
+                    get_elementid_value(c.Id) for c in prop.categories if c
                 )
                 filter_cat_ids = set(
                     get_elementid_value(cat_id)

@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">创建图纸</system:String>
     <system:String x:Key="CreatePlaceholders">创建占位符</system:String>
     <system:String x:Key="CreateButton">创建</system:String>
+    <system:String x:Key="SheetParametersLabel">图纸参数</system:String>
+    <system:String x:Key="SheetParametersHint">勾选要为本批次创建的每张图纸设置的参数，并为每个参数输入值。</system:String>
 </ResourceDictionary>

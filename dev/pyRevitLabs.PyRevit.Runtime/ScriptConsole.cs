@@ -3,6 +3,7 @@ using System.Windows;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -15,7 +16,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
 using pyRevitLabs.PyRevit;
-using PyRevitLabs.UI.Client;
+using PyRevitLabs.PyRevit.Renderer;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public struct ScriptConsoleDebugger {
@@ -32,11 +33,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public static class ScriptConsoleConfigs {
         public static string DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         public static string DOCHead = "<head>" +
-                                       "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />" +
                                        "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />" +
                                        "<meta name=\"appversion\" content=\"{0}\" />" +
                                        "<meta name=\"rendererversion\" content=\"{1}\" />" +
-                                       "<link rel=\"stylesheet\" href=\"file:///{2}\">" +
+                                       "<link rel=\"stylesheet\" href=\"{2}\">" +
                                        "</head>";
         public static string DefaultBlock = "<div class=\"entry\"></div>";
         public static string ErrorBlock = "<div class=\"errorentry\"></div>";
@@ -46,11 +46,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string CLRErrorHeader = "<strong>Script Executor Traceback:</strong>";
         public static string CSharpErrorHeader = "<strong>C# Traceback:</strong>";
         public static string VBErrorHeader = "<strong>VB.NET Traceback:</strong>";
-        public static string ProgressBlock = "<div class=\"progressindicator\" id=\"pbarcontainer\"></div>";
         public static string ProgressBlockId = "pbarcontainer";
-        public static string ProgressBar = "<div class=\"progressbar\" id=\"pbar\"></div>";
         public static string ProgressBarId = "pbar";
-        public static string InlineWaitBlock = "<div class=\"inlinewait\" id=\"inlnwait\">\u280b Preparing results...</div>";
         public static string InlineWaitBlockId = "inlnwait";
         public static List<string> InlineWaitSequence = new List<string>(){
             "\u280b Preparing results...",
@@ -164,10 +161,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
+    /// <summary>
+    /// Output window hosting a Chromium (WebView2) renderer. Content mutations
+    /// are buffered and flushed to the browser in order; DOM reads and other
+    /// synchronous operations block via nested message pumps so engine worker
+    /// threads can use this window directly.
+    /// </summary>
     public partial class ScriptConsole : ScriptConsoleTemplate, IComponentConnector, IDisposable {
         private bool _contentLoaded;
         private bool _debugMode;
-        private bool _frozen = false;
+        private volatile bool _frozen = false;
 
         // Guards against re-entrant render pumping. All output windows share the
         // main UI thread dispatcher, so a synchronous render pump triggered by one
@@ -177,9 +180,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static bool _renderingFrame;
         private string _lastLine = string.Empty;
         private DispatcherTimer _animationTimer;
-        private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
         private ScriptConsoleLowLevelKeyHook _keyHook;
+
+        private readonly IScriptRenderer _renderer;
+        private readonly object _pendingLock = new object();
+        private readonly StringBuilder _pendingHtml = new StringBuilder();
+        private readonly StringBuilder _frozenPendingHtml = new StringBuilder();
+        private readonly Queue<string> _pendingScripts = new Queue<string>();
+        private volatile bool _flushQueued;
+        private volatile bool _documentStarted;
+        private volatile bool _outputLossReported;
+        private string _frozenBodyHtml;
+        private System.Windows.Controls.TextBox _plainTextOutput;
+        private readonly RowDefinition _rendererRow = new RowDefinition();
+        private int _inlineWaitIndex = -1;
+        private string _initialStyleSheetPath;
+        private string _outputHtmlPath;
 
         private List<ScriptConsoleDebugger> _supportedDebuggers =
             new List<ScriptConsoleDebugger> {
@@ -204,6 +221,51 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
         };
 
+        // JS is assembled by concatenation, never string.Format: the snippets
+        // are full of literal braces that the composite-format parser rejects.
+        private static string BuildInsertEntriesJs(string payloadJson) {
+            return "(function(h){var d=document.body;if(!d)return;"
+                 + "var nb=d.scrollHeight<=window.innerHeight||window.innerHeight+window.scrollY>=d.scrollHeight-50;"
+                 + "d.insertAdjacentHTML('beforeend',h);"
+                 + "if(nb)window.scrollTo(0,d.scrollHeight);})(" + payloadJson + ");";
+        }
+
+        private static string BuildSetElementDisplayJs(string idJson, string displayJsLiteral) {
+            return "(function(id,v){var e=document.getElementById(id);if(e)e.style.display=v;})("
+                 + idJson + "," + displayJsLiteral + ");";
+        }
+
+        private static string BuildUpdateProgressJs(string widthJson) {
+            return "(function(w){"
+                 + "var c=document.getElementById('pbarcontainer');"
+                 + "if(!c){c=document.createElement('div');c.id='pbarcontainer';c.className='progressindicator';"
+                 + "var b=document.createElement('div');b.id='pbar';b.className='progressbar';"
+                 + "c.appendChild(b);document.body.appendChild(c);}"
+                 + "var p=document.getElementById('pbar');"
+                 + "if(p)p.style.width=w;})(" + widthJson + ");";
+        }
+
+        private static string BuildInlineWaitJs(string textJson) {
+            return "(function(t){var w=document.getElementById('inlnwait');"
+                 + "if(!w){w=document.createElement('div');w.id='inlnwait';w.className='inlinewait';"
+                 + "document.body.appendChild(w);}"
+                 + "w.textContent=t;window.scrollTo(0,document.body.scrollHeight);})(" + textJson + ");";
+        }
+
+        private static string BuildInjectHtmlJs(string htmlJson, string targetJson) {
+            return "(function(h,target){(target==='head'?document.head:document.body)"
+                 + ".insertAdjacentHTML('beforeend',h);})(" + htmlJson + "," + targetJson + ");";
+        }
+
+        // Scripts injected through innerHTML never execute in Chromium, so script
+        // tags are built with createElement and appended for real execution.
+        private static string BuildInjectScriptElementJs(string codeJson, string attrsJson, string targetJson) {
+            return "(function(code,attrs,target){var s=document.createElement('script');"
+                 + "for(var k in attrs)s.setAttribute(k,attrs[k]);"
+                 + "s.textContent=code;(target==='head'?document.head:document.body).appendChild(s);})("
+                 + codeJson + "," + attrsJson + "," + targetJson + ");";
+        }
+
         // OutputUniqueId is set in constructor
         // OutputUniqueId is unique for every output window
         public string OutputUniqueId;
@@ -226,10 +288,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // is window expanded?
         public bool IsExpanded = false;
 
-        // Html renderer and its Winforms host, and navigate handler method
-        public System.Windows.Forms.Integration.WindowsFormsHost host;
-        public System.Windows.Forms.WebBrowser renderer;
-        public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
+        // Chromium renderer (WebView2) and its activity/stdin companions
         public ActivityBar activityBar;
         public InputBar stdinBar;
 
@@ -239,6 +298,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // setup unique id for this output window
             OutputUniqueId = Guid.NewGuid().ToString();
+
+            _renderer = ScriptRendererProvider.Create(Dispatcher.CurrentDispatcher);
+            _renderer.NavigationStartingRequested += WebView_NavigationStarting;
+            _renderer.DocumentReady += WebView_DocumentReady;
+            _renderer.MessageReceived += Renderer_MessageReceived;
 
             InitializeComponent();
         }
@@ -258,20 +322,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (InitializeIsolatedComponent())
                 return;
 
-            host = new System.Windows.Forms.Integration.WindowsFormsHost();
-            host.SnapsToDevicePixels = true;
-
-            // Create the WebBrowser control.
-            renderer = new System.Windows.Forms.WebBrowser();
-
-            _navigateHandler = new System.Windows.Forms.WebBrowserNavigatingEventHandler(renderer_Navigating);
-            renderer.Navigating += _navigateHandler;
-
-            // setup the default html page
+            // record the active stylesheet; the initial page is written and
+            // loaded lazily on first renderer use
             SetupDefaultPage();
-
-            // Assign the WebBrowser control as the host control's child.
-            host.Child = renderer;
 
             #region Window Layout
 
@@ -287,11 +340,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             activityBar.Visibility = Visibility.Collapsed;
             Grid.SetRow(activityBar, 0);
 
-            // Add the interop host control to the Grid
-            // control's collection of child controls.
-            var rendererRow = new RowDefinition();
-            baseGrid.RowDefinitions.Add(rendererRow);
-            Grid.SetRow(host, 1);
+            // Add the renderer to the Grid
+            baseGrid.RowDefinitions.Add(_rendererRow);
+            Grid.SetRow(_renderer.Control, baseGrid.RowDefinitions.IndexOf(_rendererRow));
 
             // standard input bar
             var stdinRow = new RowDefinition();
@@ -301,9 +352,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             stdinBar.Visibility = Visibility.Collapsed;
             Grid.SetRow(stdinBar, 2);
 
-            // set activity bar and host
+            // set activity bar and renderer
             baseGrid.Children.Add(activityBar);
-            baseGrid.Children.Add(host);
+            baseGrid.Children.Add(_renderer.Control);
             baseGrid.Children.Add(stdinBar);
             this.Content = baseGrid;
 
@@ -375,14 +426,98 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this._contentLoaded = true;
         }
 
-        public System.Windows.Forms.HtmlDocument ActiveDocument {
-            get { return _isolatedUi || renderer == null ? null : renderer.Document; }
+        /// <summary>
+        /// Raised for each message the page posts with
+        /// <c>window.chrome.webview.postMessage</c>, on the window's UI thread
+        /// and outside Revit API context. Subscribers are released when the
+        /// window closes.
+        /// </summary>
+        public event EventHandler<RendererMessageReceivedEventArgs> WebMessageReceived;
+
+        /// <summary>
+        /// True when the page can exchange messages with the host, i.e. the
+        /// window renders with WebView2 rather than the plain-text fallback.
+        /// Starts the renderer when necessary but never waits for it, so it is
+        /// safe during session load; a missing runtime or broken deployment is
+        /// known as soon as the renderer starts.
+        ///
+        /// Warning: do not switch this to <see cref="EnsureDocumentReadyBlocking"/>.
+        /// That pumps a nested dispatcher frame, which terminates the host when
+        /// reached from Revit API callbacks during session load.
+        /// </summary>
+        public bool SupportsWebMessages {
+            get {
+                if (ClosedByUser || _isolatedUi)
+                    return false;
+                EnsureDocumentReady();
+                return _plainTextOutput == null
+                    && _renderer.Failure == RendererFailure.None
+                    && !_renderer.InitializationFailed;
+            }
         }
 
+        /// <summary>
+        /// Deliver a JSON message to the page's <c>chrome.webview</c> message
+        /// listeners. Returns false when the window cannot deliver messages,
+        /// including while the renderer is starting or the page is navigating.
+        /// </summary>
+        public bool PostWebMessage(string json) {
+            return SupportsWebMessages && _renderer.PostMessage(json);
+        }
+
+        /// <summary>
+        /// Chromium runtime version of the renderer. Initializes the renderer
+        /// when necessary; 0.0 only if initialization is unavailable.
+        /// </summary>
         public Version RendererVersion {
             get {
-                return _isolatedUi || renderer == null ? new Version(0, 0) : renderer.Version;
+                if (_isolatedUi)
+                    return new Version(0, 0);
+                EnsureDocumentReadyBlocking();
+                return Version.TryParse(_renderer.BrowserVersion.Split(' ')[0], out var parsed)
+                    ? parsed
+                    : new Version(0, 0);
             }
+        }
+
+        /// <summary>Engine identity of the renderer, e.g. "WebView2/Chromium".</summary>
+        public string RendererEngine {
+            get {
+                switch (_renderer.Failure) {
+                    case RendererFailure.RuntimeMissing:
+                        return "WebView2 (runtime missing)";
+                    case RendererFailure.BrokenDeployment:
+                        return "WebView2 (failed to start)";
+                    default:
+                        return "WebView2/Chromium";
+                }
+            }
+        }
+
+        /// <summary>
+        /// Full renderer runtime version, e.g. "151.0.4129.107". Initializes
+        /// the renderer when necessary; empty only if unavailable.
+        /// </summary>
+        public string RendererFullVersion {
+            get {
+                if (_isolatedUi)
+                    return string.Empty;
+                EnsureDocumentReadyBlocking();
+                return _renderer.BrowserVersion;
+            }
+        }
+
+        /// <summary>
+        /// Evaluate JavaScript in the current output document and return the
+        /// result: JSON string results are returned decoded, any other result
+        /// (number, boolean, object) is returned as its raw JSON text.
+        /// </summary>
+        public string RunJavaScript(string javaScript) {
+            if (string.IsNullOrEmpty(javaScript) || _isolatedUi)
+                return string.Empty;
+            EnsureDocumentReadyBlocking();
+            var result = _renderer.EvalScript(javaScript);
+            return DecodeJsonString(result) ?? result;
         }
 
         private string GetStyleSheetFile() {
@@ -390,13 +525,54 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return env.ActiveStyleSheet;
         }
 
+        /// <summary>Full current document including the html wrapper.</summary>
         public string GetFullHtml() {
             if (_isolatedUi)
                 return GetIsolatedHtml();
-            var head = ActiveDocument.GetElementsByTagName("head")[0];
-            return ScriptConsoleConfigs.DOCTYPE + head.OuterHtml + ActiveDocument.Body.OuterHtml;
+            EnsureDocumentReadyBlocking();
+            if (_plainTextOutput != null)
+                return ScriptConsoleConfigs.DOCTYPE
+                       + "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" /></head>"
+                       + "<body><pre>"
+                       + System.Net.WebUtility.HtmlEncode(_plainTextOutput.Text)
+                       + "</pre></body></html>";
+            var html = DecodeJsonString(_renderer.EvalScript("document.documentElement.outerHTML"));
+            return ScriptConsoleConfigs.DOCTYPE + (html ?? string.Empty);
         }
 
+        internal string GetHeadHtml() {
+            if (_isolatedUi)
+                return string.Empty;
+            EnsureDocumentReadyBlocking();
+            return DecodeJsonString(_renderer.EvalScript("(document.head ? document.head.innerHTML : '')"))
+                ?? string.Empty;
+        }
+
+        /// <summary>Navigate the renderer to an absolute url, replacing current content.</summary>
+        internal void NavigateInWindow(string url) {
+            if (string.IsNullOrEmpty(url))
+                return;
+            if (_isolatedUi) {
+                NavigateIsolated(url);
+                return;
+            }
+            EnsureDocumentReadyBlocking();
+            _renderer.Navigate(url);
+        }
+
+        /// <summary>
+        /// Apply output font preferences as a CSS override. Replaces the legacy
+        /// WebBrowser control Font property; affects body-level defaults only.
+        /// </summary>
+        internal void SetFont(string fontFamily, float fontSize) {
+            var family = (fontFamily ?? string.Empty).Trim().Replace("'", "\\'");
+            var css = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "body {{ font-family: '{0}' !important; font-size: {1}pt !important; }}",
+                string.IsNullOrEmpty(family) ? "inherit" : family,
+                fontSize > 0 ? fontSize : 10f);
+            InjectHtmlElement("head", "style", css, null);
+        }
         private void ApplyCloseOthersConfig() {
             if (PyRevitConfigs.GetCloseOtherOutputs()) {
                 var mode = PyRevitConfigs.GetCloseOutputMode();
@@ -415,40 +591,124 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private void SetupDefaultPage(string styleSheetFilePath = null) {
-            string cssFilePath;
-            if (styleSheetFilePath != null)
-                cssFilePath = styleSheetFilePath;
-            else
-                cssFilePath = GetStyleSheetFile();
-
+        /// <summary>
+        /// Record the stylesheet for this window and reset the document if one
+        /// is already loaded. The initial page materializes lazily on first
+        /// renderer interaction.
+        /// </summary>
+        public void SetupDefaultPage(string styleSheetFilePath = null) {
+            _initialStyleSheetPath = styleSheetFilePath ?? GetStyleSheetFile();
             if (_isolatedUi) {
-                SetupIsolatedDefaultPage(cssFilePath);
+                SetupIsolatedDefaultPage(ToStyleSheetHref(_initialStyleSheetPath));
                 return;
             }
-
-            // create the head with default styling
-            var dochead = string.Format(
-                ScriptConsoleConfigs.DOCTYPE + ScriptConsoleConfigs.DOCHead,
-                AppVersion,
-                RendererVersion,
-                cssFilePath
-                );
-            // create default html
-            renderer.DocumentText = string.Format("{0}<html><body></body></html>", dochead);
-
-            while (ActiveDocument.Body == null)
-                System.Windows.Forms.Application.DoEvents();
+            if (_documentStarted && _renderer.IsCoreReady) {
+                SyncFlushBlocking();
+                _renderer.Navigate(WriteInitialPageFile());
+            }
         }
 
         public void WaitReadyBrowser() {
-            if (!_isolatedUi)
-                System.Windows.Forms.Application.DoEvents();
+            EnsureDocumentReadyBlocking();
         }
 
+        /// <summary>Start the renderer without waiting; safe from the print path.</summary>
         internal void WaitReadyBrowserLite() {
-            if (!_isolatedUi)
-                System.Windows.Forms.Application.DoEvents();
+            EnsureDocumentReady();
+        }
+
+        /// <summary>
+        /// Bring the WebView2 core online and load the initial page, blocking
+        /// until the document is interactive. Safe from any thread.
+        /// </summary>
+        internal void EnsureDocumentReady() {
+            if (ClosedByUser || _isolatedUi)
+                return;
+            if (!Dispatcher.CheckAccess()) {
+                try {
+                    Dispatcher.Invoke(new Action(EnsureDocumentReady));
+                }
+                catch {
+                }
+                return;
+            }
+            // The WebView2 controller can only be created once the window has
+            // been shown: the renderer's child HWND does not exist before.
+            // Surface the window exactly like the first printed entry would.
+            if (!IsVisible) {
+                try {
+                    Show();
+                    Focus();
+                }
+                catch {
+                }
+            }
+            _renderer.EnsureReady(ProvideInitialPageUri);
+            if (_renderer.Failure != RendererFailure.None && _plainTextOutput == null) {
+                var grid = Content as Grid;
+                if (grid == null)
+                    return;
+                _plainTextOutput = new System.Windows.Controls.TextBox {
+                    IsReadOnly = true,
+                    AcceptsReturn = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Margin = new Thickness(12),
+                    Text = BuildPlainTextFallbackNotice()
+                };
+                Grid.SetRow(_plainTextOutput, grid.RowDefinitions.IndexOf(_rendererRow));
+                _renderer.Control.Visibility = Visibility.Collapsed;
+                grid.Children.Add(_plainTextOutput);
+            }
+        }
+
+        /// <summary>
+        /// What the plain-text fallback tells the user. A broken deployment is
+        /// not fixed by installing the Evergreen runtime, so it must not offer
+        /// the download.
+        /// </summary>
+        private string BuildPlainTextFallbackNotice() {
+            if (_renderer.Failure == RendererFailure.BrokenDeployment) {
+                return "The WebView2 components of this pyRevit installation failed to start.\n"
+                    + "Script output is displayed as plain text. Reinstall pyRevit to restore the "
+                    + "output window.\n\n";
+            }
+
+            return "WebView2 Runtime not found.\n"
+                + "Script output is displayed as plain text. Install the Microsoft Edge "
+                + "WebView2 Evergreen Runtime, then reopen this window:\n"
+                + ScriptRendererConsts.RuntimeDownloadUrl + "\n\n";
+        }
+
+        private string ProvideInitialPageUri() {
+            if (_documentStarted)
+                return null;
+            _documentStarted = true;
+            return WriteInitialPageFile();
+        }
+
+        private static string ToStyleSheetHref(string cssPath) {
+            var cssHref = cssPath ?? string.Empty;
+            try {
+                cssHref = new Uri(Path.GetFullPath(cssPath)).AbsoluteUri;
+            }
+            catch {
+            }
+            return cssHref;
+        }
+
+        private string WriteInitialPageFile() {
+            var cssHref = ToStyleSheetHref(_initialStyleSheetPath ?? GetStyleSheetFile());
+            var dochead = string.Format(
+                ScriptConsoleConfigs.DOCTYPE + ScriptConsoleConfigs.DOCHead,
+                AppVersion,
+                _renderer.BrowserVersion,
+                cssHref
+                );
+            var html = dochead + "<html><body></body></html>";
+            _outputHtmlPath = Path.Combine(UserEnv.UserTemp, string.Format("pyrevit-output-{0}.html", OutputUniqueId));
+            File.WriteAllText(_outputHtmlPath, html);
+            return new Uri(_outputHtmlPath).AbsoluteUri;
         }
 
         public string OutputTitle {
@@ -480,60 +740,56 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
         }
 
+        /// <summary>Buffers subsequent output until <see cref="Unfreeze"/> in either renderer.</summary>
         public void Freeze() {
+            if (_frozen)
+                return;
             if (_isolatedUi) {
-                _isolatedFrozenHtml.Clear();
-                _frozen = true;
+                FreezeIsolated();
                 return;
             }
-            WaitReadyBrowser();
-            _lastDocumentBody = ActiveDocument.CreateElement("<body>");
-            _lastDocumentBody.InnerHtml = ActiveDocument.Body.InnerHtml;
+            EnsureDocumentReadyBlocking();
+            _frozenBodyHtml = _renderer.Failure != RendererFailure.None
+                ? string.Empty
+                : DecodeJsonString(_renderer.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
             _frozen = true;
             UpdateInlineWaitAnimation();
         }
 
+        /// <summary>Releases buffered output to the browser or the plain-text fallback.</summary>
         public void Unfreeze() {
+            if (!_frozen)
+                return;
             if (_isolatedUi) {
-                if (_frozen) {
-                    _frozen = false;
-                    if (_isolatedFrozenHtml.Length > 0) {
-                        EnsureIsolatedWindow();
-                        Wait(IsolatedOutput.AppendHtmlAsync(OutputUniqueId, _isolatedFrozenHtml.ToString()));
-                        _isolatedFrozenHtml.Clear();
-                    }
-                }
+                UnfreezeIsolated();
                 return;
             }
-            if (_frozen) {
-                WaitReadyBrowser();
-                ActiveDocument.Body.InnerHtml = _lastDocumentBody.InnerHtml;
-                _frozen = false;
-                _lastDocumentBody = null;
-                UpdateInlineWaitAnimation(false);
+            EnsureDocumentReadyBlocking();
+            string snapshot;
+            lock (_pendingLock) {
+                if (_frozenPendingHtml.Length > 0) {
+                    _frozenBodyHtml += _frozenPendingHtml.ToString();
+                    _frozenPendingHtml.Clear();
+                }
+                snapshot = _frozenBodyHtml ?? string.Empty;
             }
+            if (_renderer.Failure != RendererFailure.None) {
+                lock (_pendingLock) {
+                    _pendingHtml.Append(snapshot);
+                }
+            }
+            else {
+                _renderer.EvalScript("document.body.innerHTML = " + ToJsString(snapshot) + ";");
+            }
+            _frozenBodyHtml = null;
+            _frozen = false;
+            UpdateInlineWaitAnimation(false);
+            if (_renderer.Failure != RendererFailure.None)
+                QueueFlush();
         }
 
         public void ScrollToBottom() {
-            if (ActiveDocument != null) {
-                ActiveDocument.Window.ScrollTo(0, ActiveDocument.Body.ScrollRectangle.Height);
-            }
-        }
-
-        private bool IsScrolledNearBottom() {
-            if (ActiveDocument == null || ActiveDocument.Body == null)
-                return true;
-            try {
-                var body = ActiveDocument.Body;
-                var docHeight = body.ScrollRectangle.Height;
-                var view = ActiveDocument.Window;
-                if (docHeight <= 0 || view.Size.Height >= docHeight)
-                    return true;
-                return (body.ScrollTop + view.Size.Height) >= (docHeight - 50);
-            }
-            catch {
-                return true;
-            }
+            PostScriptWhenReady("window.scrollTo(0, document.body.scrollHeight);");
         }
 
         internal void ForceRenderFrame() {
@@ -541,6 +797,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             _renderingFrame = true;
             try {
+                // A queued flush sits below Render priority in the dispatcher
+                // queue and Invoke(Render) will not process it, so drain the
+                // buffer synchronously or output never appears when nothing
+                // else pumps this dispatcher.
+                SyncFlushBlocking();
                 if (Dispatcher != null
                         && !Dispatcher.HasShutdownStarted
                         && !Dispatcher.HasShutdownFinished) {
@@ -554,21 +815,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>Focuses the visible browser or plain-text output control.</summary>
         public void FocusOutput() {
             if (_isolatedUi) {
-                EnsureIsolatedWindow();
-                Wait(IsolatedOutput.FocusAsync(OutputUniqueId));
+                FocusIsolated();
                 return;
             }
-            renderer.Focus();
+            if (_plainTextOutput != null)
+                _plainTextOutput.Focus();
+            else
+                _renderer.Control.Focus();
         }
 
-        public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType) {
-            WaitReadyBrowser();
-
+        /// <summary>
+        /// Escape and wrap contents into the given block template
+        /// (e.g. <see cref="ScriptConsoleConfigs.DefaultBlock"/>) and return
+        /// ready-to-insert html.
+        /// </summary>
+        public string ComposeEntry(string contents, string HtmlElementType) {
             // order is important
             // "<"      --->    &lt;
-            contents = ScriptConsoleConfigs.EscapeForHtml(contents);
+            contents = ScriptConsoleConfigs.EscapeForHtml(contents ?? string.Empty);
             // &clt;    --->    ">"
             contents = ScriptConsoleConfigs.FromCustomHtmlTags(contents);
             // "\n"     --->    <br/>
@@ -576,9 +843,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // :heart:  --->    \uFFFF (emoji unicode)
             contents = Emojis.Emojize(contents);
 
-            var htmlElement = ActiveDocument.CreateElement(HtmlElementType);
-            htmlElement.InnerHtml = contents;
-            return htmlElement;
+            return WrapInBlock(contents, HtmlElementType);
+        }
+
+        internal static string WrapInBlock(string contents, string blockTemplate) {
+            if (string.IsNullOrEmpty(blockTemplate))
+                return contents;
+            var closeIndex = blockTemplate.LastIndexOf("</", StringComparison.OrdinalIgnoreCase);
+            return closeIndex < 0
+                ? blockTemplate + contents
+                : blockTemplate.Insert(closeIndex, contents);
         }
 
         public void AppendText(string OutputText, string HtmlElementType, bool record = true) {
@@ -590,19 +864,199 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (record)
                 _lastLine = OutputText;
 
-            if (!_frozen) {
-                var document = ActiveDocument;
-                if (document == null || document.Body == null)
-                    throw new InvalidOperationException(
-                        "Console renderer is not ready."
-                        );
-                document.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
-                if (IsScrolledNearBottom())
-                    ScrollToBottom();
+            AppendEntry(ComposeEntry(OutputText, HtmlElementType));
+        }
+
+        private void AppendEntry(string entryHtml) {
+            if (string.IsNullOrEmpty(entryHtml))
+                return;
+
+            lock (_pendingLock) {
+                if (_frozen)
+                    _frozenPendingHtml.Append(entryHtml);
+                else
+                    _pendingHtml.Append(entryHtml);
             }
-            else if (_lastDocumentBody != null) {
-                _lastDocumentBody.AppendChild(ComposeEntry(OutputText, HtmlElementType));
+
+            if (!_frozen)
+                QueueFlush();
+        }
+
+        /// <summary>
+        /// Warning: the callback swallows its exceptions. An exception escaping a
+        /// <see cref="Dispatcher.BeginInvoke(Delegate, DispatcherPriority)"/>
+        /// callback reaches <c>Dispatcher.UnhandledException</c> and terminates
+        /// Revit; output failing to render must never be fatal.
+        /// </summary>
+        private void QueueFlush() {
+            if (_flushQueued || ClosedByUser)
+                return;
+            _flushQueued = true;
+            Dispatcher.BeginInvoke(
+                new Action(() => {
+                    try {
+                        FlushPendingEntries();
+                    }
+                    catch (Exception ex) {
+                        ScriptRendererLog.Error("output flush failed. {0}", ex);
+                    }
+                }),
+                DispatcherPriority.Normal);
+        }
+
+        /// <summary>
+        /// Post buffered entries into the document, in submission order.
+        ///
+        /// Important: writes are fire-and-forget. <c>ExecuteScriptAsync</c>
+        /// preserves submission order, so a later read still observes these
+        /// inserts, and the print path must never pump a nested dispatcher frame —
+        /// it runs inside Revit API callbacks during session load.
+        ///
+        /// Content arriving before the document is ready stays buffered until
+        /// <see cref="IScriptRenderer.DocumentReady"/>; re-queueing instead would
+        /// spin the dispatcher for as long as the core takes to come up.
+        /// A missing runtime displays buffered entries as plain text.
+        /// </summary>
+        private void FlushPendingEntries() {
+            _flushQueued = false;
+
+            string payload;
+            lock (_pendingLock) {
+                payload = _pendingHtml.ToString();
+                _pendingHtml.Clear();
             }
+
+            if (payload.Length == 0 || ClosedByUser)
+                return;
+
+            EnsureDocumentReady();
+
+            if (_renderer.Failure != RendererFailure.None) {
+                var plainText = ToPlainText(payload);
+                if (plainText.Length == 0)
+                    return;
+                if (!ScriptOutputUi.TryBeginInvoke(() => {
+                    if (_plainTextOutput == null) {
+                        ReportOutputLossOnce();
+                        return;
+                    }
+                    _plainTextOutput.AppendText(plainText);
+                    _plainTextOutput.ScrollToEnd();
+                }))
+                    ReportOutputLossOnce();
+                return;
+            }
+
+            if (_renderer.InitializationFailed) {
+                ReportOutputLossOnce();
+                return;
+            }
+
+            if (!_renderer.IsDocumentReady) {
+                lock (_pendingLock) {
+                    _pendingHtml.Insert(0, payload);
+                }
+                return;
+            }
+
+            _renderer.PostScript(BuildInsertEntriesJs(ToJsString(payload)));
+        }
+
+        internal static string ToPlainText(string html) {
+            var text = Regex.Replace(html, @"</(?:td|th)>", "\t", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\t*</tr>", "\n", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\n?</table>", string.Empty, RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"<br\s*/?>|</(?:div|p|pre|h[1-6]|li)>", "\n", RegexOptions.IgnoreCase);
+            return System.Net.WebUtility.HtmlDecode(Regex.Replace(text, "<[^>]*>", string.Empty));
+        }
+
+        /// <summary>
+        /// Report discarded output once per window: this is reached on every
+        /// subsequent write, and the record itself can reach the console and
+        /// schedule another flush.
+        /// </summary>
+        private void ReportOutputLossOnce() {
+            if (_outputLossReported)
+                return;
+            _outputLossReported = true;
+            ScriptRendererLog.Error(
+                "discarding output for this window: failure={0} initFailed={1}",
+                _renderer.Failure, _renderer.InitializationFailed);
+        }
+
+        private void Renderer_MessageReceived(object sender, RendererMessageReceivedEventArgs e) {
+            var handlers = WebMessageReceived;
+            if (handlers == null)
+                return;
+            foreach (EventHandler<RendererMessageReceivedEventArgs> handler in handlers.GetInvocationList()) {
+                try {
+                    handler(this, e);
+                }
+                catch (Exception ex) {
+                    ScriptRendererLog.Error("web message handler failed. {0}", ex);
+                }
+            }
+        }
+
+        private void WebView_DocumentReady(object sender, EventArgs e) {
+            FlushPendingEntries();
+            FlushPendingScripts();
+        }
+
+        /// <summary>Push all buffered entries into the document, in order.</summary>
+        internal void SyncFlushBlocking() {
+            bool workPending;
+            lock (_pendingLock) {
+                workPending = _flushQueued || _pendingHtml.Length > 0;
+            }
+            if (workPending)
+                FlushPendingEntries();
+            FlushPendingScripts();
+        }
+
+        private void PostScriptWhenReady(string javaScript) {
+            if (string.IsNullOrEmpty(javaScript) || ClosedByUser || _isolatedUi)
+                return;
+
+            EnsureDocumentReady();
+            lock (_pendingLock) {
+                if (!_renderer.IsDocumentReady) {
+                    _pendingScripts.Enqueue(javaScript);
+                    return;
+                }
+            }
+
+            _renderer.PostScript(javaScript);
+        }
+
+        private void FlushPendingScripts() {
+            string[] pendingScripts;
+            lock (_pendingLock) {
+                if (_pendingScripts.Count == 0 || ClosedByUser)
+                    return;
+                pendingScripts = _pendingScripts.ToArray();
+                _pendingScripts.Clear();
+            }
+
+            foreach (var pendingScript in pendingScripts)
+                _renderer.PostScript(pendingScript);
+        }
+
+        /// <summary>
+        /// Bring the renderer up and block until the document can be read, then
+        /// drain buffered content so a following read observes it.
+        ///
+        /// Warning: for the synchronous API only — DOM reads, freeze, and
+        /// injection, which run from user commands and would otherwise silently
+        /// drop work posted before the core is up. Never call this from the print
+        /// path; see <see cref="IScriptRenderer.WaitUntilReady"/>.
+        /// </summary>
+        internal void EnsureDocumentReadyBlocking() {
+            if (_isolatedUi)
+                return;
+            EnsureDocumentReady();
+            _renderer.WaitUntilReady();
+            SyncFlushBlocking();
         }
 
         /// <summary>
@@ -725,41 +1179,45 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return inputText;
         }
 
-        private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e) {
-            if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase))) {
-                var inputUrl = e.Url.ToString();
+        private void WebView_NavigationStarting(object sender, RendererNavigationStartingEventArgs e) {
+            var inputUrl = e.Uri ?? string.Empty;
+            if (inputUrl.StartsWith("about:", StringComparison.InvariantCultureIgnoreCase))
+                return;
 
-                if (inputUrl.StartsWith("http") && !inputUrl.StartsWith("http://localhost")) {
-                    System.Diagnostics.Process.Start(inputUrl);
-                }
-                else if (inputUrl.StartsWith("revit")) {
-                    e.Cancel = true;
-                    ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl, this);
-                    return;
-                }
-                else if (inputUrl.StartsWith("file")) {
-                    e.Cancel = false;
-                    return;
-                }
-
+            if (inputUrl.StartsWith("http") && !inputUrl.StartsWith("http://localhost")) {
+                OpenUrlExternally(inputUrl);
+            }
+            else if (inputUrl.StartsWith("http://localhost")) {
+                return;
+            }
+            else if (inputUrl.StartsWith("revit")) {
                 e.Cancel = true;
+                ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl, this);
+                return;
+            }
+            else if (inputUrl.StartsWith("file")) {
+                return;
+            }
+
+            e.Cancel = true;
+        }
+
+        internal ElementIdRegistry ElementIds { get; set; }
+
+        internal string ResolveElementIds(string token) => ElementIds?.Resolve(token);
+
+        private static void OpenUrlExternally(string url) {
+            try {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch {
             }
         }
 
         public void SetElementVisibility(bool visibility, string elementId) {
-            WaitReadyBrowser();
-            if (ActiveDocument != null) {
-                var cssdisplay = visibility ? "" : "display: none;";
-                var element = ActiveDocument.GetElementById(elementId);
-                if (element.Style != null) {
-                    if (element.Style.Contains("display:"))
-                        element.Style = Regex.Replace(element.Style, "display:.+?;", cssdisplay, RegexOptions.IgnoreCase);
-                    else
-                        element.Style += cssdisplay;
-                }
-                else
-                    element.Style = cssdisplay;
-            }
+            PostScriptWhenReady(BuildSetElementDisplayJs(
+                ToJsString(elementId),
+                visibility ? "''" : "'none'"));
         }
 
         public void SetProgressBarVisibility(bool visibility) {
@@ -767,21 +1225,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // taskbar progress object
                 this.TaskbarItemInfo.ProgressState = visibility ? System.Windows.Shell.TaskbarItemProgressState.Normal : System.Windows.Shell.TaskbarItemProgressState.None;
 
-            WaitReadyBrowser();
-            if (ActiveDocument != null) {
-                var cssdisplay = visibility ? "" : "display: none;";
-                var pbarcontainer = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBlockId);
-                if (pbarcontainer.Style != null) {
-                    if (pbarcontainer.Style.Contains("display:"))
-                        pbarcontainer.Style = Regex.Replace(pbarcontainer.Style, "display:.+?;",
-                                                            cssdisplay,
-                                                            RegexOptions.IgnoreCase);
-                    else
-                        pbarcontainer.Style += cssdisplay;
-                }
-                else
-                    pbarcontainer.Style = cssdisplay;
-            }
+            PostScriptWhenReady(BuildSetElementDisplayJs(
+                ToJsString(ScriptConsoleConfigs.ProgressBlockId),
+                visibility ? "''" : "'none'"));
         }
 
         public void SetActivityBarVisibility(bool visibility) {
@@ -790,10 +1236,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             activityBar.Visibility = visibility ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        /// <summary>
+        /// Writes a message to the activity log at <paramref name="level"/>
+        /// (<c>debug</c>, <c>success</c>, <c>info</c>, <c>warning</c> or <c>error</c>),
+        /// in the isolated UI host when it is enabled.
+        /// </summary>
         public void AppendActivityLog(string level, string message) {
             if (_isolatedUi) {
-                EnsureIsolatedWindow();
-                Wait(IsolatedOutput.AppendLogAsync(OutputUniqueId, level, message));
+                AppendIsolatedActivityLog(level, message);
                 return;
             }
 
@@ -832,8 +1282,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             if (_isolatedUi) {
-                EnsureIsolatedWindow();
-                Wait(IsolatedOutput.SetProgressAsync(OutputUniqueId, curValue, maxValue, true));
+                SetIsolatedProgress(curValue, maxValue);
                 return;
             }
 
@@ -848,8 +1297,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             if (_isolatedUi) {
-                EnsureIsolatedWindow();
-                Wait(IsolatedOutput.SetIndeterminateAsync(OutputUniqueId, indeterminate));
+                SetIsolatedIndeterminate(indeterminate);
                 return;
             }
 
@@ -865,38 +1313,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             UpdateTaskBarProgress(curValue, maxValue);
 
-            WaitReadyBrowser();
-            if (ActiveDocument != null) {
-                if (!this.IsVisible) {
-                    try {
-                        this.Show();
-                        this.Focus();
-                    }
-                    catch {
-                        return;
-                    }
+            if (_isolatedUi)
+                return;
+
+            if (!this.IsVisible) {
+                try {
+                    this.Show();
+                    this.Focus();
                 }
-
-                var pbargraph = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBarId);
-                if (pbargraph == null) {
-                    if (ActiveDocument != null) {
-                        var pbar = ActiveDocument.CreateElement(ScriptConsoleConfigs.ProgressBlock);
-                        var newpbargraph = ActiveDocument.CreateElement(ScriptConsoleConfigs.ProgressBar);
-                        pbar.AppendChild(newpbargraph);
-                        ActiveDocument.Body.AppendChild(pbar);
-                    }
-
-                    pbargraph = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBarId);
+                catch {
+                    return;
                 }
-
-                SetProgressBarVisibility(true);
-
-                var newWidthStyleProperty = string.Format("width:{0}%;", (curValue / maxValue) * 100);
-                if (pbargraph.Style == null)
-                    pbargraph.Style = newWidthStyleProperty;
-                else
-                    pbargraph.Style = Regex.Replace(pbargraph.Style, "width:.+?;", newWidthStyleProperty, RegexOptions.IgnoreCase);
             }
+
+            SetProgressBarVisibility(true);
+
+            var widthStyleProperty = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}%", Math.Max(0, Math.Min(100, (curValue / maxValue) * 100)));
+            PostScriptWhenReady(BuildUpdateProgressJs(ToJsString(widthStyleProperty)));
         }
 
         public void UpdateInlineWaitAnimation(bool state = true) {
@@ -915,43 +1348,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void UpdateInlineWait() {
-            if (this.ClosedByUser) {
+            if (this.ClosedByUser || _isolatedUi) {
                 return;
             }
 
-            WaitReadyBrowser();
-            if (ActiveDocument != null) {
-                if (!this.IsVisible) {
-                    try {
-                        this.Show();
-                        this.Focus();
-                    }
-                    catch {
-                        return;
-                    }
+            if (!this.IsVisible) {
+                try {
+                    this.Show();
+                    this.Focus();
                 }
-
-                var inlinewait = ActiveDocument.GetElementById(ScriptConsoleConfigs.InlineWaitBlockId);
-                if (inlinewait == null) {
-                    if (ActiveDocument != null) {
-                        inlinewait = ActiveDocument.CreateElement(ScriptConsoleConfigs.InlineWaitBlock);
-                        ActiveDocument.Body.AppendChild(inlinewait);
-                    }
-
-                    inlinewait = ActiveDocument.GetElementById(ScriptConsoleConfigs.InlineWaitBlockId);
+                catch {
+                    return;
                 }
-
-                SetElementVisibility(true, ScriptConsoleConfigs.InlineWaitBlockId);
-
-                int idx = ScriptConsoleConfigs.InlineWaitSequence.IndexOf(inlinewait.InnerText);
-                if (idx + 1 > ScriptConsoleConfigs.InlineWaitSequence.Count - 1)
-                    idx = 0;
-                inlinewait.InnerText = ScriptConsoleConfigs.InlineWaitSequence[idx + 1];
-                ScrollToBottom();
             }
+
+            _inlineWaitIndex = (_inlineWaitIndex + 1) % ScriptConsoleConfigs.InlineWaitSequence.Count;
+            var waitText = ScriptConsoleConfigs.InlineWaitSequence[_inlineWaitIndex];
+            PostScriptWhenReady(BuildInlineWaitJs(ToJsString(waitText)));
         }
 
+        /// <summary>Closes this window after <paramref name="seconds"/>, unless the Debug log level is set.</summary>
         public void SelfDestructTimer(int seconds) {
+            if (ScriptConsoleManager.KeepOutputWindowsOpen)
+                return;
+
             var dispatcherTimer = new DispatcherTimer();
             dispatcherTimer.Tick += (sender, e) => {
                 var dt = (DispatcherTimer)sender;
@@ -964,10 +1384,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void Window_Loaded(object sender, System.EventArgs e) {
             var outputWindow = (ScriptConsole)sender;
-            // Install low-level keyboard hook for Ctrl+C/Ctrl+A support.
-            // Installed here (not in constructor) so Window_Closing can always dispose it.
-            // Fix for https://github.com/pyrevitlabs/pyRevit/issues/1729
-            _keyHook = new ScriptConsoleLowLevelKeyHook(this);
             ScriptConsoleManager.AppendToOutputWindowList(this);
             ApplyCloseOthersConfig();
         }
@@ -975,29 +1391,107 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             var outputWindow = (ScriptConsole)sender;
             outputWindow._keyHook?.Dispose();
+            outputWindow._keyHook = null;
 
             outputWindow.stdinBar.CancelRead();
 
             ScriptConsoleManager.RemoveFromOutputList(this);
-
-            outputWindow.renderer.Navigating -= _navigateHandler;
-            outputWindow._navigateHandler = null;
         }
 
         private void Window_Closed(object sender, System.EventArgs e) {
             var outputWindow = (ScriptConsole)sender;
 
             var grid = (Grid)outputWindow.Content;
-            grid.Children.Remove(host);
+            grid.Children.Remove(outputWindow._renderer.Control);
             grid.Children.Clear();
 
-            outputWindow.renderer.Dispose();
-            outputWindow.renderer = null;
-
-            outputWindow.host = null;
+            outputWindow._renderer.Dispose();
+            outputWindow.WebMessageReceived = null;
             outputWindow.Content = null;
 
+            if (outputWindow._outputHtmlPath != null) {
+                try {
+                    File.Delete(outputWindow._outputHtmlPath);
+                }
+                catch {
+                }
+                outputWindow._outputHtmlPath = null;
+            }
+
+            outputWindow.ElementIds?.Clear();
             outputWindow.ClosedByUser = true;
+        }
+
+        internal void InjectHtmlElement(string targetName, string elementTag, string contents, Dictionary<string, string> attribs) {
+            if (string.IsNullOrEmpty(elementTag) || _isolatedUi)
+                return;
+
+            EnsureDocumentReadyBlocking();
+
+            var target = string.Equals(targetName, "head", StringComparison.OrdinalIgnoreCase) ? "head" : "body";
+
+            if (elementTag.Equals("script", StringComparison.OrdinalIgnoreCase)) {
+                var attrs = new Dictionary<string, string>();
+                if (attribs != null) {
+                    foreach (var attr in attribs)
+                        attrs[attr.Key] = attr.Value ?? string.Empty;
+                }
+                PostScriptWhenReady(BuildInjectScriptElementJs(
+                    ToJsString(contents ?? string.Empty),
+                    pyRevitLabs.Json.JsonConvert.SerializeObject(attrs),
+                    ToJsString(target)));
+                return;
+            }
+
+            var attrText = new StringBuilder();
+            if (attribs != null) {
+                foreach (var attr in attribs)
+                    attrText.AppendFormat(
+                        " {0}=\"{1}\"",
+                        attr.Key,
+                        (attr.Value ?? string.Empty).Replace("&", "&amp;").Replace("\"", "&quot;"));
+            }
+
+            var html = string.Format("<{0}{1}>{2}</{0}>", elementTag, attrText, contents ?? string.Empty);
+            PostScriptWhenReady(BuildInjectHtmlJs(ToJsString(html), ToJsString(target)));
+        }
+
+        internal void PostRendererScript(string javaScript) {
+            PostScriptWhenReady(javaScript);
+        }
+
+        internal void CopyRendererSelection() {
+            try {
+                Dispatcher.Invoke(new Action(() => {
+                    var selection = _plainTextOutput?.SelectedText ?? DecodeJsonString(
+                        _renderer.EvalScript("window.getSelection().toString()"));
+                    if (!string.IsNullOrEmpty(selection))
+                        Clipboard.SetText(selection);
+                }));
+            }
+            catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ScriptConsoleLowLevelKeyHook] copy failed: {ex.Message}");
+            }
+        }
+
+        internal bool RendererHasFocus {
+            get { return _plainTextOutput?.IsKeyboardFocusWithin ?? _renderer.Control.IsKeyboardFocusWithin; }
+        }
+
+        internal static string ToJsString(string value) {
+            return pyRevitLabs.Json.JsonConvert.SerializeObject(value ?? string.Empty);
+        }
+
+        internal static string DecodeJsonString(string jsonResult) {
+            if (string.IsNullOrEmpty(jsonResult) || jsonResult == "null" || jsonResult == "undefined")
+                return null;
+            try {
+                return pyRevitLabs.Json.JsonConvert.DeserializeObject<string>(jsonResult);
+            }
+            catch {
+                return jsonResult;
+            }
         }
 
         private System.Windows.Shapes.Path MakeButtonPath(string geom, int size = 14) {
@@ -1047,6 +1541,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void PinButton_Click(object sender, RoutedEventArgs e) {
             var button = e.Source as Button;
+
             if (Topmost) {
                 if (IsAutoCollapseActive) {
                     Topmost = false;
@@ -1117,11 +1612,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void PrintButton_Click(object sender, RoutedEventArgs e) {
-            renderer.ShowPrintPreviewDialog();
+            _renderer.ShowPrintUi();
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e) {
-            Clipboard.SetText(ActiveDocument.Body.InnerText);
+            SyncFlushBlocking();
+            var text = _plainTextOutput?.Text ?? DecodeJsonString(_renderer.EvalScript("document.body.innerText"));
+            Clipboard.SetText(text ?? string.Empty);
             var notif = new ToolTip() { Content = "Copied to Clipboard" };
             notif.StaysOpen = false;
             notif.IsOpen = true;
@@ -1131,9 +1628,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// Low-level keyboard hook that intercepts Ctrl+C/Ctrl+A before Revit's
         /// accelerator table consumes them. Revit calls IOleInPlaceActiveObject
         /// .TranslateAccelerator in its message loop, which processes Ctrl+C for
-        /// its own Copy command before WPF events, WinForms events, IMessageFilter,
-        /// or JavaScript onkeydown ever see the keystroke. WH_KEYBOARD_LL fires
-        /// at the OS level before any of this processing occurs.
+        /// its own Copy command before WPF events or JavaScript onkeydown ever
+        /// see the keystroke. WH_KEYBOARD_LL fires at the OS level before any of
+        /// this processing occurs.
         /// Fix for https://github.com/pyrevitlabs/pyRevit/issues/1729
         /// </summary>
         private class ScriptConsoleLowLevelKeyHook : IDisposable {
@@ -1175,17 +1672,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     bool ctrl = (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.Control) != 0;
 
                     if (ctrl && (vkCode == VK_C || vkCode == VK_A) &&
-                        _console.IsActive && _console.renderer != null &&
-                        _console.renderer.ContainsFocus &&
-                        _console.ActiveDocument != null) {
+                        _console.IsActive && _console.RendererHasFocus) {
                         try {
                             if (vkCode == VK_C)
-                                _console.ActiveDocument.ExecCommand("Copy", false, null);
+                                _console.CopyRendererSelection();
+                            else if (_console._plainTextOutput != null)
+                                _console.Dispatcher.Invoke(new Action(_console._plainTextOutput.SelectAll));
                             else
-                                _console.ActiveDocument.ExecCommand("SelectAll", false, null);
+                                _console.PostRendererScript("document.execCommand('SelectAll');");
                         }
                         catch (Exception ex) {
-                            System.Diagnostics.Debug.WriteLine($"[ScriptConsoleLowLevelKeyHook] ExecCommand failed: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"[ScriptConsoleLowLevelKeyHook] execCommand failed: {ex.Message}");
                         }
                         return (IntPtr)1;
                     }
@@ -1215,11 +1712,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void ScriptOutput_GotFocus(object sender, EventArgs e) {
+            if (_keyHook == null)
+                _keyHook = new ScriptConsoleLowLevelKeyHook(this);
+
             if (IsAutoCollapseActive && IsCollapsed)
                 UnCollapseWindow();
         }
 
         private void ScriptOutput_LostFocus(object sender, EventArgs e) {
+            if (_keyHook != null) {
+                _keyHook.Dispose();
+                _keyHook = null;
+            }
+
             if (IsAutoCollapseActive && !IsCollapsed)
                 CollapseWindow();
         }

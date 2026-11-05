@@ -69,7 +69,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     if (linkBtn != null)
                     {
                         ButtonPostProcessor.Process(linkBtn, component);
-                        Logger.Debug($"Created link button '{component.DisplayName}'.");
                     }
                 }
             }
@@ -124,12 +123,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     linkBtn.Enabled = true;
                     linkBtn.Visible = true;
                 }
-
-                Logger.Debug($"Updated existing link button '{component.DisplayName}'.");
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Failed to update link button '{component.DisplayName}': {ex.Message}");
+                Logger.Warning($"Failed to update link button '{component.DisplayName}': {ex.Message}");
             }
         }
 
@@ -254,6 +251,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 (component.Type == CommandComponentType.LinkButton || component.Type == CommandComponentType.InvokeButton))
             {
                 searchPaths.AddRange(_currentExtension.CollectBinaryPaths(component));
+                foreach (var libPath in _currentExtension.CollectLibraryPaths(component))
+                {
+                    if (!searchPaths.Contains(libPath))
+                        searchPaths.Add(libPath);
+                }
             }
             else if (!string.IsNullOrEmpty(component.Directory))
             {

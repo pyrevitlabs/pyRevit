@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -45,7 +45,7 @@ namespace pyRevitLabs.DeffrelDB {
             if (exstDStoreType is null)
                 throw new FormatException(string.Format("Datastore does not have a type definition"));
 
-            return dstore.DataFormatter.ReadDataStoreType(dstoreEntries); 
+            return dstore.DataFormatter.ReadDataStoreType(dstoreEntries);
         }
 
         // db functions

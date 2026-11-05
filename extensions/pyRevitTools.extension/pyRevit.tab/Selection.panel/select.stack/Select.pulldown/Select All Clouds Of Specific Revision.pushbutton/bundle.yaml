@@ -17,3 +17,4 @@ tooltip:
   de_de: >-
     Es erscheint ein Dialog mit allen im Projekt vorhandenen Änderungen.  Sie müssen eine Änderung (Revision) auswählen und pyRevit wählt alle  dazugehörigen Änderungswolken im Projekt aus. Dies ist hilfreich,  um einen Parameter oder einen Kommentar für alle Änderungswolken  einer bestimmten Änderung auf einmal zu setzen
   pt_br: Seleciona todas as nuvens de revisão de uma revisão específica. Isso é útil para definir um parâmetro ou comentário em todas as nuvens de revisão de uma vez
+context: doc-project

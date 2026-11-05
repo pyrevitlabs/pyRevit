@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """This is the tooltip content"""
-#pylint: disable=import-error,invalid-name,broad-except
+
+# pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import forms
 from pyrevit import script
 
@@ -12,28 +13,29 @@ slogger = script.get_logger()
 
 
 if __shiftclick__:
-    print('Shift-Clicked button')
+    print("Shift-Clicked button")
     script.exit()
 
 if __forceddebugmode__:
-    print('Ctrl-Clicked button')
+    print("Ctrl-Clicked button")
     script.exit()
 
 
-selected_switch, switches = \
-    forms.CommandSwitchWindow.show(
-        ['Option_1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'],
-        switches=['Switch 1', 'Switch 2'],
-        message='Select Option:',
-        recognize_access_key=True
-        )
+selected_switch, switches = forms.CommandSwitchWindow.show(
+    ["Option_1", "Option 2", "Option 3", "Option 4", "Option 5"],
+    switches=["Switch 1", "Switch 2"],
+    message="Select Option:",
+    recognize_access_key=True,
+)
 
 if selected_switch:
-    slogger.debug('Debug message')
-    print('Try different Modifier keys with '
-          'this button to check results. '
-          '\n Selected Option: {}'
-          '\n Switch 1 = {}'
-          '\n Switch 2 = {}'.format(selected_switch,
-                                    switches['Switch 1'],
-                                    switches['Switch 2']))
+    slogger.debug("Debug message")
+    print(
+        "Try different Modifier keys with "
+        "this button to check results. "
+        "\n Selected Option: {}"
+        "\n Switch 1 = {}"
+        "\n Switch 2 = {}".format(
+            selected_switch, switches["Switch 1"], switches["Switch 2"]
+        )
+    )

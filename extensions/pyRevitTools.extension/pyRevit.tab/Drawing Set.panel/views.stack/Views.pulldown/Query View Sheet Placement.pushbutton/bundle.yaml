@@ -28,3 +28,5 @@ tooltip:
     Listet alle Ansichten auf, die bisher noch nicht auf Plänen platziert wurden
   pt_br: |-
     Lista vistas que não foram colocadas em nenhuma folha
+context:
+  - doc-project

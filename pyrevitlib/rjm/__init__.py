@@ -28,7 +28,7 @@ from rjm import entries
 
 
 # rjm version
-__version__ = '1.4.0'
+__version__ = "1.4.0"
 
 
 class JournalMaker(object):
@@ -47,11 +47,11 @@ class JournalMaker(object):
             take_default_action (bool): If True, causes Revit to take the
                                         default action on all the popups
         """
-        self._journal_contents = ''
+        self._journal_contents = ""
         self._init_journal(
             permissive=permissive,
             take_default_action=take_default_action,
-            )
+        )
 
     def _add_entry(self, entry_string):
         """Append the provided string to the journal contents.
@@ -61,8 +61,9 @@ class JournalMaker(object):
         """
         self._journal_contents += entry_string
 
-    def _init_journal(self, permissive=True,
-                      take_default_action=True, usedx9accel=True):
+    def _init_journal(
+        self, permissive=True, take_default_action=True, usedx9accel=True
+    ):
         """Add the initialization lines to the journal.
 
         By default adds JrnObj variable and timestamp to the journal contents.
@@ -81,7 +82,7 @@ class JournalMaker(object):
                 takedefaultaction=1 if take_default_action else 0,
                 permissive=1 if permissive else 0,
                 permissive_jrn=1 if permissive else 0,
-                usedx9accel=1 if usedx9accel else 0
+                usedx9accel=1 if usedx9accel else 0,
             )
         )
 
@@ -98,9 +99,9 @@ class JournalMaker(object):
         self._add_entry(base_template)
         self._add_entry(
             templates.NEW_FROM_RFT.format(
-                rft_file_path=rft_file,
-                rft_file_name=op.basename(rft_file)
-                ))
+                rft_file_path=rft_file, rft_file_name=op.basename(rft_file)
+            )
+        )
 
     def new_family(self, base_rft_file):
         """Append a new family from .rft entry to the journal.
@@ -146,7 +147,7 @@ class JournalMaker(object):
         """
         self._new_from_rft(templates.NEW_ANNOTATION_SYM, base_rft_file)
 
-    def new_model(self, template_name='<None>'):
+    def new_model(self, template_name="<None>"):
         """Append a new model from .rft entry to the journal.
 
         This instructs Revit to create a new model based on the
@@ -156,12 +157,9 @@ class JournalMaker(object):
             template_name (str): optional full path to .rft template
                                  to be used. default value is <None>
         """
-        self._add_entry(
-            templates.NEW_MODEL.format(
-                template_name=template_name
-                ))
+        self._add_entry(templates.NEW_MODEL.format(template_name=template_name))
 
-    def new_template(self, template_name='<None>'):
+    def new_template(self, template_name="<None>"):
         """Append a new template from .rft entry to the journal.
 
         This instructs Revit to create a new template model based on the
@@ -172,13 +170,18 @@ class JournalMaker(object):
                                  to be used. default value is <None>
         """
         self._add_entry(
-            templates.NEW_MODEL_TEMPLATE.format(
-                template_name=template_name
-                ))
+            templates.NEW_MODEL_TEMPLATE.format(template_name=template_name)
+        )
 
-    def open_workshared_model(self, model_path, central=False,
-                              detached=False, keep_worksets=True, audit=False,
-                              show_workset_config=1):
+    def open_workshared_model(
+        self,
+        model_path,
+        central=False,
+        detached=False,
+        keep_worksets=True,
+        audit=False,
+        show_workset_config=1,
+    ):
         """Append a open workshared model entry to the journal.
 
         This instructs Revit to open a workshared model.
@@ -195,54 +198,54 @@ class JournalMaker(object):
                 if keep_worksets:
                     self._add_entry(
                         templates.CENTRAL_OPEN_DETACH_AUDIT.format(
-                            model_path=model_path,
-                            workset_config=show_workset_config
-                            ))
+                            model_path=model_path, workset_config=show_workset_config
+                        )
+                    )
                 else:
                     self._add_entry(
                         templates.CENTRAL_OPEN_DETACH_AUDIT_DISCARD.format(
-                            model_path=model_path,
-                            workset_config=show_workset_config
-                            ))
+                            model_path=model_path, workset_config=show_workset_config
+                        )
+                    )
             else:
                 if keep_worksets:
                     self._add_entry(
                         templates.CENTRAL_OPEN_DETACH.format(
-                            model_path=model_path,
-                            workset_config=show_workset_config
-                            ))
+                            model_path=model_path, workset_config=show_workset_config
+                        )
+                    )
                 else:
                     self._add_entry(
                         templates.CENTRAL_OPEN_DETACH_DISCARD.format(
-                            model_path=model_path,
-                            workset_config=show_workset_config
-                            ))
+                            model_path=model_path, workset_config=show_workset_config
+                        )
+                    )
         elif central:
             if audit:
                 self._add_entry(
                     templates.CENTRAL_OPEN_AUDIT.format(
-                        model_path=model_path,
-                        workset_config=show_workset_config
-                        ))
+                        model_path=model_path, workset_config=show_workset_config
+                    )
+                )
             else:
                 self._add_entry(
                     templates.CENTRAL_OPEN.format(
-                        model_path=model_path,
-                        workset_config=show_workset_config
-                        ))
+                        model_path=model_path, workset_config=show_workset_config
+                    )
+                )
         else:
             if audit:
                 self._add_entry(
                     templates.WORKSHARED_OPEN_AUDIT.format(
-                        model_path=model_path,
-                        workset_config=show_workset_config
-                        ))
+                        model_path=model_path, workset_config=show_workset_config
+                    )
+                )
             else:
                 self._add_entry(
                     templates.WORKSHARED_OPEN.format(
-                        model_path=model_path,
-                        workset_config=show_workset_config
-                        ))
+                        model_path=model_path, workset_config=show_workset_config
+                    )
+                )
 
     def open_model(self, model_path, audit=False):
         """Append a open non-workshared model entry to the journal.
@@ -254,13 +257,9 @@ class JournalMaker(object):
             audit (bool): if True audits the model when opening
         """
         if audit:
-            self._add_entry(
-                templates.FILE_OPEN_AUDIT.format(model_path=model_path)
-                )
+            self._add_entry(templates.FILE_OPEN_AUDIT.format(model_path=model_path))
         else:
-            self._add_entry(
-                templates.FILE_OPEN.format(model_path=model_path)
-                )
+            self._add_entry(templates.FILE_OPEN.format(model_path=model_path))
 
     def ignore_missing_links(self):
         """Append a ignore missing links entry to the journal.
@@ -269,8 +268,9 @@ class JournalMaker(object):
         """
         self._add_entry(templates.IGNORE_MISSING_LINKS)
 
-    def execute_command(self, tab_name, panel_name,
-                        command_module, command_class, command_data=None):
+    def execute_command(
+        self, tab_name, panel_name, command_module, command_class, command_data=None
+    ):
         """Append an execute external command entry to the journal.
 
         This instructs Revit to execute the provided command from the
@@ -295,15 +295,16 @@ class JournalMaker(object):
         # make sure command_data is not empty
         command_data = {} if command_data is None else command_data
         # make the canonical name for the command
-        cmdclassname = '{}.{}'.format(command_module, command_class)
+        cmdclassname = "{}.{}".format(command_module, command_class)
 
         self._add_entry(
             templates.EXTERNAL_COMMAND.format(
                 external_command_tab=tab_name,
                 external_command_panel=panel_name,
                 command_class_name=command_class,
-                command_class=cmdclassname
-                ))
+                command_class=cmdclassname,
+            )
+        )
 
         # count the data
         data_count = len(command_data.keys())
@@ -312,20 +313,23 @@ class JournalMaker(object):
         if data_count > 0:
             data_str_list = []
             for cdata_key, cdata_value in command_data.items():
-                data_str_list.append(
-                    ' "{}" , "{}"'.format(cdata_key, cdata_value)
-                    )
+                data_str_list.append(' "{}" , "{}"'.format(cdata_key, cdata_value))
 
-            data_str = '_\n    ,'.join(data_str_list)
+            data_str = "_\n    ,".join(data_str_list)
             self._add_entry(
                 templates.EXTERNAL_COMMANDDATA.format(
-                    data_count=data_count,
-                    data_string=data_str
-                    ))
+                    data_count=data_count, data_string=data_str
+                )
+            )
 
-    def execute_dynamo_definition(self, definition_path,
-                                  show_ui=False, shutdown=True,
-                                  automation=False, path_exec=True):
+    def execute_dynamo_definition(
+        self,
+        definition_path,
+        show_ui=False,
+        shutdown=True,
+        automation=False,
+        path_exec=True,
+    ):
         """Execute a dynamo definition.
 
         Args:
@@ -349,8 +353,9 @@ class JournalMaker(object):
                 dyn_show_ui=show_ui,
                 dyn_automation=automation,
                 dyn_path_exec=path_exec,
-                dyn_shutdown=shutdown
-                ))
+                dyn_shutdown=shutdown,
+            )
+        )
 
     def import_family(self, rfa_file):
         """Append a import family entry to the journal.
@@ -384,9 +389,9 @@ class JournalMaker(object):
         warn_filename = op.splitext(op.basename(export_file))[0]
         self._add_entry(
             templates.EXPORT_WARNINGS.format(
-                warnings_export_path=warn_filepath,
-                warnings_export_file=warn_filename
-                ))
+                warnings_export_path=warn_filepath, warnings_export_file=warn_filename
+            )
+        )
 
     def purge_unused(self, pass_count=3):
         """Append an purge model entry to the journal.
@@ -421,9 +426,14 @@ class JournalMaker(object):
         """
         self._add_entry(templates.FILE_SAVE)
 
-    def sync_model(self, comment='', compact_central=False,
-                   release_borrowed=True, release_workset=True,
-                   save_local=False):
+    def sync_model(
+        self,
+        comment="",
+        compact_central=False,
+        release_borrowed=True,
+        release_workset=True,
+        save_local=False,
+    ):
         """Append a sync model entry to the journal.
 
         This instructs Revit to sync the currently open workshared model.
@@ -446,9 +456,7 @@ class JournalMaker(object):
         if save_local:
             self._add_entry(templates.FILE_SYNC_RELEASE_SAVELOCAL)
 
-        self._add_entry(
-            templates.FILE_SYNC_COMMENT_OK.format(sync_comment=comment)
-            )
+        self._add_entry(templates.FILE_SYNC_COMMENT_OK.format(sync_comment=comment))
 
     def write_journal(self, journal_file_path):
         """Write the constructed journal in to the provided file.
@@ -456,7 +464,7 @@ class JournalMaker(object):
         Args:
             journal_file_path (str): full path to output journal file
         """
-        if not journal_file_path.lower().endswith('.txt'):
+        if not journal_file_path.lower().endswith(".txt"):
             raise Exception("Journal file extension must be .txt")
         with open(journal_file_path, "w") as jrn_file:
             jrn_file.write(self._journal_contents)
@@ -479,7 +487,7 @@ class JournalReader(object):
         Returns:
             str: journal file contents
         """
-        with open(self._jrnl_file, 'r') as jrn_file:
+        with open(self._jrnl_file, "r") as jrn_file:
             return jrn_file.read()
 
     def endswith(self, search_str):
@@ -494,7 +502,7 @@ class JournalReader(object):
         Returns:
             bool: if True the search string is found
         """
-        for entry in reversed(list(open(self._jrnl_file, 'r'))[-5:]):
+        for entry in reversed(list(open(self._jrnl_file, "r"))[-5:]):
             if search_str in entry:
                 return True
 

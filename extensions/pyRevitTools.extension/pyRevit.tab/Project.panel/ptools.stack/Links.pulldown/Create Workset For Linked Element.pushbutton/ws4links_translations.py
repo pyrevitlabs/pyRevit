@@ -10,7 +10,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "The script has stopped",
         "Transaction.Name": "Create Workset(s) for linked model(s)",
         "Alert.NoLinksFound.Message": "No links found in the document.",
-        "Alert.SelectOne.Message": "At least one linked element must be selected."
+        "Alert.SelectOne.Message": "At least one linked element must be selected.",
     },
     "fr_fr": {
         "Worksharing.Enable.Message": "Le partage de projet n'est pas activé pour ce document.\nL'activer ?",
@@ -19,7 +19,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "Le script s'est arrêté",
         "Transaction.Name": "Créer des sous-projets pour les modèles liés",
         "Alert.NoLinksFound.Message": "Aucun lien trouvé dans le document.",
-        "Alert.SelectOne.Message": "Au moins un élément lié doit être sélectionné."
+        "Alert.SelectOne.Message": "Au moins un élément lié doit être sélectionné.",
     },
     "ru": {
         "Worksharing.Enable.Message": "Документ без совместной работы.\nВключить её?",
@@ -28,7 +28,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "Скрипт остановлен",
         "Transaction.Name": "Создание рабочих наборов для связанных моделей",
         "Alert.NoLinksFound.Message": "В документе нет связанных файлов.",
-        "Alert.SelectOne.Message": "Необходимо выбрать хотя бы один элемент связи."
+        "Alert.SelectOne.Message": "Необходимо выбрать хотя бы один элемент связи.",
     },
     "chinese_s": {
         "Worksharing.Enable.Message": "文档未启用工作共享。\n要启用它吗？",
@@ -37,7 +37,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "脚本已停止",
         "Transaction.Name": "为链接模型创建工作集",
         "Alert.NoLinksFound.Message": "在文档中找不到链接。",
-        "Alert.SelectOne.Message": "必须至少选择一个链接元素。"
+        "Alert.SelectOne.Message": "必须至少选择一个链接元素。",
     },
     "es_es": {
         "Worksharing.Enable.Message": "El documento no tiene activada la compartición de proyecto.\n¿Activarla?",
@@ -46,7 +46,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "El script se ha detenido",
         "Transaction.Name": "Crear subproyectos para modelos vinculados",
         "Alert.NoLinksFound.Message": "No se encontraron vínculos en el documento.",
-        "Alert.SelectOne.Message": "Se debe seleccionar al menos un elemento vinculado."
+        "Alert.SelectOne.Message": "Se debe seleccionar al menos un elemento vinculado.",
     },
     "de_de": {
         "Worksharing.Enable.Message": "Die Bearbeitungsbereiche sind für das Dokument nicht aktiviert.\nAktivieren?",
@@ -55,7 +55,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "Das Skript wurde angehalten",
         "Transaction.Name": "Bearbeitungsbereiche für verknüpfte Modelle erstellen",
         "Alert.NoLinksFound.Message": "Keine Verknüpfungen im Dokument gefunden.",
-        "Alert.SelectOne.Message": "Es muss mindestens ein verknüpftes Element ausgewählt werden."
+        "Alert.SelectOne.Message": "Es muss mindestens ein verknüpftes Element ausgewählt werden.",
     },
     "pt_br": {
         "Worksharing.Enable.Message": "O documento não tem o compartilhamento de trabalho ativado.\nDeseja ativá-lo?",
@@ -64,7 +64,7 @@ TRANSLATIONS_SCRIPT = {
         "Worksharing.Enable.Error.Title": "O script foi interrompido",
         "Transaction.Name": "Criar conjunto(s) de trabalho para modelo(s) vinculado(s)",
         "Alert.NoLinksFound.Message": "Nenhum vínculo encontrado no documento.",
-        "Alert.SelectOne.Message": "Pelo menos um elemento vinculado deve ser selecionado."
+        "Alert.SelectOne.Message": "Pelo menos um elemento vinculado deve ser selecionado.",
     },
 }  # type: dict[str, dict[str, str | list]]
 
@@ -78,7 +78,7 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "Custom Prefix for RVT",
         "Options.CustomPrefixDwg.Text": "Custom Prefix for DWG",
         "PrefixRvt.Prompt": "Pick a Prefix for RVTs",
-        "PrefixDwg.Prompt": "Pick a Prefix for DWGs"
+        "PrefixDwg.Prompt": "Pick a Prefix for DWGs",
     },
     "fr_fr": {
         "Options.WindowTitle": "Sélectionner les options",
@@ -88,7 +88,7 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "Préfixe personnalisé pour RVT",
         "Options.CustomPrefixDwg.Text": "Préfixe personnalisé pour DWG",
         "PrefixRvt.Prompt": "Choisissez un préfixe pour les RVT",
-        "PrefixDwg.Prompt": "Choisissez un préfixe pour les DWG"
+        "PrefixDwg.Prompt": "Choisissez un préfixe pour les DWG",
     },
     "ru": {
         "Options.WindowTitle": "Выберите параметры",
@@ -98,7 +98,7 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "Пользовательский префикс для RVT",
         "Options.CustomPrefixDwg.Text": "Пользовательский префикс для DWG",
         "PrefixRvt.Prompt": "Выберите префикс для RVT",
-        "PrefixDwg.Prompt": "Выберите префикс для DWG"
+        "PrefixDwg.Prompt": "Выберите префикс для DWG",
     },
     "chinese_s": {
         "Options.WindowTitle": "选择选项",
@@ -108,7 +108,7 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "RVT 的自定义前缀",
         "Options.CustomPrefixDwg.Text": "DWG 的自定义前缀",
         "PrefixRvt.Prompt": "为 RVT 选择一个前缀",
-        "PrefixDwg.Prompt": "为 DWG 选择一个前缀"
+        "PrefixDwg.Prompt": "为 DWG 选择一个前缀",
     },
     "es_es": {
         "Options.WindowTitle": "Seleccionar opciones",
@@ -118,7 +118,7 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "Prefijo personalizado para RVT",
         "Options.CustomPrefixDwg.Text": "Prefijo personalizado para DWG",
         "PrefixRvt.Prompt": "Elija un prefijo para los RVT",
-        "PrefixDwg.Prompt": "Elija un prefijo para los DWG"
+        "PrefixDwg.Prompt": "Elija un prefijo para los DWG",
     },
     "de_de": {
         "Options.WindowTitle": "Optionen auswählen",
@@ -128,7 +128,7 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "Benutzerdefiniertes Präfix für RVT",
         "Options.CustomPrefixDwg.Text": "Benutzerdefiniertes Präfix für DWG",
         "PrefixRvt.Prompt": "Wählen Sie ein Präfix für RVTs",
-        "PrefixDwg.Prompt": "Wählen Sie ein Präfix für DWGs"
+        "PrefixDwg.Prompt": "Wählen Sie ein Präfix für DWGs",
     },
     "pt_br": {
         "Options.WindowTitle": "Selecionar Opções",
@@ -138,6 +138,6 @@ TRANSLATIONS_CONFIG = {
         "Options.CustomPrefixRvt.Text": "Prefixo personalizado para RVT",
         "Options.CustomPrefixDwg.Text": "Prefixo personalizado para DWG",
         "PrefixRvt.Prompt": "Escolha um prefixo para RVTs",
-        "PrefixDwg.Prompt": "Escolha um prefixo para DWGs"
+        "PrefixDwg.Prompt": "Escolha um prefixo para DWGs",
     },
 }  # type: dict[str, dict[str, str | list]]

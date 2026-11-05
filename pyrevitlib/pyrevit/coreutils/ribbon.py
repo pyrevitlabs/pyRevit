@@ -603,7 +603,7 @@ class RevitNativeRibbonPanel(GenericRevitNativeUIContainer):
                         all_adwnd_ribbon_items.append(sub_rvtapi_item)
                 except Exception as append_err:
                     mlogger.debug(
-                        "Can not get RibbonFoldPanel children: %s " "| %s",
+                        "Can not get RibbonFoldPanel children: %s | %s",
                         adwnd_ribbon_item,
                         append_err,
                     )
@@ -627,7 +627,7 @@ class RevitNativeRibbonPanel(GenericRevitNativeUIContainer):
 
             except Exception as append_err:
                 mlogger.debug(
-                    "Can not create native ribbon item: %s " "| %s",
+                    "Can not create native ribbon item: %s | %s",
                     adwnd_ribbon_item,
                     append_err,
                 )
@@ -663,7 +663,7 @@ class RevitNativeRibbonTab(GenericRevitNativeUIContainer):
                     self._add_component(RevitNativeRibbonPanel(adwnd_ribbon_panel))
         except Exception as append_err:
             mlogger.debug(
-                "Can not get native panels for this native tab: %s " "| %s",
+                "Can not get native panels for this native tab: %s | %s",
                 adwnd_ribbon_tab,
                 append_err,
             )
@@ -756,8 +756,7 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
             self._dirty = True
         except Exception as tooltip_err:
             raise PyRevitUIError(
-                "Item does not have extended "
-                "tooltip property: {}".format(tooltip_err)
+                "Item does not have extended tooltip property: {}".format(tooltip_err)
             )
 
     def set_tooltip_image(self, tooltip_image):
@@ -1010,8 +1009,7 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
             self._dirty = True
         except Exception as tooltip_err:
             raise PyRevitUIError(
-                "Item does not have extended "
-                "tooltip property: {}".format(tooltip_err)
+                "Item does not have extended tooltip property: {}".format(tooltip_err)
             )
 
     def set_tooltip_image(self, tooltip_image):
@@ -1299,7 +1297,6 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
 
 
 class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
-
     button = GenericPyRevitUIContainer._get_component
 
     def __init__(self, ribbon_item):
@@ -1374,7 +1371,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
             self._dirty = True
         except Exception as sync_item_err:
             raise PyRevitUIError(
-                "Item is not a split button. " "| {}".format(sync_item_err)
+                "Item is not a split button. | {}".format(sync_item_err)
             )
 
     def set_icon(self, icon_file, icon_size=ICON_LARGE):
@@ -1452,7 +1449,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
                             )
                 except Exception as asm_update_err:
                     mlogger.debug(
-                        "Error updating button asm info: %s " "| %s",
+                        "Error updating button asm info: %s | %s",
                         button_name,
                         asm_update_err,
                     )
@@ -1502,8 +1499,9 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
                 return
             else:
                 raise PyRevitUIError(
-                    "Push button already exits and update "
-                    "is not allowed: {}".format(button_name)
+                    "Push button already exits and update is not allowed: {}".format(
+                        button_name
+                    )
                 )
 
         mlogger.debug("Parent does not include this button. Creating: %s", button_name)
@@ -1541,7 +1539,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
                     )
                 except PyRevitUIError as iconerr:
                     mlogger.debug(
-                        "Error adding icon for %s from %s " "| %s",
+                        "Error adding icon for %s from %s | %s",
                         button_name,
                         icon_path,
                         iconerr,
@@ -1562,7 +1560,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
             self._add_component(new_button)
 
         except Exception as create_err:
-            raise PyRevitUIError("Can not create button " "| {}".format(create_err))
+            raise PyRevitUIError("Can not create button | {}".format(create_err))
 
     def add_separator(self):
         if not self.itemdata_mode:
@@ -1574,7 +1572,6 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
 
 class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
-
     button = GenericPyRevitUIContainer._get_component
     ribbon_item = GenericPyRevitUIContainer._get_component
 
@@ -1705,7 +1702,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         # if no items have been added, log the empty stack and return
         elif data_obj_count == 0:
             mlogger.debug(
-                "No new items has been added to stack. " "Skipping stack creation."
+                "No new items has been added to stack. Skipping stack creation."
             )
         # if none of the above, more than 3 items have been added.
         # Cleanup data item cache and raise an error.
@@ -1713,8 +1710,9 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             for pyrvt_data_item_name in pyrvt_data_item_names:
                 self._remove_component(pyrvt_data_item_name)
             raise PyRevitUIError(
-                "Can not create stack of {}. "
-                "Stack can only have 2 or 3 items.".format(data_obj_count)
+                "Can not create stack of {}. Stack can only have 2 or 3 items.".format(
+                    data_obj_count
+                )
             )
 
         # now that items are created and revit api objects are ready
@@ -1776,7 +1774,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                             rvtapi_obj.AvailabilityClassName = avail_class_name
                 except Exception as asm_update_err:
                     mlogger.debug(
-                        "Error updating button asm info: %s " "| %s",
+                        "Error updating button asm info: %s | %s",
                         button_name,
                         asm_update_err,
                     )
@@ -1798,13 +1796,14 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                         existing_item.set_icon(icon_path, icon_size=ICON_LARGE)
                     except PyRevitUIError as iconerr:
                         mlogger.error(
-                            "Error adding icon for %s " "| %s", button_name, iconerr
+                            "Error adding icon for %s | %s", button_name, iconerr
                         )
                 existing_item.activate()
             else:
                 raise PyRevitUIError(
-                    "Push button already exits and update "
-                    "is not allowed: {}".format(button_name)
+                    "Push button already exits and update is not allowed: {}".format(
+                        button_name
+                    )
                 )
         else:
             mlogger.debug(
@@ -1827,11 +1826,11 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
 
                 if not icon_path:
                     mlogger.debug(
-                        "Parent ui item is a panel and " "panels don't have icons."
+                        "Parent ui item is a panel and panels don't have icons."
                     )
                 else:
                     mlogger.debug(
-                        "Creating icon for push button %s " "from file: %s",
+                        "Creating icon for push button %s from file: %s",
                         button_name,
                         icon_path,
                     )
@@ -1839,7 +1838,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                         new_button.set_icon(icon_path, icon_size=ICON_LARGE)
                     except PyRevitUIError as iconerr:
                         mlogger.error(
-                            "Error adding icon for %s from %s " "| %s",
+                            "Error adding icon for %s from %s | %s",
                             button_name,
                             icon_path,
                             iconerr,
@@ -1874,7 +1873,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                 )
         else:
             mlogger.debug(
-                "Panel does not include this pull down button. " "Creating: %s",
+                "Panel does not include this pull down button. Creating: %s",
                 item_name,
             )
             try:
@@ -1890,14 +1889,14 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                         pyrvt_pdbutton.set_icon(icon_path)
                     except PyRevitUIError as iconerr:
                         mlogger.debug(
-                            "Error adding icon for %s from %s " "| %s",
+                            "Error adding icon for %s from %s | %s",
                             item_name,
                             icon_path,
                             iconerr,
                         )
                 else:
                     mlogger.debug(
-                        "Creating pull down button under stack: " "%s in %s",
+                        "Creating pull down button under stack: %s in %s",
                         item_name,
                         self,
                     )
@@ -1906,7 +1905,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                         pyrvt_pdbutton.set_icon(icon_path)
                     except PyRevitUIError as iconerr:
                         mlogger.debug(
-                            "Error adding icon for %s from %s " "| %s",
+                            "Error adding icon for %s from %s | %s",
                             item_name,
                             icon_path,
                             iconerr,
@@ -1947,8 +1946,9 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         if self.contains(item_name):
             if not update_if_exists:
                 raise PyRevitUIError(
-                    "ComboBox already exists and "
-                    "update is not allowed: {}".format(item_name)
+                    "ComboBox already exists and update is not allowed: {}".format(
+                        item_name
+                    )
                 )
             existing_item = self._get_component(item_name)
             existing_item.activate()
@@ -1970,6 +1970,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         self._add_component(pyrvt_combobox)
         pyrvt_combobox.activate()
         return pyrvt_combobox
+
     def create_panel_push_button(
         self,
         button_name,
@@ -2063,8 +2064,9 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
                 exiting_pyrvt_panel.activate()
             else:
                 raise PyRevitUIError(
-                    "RibbonPanel already exits and update "
-                    "is not allowed: {}".format(panel_name)
+                    "RibbonPanel already exits and update is not allowed: {}".format(
+                        panel_name
+                    )
                 )
         else:
             try:
@@ -2185,8 +2187,9 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                 existing_pyrvt_tab.activate()
             else:
                 raise PyRevitUIError(
-                    "RibbonTab already exits and update is "
-                    "not allowed: {}".format(tab_name)
+                    "RibbonTab already exits and update is not allowed: {}".format(
+                        tab_name
+                    )
                 )
         else:
             try:
@@ -2210,9 +2213,7 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                     pyrvt_ribbon_tab.set_dirty_flag()
                     self._add_component(pyrvt_ribbon_tab)
                 else:
-                    raise PyRevitUIError(
-                        "Tab created but can not " "be obtained from ui."
-                    )
+                    raise PyRevitUIError("Tab created but can not be obtained from ui.")
 
             except Exception as tab_create_err:
                 raise PyRevitUIError("Can not create tab: {}".format(tab_create_err))

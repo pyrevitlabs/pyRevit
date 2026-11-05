@@ -19,3 +19,5 @@ tooltip:
     in Zeichenansichten umgewandelt. Achtung: Legendenkomponenten dürfen nicht
     auf der Legendansicht platziert sein!
   pt_br: Converte vistas de legenda selecionadas em vistas de desenho
+context:
+  - doc-project

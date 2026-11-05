@@ -11,14 +11,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
         public static string EnginesDictKey = keyPrefix + "CachedEngines";
+        public static string ActiveEnginesDictKey = keyPrefix + "ActiveEngines";
         public static string IronPythonEngineDefaultOutputStreamCfgKey = keyPrefix + "CachedEngineDefaultOutputStreamCfg";
         public static string IronPythonEngineDefaultErrorStreamCfgKey = keyPrefix + "CachedEngineDefaultErrorStreamCfg";
         public static string IronPythonEngineDefaultInputStreamCfgKey = keyPrefix + "CachedEngineDefaultInputStreamCfg";
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
 
-    public static class EnvDictionaryKeys
-    {
+    /// <summary>Defines the shared C# and Python core environment key names.</summary>
+    public static class EnvDictionaryKeys {
         public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string SessionUUID = string.Format("{0}_UUID", keyPrefix);
@@ -37,7 +38,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string TelemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string TelemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
         public static string TelemetryIncludeHooks = string.Format("{0}_TELEMETRYINCLUDEHOOKS", keyPrefix);
-        
+
         public static string AppTelemetryState = string.Format("{0}_APPTELEMETRYSTATE", keyPrefix);
         public static string AppTelemetryHandler = string.Format("{0}_APPTELEMETRYHANDLER", keyPrefix);
         public static string AppTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
@@ -46,14 +47,50 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string Hooks = string.Format("{0}_HOOKS", keyPrefix);
         public static string HooksHandler = string.Format("{0}_HOOKSHANDLER", keyPrefix);
 
+        public static string RoutesServer = string.Format("{0}_ROUTESSERVER", keyPrefix);
+        public static string CheckUpdatesTimestamp = string.Format("{0}_CHECKUPDATESTIMESTAMP", keyPrefix);
+        public static string CheckUpdatesResult = string.Format("{0}_CHECKUPDATESRESULT", keyPrefix);
+
         public static string AutoUpdating = string.Format("{0}_AUTOUPDATE", keyPrefix);
         public static string OutputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
         public static string RibbonUpdator = string.Format("{0}_RIBBONUPDATOR", keyPrefix);
         public static string TabColorizer = string.Format("{0}_TABCOLORIZER", keyPrefix);
     }
 
-    public class EnvDictionary
-    {
+    /// <summary>Manages process-wide environment values across pyRevit session reloads.</summary>
+    public class EnvDictionary {
+        /// <summary>Invariant: <see cref="EnvDictionaryKeys.RoutesServer"/> remains available after seeding for <c>routes.deactivate_server()</c> to stop the previous session's live socket.</summary>
+        /// <remarks>Important: session startup clears running engines before Routes teardown; the server handle survives both engine shutdown and environment seeding.</remarks>
+        private static readonly HashSet<string> CoreKeys = new HashSet<string> {
+            EnvDictionaryKeys.SessionUUID,
+            EnvDictionaryKeys.RevitVersion,
+            EnvDictionaryKeys.Version,
+            EnvDictionaryKeys.Clone,
+            EnvDictionaryKeys.IPYVersion,
+            EnvDictionaryKeys.CPYVersion,
+            EnvDictionaryKeys.LoadedAssms,
+            EnvDictionaryKeys.RefedAssms,
+            EnvDictionaryKeys.TelemetryState,
+            EnvDictionaryKeys.TelemetryUTCTimeStamps,
+            EnvDictionaryKeys.TelemetryFileDir,
+            EnvDictionaryKeys.TelemetryFilePath,
+            EnvDictionaryKeys.TelemetryServerUrl,
+            EnvDictionaryKeys.TelemetryIncludeHooks,
+            EnvDictionaryKeys.AppTelemetryState,
+            EnvDictionaryKeys.AppTelemetryHandler,
+            EnvDictionaryKeys.AppTelemetryServerUrl,
+            EnvDictionaryKeys.AppTelemetryEventFlags,
+            EnvDictionaryKeys.Hooks,
+            EnvDictionaryKeys.HooksHandler,
+            EnvDictionaryKeys.RoutesServer,
+            EnvDictionaryKeys.CheckUpdatesTimestamp,
+            EnvDictionaryKeys.CheckUpdatesResult,
+            EnvDictionaryKeys.AutoUpdating,
+            EnvDictionaryKeys.OutputStyleSheet,
+            EnvDictionaryKeys.RibbonUpdator,
+            EnvDictionaryKeys.TabColorizer,
+        };
+
         private PythonDictionary _envData = null;
 
         public string SessionUUID;
@@ -75,7 +112,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string AppTelemetryServerUrl;
         public string AppTelemetryEventFlags;
 
-        public Dictionary<string, Dictionary<string, string>> EventHooks = 
+        public Dictionary<string, Dictionary<string, string>> EventHooks =
             new Dictionary<string, Dictionary<string, string>>();
 
         public string ActiveStyleSheet;
@@ -83,80 +120,92 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool TelemetryUTCTimeStamps;
 
 
-        public EnvDictionary()
-        {
-            // get the dictionary from appdomain
-            _envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
+        /// <summary>
+        /// Initializes environment values from the current application domain.
+        /// </summary>
+        public EnvDictionary() {
+            _envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary;
+            if (_envData is null) {
+                _envData = new PythonDictionary();
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnvVarsDictKey, _envData);
+            }
 
             // base info
-            if (_envData.Contains(EnvDictionaryKeys.SessionUUID))
-                SessionUUID = (string)_envData[EnvDictionaryKeys.SessionUUID];
-
-            if (_envData.Contains(EnvDictionaryKeys.RevitVersion))
-                RevitVersion = (string)_envData[EnvDictionaryKeys.RevitVersion];
-
-            if (_envData.Contains(EnvDictionaryKeys.Version))
-                PyRevitVersion = (string)_envData[EnvDictionaryKeys.Version];
-
-            if (_envData.Contains(EnvDictionaryKeys.Clone))
-                PyRevitClone = (string)_envData[EnvDictionaryKeys.Clone];
-
-            if (_envData.Contains(EnvDictionaryKeys.IPYVersion))
-                PyRevitIPYVersion = (string)_envData[EnvDictionaryKeys.IPYVersion];
-
-            if (_envData.Contains(EnvDictionaryKeys.CPYVersion))
-                PyRevitCPYVersion = (string)_envData[EnvDictionaryKeys.CPYVersion];
+            SessionUUID = GetString(EnvDictionaryKeys.SessionUUID, SessionUUID);
+            RevitVersion = GetString(EnvDictionaryKeys.RevitVersion, RevitVersion);
+            PyRevitVersion = GetString(EnvDictionaryKeys.Version, PyRevitVersion);
+            PyRevitClone = GetString(EnvDictionaryKeys.Clone, PyRevitClone);
+            PyRevitIPYVersion = GetString(EnvDictionaryKeys.IPYVersion, PyRevitIPYVersion);
+            PyRevitCPYVersion = GetString(EnvDictionaryKeys.CPYVersion, PyRevitCPYVersion);
 
             // assemblies
-            if (_envData.Contains(EnvDictionaryKeys.LoadedAssms))
-                LoadedAssemblies = ((string)_envData[EnvDictionaryKeys.LoadedAssms]).Split(Path.PathSeparator);
-            if (_envData.Contains(EnvDictionaryKeys.RefedAssms))
-                ReferencedAssemblies = ((string)_envData[EnvDictionaryKeys.RefedAssms]).Split(Path.PathSeparator);
+            LoadedAssemblies = GetPathList(EnvDictionaryKeys.LoadedAssms, LoadedAssemblies);
+            ReferencedAssemblies = GetPathList(EnvDictionaryKeys.RefedAssms, ReferencedAssemblies);
 
             // telemetry
-            if (_envData.Contains(EnvDictionaryKeys.TelemetryUTCTimeStamps))
-                TelemetryUTCTimeStamps = (bool)_envData[EnvDictionaryKeys.TelemetryUTCTimeStamps];
+            TelemetryUTCTimeStamps = GetBool(EnvDictionaryKeys.TelemetryUTCTimeStamps, TelemetryUTCTimeStamps);
 
             // script telemetry
-            if (_envData.Contains(EnvDictionaryKeys.TelemetryState))
-                TelemetryState = (bool)_envData[EnvDictionaryKeys.TelemetryState];
-
-            if (_envData.Contains(EnvDictionaryKeys.TelemetryFilePath))
-                TelemetryFilePath = (string)_envData[EnvDictionaryKeys.TelemetryFilePath];
-
-            if (_envData.Contains(EnvDictionaryKeys.TelemetryServerUrl))
-                TelemetryServerUrl = (string)_envData[EnvDictionaryKeys.TelemetryServerUrl];
-
-            if (_envData.Contains(EnvDictionaryKeys.TelemetryIncludeHooks))
-                TelemetryIncludeHooks = (bool)_envData[EnvDictionaryKeys.TelemetryIncludeHooks];
+            TelemetryState = GetBool(EnvDictionaryKeys.TelemetryState, TelemetryState);
+            TelemetryFilePath = GetString(EnvDictionaryKeys.TelemetryFilePath, TelemetryFilePath);
+            TelemetryServerUrl = GetString(EnvDictionaryKeys.TelemetryServerUrl, TelemetryServerUrl);
+            TelemetryIncludeHooks = GetBool(EnvDictionaryKeys.TelemetryIncludeHooks, TelemetryIncludeHooks);
 
             // app events telemetry
-            if (_envData.Contains(EnvDictionaryKeys.AppTelemetryState))
-                AppTelemetryState = (bool)_envData[EnvDictionaryKeys.AppTelemetryState];
-
-            if (_envData.Contains(EnvDictionaryKeys.AppTelemetryServerUrl))
-                AppTelemetryServerUrl = (string)_envData[EnvDictionaryKeys.AppTelemetryServerUrl];
-
-            if (_envData.Contains(EnvDictionaryKeys.AppTelemetryEventFlags))
-                AppTelemetryEventFlags = (string)_envData[EnvDictionaryKeys.AppTelemetryEventFlags];
+            AppTelemetryState = GetBool(EnvDictionaryKeys.AppTelemetryState, AppTelemetryState);
+            AppTelemetryServerUrl = GetString(EnvDictionaryKeys.AppTelemetryServerUrl, AppTelemetryServerUrl);
+            AppTelemetryEventFlags = GetString(EnvDictionaryKeys.AppTelemetryEventFlags, AppTelemetryEventFlags);
 
             // hooks
-            if (_envData.Contains(EnvDictionaryKeys.Hooks))
-                EventHooks = (Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.Hooks];
+            if (_envData.Contains(EnvDictionaryKeys.Hooks)
+                    && _envData[EnvDictionaryKeys.Hooks] is Dictionary<string, Dictionary<string, string>> hooks)
+                EventHooks = hooks;
             else
                 _envData[EnvDictionaryKeys.Hooks] = EventHooks;
 
-            // misc 
-            if (_envData.Contains(EnvDictionaryKeys.AutoUpdating))
-                AutoUpdate = (bool)_envData[EnvDictionaryKeys.AutoUpdating];
+            // misc
+            AutoUpdate = GetBool(EnvDictionaryKeys.AutoUpdating, AutoUpdate);
+            ActiveStyleSheet = GetString(EnvDictionaryKeys.OutputStyleSheet, ActiveStyleSheet);
+        }
 
-            if (_envData.Contains(EnvDictionaryKeys.OutputStyleSheet))
-                ActiveStyleSheet = (string)_envData[EnvDictionaryKeys.OutputStyleSheet];
+        private string GetString(string key, string fallback) {
+            return _envData.Contains(key) && _envData[key] is string value ? value : fallback;
+        }
 
+        private bool GetBool(string key, bool fallback) {
+            return _envData.Contains(key) && _envData[key] is bool value ? value : fallback;
+        }
+
+        private string[] GetPathList(string key, string[] fallback) {
+            return _envData.Contains(key) && _envData[key] is string value
+                ? value.Split(Path.PathSeparator)
+                : fallback;
         }
 
         public void ResetEventHooks() {
-            ((Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.Hooks]).Clear();
+            if (_envData.Contains(EnvDictionaryKeys.Hooks)
+                    && _envData[EnvDictionaryKeys.Hooks] is Dictionary<string, Dictionary<string, string>> hooks)
+                hooks.Clear();
+            else
+                _envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();
+        }
+
+        /// <summary>
+        /// Removes custom entries from the AppDomain environment dictionary while preserving core pyRevit keys.
+        /// </summary>
+        public static void ResetCustomEnvVars() {
+            var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary
+                          ?? new PythonDictionary();
+            var keys = new List<object>();
+            foreach (var key in envData.Keys)
+                keys.Add(key);
+
+            foreach (var key in keys) {
+                if (!(key is string keyString) || !CoreKeys.Contains(keyString))
+                    envData.Remove(key);
+            }
+
+            AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnvVarsDictKey, envData);
         }
 
         /// <summary>
@@ -170,6 +219,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// Values must be plain CLR primitives (string, bool, int) — IronPython coerces them correctly.
         /// </param>
         public static void Seed(Dictionary<string, object> values) {
+            ResetCustomEnvVars();
             var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary
                           ?? new PythonDictionary();
 

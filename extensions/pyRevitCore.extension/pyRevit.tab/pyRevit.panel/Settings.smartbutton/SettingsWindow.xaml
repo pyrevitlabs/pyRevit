@@ -1,9 +1,9 @@
-<!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
+﻿<!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="{DynamicResource Title}"
-        Height="800" Width="710" MinWidth="600" MinHeight="700"
+        Height="840" MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}" Width="710" MinWidth="600" MinHeight="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -327,6 +327,46 @@
                                     <LineBreak/>
                                     <TextBlock x:Name="routes_example" DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" />
                             </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+                <Expander Header="{DynamicResource Agent.Title}" IsExpanded="False" Margin="10,0">
+                    <StackPanel Margin="10px">
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Description}"/>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" FontStyle="Italic" Text="{DynamicResource Agent.Privacy}"/>
+                        <StackPanel>
+                            <WrapPanel Margin="0,15,0,0">
+                                <CheckBox x:Name="agent_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Agent.Check}"/>
+                                <CheckBox x:Name="agent_tab_highlight_cb" Margin="15,0,0,0" IsChecked="True" Content="{DynamicResource Agent.TabHighlight}"/>
+                            </WrapPanel>
+                            <GroupBox Header="{DynamicResource Agent.Policy}" Padding="10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <RadioButton x:Name="agent_policy_ask_rb" GroupName="agent_policy" Content="{DynamicResource Agent.Policy.Ask}"/>
+                                    <RadioButton x:Name="agent_policy_auto_rb" GroupName="agent_policy" Margin="0,5,0,0" Content="{DynamicResource Agent.Policy.Auto}"/>
+                                    <RadioButton x:Name="agent_policy_readonly_rb" GroupName="agent_policy" Margin="0,5,0,0" Content="{DynamicResource Agent.Policy.ReadOnly}"/>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="{DynamicResource Agent.Engine}" Padding="10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <RadioButton x:Name="agent_engine_ironpython_rb" GroupName="agent_engine" Content="{DynamicResource Agent.Engine.IronPython}"/>
+                                    <RadioButton x:Name="agent_engine_cpython_rb" GroupName="agent_engine" Margin="0,5,0,0" Content="{DynamicResource Agent.Engine.CPython}"/>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="{DynamicResource Agent.Connect}" Padding="10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Connect.Description}"/>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Content="Claude Code" Tag="claude" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="Codex" Tag="codex" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="Cursor" Tag="cursor" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="VS Code" Tag="vscode" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="OpenCode" Tag="opencode" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+                            <Border x:Name="agent_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Margin="0,10,0,0" Background="LightGray">
+                                <TextBlock x:Name="agent_statusmsg" Foreground="White" VerticalAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                     </StackPanel>
                 </Expander>

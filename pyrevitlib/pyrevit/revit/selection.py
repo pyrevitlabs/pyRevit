@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Elements selection utilities."""
+
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
@@ -9,15 +10,26 @@ from pyrevit.revit import query
 from Autodesk.Revit import Exceptions as RevitExceptions
 
 
-__all__ = ('pick_element', 'pick_element_by_category',
-           'pick_elements', 'pick_elements_by_category',
-           'get_picked_elements', 'get_picked_elements_by_category',
-           'pick_edge', 'pick_edges',
-           'pick_face', 'pick_faces',
-           'pick_linked', 'pick_linkeds',
-           'pick_elementpoint', 'pick_elementpoints',
-           'pick_point', 'pick_rectangle', 'get_selection_category_set',
-           'get_selection')
+__all__ = (
+    "pick_element",
+    "pick_element_by_category",
+    "pick_elements",
+    "pick_elements_by_category",
+    "get_picked_elements",
+    "get_picked_elements_by_category",
+    "pick_edge",
+    "pick_edges",
+    "pick_face",
+    "pick_faces",
+    "pick_linked",
+    "pick_linkeds",
+    "pick_elementpoint",
+    "pick_elementpoints",
+    "pick_point",
+    "pick_rectangle",
+    "get_selection_category_set",
+    "get_selection",
+)
 
 
 # pylint: disable=W0703,C0302,C0103
@@ -27,21 +39,34 @@ mlogger = get_logger(__name__)
 class ElementSelection:
     """Element selection handler.
 
+    Host elements are tracked as ``ElementId``s of the active document.
+    Elements inside linked models are tracked separately as host-context link
+    references (see `link_references` and `linked_elements`), because their ids
+    belong to the link document and must never be resolved against the host.
+
+    Note:
+        Iteration, indexing, `elements`, `element_ids`, `first`, `last`,
+        `include`, `exclude` and `expand_groups` only cover host elements.
+        `__len__` and `is_empty` cover both host and linked entries.
+        When created without arguments, only the host part of the current
+        Revit selection is read.
+
     Args:
         element_list (list[DB.Element]): list of selected elements
     """
+
     def __init__(self, element_list=None):
+        self._link_refs = []
         if element_list is None:
             if HOST_APP.uidoc:
-                self._refs = \
-                    [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
+                self._refs = [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
             else:
                 self._refs = []
         else:
             self._refs = ElementSelection.get_element_ids(element_list)
 
     def __len__(self):
-        return len(self._refs)
+        return len(self._refs) + len(self._link_refs)
 
     def __iter__(self):
         for elref in self._refs:
@@ -63,9 +88,68 @@ class ElementSelection:
     def get_element_ids(cls, mixed_list):
         return ensure.ensure_element_ids(mixed_list)
 
+    @staticmethod
+    def _find_link_instance(link_doc):
+        for link_instance in DB.FilteredElementCollector(DOCS.doc).OfClass(
+            DB.RevitLinkInstance
+        ):
+            instance_doc = link_instance.GetLinkDocument()
+            if instance_doc is not None and instance_doc.Equals(link_doc):
+                return link_instance
+        return None
+
+    @staticmethod
+    def _link_reference_from_element(element):
+        link_instance = ElementSelection._find_link_instance(element.Document)
+        if link_instance is None:
+            return None
+        return DB.Reference(element).CreateLinkReference(link_instance)
+
+    @staticmethod
+    def _link_reference_from_reference(reference):
+        link_instance = DOCS.doc.GetElement(reference.ElementId)
+        if not isinstance(link_instance, DB.RevitLinkInstance):
+            return None
+        link_doc = link_instance.GetLinkDocument()
+        if link_doc is None:
+            return None
+        linked_element = link_doc.GetElement(reference.LinkedElementId)
+        if linked_element is None:
+            return None
+        return DB.Reference(linked_element).CreateLinkReference(link_instance)
+
+    @staticmethod
+    def _split_host_and_linked(element_list):
+        if element_list is None:
+            return [], []
+        if not hasattr(element_list, "__iter__"):
+            element_list = [element_list]
+
+        host_items = []
+        link_refs = []
+        for item in element_list:
+            if item is None:
+                continue
+            if isinstance(item, DB.Reference):
+                if item.LinkedElementId == DB.ElementId.InvalidElementId:
+                    host_items.append(item.ElementId)
+                    continue
+                link_ref = ElementSelection._link_reference_from_reference(item)
+            elif isinstance(item, DB.Element) and item.Document.IsLinked:
+                link_ref = ElementSelection._link_reference_from_element(item)
+            else:
+                host_items.append(item)
+                continue
+
+            if link_ref is None:
+                mlogger.debug("No loaded link instance found for: %s", item)
+                continue
+            link_refs.append(link_ref)
+        return host_items, link_refs
+
     @property
     def is_empty(self):
-        return len(self._refs) == 0
+        return len(self) == 0
 
     @property
     def elements(self):
@@ -74,6 +158,35 @@ class ElementSelection:
     @property
     def element_ids(self):
         return self._refs
+
+    @property
+    def link_references(self):
+        """list[DB.Reference]: host-context references to the linked elements.
+
+        Each reference points at the link instance (``ElementId``) and at the
+        element inside the link document (``LinkedElementId``).
+        """
+        return self._link_refs
+
+    @property
+    def linked_elements(self):
+        """list[DB.Element]: selected elements that live in linked documents.
+
+        Entries whose link instance was deleted or whose link was unloaded
+        since selection, or whose element no longer exists, are skipped.
+        """
+        linked_elements = []
+        for link_ref in self._link_refs:
+            link_instance = DOCS.doc.GetElement(link_ref.ElementId)
+            if not isinstance(link_instance, DB.RevitLinkInstance):
+                continue
+            link_doc = link_instance.GetLinkDocument()
+            if link_doc is None:
+                continue
+            linked_element = link_doc.GetElement(link_ref.LinkedElementId)
+            if linked_element is not None:
+                linked_elements.append(linked_element)
+        return linked_elements
 
     @property
     def first(self):
@@ -86,32 +199,81 @@ class ElementSelection:
             return DOCS.doc.GetElement(self._refs[-1])
 
     def set_to(self, element_list):
-        self._refs = ElementSelection.get_element_ids(element_list)
-        HOST_APP.uidoc.Selection.SetElementIds(
-            framework.List[DB.ElementId](self._refs)
+        """Replace the Revit selection with the given items.
+
+        Accepts host elements, element ids, elements from linked documents
+        (e.g. from `pick_linkeds`) and ``DB.Reference`` objects, in any mix.
+        Linked elements end up individually selected, as if Tab-selected into
+        the link. ``None`` entries and a ``None`` list are ignored.
+
+        Note:
+            A bare linked element carries no link instance, so the first loaded
+            instance of its link document is used. Pass the picked
+            ``DB.Reference`` objects instead to target a specific instance when
+            the same file is linked more than once.
+
+        Args:
+            element_list (list | object | None): items to select.
+
+        Raises:
+            PyRevitException: If linked elements are given on Revit 2022 or
+                older, which cannot select elements inside links. The
+                selection is left unchanged in that case.
+        """
+        host_items, link_refs = ElementSelection._split_host_and_linked(element_list)
+        host_ids = ElementSelection.get_element_ids(host_items)
+
+        if not link_refs:
+            self._refs = host_ids
+            self._link_refs = link_refs
+            HOST_APP.uidoc.Selection.SetElementIds(
+                framework.to_clr_list(DB.ElementId, self._refs)
             )
+            HOST_APP.uidoc.RefreshActiveView()
+            return
+
+        if not HOST_APP.is_newer_than(2023, or_equal=True):
+            raise PyRevitException(
+                "Selecting elements inside links requires Revit 2023 or newer."
+            )
+
+        self._refs = host_ids
+        self._link_refs = link_refs
+        host_elements = [DOCS.doc.GetElement(x) for x in self._refs]
+        all_refs = [DB.Reference(x) for x in host_elements if x is not None]
+        all_refs.extend(link_refs)
+        HOST_APP.uidoc.Selection.SetReferences(
+            framework.to_clr_list(DB.Reference, all_refs)
+        )
         HOST_APP.uidoc.RefreshActiveView()
 
     def clear(self):
+        self._refs = []
+        self._link_refs = []
         HOST_APP.uidoc.Selection.SetElementIds(
-            framework.List[DB.ElementId]([DB.ElementId.InvalidElementId])
+            framework.to_clr_list(DB.ElementId, [DB.ElementId.InvalidElementId])
         )
         HOST_APP.uidoc.RefreshActiveView()
 
     def append(self, element_list):
-        self._refs.extend(ElementSelection.get_element_ids(element_list))
-        self.set_to(self._refs)
+        if element_list is None:
+            element_list = []
+        elif not hasattr(element_list, "__iter__"):
+            element_list = [element_list]
+        self.set_to(list(self._refs) + list(self._link_refs) + list(element_list))
 
     def include(self, element_type):
-        refs = [x for x in self._refs
-                if isinstance(DOCS.doc.GetElement(x),
-                              element_type)]
+        refs = [
+            x for x in self._refs if isinstance(DOCS.doc.GetElement(x), element_type)
+        ]
         return ElementSelection(refs)
 
     def exclude(self, element_type):
-        refs = [x for x in self._refs
-                if not isinstance(DOCS.doc.GetElement(x),
-                                  element_type)]
+        refs = [
+            x
+            for x in self._refs
+            if not isinstance(DOCS.doc.GetElement(x), element_type)
+        ]
         return ElementSelection(refs)
 
     def no_views(self):
@@ -148,7 +310,7 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
 
 def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=None):
     mlogger.debug(
-        "Picking elements: %s " "message: %s " "multiple: %s " "world: %s",
+        "Picking elements: %s message: %s multiple: %s world: %s",
         obj_type,
         message,
         multiple,
@@ -186,12 +348,16 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
         return_values = []
         for ref in refs:
             element = DOCS.doc.GetElement(ref)
-            if obj_type == UI.Selection.ObjectType.LinkedElement and isinstance(element, DB.RevitLinkInstance):
+            if obj_type == UI.Selection.ObjectType.LinkedElement and isinstance(
+                element, DB.RevitLinkInstance
+            ):
                 link_doc = element.GetLinkDocument()
                 if link_doc and ref.LinkedElementId != DB.ElementId.InvalidElementId:
                     return_values.append(link_doc.GetElement(ref.LinkedElementId))
                 else:
-                    mlogger.debug("Skipping unloaded link or invalid reference: %s", ref)
+                    mlogger.debug(
+                        "Skipping unloaded link or invalid reference: %s", ref
+                    )
                     return_values.append(None)
             else:
                 return_values.append(element.GetGeometryObjectFromReference(ref))
@@ -205,7 +371,7 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
     mlogger.error("Error processing picked elements. return_values should be a list.")
 
 
-def pick_element(message='', pick_filter=None):
+def pick_element(message="", pick_filter=None):
     """Asks the user to pick an element.
 
     Args:
@@ -216,11 +382,12 @@ def pick_element(message='', pick_filter=None):
     Returns:
         (Element): element selected by the user.
     """
-    return _pick_obj(UI.Selection.ObjectType.Element,
-                     message, selection_filter=pick_filter)
+    return _pick_obj(
+        UI.Selection.ObjectType.Element, message, selection_filter=pick_filter
+    )
 
 
-def pick_element_by_category(cat_name_or_builtin, message=''):
+def pick_element_by_category(cat_name_or_builtin, message=""):
     """Returns the element of the specified category picked by the user.
 
     Args:
@@ -238,15 +405,16 @@ def pick_element_by_category(cat_name_or_builtin, message=''):
     category = query.get_category(cat_name_or_builtin)
     if category:
         pick_filter = PickByCategorySelectionFilter(category.Id)
-        return _pick_obj(UI.Selection.ObjectType.Element,
-                         message,
-                         selection_filter=pick_filter)
+        return _pick_obj(
+            UI.Selection.ObjectType.Element, message, selection_filter=pick_filter
+        )
     else:
-        raise PyRevitException("Can not determine category id from: {}"
-                               .format(cat_name_or_builtin))
+        raise PyRevitException(
+            "Can not determine category id from: {}".format(cat_name_or_builtin)
+        )
 
 
-def pick_elementpoint(message='', world=False):
+def pick_elementpoint(message="", world=False):
     """Returns the element point selected by the user.
 
     Args:
@@ -256,12 +424,10 @@ def pick_elementpoint(message='', world=False):
     Returns:
         (PointOnElement): The selected point.
     """
-    return _pick_obj(UI.Selection.ObjectType.PointOnElement,
-                     message,
-                     world=world)
+    return _pick_obj(UI.Selection.ObjectType.PointOnElement, message, world=world)
 
 
-def pick_edge(message=''):
+def pick_edge(message=""):
     """Returns the edge selected by the user.
 
     Args:
@@ -270,11 +436,10 @@ def pick_edge(message=''):
     Returns:
         (Edge): The selected edge.
     """
-    return _pick_obj(UI.Selection.ObjectType.Edge,
-                     message)
+    return _pick_obj(UI.Selection.ObjectType.Edge, message)
 
 
-def pick_face(message=''):
+def pick_face(message=""):
     """Returns the face selected by the user.
 
     Args:
@@ -283,11 +448,10 @@ def pick_face(message=''):
     Returns:
         (Face): The selected face.
     """
-    return _pick_obj(UI.Selection.ObjectType.Face,
-                     message)
+    return _pick_obj(UI.Selection.ObjectType.Face, message)
 
 
-def pick_linked(message='', pick_filter=None):
+def pick_linked(message="", pick_filter=None):
     """Returns the linked element selected by the user.
 
     Args:
@@ -298,12 +462,12 @@ def pick_linked(message='', pick_filter=None):
     Returns:
         (LinkedElement): The selected linked element.
     """
-    return _pick_obj(UI.Selection.ObjectType.LinkedElement,
-                     message,
-                     selection_filter=pick_filter)
+    return _pick_obj(
+        UI.Selection.ObjectType.LinkedElement, message, selection_filter=pick_filter
+    )
 
 
-def pick_elements(message='', pick_filter=None):
+def pick_elements(message="", pick_filter=None):
     """Asks the user to pick multiple elements.
 
     Args:
@@ -314,13 +478,15 @@ def pick_elements(message='', pick_filter=None):
     Returns:
         (list[Element]): elements selected by the user.
     """
-    return _pick_obj(UI.Selection.ObjectType.Element,
-                     message,
-                     multiple=True,
-                     selection_filter=pick_filter)
+    return _pick_obj(
+        UI.Selection.ObjectType.Element,
+        message,
+        multiple=True,
+        selection_filter=pick_filter,
+    )
 
 
-def pick_elements_by_category(cat_name_or_builtin, message=''):
+def pick_elements_by_category(cat_name_or_builtin, message=""):
     """Returns the elements of the specified category picked by the user.
 
     Args:
@@ -338,16 +504,19 @@ def pick_elements_by_category(cat_name_or_builtin, message=''):
     category = query.get_category(cat_name_or_builtin)
     if category:
         pick_filter = PickByCategorySelectionFilter(category.Id)
-        return _pick_obj(UI.Selection.ObjectType.Element,
-                         message,
-                         multiple=True,
-                         selection_filter=pick_filter)
+        return _pick_obj(
+            UI.Selection.ObjectType.Element,
+            message,
+            multiple=True,
+            selection_filter=pick_filter,
+        )
     else:
-        raise PyRevitException("Can not determine category id from: {}"
-                               .format(cat_name_or_builtin))
+        raise PyRevitException(
+            "Can not determine category id from: {}".format(cat_name_or_builtin)
+        )
 
 
-def get_picked_elements(message=''):
+def get_picked_elements(message=""):
     """Allows the user to pick multple elements, one at a time.
 
     It keeps asking the user to pick an element until no elements are selected.
@@ -366,7 +535,7 @@ def get_picked_elements(message=''):
         yield picked_element
 
 
-def get_picked_elements_by_category(cat_name_or_builtin, message=''):
+def get_picked_elements_by_category(cat_name_or_builtin, message=""):
     """Pick elements by category.
 
     Keeps asking the user to pick an element until no elements are selected.
@@ -380,14 +549,13 @@ def get_picked_elements_by_category(cat_name_or_builtin, message=''):
     """
     picked_element = True
     while picked_element:
-        picked_element = pick_element_by_category(cat_name_or_builtin,
-                                                  message=message)
+        picked_element = pick_element_by_category(cat_name_or_builtin, message=message)
         if not picked_element:
             break
         yield picked_element
 
 
-def pick_elementpoints(message='', world=False):
+def pick_elementpoints(message="", world=False):
     """Selects element points.
 
     Args:
@@ -397,12 +565,12 @@ def pick_elementpoints(message='', world=False):
     Returns:
         (list[PointOnElement]): selected element points.
     """
-    return _pick_obj(UI.Selection.ObjectType.PointOnElement,
-                     message,
-                     multiple=True, world=world)
+    return _pick_obj(
+        UI.Selection.ObjectType.PointOnElement, message, multiple=True, world=world
+    )
 
 
-def pick_edges(message=''):
+def pick_edges(message=""):
     """Selects edges.
 
     Args:
@@ -411,12 +579,10 @@ def pick_edges(message=''):
     Returns:
         (list[Edge]): selected edges.
     """
-    return _pick_obj(UI.Selection.ObjectType.Edge,
-                     message,
-                     multiple=True)
+    return _pick_obj(UI.Selection.ObjectType.Edge, message, multiple=True)
 
 
-def pick_faces(message=''):
+def pick_faces(message=""):
     """Selects faces.
 
     Args:
@@ -425,12 +591,10 @@ def pick_faces(message=''):
     Returns:
         (list[Face]): selected faces.
     """
-    return _pick_obj(UI.Selection.ObjectType.Face,
-                     message,
-                     multiple=True)
+    return _pick_obj(UI.Selection.ObjectType.Face, message, multiple=True)
 
 
-def pick_linkeds(message='', pick_filter=None):
+def pick_linkeds(message="", pick_filter=None):
     """Selects linked elements.
 
     Args:
@@ -442,13 +606,15 @@ def pick_linkeds(message='', pick_filter=None):
     Returns:
         (list[LinkedElement]): selected linked elements.
     """
-    return _pick_obj(UI.Selection.ObjectType.LinkedElement,
-                     message,
-                     multiple=True,
-                     selection_filter=pick_filter)
+    return _pick_obj(
+        UI.Selection.ObjectType.LinkedElement,
+        message,
+        multiple=True,
+        selection_filter=pick_filter,
+    )
 
 
-def pick_point(message=''):
+def pick_point(message=""):
     # type: (str) -> DB.XYZ | None
     """Pick a point from the user interface.
 
@@ -489,9 +655,8 @@ def pick_point(message=''):
                     sketch_plane = DB.SketchPlane.Create(
                         doc,
                         DB.Plane.CreateByNormalAndOrigin(
-                            active_view.ViewDirection,
-                            active_view.Origin
-                        )
+                            active_view.ViewDirection, active_view.Origin
+                        ),
                     )
                     active_view.SketchPlane = sketch_plane
                     t.Commit()
@@ -517,7 +682,7 @@ def pick_point(message=''):
     return result
 
 
-def pick_rectangle(message='', pick_filter=None):
+def pick_rectangle(message="", pick_filter=None):
     """Picks elements from the user interface by specifying a rectangular area.
 
     Args:
@@ -530,8 +695,7 @@ def pick_rectangle(message='', pick_filter=None):
         (list[DB.ElementId]): The selected elements.
     """
     if pick_filter:
-        return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_filter,
-                                                                message)
+        return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_filter, message)
     else:
         return HOST_APP.uidoc.Selection.PickElementsByRectangle(message)
 

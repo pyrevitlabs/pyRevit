@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -87,7 +87,7 @@ namespace pyRevitExtensionParserTest
                 }
             }
         }
-        
+
         public void PrintScriptDataRecursively(ParsedComponent parsedComponent, int level = 0)
         {
             // Only print components that have script files
@@ -101,9 +101,9 @@ namespace pyRevitExtensionParserTest
                 TestContext.Out.WriteLine($"{indent}  Tooltip: {parsedComponent.Tooltip ?? "N/A"}");
                 TestContext.Out.WriteLine($"{indent}  Author: {parsedComponent.Author ?? "N/A"}");
                 TestContext.Out.WriteLine($"{indent}  Component Type: {parsedComponent.Type}");
-                
+
                 // Special debug for problematic components
-                if (parsedComponent.Name.Contains("About") || parsedComponent.Name.Contains("Settings") || 
+                if (parsedComponent.Name.Contains("About") || parsedComponent.Name.Contains("Settings") ||
                     parsedComponent.Name.Contains("ManagePackages") || parsedComponent.Name.Contains("Tag"))
                 {
                     TestContext.Out.WriteLine($"{indent}  [DEBUG] Problematic component detected!");
@@ -111,7 +111,7 @@ namespace pyRevitExtensionParserTest
                     TestContext.Out.WriteLine($"{indent}  [DEBUG] Tooltip Length: {parsedComponent.Tooltip?.Length ?? 0}");
                     TestContext.Out.WriteLine($"{indent}  [DEBUG] Tooltip Contains Newlines: {(parsedComponent.Tooltip?.Contains('\n') ?? false)}");
                     TestContext.Out.WriteLine($"{indent}  [DEBUG] Tooltip Contains 'en_us': {(parsedComponent.Tooltip?.Contains("en_us") ?? false)}");
-                    
+
                     if (!string.IsNullOrEmpty(parsedComponent.BundleFile))
                     {
                         try
@@ -132,7 +132,7 @@ namespace pyRevitExtensionParserTest
                         }
                     }
                 }
-                
+
                 TestContext.Out.WriteLine($"{indent}  --------------------------------");
             }
 
@@ -161,20 +161,20 @@ namespace pyRevitExtensionParserTest
                         TestContext.Out.WriteLine($"Bundle File: {pulldownComponent.BundleFile}");
                         TestContext.Out.WriteLine($"Tooltip: {pulldownComponent.Tooltip}");
                         TestContext.Out.WriteLine($"Type: {pulldownComponent.Type}");
-                        
+
                         // Verify the component was parsed correctly
                         Assert.That(pulldownComponent.Type, Is.EqualTo(CommandComponentType.PullDown),
                                         "Component should be PullDown type");
                         Assert.IsNotNull(pulldownComponent.Tooltip, "Tooltip should not be null");
-                        
+
                         // Should not contain YAML syntax
                         Assert.IsFalse(pulldownComponent.Tooltip.Contains("en_us:"), "Tooltip should not contain YAML syntax");
                         Assert.IsFalse(pulldownComponent.Tooltip.Contains(">-"), "Tooltip should not contain YAML folding indicators");
-                        
+
                         // Should contain the actual content
-                        Assert.IsTrue(pulldownComponent.Tooltip.Contains("This is a test tooltip for the pulldown button"), 
+                        Assert.IsTrue(pulldownComponent.Tooltip.Contains("This is a test tooltip for the pulldown button"),
                                      $"Should contain the pulldown tooltip content, but was: '{pulldownComponent.Tooltip}'");
-                        
+
                         Assert.Pass("Pulldown tooltip parsing test completed successfully.");
                         return;
                     }
@@ -203,19 +203,19 @@ namespace pyRevitExtensionParserTest
                         TestContext.Out.WriteLine($"Bundle File: {tooltipComponent.BundleFile}");
                         TestContext.Out.WriteLine($"Tooltip: {tooltipComponent.Tooltip}");
                         TestContext.Out.WriteLine($"Type: {tooltipComponent.Type}");
-                        
+
                         // Verify the component was parsed correctly
                         Assert.IsNotNull(tooltipComponent.Tooltip, "Tooltip should not be null");
-                        
+
                         // Should not contain YAML syntax
                         Assert.IsFalse(tooltipComponent.Tooltip.Contains("en_us:"), "Tooltip should not contain YAML syntax");
                         Assert.IsFalse(tooltipComponent.Tooltip.Contains(">-"), "Tooltip should not contain YAML folding indicators");
                         Assert.IsFalse(tooltipComponent.Tooltip.Contains("ru:"), "Tooltip should not contain YAML syntax");
-                        
+
                         // Should contain the actual content
-                        Assert.IsTrue(tooltipComponent.Tooltip.Contains("This is a test tooltip in English"), 
+                        Assert.IsTrue(tooltipComponent.Tooltip.Contains("This is a test tooltip in English"),
                                      $"Should contain the English content, but was: '{tooltipComponent.Tooltip}'");
-                        
+
                         Assert.Pass("Multiline tooltip parsing test completed successfully.");
                         return;
                     }

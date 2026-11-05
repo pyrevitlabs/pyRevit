@@ -16,3 +16,5 @@ tooltip:
   es_es: Lista todas las hojas revisadas bajo cualquier revisión
   de_de: Es werden alle Pläne aufgelistet die mit einer beliebigen Änderung markiert wurden
   pt_br: Lista todas as folhas revisadas sob qualquer revisão
+context:
+  - doc-project

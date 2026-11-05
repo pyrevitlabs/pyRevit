@@ -1,8 +1,8 @@
 """Advanced Collection of Data: Collects all the walls of height 10"""
 
-
 # for timing -------------------------------------------------------------------
 from pyrevit.coreutils import Timer
+
 timer = Timer()
 # ------------------------------------------------------------------------------
 
@@ -16,16 +16,18 @@ doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
 
 
-walls = DB.FilteredElementCollector(doc) \
-          .OfCategory(DB.BuiltInCategory.OST_Walls) \
-          .WhereElementIsNotElementType() \
-          .ToElements()
+walls = (
+    DB.FilteredElementCollector(doc)
+    .OfCategory(DB.BuiltInCategory.OST_Walls)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 
 tallwalls_ids = []
 
 for wall in walls:
-    heightp = wall.Parameter[DB.BuiltInParameter.WALL_USER_HEIGHT_PARAM]
+    heightp = wall.get_Parameter(DB.BuiltInParameter.WALL_USER_HEIGHT_PARAM)
     if heightp and heightp.AsDouble() == 10.0:
         tallwalls_ids.append(wall.Id)
 

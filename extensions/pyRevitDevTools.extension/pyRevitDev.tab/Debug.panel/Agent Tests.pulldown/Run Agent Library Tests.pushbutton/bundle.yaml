@@ -1,0 +1,8 @@
+title: Run Agent Library Tests
+tooltip: >-
+  Check the MCP server's skills and library tools through a short-lived
+  pyrevit mcp process, and the pyrevitlib side of the automation operations
+  on both engines. Uses the same scratch projects as Run Agent Tests.
+context: zero-doc
+engine:
+  clean: true

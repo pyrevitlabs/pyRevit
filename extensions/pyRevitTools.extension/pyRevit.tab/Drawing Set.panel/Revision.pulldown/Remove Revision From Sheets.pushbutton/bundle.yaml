@@ -26,3 +26,5 @@ tooltip:
   de_de: >-
     Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript  entfernt diese Änderung von allen Plänen, wenn sie nicht auf dem Plan „eingewolkt“ wurde
   pt_br: Selecione uma revisão da lista de revisões e este script removerá essa revisão de todas as folhas se ela não tiver "nuvem" na folha
+context:
+  - doc-project

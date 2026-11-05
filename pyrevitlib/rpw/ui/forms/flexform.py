@@ -235,7 +235,7 @@ class ComboBox(RpwControlMixin, Controls.ComboBox):
 
         self.options = options
         if hasattr(options, 'keys'):
-            options = options.keys()
+            options = list(options.keys())
         if sort:
             options.sort()
         if default is None:

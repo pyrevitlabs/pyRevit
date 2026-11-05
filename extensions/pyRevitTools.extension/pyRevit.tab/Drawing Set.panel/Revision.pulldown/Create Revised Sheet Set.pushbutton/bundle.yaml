@@ -16,3 +16,5 @@ tooltip:
   es_es: Seleccione una revisión de la lista de revisiones y este script creará un conjunto de hojas de impresión para las hojas revisadas bajo la revisión seleccionada, y asignará el nuevo conjunto de hojas como el conjunto de impresión predeterminado
   de_de: Wählen Sie eine Änderung aus der Liste der Planänderungen aus, und dieses Script erstellt einen Drucksatz für die überarbeiteten Pläne unter der ausgewählten Änderung und weist den neuen Plansatz als Standarddrucksatz zu
   pt_br: Selecione uma revisão da lista de revisões e este script criará um conjunto de folhas de impressão para as folhas revisadas sob a revisão selecionada, e atribuirá o novo conjunto de folhas como o conjunto de impressão padrão
+context:
+  - doc-project

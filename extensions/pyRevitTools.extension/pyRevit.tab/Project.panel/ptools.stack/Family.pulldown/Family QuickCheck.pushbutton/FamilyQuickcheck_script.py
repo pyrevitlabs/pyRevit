@@ -6,7 +6,8 @@ github.com/frederic-beaupere
 
 PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
 """
-#pylint: disable=invalid-name,import-error,superfluous-parens,broad-except
+
+# pylint: disable=invalid-name,import-error,superfluous-parens,broad-except
 from pyrevit import revit, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import script
@@ -29,15 +30,11 @@ if EXEC_PARAMS.config_mode:
     family_dict = {}
     for family in all_families:
         if family.FamilyCategory:
-            family_dict[
-                "%s: %s" % (family.FamilyCategory.Name, family.Name)
-                ] = family
+            family_dict["%s: %s" % (family.FamilyCategory.Name, family.Name)] = family
 
-    selected_families = \
-        forms.SelectFromList.show(
-            sorted(family_dict.keys()),
-            title="Select Families to Check",
-            multiselect=True)
+    selected_families = forms.SelectFromList.show(
+        sorted(family_dict.keys()), title="Select Families to Check", multiselect=True
+    )
     if selected_families:
         editable_families = [family_dict[x] for x in selected_families]
 else:
@@ -62,7 +59,7 @@ with revit.ErrorSwallower(log_errors=True) as swallower:
             if swallowed_errors:
                 error_descs = "\n".join(
                     [x.GetDescriptionText() for x in swallowed_errors]
-                    )
+                )
                 logger.warning(":warning: %s\n%s", fam.Name, error_descs)
                 count_swallowed += len(swallowed_errors)
                 count_families_with_warnings += 1
@@ -79,8 +76,9 @@ with revit.ErrorSwallower(log_errors=True) as swallower:
         # increment, update gui, and proceed
         checked_families += 1
         output.update_progress(checked_families, total_count)
-        output.set_title("Family QuickCheck (X{} !{})"
-                         .format(count_exceptions, count_swallowed))
+        output.set_title(
+            "Family QuickCheck (X{} !{})".format(count_exceptions, count_swallowed)
+        )
         if output.is_closed_by_user:
             script.exit()
 
@@ -95,8 +93,8 @@ if count_families_with_warnings and count_swallowed:
     logger.warning(
         "%s families have total of %s warnings",
         count_families_with_warnings,
-        count_swallowed
-        )
+        count_swallowed,
+    )
 
 if not (count_exceptions and count_swallowed):
     logger.success("Finished. No errors found.")

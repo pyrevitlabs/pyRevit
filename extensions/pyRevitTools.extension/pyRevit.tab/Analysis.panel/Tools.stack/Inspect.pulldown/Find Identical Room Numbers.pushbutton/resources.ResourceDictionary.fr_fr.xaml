@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">Aucun numéro de pièce identique n'a été trouvé dans la vue active.</sys:String>
+    <sys:String x:Key="duplicates_found">Numéros de pièce utilisés plusieurs fois : {}</sys:String>
+    <sys:String x:Key="number_title">Numéro de pièce {}</sys:String>
+    <sys:String x:Key="column_name">Nom</sys:String>
+    <sys:String x:Key="column_level">Niveau</sys:String>
+    <sys:String x:Key="column_show">Sélectionner/Afficher l'élément</sys:String>
+    <sys:String x:Key="no_rooms_in_view">Cette vue ne peut pas afficher de pièces. Ouvrez un plan, une coupe, une élévation, une vue 3D ou une nomenclature de pièces.</sys:String>
+    <sys:String x:Key="no_level">Sans niveau</sys:String>
+</ResourceDictionary>

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using pyRevitExtensionParser;
 using System;
 using System.Collections.Generic;
@@ -180,7 +180,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     paths.Add(sitePackagesDir);
             }
 
-            return paths.ToArray();
+            return SearchPaths.DedupeKeepingFirstOccurrence(paths).ToArray();
         }
 
         /// <summary>

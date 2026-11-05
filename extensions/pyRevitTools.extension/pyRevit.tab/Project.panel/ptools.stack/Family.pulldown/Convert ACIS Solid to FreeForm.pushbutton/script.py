@@ -8,7 +8,8 @@ easily and get access to its shape handles.
 Copyright (c) 2019 Frederic Beaupere
 github.com/hdm-dt-fb
 """
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit.framework import Stopwatch
 from pyrevit import forms
 from pyrevit import revit, DB
@@ -19,14 +20,21 @@ logger = script.get_logger()
 
 def verify_selection(selected_elems, doc):
     if doc.IsFamilyDocument:
-        if all([isinstance(x, (DB.DirectShape, DB.ImportInstance)) for x in selected_elems]):
+        if all(
+            [isinstance(x, (DB.DirectShape, DB.ImportInstance)) for x in selected_elems]
+        ):
             return True
         else:
-            forms.alert("More than one element is selected or selected "
-                        "element is not an ACIS Solid.", exitscript=True)
+            forms.alert(
+                "More than one element is selected or selected "
+                "element is not an ACIS Solid.",
+                exitscript=True,
+            )
     else:
-        forms.alert("Please select one imported ACIS SAT DirectShape "
-                    "while in Family Editor.", exitscript=True)
+        forms.alert(
+            "Please select one imported ACIS SAT DirectShape while in Family Editor.",
+            exitscript=True,
+        )
     return False
 
 
@@ -38,7 +46,7 @@ if verify_selection(selection, revit.doc):
     for sat_import in selection:
         geom_opts = DB.Options()
         geom_opts.IncludeNonVisibleObjects = True
-        logger.debug('Converting: %s', sat_import)
+        logger.debug("Converting: %s", sat_import)
         solids = []
         for geo in revit.query.get_geometry(sat_import):
             if isinstance(geo, DB.Solid):
@@ -49,4 +57,4 @@ if verify_selection(selection, revit.doc):
             for solid in solids:
                 DB.FreeFormElement.Create(revit.doc, solid)
 
-logger.debug('Conversion completed in: %s', stopwatch.Elapsed)
+logger.debug("Conversion completed in: %s", stopwatch.Elapsed)

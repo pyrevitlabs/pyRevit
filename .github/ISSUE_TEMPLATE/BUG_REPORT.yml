@@ -15,16 +15,18 @@ body:
         pyRevit 4.8.x is not compatible with Revit 2025. 
         Use pyRevit 5.0.0+, it is backwards compatible.
         Latest WIP version can be found at [this page](https://www.pyrevitlabs.io/)
-        ## 🚧 SentinelOne 🚧
-        If you have SentinelOne installed as an antivirus, **look no further**.
-        **You will need to create exceptions for Revit and pyRevit**, both on the software and the %appdata% folders. ask your IT guy to do that.
+        ## 🚧🚧 Revit <2021 🚧🚧
+        Starting pyRevit 7.x, supporting Revit versions are reduced to 2021+. Don't expect bug fixes or features to be backwards ported.
+        ## 🚧 Endpoint Protection / Antivirus Software 🚧
+        Many corporate and system-level security tools (such as SentinelOne, ThreatLocker, or similar Endpoint Detection and Response platforms) can inadvertently block software add-ins from loading correctly.
+        **You will need to create exceptions for Revit and pyRevit**, both on the application executables and within your `%appdata%` directories. Ask your IT administrator or security team to configure these exclusions.
   - type: checkboxes
     id: preflight
     attributes:
       label: ✈ Pre-Flight checks
       description: before submitting an issue, make sure you've checked the following.
       options:
-        - label: I **don't have SentinelOne** antivirus installed (see above for the solution)
+        - label: I have checked that my antivirus or endpoint protection software is not blocking pyRevit (see above for the solution)
         - label: I have **searched in the issues** (open and closed) but couldn't find a similar issue
         - label: I have **searched in the [pyRevit Forum](https://discourse.pyrevitlabs.io)** for similar issues
         - label: I already **followed the [installation troubleshooting guide](https://pyrevitlabs.notion.site/Installation-issues-f6495adb56254e9e8021f8a68e3b2ab7) thoroughly**

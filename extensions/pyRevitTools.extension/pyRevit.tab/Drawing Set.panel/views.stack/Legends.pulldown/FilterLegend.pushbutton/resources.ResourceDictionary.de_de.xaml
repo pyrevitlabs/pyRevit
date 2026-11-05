@@ -21,6 +21,7 @@ Bitte weisen Sie einer Ansicht einen Filter zu und versuchen Sie es erneut.</sys
     <system:String x:Key="Settings_Section_Behavior">Verhalten</system:String>
     <system:String x:Key="Settings_SortAlpha">Filter alphabetisch sortieren</system:String>
     <system:String x:Key="Settings_OpenLegend">Zuletzt erstellte Legende öffnen</system:String>
+    <system:String x:Key="Settings_TrackLegend">Vorhandene Legenden verfolgen und aktualisieren</system:String>
 
     <system:String x:Key="Header_FilterName">Filtername</system:String>
     <system:String x:Key="Header_Parameter">Parameter</system:String>
@@ -28,6 +29,8 @@ Bitte weisen Sie einer Ansicht einen Filter zu und versuchen Sie es erneut.</sys
     <system:String x:Key="Value_NA">N/V</system:String>
 
     <system:String x:Key="Msg_Done">{0} Legendenansicht(en) erstellt.</system:String>
+    <system:String x:Key="Msg_Updated">{0} Legendenansicht(en) aktualisiert.</system:String>
+    <system:String x:Key="Msg_DoneMixed">{0} Legendenansicht(en) erstellt, {1} aktualisiert.</system:String>
     <system:String x:Key="Msg_Failed">Es konnten keine Legendenansichten erstellt werden. Details siehe Protokoll.</system:String>
 
 </ResourceDictionary>

@@ -18,7 +18,8 @@ up_2_folder = os.path.dirname(up_1_folder)
 
 # get panel name and create folder
 panel_name = forms.ask_for_string(
-    default="My New Panel Name", title="New panel", prompt="Get your new panel a name")
+    default="My New Panel Name", title="New panel", prompt="Get your new panel a name"
+)
 if not panel_name:
     script.exit()
 panel_folder = os.path.join(up_2_folder, panel_name + ".panel")
@@ -26,13 +27,14 @@ if not os.path.exists(panel_folder):
     os.mkdir(panel_folder)
 
 # to extend add entry to dict: {"button type": ["bundle extension", "button template folder"]}
-buttton_type_dict = {"pushbutton": ["pushbutton", "pushbutton"],
-                     "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
-                     "pushbutton for Dynamo script": ["pushbutton", "pushbutton_for_dynamo_script"],
-                     "content button": ["content", "content_button"],
-                     "url button": ["urlbutton", "url_button"],
-                     "invoke C# dll button": ["invokebutton", "invoke_dll_button"],
-                     }
+buttton_type_dict = {
+    "pushbutton": ["pushbutton", "pushbutton"],
+    "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
+    "pushbutton for Dynamo script": ["pushbutton", "pushbutton_for_dynamo_script"],
+    "content button": ["content", "content_button"],
+    "url button": ["urlbutton", "url_button"],
+    "invoke C# dll button": ["invokebutton", "invoke_dll_button"],
+}
 
 
 def button_template(button_type):
@@ -42,19 +44,20 @@ def button_template(button_type):
         button_folder = buttton_type_dict[button_type][0]
         button_template_folder_str = buttton_type_dict[button_type][1]
     button_template_folder = os.path.join(
-        button_types_folder, button_template_folder_str)
+        button_types_folder, button_template_folder_str
+    )
     return button_folder, button_template_folder
 
 
 def create_button(button_type):
     button_folder, button_template_folder = button_template(button_type)
     newname = ask_for_string(
-        title="New Folder", instructions="Specify name for new button")
+        title="New Folder", instructions="Specify name for new button"
+    )
     if not newname:
         alert("No name specified, will exit")
         script.exit()
-    new_button_folder = os.path.join(
-        panel_folder, newname + "." + button_folder)
+    new_button_folder = os.path.join(panel_folder, newname + "." + button_folder)
 
     if os.path.exists(new_button_folder):
         alert("Folder already exists")
@@ -88,11 +91,19 @@ def create_button(button_type):
 
 while True:
     button_type_selected = CommandSwitchWindow.show(
-        buttton_type_dict.keys(), message="Select button type")
+        buttton_type_dict.keys(), message="Select button type"
+    )
     if button_type_selected:
         create_button(button_type_selected)
-    res = alert("Create another one?", title="Create another button?", yes=True,
-                no=True, ok=False, warn_icon=False, footer="pyRevit Bundle Creator")
+    res = alert(
+        "Create another one?",
+        title="Create another button?",
+        yes=True,
+        no=True,
+        ok=False,
+        warn_icon=False,
+        footer="pyRevit Bundle Creator",
+    )
     if res is False:
         sessionmgr.reload_pyrevit()
         break

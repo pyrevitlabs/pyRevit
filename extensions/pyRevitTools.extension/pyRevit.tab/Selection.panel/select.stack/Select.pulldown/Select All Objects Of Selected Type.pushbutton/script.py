@@ -5,7 +5,8 @@ are View Specific objects)
 Shift-Click:
 Show Results
 """
-#pylint: disable=import-error,invalid-name,unused-argument,broad-except,superfluous-parens
+
+# pylint: disable=import-error,invalid-name,unused-argument,broad-except,superfluous-parens
 from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import script
 from pyrevit import forms
@@ -21,7 +22,7 @@ viewspecific_items = {}
 
 # verify selection
 if not selection:
-    forms.alert('At least one object must be selected.', exitscript=True)
+    forms.alert("At least one object must be selected.", exitscript=True)
 
 # collect element matching selected input
 for selected_element in selection:
@@ -42,17 +43,19 @@ for selected_element in selection:
 
     # collect all target elements
     if by_class:
-        same_cat_elements = \
-            DB.FilteredElementCollector(revit.doc)\
-            .OfClass(by_class)\
-            .WhereElementIsNotElementType()\
+        same_cat_elements = (
+            DB.FilteredElementCollector(revit.doc)
+            .OfClass(by_class)
+            .WhereElementIsNotElementType()
             .ToElements()
+        )
     else:
-        same_cat_elements = \
-            DB.FilteredElementCollector(revit.doc)\
-            .OfCategoryId(category_id)\
-            .WhereElementIsNotElementType()\
+        same_cat_elements = (
+            DB.FilteredElementCollector(revit.doc)
+            .OfCategoryId(category_id)
+            .WhereElementIsNotElementType()
             .ToElements()
+        )
 
     # find matching types
     for sim_element in same_cat_elements:
@@ -63,10 +66,9 @@ for selected_element in selection:
         if r_type == type_id:
             filered_elements.append(sim_element.Id)
             if is_viewspecific:
-                ovname = \
-                    revit.query.get_name(
-                        revit.doc.GetElement(sim_element.OwnerViewId)
-                        )
+                ovname = revit.query.get_name(
+                    revit.doc.GetElement(sim_element.OwnerViewId)
+                )
                 if ovname in viewspecific_items:
                     viewspecific_items[ovname].append(sim_element)
                 else:
@@ -78,20 +80,24 @@ for selected_element in selection:
 if EXEC_PARAMS.config_mode:
     if is_viewspecific:
         for ovname, items in viewspecific_items.items():
-            print('OWNER VIEW: {0}'.format(ovname))
+            print("OWNER VIEW: {0}".format(ovname))
             for vs_element in items:
-                print('\tID: {0}\t{1}'.format(
-                    output.linkify(vs_element.Id),
-                    vs_element.GetType().Name.ljust(20)
-                    ))
-            print('\n')
+                print(
+                    "\tID: {0}\t{1}".format(
+                        output.linkify(vs_element.Id),
+                        vs_element.GetType().Name.ljust(20),
+                    )
+                )
+            print("\n")
     else:
-        print('SELECTING MODEL ITEMS:')
+        print("SELECTING MODEL ITEMS:")
         for model_element in model_items:
-            print('\tID: {0}\t{1}'.format(
-                output.linkify(model_element.Id),
-                model_element.GetType().Name.ljust(20)
-                ))
+            print(
+                "\tID: {0}\t{1}".format(
+                    output.linkify(model_element.Id),
+                    model_element.GetType().Name.ljust(20),
+                )
+            )
 
 # select results
 revit.get_selection().set_to(filered_elements)

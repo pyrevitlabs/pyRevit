@@ -99,8 +99,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                         _logger.Warning($"ComboBox event handler setup failed for '{comboBoxText}'. Exception: {scriptEx.Message}");
                     }
                 }
-
-                _logger.Debug($"Successfully created ComboBox '{comboBoxText}' with {component.Members?.Count ?? 0} members.");
             }
             catch (Exception ex)
             {
@@ -157,12 +155,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                         _logger.Warning($"ComboBox event handler setup failed for '{comboBoxText}'. Exception: {scriptEx.Message}");
                     }
                 }
-
-                _logger.Debug($"Updated existing ComboBox '{comboBoxText}'.");
             }
             catch (Exception ex)
             {
-                _logger.Debug($"Failed to update ComboBox '{component.DisplayName}'. Exception: {ex.Message}");
+                _logger.Warning($"Failed to update ComboBox '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 

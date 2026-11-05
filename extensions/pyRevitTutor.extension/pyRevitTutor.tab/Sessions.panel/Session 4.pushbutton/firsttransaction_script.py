@@ -1,18 +1,29 @@
 """Basics of transactions. Updates comment parameter on all sheets and delete all walls."""
 
-
 from pyrevit import HOST_APP
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Transaction, TransactionGroup, BuiltInParameter
+from Autodesk.Revit.DB import (
+    FilteredElementCollector,
+    BuiltInCategory,
+    Transaction,
+    TransactionGroup,
+    BuiltInParameter,
+)
 
 doc = HOST_APP.doc
 
-sheets_collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Sheets) \
-                                                .WhereElementIsNotElementType() \
-                                                .ToElements()
+sheets_collector = (
+    FilteredElementCollector(doc)
+    .OfCategory(BuiltInCategory.OST_Sheets)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
-wall_id_collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls) \
-                                              .WhereElementIsNotElementType() \
-                                              .ToElementIds()
+wall_id_collector = (
+    FilteredElementCollector(doc)
+    .OfCategory(BuiltInCategory.OST_Walls)
+    .WhereElementIsNotElementType()
+    .ToElementIds()
+)
 
 
 tg = TransactionGroup(doc, "Update and Delete")
@@ -22,7 +33,7 @@ t = Transaction(doc, "Update Sheet Parmeters")
 t.Start()
 
 for sheet in sheets_collector:
-    custom_param = sheet.Parameter[BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+    custom_param = sheet.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
     if custom_param:
         custom_param.Set("Example value")
 

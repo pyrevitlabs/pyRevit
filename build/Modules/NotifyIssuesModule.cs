@@ -15,6 +15,7 @@ using System.Net;
 
 namespace Build.Modules;
 
+[DependsOn<RejectTestSignedBinariesModule>(Optional = true)]
 [SkipIfNoGitHubToken]
 public sealed class NotifyIssuesModule(
     IOptions<BuildOptions> buildOptions,

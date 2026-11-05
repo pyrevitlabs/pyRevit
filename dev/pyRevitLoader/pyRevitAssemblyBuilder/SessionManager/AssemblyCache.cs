@@ -13,18 +13,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private static readonly object _lock = new object();
         private static readonly Dictionary<string, Assembly> _cache = new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
         private static bool _scanned;
-        
+
         /// <summary>
         /// Scans AppDomain once and caches all assembly references.
         /// </summary>
         private static void EnsureScanned()
         {
             if (_scanned) return;
-            
+
             lock (_lock)
             {
                 if (_scanned) return;
-                
+
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
                     try
@@ -40,11 +40,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         // Ignore assemblies that throw on GetName()
                     }
                 }
-                
+
                 _scanned = true;
             }
         }
-        
+
         /// <summary>
         /// Gets an assembly by exact name.
         /// </summary>
@@ -53,14 +53,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
             EnsureScanned();
             return _cache.TryGetValue(name, out var assembly) ? assembly : null;
         }
-        
+
         /// <summary>
         /// Gets an assembly by prefix (e.g., "pyRevitLoader" matches "pyRevitLoader.2024").
         /// </summary>
         public static Assembly GetByPrefix(string prefix)
         {
             EnsureScanned();
-            
+
             lock (_lock)
             {
                 foreach (var kvp in _cache)
@@ -71,14 +71,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             return null;
         }
-        
+
         /// <summary>
         /// Gets an assembly by substring match (e.g., "IronPython" matches "IronPython.dll").
         /// </summary>
         public static Assembly GetByContains(string substring, params string[] exclusions)
         {
             EnsureScanned();
-            
+
             lock (_lock)
             {
                 foreach (var kvp in _cache)
@@ -101,14 +101,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             return null;
         }
-        
+
         /// <summary>
         /// Adds a newly loaded assembly to the cache.
         /// </summary>
         public static void Add(Assembly assembly)
         {
             if (assembly == null) return;
-            
+
             try
             {
                 var name = assembly.GetName().Name;
@@ -125,7 +125,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Ignore
             }
         }
-        
+
         /// <summary>
         /// Clears the cache (useful for reload scenarios).
         /// </summary>

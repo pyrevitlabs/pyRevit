@@ -8,6 +8,6 @@ from pyrevit import script
 
 datafile = script.get_document_data_file("SelList", "pym")
 
-f = open(datafile, 'wb')
+f = open(datafile, "wb")
 pl.dump([], f)
 f.close()

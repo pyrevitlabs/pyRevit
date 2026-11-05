@@ -227,7 +227,7 @@ pyrevit attachments
 
 !!! note
 
-    pyRevit 5 (current WIP) needs a WIP `pyrevit` CLI. Build it from this repo if needed:
+    pyRevit 7 (current WIP) needs a WIP `pyrevit` CLI — a released CLI does not know the commands added in `develop`. Build it from this repo if you need one:
 
     ```shell
     cd build

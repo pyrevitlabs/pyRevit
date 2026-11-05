@@ -12,16 +12,33 @@ using System.Reflection;
 using System.Windows.Forms;
 using IronPython.Runtime.Operations;
 
-namespace PyRevitLoader {
+namespace PyRevitLoader
+{
     // Executes a script
-    public class ScriptExecutor {
+    public class ScriptExecutor
+    {
         private bool _fullframe = false;
         private readonly UIApplication _revit = null;
 
-        public ScriptExecutor() {
+        /// <summary>
+        /// Creates an executor with no host application handle, usable only for
+        /// <see cref="AddEmbeddedLib(ScriptEngine)"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Warning:</b> <see cref="SetupEnvironment(ScriptEngine, ScriptScope)"/>
+        /// rejects an instance built this way, because it could only inject a null
+        /// <c>__revit__</c>.
+        /// </remarks>
+        public ScriptExecutor()
+        {
         }
 
-        public ScriptExecutor(UIApplication uiApplication, bool fullFrame = false) {
+        /// <summary>
+        /// Creates an executor bound to a host application handle. This is the only
+        /// overload that can run a script.
+        /// </summary>
+        public ScriptExecutor(UIApplication uiApplication, bool fullFrame = false)
+        {
             _revit = uiApplication;
             _fullframe = fullFrame;
         }
@@ -34,8 +51,10 @@ namespace PyRevitLoader {
         public static string EnginePrefix => "";
 #endif
 
-        public static string EngineVersion {
-            get {
+        public static string EngineVersion
+        {
+            get
+            {
                 var assmVersion = Assembly.GetAssembly(typeof(ScriptExecutor)).GetName().Version;
                 return string.Format("{0}{1}{2}", assmVersion.Major, assmVersion.Minor, assmVersion.Build);
             }
@@ -44,13 +63,16 @@ namespace PyRevitLoader {
         public Result ExecuteScript(string sourcePath,
                                     IEnumerable<string> sysPaths = null,
                                     string logFilePath = null,
-                                    IDictionary <string, object> variables = null) {
-            try {
+                                    IDictionary<string, object> variables = null)
+        {
+            try
+            {
                 var engine = CreateEngine();
                 var scope = SetupEnvironment(engine);
 
                 // Add script directory address to sys search paths
-                if (sysPaths != null) {
+                if (sysPaths != null)
+                {
                     var path = engine.GetSearchPaths();
                     foreach (var sysPath in sysPaths)
                         path.Add(sysPath);
@@ -63,7 +85,7 @@ namespace PyRevitLoader {
                 scope.SetVariable("__file__", sourcePath);
 
                 if (variables != null)
-                    foreach(var keyPair in variables)
+                    foreach (var keyPair in variables)
                         scope.SetVariable(keyPair.Key, keyPair.Value);
 
                 //var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
@@ -77,7 +99,8 @@ namespace PyRevitLoader {
                 // Setting up error reporter and compile the script
                 var errors = new ErrorReporter();
                 var command = script.Compile(compiler_options, errors);
-                if (command == null) {
+                if (command == null)
+                {
                     // compilation failed, print errors and return
                     Message =
                         string.Join("\r\n", "IronPython Traceback:", string.Join("\r\n", errors.Errors.ToArray()));
@@ -88,15 +111,18 @@ namespace PyRevitLoader {
                 }
 
 
-                try {
+                try
+                {
                     script.Execute(scope);
                     return Result.Succeeded;
                 }
-                catch (SystemExitException) {
+                catch (SystemExitException)
+                {
                     // ok, so the system exited. That was bound to happen...
                     return Result.Succeeded;
                 }
-                catch (Exception exception) {
+                catch (Exception exception)
+                {
                     string _dotnet_err_message = exception.ToString();
                     string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
 
@@ -113,25 +139,29 @@ namespace PyRevitLoader {
 
                     return Result.Failed;
                 }
-                finally {
+                finally
+                {
                     engine.Runtime.Shutdown();
                     engine = null;
                 }
 
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Message = ex.ToString();
                 return Result.Failed;
             }
         }
 
-        public ScriptEngine CreateEngine() {
+        public ScriptEngine CreateEngine()
+        {
             var flags = new Dictionary<string, object>();
 
             // default flags
             flags["LightweightScopes"] = true;
 
-            if (_fullframe) {
+            if (_fullframe)
+            {
                 flags["Frames"] = true;
                 flags["FullFrames"] = true;
             }
@@ -141,7 +171,8 @@ namespace PyRevitLoader {
             return engine;
         }
 
-        public void AddEmbeddedLib(ScriptEngine engine) {
+        public void AddEmbeddedLib(ScriptEngine engine)
+        {
             // use embedded python lib
             var asm = this.GetType().Assembly;
 #if PYREVITLABS_ENGINE
@@ -149,7 +180,7 @@ namespace PyRevitLoader {
 #else
             string resName = string.Format("python_{0}_lib.zip", EngineVersion);
 #endif
-            
+
             var resQuery = from name in asm.GetManifestResourceNames()
                            where name.ToLowerInvariant().EndsWith(resName)
                            select name;
@@ -160,7 +191,8 @@ namespace PyRevitLoader {
         }
 
         // Set up an IronPython environment
-        public ScriptScope SetupEnvironment(ScriptEngine engine) {
+        public ScriptScope SetupEnvironment(ScriptEngine engine)
+        {
             var scope = IronPython.Hosting.Python.CreateModule(engine, "__main__");
 
             SetupEnvironment(engine, scope);
@@ -168,8 +200,31 @@ namespace PyRevitLoader {
             return scope;
         }
 
-        public void SetupEnvironment(ScriptEngine engine, ScriptScope scope) {
-            // add two special variables: __revit__ and __vars__ to be globally visible everywhere:            
+        /// <summary>
+        /// Injects pyRevit's reserved builtins into the scope of
+        /// <paramref name="engine"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// This executor was built without a host application handle, so the only
+        /// <c>__revit__</c> it could inject would be null.
+        /// </exception>
+        /// <remarks>
+        /// <b>Invariant:</b> <c>__revit__</c> injected here is always a non-null
+        /// <c>UIApplication</c>. This is the second place that builtin is injected
+        /// - smart buttons and combo boxes run through here rather than through the
+        /// runtime engines - and the pyrevit library resolves the host application
+        /// through it, so a null or differently typed handle degrades every consumer
+        /// silently instead of failing. Keep the contract in step with
+        /// <c>PyRevitLabs.PyRevit.Runtime.RevitAppResolver</c>, which normalizes
+        /// handles for command and event-hook execution.
+        /// </remarks>
+        public void SetupEnvironment(ScriptEngine engine, ScriptScope scope)
+        {
+            if (_revit == null)
+                throw new InvalidOperationException(
+                    "ScriptExecutor was created without a UIApplication handle and cannot set up a " +
+                    "script environment. Construct it with the host UIApplication.");
+
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
             builtin.SetVariable("__revit__", _revit);
 

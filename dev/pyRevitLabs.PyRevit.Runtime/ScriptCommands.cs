@@ -30,7 +30,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
     public abstract class ScriptCommand : IExternalCommand {
-        
+
         public ScriptData ScriptData;
         public ScriptRuntimeConfigs ScriptRuntimeConfigs;
 
@@ -236,7 +236,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 return Result.Succeeded;
             }
-     
+
             else if (ALT) {
                 // combine the arguments together
                 // it doesn't matter if there is a space after ','
@@ -329,7 +329,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             bool capturingSubCondition = false;
             bool subConditionIsNot = false;
             CompoundCondition subCondition = new AllCondition();
-            var  collectedSubConditions = new HashSet<Condition>();
+            var collectedSubConditions = new HashSet<Condition>();
 
             bool capturingToken = false;
             string currentToken = string.Empty;
@@ -358,7 +358,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             };
 
-            foreach(char c in contextString) {
+            foreach (char c in contextString) {
                 switch (c) {
                     // sub conditions
                     case '(':
@@ -409,7 +409,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public abstract class Condition {
             public bool IsRoot { get; set; } = false;
-            
+
             public static bool HasDocument(UIApplication uiApp) => uiApp != null && uiApp.ActiveUIDocument != null;
 
             public static bool HasSelection(UIApplication uiApp, CategorySet selectedCategories) => HasDocument(uiApp) && !selectedCategories.IsEmpty;
@@ -488,6 +488,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         return new ViewTypeCondition(ViewType.PanelSchedule);
                     case "active-column-schedule":
                         return new ViewTypeCondition(ViewType.ColumnSchedule);
+                    case "active-project-browser":
+                        return new ActiveBrowserCondition(ViewType.ProjectBrowser);
+                    case "active-system-browser":
+                        return new ActiveBrowserCondition(ViewType.SystemBrowser);
                 }
 
                 // check for custom tokens next
@@ -511,9 +515,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public abstract override string ToString();
         }
 
-        public abstract class CompoundCondition: Condition {
+        public abstract class CompoundCondition : Condition {
             public bool IsNot { get; set; } = false;
-            
+
             public abstract string Separator { get; }
 
             public HashSet<Condition> Conditions = new HashSet<Condition>();
@@ -602,21 +606,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             HashSet<ViewType> _viewTypes;
 
             public ViewTypeCondition(ViewType viewType) => _viewTypes = new HashSet<ViewType> { viewType };
-            public ViewTypeCondition(ViewType[] viewTypes) => _viewTypes = new HashSet<ViewType> (viewTypes);
+            public ViewTypeCondition(ViewType[] viewTypes) => _viewTypes = new HashSet<ViewType>(viewTypes);
+
+            protected virtual View GetActiveView(UIDocument uiDoc) => uiDoc.ActiveGraphicalView;
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 try {
                     // check active views
                     if (_viewTypes.Count > 0) {
                         if (HasDocument(uiApp))
-                            return _viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType);
+                            return _viewTypes.Contains(GetActiveView(uiApp.ActiveUIDocument).ViewType);
                     }
                     else
                         return true;
                 }
                 // say no if any errors occured, otherwise Revit will not call this method again if exceptions
                 // are bubbled up
-                catch {}
+                catch { }
                 return false;
             }
 
@@ -638,6 +644,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        class ActiveBrowserCondition : ViewTypeCondition {
+            public ActiveBrowserCondition(ViewType browserType) : base(browserType) { }
+
+            protected override View GetActiveView(UIDocument uiDoc) => uiDoc.ActiveView;
+        }
+
         abstract class CategoryCondition : Condition {
             public abstract bool IsMatch(Category category);
         }
@@ -650,8 +662,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 if (HasSelection(uiApp, selectedCategories)) {
                     try {
-                        foreach (Category category in selectedCategories)
-                        {
+                        foreach (Category category in selectedCategories) {
 #if !(REVIT2021 || REVIT2022 || REVIT2023)
                             if (category.Id.Value == _categoryId)
 #else
@@ -710,7 +721,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                     catch { }
                 }
-                
+
                 return false;
             }
 
@@ -783,7 +794,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        class AnyCondition: CompoundCondition {
+        class AnyCondition : CompoundCondition {
             public override string Separator => new string(new char[] { CONTEXT_CONDITION_ANY_SEP });
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
@@ -792,16 +803,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        class ExactCondition: CompoundCondition {
+        class ExactCondition : CompoundCondition {
             public override string Separator => new string(new char[] { CONTEXT_CONDITION_EXACT_SEP });
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 var catConditions = Conditions.OfType<CategoryCondition>();
-                
+
                 // test if all category conditions are ALL in selectedCategories
                 if (!catConditions.All(c => c.IsMatch(uiApp, selectedCategories)))
                     return IsNot ? true : false;
-                
+
                 // test if there is no selectedCategories that isnt matching ANY condition
                 foreach (Category cat in selectedCategories)
                     if (!catConditions.Any(c => c.IsMatch(cat)))

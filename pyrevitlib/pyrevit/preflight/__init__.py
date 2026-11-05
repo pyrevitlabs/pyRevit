@@ -8,6 +8,7 @@ All preflight checks are subclassed from a base class and are recognized
 automatically by the preflight module. Each test case, can perform ``setUp()``,
 ``startTest()``, ``tearDown()``, and ``doCleanups()``.
 """
+
 import os.path as op
 import imp
 import inspect
@@ -24,9 +25,11 @@ def _grab_test_types(module):
     testtypes = []
     for mem in inspect.getmembers(module):
         mobj = mem[1]
-        if inspect.isclass(mobj) \
-                and issubclass(mobj, PreflightTestCase) \
-                and mobj is not PreflightTestCase:
+        if (
+            inspect.isclass(mobj)
+            and issubclass(mobj, PreflightTestCase)
+            and mobj is not PreflightTestCase
+        ):
             testtypes.append(mobj)
     return testtypes
 
@@ -41,8 +44,9 @@ class PreflightCheck(object):
 
     def __init__(self, extension, check_type, script_path):
         self.check_case = check_type
-        self.name = getattr(self.check_case, "name", None) \
-            or _get_check_name(script_path)
+        self.name = getattr(self.check_case, "name", None) or _get_check_name(
+            script_path
+        )
         self.script_path = script_path
 
         self.extension = extension.name
@@ -58,11 +62,12 @@ class PreflightCheck(object):
             mlogger.error(
                 "PreflightCheck '%s' in '%s' has no docstring -- "
                 "add a class-level docstring (first line becomes the subtitle).",
-                self.name, op.basename(script_path)
+                self.name,
+                op.basename(script_path),
             )
-        desc_lines = doc_str.split('\n') if doc_str else ['']
+        desc_lines = doc_str.split("\n") if doc_str else [""]
         self.subtitle = desc_lines[0]
-        self.description = '\n'.join(x.strip() for x in desc_lines[1:])
+        self.description = "\n".join(x.strip() for x in desc_lines[1:])
 
 
 def run_preflight_check(check, doc, output):
@@ -88,11 +93,8 @@ def get_all_preflight_checks():
         # find the checks in the extension
         for check_script in ext.get_checks():
             # load the check source file so all the checks can be extracted
-            check_mod = \
-                imp.load_source(_get_check_name(check_script), check_script)
+            check_mod = imp.load_source(_get_check_name(check_script), check_script)
             # extract the checks and wrap
             for check_type in _grab_test_types(check_mod):
-                preflight_checks.append(
-                    PreflightCheck(ext, check_type, check_script)
-                )
+                preflight_checks.append(PreflightCheck(ext, check_type, check_script))
     return preflight_checks

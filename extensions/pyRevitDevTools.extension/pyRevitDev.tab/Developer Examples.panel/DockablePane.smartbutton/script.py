@@ -4,6 +4,7 @@
 Exercises every WPFPanel / _WPFMixin feature.
 The toolbar icon mirrors the panel's open/closed state.
 """
+
 from pyrevit import forms
 from pyrevit.revit import ui
 from pyrevit.framework import Threading, System

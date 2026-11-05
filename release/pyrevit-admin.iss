@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "7.0.0.26237"
+#define MyAppVersion "7.0.0.26278"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -70,16 +70,11 @@ Source: "..\site-packages\*"; DestDir: "{app}\site-packages"; Flags: ignoreversi
 Source: "..\release\.pyrevitargs"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 
-[Registry]
-; Uninstaller does not undo this change
-; Multiple installs keep adding the path
-; https://stackoverflow.com/a/3431379/2350244
-; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
-
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemovePathEntry"; Parameters: "env path remove ""{app}\bin"" --scope=machine"; Flags: runhidden
 
 [Code]
 function RunPyRevitCommand(const Params: String; const AsOriginalUser: Boolean): Boolean;
@@ -109,6 +104,12 @@ end;
 
 procedure RunAdminPostInstallCommands;
 begin
+  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine', False) then
+    SuppressibleMsgBox(
+      'pyRevit was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
+      'You may need to manually add the following folder to the machine PATH:' + #13#10 +
+      '  ' + ExpandConstant('{app}\bin'),
+      mbError, MB_OK, MB_OK);
   RunPyRevitCommand('caches clear --all', True);
   RunPyRevitCommand('detach --all', True);
   if not RunPyRevitCommand('clones add this master --force', False) then
@@ -133,6 +134,8 @@ end;
 
 function InitializeSetup: Boolean;
 begin
+  // WebView2 Runtime for the output window renderer
+  Dependency_AddWebView2;
   // .NET 8 for Revit 2025-2026
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;

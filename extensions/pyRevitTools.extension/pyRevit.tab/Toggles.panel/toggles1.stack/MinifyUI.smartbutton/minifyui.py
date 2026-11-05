@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Minify UI backend."""
-#pylint: disable=E0401,C0103
+
+# pylint: disable=E0401,C0103
 from pyrevit import forms
 from pyrevit import script
 from pyrevit.coreutils import ribbon
@@ -10,7 +11,7 @@ from pyrevit.runtime import types
 mlogger = script.get_logger()
 
 
-MINIFYUI_ENV_VAR = 'MINIFYUIACTIVE'
+MINIFYUI_ENV_VAR = "MINIFYUIACTIVE"
 
 
 class TabOption(forms.TemplateListItem):
@@ -29,19 +30,22 @@ def set_minifyui_config(hidden_tabs_list, config):
 
 
 def get_minifyui_config(config):
-    return config.get_option('hidden_tabs', [])
+    return config.get_option("hidden_tabs", [])
 
 
 def config_minifyui(config):
     this_ext_name = script.get_extension_name()
     hidden_tabs = get_minifyui_config(config)
     tabs = forms.SelectFromList.show(
-        [TabOption(x, hidden_tabs) for x in ribbon.get_current_ui()
-         if x.name not in this_ext_name],
-        title='Minify UI Config',
-        button_name='Hide Selected Tabs in Minified Mode',
-        multiselect=True
-        )
+        [
+            TabOption(x, hidden_tabs)
+            for x in ribbon.get_current_ui()
+            if x.name not in this_ext_name
+        ],
+        title="Minify UI Config",
+        button_name="Hide Selected Tabs in Minified Mode",
+        multiselect=True,
+    )
 
     if tabs:
         set_minifyui_config([x.name for x in tabs if x], config)

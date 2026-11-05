@@ -57,14 +57,14 @@ skipped_docs = []
 
 with forms.ProgressBar(cancellable=True) as pb:
     for dest_doc in open_docs:
-
         pb.title = "Processing Document: {}".format(dest_doc.Title)
         pb.update_progress(current_operation, total_operations)
 
         # get all legend names in destination
         all_graphviews = revit.query.get_all_views(doc=dest_doc)
         all_legend_names = [
-            revit.query.get_name(x) for x in all_graphviews
+            revit.query.get_name(x)
+            for x in all_graphviews
             if x.ViewType == DB.ViewType.Legend
         ]
 
@@ -98,7 +98,11 @@ with forms.ProgressBar(cancellable=True) as pb:
             for el in view_elements:
                 # ReferencePlanes  skipped because they are copied in the model space, not in the legend view
                 is_element_reference_plane = isinstance(el, DB.ReferencePlane)
-                if isinstance(el, DB.Element) and el.Category and not is_element_reference_plane:
+                if (
+                    isinstance(el, DB.Element)
+                    and el.Category
+                    and not is_element_reference_plane
+                ):
                     elements_to_copy.append(el.Id)
                 else:
                     logger_messages.log_message_with_doc_and_legend(
@@ -143,8 +147,9 @@ with forms.ProgressBar(cancellable=True) as pb:
                     logger_messages.log_message_with_doc_and_legend(
                         dest_doc.Title,
                         legend_name,
-                        "Error setting element overrides: {}\n{} in "
-                        "{}".format(ex, src_id, dest_doc.Title),
+                        "Error setting element overrides: {}\n{} in {}".format(
+                            ex, src_id, dest_doc.Title
+                        ),
                     )
 
             # set unique name

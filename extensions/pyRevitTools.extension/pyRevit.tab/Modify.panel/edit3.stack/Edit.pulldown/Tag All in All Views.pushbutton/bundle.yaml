@@ -16,3 +16,5 @@ tooltip:
   es_es: Etiquetar todos los tipos de elementos elegidos en todas las vistas
   de_de: Es werden alle Räume oder MEP-Räume in allen Ansichten beschriftet
   pt_br: Identificar todos os tipos de elementos escolhidos em todas as vistas
+context:
+  - doc-project

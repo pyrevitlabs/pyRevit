@@ -1,85 +1,185 @@
 # -*- coding: utf-8 -*-
-"""Lightweight Python-side perf instrumentation.
+"""Python-side perf checkpoints recorded on the C# session load timeline.
 
-Emits [PERF:py] checkpoints through the standard pyRevit logger at DEBUG
-level so Python startup-script timings interleave with the C# loader's
-[PERF] timeline in the regular runtime log / output window.
+Checkpoints are recorded on `pyRevitLabs.Common.LoadTimeline`, the clock the C#
+loader times the whole session load with, and logged as DEBUG `[PERF:py]` lines
+that interleave with its `[PERF]` lines. Outside a session load there is no
+active timeline and every call does nothing, so checkpoints left in library
+modules cost nothing when commands import them.
 
-Self-contained on purpose: imports only stdlib at module load so it can be
-the first line of pyrevit/__init__.py without triggering circular loads. The
-pyRevit logger is resolved lazily on first use; checkpoints that fire before
-the logger is importable (early bootstrap) are silently skipped.
+Every checkpoint is recorded on the timeline, but only those at or over
+`_ROLLUP_THRESHOLD_MS` get their own log line. Cheaper ones are counted into a
+per-module rollup line, so the log keeps the steps worth acting on and still
+says what the omitted ones cost in total.
+
+Self-contained on purpose: imports only sys at module load so it can be the first
+line of pyrevit/__init__.py without triggering circular loads. The timeline type
+is resolved on first use. The pyRevit logger is never imported from here, since
+importing it before pyrevit/__init__.py finishes fails and costs time inside the
+very checkpoints being measured; it is used once another import has loaded it.
+Lines recorded before then are held and logged, in order, ahead of the first
+line after it.
 """
-import time
 
-# perf_counter exists on IronPython 2.7.6+ and CPython 3.3+; fall back to
-# time.time() so a stripped-down engine still gets coarse-grained data.
-_now = getattr(time, "perf_counter", None) or time.time
+import sys
 
-# Tracks the wall-clock time of the previous mark() call so we can emit a
-# delta-since-last-mark. Updated even when a checkpoint isn't logged, so the
-# timeline stays continuous across early bootstrap marks.
-_LAST = [_now()]
+_ROLLUP_THRESHOLD_MS = 10.0
 
-# Resolved pyRevit logger, cached once available. Holds None until the logger
-# module can be imported; each call retries until resolution succeeds.
+_UNRESOLVED = object()
+
+_TIMELINE_TYPE = [_UNRESOLVED]
+
 _LOGGER = [None]
+
+_PENDING_LINES = []
+
+_ROLLUP = [None, 0, 0.0]
+
+
+def _timeline_type():
+    if _TIMELINE_TYPE[0] is _UNRESOLVED:
+        try:
+            import clr  # pylint: disable=E0401
+
+            clr.AddReference("pyRevitLabs.Common")
+            from pyRevitLabs.Common import LoadTimeline  # pylint: disable=E0401
+
+            _TIMELINE_TYPE[0] = LoadTimeline
+        except Exception:
+            _TIMELINE_TYPE[0] = None
+    return _TIMELINE_TYPE[0]
+
+
+def _active_timeline():
+    timeline_type = _timeline_type()
+    if timeline_type is None:
+        return None
+    return timeline_type.Active
 
 
 def _logger():
     if _LOGGER[0] is not None:
         return _LOGGER[0]
+    logger_module = sys.modules.get("pyrevit.coreutils.logger")
+    get_logger = getattr(logger_module, "get_logger", None)
+    if get_logger is None:
+        return None
     try:
-        from pyrevit.coreutils.logger import get_logger
         _LOGGER[0] = get_logger("pyrevit.perf")
     except Exception:
         return None
     return _LOGGER[0]
 
 
+def _log_debug(message, *args):
+    lg = _logger()
+    if lg is None:
+        _PENDING_LINES.append((message, args))
+        return
+    lines = _PENDING_LINES[:] + [(message, args)]
+    del _PENDING_LINES[:]
+    for line_message, line_args in lines:
+        try:
+            lg.debug(line_message, *line_args)
+        except Exception:
+            pass
+
+
+def _group_of(label):
+    return label.split(":", 1)[0]
+
+
+def _flush_rollup():
+    group, count, total = _ROLLUP
+    _ROLLUP[0] = None
+    _ROLLUP[1] = 0
+    _ROLLUP[2] = 0.0
+    if count:
+        _log_debug(
+            "[PERF:py] %s: %d steps under %.0fms: %.0fms",
+            group,
+            count,
+            _ROLLUP_THRESHOLD_MS,
+            total,
+        )
+
+
+def _record(label, elapsed_ms, indent=""):
+    group = _group_of(label)
+    if group != _ROLLUP[0]:
+        _flush_rollup()
+    if elapsed_ms < _ROLLUP_THRESHOLD_MS:
+        _ROLLUP[0] = group
+        _ROLLUP[1] += 1
+        _ROLLUP[2] += elapsed_ms
+        return
+    _log_debug("[PERF:py] %s%s: %.0fms", indent, label, elapsed_ms)
+
+
+def flush():
+    """Log the rollup line for any checkpoints still held.
+
+    A rollup line is held until a checkpoint from another module arrives, so the
+    last module of a load needs this to reach the log. Call once at the end of a
+    session load; harmless at any other time.
+    """
+    _flush_rollup()
+
+
+def elapsed_load_seconds():
+    """Seconds since the current session load started, or None outside a load."""
+    timeline = _active_timeline()
+    if timeline is None:
+        return None
+    return timeline.ElapsedMilliseconds / 1000.0
+
+
 def mark(label):
     """Record a perf checkpoint.
 
-    Emits one DEBUG `[PERF:py]` line with elapsed time since the previous
-    mark. Format mirrors the C# `[PERF]` lines for visual parity. No-op until
-    the pyRevit logger is importable.
+    Measures the time since the previous checkpoint in the innermost open
+    timeline span, or since that span started. Deltas therefore never reach
+    back into another script or loader step.
+
+    Checkpoints at or over `_ROLLUP_THRESHOLD_MS` get a DEBUG `[PERF:py]` line
+    of their own; cheaper ones are counted into the rollup line for the label's
+    module, the part before the first colon.
+
+    Note:
+        Checkpoints taken before the pyRevit logger has been loaded are held
+        and logged, in order, once it has, so their log timestamps run late
+        but their deltas are exact.
     """
-    now = _now()
-    delta_ms = (now - _LAST[0]) * 1000.0
-    _LAST[0] = now
-    lg = _logger()
-    if lg is None:
+    timeline = _active_timeline()
+    if timeline is None:
         return
-    try:
-        lg.debug("[PERF:py] %s: %.0fms", label, delta_ms)
-    except Exception:
-        pass
+    span = timeline.CurrentSpan
+    if span is None:
+        return
+    _record(label, span.Lap())
 
 
 class time_block(object):
-    """Context manager: time a block independently of the running timeline.
+    """Context manager: time a block as a child span of the innermost open span.
 
-    Emits one DEBUG `[PERF:py]` line at exit, indented two extra spaces past
-    `mark()` lines to mirror C# sub-item indentation (`[PERF]   <name>:`).
+    Thresholded and rolled up like `mark()`. A block that earns its own line is
+    logged at exit, indented two extra spaces past `mark()` lines to mirror C#
+    sub-item indentation (`[PERF]   <name>:`). Does nothing outside a session
+    load.
     """
 
     def __init__(self, label):
         self.label = label
-        self._t0 = None
+        self._span = None
 
     def __enter__(self):
-        self._t0 = _now()
+        timeline = _active_timeline()
+        if timeline is not None:
+            self._span = timeline.StartSpan(self.label)
         return self
 
     def __exit__(self, exc_type, exc, tb):
-        if self._t0 is None:
+        if self._span is None:
             return False
-        elapsed_ms = (_now() - self._t0) * 1000.0
-        lg = _logger()
-        if lg is None:
-            return False
-        try:
-            lg.debug("[PERF:py]   %s: %.0fms", self.label, elapsed_ms)
-        except Exception:
-            pass
+        _record(self.label, self._span.End(), "  ")
         return False

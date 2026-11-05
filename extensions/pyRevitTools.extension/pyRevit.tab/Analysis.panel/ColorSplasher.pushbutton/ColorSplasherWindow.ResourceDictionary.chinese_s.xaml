@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">保存方案时出错</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">加载方案时出错</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">文件不存在。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">颜色方案存储位置：</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">选择颜色方案的保存和加载位置。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">文件</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">保存到 .cschn 文件或从中加载。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">活动视图</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">活动视图（未存储方案）</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">保存到活动视图或从中加载。每个视图存储一个颜色方案；保存会替换原有方案。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">颜色方案已保存到视图：{0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">按参数着色元素</system:String>

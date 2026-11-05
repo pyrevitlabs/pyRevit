@@ -1,24 +1,26 @@
 """Charts engine for output window."""
+
 # pylint: disable=C0103
 from json import JSONEncoder
 
 from pyrevit.coreutils import timestamp, random_rgba_color
 
 # CHARTS_ENGINE = 'Chart.js'
-CHARTS_ENGINE = 'Chart.bundle.js'
+CHARTS_ENGINE = "Chart.bundle.js"
 
 # chart.js chart types
-LINE_CHART = 'line'
-BAR_CHART = 'bar'
-RADAR_CHART = 'radar'
-POLAR_CHART = 'polarArea'
-PIE_CHART = 'pie'
-DOUGHNUT_CHART = 'doughnut'
-BUBBLE_CHART = 'bubble'
+LINE_CHART = "line"
+BAR_CHART = "bar"
+RADAR_CHART = "radar"
+POLAR_CHART = "polarArea"
+PIE_CHART = "pie"
+DOUGHNUT_CHART = "doughnut"
+BUBBLE_CHART = "bubble"
 
 
-CHARTS_JS_PATH = \
+CHARTS_JS_PATH = (
     "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/{version}/Chart.min.js"
+)
 
 
 SCRIPT_TEMPLATE = """
@@ -54,12 +56,13 @@ SCRIPT_TEMPLATE = """
 
 class _ChartsDataSetEncode(JSONEncoder):
     """JSON encoder for chart data sets."""
+
     def default(self, dataset_obj):  # pylint: disable=E0202, W0221
         data_dict = dataset_obj.__dict__.copy()
         # iterate over a snapshot; on python 3 .items() is a live view and
         # popping while iterating raises RuntimeError
         for key, value in list(data_dict.items()):
-            if key.startswith('_') or value == '' or value == []:
+            if key.startswith("_") or value == "" or value == []:
                 data_dict.pop(key)
 
         return data_dict
@@ -67,16 +70,18 @@ class _ChartsDataSetEncode(JSONEncoder):
 
 class PyRevitOutputChartOptions(object):
     """Chart options wrapper object."""
+
     def __init__(self):
         pass
 
 
 class PyRevitOutputChartDataset(object):
     """Chart dataset wrapper object."""
+
     def __init__(self, label):
         self.label = label
         self.data = []
-        self.backgroundColor = ''
+        self.backgroundColor = ""
 
     def set_color(self, *args):
         """Set dataset color.
@@ -89,18 +94,18 @@ class PyRevitOutputChartDataset(object):
             ```
         """
         if len(args) == 4:
-            self.backgroundColor = 'rgba({},{},{},{})'.format(args[0],
-                                                              args[1],
-                                                              args[2],
-                                                              args[3])
+            self.backgroundColor = "rgba({},{},{},{})".format(
+                args[0], args[1], args[2], args[3]
+            )
         elif len(args) == 1:
-            self.backgroundColor = '{}'.format(args[0])
+            self.backgroundColor = "{}".format(args[0])
 
 
 class PyRevitOutputChartData(object):
     """Chart data wrapper object."""
+
     def __init__(self):
-        self.labels = ''
+        self.labels = ""
         self.datasets = []
 
     def new_dataset(self, dataset_label):
@@ -130,11 +135,12 @@ class PyRevitOutputChart(object):
             output window wrapper object
         chart_type (str): chart type name
     """
+
     def __init__(self, output, chart_type=LINE_CHART, version=None):
         self._output = output
         self._style = None
         self._width = self._height = None
-        self._version = version or '2.8.0'
+        self._version = version or "2.8.0"
 
         self.type = chart_type
         self.data = PyRevitOutputChartData()
@@ -193,14 +199,14 @@ class PyRevitOutputChart(object):
         cur_head = self._output.get_head_html()
         charts_js_path = CHARTS_JS_PATH.format(version=self._version)
         if charts_js_path not in cur_head:
-            self._output.inject_script('', {'src': charts_js_path})
+            self._output.inject_script("", {"src": charts_js_path})
 
     @staticmethod
     def _make_canvas_unique_id():
-        return 'chart{}'.format(timestamp())
+        return "chart{}".format(timestamp())
 
     def _make_canvas_code(self, canvas_id):
-        attribs = ''
+        attribs = ""
         attribs += ' id="{}"'.format(canvas_id)
         if self._style:
             attribs += ' style="{}"'.format(self._style)
@@ -210,19 +216,20 @@ class PyRevitOutputChart(object):
             if self._height:
                 attribs += ' height="{}px"'.format(self._height)
 
-        return '<canvas {}></canvas>'.format(attribs)
+        return "<canvas {}></canvas>".format(attribs)
 
     def _make_charts_script(self, canvas_id):
         return SCRIPT_TEMPLATE.format(
-            canvas_id=canvas_id,
-            canvas_code=_ChartsDataSetEncode().encode(self))
+            canvas_id=canvas_id, canvas_code=_ChartsDataSetEncode().encode(self)
+        )
 
     def randomize_colors(self):
         """Randomize chart datasets colors."""
         if self.type in [POLAR_CHART, PIE_CHART, DOUGHNUT_CHART]:
             for dataset in self.data.datasets:
-                dataset.backgroundColor = [random_rgba_color()
-                                           for _ in range(0, len(dataset.data))]
+                dataset.backgroundColor = [
+                    random_rgba_color() for _ in range(0, len(dataset.data))
+                ]
         else:
             for dataset in self.data.datasets:
                 dataset.backgroundColor = random_rgba_color()

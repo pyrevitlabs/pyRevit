@@ -33,8 +33,8 @@ class ElementSet(BaseObject):
 
     """
 
-    def __init__(self, elements_or_ids=None, doc=revit.doc):
-        self.doc = doc
+    def __init__(self, elements_or_ids=None, doc=None):
+        self.doc = doc or revit.doc
         self._element_id_set = []
         if elements_or_ids:
             self.add(elements_or_ids)
@@ -211,8 +211,8 @@ class ElementCollection(BaseObject):
     Args:
         (`DB.Element`, `DB.ElementID`, optional): Elements or Element Ids.
     """
-    def __init__(self, elements_or_ids=None, doc=revit.doc):
-        self.doc = doc
+    def __init__(self, elements_or_ids=None, doc=None):
+        self.doc = doc or revit.doc
         self._elements = []
         if elements_or_ids:
             self.append(elements_or_ids)

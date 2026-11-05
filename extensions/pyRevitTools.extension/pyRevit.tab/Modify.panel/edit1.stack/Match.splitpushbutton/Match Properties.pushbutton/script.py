@@ -13,7 +13,7 @@ from pyrevit import forms
 from pyrevit import script
 
 from match.match_utils import get_source_properties, match_prop
-from match.clipboard import RecallWindow
+from panes.clipboard.pane import RecallWindow
 
 logger = script.get_logger()
 output = script.get_output()

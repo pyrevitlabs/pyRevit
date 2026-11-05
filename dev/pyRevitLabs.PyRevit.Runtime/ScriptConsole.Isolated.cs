@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using PyRevitLabs.UI.Client;
 using PyRevitLabs.UI.Protocol;
-using pyRevitLabs.Emojis;
+using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public partial class ScriptConsole {
@@ -39,6 +39,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 throw new InvalidOperationException("Isolated UI is enabled but the UI host is not available.");
             UiHostClientContext.EventReceived += IsolatedUiEventReceived;
             SetupDefaultPage();
+            OutputTitle = PyRevitLabsConsts.ProductName;
             return true;
         }
         private void EnsureIsolatedWindow() {
@@ -141,24 +142,50 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _isolatedInitialHtml = string.Format("{0}<html><body></body></html>", dochead);
         }
 
-        private string ComposeEntryHtml(string contents, string htmlElementType) {
-            contents = ScriptConsoleConfigs.EscapeForHtml(contents);
-            contents = ScriptConsoleConfigs.FromCustomHtmlTags(contents);
-            contents = ScriptConsoleConfigs.EscapeForOutput(contents);
-            contents = Emojis.Emojize(contents);
-            return string.Format("<{0}>{1}</{0}>", htmlElementType, contents);
-        }
-
         private void AppendIsolatedText(string outputText, string htmlElementType, bool record) {
             if (record)
                 _lastLine = outputText;
-            var html = ComposeEntryHtml(outputText, htmlElementType);
+            var html = ComposeEntry(outputText, htmlElementType);
             if (_frozen) {
                 _isolatedFrozenHtml.Append(html);
                 return;
             }
             EnsureIsolatedWindow();
             Wait(IsolatedOutput.AppendHtmlAsync(OutputUniqueId, html));
+        }
+
+        private void FreezeIsolated() {
+            _isolatedFrozenHtml.Clear();
+            _frozen = true;
+        }
+
+        private void UnfreezeIsolated() {
+            _frozen = false;
+            if (_isolatedFrozenHtml.Length == 0)
+                return;
+            EnsureIsolatedWindow();
+            Wait(IsolatedOutput.AppendHtmlAsync(OutputUniqueId, _isolatedFrozenHtml.ToString()));
+            _isolatedFrozenHtml.Clear();
+        }
+
+        private void FocusIsolated() {
+            EnsureIsolatedWindow();
+            Wait(IsolatedOutput.FocusAsync(OutputUniqueId));
+        }
+
+        private void AppendIsolatedActivityLog(string level, string message) {
+            EnsureIsolatedWindow();
+            Wait(IsolatedOutput.AppendLogAsync(OutputUniqueId, level, message));
+        }
+
+        private void SetIsolatedProgress(float curValue, float maxValue) {
+            EnsureIsolatedWindow();
+            Wait(IsolatedOutput.SetProgressAsync(OutputUniqueId, curValue, maxValue, true));
+        }
+
+        private void SetIsolatedIndeterminate(bool indeterminate) {
+            EnsureIsolatedWindow();
+            Wait(IsolatedOutput.SetIndeterminateAsync(OutputUniqueId, indeterminate));
         }
 
         private string GetIsolatedHtml() {
@@ -197,11 +224,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     OutputUniqueId, _isolatedWidth, _isolatedHeight, _isolatedLeft, _isolatedTop));
         }
 
-        public void NavigateOutput(string url) {
-            if (!_isolatedUi) {
-                renderer?.Navigate(url, false);
-                return;
-            }
+        private void NavigateIsolated(string url) {
             EnsureIsolatedWindow();
             Wait(IsolatedOutput.NavigateAsync(OutputUniqueId, url));
         }

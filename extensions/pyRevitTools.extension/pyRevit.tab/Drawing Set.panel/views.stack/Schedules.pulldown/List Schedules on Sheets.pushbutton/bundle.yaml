@@ -18,3 +18,5 @@ tooltip:
     Es öffnet sich ein Konsolenfenster, in dem alle Bauteillisten aufgelistet sind,  die auf einem Plan platziert wurden. Die dazugehörige Plannummer und der Planname  wird ebenfalls aufgelistet.
   pt_br: Listar tabelas em folhas
 author: Jean-Marc Couffin
+context:
+  - doc-project

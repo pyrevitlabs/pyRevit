@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Markdown utils."""
+
 from __future__ import unicode_literals
 import re
 import sys
@@ -34,17 +35,17 @@ BLOCK_LEVEL_ELEMENTS = re.compile(
     "|tr|th|td|section|footer|header|group|figure"
     "|figcaption|aside|article|canvas|output"
     "|progress|video|nav|main)$",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 # Placeholders
-STX = '\u0002'  # Use STX ("Start of text") for start-of-placeholder
-ETX = '\u0003'  # Use ETX ("End of text") for end-of-placeholder
-INLINE_PLACEHOLDER_PREFIX = STX+"klzzwxh:"
+STX = "\u0002"  # Use STX ("Start of text") for start-of-placeholder
+ETX = "\u0003"  # Use ETX ("End of text") for end-of-placeholder
+INLINE_PLACEHOLDER_PREFIX = STX + "klzzwxh:"
 INLINE_PLACEHOLDER = INLINE_PLACEHOLDER_PREFIX + "%s" + ETX
-INLINE_PLACEHOLDER_RE = re.compile(INLINE_PLACEHOLDER % r'([0-9]+)')
-AMP_SUBSTITUTE = STX+"amp"+ETX
+INLINE_PLACEHOLDER_RE = re.compile(INLINE_PLACEHOLDER % r"([0-9]+)")
+AMP_SUBSTITUTE = STX + "amp" + ETX
 HTML_PLACEHOLDER = STX + "wzxhzdk:%s" + ETX
-HTML_PLACEHOLDER_RE = re.compile(HTML_PLACEHOLDER % r'([0-9]+)')
+HTML_PLACEHOLDER_RE = re.compile(HTML_PLACEHOLDER % r"([0-9]+)")
 TAG_PLACEHOLDER = STX + "hzzhzkh:%s" + ETX
 
 
@@ -54,11 +55,11 @@ Constants you probably do not need to change
 """
 
 RTL_BIDI_RANGES = (
-    ('\u0590', '\u07FF'),
+    ("\u0590", "\u07ff"),
     # Hebrew (0590-05FF), Arabic (0600-06FF),
     # Syriac (0700-074F), Arabic supplement (0750-077F),
     # Thaana (0780-07BF), Nko (07C0-07FF).
-    ('\u2D30', '\u2D7F')  # Tifinagh
+    ("\u2d30", "\u2d7f"),  # Tifinagh
 )
 
 # Extensions should use "markdown.util.etree" instead of "etree" (or do `from
@@ -68,6 +69,7 @@ try:  # pragma: no cover
     # Is the C implementation of ElementTree available?
     import xml.etree.cElementTree as etree
     from xml.etree.ElementTree import Comment
+
     # Serializers (including ours) test with non-c Comment
     etree.test_comment = Comment
     if etree.VERSION < "1.0.5":
@@ -75,6 +77,7 @@ try:  # pragma: no cover
 except (ImportError, RuntimeError):  # pragma: no cover
     # Use the Python implementation of ElementTree?
     import xml.etree.ElementTree as etree
+
     if etree.VERSION < "1.1":
         raise RuntimeError("ElementTree version 1.1 or higher is required")
 
@@ -95,18 +98,18 @@ def isBlockLevel(tag):
 
 def parseBoolValue(value, fail_on_errors=True, preserve_none=False):
     """Parses a string representing bool value.
-    
+
     If parsing was successful, returns True or False.
     If preserve_none=True, returns True, False, or None.
     If parsing was not successful, raises ValueError, or, if
     fail_on_errors=False, returns None.
-    
+
 
     Args:
         value (str): String to parse.
         fail_on_errors (bool): If True, raises ValueError.
         preserve_none (bool): If True and value is None, returns None.
-        
+
 
     Returns:
         (bool): boolean value
@@ -115,14 +118,14 @@ def parseBoolValue(value, fail_on_errors=True, preserve_none=False):
         if preserve_none and value is None:
             return value
         return bool(value)
-    elif preserve_none and value.lower() == 'none':
+    elif preserve_none and value.lower() == "none":
         return None
-    elif value.lower() in ('true', 'yes', 'y', 'on', '1'):
+    elif value.lower() in ("true", "yes", "y", "on", "1"):
         return True
-    elif value.lower() in ('false', 'no', 'n', 'off', '0', 'none'):
+    elif value.lower() in ("false", "no", "n", "off", "0", "none"):
         return False
     elif fail_on_errors:
-        raise ValueError('Cannot parse bool value: %r' % value)
+        raise ValueError("Cannot parse bool value: %r" % value)
 
 
 """
@@ -133,11 +136,13 @@ MISC AUXILIARY CLASSES
 
 class AtomicString(text_type):
     """A string which should not be further processed."""
+
     pass
 
 
 class Processor(object):
     """Base class for Markdown processors."""
+
     def __init__(self, markdown_instance=None):
         if markdown_instance:
             self.markdown = markdown_instance
@@ -180,9 +185,14 @@ class HtmlStash(object):
 
     def store_tag(self, tag, attrs, left_index, right_index):
         """Store tag data and return a placeholder."""
-        self.tag_data.append({'tag': tag, 'attrs': attrs,
-                              'left_index': left_index,
-                              'right_index': right_index})
+        self.tag_data.append(
+            {
+                "tag": tag,
+                "attrs": attrs,
+                "left_index": left_index,
+                "right_index": right_index,
+            }
+        )
         placeholder = TAG_PLACEHOLDER % text_type(self.tag_counter)
         self.tag_counter += 1  # equal to the tag's index in self.tag_data
         return placeholder

@@ -20,6 +20,7 @@ non-printable characters from the sheet numbers,
 in case an error in the tool causes these characters
 to remain.
 """
+
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
 import os.path as op
@@ -37,6 +38,7 @@ from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.coreutils import pathtemplate
 
 
 get_elementid_value = get_elementid_value_func()
@@ -46,24 +48,96 @@ config = script.get_config()
 
 
 # Non Printable Char
-NPC = u'\u200e'
-INDEX_FORMAT = '{{:0{digits}}}'
+NPC = u"\u200e"  # fmt: skip
+INDEX_FORMAT = "{{:0{digits}}}"
 
 
-EXPORT_ENCODING = 'utf_8'
+EXPORT_ENCODING = "utf_8"
 
 IS_REVIT_2022_OR_NEWER = HOST_APP.is_newer_than(2021)
 
+DEFAULT_SUBFOLDER_FORMAT = "{date}_{time}_PRINT"
 
-AvailableDoc = namedtuple('AvailableDoc', ['name', 'hash', 'linked'])
+COMBINED_PDF_NAME = "Ordered Sheet Set"
 
-NamingFormatter = namedtuple('NamingFormatter', ['template', 'desc'])
+STANDARD_PAPER_FORMATS = (
+    "ANSI_A",
+    "ANSI_B",
+    "ANSI_C",
+    "ANSI_D",
+    "ANSI_E",
+    "ARCH_A",
+    "ARCH_B",
+    "ARCH_C",
+    "ARCH_D",
+    "ARCH_E",
+    "ARCH_E1",
+    "ARCH_E2",
+    "ARCH_E3",
+    "ISO_A0",
+    "ISO_A1",
+    "ISO_A2",
+    "ISO_A3",
+    "ISO_A4",
+    "ISO_B1",
+    "ISO_B2",
+    "ISO_B3",
+    "ISO_B4",
+)
 
-SheetRevision = namedtuple('SheetRevision', ['number', 'desc', 'date', 'is_set'])
+PAPER_FORMAT_ALIASES = {
+    "LETTER": "ANSI_A",
+    "USLETTER": "ANSI_A",
+    "TABLOID": "ANSI_B",
+    "LEDGER": "ANSI_B",
+}
+
+MM_PER_INCH = 25.4
+FEET_TO_MM = 304.8
+CM_TO_MM = 10.0
+
+STANDARD_PAPER_SIZES_MM = {
+    "ANSI_A": (215.9, 279.4),
+    "ANSI_B": (279.4, 431.8),
+    "ANSI_C": (431.8, 558.8),
+    "ANSI_D": (558.8, 863.6),
+    "ANSI_E": (863.6, 1117.6),
+    "ARCH_A": (228.6, 304.8),
+    "ARCH_B": (304.8, 457.2),
+    "ARCH_C": (457.2, 609.6),
+    "ARCH_D": (609.6, 914.4),
+    "ARCH_E": (914.4, 1219.2),
+    "ARCH_E1": (762.0, 1066.8),
+    "ARCH_E2": (660.4, 965.2),
+    "ARCH_E3": (685.8, 990.6),
+    "ISO_A0": (841.0, 1189.0),
+    "ISO_A1": (594.0, 841.0),
+    "ISO_A2": (420.0, 594.0),
+    "ISO_A3": (297.0, 420.0),
+    "ISO_A4": (210.0, 297.0),
+    "ISO_B1": (707.0, 1000.0),
+    "ISO_B2": (500.0, 707.0),
+    "ISO_B3": (353.0, 500.0),
+    "ISO_B4": (250.0, 353.0),
+}
+
+PAPER_SIZE_TOLERANCE_MM = 3.0
+SHEET_OVERSIZE_EPSILON_MM = 0.5
+FULL_SIZE_ZOOM_PERCENT = 100
+
+WARNED_PAPER_SIZES = set()
+
+
+AvailableDoc = namedtuple("AvailableDoc", ["name", "hash", "linked"])
+
+NamingFormatter = namedtuple("NamingFormatter", ["template", "desc"])
+
+SheetRevision = namedtuple("SheetRevision", ["number", "desc", "date", "is_set"])
 UNSET_REVISION = SheetRevision(number=None, desc=None, date=None, is_set=False)
 
-TitleBlockPrintSettings = \
-    namedtuple('TitleBlockPrintSettings', ['psettings', 'set_by_param'])
+TitleBlockPrintSettings = namedtuple(
+    "TitleBlockPrintSettings", ["psettings", "set_by_param"]
+)
 
 
 class PrintUtils:
@@ -76,12 +150,6 @@ class PrintUtils:
     @staticmethod
     def get_dir():
         return os.path.join(os.path.expanduser("~"), "Desktop", "pyRevit Print Folder")
-
-    @staticmethod
-    def get_folder(task="_PDF"):
-        dateStamp = datetime.datetime.today().strftime("%y%m%d")
-        timeStamp = datetime.datetime.today().strftime("%H%M%S")
-        return dateStamp + "_" + timeStamp + task
 
     @staticmethod
     def ensure_dir(dp):
@@ -98,15 +166,246 @@ class PrintUtils:
         return dp
 
     @staticmethod
-    def pdf_opts(hcb=True, hsb=True, hrp=True, hvt=True, mcl=True):
-        opts = DB.PDFExportOptions()
+    def paper_dimensions_mm(name):
+        """Read a paper size's measurements out of its name, in millimeters.
+
+        Print drivers may include units after either dimension. Returns None
+        when the name carries no usable pair of measurements.
+        """
+        # fmt: off
+        text = (name or "").lower().replace(u"\u00d7", "x").replace(",", ".")
+        unit = (
+            u"(mm[.]?|cm[.]?|millimet(?:er|re)s?[.]?|"
+            u'centimet(?:er|re)s?[.]?|in(?:ch(?:es)?)?[.]?|["\u2033])?'
+        )
+        # fmt: on
+        found = re.search(
+            r"(\d+(?:\.\d+)?)[\s_]*" + unit + r"[\s_]*x[\s_]*"
+            r"(\d+(?:\.\d+)?)[\s_]*" + unit,
+            text,
+        )
+        if not found:
+            return None
+        width, height = float(found.group(1)), float(found.group(3))
+        if width <= 0 or height <= 0:
+            return None
+        recognized_units = [found.group(2), found.group(4)]
+        recognized_units = [item for item in recognized_units if item]
+        if recognized_units:
+            scales = [PrintUtils._paper_unit_scale(item) for item in recognized_units]
+            if any(value != scales[0] for value in scales):
+                return None
+            scale = scales[0]
+        else:
+            scale = 1.0 if max(width, height) >= 100 else MM_PER_INCH
+        scaled_width, scaled_height = width * scale, height * scale
+        return min(scaled_width, scaled_height), max(scaled_width, scaled_height)
+
+    @staticmethod
+    def _paper_unit_scale(unit):
+        if unit.startswith("mm") or unit.startswith("millim"):
+            return 1.0
+        if unit.startswith("cm") or unit.startswith("centim"):
+            return CM_TO_MM
+        return MM_PER_INCH
+
+    @staticmethod
+    def paper_format_name(name):
+        """Return the standard format a paper size's name refers to."""
+        key = re.sub(r"[^A-Z0-9]", "", (name or "").upper())
+        if not key:
+            return None
+        key = key.replace("ARCHITECTURE", "ARCH")
+        if key.endswith("SHEET"):
+            key = key[: -len("SHEET")]
+        key = PAPER_FORMAT_ALIASES.get(key, key).replace("_", "")
+        keys = {key}
+        if key not in {"A", "B", "C", "D", "E"}:
+            keys.update(("ISO" + key, "ANSI" + key, "ARCH" + key))
+        for member in STANDARD_PAPER_FORMATS:
+            if member.replace("_", "") in keys:
+                return member
+        return None
+
+    @staticmethod
+    def paper_format_size(name):
+        """Return the standard format a paper size's measurements match."""
+        dims = PrintUtils.paper_dimensions_mm(name)
+        if not dims:
+            return None
+        width, height = dims
+        for member in STANDARD_PAPER_FORMATS:
+            standard = STANDARD_PAPER_SIZES_MM.get(member)
+            if (
+                standard
+                and abs(standard[0] - width) <= PAPER_SIZE_TOLERANCE_MM
+                and abs(standard[1] - height) <= PAPER_SIZE_TOLERANCE_MM
+            ):
+                return member
+        return None
+
+    @staticmethod
+    def paper_format(paper_size):
+        """Resolve a print setting's paper size to an ExportPaperFormat.
+
+        Falls back to the sheet's own size, warning once per size, when the
+        paper has no standard format that PDF export can represent.
+        """
+        name = getattr(paper_size, "Name", None) or ""
+        member = PrintUtils.paper_format_name(name) or PrintUtils.paper_format_size(
+            name
+        )
+        if member:
+            paper_fmt = getattr(DB.ExportPaperFormat, member, None)
+            if paper_fmt is not None:
+                return paper_fmt
+        if name and name not in WARNED_PAPER_SIZES:
+            WARNED_PAPER_SIZES.add(name)
+            logger.warning(
+                'Paper size "%s" is not a standard size that PDF export can '
+                "apply; exporting at sheet size instead.",
+                name,
+            )
+        return DB.ExportPaperFormat.Default
+
+    @staticmethod
+    def sheet_size_mm(sheet):
+        """Return a sheet's (width, height) in millimeters."""
+        outline = sheet.Outline
+        return (
+            (outline.Max.U - outline.Min.U) * FEET_TO_MM,
+            (outline.Max.V - outline.Min.V) * FEET_TO_MM,
+        )
+
+    @staticmethod
+    def sheets_match_paper(sheets, paper_format, orientation):
+        """Return True when every sheet fills the paper in the given orientation.
+
+        A sheet may be up to ``PAPER_SIZE_TOLERANCE_MM`` smaller than the paper
+        but never larger, since 100% zoom would clip the overhang. An
+        orientation other than landscape or portrait leaves the paper's
+        orientation open, so a sheet matches in either one.
+        """
+        paper = STANDARD_PAPER_SIZES_MM.get(str(paper_format))
+        if not paper or not sheets:
+            return False
+        short_side, long_side = paper
+        if orientation == DB.PageOrientationType.Landscape:
+            accepted = [(long_side, short_side)]
+        elif orientation == DB.PageOrientationType.Portrait:
+            accepted = [(short_side, long_side)]
+        else:
+            accepted = [(long_side, short_side), (short_side, long_side)]
+        for sheet in sheets:
+            width, height = PrintUtils.sheet_size_mm(sheet)
+            if not any(
+                -SHEET_OVERSIZE_EPSILON_MM
+                <= paper_width - width
+                <= PAPER_SIZE_TOLERANCE_MM
+                and -SHEET_OVERSIZE_EPSILON_MM
+                <= paper_height - height
+                <= PAPER_SIZE_TOLERANCE_MM
+                for paper_width, paper_height in accepted
+            ):
+                return False
+        return True
+
+    @staticmethod
+    def pdf_opts(
+        hcb=True, hsb=True, hrp=True, hvt=True, mcl=True, print_params=None, sheets=None
+    ):
+        """Build PDF export options and map compatible print settings.
+
+        Note:
+            Revit's Fit to Page leaves a white border inside the PDF page even
+            when the paper is exactly the sheet size. When ``sheets`` all have
+            the size of the print setting's paper in its page orientation, Fit
+            to Page is mapped to 100% zoom so the sheet fills the page edge to
+            edge. Fit to Page is kept whenever 100% zoom could clip the sheet:
+            a sheet in the other orientation, a sheet larger than the paper, or
+            a print setting with a non-zero user-defined origin offset.
+        """
+        opts = DB.PDFExportOptions()  # compat-ignore: callers gate on IS_REVIT_2022_OR_NEWER
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
         opts.HideReferencePlane = hrp
         opts.HideUnreferencedViewTags = hvt
         opts.MaskCoincidentLines = mcl
         opts.PaperFormat = DB.ExportPaperFormat.Default
+        if print_params:
+            try:
+                opts.ColorDepth = print_params.ColorDepth
+            except Exception as ex:
+                logger.debug("Could not map ColorDepth: %s", ex)
+            try:
+                opts.RasterQuality = print_params.RasterQuality
+            except Exception as ex:
+                logger.debug("Could not map RasterQuality: %s", ex)
+            try:
+                opts.AlwaysUseRaster = (
+                    print_params.HiddenLineViews
+                    == DB.HiddenLineViewsType.RasterProcessing
+                )
+            except Exception as ex:
+                logger.debug("Could not map HiddenLineViews: %s", ex)
+            try:
+                paper_format = PrintUtils.paper_format(print_params.PaperSize)
+                opts.PaperFormat = paper_format
+            except Exception as ex:
+                logger.debug("Could not map PaperSize: %s", ex)
+                paper_format = DB.ExportPaperFormat.Default
+            if paper_format == DB.ExportPaperFormat.Default:
+                opts.PaperPlacement = DB.PaperPlacementType.Center
+            else:
+                try:
+                    opts.PaperOrientation = print_params.PageOrientation
+                except Exception as ex:
+                    logger.debug("Could not map PageOrientation: %s", ex)
+                try:
+                    opts.PaperPlacement = print_params.PaperPlacement
+                except Exception as ex:
+                    logger.debug("Could not map PaperPlacement: %s", ex)
+                if PrintUtils._has_user_defined_margins(print_params):
+                    try:
+                        opts.OriginOffsetX = print_params.OriginOffsetX
+                        opts.OriginOffsetY = print_params.OriginOffsetY
+                    except Exception as ex:
+                        logger.debug("Could not map OriginOffset: %s", ex)
+                try:
+                    opts.ZoomType = print_params.ZoomType
+                    if (
+                        opts.ZoomType == DB.ZoomType.FitToPage
+                        and not PrintUtils._has_origin_offset(print_params)
+                        and PrintUtils.sheets_match_paper(
+                            sheets, paper_format, opts.PaperOrientation
+                        )
+                    ):
+                        opts.ZoomType = DB.ZoomType.Zoom
+                        opts.ZoomPercentage = FULL_SIZE_ZOOM_PERCENT
+                    else:
+                        opts.ZoomPercentage = int(print_params.Zoom)
+                except Exception as ex:
+                    logger.debug("Could not map Zoom: %s", ex)
         return opts
+
+    @staticmethod
+    def _has_user_defined_margins(print_params):
+        try:
+            return (
+                print_params.PaperPlacement == DB.PaperPlacementType.Margins
+                and print_params.MarginType == DB.MarginType.UserDefined
+            )
+        except Exception:
+            return False
+
+    @staticmethod
+    def _has_origin_offset(print_params):
+        if not PrintUtils._has_user_defined_margins(print_params):
+            return False
+        try:
+            return bool(print_params.OriginOffsetX or print_params.OriginOffsetY)
+        except Exception:
+            return False
 
     @staticmethod
     def dwg_opts(sc=False, mv=True):
@@ -117,25 +416,45 @@ class PrintUtils:
 
     @staticmethod
     def export_sheet_pdf(dir_path, sheet, opt, doc, filename):
+        """Export one sheet to PDF and raise if Revit reports a failure."""
         pdf_doc_name = op.splitext(filename)[0]
         opt.FileName = pdf_doc_name
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
-        doc.Export(dir_path, export_sheet, opt)
+        if not doc.Export(dir_path, export_sheet, opt):
+            raise RuntimeError("Revit reported an incomplete PDF export.")
         return True
 
     @staticmethod
+    def export_combined_pdf(dir_path, sheet_ids, opt, doc, filename):
+        """Export ordered sheets into one PDF and return Revit's result.
+
+        The export writes a single file in ``dir_path`` using ``filename``
+        without its extension. A false return means at least one sheet was
+        not exported successfully.
+        """
+        opt.FileName = op.splitext(filename)[0]
+        opt.Combine = True
+        export_sheets = List[DB.ElementId]()
+        for sheet_id in sheet_ids:
+            export_sheets.Add(sheet_id)
+        return doc.Export(dir_path, export_sheets, opt)
+
+    @staticmethod
     def export_sheet_dwg(dir_path, sheet, opt, doc, filename):
+        """Export a sheet to DWG, raising if Revit reports incomplete output."""
         base_name = op.splitext(filename)[0]
         dwg_doc_name = base_name + ".dwg"
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
-        doc.Export(dir_path, dwg_doc_name, export_sheet, opt)
+        if not doc.Export(dir_path, dwg_doc_name, export_sheet, opt):
+            raise RuntimeError("Revit reported an incomplete DWG export.")
         return True
 
 
 class NamingFormat(forms.Reactive):
     """Print File Naming Format"""
+
     def __init__(self, name, template, builtin=False):
         self._name = name
         self._template = self.verify_template(template)
@@ -144,8 +463,8 @@ class NamingFormat(forms.Reactive):
     @staticmethod
     def verify_template(value):
         """Verify template is valid"""
-        if not value.lower().endswith('.pdf'):
-            value += '.pdf'
+        if not value.lower().endswith(".pdf"):
+            value += ".pdf"
         return value
 
     @forms.reactive
@@ -170,25 +489,26 @@ class NamingFormat(forms.Reactive):
 class ViewSheetListItem(forms.Reactive):
     """Revit Sheet show in Print Window"""
 
-    def __init__(self, view_sheet, view_tblock,
-                 print_settings=None, rev_settings=None):
+    def __init__(self, view_sheet, view_tblock, print_settings=None, rev_settings=None):
         self._sheet = view_sheet
         self._tblock = view_tblock
         if self._tblock:
-            self._tblock_type = \
-                view_sheet.Document.GetElement(view_tblock.GetTypeId())
+            self._tblock_type = view_sheet.Document.GetElement(view_tblock.GetTypeId())
         else:
             self._tblock_type = None
         self.name = self._sheet.Name
-        self.number = self._sheet.SheetNumber if hasattr(self._sheet, 'SheetNumber') else ''
-        self.issue_date = \
-            self._sheet.Parameter[
-                DB.BuiltInParameter.SHEET_ISSUE_DATE].AsString() if self._sheet.Parameter[
-                DB.BuiltInParameter.SHEET_ISSUE_DATE] else ''
+        self.number = (
+            self._sheet.SheetNumber if hasattr(self._sheet, "SheetNumber") else ""
+        )
+        self.issue_date = (
+            self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE).AsString()
+            if self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE)
+            else ""
+        )
         self.printable = self._sheet.CanBePrinted
         self.revision_date_sortable = ""
         self._print_index = 0
-        self._print_filename = ''
+        self._print_filename = ""
 
         self._tblock_psettings = print_settings
         self._print_settings = self._tblock_psettings.psettings
@@ -197,10 +517,16 @@ class ViewSheetListItem(forms.Reactive):
             self._print_settings = self.all_print_settings[0]
         self.read_only = self._tblock_psettings.set_by_param
 
-        per_sheet_revisions = \
-            rev_settings.RevisionNumbering == DB.RevisionNumbering.PerSheet \
-            if rev_settings else False
-        cur_rev = revit.query.get_current_sheet_revision(self._sheet) if hasattr(self._sheet, 'GetCurrentRevision') else ''
+        per_sheet_revisions = (
+            rev_settings.RevisionNumbering == DB.RevisionNumbering.PerSheet
+            if rev_settings
+            else False
+        )
+        cur_rev = (
+            revit.query.get_current_sheet_revision(self._sheet)
+            if hasattr(self._sheet, "GetCurrentRevision")
+            else ""
+        )
         self.revision = UNSET_REVISION
         if cur_rev:
             on_sheet = self._sheet if per_sheet_revisions else None
@@ -208,7 +534,7 @@ class ViewSheetListItem(forms.Reactive):
                 number=revit.query.get_rev_number(cur_rev, sheet=on_sheet),
                 desc=cur_rev.Description,
                 date=cur_rev.RevisionDate,
-                is_set=True
+                is_set=True,
             )
 
     @property
@@ -251,8 +577,7 @@ class ViewSheetListItem(forms.Reactive):
 
     @print_filename.setter
     def print_filename(self, value):
-        self._print_filename = \
-            coreutils.cleanup_filename(value, windows_safe=True)
+        self._print_filename = coreutils.cleanup_filename(value, windows_safe=True)
 
 
 class PrintSettingListItem(forms.TemplateListItem):
@@ -292,7 +617,7 @@ class PrintSettingListItem(forms.TemplateListItem):
 
     @property
     def is_user_defined(self):
-        return not self.name.startswith('<')
+        return not self.name.startswith("<")
 
 
 class VariablePaperPrintSettingListItem(PrintSettingListItem):
@@ -311,6 +636,8 @@ class VariablePaperPrintSettingListItem(PrintSettingListItem):
 
 
 class EditNamingFormatsWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name, start_with=None):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
@@ -324,97 +651,76 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     @staticmethod
     def get_default_formatters():
         return [
+            NamingFormatter(template="{index}", desc='Print Index Number e.g. "0001"'),
+            NamingFormatter(template="{number}", desc='Sheet Number e.g. "A1.00"'),
+            NamingFormatter(template="{name}", desc='Sheet Name e.g. "1ST FLOOR PLAN"'),
             NamingFormatter(
-                template='{index}',
-                desc='Print Index Number e.g. "0001"'
+                template="{name_dash}",
+                desc='Sheet Name (with - for space) e.g. "1ST-FLOOR-PLAN"',
             ),
             NamingFormatter(
-                template='{number}',
-                desc='Sheet Number e.g. "A1.00"'
+                template="{name_underline}",
+                desc='Sheet Name (with _ for space) e.g. "1ST_FLOOR_PLAN"',
             ),
             NamingFormatter(
-                template='{name}',
-                desc='Sheet Name e.g. "1ST FLOOR PLAN"'
+                template="{current_date}", desc='Todays Date e.g. "2019-10-12"'
             ),
             NamingFormatter(
-                template='{name_dash}',
-                desc='Sheet Name (with - for space) e.g. "1ST-FLOOR-PLAN"'
+                template="{issue_date}", desc='Sheet Issue Date e.g. "2019-10-12"'
+            ),
+            NamingFormatter(template="{rev_number}", desc='Revision Number e.g. "01"'),
+            NamingFormatter(
+                template="{rev_desc}", desc='Revision Description e.g. "ASI01"'
             ),
             NamingFormatter(
-                template='{name_underline}',
-                desc='Sheet Name (with _ for space) e.g. "1ST_FLOOR_PLAN"'
+                template="{rev_date}", desc='Revision Date e.g. "2019-10-12"'
             ),
             NamingFormatter(
-                template='{current_date}',
-                desc='Today''s Date e.g. "2019-10-12"'
+                template="{proj_name}", desc='Project Name e.g. "MY_PROJECT"'
             ),
             NamingFormatter(
-                template='{issue_date}',
-                desc='Sheet Issue Date e.g. "2019-10-12"'
+                template="{proj_number}", desc='Project Number e.g. "PR2019.12"'
             ),
             NamingFormatter(
-                template='{rev_number}',
-                desc='Revision Number e.g. "01"'
+                template="{proj_building_name}",
+                desc='Project Building Name e.g. "BLDG01"',
             ),
             NamingFormatter(
-                template='{rev_desc}',
-                desc='Revision Description e.g. "ASI01"'
+                template="{proj_issue_date}",
+                desc='Project Issue Date e.g. "2019-10-12"',
             ),
             NamingFormatter(
-                template='{rev_date}',
-                desc='Revision Date e.g. "2019-10-12"'
+                template="{proj_org_name}",
+                desc='Project Organization Name e.g. "MYCOMP"',
             ),
             NamingFormatter(
-                template='{proj_name}',
-                desc='Project Name e.g. "MY_PROJECT"'
+                template="{proj_status}", desc='Project Status e.g. "CD100"'
             ),
             NamingFormatter(
-                template='{proj_number}',
-                desc='Project Number e.g. "PR2019.12"'
+                template="{username}", desc='Active User e.g. "eirannejad"'
             ),
             NamingFormatter(
-                template='{proj_building_name}',
-                desc='Project Building Name e.g. "BLDG01"'
+                template="{revit_version}", desc='Active Revit Version e.g. "2019"'
             ),
             NamingFormatter(
-                template='{proj_issue_date}',
-                desc='Project Issue Date e.g. "2019-10-12"'
+                template="{sheet_param:PARAM_NAME}",
+                desc="Value of Given Sheet Parameter e.g. "
+                "Replace PARAM_NAME with target parameter name",
             ),
             NamingFormatter(
-                template='{proj_org_name}',
-                desc='Project Organization Name e.g. "MYCOMP"'
+                template="{tblock_param:PARAM_NAME}",
+                desc="Value of Given TitleBlock Parameter e.g. "
+                "Replace PARAM_NAME with target parameter name",
             ),
             NamingFormatter(
-                template='{proj_status}',
-                desc='Project Status e.g. "CD100"'
+                template="{proj_param:PARAM_NAME}",
+                desc="Value of Given Project Information Parameter e.g. "
+                "Replace PARAM_NAME with target parameter name",
             ),
             NamingFormatter(
-                template='{username}',
-                desc='Active User e.g. "eirannejad"'
-            ),
-            NamingFormatter(
-                template='{revit_version}',
-                desc='Active Revit Version e.g. "2019"'
-            ),
-            NamingFormatter(
-                template='{sheet_param:PARAM_NAME}',
-                desc='Value of Given Sheet Parameter e.g. '
-                     'Replace PARAM_NAME with target parameter name'
-            ),
-            NamingFormatter(
-                template='{tblock_param:PARAM_NAME}',
-                desc='Value of Given TitleBlock Parameter e.g. '
-                     'Replace PARAM_NAME with target parameter name'
-            ),
-            NamingFormatter(
-                template='{proj_param:PARAM_NAME}',
-                desc='Value of Given Project Information Parameter e.g. '
-                     'Replace PARAM_NAME with target parameter name'
-            ),
-            NamingFormatter(
-                template='{glob_param:PARAM_NAME}',
-                desc='Value of Given Global Parameter. '
-                     'Replace PARAM_NAME with target parameter name'
+                template="{glob_param:PARAM_NAME}",
+                desc="Value of Given Global Parameter. "
+                "Replace PARAM_NAME with target parameter name",
             ),
         ]
 
@@ -422,26 +728,26 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     def get_default_naming_formats():
         return [
             NamingFormat(
-                name='0001 A1.00 1ST FLOOR PLAN.pdf',
-                template='{index} {number} {name}.pdf',
-                builtin=True
+                name="0001 A1.00 1ST FLOOR PLAN.pdf",
+                template="{index} {number} {name}.pdf",
+                builtin=True,
             ),
             NamingFormat(
-                name='0001_A1.00_1ST FLOOR PLAN.pdf',
-                template='{index}_{number}_{name}.pdf',
-                builtin=True
+                name="0001_A1.00_1ST FLOOR PLAN.pdf",
+                template="{index}_{number}_{name}.pdf",
+                builtin=True,
             ),
             NamingFormat(
-                name='0001-A1.00-1ST FLOOR PLAN.pdf',
-                template='{index}-{number}-{name}.pdf',
-                builtin=True
+                name="0001-A1.00-1ST FLOOR PLAN.pdf",
+                template="{index}-{number}-{name}.pdf",
+                builtin=True,
             ),
         ]
 
     @staticmethod
     def get_naming_formats():
         naming_formats = EditNamingFormatsWindow.get_default_naming_formats()
-        naming_formats_dict = config.get_option('namingformats', {})
+        naming_formats_dict = config.get_option("namingformats", {})
         for name, template in naming_formats_dict.items():
             naming_formats.append(NamingFormat(name=name, template=template))
         return naming_formats
@@ -468,14 +774,14 @@ class EditNamingFormatsWindow(forms.WPFWindow):
         self.namingformat_edit.DataContext = value
 
     def reset_formatters(self):
-        self.formatters_wp.ItemsSource = \
+        self.formatters_wp.ItemsSource = (
             EditNamingFormatsWindow.get_default_formatters()
+        )
 
     def reset_naming_formats(self):
-        self.formats_lb.ItemsSource = \
-                ObjectModel.ObservableCollection[object](
-                    EditNamingFormatsWindow.get_naming_formats()
-                )
+        self.formats_lb.ItemsSource = ObjectModel.ObservableCollection[object](
+            EditNamingFormatsWindow.get_naming_formats()
+        )
         if isinstance(self._starting_item, NamingFormat):
             for item in self.formats_lb.ItemsSource:
                 if item.name == self._starting_item.name:
@@ -488,18 +794,16 @@ class EditNamingFormatsWindow(forms.WPFWindow):
         Windows.DragDrop.DoDragDrop(
             self.formatters_wp,
             Windows.DataObject("name_formatter", name_formatter),
-            Windows.DragDropEffects.Copy
-            )
+            Windows.DragDropEffects.Copy,
+        )
 
     # https://social.msdn.microsoft.com/Forums/vstudio/en-US/941f6bf2-a321-459e-85c9-501ec1e13204/how-do-you-get-a-drag-and-drop-event-for-a-wpf-textbox-hosted-in-a-windows-form
     def preview_drag(self, sender, args):
         mouse_pos = Forms.Cursor.Position
         mouse_po_pt = Windows.Point(mouse_pos.X, mouse_pos.Y)
-        self._drop_pos = \
-            self.template_tb.GetCharacterIndexFromPoint(
-                point=self.template_tb.PointFromScreen(mouse_po_pt),
-                snapToText=True
-                )
+        self._drop_pos = self.template_tb.GetCharacterIndexFromPoint(
+            point=self.template_tb.PointFromScreen(mouse_po_pt), snapToText=True
+        )
         self.template_tb.SelectionStart = self._drop_pos
         self.template_tb.SelectionLength = 0
         self.template_tb.Focus()
@@ -509,10 +813,11 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     def stop_drag(self, sender, args):
         name_formatter = args.Data.GetData("name_formatter")
         if name_formatter:
-            new_template = \
-                str(self.template_tb.Text)[:self._drop_pos] \
-                + name_formatter.template \
-                + str(self.template_tb.Text)[self._drop_pos:]
+            new_template = (
+                str(self.template_tb.Text)[: self._drop_pos]
+                + name_formatter.template
+                + str(self.template_tb.Text)[self._drop_pos :]
+            )
             self.template_tb.Text = new_template
             self.template_tb.Focus()
 
@@ -523,9 +828,8 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     def duplicate_namingformat(self, sender, args):
         naming_format = self.selected_naming_format
         new_naming_format = NamingFormat(
-            name='<unnamed>',
-            template=naming_format.template
-            )
+            name="<unnamed>", template=naming_format.template
+        )
         self.naming_formats.Add(new_naming_format)
         self.selected_naming_format = new_naming_format
 
@@ -535,7 +839,7 @@ class EditNamingFormatsWindow(forms.WPFWindow):
             return
         item_index = self.naming_formats.IndexOf(naming_format)
         self.naming_formats.Remove(naming_format)
-        next_index = min([item_index, self.naming_formats.Count-1])
+        next_index = min([item_index, self.naming_formats.Count - 1])
         self.selected_naming_format = self.naming_formats[next_index]
 
     def save_formats(self, sender, args):
@@ -553,6 +857,7 @@ class EditNamingFormatsWindow(forms.WPFWindow):
 
 class SheetSetList(object):
     """List of sheets from a named Revit Sheet Set."""
+
     def __init__(self, view_sheetset):
         self.doc = view_sheetset.Document
         self.name = view_sheetset.Name
@@ -574,22 +879,27 @@ class ScheduleSheetList(object):
         return self._get_ordered_schedule_sheets(doc)
 
     def _get_schedule_text_data(self, view_shedule):
-        schedule_data_file = \
-            script.get_instance_data_file(str(get_elementid_value(view_shedule.Id)))
+        schedule_data_file = script.get_instance_data_file(
+            str(get_elementid_value(view_shedule.Id))
+        )
         vseop = DB.ViewScheduleExportOptions()
         vseop.TextQualifier = coreutils.get_enum_none(DB.ExportTextQualifier)
-        view_shedule.Export(op.dirname(schedule_data_file),
-                            op.basename(schedule_data_file),
-                            vseop)
+        view_shedule.Export(
+            op.dirname(schedule_data_file), op.basename(schedule_data_file), vseop
+        )
 
         sched_data = []
         try:
-            with codecs.open(schedule_data_file, 'r', EXPORT_ENCODING) \
-                    as sched_data_file:
+            with codecs.open(
+                schedule_data_file, "r", EXPORT_ENCODING
+            ) as sched_data_file:
                 return [x.strip() for x in sched_data_file.readlines()]
         except Exception as open_err:
-            logger.error('Error opening sheet index export: %s | %s',
-                         schedule_data_file, open_err)
+            logger.error(
+                "Error opening sheet index export: %s | %s",
+                schedule_data_file,
+                open_err,
+            )
             return sched_data
 
     def _order_sheets_by_schedule_data(self, view_shedule, sheet_list):
@@ -600,36 +910,30 @@ class ScheduleSheetList(object):
 
         ordered_sheets_dict = {}
         for sheet in sheet_list:
-            logger.debug('finding index for: %s', sheet.SheetNumber)
+            sheet_number = re.escape(sheet.SheetNumber)
             for line_no, data_line in enumerate(sched_data):
-                match_pattern = r'(^|.*\t){}(\t.*|$)'.format(sheet.SheetNumber)
-                matches_sheet = re.match(match_pattern, data_line)
-                logger.debug('match: %s', matches_sheet)
-                try:
-                    if matches_sheet:
-                        ordered_sheets_dict[line_no] = sheet
-                        break
-                    if not sheet.CanBePrinted:
-                        logger.debug('Sheet %s is not printable.',
-                                     sheet.SheetNumber)
-                except Exception:
-                    continue
+                match_pattern = r"(^|.*\t){}(\t.*|$)".format(sheet_number)
+                if re.match(match_pattern, data_line):
+                    ordered_sheets_dict[line_no] = sheet
+                    break
+            else:
+                logger.debug(
+                    "Sheet %s was not found in the schedule.", sheet.SheetNumber
+                )
 
         sorted_keys = sorted(ordered_sheets_dict.keys())
         return [ordered_sheets_dict[x] for x in sorted_keys]
 
     def _get_ordered_schedule_sheets(self, doc):
         if doc == self.doc:
-            sheets = DB.FilteredElementCollector(self.doc,
-                                                 self.schedule.Id)\
-                    .OfClass(framework.get_type(DB.ViewSheet))\
-                    .WhereElementIsNotElementType()\
-                    .ToElements()
+            sheets = (
+                DB.FilteredElementCollector(self.doc, self.schedule.Id)
+                .OfClass(framework.get_type(DB.ViewSheet))
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
 
-            return self._order_sheets_by_schedule_data(
-                self.schedule,
-                sheets
-                )
+            return self._order_sheets_by_schedule_data(self.schedule, sheets)
         return []
 
 
@@ -639,10 +943,12 @@ class AllSheetsList(object):
         return "<All Sheets>"
 
     def get_sheets(self, doc):
-        return DB.FilteredElementCollector(doc)\
-                 .OfClass(framework.get_type(DB.ViewSheet))\
-                 .WhereElementIsNotElementType()\
-                 .ToElements()
+        return (
+            DB.FilteredElementCollector(doc)
+            .OfClass(framework.get_type(DB.ViewSheet))
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
 
 class UnlistedSheetsList(object):
@@ -656,30 +962,245 @@ class UnlistedSheetsList(object):
         param_equality = DB.FilterNumericEquals()
         value_rule = DB.FilterIntegerRule(param_prov, param_equality, 0)
         param_filter = DB.ElementParameterFilter(value_rule)
-        return DB.FilteredElementCollector(doc)\
-                 .OfClass(framework.get_type(DB.ViewSheet))\
-                 .WherePasses(param_filter) \
-                 .WhereElementIsNotElementType()\
-                 .ToElements()
+        return (
+            DB.FilteredElementCollector(doc)
+            .OfClass(framework.get_type(DB.ViewSheet))
+            .WherePasses(param_filter)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
 
 class PrintSheetsWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         self._init_psettings = None
         self._scheduled_sheets = []
+        self._restoring_options = False
 
         self.project_info = revit.query.get_project_info(doc=revit.doc)
-        self.sheet_cat_id = \
-            revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
+        self.sheet_cat_id = revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
+        self._setup_output_folder()
         self._setup_docs_list()
         self._setup_naming_formats()
 
         self._apply_projectinfo_naming_format_default()
+        self._restore_options()
 
-        self._all_sheets_list = list(self.sheets_lb.ItemsSource) if self.sheets_lb.ItemsSource else []
+        self._all_sheets_list = (
+            list(self.sheets_lb.ItemsSource) if self.sheets_lb.ItemsSource else []
+        )
+
+    @staticmethod
+    def _doc_key(doc):
+        try:
+            return revit.query.get_central_path(doc) or doc.PathName or doc.Title
+        except Exception:
+            return doc.Title
+
+    def _setup_output_folder(self):
+        self.output_folder_tb.Text = _saved_text("output_folder", "")
+        self.subfolder_tb.Text = _saved_text(
+            "subfolder_format", DEFAULT_SUBFOLDER_FORMAT
+        )
+
+    def _restore_options(self):
+        """Apply the options saved by `save_options` to the window.
+
+        Each option is restored on its own and a bad saved value is skipped,
+        so a damaged config section cannot stop the window from opening.
+        """
+        self._restoring_options = True
+        try:
+            for option_name, default, apply_option in self._restored_option_writers():
+                try:
+                    apply_option(config.get_option(option_name, default))
+                except Exception as restore_err:
+                    logger.debug(
+                        "Could not restore option %s: %s", option_name, restore_err
+                    )
+        finally:
+            self._restoring_options = False
+        self.options_changed(None, None)
+
+    def _restored_option_writers(self):
+        return [
+            ("reverse_order", False, lambda value: _check(self.reverse_cb, value)),
+            (
+                "show_placeholders",
+                True,
+                lambda value: _check(self.placeholder_cb, value),
+            ),
+            (
+                "include_placeholders",
+                True,
+                lambda value: _check(self.indexspace_cb, value),
+            ),
+            ("combine", False, lambda value: _check_if_enabled(self.combine_cb, value)),
+            (
+                "export_dwg",
+                False,
+                lambda value: _check_if_enabled(self.export_dwg, value),
+            ),
+            ("index_start", 0, self._restore_index_start),
+            ("index_digits", None, self._restore_index_digits),
+        ]
+
+    def _restore_index_start(self, value):
+        self.indexstart_tb.Text = str(int(value))
+
+    def _restore_index_digits(self, value):
+        self._update_index_slider()
+        if value is not None:
+            self.index_slider.Value = int(value)
+
+    def save_options(self, sender, args):
+        """Remember the window's choices for the next run.
+
+        Each option is saved on its own, so one unreadable control does not
+        discard the others.
+
+        Note:
+            Runs on every close, including after printing, so a cancelled
+            window still keeps its last folder and naming choices.
+        """
+        for option_name, read_option in self._saved_option_readers():
+            try:
+                setattr(config, option_name, read_option())
+            except Exception as read_err:
+                logger.debug("Could not save option %s: %s", option_name, read_err)
+        try:
+            script.save_config()
+        except Exception as save_err:
+            logger.debug("Could not save Print Sheets options: %s", save_err)
+
+    def _saved_option_readers(self):
+        return [
+            ("output_folder", lambda: self.output_folder_tb.Text.strip()),
+            ("subfolder_format", lambda: self.subfolder_tb.Text.strip()),
+            ("printer", lambda: self.selected_printer or ""),
+            ("naming_format", self._naming_format_to_save),
+            ("reverse_order", lambda: bool(self.reverse_print)),
+            ("show_placeholders", lambda: bool(self.show_placeholders)),
+            ("include_placeholders", lambda: bool(self.include_placeholders)),
+            ("combine", lambda: bool(self.combine_print)),
+            ("export_dwg", lambda: bool(self.export_dwg.IsChecked)),
+            ("index_digits", lambda: self.index_digits),
+            ("index_start", lambda: self.index_start),
+            ("sheet_lists", self._sheet_lists_to_save),
+        ]
+
+    def _naming_format_to_save(self):
+        if self.selected_naming_format:
+            return self.selected_naming_format.name
+        return config.get_option("naming_format", "")
+
+    def _sheet_lists_to_save(self):
+        sheet_lists = _saved_sheet_lists()
+        if self.selected_doc and self.selected_sheetlist:
+            sheet_lists[self._doc_key(self.selected_doc)] = self.selected_sheetlist.name
+        return sheet_lists
+
+    def browse_output_folder(self, sender, args):
+        current = self.output_folder_tb.Text.strip()
+        folder = forms.pick_folder(
+            owner=self,
+            init_dir=current if op.isdir(current) else PrintUtils.get_dir(),
+        )
+        if folder:
+            self.output_folder_tb.Text = folder
+
+    def _get_output_dir(self):
+        """Create this run's output folder and return its path.
+
+        Returns None after telling the user why the folder cannot be used,
+        so callers can keep the window open for a correction.
+        """
+        sheet_index = self.selected_sheetlist.name if self.selected_sheetlist else ""
+        try:
+            dir_path = pathtemplate.resolve_folder(
+                self.output_folder_tb.Text.strip() or PrintUtils.get_dir(),
+                self.subfolder_tb.Text,
+                values={"model": self.selected_doc.Title, "sheet_index": sheet_index},
+            )
+        except pathtemplate.NotFullPathError as root_err:
+            forms.alert(
+                'The output folder "{}" must be a full path, '
+                "such as C:\\Prints or \\\\server\\share\\Prints.".format(
+                    root_err.template
+                )
+            )
+            return None
+        except pathtemplate.InvalidTemplateError as template_err:
+            forms.alert(
+                "The folder name is not valid. Use {} only.".format(
+                    ", ".join("{" + name + "}" for name in template_err.placeholders)
+                ),
+                expanded=template_err.template,
+            )
+            return None
+        try:
+            return PrintUtils.ensure_dir(dir_path)
+        except Exception as dir_err:
+            forms.alert(
+                "Cannot create the output folder:\n{}".format(dir_path),
+                expanded=str(dir_err),
+            )
+            return None
+
+    def _planned_output_files(self, dir_path, target_sheets):
+        if self.combine_print:
+            return [op.join(dir_path, COMBINED_PDF_NAME + ".pdf")]
+        planned = []
+        for sheet in target_sheets:
+            if not (sheet.printable and sheet.print_filename):
+                continue
+            planned.append(op.join(dir_path, sheet.print_filename))
+            if self.export_dwg.IsChecked:
+                dwg_name = op.splitext(sheet.print_filename)[0] + ".dwg"
+                planned.append(op.join(dir_path, dwg_name))
+        return planned
+
+    def _replace_existing_outputs(self, dir_path, target_sheets):
+        """Ask before printing into a folder that already holds this run's files.
+
+        Print paths skip or overwrite existing files without telling the
+        user, so this runs before the window closes.
+
+        Returns:
+            (_OutputReplacement): Recovery state, or None when the user cancels
+                or a file cannot be moved aside.
+
+        Warning:
+            Existing files remain in backups until export completion is verified.
+            External printer jobs retain backups for manual recovery because
+            submission does not confirm that the driver has finished writing.
+        """
+        planned = self._planned_output_files(dir_path, target_sheets)
+        existing = _existing_files(planned)
+        if existing and not forms.alert(
+            "{} file(s) this print creates already exist in:\n{}\n\n"
+            "Replace them?".format(len(existing), dir_path),
+            expanded="\n".join(op.basename(path) for path in existing),
+            ok=False,
+            yes=True,
+            no=True,
+        ):
+            return None
+        try:
+            return _OutputReplacement(planned)
+        except _LockedFileError as locked_err:
+            forms.alert(
+                "Cannot replace {}. Close it if it is open, then print again.".format(
+                    op.basename(locked_err.path)
+                ),
+                expanded=str(locked_err.cause),
+            )
+            return None
 
     def copy_naming_format(self, sender, args):
         try:
@@ -696,11 +1217,16 @@ class PrintSheetsWindow(forms.WPFWindow):
         pi = self.selected_doc.ProjectInformation
         param = pi.LookupParameter("Naming Format") if pi else None
         param_value = param.AsString() if param else None
+        saved_value = config.get_option("naming_format", None)
 
-        selected_item = next(
-            (nf for nf in self.namingformat_cb.ItemsSource if nf.name == param_value),
-            None
-        )
+        selected_item = None
+        for wanted in (param_value, saved_value):
+            selected_item = next(
+                (nf for nf in self.namingformat_cb.ItemsSource if nf.name == wanted),
+                None,
+            )
+            if selected_item is not None:
+                break
 
         if not selected_item and self.namingformat_cb.ItemsSource:
             selected_item = self.namingformat_cb.ItemsSource[0]
@@ -717,8 +1243,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         else:
             filtered = []
             for sheet in self._all_sheets_list:
-                number = sheet.number.lower() if sheet.number else ''
-                name = sheet.name.lower() if sheet.name else ''
+                number = sheet.number.lower() if sheet.number else ""
+                name = sheet.name.lower() if sheet.name else ""
                 if search_text in number or search_text in name:
                     filtered.append(sheet)
             self.sheets_lb.ItemsSource = filtered
@@ -738,7 +1264,7 @@ class PrintSheetsWindow(forms.WPFWindow):
     # misc
     @property
     def has_errors(self):
-        return self.errormsg_tb.Text != ''
+        return self.errormsg_tb.Text != ""
 
     # ordering configs
     @property
@@ -811,44 +1337,51 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     # private utils
     def _is_sheet_index(self, schedule_view):
-        return self.sheet_cat_id == schedule_view.Definition.CategoryId \
-               and not schedule_view.IsTemplate
+        return (
+            self.sheet_cat_id == schedule_view.Definition.CategoryId
+            and not schedule_view.IsTemplate
+        )
 
     def _get_sheet_index_list(self):
-        schedules = DB.FilteredElementCollector(self.selected_doc)\
-                      .OfClass(framework.get_type(DB.ViewSchedule))\
-                      .WhereElementIsNotElementType()\
-                      .ToElements()
+        schedules = (
+            DB.FilteredElementCollector(self.selected_doc)
+            .OfClass(framework.get_type(DB.ViewSchedule))
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
-        return [
-            ScheduleSheetList(s) for s in schedules
-            if self._is_sheet_index(s)
-            ]
+        return [ScheduleSheetList(s) for s in schedules if self._is_sheet_index(s)]
 
     def _get_printmanager(self):
         try:
             return self.selected_doc.PrintManager
         except Exception as printerr:
-            logger.critical('Error getting printer manager from document. '
-                            'Most probably there is not a printer defined '
-                            'on your system. | %s', printerr)
+            logger.critical(
+                "Error getting printer manager from document. "
+                "Most probably there is not a printer defined "
+                "on your system. | %s",
+                printerr,
+            )
             script.exit()
 
     def _setup_docs_list(self):
         if not revit.doc.IsFamilyDocument:
-            docs = [AvailableDoc(name=revit.doc.Title,
-                                 hash=revit.doc.GetHashCode(),
-                                 linked=False)]
-            docs.extend([
-                AvailableDoc(name=x.Title, hash=x.GetHashCode(), linked=True)
-                for x in revit.query.get_all_linkeddocs(doc=revit.doc)
-            ])
+            docs = [
+                AvailableDoc(
+                    name=revit.doc.Title, hash=revit.doc.GetHashCode(), linked=False
+                )
+            ]
+            docs.extend(
+                [
+                    AvailableDoc(name=x.Title, hash=x.GetHashCode(), linked=True)
+                    for x in revit.query.get_all_linkeddocs(doc=revit.doc)
+                ]
+            )
             self.documents_cb.ItemsSource = docs
             self.documents_cb.SelectedIndex = 0
 
     def _setup_naming_formats(self):
-        self.namingformat_cb.ItemsSource = \
-            EditNamingFormatsWindow.get_naming_formats()
+        self.namingformat_cb.ItemsSource = EditNamingFormatsWindow.get_naming_formats()
         self.namingformat_cb.SelectedIndex = 0
 
     def _setup_printers(self):
@@ -858,14 +1391,17 @@ class PrintSheetsWindow(forms.WPFWindow):
             printers.insert(0, "Revit Internal Printer")
 
         self.printers_cb.ItemsSource = printers
-        if IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
+        print_mgr = self._get_printmanager()
+        restorable_printers = {"Revit Internal Printer", print_mgr.PrinterName}
+        saved_printer = config.get_option("printer", "")
+        if saved_printer in printers and saved_printer in restorable_printers:
+            self.printers_cb.SelectedItem = saved_printer
+        elif IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
             self.printers_cb.SelectedItem = "Revit Internal Printer"
         else:
-            print_mgr = self._get_printmanager()
             self.printers_cb.SelectedItem = print_mgr.PrinterName
 
-    def _get_psetting_items(self, doc,
-                            psettings=None, include_varsettings=False):
+    def _get_psetting_items(self, doc, psettings=None, include_varsettings=False):
         if include_varsettings:
             psetting_items = [VariablePaperPrintSettingListItem()]
         else:
@@ -878,25 +1414,24 @@ class PrintSheetsWindow(forms.WPFWindow):
         compatible_sizes = {x.Name for x in print_mgr.PaperSizes}
         for psetting_item in psetting_items:
             if isinstance(psetting_item, PrintSettingListItem):
-                if psetting_item.paper_size \
-                        and psetting_item.paper_size.Name in compatible_sizes:
+                if (
+                    psetting_item.paper_size
+                    and psetting_item.paper_size.Name in compatible_sizes
+                ):
                     psetting_item.is_compatible = True
         return psetting_items
 
     def _setup_print_settings(self):
-        psetting_items = \
-            self._get_psetting_items(
-                doc=self.selected_doc,
-                include_varsettings=not self.selected_doc.IsLinked
-                )
+        psetting_items = self._get_psetting_items(
+            doc=self.selected_doc, include_varsettings=not self.selected_doc.IsLinked
+        )
         self.printsettings_cb.ItemsSource = psetting_items
 
         print_mgr = self._get_printmanager()
-        if isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
-                      DB.InSessionPrintSetting):
-            in_session = PrintSettingListItem(
-                print_mgr.PrintSetup.CurrentPrintSetting
-                )
+        if isinstance(
+            print_mgr.PrintSetup.CurrentPrintSetting, DB.InSessionPrintSetting
+        ):
+            in_session = PrintSettingListItem(print_mgr.PrintSetup.CurrentPrintSetting)
             psetting_items.append(in_session)
             self.printsettings_cb.SelectedItem = in_session
         else:
@@ -915,9 +1450,10 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _update_combine_option(self):
         self.enable_element(self.combine_cb)
-        if self.selected_doc.IsLinked \
-                or ((self.selected_sheetlist and self.has_print_settings)
-                    and self.selected_print_setting.allows_variable_paper):
+        if self.selected_doc.IsLinked or (
+            (self.selected_sheetlist and self.has_print_settings)
+            and self.selected_print_setting.allows_variable_paper
+        ):
             self.disable_element(self.combine_cb)
             self.combine_cb.IsChecked = False
 
@@ -925,7 +1461,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet_indices = self._get_sheet_index_list()
         try:
             cl = DB.FilteredElementCollector(self.selected_doc)
-            sheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet)).WhereElementIsNotElementType().ToElements()
+            sheetsets = (
+                cl.OfClass(framework.get_type(DB.ViewSheetSet))
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
             for ss in sheetsets:
                 sheet_indices.append(SheetSetList(ss))
         except Exception as e:
@@ -934,7 +1474,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet_indices.append(UnlistedSheetsList())
 
         self.schedules_cb.ItemsSource = sheet_indices
-        self.schedules_cb.SelectedIndex = 0
+        saved_name = _saved_sheet_lists().get(self._doc_key(self.selected_doc))
+        self.schedules_cb.SelectedItem = next(
+            (x for x in sheet_indices if x.name == saved_name),
+            sheet_indices[0] if sheet_indices else None,
+        )
         if self.schedules_cb.ItemsSource:
             self.enable_element(self.schedules_cb)
         else:
@@ -943,36 +1487,38 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _verify_print_filename(self, sheet_name, sheet_print_filepath):
         if op.exists(sheet_print_filepath):
             logger.warning(
-                "Skipping sheet \"%s\" "
-                "File already exist at %s.",
-                sheet_name, sheet_print_filepath
-                )
+                'Skipping sheet "%s" File already exist at %s.',
+                sheet_name,
+                sheet_print_filepath,
+            )
             return False
         return True
 
-    def _print_combined_sheets_in_order(self, target_sheets):
+    def _print_combined_sheets_in_order(self, target_sheets, dir_path):
+        if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
+            self._export_combined_pdf_internal(target_sheets, dir_path)
+            return
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         if not print_mgr:
             forms.alert(
-                "Error getting print manager for this document",
-                exitscript=True
-                )
-        with revit.TransactionGroup('Print Sheets in Order',
-                                    doc=self.selected_doc):
-            with revit.Transaction('Set Printer Settings',
-                                   doc=self.selected_doc,
-                                   log_errors=False):
+                "Error getting print manager for this document", exitscript=True
+            )
+        with revit.TransactionGroup("Print Sheets in Order", doc=self.selected_doc):
+            with revit.Transaction(
+                "Set Printer Settings", doc=self.selected_doc, log_errors=False
+            ):
                 try:
-                    print_mgr.PrintSetup.CurrentPrintSetting = \
+                    print_mgr.PrintSetup.CurrentPrintSetting = (
                         self.selected_print_setting.print_settings
+                    )
                     print_mgr.SelectNewPrintDriver(self.selected_printer)
                     print_mgr.PrintRange = DB.PrintRange.Select
                 except Exception as cpSetEx:
                     forms.alert(
                         "Print setting is incompatible with printer.",
-                        expanded=str(cpSetEx)
-                        )
+                        expanded=str(cpSetEx),
+                    )
                     return
             # The OrderedViewList property was added to the IViewSheetSet
             # interface in Revit 2023 and makes the non-printable char
@@ -988,65 +1534,64 @@ class PrintSheetsWindow(forms.WPFWindow):
                 # to push revit to sort them per user
                 sheet_set = DB.ViewSet()
                 original_sheetnums = []
-                with revit.Transaction('Fix Sheet Numbers',
-                                       doc=self.selected_doc):
+                with revit.Transaction("Fix Sheet Numbers", doc=self.selected_doc):
                     for idx, sheet in enumerate(target_sheets):
                         rvtsheet = sheet.revit_sheet
                         # removing any NPC from previous failed prints
                         if NPC in rvtsheet.SheetNumber:
-                            rvtsheet.SheetNumber = \
-                                rvtsheet.SheetNumber.replace(NPC, '')
+                            rvtsheet.SheetNumber = rvtsheet.SheetNumber.replace(NPC, "")
                         # create a list of the existing sheet numbers
                         original_sheetnums.append(rvtsheet.SheetNumber)
                         # add a prefix (NPC) for sorting purposes
-                        rvtsheet.SheetNumber = \
-                            NPC * (idx + 1) + rvtsheet.SheetNumber
+                        rvtsheet.SheetNumber = NPC * (idx + 1) + rvtsheet.SheetNumber
                         if sheet.printable:
                             sheet_set.Insert(rvtsheet)
 
             # Collect existing sheet sets
             cl = DB.FilteredElementCollector(self.selected_doc)
-            viewsheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet))\
-                              .WhereElementIsNotElementType()\
-                              .ToElements()
+            viewsheetsets = (
+                cl.OfClass(framework.get_type(DB.ViewSheetSet))
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
             all_viewsheetsets = {vss.Name: vss for vss in viewsheetsets}
 
-            sheetsetname = 'OrderedPrintSet'
+            sheetsetname = "OrderedPrintSet"
 
-            with revit.Transaction('Remove Previous Print Set',
-                                   doc=self.selected_doc):
+            with revit.Transaction("Remove Previous Print Set", doc=self.selected_doc):
                 # Delete existing matching sheet set
                 if sheetsetname in all_viewsheetsets:
-                    print_mgr.ViewSheetSetting.CurrentViewSheetSet = \
-                        all_viewsheetsets[sheetsetname]
+                    print_mgr.ViewSheetSetting.CurrentViewSheetSet = all_viewsheetsets[
+                        sheetsetname
+                    ]
                     print_mgr.ViewSheetSetting.Delete()
 
-            with revit.Transaction('Update Ordered Print Set',
-                                   doc=self.selected_doc):
+            with revit.Transaction("Update Ordered Print Set", doc=self.selected_doc):
                 try:
                     viewsheet_settings = print_mgr.ViewSheetSetting
                     if supports_OrderedViewList:
                         viewsheet_settings.CurrentViewSheetSet.IsAutomatic = False
-                        viewsheet_settings.CurrentViewSheetSet.OrderedViewList = \
+                        viewsheet_settings.CurrentViewSheetSet.OrderedViewList = (
                             sheet_list
+                        )
                     else:
-                        viewsheet_settings.CurrentViewSheetSet.Views = \
-                            sheet_set
+                        viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
                     viewsheet_settings.SaveAs(sheetsetname)
                 except Exception as viewset_err:
-                    sheet_report = ''
+                    sheet_report = ""
                     for sheet in sheet_set:
-                        sheet_report += '{} {}\n'.format(
-                            sheet.SheetNumber if isinstance(sheet,
-                                                            DB.ViewSheet)
-                            else '---',
-                            type(sheet)
-                            )
-                    logger.critical(
-                        'Error setting sheet set on print mechanism. '
-                        'These items are included in the viewset '
-                        'object:\n%s', sheet_report
+                        sheet_report += "{} {}\n".format(
+                            sheet.SheetNumber
+                            if isinstance(sheet, DB.ViewSheet)
+                            else "---",
+                            type(sheet),
                         )
+                    logger.critical(
+                        "Error setting sheet set on print mechanism. "
+                        "These items are included in the viewset "
+                        "object:\n%s",
+                        sheet_report,
+                    )
                     raise viewset_err
 
             # set print job configurations
@@ -1054,62 +1599,104 @@ class PrintSheetsWindow(forms.WPFWindow):
             try:
                 print_mgr.CombinedFile = True
             except Exception as e:
-                forms.alert(str(e) +
-                            '\nSet printer correctly in Print settings.')
+                forms.alert(str(e) + "\nSet printer correctly in Print settings.")
                 script.exit()
-            print_filepath = op.join('C:', 'Ordered Sheet Set.pdf')
+            print_filepath = op.join(dir_path, COMBINED_PDF_NAME + ".pdf")
             print_mgr.PrintToFile = True
             print_mgr.PrintToFileName = print_filepath
 
-            with revit.Transaction('Reload Keynote File',
-                                   doc=self.selected_doc):
+            with revit.Transaction("Reload Keynote File", doc=self.selected_doc):
                 DB.KeynoteTable.GetKeynoteTable(revit.doc).Reload(None)
             print_mgr.Apply()
             print_mgr.SubmitPrint()
             if not supports_OrderedViewList:
                 # now fix the sheet names
-                with revit.Transaction('Restore Sheet Numbers', doc=self.selected_doc):
+                with revit.Transaction("Restore Sheet Numbers", doc=self.selected_doc):
                     for sheet, sheetnum in zip(target_sheets, original_sheetnums):
                         rvtsheet = sheet.revit_sheet
                         rvtsheet.SheetNumber = sheetnum
 
             self._reset_psettings()
 
-    def _print_sheets_in_order(self, target_sheets):
+    def _export_combined_pdf_internal(self, target_sheets, dirPath):
+        WARNED_PAPER_SIZES.clear()
+        doc = self.selected_doc
+        PrintUtils.open_dir(dirPath)
+
+        sheet_ids = [x.revit_sheet.Id for x in target_sheets if x.printable]
+        if not sheet_ids:
+            return
+
+        with revit.Transaction("Reload Keynote File", doc=doc):
+            DB.KeynoteTable.GetKeynoteTable(doc).Reload(None)
+
+        optspdf = PrintUtils.pdf_opts(
+            print_params=self.selected_print_setting.print_params,
+            sheets=[x.revit_sheet for x in target_sheets if x.printable],
+        )
+        try:
+            with forms.ProgressBar(
+                title="Exporting combined PDF...", indeterminate=True
+            ):
+                exported = PrintUtils.export_combined_pdf(
+                    dirPath, sheet_ids, optspdf, doc, COMBINED_PDF_NAME
+                )
+                if exported:
+                    self._completed_outputs.append(
+                        op.join(dirPath, COMBINED_PDF_NAME + ".pdf")
+                    )
+        except Exception as e:
+            logger.error("Failed to export combined PDF: %s", e)
+            forms.alert("Failed to export combined PDF: {}".format(e))
+        else:
+            if not exported:
+                message = (
+                    "Combined PDF export was incomplete; some sheets may be missing."
+                )
+                logger.error(message)
+                forms.alert(message)
+
+    def _print_sheets_in_order(self, target_sheets, dirPath):
+        WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
         per_sheet_psettings = self.selected_print_setting.allows_variable_paper
 
-        # make sure you can print, construct print path and make directory
-        dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
-        PrintUtils.ensure_dir(dirPath)
         doc = self.selected_doc
 
-        if self.selected_printer == "Revit Internal Printer" or self.export_dwg.IsChecked:
+        if (
+            self.selected_printer == "Revit Internal Printer"
+            or self.export_dwg.IsChecked
+        ):
             PrintUtils.open_dir(dirPath)
-        with revit.Transaction('Reload Keynote File',
-                               doc=self.selected_doc):
+        with revit.Transaction("Reload Keynote File", doc=self.selected_doc):
             DB.KeynoteTable.GetKeynoteTable(self.selected_doc).Reload(None)
 
-        with revit.DryTransaction('Set Printer Settings',
-                                  doc=self.selected_doc):
+        with revit.DryTransaction("Set Printer Settings", doc=self.selected_doc):
             try:
                 if not per_sheet_psettings:
-                    print_mgr.PrintSetup.CurrentPrintSetting = \
+                    print_mgr.PrintSetup.CurrentPrintSetting = (
                         self.selected_print_setting.print_settings
-                if not (IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer"):
+                    )
+                if not (
+                    IS_REVIT_2022_OR_NEWER
+                    and self.selected_printer == "Revit Internal Printer"
+                ):
                     print_mgr.SelectNewPrintDriver(self.selected_printer)
                 print_mgr.PrintRange = DB.PrintRange.Current
             except Exception as cpSetEx:
                 forms.alert(
-                    "Print setting is incompatible with printer.",
-                    expanded=str(cpSetEx)
-                    )
+                    "Print setting is incompatible with printer.", expanded=str(cpSetEx)
+                )
                 return
             if target_sheets:
                 if self.export_dwg.IsChecked:
-                    with forms.ProgressBar(step=1, title='Exporting PDF & DWGs... ' + '{value} of {max_value}', cancellable=True) as pb1:
+                    with forms.ProgressBar(
+                        step=1,
+                        title="Exporting PDF & DWGs... " + "{value} of {max_value}",
+                        cancellable=True,
+                    ) as pb1:
                         pbTotal1 = len(target_sheets) * 2
                         pbCount1 = 1
                         for sheet in target_sheets:
@@ -1118,43 +1705,97 @@ class PrintSheetsWindow(forms.WPFWindow):
                             else:
                                 if sheet.printable:
                                     if sheet.print_filename:
-                                        print_filepath = op.join(dirPath, sheet.print_filename)
+                                        print_filepath = op.join(
+                                            dirPath, sheet.print_filename
+                                        )
                                         print_mgr.PrintToFileName = print_filepath
 
                                         # set the per-sheet print settings if required
                                         if per_sheet_psettings:
-                                            print_mgr.PrintSetup.CurrentPrintSetting = \
+                                            print_mgr.PrintSetup.CurrentPrintSetting = (
                                                 sheet.print_settings
+                                            )
 
-                                        if self._verify_print_filename(sheet.name, print_filepath):
+                                        if self._verify_print_filename(
+                                            sheet.name, print_filepath
+                                        ):
                                             try:
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
-                                                if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
-                                                    optspdf = PrintUtils.pdf_opts()
-                                                    PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                                if (
+                                                    IS_REVIT_2022_OR_NEWER
+                                                    and self.selected_printer
+                                                    == "Revit Internal Printer"
+                                                ):
+                                                    _params = (
+                                                        sheet.print_settings.PrintParameters
+                                                        if per_sheet_psettings
+                                                        else self.selected_print_setting.print_params
+                                                    )
+                                                    optspdf = PrintUtils.pdf_opts(
+                                                        print_params=_params,
+                                                        sheets=[sheet.revit_sheet],
+                                                    )
+                                                    PrintUtils.export_sheet_pdf(
+                                                        dirPath,
+                                                        sheet.revit_sheet,
+                                                        optspdf,
+                                                        doc,
+                                                        sheet.print_filename,
+                                                    )
+                                                    self._completed_outputs.append(
+                                                        print_filepath
+                                                    )
                                                 else:
-                                                    print_mgr.SubmitPrint(sheet.revit_sheet)
+                                                    print_mgr.SubmitPrint(
+                                                        sheet.revit_sheet
+                                                    )
                                             except Exception as e:
-                                                logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
+                                                logger.error(
+                                                    "Failed to export PDF for sheet %s: %s",
+                                                    sheet.number,
+                                                    e,
+                                                )
 
                                             try:
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
                                                 optsdwg = PrintUtils.dwg_opts()
-                                                PrintUtils.export_sheet_dwg(dirPath, sheet.revit_sheet, optsdwg, doc, sheet.print_filename)
+                                                PrintUtils.export_sheet_dwg(
+                                                    dirPath,
+                                                    sheet.revit_sheet,
+                                                    optsdwg,
+                                                    doc,
+                                                    sheet.print_filename,
+                                                )
+                                                self._completed_outputs.append(
+                                                    op.splitext(print_filepath)[0]
+                                                    + ".dwg"
+                                                )
                                             except Exception as e:
-                                                logger.error('Failed to export DWG for sheet %s: %s', sheet.number, e)
+                                                logger.error(
+                                                    "Failed to export DWG for sheet %s: %s",
+                                                    sheet.number,
+                                                    e,
+                                                )
                                     else:
                                         pbCount1 += 2
                                         logger.debug(
-                                            'Sheet %s does not have a valid file name.',
-                                            sheet.number)
+                                            "Sheet %s does not have a valid file name.",
+                                            sheet.number,
+                                        )
                                 else:
                                     pbCount1 += 2
-                                    logger.debug('Sheet %s is not printable. Skipping print.', sheet.number)
+                                    logger.debug(
+                                        "Sheet %s is not printable. Skipping print.",
+                                        sheet.number,
+                                    )
                 else:
-                    with forms.ProgressBar(step=1, title='Exporting PDFs... ' + '{value} of {max_value}', cancellable=True) as pb1:
+                    with forms.ProgressBar(
+                        step=1,
+                        title="Exporting PDFs... " + "{value} of {max_value}",
+                        cancellable=True,
+                    ) as pb1:
                         pbTotal1 = len(target_sheets)
                         pbCount1 = 1
                         for sheet in target_sheets:
@@ -1163,52 +1804,93 @@ class PrintSheetsWindow(forms.WPFWindow):
                             else:
                                 if sheet.printable:
                                     if sheet.print_filename:
-                                        print_filepath = op.join(dirPath, sheet.print_filename)
+                                        print_filepath = op.join(
+                                            dirPath, sheet.print_filename
+                                        )
 
                                         print_mgr.PrintToFileName = print_filepath
 
                                         if per_sheet_psettings:
-                                            print_mgr.PrintSetup.CurrentPrintSetting = \
+                                            print_mgr.PrintSetup.CurrentPrintSetting = (
                                                 sheet.print_settings
+                                            )
 
-                                        if self._verify_print_filename(sheet.name, print_filepath):
+                                        if self._verify_print_filename(
+                                            sheet.name, print_filepath
+                                        ):
                                             try:
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
-                                                if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
-                                                    optspdf = PrintUtils.pdf_opts()
-                                                    PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                                if (
+                                                    IS_REVIT_2022_OR_NEWER
+                                                    and self.selected_printer
+                                                    == "Revit Internal Printer"
+                                                ):
+                                                    _params = (
+                                                        sheet.print_settings.PrintParameters
+                                                        if per_sheet_psettings
+                                                        else self.selected_print_setting.print_params
+                                                    )
+                                                    optspdf = PrintUtils.pdf_opts(
+                                                        print_params=_params,
+                                                        sheets=[sheet.revit_sheet],
+                                                    )
+                                                    PrintUtils.export_sheet_pdf(
+                                                        dirPath,
+                                                        sheet.revit_sheet,
+                                                        optspdf,
+                                                        doc,
+                                                        sheet.print_filename,
+                                                    )
+                                                    self._completed_outputs.append(
+                                                        print_filepath
+                                                    )
                                                 else:
-                                                    print_mgr.SubmitPrint(sheet.revit_sheet)
+                                                    print_mgr.SubmitPrint(
+                                                        sheet.revit_sheet
+                                                    )
                                             except Exception as e:
-                                                logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
+                                                logger.error(
+                                                    "Failed to export PDF for sheet %s: %s",
+                                                    sheet.number,
+                                                    e,
+                                                )
 
                                     else:
                                         pbCount1 += 1
                                         logger.debug(
-                                            'Sheet %s does not have a valid file name.',
-                                            sheet.number)
+                                            "Sheet %s does not have a valid file name.",
+                                            sheet.number,
+                                        )
                                 else:
                                     pbCount1 += 1
-                                    logger.debug('Sheet %s is not printable. Skipping print.', sheet.number)
+                                    logger.debug(
+                                        "Sheet %s is not printable. Skipping print.",
+                                        sheet.number,
+                                    )
 
-    def _print_linked_sheets_in_order(self, target_sheets, target_doc):
+    def _print_linked_sheets_in_order(self, target_sheets, target_doc, dirPath):
+        WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
-        if not (IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer"):
+        if not (
+            IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer"
+        ):
             print_mgr.SelectNewPrintDriver(self.selected_printer)
         print_mgr.PrintRange = DB.PrintRange.Current
 
-        dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
-        PrintUtils.ensure_dir(dirPath)
         doc = target_doc
 
         if self.selected_printer == "Revit Internal Printer":
             PrintUtils.open_dir(dirPath)
 
         if target_sheets:
-            with forms.ProgressBar(step=1, title='Exporting Linked PDFs... ' + '{value} of {max_value}', cancellable=True) as pb1:
+            with forms.ProgressBar(
+                step=1,
+                title="Exporting Linked PDFs... " + "{value} of {max_value}",
+                cancellable=True,
+            ) as pb1:
                 pbTotal1 = len(target_sheets)
                 pbCount1 = 1
                 for sheet in target_sheets:
@@ -1220,30 +1902,56 @@ class PrintSheetsWindow(forms.WPFWindow):
                                 print_filepath = op.join(dirPath, sheet.print_filename)
                                 print_mgr.PrintToFileName = print_filepath
 
-                                if self._verify_print_filename(sheet.name, print_filepath):
+                                if self._verify_print_filename(
+                                    sheet.name, print_filepath
+                                ):
                                     try:
                                         pb1.update_progress(pbCount1, pbTotal1)
                                         pbCount1 += 1
-                                        if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
-                                            optspdf = PrintUtils.pdf_opts()
-                                            PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                        if (
+                                            IS_REVIT_2022_OR_NEWER
+                                            and self.selected_printer
+                                            == "Revit Internal Printer"
+                                        ):
+                                            optspdf = PrintUtils.pdf_opts(
+                                                print_params=self.selected_print_setting.print_params,
+                                                sheets=[sheet.revit_sheet],
+                                            )
+                                            PrintUtils.export_sheet_pdf(
+                                                dirPath,
+                                                sheet.revit_sheet,
+                                                optspdf,
+                                                doc,
+                                                sheet.print_filename,
+                                            )
+                                            self._completed_outputs.append(
+                                                print_filepath
+                                            )
                                         else:
                                             print_mgr.SubmitPrint(sheet.revit_sheet)
                                     except Exception as e:
-                                        logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
+                                        logger.error(
+                                            "Failed to export PDF for sheet %s: %s",
+                                            sheet.number,
+                                            e,
+                                        )
                             else:
                                 pbCount1 += 1
                                 logger.debug(
-                                    'Sheet %s does not have a valid file name.',
-                                    sheet.number)
+                                    "Sheet %s does not have a valid file name.",
+                                    sheet.number,
+                                )
                         else:
                             pbCount1 += 1
-                            logger.debug('Sheet %s is not printable. Skipping print.', sheet.number)
+                            logger.debug(
+                                "Sheet %s is not printable. Skipping print.",
+                                sheet.number,
+                            )
 
     def _reset_error(self):
         self.enable_element(self.print_b)
         self.hide_element(self.errormsg_block)
-        self.errormsg_tb.Text = ''
+        self.errormsg_tb.Text = ""
 
     def _set_error(self, err_msg):
         if self.errormsg_tb.Text != err_msg:
@@ -1254,18 +1962,18 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _update_print_indices(self, sheet_list):
         start_idx = self.index_start
         for idx, sheet in enumerate(sheet_list):
-            sheet.print_index = INDEX_FORMAT\
-                .format(digits=self.index_digits)\
-                .format(idx + start_idx)
+            sheet.print_index = INDEX_FORMAT.format(digits=self.index_digits).format(
+                idx + start_idx
+            )
 
     def _update_filename_template(self, template, value_type, value_getter):
-        finder_pattern = r'{' + value_type + r':(.*?)}'
+        finder_pattern = r"{" + value_type + r":(.*?)}"
         for param_name in re.findall(finder_pattern, template):
             param_value = value_getter(param_name)
-            repl_pattern = r'{' + value_type + ':' + param_name + r'}'
+            repl_pattern = r"{" + value_type + ":" + param_name + r"}"
             if param_value:
                 template = re.sub(repl_pattern, str(param_value), template)
-            template = re.sub(repl_pattern, '', template)
+            template = re.sub(repl_pattern, "", template)
         return template
 
     def _update_print_filename(self, template, sheet):
@@ -1273,21 +1981,24 @@ class PrintSheetsWindow(forms.WPFWindow):
         # get titleblock param values
         template = self._update_filename_template(
             template=template,
-            value_type='tblock_param',
-            value_getter=lambda x: revit.query.get_param_value(
+            value_type="tblock_param",
+            value_getter=lambda x: (
+                revit.query.get_param_value(
                     revit.query.get_param(sheet.revit_tblock, x)
-                ) or revit.query.get_param_value(
+                )
+                or revit.query.get_param_value(
                     revit.query.get_param(sheet.revit_tblock_type, x)
                 )
+            ),
         )
 
         # get sheet param values
         template = self._update_filename_template(
             template=template,
-            value_type='sheet_param',
+            value_type="sheet_param",
             value_getter=lambda x: revit.query.get_param_value(
                 revit.query.get_param(sheet.revit_sheet, x)
-                )
+            ),
         )
 
         # get date for sortable list
@@ -1296,7 +2007,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         # Try to detect user's locale
         locale_tuple = locale.getdefaultlocale()
-        user_locale = (locale_tuple[0] if locale_tuple and locale_tuple[0] else "en_GB")
+        user_locale = locale_tuple[0] if locale_tuple and locale_tuple[0] else "en_GB"
         dayfirst = not user_locale.startswith("en_US")
 
         # Try several common patterns
@@ -1315,31 +2026,30 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet.revision_date_sortable = sortable_date
         # resolved the fixed formatters
         try:
-            output_fname = \
-                template.format(
-                    index=sheet.print_index,
-                    number=sheet.number,
-                    name=sheet.name,
-                    name_dash=sheet.name.replace(' ', '-'),
-                    name_underline=sheet.name.replace(' ', '_'),
-                    current_date=coreutils.current_date(),
-                    issue_date=sheet.issue_date,
-                    rev_number=sheet.revision.number if sheet.revision else '',
-                    rev_desc=sheet.revision.desc if sheet.revision else '',
-                    rev_date=sheet.revision.date if sheet.revision else '',
-                    proj_name=self.project_info.name,
-                    proj_number=self.project_info.number,
-                    proj_building_name=self.project_info.building_name,
-                    proj_issue_date=self.project_info.issue_date,
-                    proj_org_name=self.project_info.org_name,
-                    proj_status=self.project_info.status,
-                    username=HOST_APP.username,
-                    revit_version=HOST_APP.version,
-                )
+            output_fname = template.format(
+                index=sheet.print_index,
+                number=sheet.number,
+                name=sheet.name,
+                name_dash=sheet.name.replace(" ", "-"),
+                name_underline=sheet.name.replace(" ", "_"),
+                current_date=coreutils.current_date(),
+                issue_date=sheet.issue_date,
+                rev_number=sheet.revision.number if sheet.revision else "",
+                rev_desc=sheet.revision.desc if sheet.revision else "",
+                rev_date=sheet.revision.date if sheet.revision else "",
+                proj_name=self.project_info.name,
+                proj_number=self.project_info.number,
+                proj_building_name=self.project_info.building_name,
+                proj_issue_date=self.project_info.issue_date,
+                proj_org_name=self.project_info.org_name,
+                proj_status=self.project_info.status,
+                username=HOST_APP.username,
+                revit_version=HOST_APP.version,
+            )
         except Exception as ferr:
-            output_fname = ''
+            output_fname = ""
             if isinstance(ferr, KeyError):
-                self._set_error('Unknown key in selected naming format')
+                self._set_error("Unknown key in selected naming format")
         # and set the sheet file name
         sheet.print_filename = output_fname
 
@@ -1352,19 +2062,19 @@ class PrintSheetsWindow(forms.WPFWindow):
             # project info param values
             template = self._update_filename_template(
                 template=template,
-                value_type='proj_param',
+                value_type="proj_param",
                 value_getter=lambda x: revit.query.get_param_value(
                     doc.ProjectInformation.LookupParameter(x)
-                    )
+                ),
             )
 
             # global param values
             template = self._update_filename_template(
                 template=template,
-                value_type='glob_param',
+                value_type="glob_param",
                 value_getter=lambda x: revit.query.get_param_value(
                     revit.query.get_global_parameter(x, doc=doc)
-                    )
+                ),
             )
 
             for sheet in sheet_list:
@@ -1385,7 +2095,9 @@ class PrintSheetsWindow(forms.WPFWindow):
             # build a unique id for this tblock
             tblock_tform = tblock.GetTotalTransform()
             tblock_tid = get_elementid_value(tblock.GetTypeId())
-            tblock_tid = tblock_tid * 100 + tblock_tform.BasisX.X * 10 + tblock_tform.BasisX.Y
+            tblock_tid = (
+                tblock_tid * 100 + tblock_tform.BasisX.X * 10 + tblock_tform.BasisX.Y
+            )
             # can not use None as default. see notes below
             tblock_psetting = tblock_printsettings.get(tblock_tid, None)
             # if found a tblock print settings, assign that to sheet
@@ -1399,30 +2111,22 @@ class PrintSheetsWindow(forms.WPFWindow):
                     psparam = tblock_type.LookupParameter("Print Setting")
                     if psparam:
                         psetting_name = psparam.AsString()
-                        psparam_psetting = \
-                            next(
-                                (x for x in psettings
-                                    if x.Name == psetting_name),
-                                None
-                            )
+                        psparam_psetting = next(
+                            (x for x in psettings if x.Name == psetting_name), None
+                        )
                         if psparam_psetting:
-                            tblock_psetting = \
-                                TitleBlockPrintSettings(
-                                    psettings=[psparam_psetting],
-                                    set_by_param=True
-                                )
+                            tblock_psetting = TitleBlockPrintSettings(
+                                psettings=[psparam_psetting], set_by_param=True
+                            )
                 # otherwise, try to detect applicable print settings
                 # based on title block geometric properties
                 if not tblock_psetting:
-                    tblock_psetting = \
-                        TitleBlockPrintSettings(
-                            psettings=revit.query.get_titleblock_print_settings(
-                                tblock,
-                                self.selected_printer,
-                                psettings
-                                ),
-                            set_by_param=False
-                        )
+                    tblock_psetting = TitleBlockPrintSettings(
+                        psettings=revit.query.get_titleblock_print_settings(
+                            tblock, self.selected_printer, psettings
+                        ),
+                        set_by_param=False,
+                    )
                 # the analysis result might be None
                 tblock_printsettings[tblock_tid] = tblock_psetting
                 sheet_printsettings[sheet.SheetNumber] = tblock_psetting
@@ -1435,10 +2139,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                 print_mgr.PrintSetup.CurrentPrintSetting = self._init_psettings
 
     def _update_index_slider(self):
-        index_digits = \
-            coreutils.get_integer_length(
-                len(self._scheduled_sheets) + self.index_start
-                )
+        index_digits = coreutils.get_integer_length(
+            len(self._scheduled_sheets) + self.index_start
+        )
         self.index_slider.Minimum = max([index_digits, 2])
         self.index_slider.Maximum = self.index_slider.Minimum + 3
 
@@ -1452,33 +2155,25 @@ class PrintSheetsWindow(forms.WPFWindow):
     def sheetlist_changed(self, sender, args):
         print_settings = None
         tblocks = revit.query.get_elements_by_categories(
-            [DB.BuiltInCategory.OST_TitleBlocks],
-            doc=self.selected_doc
+            [DB.BuiltInCategory.OST_TitleBlocks], doc=self.selected_doc
         )
         if self.selected_sheetlist and self.has_print_settings:
             rev_cfg = DB.RevisionSettings.GetRevisionSettings(revit.doc)
             if self.selected_print_setting.allows_variable_paper:
-                sheet_printsettings = \
-                    self._get_sheet_printsettings(
-                        tblocks,
-                        revit.query.get_all_print_settings(
-                            doc=self.selected_doc
-                            )
-                        )
+                sheet_printsettings = self._get_sheet_printsettings(
+                    tblocks, revit.query.get_all_print_settings(doc=self.selected_doc)
+                )
                 self.show_element(self.varsizeguide)
                 self.show_element(self.psettingcol)
                 self._scheduled_sheets = [
                     ViewSheetListItem(
                         view_sheet=x,
                         view_tblock=self._find_sheet_tblock(x, tblocks),
-                        print_settings=sheet_printsettings.get(
-                            x.SheetNumber,
-                            None),
-                        rev_settings=rev_cfg)
-                    for x in self.selected_sheetlist.get_sheets(
-                        doc=self.selected_doc
-                        )
-                    ]
+                        print_settings=sheet_printsettings.get(x.SheetNumber, None),
+                        rev_settings=rev_cfg,
+                    )
+                    for x in self.selected_sheetlist.get_sheets(doc=self.selected_doc)
+                ]
             else:
                 print_settings = self.selected_print_setting.print_settings
                 self.hide_element(self.varsizeguide)
@@ -1488,14 +2183,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                         view_sheet=x,
                         view_tblock=self._find_sheet_tblock(x, tblocks),
                         print_settings=TitleBlockPrintSettings(
-                            psettings=[print_settings],
-                            set_by_param=False
+                            psettings=[print_settings], set_by_param=False
                         ),
-                        rev_settings=rev_cfg)
-                    for x in self.selected_sheetlist.get_sheets(
-                        doc=self.selected_doc
-                        )
-                    ]
+                        rev_settings=rev_cfg,
+                    )
+                    for x in self.selected_sheetlist.get_sheets(doc=self.selected_doc)
+                ]
         self._update_combine_option()
         # self._update_index_slider()
         self.options_changed(None, None)
@@ -1509,6 +2202,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         self._setup_print_settings()
 
     def options_changed(self, sender, args):
+        if self._restoring_options:
+            return
         self._reset_error()
 
         # update index digit range
@@ -1564,24 +2259,21 @@ class PrintSheetsWindow(forms.WPFWindow):
         if self.selected_printable_sheets:
             # make sure none of the sheets has readonly print setting
             if any(x.read_only for x in self.selected_printable_sheets):
-                forms.alert("Print settings has been set by titleblock "
-                            "for one or more sheets and can only be changed "
-                            "by modifying the titleblock print setting")
+                forms.alert(
+                    "Print settings has been set by titleblock "
+                    "for one or more sheets and can only be changed "
+                    "by modifying the titleblock print setting"
+                )
                 return
 
-            all_psettings = \
-                [x for x in self.print_settings if x.is_user_defined]
-            sheet_psettings = \
-                self.selected_printable_sheets[0].all_print_settings
+            all_psettings = [x for x in self.print_settings if x.is_user_defined]
+            sheet_psettings = self.selected_printable_sheets[0].all_print_settings
             if sheet_psettings:
                 options = {
-                    'Matching Print Settings':
-                        self._get_psetting_items(
-                            doc=self.selected_doc,
-                            psettings=sheet_psettings
-                            ),
-                    'All Print Settings':
-                        all_psettings
+                    "Matching Print Settings": self._get_psetting_items(
+                        doc=self.selected_doc, psettings=sheet_psettings
+                    ),
+                    "All Print Settings": all_psettings,
                 }
             else:
                 options = all_psettings or []
@@ -1589,18 +2281,19 @@ class PrintSheetsWindow(forms.WPFWindow):
             if options:
                 psetting_item = forms.SelectFromList.show(
                     options,
-                    name_attr='name',
-                    group_selector_title='Print Settings:',
-                    default_group='Matching Print Settings',
-                    title='Select Print Setting',
+                    name_attr="name",
+                    group_selector_title="Print Settings:",
+                    default_group="Matching Print Settings",
+                    title="Select Print Setting",
                     item_container_template=self.Resources["printSettingsItem"],
-                    width=450, height=400
-                    )
+                    width=450,
+                    height=400,
+                )
                 if psetting_item:
                     for sheet in self.selected_printable_sheets:
                         sheet.print_settings = psetting_item
             else:
-                forms.alert('There are no print settings in this model.')
+                forms.alert("There are no print settings in this model.")
 
     def sheet_selection_changed(self, sender, args):
         if self.selected_printable_sheets:
@@ -1608,17 +2301,15 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.disable_element(self.sheetopts_wp)
 
     def validate_index_start(self, sender, args):
-        args.Handled = re.match(r'[^0-9]+', args.Text)
+        args.Handled = re.match(r"[^0-9]+", args.Text)
 
     def rest_index(self, sender, args):
-        self.indexstart_tb.Text = '0'
+        self.indexstart_tb.Text = "0"
 
     def edit_formats(self, sender, args):
-        editfmt_wnd = \
-            EditNamingFormatsWindow(
-                'EditNamingFormats.xaml',
-                start_with=self.selected_naming_format
-                )
+        editfmt_wnd = EditNamingFormatsWindow(
+            "EditNamingFormats.xaml", start_with=self.selected_naming_format
+        )
         editfmt_wnd.show_dialog()
         self.namingformat_cb.ItemsSource = editfmt_wnd.naming_formats
         self.namingformat_cb.SelectedItem = editfmt_wnd.selected_naming_format
@@ -1626,7 +2317,7 @@ class PrintSheetsWindow(forms.WPFWindow):
     def copy_filenames(self, sender, args):
         if self.selected_sheets:
             filenames = [x.print_filename for x in self.selected_sheets]
-            script.clipboard_copy('\n'.join(filenames))
+            script.clipboard_copy("\n".join(filenames))
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
@@ -1635,20 +2326,21 @@ class PrintSheetsWindow(forms.WPFWindow):
                 opts = forms.alert(
                     "You have a series of sheets selected. Do you want to "
                     "print the selected sheets or all sheets?",
-                    options=["Only Selected Sheets", "All Scheduled Sheets"]
-                    )
+                    options=["Only Selected Sheets", "All Scheduled Sheets"],
+                )
                 selected_only = opts == "Only Selected Sheets"
 
-            target_sheets = \
-                self.selected_sheets if selected_only else self.sheet_list
+            target_sheets = self.selected_sheets if selected_only else self.sheet_list
 
             if not self.combine_print:
                 # verify all sheets have print settings
-                if (self.selected_print_setting.allows_variable_paper
-                        and not all(x.print_settings for x in target_sheets)):
+                if self.selected_print_setting.allows_variable_paper and not all(
+                    x.print_settings for x in target_sheets
+                ):
                     forms.alert(
-                        'Not all sheets have a print setting assigned to them. '
-                        'Select sheets and assign print settings.')
+                        "Not all sheets have a print setting assigned to them. "
+                        "Select sheets and assign print settings."
+                    )
                     return
                 # confirm print if a lot of sheets are going to be printed
                 printable_count = len([x for x in target_sheets if x.printable])
@@ -1657,29 +2349,168 @@ class PrintSheetsWindow(forms.WPFWindow):
                     sheet_count = len(target_sheets)
                     message = str(printable_count)
                     if printable_count != sheet_count:
-                        message += ' (out of {} total)'.format(sheet_count)
+                        message += " (out of {} total)".format(sheet_count)
 
-                    if not forms.alert('Are you sure you want to print {} '
-                                       'sheets individually? The process can '
-                                       'not be cancelled.'.format(message),
-                                       ok=False, yes=True, no=True):
+                    if not forms.alert(
+                        "Are you sure you want to print {} "
+                        "sheets individually? The process can "
+                        "not be cancelled.".format(message),
+                        ok=False,
+                        yes=True,
+                        no=True,
+                    ):
                         return
-            # close window and submit print
-            self.Close()
-            if self.combine_print:
-                self._print_combined_sheets_in_order(target_sheets)
-            else:
-                if self.selected_doc.IsLinked:
-                    self._print_linked_sheets_in_order(target_sheets, self.selected_doc)
+            elif (
+                self.selected_print_setting is not None
+                and self.selected_print_setting.allows_variable_paper
+            ):
+                forms.alert(
+                    "Combined export is unavailable when paper sizes vary by sheet."
+                )
+                return
+            dir_path = self._get_output_dir()
+            if not dir_path:
+                return
+            replacement = self._replace_existing_outputs(dir_path, target_sheets)
+            if replacement is None:
+                return
+            self._completed_outputs = []
+            try:
+                self.Close()
+                if self.combine_print:
+                    self._print_combined_sheets_in_order(target_sheets, dir_path)
+                elif self.selected_doc.IsLinked:
+                    self._print_linked_sheets_in_order(
+                        target_sheets, self.selected_doc, dir_path
+                    )
                 else:
-                    self._print_sheets_in_order(target_sheets)
+                    self._print_sheets_in_order(target_sheets, dir_path)
+            finally:
+                replacement.finish(
+                    self._completed_outputs,
+                    asynchronous=self.selected_printer != "Revit Internal Printer",
+                )
+
+
+def _saved_text(option_name, default):
+    value = config.get_option(option_name, default)
+    return default if value is None else str(value)
+
+
+def _saved_sheet_lists():
+    sheet_lists = config.get_option("sheet_lists", {})
+    return sheet_lists if isinstance(sheet_lists, dict) else {}
+
+
+def _check(checkbox, value):
+    checkbox.IsChecked = bool(value)
+
+
+def _check_if_enabled(checkbox, value):
+    if checkbox.IsEnabled:
+        _check(checkbox, value)
+
+
+class _OutputReplacement(object):
+    def __init__(self, paths):
+        self.paths = sorted(set(paths))
+        self.backups = _set_aside_files(_existing_files(self.paths))
+
+    def finish(self, completed, asynchronous=False):
+        if asynchronous:
+            if self.backups:
+                forms.alert(
+                    "External printer completion cannot be verified. Previous files "
+                    "were kept as .replaced backups. Keep them until you verify the new exports.",
+                    expanded="\n".join(backup for _, backup in self.backups),
+                )
+            return
+        confirmed = set(op.normcase(path) for path in completed)
+        if all(
+            op.normcase(path) in confirmed and op.isfile(path) for path in self.paths
+        ):
+            _delete_set_aside_files(self.backups)
+            return
+        for path in self.paths:
+            if op.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as remove_err:
+                    logger.warning(
+                        "Could not remove partial export %s: %s", path, remove_err
+                    )
+        _put_back_files(self.backups)
+        forms.alert(
+            "Export did not complete. Previous files were restored where possible. "
+            "Any backup that could not be restored remains at its .replaced path; "
+            "check the output log for recovery details."
+        )
+
+
+class _LockedFileError(Exception):
+    def __init__(self, path, cause):
+        super(_LockedFileError, self).__init__(path)
+        self.path = path
+        self.cause = cause
+
+
+def _existing_files(paths):
+    unique = {}
+    for path in paths:
+        if op.exists(path):
+            unique.setdefault(op.normcase(path), path)
+    return sorted(unique.values(), key=op.normcase)
+
+
+def _set_aside_files(paths):
+    set_aside = []
+    for path in paths:
+        backup = _unused_backup_path(path)
+        try:
+            os.rename(path, backup)
+        except Exception as rename_err:
+            if not op.exists(path):
+                continue
+            _put_back_files(set_aside)
+            raise _LockedFileError(path, rename_err)
+        set_aside.append((path, backup))
+    return set_aside
+
+
+def _put_back_files(set_aside):
+    for original, backup in set_aside:
+        try:
+            if op.exists(original):
+                raise OSError("The output still exists; its backup has been retained")
+            os.rename(backup, original)
+        except Exception as restore_err:
+            logger.warning(
+                "Could not restore %s from %s: %s", original, backup, restore_err
+            )
+
+
+def _delete_set_aside_files(set_aside):
+    for _, backup in set_aside:
+        try:
+            os.remove(backup)
+        except Exception as remove_err:
+            logger.warning("Could not delete replaced file %s: %s", backup, remove_err)
+
+
+def _unused_backup_path(path):
+    backup = path + ".replaced"
+    suffix = 1
+    while op.exists(backup):
+        backup = "{}.replaced{}".format(path, suffix)
+        suffix += 1
+    return backup
 
 
 def cleanup_sheetnumbers(doc):
     sheets = revit.query.get_sheets(doc=doc)
-    with revit.Transaction('Cleanup Sheet Numbers', doc=doc):
+    with revit.Transaction("Cleanup Sheet Numbers", doc=doc):
         for sheet in sheets:
-            sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
+            sheet.SheetNumber = sheet.SheetNumber.replace(NPC, "")
 
 
 # verify model is printable
@@ -1694,4 +2525,4 @@ if EXEC_PARAMS.config_mode:
         for open_doc in open_docs:
             cleanup_sheetnumbers(open_doc)
 else:
-    PrintSheetsWindow('PrintSheets.xaml').ShowDialog()
+    PrintSheetsWindow("PrintSheets.xaml").ShowDialog()

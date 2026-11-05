@@ -12,15 +12,36 @@ import System
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY = '.net' in sys.version.lower()
+IRONPY = ".net" in sys.version.lower()
 IRONPY2 = PY2 and IRONPY
 IRONPY3 = PY3 and IRONPY
 NETCORE = System.Environment.Version.Major >= 8  # Revit 2025 onwards
-NETFRAMEWORK = not NETCORE # Revit 2024 and earlier
+NETFRAMEWORK = not NETCORE  # Revit 2024 and earlier
 NO_REVIT = -1
 REVIT_NETCORE_VERSION = 2025
 
-#pylint: disable=import-error,unused-import
+
+class _LazyModule(object):
+    """Stand-in for a module, imported on first attribute access.
+
+    Note:
+        A failed import surfaces at first attribute access rather than at
+        the point this placeholder is created.
+    """
+
+    def __init__(self, module_name):
+        self.__dict__["_module_name"] = module_name
+        self.__dict__["_module"] = None
+
+    def __getattr__(self, attr):
+        module = self.__dict__["_module"]
+        if module is None:
+            module = __import__(self.__dict__["_module_name"])
+            self.__dict__["_module"] = module
+        return getattr(module, attr)
+
+
+# pylint: disable=import-error,unused-import
 if PY3:
     __builtins__["unicode"] = str
 
@@ -28,8 +49,9 @@ if PY2:
     import _winreg as winreg
     import ConfigParser as configparser
     from collections import Iterable, Callable
-    import urllib2
     from urlparse import urlparse
+
+    urllib2 = _LazyModule("urllib2")
 
 elif PY3:
     import winreg as winreg
@@ -38,36 +60,51 @@ elif PY3:
     import urllib
     from urllib.parse import urlparse
 
-try:
-    if PY3:
-        import requests
-    else:
-        import pyrevit.netrequests as requests
-except Exception:
+if IRONPY:
+    import pyrevit.netrequests as requests
+else:
     import requests
 
+
 def _get_revit_version():
-    """Returns the current Revit version as an integer."""
-    if __revit__ is None:
+    """Returns the current Revit version as an integer, or NO_REVIT.
+
+    Note:
+        pyRevit injects ``__revit__`` as a UIApplication, so the UIApplication
+        branch is the one that fires under a pyRevit engine. The remaining
+        branches tolerate third-party hosts that bind the name to an Application
+        or ControlledApplication themselves, and an undefined name outside any
+        host resolves to NO_REVIT instead of raising.
+    """
+    try:
+        host_app = __revit__
+    except NameError:
+        return NO_REVIT
+
+    if host_app is None:
         return NO_REVIT
     try:
         # UIApplication
-        return int(__revit__.Application.VersionNumber)
+        return int(host_app.Application.VersionNumber)
     except AttributeError:
         pass
     try:
         # Application, (ControlledApplication)
-        return int(__revit__.VersionNumber)
+        return int(host_app.VersionNumber)
     except AttributeError:
+        pass
+    try:
         # ControlledApplication
-        return int(__revit__.ControlledApplication.VersionNumber)
+        return int(host_app.ControlledApplication.VersionNumber)
+    except AttributeError:
+        return NO_REVIT
 
 
-#pylint: disable=C0103
+# pylint: disable=C0103
 safe_strtype = str
 if PY2:
     # https://gist.github.com/gornostal/1f123aaf838506038710
-    safe_strtype = lambda x: unicode(x)  #pylint: disable=E0602,unnecessary-lambda
+    safe_strtype = lambda x: unicode(x)  # pylint: disable=E0602,unnecessary-lambda
 
 
 def get_elementid_value_func():
@@ -86,8 +123,10 @@ def get_elementid_value_func():
         ```
     """
     attr = "Value" if _get_revit_version() > 2023 else "IntegerValue"
+
     def from_elementid(item):
         return getattr(item, attr)
+
     return from_elementid
 
 
@@ -106,9 +145,12 @@ def get_elementid_from_value_func():
         ```
     """
     from pyrevit.api import DB
+
     cast_class = System.Int64 if _get_revit_version() > 2023 else int
+
     def from_value(value):
         return DB.ElementId(cast_class(value))
+
     return from_value
 
 
@@ -123,18 +165,20 @@ def urlopen(url):
     return urllib2.urlopen(url)
 
 
-def make_request(url, headers, data):
+def make_request(url, headers, data, timeout=None):
     """Urlopen wrapper to create and send a request.
 
     Args:
         url (str): request url
         headers (dict[str, str]): headers
         data (bytes | None): request data
+        timeout (float | None): socket timeout in seconds; None keeps the default.
     """
+    timeout_kwargs = {} if timeout is None else {"timeout": timeout}
     if PY3:
         req = urllib.request.Request(url, headers, data)
-        urllib.request.urlopen(req).close()
+        urllib.request.urlopen(req, **timeout_kwargs).close()
         return
 
     req = urllib2.Request(url, headers, data)
-    urllib2.urlopen(req).close()
+    urllib2.urlopen(req, **timeout_kwargs).close()

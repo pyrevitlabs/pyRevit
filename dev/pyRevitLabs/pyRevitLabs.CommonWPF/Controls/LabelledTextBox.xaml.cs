@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,13 +13,11 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace pyRevitLabs.CommonWPF.Controls
-{
+namespace pyRevitLabs.CommonWPF.Controls {
     /// <summary>
     /// Interaction logic for LabelledTextBox.xaml
     /// </summary>
-    public partial class LabelledTextBox : UserControl
-    {
+    public partial class LabelledTextBox : UserControl {
         public static readonly DependencyProperty LabelProperty =
             DependencyProperty.Register("Label", typeof(String), typeof(LabelledTextBox),
                                         new FrameworkPropertyMetadata(String.Empty));
@@ -29,25 +27,21 @@ namespace pyRevitLabs.CommonWPF.Controls
                                         new FrameworkPropertyMetadata(String.Empty));
 
 
-        public LabelledTextBox()
-        {
+        public LabelledTextBox() {
             InitializeComponent();
         }
 
-        public LabelledTextBox(string label)
-        {
+        public LabelledTextBox(string label) {
             InitializeComponent();
             Label = label;
         }
 
-        public string Label
-        {
+        public string Label {
             get { return GetValue(LabelProperty) as String; }
             set { SetValue(LabelProperty, value); }
         }
 
-        public string Text
-        {
+        public string Text {
             get { return GetValue(TextProperty) as String; }
             set { SetValue(TextProperty, value); }
         }

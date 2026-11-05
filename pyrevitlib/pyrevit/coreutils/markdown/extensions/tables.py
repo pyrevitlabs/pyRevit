@@ -23,12 +23,12 @@ import re
 class TableProcessor(BlockProcessor):
     """Process Tables."""
 
-    RE_CODE_PIPES = re.compile(r'(?:(\\\\)|(\\`+)|(`+)|(\\\|)|(\|))')
-    RE_END_BORDER = re.compile(r'(?<!\\)(?:\\\\)*\|$')
+    RE_CODE_PIPES = re.compile(r"(?:(\\\\)|(\\`+)|(`+)|(\\\|)|(\|))")
+    RE_END_BORDER = re.compile(r"(?<!\\)(?:\\\\)*\|$")
 
     def __init__(self, parser):
         self.border = False
-        self.separator = ''
+        self.separator = ""
         super(TableProcessor, self).__init__(parser)
 
     def test(self, parent, block):
@@ -37,22 +37,22 @@ class TableProcessor(BlockProcessor):
         Keep border check and separator row do avoid repeating the work.
         """
         is_table = False
-        header = [row.strip() for row in block.split('\n')[0:2]]
+        header = [row.strip() for row in block.split("\n")[0:2]]
         if len(header) == 2:
-            self.border = header[0].startswith('|')
+            self.border = header[0].startswith("|")
             row = self._split_row(header[0])
             is_table = len(row) > 1
 
             if is_table:
                 row = self._split_row(header[1])
-                is_table = len(row) > 1 and set(''.join(row)) <= set('|:- ')
+                is_table = len(row) > 1 and set("".join(row)) <= set("|:- ")
                 if is_table:
                     self.separator = row
         return is_table
 
     def run(self, parent, blocks):
         """Parse a table block and build table."""
-        block = blocks.pop(0).split('\n')
+        block = blocks.pop(0).split("\n")
         header = block[0].strip()
         rows = [] if len(block) < 3 else block[2:]
 
@@ -60,29 +60,29 @@ class TableProcessor(BlockProcessor):
         align = []
         for c in self.separator:
             c = c.strip()
-            if c.startswith(':') and c.endswith(':'):
-                align.append('center')
-            elif c.startswith(':'):
-                align.append('left')
-            elif c.endswith(':'):
-                align.append('right')
+            if c.startswith(":") and c.endswith(":"):
+                align.append("center")
+            elif c.startswith(":"):
+                align.append("left")
+            elif c.endswith(":"):
+                align.append("right")
             else:
                 align.append(None)
 
         # Build table
-        table = etree.SubElement(parent, 'table')
-        thead = etree.SubElement(table, 'thead')
+        table = etree.SubElement(parent, "table")
+        thead = etree.SubElement(table, "thead")
         self._build_row(header, thead, align)
-        tbody = etree.SubElement(table, 'tbody')
+        tbody = etree.SubElement(table, "tbody")
         for row in rows:
             self._build_row(row.strip(), tbody, align)
 
     def _build_row(self, row, parent, align):
         """Given a row of text, build table cells."""
-        tr = etree.SubElement(parent, 'tr')
-        tag = 'td'
-        if parent.tag == 'thead':
-            tag = 'th'
+        tr = etree.SubElement(parent, "tr")
+        tag = "td"
+        if parent.tag == "thead":
+            tag = "th"
         cells = self._split_row(row)
         # We use align here rather than cells to ensure every row
         # contains the same number of columns.
@@ -93,14 +93,14 @@ class TableProcessor(BlockProcessor):
             except IndexError:  # pragma: no cover
                 c.text = ""
             if a:
-                c.set('align', a)
+                c.set("align", a)
 
     def _split_row(self, row):
         """Split a row of text into list of cells."""
         if self.border:
-            if row.startswith('|'):
+            if row.startswith("|"):
                 row = row[1:]
-            row = self.RE_END_BORDER.sub('', row)
+            row = self.RE_END_BORDER.sub("", row)
         return self._split(row)
 
     def _split(self, row):
@@ -143,7 +143,7 @@ class TableProcessor(BlockProcessor):
                 tic_size = tics[pos] - tic_points[pos][2]
                 if tic_size == 0:
                     raise ValueError
-                index = tics[pos + 1:].index(tic_size) + 1
+                index = tics[pos + 1 :].index(tic_size) + 1
                 tic_region.append((tic_points[pos][0], tic_points[pos + index][1]))
                 pos += index + 1
             except ValueError:
@@ -181,11 +181,9 @@ class TableExtension(Extension):
 
     def extendMarkdown(self, md, md_globals):
         """Add an instance of TableProcessor to BlockParser."""
-        if '|' not in md.ESCAPED_CHARS:
-            md.ESCAPED_CHARS.append('|')
-        md.parser.blockprocessors.add('table',
-                                      TableProcessor(md.parser),
-                                      '<hashheader')
+        if "|" not in md.ESCAPED_CHARS:
+            md.ESCAPED_CHARS.append("|")
+        md.parser.blockprocessors.add("table", TableProcessor(md.parser), "<hashheader")
 
 
 def makeExtension(*args, **kwargs):

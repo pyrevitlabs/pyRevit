@@ -9,10 +9,7 @@ opts = [
     "Temporary Section Box",
 ]
 result = forms.ask_for_one_item(
-    opts,
-    default=scope,
-    prompt="Select Scope",
-    title="Toggle Section Box"
+    opts, default=scope, prompt="Select Scope", title="Toggle Section Box"
 )
 
 

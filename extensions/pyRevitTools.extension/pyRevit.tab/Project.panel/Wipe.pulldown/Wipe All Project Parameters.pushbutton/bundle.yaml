@@ -16,3 +16,5 @@ tooltip:
   es_es: Limpiar todos los parámetros del proyecto
   de_de: Es werden alle Projektparameter im aktiven Projekt gelöscht!
   pt_br: Remover todos os parâmetros do projeto
+context:
+  - doc-project

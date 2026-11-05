@@ -4,7 +4,7 @@
 
 from pyrevit import revit, script, forms
 from pyrevit.framework import System, Controls, Media
-from pyrevit.revit import events
+from pyrevit.revit import events, units
 from pyrevit import DB
 from pyrevit.coreutils import applocales
 
@@ -19,10 +19,9 @@ from sectionbox_navigation import (
 from sectionbox_utils import (
     is_2d_view,
     get_view_range_and_crop,
-    get_crop_element,
-    compute_rotation_angle,
-    apply_plan_viewrange_from_sectionbox,
-    to_world_identity,
+    section_box_from_crop,
+    align_crop_by_transform,
+    align_crop_by_shape,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
@@ -60,6 +59,16 @@ TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
 TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
+SBNAV_WINDOW_KEY = "PYREVITTOOLS_SBNAV_WINDOW"
+IS_DARK = forms.is_dark_theme()
+BRUSH_COLORS = {
+    "error": Media.Brushes.Red if not IS_DARK else Media.Brushes.LightCoral,
+    "warning": Media.Brushes.Orange if not IS_DARK else Media.Brushes.Gold,
+    "info": Media.Brushes.Blue if not IS_DARK else Media.Brushes.LightSkyBlue,
+    "success": Media.Brushes.Green if not IS_DARK else Media.Brushes.LightGreen,
+    "default_subtle": Media.Brushes.Gray if not IS_DARK else Media.Brushes.LightGray,
+    "default_text": Media.Brushes.Black if not IS_DARK else Media.Brushes.White,
+}
 
 
 def initialize_globals():
@@ -71,13 +80,9 @@ def initialize_globals():
     doc = revit.doc
     active_view = revit.active_view
 
-    length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-    length_unit = length_format_options.GetUnitTypeId()
-    length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
-    length_unit_symbol = length_format_options.GetSymbolTypeId()
-    length_unit_symbol_label = None
-    if not length_unit_symbol.Empty():
-        length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
+    length_unit, length_unit_label, _, length_unit_symbol_label = units.get_unit_info(
+        DB.SpecTypeId.Length, doc
+    )
 
     level_nudge_value = DB.UnitUtils.Convert(
         config_level_nudge_value, DB.UnitTypeId.Feet, length_unit
@@ -93,6 +98,44 @@ def initialize_globals():
 # --------------------
 # Helper Functions
 # --------------------
+
+
+def on_view_or_doc_changed(sender, args):
+    try:
+        try:
+            doc_changed = revit.doc != doc
+        except Exception:
+            # old doc was invalidated (all docs closed then a new one opened)
+            doc_changed = True
+        if doc_changed:
+            try:
+                initialize_globals()
+            except Exception:
+                if sb_form:
+                    sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
+                return
+            if sb_form:
+                sb_form.Dispatcher.Invoke(System.Action(sb_form._on_document_available))
+                sb_form.Dispatcher.Invoke(
+                    System.Action(sb_form.update_grids_and_levels)
+                )
+        if not sb_form:
+            return
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
+        logger.info("Form updated due to view or document change.")
+    except Exception as ex:
+        logger.exception("Failed to update form: {}".format(ex))
+
+
+def on_doc_closed(sender, args):
+    try:
+        if any(True for _ in (revit.docs or [])):
+            return  # at least one document still open
+        if sb_form:
+            sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
+    except Exception as ex:
+        logger.exception("Failed to handle doc close: {}".format(ex))
 
 
 def create_preview_mesh(section_box, color):
@@ -157,55 +200,6 @@ def create_adjusted_box(
     return new_box
 
 
-def format_length_value(value):
-    return DB.UnitFormatUtils.Format(doc.GetUnits(), DB.SpecTypeId.Length, value, False)
-
-
-# --------------------
-# Event Monitor
-# --------------------
-
-
-@events.handle("doc-changed")
-@events.handle("view-activated")
-def on_view_or_doc_changed(sender, args):
-    try:
-        try:
-            doc_changed = revit.doc != doc
-        except Exception:
-            # old doc was invalidated (all docs closed then a new one opened)
-            doc_changed = True
-        if doc_changed:
-            try:
-                initialize_globals()
-            except Exception:
-                if sb_form:
-                    sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
-                return
-            if sb_form:
-                sb_form.Dispatcher.Invoke(System.Action(sb_form._on_document_available))
-                sb_form.Dispatcher.Invoke(
-                    System.Action(sb_form.update_grids_and_levels)
-                )
-        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
-            return
-        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
-        logger.info("Form updated due to view or document change.")
-    except Exception as ex:
-        logger.exception("Failed to update form: {}".format(ex))
-
-
-@events.handle("doc-closed")
-def on_doc_closed(sender, args):
-    try:
-        if any(True for _ in (revit.docs or [])):
-            return  # at least one document still open
-        if sb_form:
-            sb_form.Dispatcher.Invoke(System.Action(sb_form._on_no_document))
-    except Exception as ex:
-        logger.exception("Failed to handle doc close: {}".format(ex))
-
-
 # --------------------
 # Main Form
 # --------------------
@@ -214,18 +208,20 @@ def on_doc_closed(sender, args):
 class SectionBoxNavigatorForm(forms.WPFWindow):
     """Modeless form for section box navigation."""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
-        self.chkAutoupdate.IsChecked = my_config.get_option("chkAutoupdate_state", True)
         self.rbLevel.IsChecked = my_config.get_option("rbLevel_state", True)
         self.rbLevelNudge.IsChecked = not self.rbLevel.IsChecked
         self.rbGrid.IsChecked = my_config.get_option("rbGrid_state", True)
         self.rbGridNudge.IsChecked = not self.rbGrid.IsChecked
 
         self.current_view = revit.active_view
+        self.update_window_title()
         self.current_length_unit = length_unit
         self.all_levels = None
         self.all_grids = None
@@ -251,16 +247,30 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.Closed += self.form_closed
         script.restore_window_position(self)
-        self.Show()
+        self.show()
+
+    def update_window_title(self):
+        view = revit.active_view
+        if not view:
+            return
+
+        if isinstance(view, DB.View3D):
+            navigator_type = self.get_locale_string("SectionBoxNavigatorTitle")
+        elif is_2d_view(view):
+            navigator_type = self.get_locale_string("CropBoxNavigatorTitle")
+        else:
+            navigator_type = self.get_locale_string("UnsupportedViewTypeTitle")
+
+        self.Title = "{} | {}".format(navigator_type, revit.query.get_name(view))
 
     def update_fields_with_unit_dependencies(self):
         if not length_unit_symbol_label:
-            self.project_unit_text.Visibility = forms.WPF_VISIBLE
+            self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
                 self.get_locale_string("LengthLabelAdjust") + "\n" + length_unit_label
             )
         else:
-            self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+            self.hide_element(self.project_unit_text)
 
         self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
         self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
@@ -360,7 +370,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             # Format level name and elevation
             level_name = level.Name
-            level_elev = format_length_value(level.ProjectElevation)
+            level_elev = units.format_length(level.ProjectElevation, doc)
             btn.Content = "{0} ({1})".format(level_name, level_elev)
 
             # Store level info in Tag
@@ -382,7 +392,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             lbl = Controls.TextBlock()
             lbl.Text = self.get_locale_string("NoLevelFoundInDirection")
             lbl.Margin = System.Windows.Thickness(10, 5, 10, 5)
-            lbl.Foreground = Media.Brushes.Gray
+            lbl.Foreground = BRUSH_COLORS.get("default_subtle")
             menu.Children.Add(lbl)
 
     # ----------
@@ -410,20 +420,30 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.current_length_unit = length_unit
                 self.update_fields_with_unit_dependencies()
 
-            if is_2d_view(self.current_view):
+            is_3d_view = isinstance(self.current_view, DB.View3D)
+            is_2d_view_active = is_2d_view(self.current_view)
+            is_plan_view = is_2d_view(self.current_view, only_plan=True)
+
+            self.levelNavigationGroup.IsEnabled = is_3d_view
+            self.gridNavigationGroup.IsEnabled = is_3d_view
+            self.expansionGroup.IsEnabled = is_3d_view
+            self.btnToggleBox.IsEnabled = is_3d_view or is_2d_view_active
+            self.btnHideBox.IsEnabled = is_3d_view or is_2d_view_active
+            self.btnAlignBoxToFace.IsEnabled = is_3d_view
+            self.btnTempSwitch.IsEnabled = is_3d_view or is_2d_view_active
+            self.btnAlignToView.IsEnabled = is_3d_view or is_plan_view
+
+            if is_2d_view_active:
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith3DView")
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
 
-            elif isinstance(self.current_view, DB.View3D):
+            elif is_3d_view:
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith2DView")
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
 
-            if (
-                not isinstance(self.current_view, DB.View3D)
-                or not self.current_view.IsSectionBoxActive
-            ):
+            if not is_3d_view or not self.current_view.IsSectionBoxActive:
                 self.txtTopLevelAbove.Text = self.get_locale_string(
                     "NoSectionBoxActive"
                 )
@@ -456,20 +476,20 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
 
             if top_level_above_elevation:
-                top_level_above_elevation = format_length_value(
-                    top_level_above_elevation
+                top_level_above_elevation = units.format_length(
+                    top_level_above_elevation, doc
                 )
             if top_level_below_elevation:
-                top_level_below_elevation = format_length_value(
-                    top_level_below_elevation
+                top_level_below_elevation = units.format_length(
+                    top_level_below_elevation, doc
                 )
             if bottom_level_above_elevation:
-                bottom_level_above_elevation = format_length_value(
-                    bottom_level_above_elevation
+                bottom_level_above_elevation = units.format_length(
+                    bottom_level_above_elevation, doc
                 )
             if bottom_level_below_elevation:
-                bottom_level_below_elevation = format_length_value(
-                    bottom_level_below_elevation
+                bottom_level_below_elevation = units.format_length(
+                    bottom_level_below_elevation, doc
                 )
 
             # Update top info
@@ -486,7 +506,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             else:
                 self.txtTopLevelBelow.Text = self.get_locale_string("NoLevelBelowTop")
 
-            top = format_length_value(transformed_max.Z)
+            top = units.format_length(transformed_max.Z, doc)
             self.txtTopPosition.Text = self.get_locale_string("TopOfBoxFormat").format(
                 top
             )
@@ -509,7 +529,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     "NoLevelBelowBottom"
                 )
 
-            bottom = format_length_value(transformed_min.Z)
+            bottom = units.format_length(transformed_min.Z, doc)
             self.txtBottomPosition.Text = self.get_locale_string(
                 "BottomOfBoxFormat"
             ).format(bottom)
@@ -527,15 +547,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             message_type: "info", "error", "warning", "success" (for color coding)
         """
         try:
-            # Define color mapping
-            colors = {
-                "error": Media.Brushes.Red,
-                "warning": Media.Brushes.Orange,
-                "info": Media.Brushes.Blue,
-                "success": Media.Brushes.Green,
-            }
-
-            color = colors.get(message_type.lower(), Media.Brushes.Black)
+            color = BRUSH_COLORS.get(message_type.lower())
 
             def update_ui():
                 if column == 1:
@@ -575,7 +587,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def _on_no_document(self):
         """Disable all controls and clear status when no documents are open."""
         self.Content.IsEnabled = False
-        self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+        self.hide_element(self.project_unit_text)
         self.txtVerticalStatus.Text = ""
         self.txtGridStatus.Text = ""
         self.txtExpandActionsStatus.Text = ""
@@ -600,12 +612,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtGridStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtGridStatus.Foreground = Media.Brushes.Gray
+                    self.txtGridStatus.Foreground = BRUSH_COLORS.get("default_subtle")
                     return
 
                 # Get current grid position info if needed
                 self.txtGridStatus.Text = "..."
-                self.txtGridStatus.Foreground = Media.Brushes.Black
+                self.txtGridStatus.Foreground = BRUSH_COLORS.get("default_text")
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:
@@ -621,11 +633,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtExpandActionsStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtExpandActionsStatus.Foreground = Media.Brushes.Gray
+                    self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get(
+                        "default_subtle"
+                    )
                     return
 
                 self.txtExpandActionsStatus.Text = "..."
-                self.txtExpandActionsStatus.Foreground = Media.Brushes.Black
+                self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get(
+                    "default_text"
+                )
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:
@@ -659,7 +675,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             elif action_type == "grid_move":
                 self.do_grid_move(params)
 
-            # Update info after action
             self.Dispatcher.Invoke(System.Action(self.update_info))
 
         except Exception as ex:
@@ -912,7 +927,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.popupBoxDown.IsOpen = False
             else:
                 # Nudge mode - show nudge amount
-                nudge_display = format_length_value(abs(nudge_amount))
+                nudge_display = units.format_length(abs(nudge_amount), doc)
 
                 self.show_status_message(
                     1,
@@ -939,7 +954,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             max_z_change=adjustment,
         ):
             # Success - show informative message
-            amount_display = format_length_value(amount)
+            amount_display = units.format_length(amount, doc)
             operation = (
                 self.get_locale_string("Expanded")
                 if is_expand
@@ -1127,7 +1142,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
             else:
                 # Nudge mode
-                nudge_display = format_length_value(nudge_amount)
+                nudge_display = units.format_length(nudge_amount, doc)
 
                 direction_display = cardinal_dir.upper()
                 self.show_status_message(
@@ -1163,7 +1178,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     3, self.get_locale_string("CouldNotGetCropBox"), "error"
                 )
                 return
-            new_box = to_world_identity(crop_box)
+            new_box = section_box_from_crop(crop_box)
 
         elif crop_box:
             # For floor plans, use the existing logic
@@ -1223,10 +1238,52 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if not view_data:
             return
 
-        vt = view_data.get("view_type", None)
-        section_box = view_data.get("section_box", None)
+        section_box = view_data.get("section_box")
+        if section_box is None:
+            return
 
-        # Has to be a seperate Transaction for rotate_crop_element to find the bbox
+        is_view_plan = isinstance(self.current_view, DB.ViewPlan)
+
+        scope_box_param = self.current_view.get_Parameter(
+            DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+        )
+        has_scope_box = (
+            scope_box_param is not None
+            and scope_box_param.AsElementId() != DB.ElementId.InvalidElementId
+        )
+
+        # Both alignment methods only support plan views without a scope box.
+        if not is_view_plan:
+            self.show_status_message(
+                3,
+                self.get_locale_string("UnsupportedViewType"),
+                "warning",
+            )
+            return
+
+        if has_scope_box:
+            self.show_status_message(
+                3,
+                self.get_locale_string("ScopeBoxApplied"),
+                "warning",
+            )
+            return
+
+        result = forms.alert(
+            "How should the 2D view be aligned to the 3D section box?",
+            title="Align View to 3D View",
+            options=[
+                "Rotate Crop Element",
+                "Set Crop Shape",
+                "Cancel",
+            ],
+        )
+
+        if result == "Cancel":
+            return
+
+        # The crop element needs to be activated in a separate transaction
+        # before it can reliably be accessed/transformed.
         with revit.Transaction("Activate CropBox"):
             if not self.current_view.CropBoxActive:
                 self.current_view.CropBoxActive = True
@@ -1234,56 +1291,37 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not self.current_view.CropBoxVisible:
                 self.current_view.CropBoxVisible = True
 
-        with revit.Transaction("Align 2D View to 3D Section Box"):
-            if vt == DB.ViewType.FloorPlan or vt == DB.ViewType.CeilingPlan:
-                self.current_view.CropBox = section_box
-                crop_el = get_crop_element(doc, self.current_view)
-                if crop_el:
-                    # --- 1. Compute 3D section box centroid in world coordinates ---
-                    tf = section_box.Transform
-                    sb_min = tf.OfPoint(section_box.Min)
-                    sb_max = tf.OfPoint(section_box.Max)
-                    sb_centroid = DB.XYZ(
-                        (sb_min.X + sb_max.X) / 2.0,
-                        (sb_min.Y + sb_max.Y) / 2.0,
-                        0,  # Z is ignored for plan rotation
-                    )
+        if result == "Rotate Crop Element":
+            success = align_crop_by_transform(
+                doc,
+                self.current_view,
+                section_box,
+            )
 
-                    # --- 2. Compute current crop element centroid in view coordinates ---
-                    crop_box = crop_el.get_BoundingBox(self.current_view)
-                    crop_centroid = DB.XYZ(
-                        (crop_box.Min.X + crop_box.Max.X) / 2.0,
-                        (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
-                        0,
-                    )
+        elif result == "Set Crop Shape":
+            success = align_crop_by_shape(
+                doc,
+                self.current_view,
+                section_box,
+            )
 
-                    # --- 3. Translate crop element so centroids align (XY only) ---
-                    translation = sb_centroid - crop_centroid
-                    DB.ElementTransformUtils.MoveElement(doc, crop_el.Id, translation)
+        else:
+            return
 
-                    # --- 4. Rotate crop element around vertical axis through its centroid ---
-                    angle = compute_rotation_angle(section_box, self.current_view)
-                    axis = DB.Line.CreateBound(
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 1),
-                    )
-                    DB.ElementTransformUtils.RotateElement(doc, crop_el.Id, axis, angle)
-                apply_plan_viewrange_from_sectionbox(
-                    doc, self.current_view, section_box
-                )
-                self.show_status_message(
-                    3,
-                    self.get_locale_string("CropBoxAlignedFormat").format(
-                        view_data["view"].Name
-                    ),
-                    "success",
-                )
-
-            else:
-                self.show_status_message(
-                    3, self.get_locale_string("UnsupportedViewType"), "warning"
-                )
-                return
+        if success:
+            self.show_status_message(
+                3,
+                self.get_locale_string("CropBoxAlignedFormat").format(
+                    view_data["view"].Name
+                ),
+                "success",
+            )
+        else:
+            self.show_status_message(
+                3,
+                self.get_locale_string("UnsupportedViewType"),
+                "warning",
+            )
 
     def do_toggle(self):
         """Toggle section or crop box."""
@@ -1351,11 +1389,32 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
 
     def do_temp_switch(self):
-        """Temporary switch to a box around elements"""
-        if not isinstance(self.current_view, DB.View3D):
+        """Set or restore an element-based temporary box on a 3D view."""
+        if isinstance(self.current_view, DB.View3D):
+            target_view = self.current_view
+        elif is_2d_view(self.current_view):
+            selected_view = forms.select_views(
+                multiple=False,
+                filterfunc=lambda view: isinstance(view, DB.View3D),
+                doc=doc,
+                title=self.get_locale_string("Select3DViewForTempBox"),
+            )
+            if not selected_view:
+                return
+            target_view = selected_view
+        else:
             return
+
         try:
-            temp_switch(doc, TEMP_DATAFILE)
+            result = temp_switch(doc, TEMP_DATAFILE, target_view=target_view)
+            if result == "cancelled":
+                return
+            if result is None:
+                raise RuntimeError("Could not set or restore a temporary section box")
+
+            if target_view.Id != self.current_view.Id:
+                uidoc.ActiveView = target_view
+
             self.show_status_message(
                 3, self.get_locale_string("SuccessTempSwitch"), "success"
             )
@@ -1717,7 +1776,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             }
 
         elif is_2d_view(self.current_view, only_plan=True):
-
             selected_view = forms.select_views(
                 multiple=False,
                 filterfunc=lambda v: isinstance(v, DB.View3D),
@@ -1858,7 +1916,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def btn_temp_switch_click(self, sender, e):
-        """Temporary switch to a box around elements"""
+        """Set or restore an element-based temporary box on a 3D view."""
         self.pending_action = {
             "action": "temp_switch",
         }
@@ -1952,11 +2010,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
-            # Save window position
-            script.save_window_position(self)
-
-            # Unregister event handlers
             events.stop_events()
+
+            script.save_window_position(self)
 
             # Cleanup form - shouldn't be necessary?
             global sb_form
@@ -1993,11 +2049,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             my_config.set_option("rbGrid_state", self.rbGrid.IsChecked)
             my_config.set_option("chkLinks_state", self.chkIncludeLinks.IsChecked)
             my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
-            my_config.set_option("chkAutoupdate_state", self.chkAutoupdate.IsChecked)
             script.save_config()
 
         except Exception:
             logger.exception("Error during cleanup.")
+
+        finally:
+            script.set_envvar(SBNAV_WINDOW_KEY, None)
 
 
 # ---------
@@ -2005,36 +2063,41 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 # ---------
 
 if __name__ == "__main__":
-    _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
+    if not forms.activate_open_window(SBNAV_WINDOW_KEY):
+        _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
 
-    def _t(key):
-        return applocales.get_locale_string_from_xaml(_xaml_path, key)
+        def _t(key):
+            return applocales.get_locale_string_from_xaml(_xaml_path, key)
 
-    try:
-        initialize_globals()
-        if not active_view.IsSectionBoxActive:
-            info = get_section_box_info(active_view, DATAFILENAME)
-            restored_bbox = info.get("box") if info else None
-            if restored_bbox:
-                if forms.alert(
-                    _t("StoredSectionBoxFound"),
-                    cancel=True,
-                    title=_t("RestoreSectionBox"),
-                ):
-                    with revit.Transaction("Restore SectionBox"):
-                        active_view.SetSectionBox(restored_bbox)
-            else:
-                forms.alert(
-                    _t("NoSectionBoxMessage"),
-                    title=_t("NoSectionBoxTitle"),
-                    exitscript=True,
-                )
+        try:
+            initialize_globals()
+            if not active_view.IsSectionBoxActive:
+                info = get_section_box_info(active_view, DATAFILENAME)
+                restored_bbox = info.get("box") if info else None
+                if restored_bbox:
+                    if forms.alert(
+                        _t("StoredSectionBoxFound"),
+                        cancel=True,
+                        title=_t("RestoreSectionBox"),
+                    ):
+                        with revit.Transaction("Restore SectionBox"):
+                            active_view.SetSectionBox(restored_bbox)
+                else:
+                    forms.alert(
+                        _t("NoSectionBoxMessage"),
+                        title=_t("NoSectionBoxTitle"),
+                        exitscript=True,
+                    )
 
-        sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
+            sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
+            script.set_envvar(SBNAV_WINDOW_KEY, sb_form)
 
-    except Exception as ex:
-        logger.exception("Error launching form: {}".format(ex))
-        forms.alert(
-            _t("AnErrorOccurredFormat").format(str(ex)),
-            title=_t("ErrorTitle"),
-        )
+            events.handle("view-activated", "doc-changed")(on_view_or_doc_changed)
+            events.handle("doc-closed")(on_doc_closed)
+
+        except Exception as ex:
+            logger.exception("Error launching form: {}".format(ex))
+            forms.alert(
+                _t("AnErrorOccurredFormat").format(str(ex)),
+                title=_t("ErrorTitle"),
+            )

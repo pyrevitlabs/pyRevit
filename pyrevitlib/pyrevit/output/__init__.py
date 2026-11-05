@@ -12,13 +12,16 @@ Examples:
     ```
 """
 
+import functools
+import json
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DB
 from pyrevit import framework
-from pyrevit.compat import PY3, safe_strtype
+from pyrevit.compat import IRONPY, PY3, safe_strtype
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import charts
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.runtime.types import ScriptConsoleManager, ScriptOutput
 from pyrevit.userconfig import user_config
 from pyrevit.output import linkmaker
@@ -30,7 +33,9 @@ else:
     from urllib import quote as urlquote
 
 
-DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
+mlogger = get_logger(__name__)
+
+DEFAULT_STYLESHEET_NAME = "outputstyles.css"
 
 
 def docclosing_eventhandler(sender, args):
@@ -40,10 +45,9 @@ def docclosing_eventhandler(sender, args):
 
 def setup_output_closer():
     """Setup document closing event listener."""
-    HOST_APP.app.DocumentClosing += \
-        framework.EventHandler[DB.Events.DocumentClosingEventArgs](
-            docclosing_eventhandler
-            )
+    HOST_APP.app.DocumentClosing += framework.EventHandler[
+        DB.Events.DocumentClosingEventArgs
+    ](docclosing_eventhandler)
 
 
 def set_stylesheet(stylesheet):
@@ -53,8 +57,7 @@ def set_stylesheet(stylesheet):
         stylesheet (str): full path to stylesheet file
     """
     if op.isfile(stylesheet):
-        envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
-                                    stylesheet)
+        envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR, stylesheet)
 
 
 def get_stylesheet():
@@ -69,13 +72,29 @@ def get_default_stylesheet():
 
 def reset_stylesheet():
     """Reset active stylesheet to default."""
-    envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
-                                get_default_stylesheet())
+    envvars.set_pyrevit_env_var(
+        envvars.OUTPUT_STYLESHEET_ENVVAR, get_default_stylesheet()
+    )
 
 
 # setup output window stylesheet
 active_stylesheet = user_config.output_stylesheet or get_default_stylesheet()
 set_stylesheet(active_stylesheet)
+
+
+def _command_runtime_output():
+    """Return the ``ScriptOutput`` of the running command.
+
+    Outside of a command (e.g. during session load) falls back to the session
+    output.
+    """
+    out = None
+    runtime = EXEC_PARAMS.script_runtime
+    if runtime:
+        out = getattr(runtime, "OutputService", None)
+    if out is None:
+        out = ScriptOutput.GetDefault()
+    return out
 
 
 class PyRevitOutputWindow(object):
@@ -109,7 +128,10 @@ class PyRevitOutputWindow(object):
     def __init__(self):
         # Deferred callbacks must retain the command output selected while the
         # command runtime is still active.
-        self._runtime_output()
+        output = self._runtime_output()
+        object.__setattr__(
+            self, "linkify", functools.partial(self.linkify, output=output)
+        )
 
     def _runtime_output(self):
         """Return the runtime ``ScriptOutput`` this wrapper is bound to.
@@ -117,16 +139,10 @@ class PyRevitOutputWindow(object):
         The binding is resolved during wrapper construction and reused for the
         wrapper's lifetime.
         """
-        out = self.__dict__.get('_rt_out')
+        out = self.__dict__.get("_rt_out")
         if out is None:
-            # bind to the output of the running command; outside of a command
-            # (e.g. during session load) fall back to the session output
-            runtime = EXEC_PARAMS.script_runtime
-            if runtime:
-                out = getattr(runtime, 'OutputService', None)
-            if out is None:
-                out = ScriptOutput.GetDefault()
-            object.__setattr__(self, '_rt_out', out)
+            out = _command_runtime_output()
+            object.__setattr__(self, "_rt_out", out)
         return out
 
     def __getattr__(self, name):
@@ -139,7 +155,7 @@ class PyRevitOutputWindow(object):
         Private (``_``-prefixed) names and anything the runtime object rejects
         are stored on the wrapper instead.
         """
-        if name.startswith('_'):
+        if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
 
@@ -155,12 +171,19 @@ class PyRevitOutputWindow(object):
 
     @property
     def renderer(self):
-        """Return html renderer inside output window.
+        """Raise: the legacy IE ``WebBrowser`` renderer was removed.
 
-        Returns:
-            (System.Windows.Forms.WebBrowser): HTML renderer
+        The output window now renders with Microsoft Edge WebView2 (Chromium).
+        There is no live DOM object to reach for; use :func:`inject_to_head`,
+        :func:`inject_to_body`, :func:`inject_script`, :func:`add_style`, and
+        :func:`print_html` instead.
         """
-        return self._runtime_output().renderer
+        raise NotImplementedError(
+            "output.renderer (System.Windows.Forms.WebBrowser) was removed. "
+            "The output window renders with WebView2 (Chromium) now and does "
+            "not expose a browser control. Use inject_to_head, "
+            "inject_to_body, inject_script, add_style, or print_html."
+        )
 
     @property
     def output_id(self):
@@ -231,10 +254,8 @@ class PyRevitOutputWindow(object):
             ```
         """
         return self._runtime_output().inject_to_head(
-            element_tag,
-            element_contents,
-            attribs
-            )
+            element_tag, element_contents, attribs
+        )
 
     def inject_to_body(self, element_tag, element_contents, attribs=None):
         """Inject html element to current html body of the output window.
@@ -253,10 +274,8 @@ class PyRevitOutputWindow(object):
             ```
         """
         return self._runtime_output().inject_to_body(
-            element_tag,
-            element_contents,
-            attribs
-            )
+            element_tag, element_contents, attribs
+        )
 
     def inject_script(self, script_code, attribs=None, body=False):
         """Inject script tag into current head (or body) of the output window.
@@ -395,6 +414,129 @@ class PyRevitOutputWindow(object):
         """
         return self._runtime_output().open_page(dest_file)
 
+    @property
+    def supports_messages(self):
+        """bool: Whether the page can exchange messages with Python.
+
+        False when the window falls back to plain text (e.g. the WebView2
+        runtime is missing) or has been closed by the user. Scripts should
+        check this and fall back to a printed report.
+
+        Note:
+            Opens the output window and starts its renderer if needed, without
+            waiting for it, but never reopens a window the user closed.
+        """
+        runtime_output = self._runtime_output()
+        if runtime_output.IsWindowClosed:
+            return False
+        return runtime_output.window.SupportsWebMessages
+
+    def on_message(self, handler):
+        """Register a handler for messages the output page posts to Python.
+
+        The page sends with ``window.chrome.webview.postMessage(value)``. The
+        handler receives the JSON-decoded value (``dict`` for a posted object)
+        and runs in Revit API context through
+        :func:`pyrevit.revit.events.execute_in_revit_context`, one call per
+        message in arrival order. Return values are ignored; answer with
+        :func:`post_message`. Handlers are released when the window closes.
+
+        Warning:
+            ``execute_in_revit_context`` is IronPython-only. Under CPython
+            handlers run directly on the UI thread, outside Revit API
+            context, so they can update the page but cannot read or modify
+            the model.
+
+        Args:
+            handler (function): ``handler(message)``; a plain function or
+                method, as required by ``execute_in_revit_context``
+
+        Returns:
+            (bool): False when the window cannot receive messages; see
+            :attr:`supports_messages`.
+
+        Important:
+            Handlers outlive the command, so the bundle must run on a
+            persistent engine (``engine: persistent`` in ``bundle.yaml``).
+
+        Examples:
+            ```python
+            output = script.get_output()
+
+            def select_elements(message):
+                revit.get_selection().set_to(message["ids"])
+
+            if output.on_message(select_elements):
+                output.print_html(
+                    '<button onclick="chrome.webview.postMessage('
+                    '{ids: [1234]})">Select</button>'
+                )
+            else:
+                output.print_md("Interactive actions need the WebView2 runtime.")
+            ```
+        """
+        if not self.supports_messages:
+            return False
+        window = self._runtime_output().window
+        if self.__dict__.get("_message_window") != window:
+            self._message_handlers = []
+            subscription = self.__dict__.setdefault(
+                "_message_subscription", self._dispatch_message
+            )
+            window.WebMessageReceived += subscription
+            self._message_window = window
+        handlers = self._message_handlers
+        if handler not in handlers:
+            handlers.append(handler)
+        return True
+
+    def off_message(self, handler):
+        """Unregister a handler added with :func:`on_message`."""
+        handlers = self.__dict__.get("_message_handlers", [])
+        if handler in handlers:
+            handlers.remove(handler)
+
+    def post_message(self, data):
+        """Send a JSON-serializable value to the page.
+
+        The page receives it as the ``data`` of a ``message`` event:
+        ``chrome.webview.addEventListener("message", e => e.data)``.
+
+        Args:
+            data (object): value to serialize with ``json.dumps``. Non-ASCII
+                text is sent as is, not escaped as unicode sequences, because
+                IronPython 2's ASCII-escaping encoder raises on some mixed
+                Cyrillic and Latin-1 strings.
+
+        Returns:
+            (bool): False when the window is closed or cannot deliver messages,
+            including while the page is loading or navigating (e.g. right
+            after :func:`open_page`).
+        """
+        if not self._runtime_output().IsWindowReady:
+            return False
+        return self._runtime_output().window.PostWebMessage(
+            json.dumps(data, ensure_ascii=False)
+        )
+
+    def _dispatch_message(self, sender, args):
+        """Decode one page message and schedule every handler in API context."""
+        from pyrevit.revit import events
+
+        try:
+            message = json.loads(args.Json)
+        except ValueError:
+            mlogger.debug("Ignoring output page message that is not valid JSON")
+            return
+        for handler in list(self.__dict__.get("_message_handlers", [])):
+            if IRONPY:
+                events.execute_in_revit_context(handler, message)
+                continue
+            try:
+                handler(message)
+            except Exception as ex:
+                mlogger.error("Output message handler failed: {}".format(ex))
+
     def update_progress(self, cur_value, max_value):
         """Activate and update the output window progress bar.
 
@@ -496,8 +638,9 @@ class PyRevitOutputWindow(object):
         """
         return self._runtime_output().print_md(safe_strtype(md_str))
 
-    def print_table(self, table_data, columns=None, formats=None,
-                    title='', last_line_style=''):
+    def print_table(
+        self, table_data, columns=None, formats=None, title="", last_line_style=""
+    ):
         """Print provided data in a table in output window.
 
         Args:
@@ -523,15 +666,18 @@ class PyRevitOutputWindow(object):
             ```
         """
         return self._runtime_output().print_table(
-            table_data,
-            columns,
-            formats,
-            title,
-            last_line_style
-            )
+            table_data, columns, formats, title, last_line_style
+        )
 
-    def print_html_table(self, table_data, columns=None, formats=None,
-                         title='', last_line_style='', **kwargs):
+    def print_html_table(
+        self,
+        table_data,
+        columns=None,
+        formats=None,
+        title="",
+        last_line_style="",
+        **kwargs
+    ):
         """Print provided data in a HTML table in output window.
 
         The same window can output several tables, each with their own
@@ -581,14 +727,14 @@ class PyRevitOutputWindow(object):
             formats,
             title,
             last_line_style,
-            kwargs.get('column_head_align_styles', None),
-            kwargs.get('column_data_align_styles', None),
-            kwargs.get('column_widths', None),
-            kwargs.get('column_vertical_border_style', None),
-            kwargs.get('table_width_style', None),
-            kwargs.get('repeat_head_as_foot', False),
-            kwargs.get('row_striping', True)
-            )
+            kwargs.get("column_head_align_styles", None),
+            kwargs.get("column_data_align_styles", None),
+            kwargs.get("column_widths", None),
+            kwargs.get("column_vertical_border_style", None),
+            kwargs.get("table_width_style", None),
+            kwargs.get("repeat_head_as_foot", False),
+            kwargs.get("row_striping", True),
+        )
 
     def print_image(self, image_path):
         r"""Prints given image to the output.
@@ -604,32 +750,38 @@ class PyRevitOutputWindow(object):
     @staticmethod
     def buttonify(uibutton, title=None):
         """Create an output-safe html button for a Revit ribbon button."""
-        label = title \
-            or getattr(uibutton, 'Text', None) \
-            or getattr(uibutton, 'AutomationName', None) \
-            or getattr(uibutton, 'Name', None) \
+        label = (
+            title
+            or getattr(uibutton, "Text", None)
+            or getattr(uibutton, "AutomationName", None)
+            or getattr(uibutton, "Name", None)
             or safe_strtype(uibutton)
-        control_id = getattr(uibutton, 'Id', None) \
-            or getattr(uibutton, 'Name', None) \
+        )
+        control_id = (
+            getattr(uibutton, "Id", None)
+            or getattr(uibutton, "Name", None)
             or EXEC_PARAMS.command_controlid
-        label = safe_strtype(label).replace('&', '&amp;') \
-                                  .replace('<', '&lt;') \
-                                  .replace('>', '&gt;')
+        )
+        label = (
+            safe_strtype(label)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
         quoted_control_id = urlquote(safe_strtype(control_id))
 
         return coreutils.prepare_html_str(
             '<a href="revit://outputhelpers?command=button&controlid={}" '
             'style="display:inline-block;text-decoration:none;font:inherit;'
-            'padding:4px 10px;border:1px solid #8a8f94;'
-            'background:#f5f6f7;color:#233749;">{}</a>'
-            .format(quoted_control_id, label)
-            )
+            "padding:4px 10px;border:1px solid #8a8f94;"
+            'background:#f5f6f7;color:#233749;">{}</a>'.format(quoted_control_id, label)
+        )
 
     def print_button(self, uibutton, title=None):
         """Print a Revit ribbon button as an embedded output button."""
         self.print_html(coreutils.reverse_html(self.buttonify(uibutton, title)))
 
-    def insert_divider(self, level=''):
+    def insert_divider(self, level=""):
         """Add horizontal rule to the output window."""
         return self._runtime_output().insert_divider(level)
 
@@ -642,14 +794,22 @@ class PyRevitOutputWindow(object):
         return self._runtime_output().next_page()
 
     @staticmethod
-    def linkify(element_ids, title=None):
+    def linkify(element_ids, title=None, output=None):
         """Create clickable link for the provided element ids.
 
-        This method, creates the link but does not print it directly.
+        This method, creates the link but does not print it directly. Any number
+        of ids is supported: lists too long to fit in a url are stored in the
+        output window and the link refers to them.
+
+        Note:
+            Called on an output wrapper, the link is bound to that wrapper's
+            window. Called on the class, it is bound to the running command's.
 
         Args:
             element_ids (ElementId | list[ElementId]): single or multiple ids
             title (str): tile of the link. defaults to list of element ids
+            output (ScriptOutput): output window that resolves the link when
+                the ids are stored; defaults to the running command's output
 
         Returns:
             (str): clickable link
@@ -661,9 +821,14 @@ class PyRevitOutputWindow(object):
                 print('{}: {}'.format(idx+1, output.linkify(elid)))
             ```
         """
+
+        def register_ids(comma_separated_ids):
+            target = output or _command_runtime_output()
+            return target.register_element_ids(comma_separated_ids)
+
         return coreutils.prepare_html_str(
-            linkmaker.make_link(element_ids, contents=title)
-            )
+            linkmaker.make_link(element_ids, contents=title, register_ids=register_ids)
+        )
 
     def make_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return chart object."""
@@ -672,68 +837,58 @@ class PyRevitOutputWindow(object):
     def make_line_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return line chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.LINE_CHART,
-            version=version
-            )
+            self, chart_type=charts.LINE_CHART, version=version
+        )
 
     def make_stacked_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return stacked chart object."""
         chart = charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.LINE_CHART,
-            version=version
-            )
-        chart.options.scales = {'yAxes': [{'stacked': True, }]}
+            self, chart_type=charts.LINE_CHART, version=version
+        )
+        chart.options.scales = {
+            "yAxes": [
+                {
+                    "stacked": True,
+                }
+            ]
+        }
         return chart
 
     def make_bar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return bar chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.BAR_CHART,
-            version=version
-            )
+            self, chart_type=charts.BAR_CHART, version=version
+        )
 
     def make_radar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return radar chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.RADAR_CHART,
-            version=version
-            )
+            self, chart_type=charts.RADAR_CHART, version=version
+        )
 
     def make_polar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return polar chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.POLAR_CHART,
-            version=version
-            )
+            self, chart_type=charts.POLAR_CHART, version=version
+        )
 
     def make_pie_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return pie chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.PIE_CHART,
-            version=version
-            )
+            self, chart_type=charts.PIE_CHART, version=version
+        )
 
     def make_doughnut_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return doughnut chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.DOUGHNUT_CHART,
-            version=version
-            )
+            self, chart_type=charts.DOUGHNUT_CHART, version=version
+        )
 
     def make_bubble_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return bubble chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.BUBBLE_CHART,
-            version=version
-            )
+            self, chart_type=charts.BUBBLE_CHART, version=version
+        )
 
 
 def get_output():

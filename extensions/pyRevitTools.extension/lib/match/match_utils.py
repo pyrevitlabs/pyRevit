@@ -156,8 +156,7 @@ def get_source_properties(src_element, simple=False, preselect=None):
 
 
 def paste_props(source_props, paste_mode, category_filter=False, **kwargs):
-    """paste_mode: "single" | "rectangle" | "selection"
-    """
+    """paste_mode: "single" | "rectangle" | "selection" """
     # Build category filter if the checkbox is ticked and categories are known
     pick_filter = None
     if category_filter:

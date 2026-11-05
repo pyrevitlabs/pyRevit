@@ -3,7 +3,8 @@
 Shift+Click:
     Open model file in Explorer, or open BIM360/ACC/Forma Docs project page for cloud models.
 """
-#pylint: disable=E0401,invalid-name
+
+# pylint: disable=E0401,invalid-name
 from pyrevit import revit, DB, HOST_APP, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import script

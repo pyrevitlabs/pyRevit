@@ -18,3 +18,5 @@ tooltip:
   de_de: >-
     Zunächst muss ein Projekt als Quelle definiert werden, durch die aktive Ansicht.  Beim Ausführen des Befehls öffnet sich ein Auswahldialog mit aktuell parallel  geöffneten Projekten. Im nächsten Dialog können Legendenansichten ausgewählt  werden in Zeichenansichten umgewandelt und in zuvor gewählten Projekte kopiert  werden. Auf den Legenden dürfen keine Legendenkomponenten platziert sein, da  ansonsten das Skript nicht funktioniert.
   pt_br: Converte vistas de legenda selecionadas em vistas de desenho e as copia para todos os projetos atualmente abertos no Revit
+context:
+  - doc-project

@@ -35,12 +35,12 @@ context: zero-doc";
 
                 // Test 1: Direct BundleParser parsing
                 var bundleResult = BundleParser.BundleYamlParser.Parse(tempFile);
-                
+
                 Console.WriteLine("=== BundleParser Results ===");
                 foreach (var title in bundleResult.Titles)
                 {
                     Console.WriteLine($"[{title.Key}]: '{title.Value}' (Length: {title.Value.Length})");
-                    
+
                     // Check for any quotes in the value
                     if (title.Value.Contains("\"") || title.Value.Contains("'"))
                     {
@@ -53,11 +53,11 @@ context: zero-doc";
                 var enUsTitle = GetLocalizedValue(bundleResult.Titles, "en_us");
                 var esEsTitle = GetLocalizedValue(bundleResult.Titles, "es_es");
                 var faTitle = GetLocalizedValue(bundleResult.Titles, "fa");
-                
+
                 Console.WriteLine($"en_us: '{enUsTitle}'");
                 Console.WriteLine($"es_es: '{esEsTitle}'");
                 Console.WriteLine($"fa: '{faTitle}'");
-                
+
                 // Verify these don't have quotes
                 Assert.That(enUsTitle, Is.EqualTo("Search"), "en_us title should be 'Search' without quotes");
                 Assert.That(esEsTitle, Is.EqualTo("Buscar"), "es_es title should be 'Buscar' without quotes");

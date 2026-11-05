@@ -5,8 +5,10 @@
     <system:String x:Key="Window.Title">Element Properties – Configure Additional Parameters</system:String>
     <system:String x:Key="ChkEnableStartup">Load pane at startup</system:String>
     <system:String x:Key="TbRestartHint">A Revit restart is required for startup changes to take effect.</system:String>
-    <system:String x:Key="TbParamsHint">Enter one parameter name per line. The pane picks up changes on the next selection change — no restart required.</system:String>
-    <system:String x:Key="TbExamples">Examples: Comments, Mark, Manufacturer, Type Comments</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">Show worksharing info (Creator / Last Changed By / Owner)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">Toggles the Creator, Last Changed By and Owner rows in the pane. No restart required.</system:String>
+    <system:String x:Key="TbParamsHint">Enter one parameter name per line. Start a line with # to insert a section header (e.g. "# General") — leave it as just "#" for a plain separator line. The pane picks up changes on the next selection change — no restart required.</system:String>
+    <system:String x:Key="TbExamples">Examples: Comments, Mark, # General, Manufacturer, Type Comments</system:String>
     <system:String x:Key="BtnCancel">Cancel</system:String>
     <system:String x:Key="BtnSave">Save</system:String>
 

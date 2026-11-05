@@ -2,7 +2,7 @@
 # pylint: disable=import-error,invalid-name,broad-except
 
 import os.path as op
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, PyRevitException
 from pyrevit.framework import clr
 from pyrevit.framework import IntPtr
 from pyrevit.framework import Interop, Windows
@@ -47,10 +47,8 @@ def get_statusbar_hwnd():
         (IntPtr): The handle of the status bar control.
     """
     return Common.User32.FindWindowEx(
-        get_mainwindow_hwnd(),
-        IntPtr.Zero,
-        "msctls_statusbar32",
-        "")
+        get_mainwindow_hwnd(), IntPtr.Zero, "msctls_statusbar32", ""
+    )
 
 
 def set_statusbar_text(text):
@@ -75,7 +73,7 @@ def get_window_rectangle():
     """Get the rectangle coordinates of the main window.
 
     Returns:
-        (Tuple[int, int, int, int]): The left, top, right, and bottom 
+        (Tuple[int, int, int, int]): The left, top, right, and bottom
             coordinates of the window rectangle.
     """
     return Common.User32.GetWindowRect(get_mainwindow_hwnd())
@@ -87,14 +85,15 @@ def is_infocenter_visible():
     Returns:
         (bool): True if the InfoCenter toolbar is visible, False otherwise.
     """
-    return ad.ComponentManager.InfoCenterToolBar.Visibility == \
-        Windows.Visibility.Visible
+    return (
+        ad.ComponentManager.InfoCenterToolBar.Visibility == Windows.Visibility.Visible
+    )
 
 
 def toggle_infocenter():
     """Toggles the visibility of the InfoCenter toolbar.
 
-    This function retrieves the current visibility state of the InfoCenter 
+    This function retrieves the current visibility state of the InfoCenter
     toolbar and toggles it to the opposite state.
     If the toolbar is currently collapsed, it will be set to visible,
     and if it is currently visible, it will be set to collapsed.
@@ -105,10 +104,10 @@ def toggle_infocenter():
         (bool): True if the InfoCenter toolbar is visible, False otherwise.
     """
     current_state = ad.ComponentManager.InfoCenterToolBar.Visibility
-    is_hidden = (current_state == Windows.Visibility.Collapsed)
-    ad.ComponentManager.InfoCenterToolBar.Visibility = \
-        Windows.Visibility.Visible if is_hidden else \
-            Windows.Visibility.Collapsed
+    is_hidden = current_state == Windows.Visibility.Collapsed
+    ad.ComponentManager.InfoCenterToolBar.Visibility = (
+        Windows.Visibility.Visible if is_hidden else Windows.Visibility.Collapsed
+    )
     return is_infocenter_visible()
 
 
@@ -120,7 +119,7 @@ def get_ribbon_roottype():
     """
     ap_assm = clr.GetClrType(ap.Windows.RibbonTabList).Assembly
     for apt in ap_assm.GetTypes():
-        if 'PanelSetListView' in apt.Name:
+        if "PanelSetListView" in apt.Name:
             return apt
 
 
@@ -133,13 +132,13 @@ def get_current_theme():
     return UIThemeManager.CurrentTheme
 
 
-def set_current_theme(theme='Dark'):
+def set_current_theme(theme="Dark"):
     """Sets the current UI theme to either 'Dark' or 'Light'.
 
     Args:
         theme (str, optional): The theme to set. Defaults to 'Dark'.
     """
-    if theme == 'Dark':
+    if theme == "Dark":
         UIThemeManager.CurrentTheme = UITheme.Dark
     else:
         UIThemeManager.CurrentTheme = UITheme.Light
@@ -163,3 +162,52 @@ def resolve_icon_file(directory, icon_name):
         full_file_path = dark_file_path if op.exists(dark_file_path) else full_file_path
 
     return full_file_path if op.exists(full_file_path) else None
+
+
+def request_view_change(view, uidoc=None):
+    """Ask Revit to make a view active once the current command or script ends.
+
+    Unlike setting ``revit.active_view``, this works while a transaction or
+    transaction group is open. The switch is asynchronous, so zoom the new
+    view in a later command.
+
+    Args:
+        view (DB.View): view to open.
+        uidoc (UI.UIDocument, optional): defaults to the active document.
+    """
+    (uidoc or HOST_APP.uidoc).RequestViewChange(view)
+
+
+def get_active_ui_view(uidoc=None):
+    """Return the UIView of the active view.
+
+    Raises:
+        PyRevitException: when the active view has no open window.
+    """
+    uidoc = uidoc or HOST_APP.uidoc
+    active_id = uidoc.ActiveView.Id
+    for ui_view in uidoc.GetOpenUIViews():
+        if ui_view.ViewId == active_id:
+            return ui_view
+    raise PyRevitException("The active view has no open window.")
+
+
+def zoom_to_elements(elements, padding=3.0, uidoc=None):
+    """Zoom the active view to elements.
+
+    Args:
+        elements (list[DB.Element]): elements to show.
+        padding (float, optional): clearance around them, in feet.
+        uidoc (UI.UIDocument, optional): defaults to the active document.
+    """
+    from pyrevit.revit.db import query
+
+    box = query.get_elements_bounding_box(elements, padding=padding)
+    if box is None:
+        raise PyRevitException("Nothing to zoom to: no elements with a bounding box.")
+    get_active_ui_view(uidoc).ZoomAndCenterRectangle(box.Min, box.Max)
+
+
+def zoom_fit(uidoc=None):
+    """Zoom the active view to fit everything visible."""
+    get_active_ui_view(uidoc).ZoomToFit()

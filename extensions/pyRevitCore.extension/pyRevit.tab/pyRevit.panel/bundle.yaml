@@ -8,13 +8,14 @@ title:
   de_de: pyRevit
   pt_br: pyRevit
 layout:
-  - tools
-  - ">>>>>"
-  - About
-  - Update
-  - Extensions
-  - Python Shell
-  - prlinks
-  - rpwlinks
-  - links
-  - Settings
+- tools
+- Support pyRevit
+- ">>>>>"
+- About
+- Update
+- Extensions
+- Python Shell
+- prlinks
+- rpwlinks
+- links
+- Settings

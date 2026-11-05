@@ -46,11 +46,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static async void PostTelemetryRecord(string telemetryServerUrl, object telemetryRecord) {
             try {
-                using(var client = new HttpClient()) {
+                using (var client = new HttpClient()) {
                     string jsonValue = SerializeTelemetryRecord(telemetryRecord);
                     await client.PostAsync(telemetryServerUrl, new StringContent(jsonValue, Encoding.UTF8, "application/json"));
                 }
-            } catch(Exception ex) {
+            }
+            catch (Exception ex) {
                 Console.WriteLine("Bim4EveryoneSink catch exception{0}{1}", Environment.NewLine, ex);
             }
         }
@@ -100,7 +101,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static string GetRevitVersion(object source) {
             string revit = string.Empty;
-            
+
             switch (source) {
                 case UIControlledApplication uictrlapp:
                     revit = uictrlapp.ControlledApplication.VersionNumber;
@@ -117,7 +118,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     revit = app.VersionNumber;
                     break;
             }
-            
+
             return revit;
         }
 

@@ -12,6 +12,7 @@ namespace PyRevitLabs.PyRevit.Shell {
     public partial class InteractiveShellWindow : Window, IShellWindow {
         public InteractiveShellWindow() {
             InitializeComponent();
+            Closed += (sender, args) => ConsoleControl.Pad.Dispose();
         }
 
         public IronPythonConsoleControl ConsoleControl {

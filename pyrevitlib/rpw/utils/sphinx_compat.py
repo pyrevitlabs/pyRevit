@@ -1,5 +1,4 @@
 import sys
-import imp
 
 from rpw.utils.logger import logger
 
@@ -80,6 +79,7 @@ class MockImporter(object):
             return sys.modules[fullname]
         else:
             logger.debug('Importing Mock Module: {}'.format(fullname))
+            # import imp
             # mod = imp.new_module(fullname)
             # import pdb; pdb.set_trace()
             mod = MockObject(fullname=fullname)

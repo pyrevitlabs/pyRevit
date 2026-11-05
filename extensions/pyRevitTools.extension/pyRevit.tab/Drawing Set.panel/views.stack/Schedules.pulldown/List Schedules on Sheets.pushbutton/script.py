@@ -5,11 +5,16 @@ output.close_others()
 
 doc = revit.doc
 
-schedules = DB.FilteredElementCollector(doc).OfClass(
-    DB.ScheduleSheetInstance).ToElements()
+schedules = (
+    DB.FilteredElementCollector(doc).OfClass(DB.ScheduleSheetInstance).ToElements()
+)
 
-sheets = DB.FilteredElementCollector(doc).OfCategory(
-    DB.BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+sheets = (
+    DB.FilteredElementCollector(doc)
+    .OfCategory(DB.BuiltInCategory.OST_Sheets)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 
 results = []

@@ -39,3 +39,5 @@ tooltip:
     Selecione as Viewports e pressione o botão Concluir na barra de propriedades. 
     As vistas selecionadas serão adicionadas às folhas de destino. Se a vista ou 
     tabela já existir nessa folha, a localização e o tipo serão atualizados.
+context:
+  - doc-project

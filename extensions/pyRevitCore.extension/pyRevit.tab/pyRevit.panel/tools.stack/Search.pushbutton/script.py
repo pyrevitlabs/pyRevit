@@ -1,6 +1,7 @@
 """The best interface ever!"""
+
 # -*- coding=utf-8 -*-
-#pylint: disable=undefined-variable,import-error,invalid-name
+# pylint: disable=undefined-variable,import-error,invalid-name
 import os
 import os.path as op
 
@@ -15,67 +16,69 @@ import pyrevit.extensions as exts
 logger = script.get_logger()
 
 
-HELP_SWITCH = '/help'
-DOC_SWITCH = '/doc'
-INFO_SWITCH = '/info'
-OPEN_SWITCH = '/open'
-SHOW_SWITCH = '/show'
-ATOM_SWITCH = '/atom'
-NPP_SWITCH = '/npp'
-NP_SWITCH = '/np'
-CONFIG_SWITCH = '/config'
+HELP_SWITCH = "/help"
+DOC_SWITCH = "/doc"
+INFO_SWITCH = "/info"
+OPEN_SWITCH = "/open"
+SHOW_SWITCH = "/show"
+ATOM_SWITCH = "/atom"
+NPP_SWITCH = "/npp"
+NP_SWITCH = "/np"
+CONFIG_SWITCH = "/config"
 
 
 def print_help():
     output = script.get_output()
     # output.set_width(500)
     output.print_md(
-        '### Options:\n\n'
-        '- **{help}**: Prints this help\n\n'
-        '- **{help} COMMAND:** Opens the help url or prints the docstring\n\n'
-        '- **{doc} [{config}] COMMAND:** Prints the command docstring\n\n'
-        '- **{info} [{config}] COMMAND:** Prints info about the command\n\n'
-        '- **{open} [{config}] COMMAND:** Opens the bundle folder\n\n'
-        '- **{show} [{config}] COMMAND:** Shows the source code\n\n'
-        '- **{atom} [{config}] COMMAND:** Opens the script in atom\n\n'
-        '- **{npp} [{config}] COMMAND:** Opens the script in notepad++\n\n'
-        '- **{np} [{config}] COMMAND:** Opens the script in notepad\n\n'
-        '- **{config}:** Executes the config script (like Shift+Click).\n\n'
-        .format(help=HELP_SWITCH,
-                doc=DOC_SWITCH,
-                info=INFO_SWITCH,
-                open=OPEN_SWITCH,
-                show=SHOW_SWITCH,
-                atom=ATOM_SWITCH,
-                npp=NPP_SWITCH,
-                np=NP_SWITCH,
-                config=CONFIG_SWITCH)
+        "### Options:\n\n"
+        "- **{help}**: Prints this help\n\n"
+        "- **{help} COMMAND:** Opens the help url or prints the docstring\n\n"
+        "- **{doc} [{config}] COMMAND:** Prints the command docstring\n\n"
+        "- **{info} [{config}] COMMAND:** Prints info about the command\n\n"
+        "- **{open} [{config}] COMMAND:** Opens the bundle folder\n\n"
+        "- **{show} [{config}] COMMAND:** Shows the source code\n\n"
+        "- **{atom} [{config}] COMMAND:** Opens the script in atom\n\n"
+        "- **{npp} [{config}] COMMAND:** Opens the script in notepad++\n\n"
+        "- **{np} [{config}] COMMAND:** Opens the script in notepad\n\n"
+        "- **{config}:** Executes the config script (like Shift+Click).\n\n".format(
+            help=HELP_SWITCH,
+            doc=DOC_SWITCH,
+            info=INFO_SWITCH,
+            open=OPEN_SWITCH,
+            show=SHOW_SWITCH,
+            atom=ATOM_SWITCH,
+            npp=NPP_SWITCH,
+            np=NP_SWITCH,
+            config=CONFIG_SWITCH,
         )
+    )
 
 
 def show_command_info(pyrvtcmd):
-    print('Script Source: {}\n\n'
-          'Config Script Source: {}\n\n'
-          'Search Paths: {}\n\n'
-          'Help Source: {}\n\n'
-          'Name: {}\n\n'
-          'Bundle Name: {}\n\n'
-          'Extension Name: {}\n\n'
-          'Unique Id: {}\n\n'
-          'Class Name: {}\n\n'
-          'Availability Class Name: {}\n\n'
-          .format(pyrvtcmd.script,
-                  pyrvtcmd.config_script,
-                  pyrvtcmd.search_paths,
-                  pyrvtcmd.helpsource,
-                  pyrvtcmd.name,
-                  pyrvtcmd.bundle,
-                  pyrvtcmd.extension,
-                  pyrvtcmd.unique_id,
-                  pyrvtcmd.typename,
-                  pyrvtcmd.extcmd_availtype
-                  )
-          )
+    print(
+        "Script Source: {}\n\n"
+        "Config Script Source: {}\n\n"
+        "Search Paths: {}\n\n"
+        "Help Source: {}\n\n"
+        "Name: {}\n\n"
+        "Bundle Name: {}\n\n"
+        "Extension Name: {}\n\n"
+        "Unique Id: {}\n\n"
+        "Class Name: {}\n\n"
+        "Availability Class Name: {}\n\n".format(
+            pyrvtcmd.script,
+            pyrvtcmd.config_script,
+            pyrvtcmd.search_paths,
+            pyrvtcmd.helpsource,
+            pyrvtcmd.name,
+            pyrvtcmd.bundle,
+            pyrvtcmd.extension,
+            pyrvtcmd.unique_id,
+            pyrvtcmd.typename,
+            pyrvtcmd.extcmd_availtype,
+        )
+    )
 
 
 def show_command_docstring(pyrvtcmd):
@@ -100,16 +103,14 @@ def open_command_helpurl(pyrvtcmd):
 
 def print_source(selected_cmd, altsrc=False):
     output = script.get_output()
-    source = \
-        selected_cmd.script if not altsrc else selected_cmd.config_script
+    source = selected_cmd.script if not altsrc else selected_cmd.config_script
     if source:
-        with open(source, 'r') as s:
+        with open(source, "r") as s:
             output.print_code(s.read())
 
 
 def open_in_editor(editor_name, selected_cmd, altsrc=False):
-    source = \
-        selected_cmd.script if not altsrc else selected_cmd.config_script
+    source = selected_cmd.script if not altsrc else selected_cmd.config_script
     if source:
         os.popen('{} "{}"'.format(editor_name, source))
 
@@ -134,22 +135,25 @@ for postcmd in postable_cmds.values():
     search_db[postcmd.name] = ""
 
 # search
-matched_cmdname, matched_cmdargs, switches = \
-    forms.SearchPrompt.show(search_db,
-                            switches=[HELP_SWITCH,
-                                      DOC_SWITCH,
-                                      INFO_SWITCH,
-                                      OPEN_SWITCH,
-                                      SHOW_SWITCH,
-                                      ATOM_SWITCH,
-                                      NPP_SWITCH,
-                                      NP_SWITCH,
-                                      CONFIG_SWITCH],
-                            search_tip='type to search')
+matched_cmdname, matched_cmdargs, switches = forms.SearchPrompt.show(
+    search_db,
+    switches=[
+        HELP_SWITCH,
+        DOC_SWITCH,
+        INFO_SWITCH,
+        OPEN_SWITCH,
+        SHOW_SWITCH,
+        ATOM_SWITCH,
+        NPP_SWITCH,
+        NP_SWITCH,
+        CONFIG_SWITCH,
+    ],
+    search_tip="type to search",
+)
 
-logger.debug('matched command: {}'.format(matched_cmdname))
-logger.debug('arguments: {}'.format(matched_cmdargs))
-logger.debug('switches: {}'.format(switches))
+logger.debug("matched command: {}".format(matched_cmdname))
+logger.debug("arguments: {}".format(matched_cmdargs))
+logger.debug("switches: {}".format(switches))
 
 # if asking for help show help and exit
 if switches[HELP_SWITCH] and not matched_cmdname:
@@ -160,7 +164,7 @@ if matched_cmdname:
     # if postable command
     if matched_cmdname in postable_cmds.keys():
         if any(switches.values()):
-            forms.alert('This is a native Revit command.')
+            forms.alert("This is a native Revit command.")
         else:
             HOST_APP.uiapp.PostCommand(postable_cmds[matched_cmdname].rvtobj)
     # if pyrevit command
@@ -178,16 +182,15 @@ if matched_cmdname:
         elif switches[SHOW_SWITCH]:
             print_source(selected_cmd, altsrc=switches[CONFIG_SWITCH])
         elif switches[ATOM_SWITCH]:
-            open_in_editor('atom', selected_cmd,
-                           altsrc=switches[CONFIG_SWITCH])
+            open_in_editor("atom", selected_cmd, altsrc=switches[CONFIG_SWITCH])
         elif switches[NPP_SWITCH]:
-            open_in_editor('notepad++', selected_cmd,
-                           altsrc=switches[CONFIG_SWITCH])
+            open_in_editor("notepad++", selected_cmd, altsrc=switches[CONFIG_SWITCH])
         elif switches[NP_SWITCH]:
-            open_in_editor('notepad', selected_cmd,
-                           altsrc=switches[CONFIG_SWITCH])
+            open_in_editor("notepad", selected_cmd, altsrc=switches[CONFIG_SWITCH])
         else:
             config_mode = switches[CONFIG_SWITCH] or switches[CONFIG_SWITCH]
-            sessionmgr.execute_command_cls(selected_cmd.extcmd_type,
-                                           arguments=matched_cmdargs,
-                                           config_mode=config_mode)
+            sessionmgr.execute_command_cls(
+                selected_cmd.extcmd_type,
+                arguments=matched_cmdargs,
+                config_mode=config_mode,
+            )

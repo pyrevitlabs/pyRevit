@@ -42,17 +42,29 @@ from . import util
 
 ElementTree = util.etree.ElementTree
 QName = util.etree.QName
-if hasattr(util.etree, 'test_comment'):  # pragma: no cover
+if hasattr(util.etree, "test_comment"):  # pragma: no cover
     Comment = util.etree.test_comment
 else:  # pragma: no cover
     Comment = util.etree.Comment
 PI = util.etree.PI
 ProcessingInstruction = util.etree.ProcessingInstruction
 
-__all__ = ['to_html_string', 'to_xhtml_string']
+__all__ = ["to_html_string", "to_xhtml_string"]
 
-HTML_EMPTY = ("area", "base", "basefont", "br", "col", "frame", "hr",
-              "img", "input", "isindex", "link", "meta" "param")
+HTML_EMPTY = (
+    "area",
+    "base",
+    "basefont",
+    "br",
+    "col",
+    "frame",
+    "hr",
+    "img",
+    "input",
+    "isindex",
+    "link",
+    "metaparam",
+)
 
 try:
     HTML_EMPTY = set(HTML_EMPTY)
@@ -74,9 +86,7 @@ _namespace_map = {
 
 
 def _raise_serialization_error(text):  # pragma: no cover
-    raise TypeError(
-        "cannot serialize %r (type %s)" % (text, type(text).__name__)
-        )
+    raise TypeError("cannot serialize %r (type %s)" % (text, type(text).__name__))
 
 
 def _encode(text, encoding):
@@ -112,8 +122,8 @@ def _escape_attrib(text):
             text = text.replace("<", "&lt;")
         if ">" in text:
             text = text.replace(">", "&gt;")
-        if "\"" in text:
-            text = text.replace("\"", "&quot;")
+        if '"' in text:
+            text = text.replace('"', "&quot;")
         if "\n" in text:
             text = text.replace("\n", "&#10;")
         return text
@@ -130,8 +140,8 @@ def _escape_attrib_html(text):
             text = text.replace("<", "&lt;")
         if ">" in text:
             text = text.replace(">", "&gt;")
-        if "\"" in text:
-            text = text.replace("\"", "&quot;")
+        if '"' in text:
+            text = text.replace('"', "&quot;")
         return text
     except (TypeError, AttributeError):  # pragma: no cover
         _raise_serialization_error(text)
@@ -163,18 +173,18 @@ def _serialize_html(write, elem, qnames, namespaces, format):
                         v = qnames[v.text]
                     else:
                         v = _escape_attrib_html(v)
-                    if qnames[k] == v and format == 'html':
+                    if qnames[k] == v and format == "html":
                         # handle boolean attributes
                         write(" %s" % v)
                     else:
-                        write(" %s=\"%s\"" % (qnames[k], v))
+                        write(' %s="%s"' % (qnames[k], v))
                 if namespaces:
                     items = namespaces.items()
                     items.sort(key=lambda x: x[1])  # sort on prefix
                     for v, k in items:
                         if k:
                             k = ":" + k
-                        write(" xmlns%s=\"%s\"" % (k, _escape_attrib(v)))
+                        write(' xmlns%s="%s"' % (k, _escape_attrib(v)))
             if format == "xhtml" and tag.lower() in HTML_EMPTY:
                 write(" />")
             else:
@@ -192,10 +202,7 @@ def _serialize_html(write, elem, qnames, namespaces, format):
         write(_escape_cdata(elem.tail))
 
 
-def _write_html(root,
-                encoding=None,
-                default_namespace=None,
-                format="html"):
+def _write_html(root, encoding=None, default_namespace=None, format="html"):
     assert root is not None
     data = []
     write = data.append
@@ -209,6 +216,7 @@ def _write_html(root,
 
 # --------------------------------------------------------------------
 # serialization support
+
 
 def _namespaces(elem, default_namespace=None):
     # identify namespaces used in this tree
@@ -240,9 +248,8 @@ def _namespaces(elem, default_namespace=None):
             else:
                 if default_namespace:
                     raise ValueError(
-                        "cannot use non-qualified names with "
-                        "default_namespace option"
-                        )
+                        "cannot use non-qualified names with default_namespace option"
+                    )
                 qnames[qname] = qname
         except TypeError:  # pragma: no cover
             _raise_serialization_error(qname)

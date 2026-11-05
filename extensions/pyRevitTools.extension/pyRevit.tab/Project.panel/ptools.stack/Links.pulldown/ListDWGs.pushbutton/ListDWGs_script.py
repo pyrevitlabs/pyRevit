@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 """Lists all linked and imported DWG instances with worksets and creator."""
+
 from collections import defaultdict
 
 from pyrevit import revit, DB
@@ -38,7 +39,9 @@ def listdwgs(current_view_only=False):
         output.print_md("####{}".format(link_mode))
         for dwg in dwgInst[link_mode]:
             dwg_id = dwg.Id
-            dwg_name = dwg.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
+            dwg_name = dwg.get_Parameter(
+                DB.BuiltInParameter.IMPORT_SYMBOL_NAME
+            ).AsString()
             dwg_workset = revit.query.get_element_workset(dwg).Name
             dwg_instance_creator = DB.WorksharingUtils.GetWorksharingTooltipInfo(
                 revit.doc, dwg.Id

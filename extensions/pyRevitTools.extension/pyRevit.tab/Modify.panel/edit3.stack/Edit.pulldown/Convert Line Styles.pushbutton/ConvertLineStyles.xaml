@@ -9,9 +9,9 @@
         <ControlTemplate x:Key="styleOption">
             <WrapPanel Margin="0,2,0,2">
                 <TextBlock x:Name="styleOptionName" Text="{Binding name}" Margin="0,0,10,0"/>
-                <Border CornerRadius="7" Background="#eee" VerticalAlignment="Center" BorderThickness="0">
+                <Border CornerRadius="7" Background="{DynamicResource pyRevitChromeBackgroundBrush}" VerticalAlignment="Center" BorderThickness="0">
                     <WrapPanel>
-                        <Ellipse Fill="{Binding color_hex}" StrokeThickness="2" Stroke="White" Width="12" Height="12" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        <Ellipse Fill="{Binding color_hex}" StrokeThickness="2" Stroke="{DynamicResource pyRevitWindowForegroundBrush}" Width="12" Height="12" VerticalAlignment="Center" Margin="5,0,0,0"/>
                         <TextBlock Text="{Binding weight}" Margin="10,0,10,0"/>
                         <TextBlock Text="{Binding pattern_name}" Margin="0,0,10,0"/>
                     </WrapPanel>
@@ -28,7 +28,7 @@
             <Control Template="{StaticResource styleOption}" />
         </DataTemplate>
 
-        <Style x:Key="treeItemStyle" TargetType="TreeViewItem">
+        <Style x:Key="treeItemStyle" TargetType="TreeViewItem" BasedOn="{StaticResource pyRevitTreeViewItemStyle}">
             <Setter Property="IsExpanded" Value="True"/>
         </Style>
 
@@ -89,6 +89,7 @@
                 </Button>
             </StackPanel>-->
             <TreeView x:Name="convertList"
+                      Style="{StaticResource pyRevitTreeViewStyle}"
                       ItemTemplate="{DynamicResource treeViewItem}"
                       ItemContainerStyle="{DynamicResource treeItemStyle}"/>
         </DockPanel>

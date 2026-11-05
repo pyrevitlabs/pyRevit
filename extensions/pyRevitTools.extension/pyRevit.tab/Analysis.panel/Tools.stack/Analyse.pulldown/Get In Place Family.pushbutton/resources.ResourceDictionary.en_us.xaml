@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="found_count">In-place families found: {}</sys:String>
+    <sys:String x:Key="column_element">Element</sys:String>
+    <sys:String x:Key="column_category">Category</sys:String>
+    <sys:String x:Key="column_family">Family</sys:String>
+    <sys:String x:Key="transaction_name">Isolate in-place families</sys:String>
+    <sys:String x:Key="transaction_reset_isolation">Reset temporary hide/isolate</sys:String>
+    <sys:String x:Key="transaction_isolate">Isolate</sys:String>
+    <sys:String x:Key="no_inplace_families">No in-place families found in this project.</sys:String>
+</ResourceDictionary>

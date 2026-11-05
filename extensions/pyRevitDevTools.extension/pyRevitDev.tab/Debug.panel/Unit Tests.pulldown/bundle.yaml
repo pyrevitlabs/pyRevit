@@ -1,18 +1,23 @@
 layout:
   - Run All Tests
+  - Dynamo Module Tests
   - -----
   - pyRevitLabs Module Tests
   - Output Window Tests
   - Appdata Module Tests
   - CoreUtils Module Tests
+  - Credentials Module Tests
   - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
   - Routes Module Tests
+  - Config Module Tests
   - Py3 Compat Tests
   - Py3 Compat Tests (CPython)
+  - Revit API Catalog Tests
   - -----
   - Test Output Stream
+  - Test Linkify Append Selection
   - Test Input Stream
   - Test Multiple Outputs
   - Test UI Button

@@ -192,12 +192,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         public string? GetCurrentTheme()
         {
-            var themeManagerType = _revitUiApplicationType.Assembly.GetType(
-                "Autodesk.Revit.UI.UIThemeManager");
-            var currentThemeProperty = themeManagerType?.GetProperty(
-                "CurrentTheme",
-                BindingFlags.Public | BindingFlags.Static);
-            return currentThemeProperty?.GetValue(null)?.ToString();
+            return RevitThemeDetector.ReadCurrentThemeName(_revitUiApplicationType);
         }
 
         public bool Subscribe(EventHandler handler)

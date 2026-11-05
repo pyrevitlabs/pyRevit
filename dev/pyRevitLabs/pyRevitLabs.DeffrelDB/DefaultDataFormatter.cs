@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.DeffrelDB {
-    internal class DefaultDataFormatter: IDataFormatter {
+    internal class DefaultDataFormatter : IDataFormatter {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // interface methods =========================================================================================
@@ -423,7 +423,7 @@ namespace pyRevitLabs.DeffrelDB {
         private const string mdataTableHistory = "history";
         private const string mdataTableEncapsulation = "encap";
         private const string mdataTableHeaders = "headers";
-       
+
         private const string mdataFieldBool = "bool";
         private const string mdataFieldByte = "byte";
         private const string mdataFieldInteger = "int";

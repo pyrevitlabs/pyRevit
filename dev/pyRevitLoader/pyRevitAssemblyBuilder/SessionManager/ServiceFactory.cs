@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
@@ -45,7 +46,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>A new IExtensionManagerService instance.</returns>
         public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0, UIApplication? uiApplication = null, ILogger? logger = null)
         {
-            return new ExtensionManagerService(revitYear, uiApplication, logger);
+            Func<string?>? revitUsernameProvider = uiApplication == null
+                ? null
+                : () => uiApplication.Application?.Username;
+            return new ExtensionManagerService(revitYear, revitUsernameProvider, logger);
         }
 
         /// <summary>
@@ -213,8 +217,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
             BuildContext buildContext,
-            IUIRibbonScanner? ribbonScanner = null,
-            SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
+            IUIRibbonScanner? ribbonScanner = null)
         {
             return new UIManagerService(
                 uiApplication,
@@ -226,8 +229,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 stackBuilder,
                 comboBoxBuilder,
                 buildContext,
-                ribbonScanner,
-                smartButtonScriptInitializer);
+                ribbonScanner);
         }
 
         /// <summary>
@@ -238,26 +240,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="buildStrategy">The build strategy to use for assembly generation.</param>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
+        /// <remarks>
+        ///     Important: configuration invalidation must remain before <see cref="CreateLogger"/> and <see cref="UIManagerService"/> construction; moving it later reinstates stale session settings from issue #3776.
+        /// </remarks>
         public static ISessionManagerService CreateSessionManagerService(
             string revitVersion,
             AssemblyBuildStrategy buildStrategy,
             UIApplication uiApplication)
         {
+            PyRevitConfig.ClearCache();
+
             // Create logger first - it's used by all other services.
             var logger = CreateLogger();
             ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));
-            
+
             // Create core services
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, logger);
             int.TryParse(revitVersion, out int revitYear);
             var extensionManager = CreateExtensionManagerService(revitYear, uiApplication, logger);
             var hookManager = CreateHookManager(logger);
-            
+
             // Create icon and tooltip managers
             var iconManager = CreateIconManager(logger);
             var tooltipManager = CreateTooltipManager(logger);
             var buttonPostProcessor = CreateButtonPostProcessor(logger, iconManager, tooltipManager);
-            
+
             // Create UI builders. The BuildContext is shared by reference between the UIManager
             // (writer) and every builder that needs to know the current beta / version snapshot,
             // so all readers observe the same value within a single BuildUI call.
@@ -284,8 +291,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 stackBuilder,
                 comboBoxBuilder,
                 buildContext,
-                ribbonScanner,
-                smartButtonScriptInitializer);
+                ribbonScanner);
 
             return new SessionManagerService(
                 assemblyBuilder,
@@ -295,7 +301,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ribbonScanner,
                 logger);
         }
-        
+
         /// <summary>
         /// Creates a SessionManagerService instance with custom service implementations.
         /// Use this overload for testing or when custom implementations are needed.
@@ -307,6 +313,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="ribbonScanner">Custom ribbon scanner service.</param>
         /// <param name="logger">Custom logger.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
+        /// <remarks>Callers injecting custom services own configuration freshness; this overload does not invalidate the shared configuration.</remarks>
         public static ISessionManagerService CreateSessionManagerService(
             IAssemblyBuilderService assemblyBuilder,
             IExtensionManagerService extensionManager,

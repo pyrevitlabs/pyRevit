@@ -5,13 +5,13 @@ verify_ssl = true
 
 [dev-packages]
 mypy = "*"
-pylint = "==4.0.8"
+pylint = "==4.1.3"
 pre-commit = "*"
 
 [packages]
 pyyaml = ">=5.4"
 black = "*"
-setuptools = "==84.0.0"
+setuptools = "==84.2.1"
 mkdocs = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"
@@ -32,4 +32,10 @@ allow_prereleases = false
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
 check-py3 = "python ./dev/scripts/check_py3_compat.py"
+test-py3-compat = "python -m unittest discover -s . -p test_check_py3_compat.py"
+check-config-api = "python ./dev/scripts/check_config_api.py"
+test-config-api = "python -m unittest discover -s ./dev/scripts -p test_check_config_api.py"
+test-automation-markers = "python -m unittest discover -s ./dev/scripts -p test_standalone_automation_marker.py"
+test-standalone = "python -m unittest discover -s ./dev/scripts -p test_standalone_*.py"
+check-revit-api = "python ./dev/scripts/check_revit_api_compat.py --baseline"
 install-hooks = "pre-commit install"

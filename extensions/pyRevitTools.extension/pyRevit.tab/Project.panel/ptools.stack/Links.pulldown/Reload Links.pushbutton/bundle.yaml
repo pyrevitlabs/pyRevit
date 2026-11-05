@@ -36,3 +36,5 @@ tooltip:
     Recarrega vínculos escolhidos do Revit, CAD e DWG
     
     Pode recarregar vínculos "localmente" para modelos com compartilhamento de trabalho
+context:
+  - doc-project

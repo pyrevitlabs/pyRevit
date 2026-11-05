@@ -1,1 +1,4 @@
 context: doc-project
+engine:
+  clean: true
+inherit_icon: false

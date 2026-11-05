@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Colar notas-chave</system:String>
+    <system:String x:Key="TakeAllFromSource">Trazer tudo da origem</system:String>
+    <system:String x:Key="OnlyNew">Somente novas</system:String>
+    <system:String x:Key="TakeNone">Nenhuma</system:String>
+    <system:String x:Key="ColKey">Chave</system:String>
+    <system:String x:Key="ColSource">Da origem</system:String>
+    <system:String x:Key="ColTarget">Atualmente no destino</system:String>
+    <system:String x:Key="ColResult">Resultado</system:String>
+    <system:String x:Key="PasteAction">Colar</system:String>
+    <system:String x:Key="CancelAction">Cancelar</system:String>
+    <system:String x:Key="HeaderInto">{0} registro(s) de “{1}” para “{2}”.</system:String>
+    <system:String x:Key="HeaderNote">As linhas marcadas são gravadas no arquivo de notas-chave de destino; todo o restante permanece como está.</system:String>
+    <system:String x:Key="FooterNote">Trazer uma linha em conflito substitui apenas o TEXTO do destino — o lugar dela na árvore é mantido.</system:String>
+    <system:String x:Key="SummaryCounts">{0} a adicionar · {1} a substituir · {2} sem alteração</system:String>
+    <system:String x:Key="GroupTag">(grupo)</system:String>
+    <system:String x:Key="ResultAdd">Adicionar</system:String>
+    <system:String x:Key="ResultReplace">Substituir texto</system:String>
+    <system:String x:Key="ResultIdentical">Já existe</system:String>
+    <system:String x:Key="ResultLocked">Bloqueada por {0}</system:String>
+    <system:String x:Key="ResultNoParent">Sem grupo pai</system:String>
+    <system:String x:Key="UnknownSource">outro projeto</system:String>
+    <system:String x:Key="SameFileNote">(mesmo arquivo de notas-chave)</system:String>
+    <system:String x:Key="UnknownUser">outro usuário</system:String>
+</ResourceDictionary>

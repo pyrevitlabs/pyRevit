@@ -34,4 +34,4 @@ tooltip:
     Limpar memória e Anexar seleção atual
     
     Funciona como os botões MC e M+ em uma calculadora. Esta é uma memória dependente do projeto. Cada projeto tem sua própria memória de seleção salva na pasta %appdata%/pyRevit como arquivos *.pym
-context: Selection
+context: selection

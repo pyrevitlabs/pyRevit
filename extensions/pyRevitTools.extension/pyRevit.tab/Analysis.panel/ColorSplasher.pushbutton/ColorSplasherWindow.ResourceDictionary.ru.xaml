@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Ошибка при Сохранении Схемы</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Ошибка при Загрузке Схемы</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">Файл не существует.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">Хранить цветовую схему в:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">Выберите, куда сохраняется и откуда загружается цветовая схема.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">Файл</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">Сохранить в файл .cschn или загрузить из него.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">Активный вид</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">Активный вид (схема не сохранена)</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">Сохранить в активный вид или загрузить из него. Вид хранит одну цветовую схему; сохранение заменяет её.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">Цветовая схема сохранена в виде: {0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">Окраска Элементов по Параметру</system:String>

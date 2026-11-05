@@ -162,14 +162,12 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void ReadIPYVersion_EmptyRoot_ReturnsUnknown()
         {
-            // Same bug scenario as ReadPyRevitVersion: empty root means no
-            // candidate directories are checked except the executing assembly dir.
-            // In a test environment, IronPython.dll won't be beside the test runner,
-            // so this should return "Unknown".
-            var version = EnvDictionarySeeder.ReadIPYVersion(string.Empty);
+            var emptyEngineDir = CreateSubDirectory("engine");
+
+            var version = EnvDictionarySeeder.ReadIPYVersion(string.Empty, emptyEngineDir);
 
             Assert.AreEqual("Unknown", version,
-                "An empty root with no IronPython.dll beside the test runner must yield 'Unknown'");
+                "An empty root with no IronPython.dll in the active engine dir must yield 'Unknown'");
         }
 
         // ──────────────────────────────────────────────────────────────

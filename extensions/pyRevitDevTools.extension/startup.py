@@ -22,6 +22,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import routes
 from pyrevit.compat import get_elementid_value_func
+from System import AppDomain
 
 
 # add your module paths to the sys.path here
@@ -39,14 +40,22 @@ print("lib/ import works in startup.py")
 # test code for creating event handlers =======================================
 # define event handler
 def docopen_eventhandler(sender, args):
-    forms.alert("Document Opened: {}".format(args.PathName))
+    forms.toast("Document Opened: {}".format(args.PathName), title="pyRevitDevTools")
 
+
+DOCOPEN_HANDLER_SLOT = "pyRevitDevTools.DocumentOpeningHandler"
+
+previous_docopen_handler = AppDomain.CurrentDomain.GetData(DOCOPEN_HANDLER_SLOT)
+if previous_docopen_handler is not None:
+    HOST_APP.app.DocumentOpening -= previous_docopen_handler
 
 # add to DocumentOpening
 # type is EventHandler[DocumentOpeningEventArgs] so create that correctly
-HOST_APP.app.DocumentOpening += framework.EventHandler[
-    DB.Events.DocumentOpeningEventArgs
-](docopen_eventhandler)
+docopen_handler = framework.EventHandler[DB.Events.DocumentOpeningEventArgs](
+    docopen_eventhandler
+)
+HOST_APP.app.DocumentOpening += docopen_handler
+AppDomain.CurrentDomain.SetData(DOCOPEN_HANDLER_SLOT, docopen_handler)
 
 
 # test code routes module =====================================================
@@ -132,6 +141,7 @@ class DockableExample(forms.WPFPanel):
     panel_title = "pyRevit Dockable Panel Title"
     panel_id = "3110e336-f81c-4927-87da-4e0d30d4d64a"
     panel_source = op.join(op.dirname(__file__), "DockableExample.xaml")
+    resolve_theme = True
 
     def do_something(self, sender, args):
         forms.alert("Voila!!!")
@@ -152,6 +162,7 @@ class DeveloperSamplePanel(forms.WPFPanel):
     panel_id = "759a2751-290a-4f7a-8f2d-9d900b2547b8"
     panel_source = op.join(op.dirname(__file__), "SamplePanel.xaml")
     panel_title = "pyRevit Sample Panel"
+    resolve_theme = True
 
     def __init__(self):
         forms.WPFPanel.__init__(self)

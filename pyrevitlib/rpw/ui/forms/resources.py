@@ -11,6 +11,7 @@ import clr
 import os.path as op
 from pyrevit.compat import PY3, PY2
 import pyrevit.engine as eng
+from pyrevit import dedupe_sys_path
 
 # WPF/Form Imports
 clr.AddReference("PresentationFramework")  # System.Windows: Controls, ?
@@ -23,7 +24,10 @@ from System.Windows import Window
 from System.IO import StringReader
 
 # Console
-from System.Environment import Exit, NewLine
+from System import Environment
+
+Exit = Environment.Exit
+NewLine = Environment.NewLine
 from System.Drawing import FontFamily
 from System.Windows.Input import Key
 
@@ -58,5 +62,9 @@ try:
         import wpf
 except Exception:
     clr.AddReferenceToFileAndPath(wpf_dllpath)
-    import wpf
+    if PY3:
+        wpf = IronPython.Modules.Wpf
+    else:
+        import wpf
 
+dedupe_sys_path()

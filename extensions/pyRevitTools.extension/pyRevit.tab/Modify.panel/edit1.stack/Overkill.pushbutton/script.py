@@ -1,6 +1,6 @@
 """Deletes the lines overlapped by other lines (similar to AutoCAD Overkill)"""
 
-#pylint: disable=E0401,C0103
+# pylint: disable=E0401,C0103
 import math
 from collections import namedtuple
 
@@ -15,16 +15,16 @@ logger = script.get_logger()
 output = script.get_output()
 
 # configs
-POINT_RESOLUTION = '{:.4f}'
-DIRECTION_RESOLUTION = '{:.2f}'
-OFFSET_RESOLUTION = '{:.4f}'
+POINT_RESOLUTION = "{:.4f}"
+DIRECTION_RESOLUTION = "{:.2f}"
+OFFSET_RESOLUTION = "{:.4f}"
 
 
-CurvePoint = namedtuple('CurvePoint', ['x', 'y', 'cid'])
+CurvePoint = namedtuple("CurvePoint", ["x", "y", "cid"])
 
 
 class LinearCurveGroup(object):
-    supported_geoms = (DB.Line)
+    supported_geoms = DB.Line
 
     def __init__(self, curve, include_style=False):
         self.points = set()
@@ -44,16 +44,18 @@ class LinearCurveGroup(object):
         # set cgroup boundary
         get_elementid_value = get_elementid_value_func()
         self.dir_cid = get_elementid_value(curve.Id)
-        self.add_points([
-            self.get_point(p1.X, p1.Y),
-            self.get_point(p2.X, p2.Y),
-        ])
+        self.add_points(
+            [
+                self.get_point(p1.X, p1.Y),
+                self.get_point(p2.X, p2.Y),
+            ]
+        )
 
         # prepare a list for overlapping curves
         self.bounded = set()
 
     def __repr__(self):
-        return '<%s max=%s, min=%s points=%s id(dir=[%s,%s],offset=%s,weight=%s)>' % (
+        return "<%s max=%s, min=%s points=%s id(dir=[%s,%s],offset=%s,weight=%s)>" % (
             self.__class__.__name__,
             self.max_point,
             self.min_point,
@@ -61,16 +63,16 @@ class LinearCurveGroup(object):
             self.dir_x,
             self.dir_y,
             self.dir_offset,
-            self.weight)
+            self.weight,
+        )
 
     @staticmethod
     def shortest_dist(x1, y1, x2, y2, x0, y0):
         # https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
         # line passes thru (x1, y1), (x2, y2)
         # point is (x0, y0)
-        return (
-            abs(x0*(y2-y1) - y0*(x2-x1) + x2*y1 - y2*x1) /
-            math.sqrt((y2-y1)**2 + (x2-x1)**2)
+        return abs(x0 * (y2 - y1) - y0 * (x2 - x1) + x2 * y1 - y2 * x1) / math.sqrt(
+            (y2 - y1) ** 2 + (x2 - x1) ** 2
         )
 
     @staticmethod
@@ -105,32 +107,34 @@ class LinearCurveGroup(object):
         return min(self.points, key=lambda p: p.x + p.y)
 
     def get_point(self, x, y):
-        return CurvePoint(x=LinearCurveGroup.get_float(x, res=POINT_RESOLUTION),
-                          y=LinearCurveGroup.get_float(y, res=POINT_RESOLUTION),
-                          cid=self.dir_cid)
+        return CurvePoint(
+            x=LinearCurveGroup.get_float(x, res=POINT_RESOLUTION),
+            y=LinearCurveGroup.get_float(y, res=POINT_RESOLUTION),
+            cid=self.dir_cid,
+        )
 
     def get_direction(self, curve):
-        dir_x, dir_y = \
-            curve.GeometryCurve.Direction.X, curve.GeometryCurve.Direction.Y
+        dir_x, dir_y = curve.GeometryCurve.Direction.X, curve.GeometryCurve.Direction.Y
         # unify the direction
-        if (dir_x <= 0.0 and dir_y <= 0.0) \
-                or (dir_x > 0.0 and dir_y < 0.0):
+        if (dir_x <= 0.0 and dir_y <= 0.0) or (dir_x > 0.0 and dir_y < 0.0):
             dir_x, dir_y = -dir_x, -dir_y
         # make sure there are no -0.0
         dir_x = 0.0 if dir_x == 0.0 else dir_x
         dir_y = 0.0 if dir_y == 0.0 else dir_y
         # bring direction within tolerance
-        return LinearCurveGroup.get_float(dir_x, res=DIRECTION_RESOLUTION), \
-            LinearCurveGroup.get_float(dir_y, res=DIRECTION_RESOLUTION)
+        return LinearCurveGroup.get_float(
+            dir_x, res=DIRECTION_RESOLUTION
+        ), LinearCurveGroup.get_float(dir_y, res=DIRECTION_RESOLUTION)
 
     def get_offset(self, p1, p2):
-        dir_offset = \
-            LinearCurveGroup.shortest_dist(
-                LinearCurveGroup.get_float(p1.X, res=POINT_RESOLUTION),
-                LinearCurveGroup.get_float(p1.Y, res=POINT_RESOLUTION),
-                LinearCurveGroup.get_float(p2.X, res=POINT_RESOLUTION),
-                LinearCurveGroup.get_float(p2.Y, res=POINT_RESOLUTION),
-                self.dir_x, self.dir_y)
+        dir_offset = LinearCurveGroup.shortest_dist(
+            LinearCurveGroup.get_float(p1.X, res=POINT_RESOLUTION),
+            LinearCurveGroup.get_float(p1.Y, res=POINT_RESOLUTION),
+            LinearCurveGroup.get_float(p2.X, res=POINT_RESOLUTION),
+            LinearCurveGroup.get_float(p2.Y, res=POINT_RESOLUTION),
+            self.dir_x,
+            self.dir_y,
+        )
         return LinearCurveGroup.get_float(dir_offset, res=OFFSET_RESOLUTION)
 
     def get_weight(self, curve):
@@ -146,7 +150,8 @@ class LinearCurveGroup(object):
             # and any of the points is inside the bounds of this curve group
             for cgroup_point in cgroup.points:
                 if LinearCurveGroup.is_inside(
-                        self.min_point, self.max_point, cgroup_point):
+                    self.min_point, self.max_point, cgroup_point
+                ):
                     self.add_points(cgroup.points)
                     return True
         return False
@@ -168,14 +173,14 @@ class LinearCurveGroup(object):
                 root_curve.SetGeometryCurve(geom_curve, overrideJoins=True)
                 reset_dir_curve = True
             except Exception as set_ex:
-                logger.debug('Failed re-setting root curve | %s', set_ex)
+                logger.debug("Failed re-setting root curve | %s", set_ex)
             # now delete the overlapping lines
             if reset_dir_curve:
-                bounded_curve_ids = \
-                    {x.cid for x in self.points if x.cid != self.dir_cid}
+                bounded_curve_ids = {
+                    x.cid for x in self.points if x.cid != self.dir_cid
+                }
                 if bounded_curve_ids:
-                    bounded_curve_ids = \
-                        [DB.ElementId(x) for x in bounded_curve_ids]
+                    bounded_curve_ids = [DB.ElementId(x) for x in bounded_curve_ids]
                     doc.Delete(List[DB.ElementId](bounded_curve_ids))
         return len(bounded_curve_ids)
 
@@ -194,8 +199,9 @@ class CurveGroupCollection(object):
         return iter(self.curve_groups)
 
     def merge(self, cgroup):
-        matching_cgroups = \
-            [x for x in self.curve_groups if x.cgroup_id == cgroup.cgroup_id]
+        matching_cgroups = [
+            x for x in self.curve_groups if x.cgroup_id == cgroup.cgroup_id
+        ]
         if matching_cgroups:
             first_matching = matching_cgroups[0]
             matching_cgroups.remove(first_matching)
@@ -207,10 +213,8 @@ class CurveGroupCollection(object):
 
     def extend(self, curve_element):
         for cgroup_type in CURVE_GROUP_TYPES:
-            if isinstance(curve_element.GeometryCurve,
-                          cgroup_type.supported_geoms):
-                cgroup = cgroup_type(curve_element,
-                                     include_style=self._include_style)
+            if isinstance(curve_element.GeometryCurve, cgroup_type.supported_geoms):
+                cgroup = cgroup_type(curve_element, include_style=self._include_style)
                 if not self.merge(cgroup):
                     self.curve_groups.append(cgroup)
                 return True
@@ -218,13 +222,19 @@ class CurveGroupCollection(object):
 
 def filter_curves(elements, view_specific=None, room_sep_only=False):
     """Filter given curves for view specific."""
-    filtered_elements = \
-        revit.query.get_elements_by_class(DB.CurveElement, elements=elements) \
-            if elements else []
+    filtered_elements = (
+        revit.query.get_elements_by_class(DB.CurveElement, elements=elements)
+        if elements
+        else []
+    )
     if view_specific is None:
         if room_sep_only:
-            return [el for el in filtered_elements if el.Category and 
-                el.Category.Id == DB.BuiltInCategory.OST_RoomSeparationLines]
+            return [
+                el
+                for el in filtered_elements
+                if el.Category
+                and el.Category.Id == DB.BuiltInCategory.OST_RoomSeparationLines
+            ]
         else:
             return filtered_elements
     else:
@@ -233,16 +243,13 @@ def filter_curves(elements, view_specific=None, room_sep_only=False):
 
 def ask_for_curve_type():
     # ask user for options and process
-    options = ['All Lines', 'Detail Lines', 'Model Lines', 'Room Separators']
-    switches = {'Consider Line Weights': True}
-    selected_option, switches = \
-        forms.CommandSwitchWindow.show(
-            options,
-            switches=switches,
-            message='Pick overkill option:'
-            )
+    options = ["All Lines", "Detail Lines", "Model Lines", "Room Separators"]
+    switches = {"Consider Line Weights": True}
+    selected_option, switches = forms.CommandSwitchWindow.show(
+        options, switches=switches, message="Pick overkill option:"
+    )
 
-    return (selected_option, switches['Consider Line Weights'])
+    return (selected_option, switches["Consider Line Weights"])
 
 
 def ask_consider_weight():
@@ -250,27 +257,26 @@ def ask_consider_weight():
     return True
 
 
-def overkill_curves(curve_elements,
-                    view_specific=None,
-                    include_style=True,
-                    room_sep_only=False):
+def overkill_curves(
+    curve_elements, view_specific=None, include_style=True, room_sep_only=False
+):
     # collect comparison info on each detail-lines geomtery
     cgroup_collection = CurveGroupCollection(include_style=include_style)
-    for curve_element in filter_curves(curve_elements,
-                                       view_specific=view_specific,
-                                       room_sep_only=room_sep_only):
+    for curve_element in filter_curves(
+        curve_elements, view_specific=view_specific, room_sep_only=room_sep_only
+    ):
         cgroup_collection.extend(curve_element)
 
     del_count = 0
-    with revit.Transaction('Overkill', swallow_errors=True):
+    with revit.Transaction("Overkill", swallow_errors=True):
         # process linear curve group
         for cgroup in cgroup_collection:
             del_count += cgroup.overkill(doc=revit.doc)
 
     if del_count > 0:
-        forms.alert('{} lines were removed.'.format(del_count))
+        forms.alert("{} lines were removed.".format(del_count))
     else:
-        forms.alert('Pretty clean! No lines were removed.')
+        forms.alert("Pretty clean! No lines were removed.")
 
 
 selected_curves = filter_curves(revit.get_selection())
@@ -279,27 +285,27 @@ if selected_curves:
 else:
     selected_opt, incl_style = ask_for_curve_type()
     room_sep_only = False
-    if selected_opt == 'All Lines':
+    if selected_opt == "All Lines":
         view_spec = None
-    elif selected_opt == 'Model Lines':
+    elif selected_opt == "Model Lines":
         view_spec = False
-    elif selected_opt == 'Detail Lines':
+    elif selected_opt == "Detail Lines":
         view_spec = True
-    elif selected_opt == 'Room Separators':
+    elif selected_opt == "Room Separators":
         view_spec = False
         room_sep_only = True
 
     if selected_opt:
         # collect all detail-lines in active view
-        curve_collector = \
-            revit.query.get_elements_by_class(DB.CurveElement,
-                                            view_id=revit.active_view.Id)
+        curve_collector = revit.query.get_elements_by_class(
+            DB.CurveElement, view_id=revit.active_view.Id
+        )
         try:
-            overkill_curves(list(curve_collector),
-                            view_specific=view_spec,
-                            include_style=incl_style,
-                            room_sep_only=room_sep_only)
+            overkill_curves(
+                list(curve_collector),
+                view_specific=view_spec,
+                include_style=incl_style,
+                room_sep_only=room_sep_only,
+            )
         except Exception as e:
-            print('Exception: {}'.format(e))
-
-
+            print("Exception: {}".format(e))

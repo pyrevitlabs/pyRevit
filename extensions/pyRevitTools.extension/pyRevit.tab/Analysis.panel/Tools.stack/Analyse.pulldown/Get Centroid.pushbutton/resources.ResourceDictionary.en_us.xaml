@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">Select the line style for the centroid markers</sys:String>
+    <sys:String x:Key="transaction_name">Get Centroid</sys:String>
+    <sys:String x:Key="select_element">Select at least one element.</sys:String>
+    <sys:String x:Key="no_solid_geometry">The selected elements have no solid geometry to measure.</sys:String>
+</ResourceDictionary>

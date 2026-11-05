@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">Contando triângulos</sys:String>
+    <sys:String x:Key="no_geometry">Nenhuma instância de família com geometria sólida foi encontrada.</sys:String>
+    <sys:String x:Key="table_title">Triângulos por tipo de família</sys:String>
+    <sys:String x:Key="column_type">Tipo</sys:String>
+    <sys:String x:Key="column_category">Categoria</sys:String>
+    <sys:String x:Key="column_example">Elemento de exemplo</sys:String>
+    <sys:String x:Key="column_coarse">Baixo</sys:String>
+    <sys:String x:Key="column_medium">Médio</sys:String>
+    <sys:String x:Key="column_fine">Alto</sys:String>
+    <sys:String x:Key="grand_total">Total geral</sys:String>
+</ResourceDictionary>

@@ -20,6 +20,8 @@ import famslide_actions
 
 logger = script.get_logger()
 
+FAMSLIDE_WINDOW_KEY = "PYREVITTOOLS_FAMSLIDE_WINDOW"
+
 # Path to the base XAML file, used to locate this bundle's
 # FamSlideWindow.ResourceDictionary.<locale>.xaml files for translation
 # lookups (see applocales.get_locale_string_from_xaml).
@@ -52,6 +54,16 @@ TAG_COLORS = {
     "associated": "#FF6C757D",
     "locked": "#FF566573",
 }
+TAG_TEXT_COLORS = {
+    "in_use": "#FF000000",
+    "used_in_formula": "#FFFFFFFF",
+    "has_formula": "#FFFFFFFF",
+    "built_in": "#FF000000",
+    "instance": "#FF000000",
+    "type": "#FFFFFFFF",
+    "associated": "#FFFFFFFF",
+    "locked": "#FFFFFFFF",
+}
 TAG_LABEL_KEYS = {
     "in_use": "TagInUse",
     "used_in_formula": "TagUsedInFormula",
@@ -63,6 +75,11 @@ TAG_LABEL_KEYS = {
     "locked": "TagLocked",
 }
 
+
+def _solid_brush(argb_hex):
+    return SolidColorBrush(Media.ColorConverter.ConvertFromString(argb_hex))
+
+
 # module-level handle to the single live FamSlide window, so the
 # doc-changed event hook (which pyRevit binds at import time, outside
 # any instance) can reach it. None while no window is open.
@@ -71,6 +88,8 @@ ui = None
 
 class FamSlideWindow(forms.WPFWindow):
     """Modeless FamSlide panel."""
+
+    resolve_theme = True
 
     def __init__(self, xaml_file):
         forms.WPFWindow.__init__(self, xaml_file)
@@ -135,6 +154,10 @@ class FamSlideWindow(forms.WPFWindow):
 
         self.FamilyNameLabel.Text = doc.Title
         fm = doc.FamilyManager
+        if fm.CurrentType is None:
+            self.GroupsHost.Children.Clear()
+            self._rows = []
+            return
         self._rows = famslide_paramutils.classify_parameters(doc, fm)
         self._build_ui(fm)
         if doc.Title not in self._presets:
@@ -178,7 +201,9 @@ class FamSlideWindow(forms.WPFWindow):
     def _build_row(self, fm, row):
         outer = Controls.Border()
         outer.CornerRadius = Windows.CornerRadius(16)
-        outer.Background = Media.Brushes.White
+        outer.SetResourceReference(
+            Controls.Border.BackgroundProperty, "pyRevitControlBackgroundBrush"
+        )
         outer.Margin = Windows.Thickness(0, 3, 0, 3)
         outer.Padding = Windows.Thickness(10, 6, 10, 6)
 
@@ -291,8 +316,12 @@ class FamSlideWindow(forms.WPFWindow):
         # which a TextBox does not.
         value_border = Controls.Border()
         value_border.CornerRadius = Windows.CornerRadius(14)
-        value_border.Background = Media.Brushes.White
-        value_border.BorderBrush = Media.Brushes.LightGray
+        value_border.SetResourceReference(
+            Controls.Border.BackgroundProperty, "pyRevitControlBackgroundBrush"
+        )
+        value_border.SetResourceReference(
+            Controls.Border.BorderBrushProperty, "pyRevitControlBorderBrush"
+        )
         value_border.BorderThickness = Windows.Thickness(1)
         value_border.VerticalAlignment = Windows.VerticalAlignment.Center
 
@@ -327,16 +356,12 @@ class FamSlideWindow(forms.WPFWindow):
 
     def _build_tag_pill(self, tag_id):
         pill = Controls.Border()
-        pill.CornerRadius = Windows.CornerRadius(9)
-        pill.Padding = Windows.Thickness(6, 1, 6, 1)
-        pill.Margin = Windows.Thickness(0, 0, 3, 3)
-        pill.Background = SolidColorBrush(
-            Media.ColorConverter.ConvertFromString(TAG_COLORS.get(tag_id, "#FF8A8A8A"))
-        )
+        pill.Style = self.Resources["PillTag"]
+        pill.Background = _solid_brush(TAG_COLORS.get(tag_id, "#FF8A8A8A"))
         text = Controls.TextBlock()
+        text.Style = self.Resources["PillTagText"]
         text.Text = _t(TAG_LABEL_KEYS.get(tag_id, tag_id))
-        text.Foreground = Media.Brushes.White
-        text.FontSize = 10.0
+        text.Foreground = _solid_brush(TAG_TEXT_COLORS.get(tag_id, "#FF000000"))
         pill.Child = text
         return pill
 
@@ -391,9 +416,12 @@ class FamSlideWindow(forms.WPFWindow):
 
     def on_closed(self, sender, args):
         global ui
-        events.stop_events()
-        script.save_window_position(self)
-        ui = None
+        try:
+            events.stop_events()
+            script.save_window_position(self)
+        finally:
+            ui = None
+            script.set_envvar(FAMSLIDE_WINDOW_KEY, None)
 
     # --- controls that must hand off to Revit --------------------------------
     def on_rename_click(self, sender, args):
@@ -579,7 +607,11 @@ class FamSlideWindow(forms.WPFWindow):
 
     def _do_save_preset(self):
         doc = revit.doc
-        if doc is None or not doc.IsFamilyDocument:
+        if (
+            doc is None
+            or not doc.IsFamilyDocument
+            or doc.FamilyManager.CurrentType is None
+        ):
             return
         preset = self._capture_preset(doc)
         self._presets[doc.Title] = preset
@@ -587,7 +619,11 @@ class FamSlideWindow(forms.WPFWindow):
 
     def _do_restore_preset(self):
         doc = revit.doc
-        if doc is None or not doc.IsFamilyDocument:
+        if (
+            doc is None
+            or not doc.IsFamilyDocument
+            or doc.FamilyManager.CurrentType is None
+        ):
             return
         preset = self._presets.get(doc.Title)
         if not preset:
@@ -608,7 +644,10 @@ class FamSlideWindow(forms.WPFWindow):
                         else:
                             continue
 
-                    elif row.group == "yesno" or row.storage_type == DB.StorageType.Integer:
+                    elif (
+                        row.group == "yesno"
+                        or row.storage_type == DB.StorageType.Integer
+                    ):
                         fm.Set(row.param, int(value))
                     elif row.storage_type == DB.StorageType.Double:
                         fm.Set(row.param, float(value))
@@ -624,18 +663,6 @@ class FamSlideWindow(forms.WPFWindow):
         revit.uidoc.RefreshActiveView()
 
 
-# ---------------------------------------------------------------------
-# Reactive refresh: fires on parameter edits, undo/redo, and switching
-# between open family documents (view-activated covers window
-# switches). Runs in a valid Revit API context, so it is safe for
-# ui.refresh_from_document() to touch Revit data here.
-# ---------------------------------------------------------------------
-@events.handle("doc-changed", "view-activated", "doc-opened")
-def famslide_on_revit_event(sender, args):
-    if ui is not None:
-        ui.refresh_from_document()
-
-
 def _gate_family_editor():
     doc = revit.doc
     if doc is None:
@@ -645,12 +672,13 @@ def _gate_family_editor():
 
 
 if __name__ == "__main__":
-    if ui is not None:
-        # already open from a previous click under the persistent
-        # engine - just bring it forward instead of opening a second
-        # copy (which would double-subscribe the doc-changed hook).
-        ui.Activate()
-    else:
+    if not forms.activate_open_window(FAMSLIDE_WINDOW_KEY):
         _gate_family_editor()
         ui = FamSlideWindow("FamSlideWindow.xaml")
         ui.show(modal=False)
+        script.set_envvar(FAMSLIDE_WINDOW_KEY, ui)
+
+        @events.handle("doc-changed", "view-activated", "doc-opened")
+        def famslide_on_revit_event(sender, args):
+            if ui is not None:
+                ui.refresh_from_document()

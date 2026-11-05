@@ -1,0 +1,6 @@
+layout:
+  - Run Agent Tests
+  - Run Agent Tests (CPython)
+  - Run Agent Library Tests
+  - -----
+  - Run Agent Approval Tests

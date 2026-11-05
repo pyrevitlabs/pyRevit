@@ -3,7 +3,8 @@ import os
 import re
 from collections import namedtuple
 
-from pyrevit import script, forms, coreutils, revit, DB
+from pyrevit import script, forms, coreutils, revit, EXEC_PARAMS
+from pyrevit import DB
 from pyrevit.revit import get_parameter_data_type, is_yesno_parameter
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.userconfig import user_config
@@ -296,20 +297,22 @@ def get_schedule_elements_and_params(schedule):
                         except Exception:
                             pass
 
-                    param_defs_list.append(ParamDef(
-                        name=def_name,
-                        istype=False,
-                        definition=param.Definition,
-                        isreadonly=param.IsReadOnly,
-                        isunit=(
-                            measurable(param_data_type)
-                            if param_data_type
-                            else False
-                        ),
-                        storagetype=param.StorageType,
-                        forge_type_id=param_data_type,
-                        unit_type_id=unit_type_id,
-                    ))
+                    param_defs_list.append(
+                        ParamDef(
+                            name=def_name,
+                            istype=False,
+                            definition=param.Definition,
+                            isreadonly=param.IsReadOnly,
+                            isunit=(
+                                measurable(param_data_type)
+                                if param_data_type
+                                else False
+                            ),
+                            storagetype=param.StorageType,
+                            forge_type_id=param_data_type,
+                            unit_type_id=unit_type_id,
+                        )
+                    )
                     field_mapping[def_name] = field
                     processed_params.add(def_name)
                 break
@@ -347,9 +350,7 @@ def select_parameters(src_elements):
                         definition=p.Definition,
                         isreadonly=p.IsReadOnly,
                         isunit=(
-                            measurable(param_data_type)
-                            if param_data_type
-                            else False
+                            measurable(param_data_type) if param_data_type else False
                         ),
                         storagetype=p.StorageType,
                         forge_type_id=param_data_type,
@@ -639,7 +640,9 @@ def export_xls(src_elements, selected_params, field_mapping=None):
                         elif param_el.StorageType == DB.StorageType.String:
                             val = param_el.AsString()
                         elif param_el.StorageType == DB.StorageType.Integer:
-                            if get_elementid_value(param_el.Id) == int(BIP.ELEM_PARTITION_PARAM):
+                            if get_elementid_value(param_el.Id) == int(
+                                BIP.ELEM_PARTITION_PARAM
+                            ):
                                 val = str(revit.query.get_element_workset(el).Name)
                             elif is_yesno_parameter(param.definition):
                                 val = "Yes" if param_el.AsInteger() else "No"
@@ -698,9 +701,9 @@ def export_xls(src_elements, selected_params, field_mapping=None):
     logger.info("Exported {} elements to {}".format(len(src_elements), file_path))
 
 
-def main(advanced=False):
+def main():
     try:
-        if not advanced:
+        if not EXEC_PARAMS.config_mode:
             schedule = forms.select_schedules(
                 title="Select Schedule to Export",
                 multiple=False,

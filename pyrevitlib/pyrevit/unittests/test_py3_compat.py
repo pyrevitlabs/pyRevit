@@ -18,12 +18,13 @@ Static counterpart: ``dev/scripts/check_py3_compat.py`` (no Revit needed).
 import importlib
 import unittest
 
-from pyrevit.compat import IRONPY, NETCORE
+from pyrevit.compat import IRONPY, IRONPY3, NETCORE
 
 # Path to a loadable .rfa for the out/ref-marshaling test; injected by the
 # invoking tool because the fixture ships with the DevTools extension, not
 # with pyrevitlib. Tests skip when unset.
 FAMILY_FILE = None
+FAMILY_UTILS_FILE = None
 
 # Modules every engine must import cleanly today.
 CORE_MODULES = [
@@ -37,6 +38,12 @@ CORE_MODULES = [
     "pyrevit.output",
     "pyrevit.revit",
     "pyrevit.script",
+]
+
+RPW_MODULES = [
+    "rpw",
+    "rpw.db",
+    "rpw.ui.forms",
 ]
 
 # Modules that load managed CLR assemblies at import time via
@@ -71,6 +78,57 @@ def _import_failures(module_names):
 class ImportTests(unittest.TestCase):
     """Every supported module must be importable on the running engine."""
 
+    def test_requests_backend_matches_engine(self):
+        """IronPython uses the CLR HTTP shim; CPython uses requests."""
+        from pyrevit import compat
+
+        expected_module = "pyrevit.netrequests" if IRONPY else "requests"
+        self.assertEqual(expected_module, compat.requests.__name__)
+
+    def test_vendored_requests_imports(self):
+        """Direct requests imports remain available on every Python 3 engine."""
+        failures = _import_failures(["urllib3", "requests"])
+        self.assertEqual(
+            [], failures, "import failures:\n{}".format("\n".join(failures))
+        )
+
+    def test_tool_dependency_imports(self):
+        """Bundled packages used by Keynotes, Excel tools, and Revit Server import."""
+        failures = _import_failures(["natsort", "pyrevit.interop.xl", "rpws"])
+        self.assertEqual(
+            [], failures, "import failures:\n{}".format("\n".join(failures))
+        )
+        from natsort import natsorted, ns
+
+        self.assertEqual(
+            ["Sheet1", "Sheet2", "Sheet10"], natsorted(["Sheet10", "Sheet2", "Sheet1"])
+        )
+        self.assertEqual(
+            ["apple", "Apple", "Banana", "banana"],
+            natsorted(["Banana", "apple", "banana", "Apple"], alg=ns.IGNORECASE),
+        )
+        self.assertEqual(
+            ["Apple", "apple", "Banana", "banana"],
+            natsorted(["Banana", "apple", "banana", "Apple"], alg=ns.GROUPLETTERS),
+        )
+        if hasattr(str, "casefold"):
+            sharp_s = chr(0xDF)
+            self.assertEqual(
+                [sharp_s, "ss"],
+                natsorted([sharp_s, "ss"], alg=ns.IGNORECASE),
+            )
+
+    def test_vendored_requests_wraps_invalid_json(self):
+        """Malformed JSON raises the documented Requests exception."""
+        import requests
+
+        response = requests.Response()
+        response._content = b"{"
+        response.encoding = "utf-8"
+
+        with self.assertRaises(requests.exceptions.JSONDecodeError):
+            response.json()
+
     def test_core_module_imports(self):
         """Core pyrevit modules import cleanly on this engine."""
         failures = _import_failures(CORE_MODULES)
@@ -84,7 +142,7 @@ class ImportTests(unittest.TestCase):
         ".NET 8 hosts — dev/libs/netcore omits them",
     )
     def test_interop_module_imports(self):
-        """interop modules import cleanly (needs the framework CLR shim)."""
+        """Interop modules import cleanly (needs the framework CLR shim)."""
         failures = _import_failures(INTEROP_MODULES)
         self.assertEqual(
             [], failures, "import failures:\n{}".format("\n".join(failures))
@@ -104,7 +162,7 @@ class ImportTests(unittest.TestCase):
         import pyRevitLabs.Json  # noqa pylint: disable=import-error,unused-import
 
     def test_interop_native_module_imports(self):
-        """interop modules that load native/external binaries (opt-in)."""
+        """Interop modules that load native/external binaries (opt-in)."""
         if not TEST_NATIVE_INTEROP:
             self.skipTest(
                 "loads native binaries into the Revit process; set "
@@ -154,6 +212,66 @@ class Py2IdiomTests(unittest.TestCase):
         self.assertTrue(bool(checked))
 
 
+class RpwCompatibilityTests(unittest.TestCase):
+    """The bundled RevitPythonWrapper imports and forms work on IronPython."""
+
+    @unittest.skipUnless(IRONPY, "RPW requires an IronPython Revit host")
+    def test_rpw_module_imports(self):
+        """RPW's public namespaces import under the selected IronPython engine."""
+        failures = _import_failures(RPW_MODULES)
+        self.assertEqual(
+            [], failures, "import failures:\n{}".format("\n".join(failures))
+        )
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_combobox_sorts_dictionary_options(self):
+        """Dictionary options materialize before sorting on Python 3 engines."""
+        from rpw.ui.forms import ComboBox
+
+        combobox = ComboBox("choice", {"zulu": 2, "alpha": 1})
+        self.assertEqual("alpha", combobox.SelectedItem)
+        self.assertEqual(1, combobox.value)
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_ipy3_wpf_loader(self):
+        """RPW exposes the WPF LoadComponent helper through the IPY3 engine."""
+        from rpw.ui.forms import resources
+
+        self.assertTrue(hasattr(resources.wpf, "LoadComponent"))
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_ipy3_flexform_construction(self):
+        """RPW forms used by shipped tools can instantiate without showing UI."""
+        from rpw.ui.forms import Button, FlexForm, Label
+
+        form = FlexForm("py3compat", [Label("Check"), Button("OK")])
+        try:
+            self.assertEqual(2, form.MainGrid.Children.Count)
+        finally:
+            form.Close()
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_ipy3_wraps_project_information(self):
+        """RPW wraps a live Revit element without Python 2 conversion paths."""
+        from pyrevit import revit as pyrevit_revit
+        from pyrevit.compat import get_elementid_value_func
+
+        if not pyrevit_revit.doc or pyrevit_revit.doc.IsFamilyDocument:
+            self.skipTest("Requires an open project document")
+
+        from rpw import db, revit
+
+        project_info = pyrevit_revit.doc.ProjectInformation
+        self.assertEqual(pyrevit_revit.doc, revit.doc)
+        wrapped = db.Element(project_info)
+        get_elementid_value = get_elementid_value_func()
+        self.assertEqual(
+            get_elementid_value(project_info.Id),
+            get_elementid_value(wrapped.unwrap().Id),
+        )
+        self.assertIn("id:", repr(wrapped))
+
+
 class SortingTests(unittest.TestCase):
     """Heterogeneous-data sorting (the Settings.smartbutton fix pattern)."""
 
@@ -170,6 +288,7 @@ class QueryStringLookupTests(unittest.TestCase):
     """String-identifier lookups in revit.db.query (isinstance str checks)."""
 
     def setUp(self):
+        """Require an open project document for name-based Revit queries."""
         from pyrevit import revit
 
         if not revit.doc:
@@ -205,10 +324,41 @@ class QueryStringLookupTests(unittest.TestCase):
         self.assertEqual(found.Name, category.Name)
 
 
+class FamilyLoaderTests(unittest.TestCase):
+    """The Load Families tool preserves Revit's direct load result."""
+
+    def test_overwrite_result_is_not_derived_from_symbols(self):
+        """FamilyLoader returns the helper's result for overwrite loads."""
+        import os.path as op
+        import runpy
+
+        from pyrevit import revit
+
+        if not FAMILY_UTILS_FILE or not op.isfile(FAMILY_UTILS_FILE):
+            self.skipTest("Family loader fixture not provided")
+        family_utils = runpy.run_path(FAMILY_UTILS_FILE)
+        calls = []
+        original_load = revit.create.load_family_with_result
+
+        def refuse_load(path):
+            calls.append(path)
+            return False, [object()]
+
+        try:
+            revit.create.load_family_with_result = refuse_load
+            loader = family_utils["FamilyLoader"]("existing.rfa", overwrite=True)
+            self.assertFalse(loader._load_family())
+        finally:
+            revit.create.load_family_with_result = original_load
+
+        self.assertEqual(["existing.rfa"], calls)
+
+
 class OutParamMarshalingTests(unittest.TestCase):
     """The two clr.Reference out/ref sites (sections 4.5 / 6.1)."""
 
     def setUp(self):
+        """Require an open project document for Revit API marshaling tests."""
         from pyrevit import revit
 
         if not revit.doc:
@@ -225,19 +375,115 @@ class OutParamMarshalingTests(unittest.TestCase):
         return txn
 
     def test_load_family_out_param(self):
-        """create.load_family marshals the out-param family reference."""
+        """create.load_family_with_result marshals the out-param family reference."""
         import os.path as op
 
-        from pyrevit.revit import create
+        from pyrevit.revit import create, query
+        from pyrevit import coreutils
 
         if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
             self.skipTest("No family file fixture provided")
+        family_name = coreutils.get_file_name(FAMILY_FILE)
+        if query.get_family(family_name, doc=self.doc):
+            self.skipTest("Family fixture is already loaded in this document")
         txn = self._rollback_transaction("py3compat-load-family")
         try:
-            symbols = create.load_family(FAMILY_FILE, doc=self.doc)
+            loaded, symbols = create.load_family_with_result(FAMILY_FILE, doc=self.doc)
+            self.assertTrue(loaded)
             self.assertIsInstance(symbols, list)
         finally:
             txn.RollBack()
+
+    @unittest.skipUnless(IRONPY, "Requires IronPython out-param marshaling")
+    def test_load_family_result_preserves_refusal_status(self):
+        """Existing symbols do not turn a refused family load into success."""
+        from pyrevit.revit import create
+
+        class Reference(object):
+            Value = None
+
+        class ReferenceFactory(object):
+            def __getitem__(self, _):
+                return Reference
+
+        class Clr(object):
+            Reference = ReferenceFactory()
+
+        class Family(object):
+            pass
+
+        class RefusedLoadDocument(object):
+            def LoadFamily(self, *_):
+                return False
+
+        original_clr = create.clr
+        original_db = create.DB
+        original_get_family = create.query.get_family
+        existing_symbol = object()
+        create.clr = Clr()
+        create.DB = type("DBStub", (object,), {"Family": Family})
+        create.query.get_family = lambda *_args, **_kwargs: [existing_symbol]
+        try:
+            loaded, symbols = create.load_family_with_result(
+                "existing.rfa", doc=RefusedLoadDocument()
+            )
+        finally:
+            create.clr = original_clr
+            create.DB = original_db
+            create.query.get_family = original_get_family
+
+        self.assertFalse(loaded)
+        self.assertEqual([existing_symbol], symbols)
+
+    def test_load_family_symbol_out_param(self):
+        """create.load_family_symbol marshals the out-param symbol reference.
+
+        Two host-API details shape this test.
+
+        The symbol is checked against ``DB.FamilySymbol`` rather than through
+        rpw: rpw's ``Element`` constructor always returns the base
+        ``rpw.db.Element`` wrapper, never the specific subclass, so an
+        ``isinstance`` check against ``rpw.db.family.FamilySymbol`` cannot pass
+        on any input. Revit hands back a generated subclass (this family's type
+        is an ``AnnotationSymbolType``) whose MRO still derives from
+        ``FamilySymbol``, so the host-type check is the one that expresses the
+        claim.
+
+        That same generated subclass is why the type name cannot be read as
+        ``.Name``: the member is present in the binding but raises
+        ``AttributeError`` on read, on IronPython and CPython alike. The
+        symbol-name parameter is the stable read for a family type name.
+        """
+        import os.path as op
+
+        from pyrevit.revit import create, query
+        from pyrevit import coreutils
+        from pyrevit import DB
+
+        if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
+            self.skipTest("No family file fixture provided")
+        family_name = coreutils.get_file_name(FAMILY_FILE)
+        if query.get_family(family_name, doc=self.doc):
+            self.skipTest("Family fixture is already loaded in this document")
+        discovery_txn = self._rollback_transaction("py3compat-discover-family-symbol")
+        try:
+            symbols = create.load_family(FAMILY_FILE, doc=self.doc)
+            if not symbols:
+                self.skipTest("Family fixture contains no loadable symbols")
+            self.assertIsInstance(symbols[0], DB.FamilySymbol)
+            name_param = symbols[0].get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM)
+            self.assertIsNotNone(name_param, "family symbol carries no symbol name")
+            symbol_name = name_param.AsString()
+        finally:
+            discovery_txn.RollBack()
+
+        load_txn = self._rollback_transaction("py3compat-load-family-symbol")
+        try:
+            self.assertTrue(
+                create.load_family_symbol(FAMILY_FILE, symbol_name, doc=self.doc)
+            )
+        finally:
+            load_txn.RollBack()
 
     def test_curve_intersect_out_param(self):
         """geom.intersect_curves marshals intersection results.

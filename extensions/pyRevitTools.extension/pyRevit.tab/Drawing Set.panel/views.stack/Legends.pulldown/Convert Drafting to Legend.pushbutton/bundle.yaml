@@ -19,3 +19,5 @@ tooltip:
     in Legenden Ansichten umgewandelt. Referenzebenen werden nicht in die Legendenansicht
     übertragen.
   pt_br: Converte vistas de desenho selecionadas em vistas de legenda
+context:
+  - doc-project

@@ -156,7 +156,10 @@ namespace pyRevitExtensionParser
                     parsed.ContentAlt = GetScalar(valueNode);
                     return;
                 case "background":
-                    ParseBackground(valueNode, parsed);
+                    ParseBackground(valueNode, parsed, dark: false);
+                    return;
+                case "background_dark":
+                    ParseBackground(valueNode, parsed, dark: true);
                     return;
                 case "assembly":
                     parsed.Assembly = GetScalar(valueNode);
@@ -594,11 +597,13 @@ namespace pyRevitExtensionParser
             }
         }
 
-        private static void ParseBackground(YamlNode node, ParsedBundle parsed)
+        private static void ParseBackground(YamlNode node, ParsedBundle parsed, bool dark)
         {
             if (node is YamlScalarNode scalar)
             {
-                parsed.PanelBackground = scalar.Value;
+                SetBackground(parsed, "panel", scalar.Value, dark);
+                SetBackground(parsed, "title", scalar.Value, dark);
+                SetBackground(parsed, "slideout", scalar.Value, dark);
                 return;
             }
 
@@ -611,19 +616,32 @@ namespace pyRevitExtensionParser
                 if (string.IsNullOrEmpty(key))
                     continue;
 
-                var value = GetScalar(entry.Value);
-                switch (key)
-                {
-                    case "panel":
+                SetBackground(parsed, key, GetScalar(entry.Value), dark);
+            }
+        }
+
+        private static void SetBackground(ParsedBundle parsed, string area, string value, bool dark)
+        {
+            switch (area)
+            {
+                case "panel":
+                    if (dark)
+                        parsed.DarkPanelBackground = value;
+                    else
                         parsed.PanelBackground = value;
-                        break;
-                    case "title":
+                    break;
+                case "title":
+                    if (dark)
+                        parsed.DarkTitleBackground = value;
+                    else
                         parsed.TitleBackground = value;
-                        break;
-                    case "slideout":
+                    break;
+                case "slideout":
+                    if (dark)
+                        parsed.DarkSlideoutBackground = value;
+                    else
                         parsed.SlideoutBackground = value;
-                        break;
-                }
+                    break;
             }
         }
 

@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Coller les notes clé</system:String>
+    <system:String x:Key="TakeAllFromSource">Tout prendre de la source</system:String>
+    <system:String x:Key="OnlyNew">Uniquement les nouvelles</system:String>
+    <system:String x:Key="TakeNone">Aucune</system:String>
+    <system:String x:Key="ColKey">Clé</system:String>
+    <system:String x:Key="ColSource">De la source</system:String>
+    <system:String x:Key="ColTarget">Actuellement dans la cible</system:String>
+    <system:String x:Key="ColResult">Résultat</system:String>
+    <system:String x:Key="PasteAction">Coller</system:String>
+    <system:String x:Key="CancelAction">Annuler</system:String>
+    <system:String x:Key="HeaderInto">{0} enregistrement(s) de « {1} » vers « {2} ».</system:String>
+    <system:String x:Key="HeaderNote">Les lignes cochées sont écrites dans le fichier de notes clé cible ; tout le reste est laissé tel quel.</system:String>
+    <system:String x:Key="FooterNote">Prendre une ligne en conflit remplace uniquement le TEXTE de la cible — sa place dans l'arborescence est conservée.</system:String>
+    <system:String x:Key="SummaryCounts">{0} à ajouter · {1} à remplacer · {2} inchangées</system:String>
+    <system:String x:Key="GroupTag">(groupe)</system:String>
+    <system:String x:Key="ResultAdd">Ajouter</system:String>
+    <system:String x:Key="ResultReplace">Remplacer le texte</system:String>
+    <system:String x:Key="ResultIdentical">Déjà présente</system:String>
+    <system:String x:Key="ResultLocked">Verrouillée par {0}</system:String>
+    <system:String x:Key="ResultNoParent">Aucun groupe parent</system:String>
+    <system:String x:Key="UnknownSource">un autre projet</system:String>
+    <system:String x:Key="SameFileNote">(même fichier de notes clé)</system:String>
+    <system:String x:Key="UnknownUser">un autre utilisateur</system:String>
+</ResourceDictionary>

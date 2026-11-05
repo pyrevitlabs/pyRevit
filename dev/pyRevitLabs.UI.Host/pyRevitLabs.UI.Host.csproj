@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.UI.Protocol\pyRevitLabs.UI.Protocol.csproj" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3485.44" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="$(PyRevitWebView2Version)" />
   </ItemGroup>
   <Target Name="DeployUiHost" AfterTargets="Build" Condition="'$(SkipPyRevitDeploy)' != 'true'">
     <PropertyGroup>

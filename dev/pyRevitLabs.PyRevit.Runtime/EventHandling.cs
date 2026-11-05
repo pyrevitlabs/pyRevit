@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Reflection;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
@@ -704,19 +702,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class UIAppEventUtils {
-        public static Visual GetWindowRoot(UIApplication uiapp) {
-            IntPtr wndHndle = IntPtr.Zero;
-            try {
-                wndHndle = uiapp.MainWindowHandle;
-            }
-            catch { }
-
-            if (wndHndle != IntPtr.Zero) {
-                var wndSource = HwndSource.FromHwnd(wndHndle);
-                return wndSource.RootVisual;
-            }
-            return null;
-        }
+        public static Visual GetWindowRoot(UIApplication uiapp) => DocumentTabLocator.GetWindowRoot(uiapp);
     }
 
     public static class DocumentEventUtils {
@@ -953,7 +939,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (hue < 240) return q1 + (q2 - q1) * (240 - hue) / 60;
             return q1;
         }
-    
+
     }
 
     public class TabColoringRule {
@@ -979,7 +965,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public class TabColoringStyle {
         public string Name { get; private set; }
-        
+
         public Thickness BorderThickness { get; set; } = new Thickness();
         public bool FillBackground { get; set; } = false;
 
@@ -1046,7 +1032,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // selected tab hides the bottom border
             var selectedThickness = new Thickness(BorderThickness.Left, BorderThickness.Top, BorderThickness.Right, 0);
             triggerSelected.Setters.Add(
-                new Setter { Property = TabItem.BorderThicknessProperty, Value = FillBackground ? new Thickness(1,1,1,0) : selectedThickness }
+                new Setter { Property = TabItem.BorderThicknessProperty, Value = FillBackground ? new Thickness(1, 1, 1, 0) : selectedThickness }
             );
 
             // apply border highlighting only when background is active, otherwise the difference is not visible
@@ -1054,7 +1040,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BorderBrushProperty, Value = Brushes.White }
                 );
-            } else {
+            }
+            else {
                 triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BorderBrushProperty, Value = borderHighlightBrush }
                 );
@@ -1075,7 +1062,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class TabColoringTheme {
         public class RuleSlot {
             public TabColoringRule Rule { get; private set; }
-            
+
             public RuleSlot(TabColoringRule rule) => Rule = rule;
 
             public long Id { get; set; }
@@ -1091,7 +1078,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public TabColoringStyle TabStyle { get; set; }
         public TabColoringStyle FamilyTabStyle { get; set; }
-        
+
         public List<TabColoringRule> _tabOrderRules = default;
         public List<TabColoringRule> TabOrderRules {
             get {
@@ -1156,35 +1143,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // keep a unique hash for the state of open tabs
         // this helps refreshing the tab styling only once
         string _lastTabState = string.Empty;
-        
+
         // storage for tab original styles set. this is used when resetting tabs
         Dictionary<TabItem, Style> _tabOrigStyles = new Dictionary<TabItem, Style>();
-        
+
         // used slots for coloring rules
         List<RuleSlot> _ruleSlots = new List<RuleSlot>();
 
         public List<RuleSlot> StyledDocuments => _ruleSlots.ToList();
 
+        internal static event Action<bool> TabStylesChanging;
+
         static string GetTabUniqueId(TabItem tab) {
             return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}+{tab.IsSelected}";
         }
 
-        static long GetTabDocumentId(TabItem tab) {
-            return (
-                (MFCMDIFrameHost)(
-                    (MFCMDIChildFrameControl)(
-                        (LayoutDocument)tab.Content
-                    ).Content
-                ).Content
-            ).document.ToInt64();
-        }
-
-        static long GetAPIDocumentId(Document doc) {
-            MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
-            object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
-            MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
-            return ((IntPtr)ptfValMethod.Invoke(mfcDoc, new object[] { })).ToInt64();
-        }
         public void SetTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
             // dont do anything if it is the same tabs as before
             string newState = string.Join(";", docTabs.Select(t => GetTabUniqueId(t)));
@@ -1192,56 +1165,49 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             else
                 _lastTabState = newState;
+            TabStylesChanging?.Invoke(true);
+            try {
 
+                var (docIds, familyDocIds) = DocumentTabEventUtils.GetCachedDocumentAndFamilyIds();
 
-            // collect ids of family documents
-            var docIds = new List<long>();
-            var familyDocIds = new List<long>();
-            foreach (Document doc in uiApp.Application.Documents) {
-                // skip linked docs. they don't have tabs
-                if (doc.IsLinked)
-                    continue;
+                // cleanup styling for docs that do no exists anymore
+                // empty this before setting new styles so empty slots can be taken
+                var removedDocs = _ruleSlots.Where(d => !docIds.Contains(d.Id)).ToList();
+                foreach (RuleSlot rslot in removedDocs)
+                    rslot.Clear();
 
-                var docId = GetAPIDocumentId(doc);
-                docIds.Add(docId);
-                if (doc.IsFamilyDocument)
-                    familyDocIds.Add(docId);
+                // cleanup any recorded tabs that do not exist anymore
+                var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
+                foreach (TabItem tab in removedTabs)
+                    _tabOrigStyles.Remove(tab);
+
+                // go over each tab and apply style
+                foreach (TabItem tab in docTabs) {
+                    long docId = DocumentTabLocator.GetTabDocumentId(tab);
+
+                    // store original style, if it has not been stored yet
+                    if (!_tabOrigStyles.ContainsKey(tab))
+                        _tabOrigStyles[tab] = tab.Style;
+
+                    // set style
+                    Set(
+                        tab: tab,
+                        docId: docId,
+                        isFamilyTab: familyDocIds.Contains(docId)
+                    );
+                }
             }
-
-            // cleanup styling for docs that do no exists anymore
-            // empty this before setting new styles so empty slots can be taken
-            var removedDocs = _ruleSlots.Where(d => !docIds.Contains(d.Id)).ToList();
-            foreach (RuleSlot rslot in removedDocs)
-                rslot.Clear();
-
-            // cleanup any recorded tabs that do not exist anymore
-            var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
-            foreach (TabItem tab in removedTabs)
-                _tabOrigStyles.Remove(tab);
-
-            // go over each tab and apply style
-            foreach (TabItem tab in docTabs) {
-                long docId = GetTabDocumentId(tab);
-
-                // store original style, if it has not been stored yet
-                if (!_tabOrigStyles.ContainsKey(tab))
-                    _tabOrigStyles[tab] = tab.Style;
-
-                // set style
-                Set(
-                    tab: tab,
-                    docId: docId,
-                    isFamilyTab: familyDocIds.Contains(docId)
-                );
+            finally {
+                TabStylesChanging?.Invoke(false);
             }
         }
-        
+
         void Set(TabItem tab, long docId, bool isFamilyTab) {
             // determine style
             TabColoringStyle tstyle = isFamilyTab ? FamilyTabStyle : TabStyle;
 
             string title = ((LayoutDocument)tab.Header).Title;
-            
+
             // apply colors by filter
             bool filtered = false;
             foreach (var rule in TabFilterRules) {
@@ -1312,17 +1278,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void ClearTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
-            foreach (TabItem tab in docTabs)
-                if (_tabOrigStyles.TryGetValue(tab, out var tabStyle))
-                    tab.Style = tabStyle;
-            _tabOrigStyles.Clear();
-            _lastTabState = string.Empty;
+            TabStylesChanging?.Invoke(true);
+            try {
+                foreach (TabItem tab in docTabs)
+                    if (_tabOrigStyles.TryGetValue(tab, out var tabStyle))
+                        tab.Style = tabStyle;
+                _tabOrigStyles.Clear();
+                _lastTabState = string.Empty;
+            }
+            finally {
+                TabStylesChanging?.Invoke(false);
+            }
         }
 
         internal void ResetSlots() {
             _ruleSlots.Clear();
             _lastTabState = string.Empty;
         }
+
+        internal void InvalidateTabState() => _lastTabState = string.Empty;
 
         internal void InitSlots(TabColoringTheme theme) {
             // copy the reserved slots in previous theme to new one
@@ -1332,7 +1306,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 foreach (RuleSlot slot in theme._ruleSlots) {
                     if (index >= ruleCount)
                         break;
-                    
+
                     _ruleSlots.Add(
                         new RuleSlot(TabOrderRules[index]) {
                             Id = slot.Id,
@@ -1352,7 +1326,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
 
-        static object UpdateLock = new object();
+        private static readonly object UpdateLock = new object();
+        private static readonly object CacheLock = new object();
+
+        private static Dictionary<long, bool> _documentCache = new Dictionary<long, bool>();
 
         static TabColoringTheme _tabColoringTheme = null;
         public static TabColoringTheme TabColoringTheme {
@@ -1400,18 +1377,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
-        public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneGroupControl docTabGroup) {
-            if (docTabGroup != null) {
-                return docTabGroup.FindVisualChildren<TabItem>();
-            }
-            return new List<TabItem>();
-        }
+        public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneGroupControl docTabGroup) =>
+            DocumentTabLocator.GetDocumentTabs(docTabGroup);
 
+        /// <summary>
+        /// Starts document tab grouping, seeds cached document identities, and tracks document lifecycle changes.
+        /// </summary>
+        /// <param name="uiapp">The active Revit UI application.</param>
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
                     IsUpdatingDocumentTabs = true;
+
+                    SeedDocumentCache(UIApp.Application.Documents);
+                    UIApp.Application.DocumentCreated += OnDocumentCreated;
+                    UIApp.Application.DocumentOpened += OnDocumentOpened;
+                    UIApp.Application.DocumentClosed += OnDocumentClosed;
 
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated += UpdateDockingManagerLayout;
@@ -1419,13 +1401,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>
+        /// Stops document tab grouping, unsubscribes document lifecycle handlers, and clears cached document identities.
+        /// </summary>
         public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
+                    UIApp.Application.DocumentCreated -= OnDocumentCreated;
+                    UIApp.Application.DocumentOpened -= OnDocumentOpened;
+                    UIApp.Application.DocumentClosed -= OnDocumentClosed;
+
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
 
                     ClearDocumentTabGroups();
+                    ClearDocumentCache();
 
                     IsUpdatingDocumentTabs = false;
                 }
@@ -1433,6 +1423,74 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static void ResetGroupingDocumentTabs() => _tabColoringTheme?.ResetSlots();
+
+        internal static (List<long> DocIds, List<long> FamilyDocIds) GetCachedDocumentAndFamilyIds() {
+            lock (CacheLock) {
+                var docIds = _documentCache.Keys.ToList();
+                var familyDocIds = _documentCache.Where(x => x.Value).Select(x => x.Key).ToList();
+                return (docIds, familyDocIds);
+            }
+        }
+
+        private static void SeedDocumentCache(DocumentSet documents) {
+            var documentCache = new Dictionary<long, bool>();
+            bool cacheComplete = true;
+            try {
+                foreach (Document doc in documents) {
+                    try {
+                        if (!doc.IsLinked) {
+                            long docId = DocumentTabLocator.GetAPIDocumentId(doc);
+                            documentCache[docId] = doc.IsFamilyDocument;
+                        }
+                    }
+                    catch (Exception ex) {
+                        cacheComplete = false;
+                        logger.Error($"Error seeding document cache: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex) {
+                cacheComplete = false;
+                logger.Error($"Error enumerating documents for cache: {ex.Message}");
+            }
+            lock (CacheLock) {
+                if (cacheComplete) {
+                    _documentCache = documentCache;
+                }
+                else {
+                    foreach (KeyValuePair<long, bool> entry in documentCache)
+                        _documentCache[entry.Key] = entry.Value;
+                }
+            }
+            _tabColoringTheme?.InvalidateTabState();
+        }
+
+        private static void ClearDocumentCache() {
+            lock (CacheLock) {
+                _documentCache = new Dictionary<long, bool>();
+            }
+        }
+
+        private static void RefreshDocumentCache() {
+            try {
+                SeedDocumentCache(UIApp.Application.Documents);
+            }
+            catch (Exception ex) {
+                logger.Error($"Error refreshing document cache: {ex.Message}");
+            }
+        }
+
+        static void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            RefreshDocumentCache();
+        }
+
+        static void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            RefreshDocumentCache();
+        }
+
+        static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
+            RefreshDocumentCache();
+        }
 
         static void UpdateDockingManagerLayout(object sender, EventArgs e) {
             UpdateDocumentTabGroups();
@@ -1536,16 +1594,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// 
     /// Called from MinifyUI smartbutton via pyrevit.runtime.types.
     /// </summary>
-    public static class RibbonTabVisibilityUtils
-    {
+    public static class RibbonTabVisibilityUtils {
         public static bool IsHidingTabs { get; private set; }
 
         private static HashSet<string> _hiddenTabTitles = new HashSet<string>();
         private static List<Autodesk.Windows.RibbonTab> _hookedTabs
             = new List<Autodesk.Windows.RibbonTab>();
 
-        public static void StartHidingTabs(IEnumerable<string> tabTitles)
-        {
+        public static void StartHidingTabs(IEnumerable<string> tabTitles) {
             StopHidingTabs();
 
             _hiddenTabTitles = new HashSet<string>(tabTitles);
@@ -1554,13 +1610,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             IsHidingTabs = true;
 
-            foreach (var tab in Autodesk.Windows.ComponentManager.Ribbon.Tabs)
-            {
-                if (_hiddenTabTitles.Contains(tab.Title))
-                {
+            foreach (var tab in Autodesk.Windows.ComponentManager.Ribbon.Tabs) {
+                if (_hiddenTabTitles.Contains(tab.Title)) {
                     var inpc = tab as System.ComponentModel.INotifyPropertyChanged;
-                    if (inpc != null)
-                    {
+                    if (inpc != null) {
                         inpc.PropertyChanged += OnTabPropertyChanged;
                         _hookedTabs.Add(tab);
                     }
@@ -1569,12 +1622,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public static void StopHidingTabs()
-        {
-            foreach (var tab in _hookedTabs)
-            {
-                try
-                {
+        public static void StopHidingTabs() {
+            foreach (var tab in _hookedTabs) {
+                try {
                     var inpc = tab as System.ComponentModel.INotifyPropertyChanged;
                     if (inpc != null)
                         inpc.PropertyChanged -= OnTabPropertyChanged;
@@ -1589,8 +1639,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static void OnTabPropertyChanged(
                 object sender,
-                System.ComponentModel.PropertyChangedEventArgs e)
-        {
+                System.ComponentModel.PropertyChangedEventArgs e) {
             if (!IsHidingTabs) return;
             if (e.PropertyName != "IsVisible") return;
 

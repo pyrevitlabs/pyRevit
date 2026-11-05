@@ -1,4 +1,5 @@
 """Opens the wiki page."""
+
 from pyrevit import script
 from pyrevit.versionmgr import urls
 

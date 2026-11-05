@@ -12,19 +12,21 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using pyRevitAssemblyBuilder.UIManager;
 
-namespace PyRevitLoader {
+namespace PyRevitLoader
+{
     /// <summary>
     /// Executes ComboBox event handler scripts using IronPython directly.
     /// Supports: __cmb_on_change__, __cmb_dropdown_close__, __cmb_dropdown_open__
     /// </summary>
-    public class ComboBoxExecutor {
+    public class ComboBoxExecutor
+    {
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
         private ScriptEngine _engine;
         private ScriptExecutor _scriptExecutor;
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
-        
+
         // Keep shared runtime objects alive once and keep per-combo references attached
         // to each ComboBox instance. This prevents event handler callables from being
         // garbage-collected while avoiding duplicate references for shared objects.
@@ -33,14 +35,16 @@ namespace PyRevitLoader {
         private static readonly ConditionalWeakTable<ComboBox, List<object>> _comboBoxAliveReferences =
             new ConditionalWeakTable<ComboBox, List<object>>();
 
-        public ComboBoxExecutor(UIApplication uiApplication, Action<string> logger = null) {
+        public ComboBoxExecutor(UIApplication uiApplication, Action<string> logger = null)
+        {
             _revit = uiApplication;
             _logger = logger;
         }
 
         public string Message { get; private set; } = null;
 
-        private void Log(string message) {
+        private void Log(string message)
+        {
             _logger?.Invoke(message);
         }
 
@@ -49,7 +53,8 @@ namespace PyRevitLoader {
         /// </summary>
         private LoggerStream _outputStream;
 
-        private void EnsureEngineInitialized() {
+        private void EnsureEngineInitialized()
+        {
             if (_engine != null)
                 return;
 
@@ -80,20 +85,24 @@ namespace PyRevitLoader {
             string scriptPath,
             ComboBoxContext context,
             ComboBox comboBox,
-            IEnumerable<string> additionalSearchPaths = null) {
+            IEnumerable<string> additionalSearchPaths = null)
+        {
 
-            if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath)) {
+            if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
+            {
                 return true;
             }
 
             // Only process Python scripts
-            if (!scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase)) {
+            if (!scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
             }
 
             bool handlersWired = false;
 
-            try {
+            try
+            {
                 // Reuse the engine instead of creating new one each time
                 EnsureEngineInitialized();
 
@@ -121,19 +130,23 @@ namespace PyRevitLoader {
 
                 var errors = new ErrorReporter();
                 var compiled = script.Compile(compilerOptions, errors);
-                if (compiled == null) {
+                if (compiled == null)
+                {
                     Message = string.Join("\r\n", "Compilation failed:", string.Join("\r\n", errors.Errors.ToArray()));
                     Log(Message);
                     return false;
                 }
 
-                try {
+                try
+                {
                     script.Execute(scope);
                 }
-                catch (SystemExitException) {
+                catch (SystemExitException)
+                {
                     return true;
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     Message = $"Script execution error: {ex.Message}";
                     Log(Message);
                     return false;
@@ -144,7 +157,8 @@ namespace PyRevitLoader {
                 bool hasDropdownClose = scope.ContainsVariable("__cmb_dropdown_close__");
                 bool hasDropdownOpen = scope.ContainsVariable("__cmb_dropdown_open__");
 
-                if (!hasOnChange && !hasDropdownClose && !hasDropdownOpen) {
+                if (!hasOnChange && !hasDropdownClose && !hasDropdownOpen)
+                {
                     Log($"No event handlers found in script for ComboBox '{context.name}'.");
                     return true;
                 }
@@ -162,17 +176,22 @@ namespace PyRevitLoader {
                 var outStream = _outputStream;
 
                 // Wire up __cmb_on_change__ handler
-                if (hasOnChange) {
+                if (hasOnChange)
+                {
                     var handler = scope.GetVariable("__cmb_on_change__");
-                    if (handler != null) {
+                    if (handler != null)
+                    {
                         handlerObjects.Add(handler);
-                        comboBox.CurrentChanged += (sender, args) => {
-                            try {
+                        comboBox.CurrentChanged += (sender, args) =>
+                        {
+                            try
+                            {
                                 // Restore stdout in case session cleanup set it to None
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
                                 ops.Invoke(handler, sender, args, context);
                             }
-                            catch (Exception ex) {
+                            catch (Exception ex)
+                            {
                                 Log($"Error in __cmb_on_change__: {ex.Message}");
                             }
                         };
@@ -182,16 +201,21 @@ namespace PyRevitLoader {
                 }
 
                 // Wire up __cmb_dropdown_close__ handler
-                if (hasDropdownClose) {
+                if (hasDropdownClose)
+                {
                     var handler = scope.GetVariable("__cmb_dropdown_close__");
-                    if (handler != null) {
+                    if (handler != null)
+                    {
                         handlerObjects.Add(handler);
-                        comboBox.DropDownClosed += (sender, args) => {
-                            try {
+                        comboBox.DropDownClosed += (sender, args) =>
+                        {
+                            try
+                            {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
                                 ops.Invoke(handler, sender, args, context);
                             }
-                            catch (Exception ex) {
+                            catch (Exception ex)
+                            {
                                 Log($"Error in __cmb_dropdown_close__: {ex.Message}");
                             }
                         };
@@ -201,16 +225,21 @@ namespace PyRevitLoader {
                 }
 
                 // Wire up __cmb_dropdown_open__ handler
-                if (hasDropdownOpen) {
+                if (hasDropdownOpen)
+                {
                     var handler = scope.GetVariable("__cmb_dropdown_open__");
-                    if (handler != null) {
+                    if (handler != null)
+                    {
                         handlerObjects.Add(handler);
-                        comboBox.DropDownOpened += (sender, args) => {
-                            try {
+                        comboBox.DropDownOpened += (sender, args) =>
+                        {
+                            try
+                            {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
                                 ops.Invoke(handler, sender, args, context);
                             }
-                            catch (Exception ex) {
+                            catch (Exception ex)
+                            {
                                 Log($"Error in __cmb_dropdown_open__: {ex.Message}");
                             }
                         };
@@ -222,13 +251,16 @@ namespace PyRevitLoader {
                 // Keep engine, scope, Python handler objects, and context alive.
                 // This prevents GC from collecting the Python callables and
                 // their parent scope, which would silently break event delivery.
-                if (handlersWired) {
-                    lock (_aliveReferencesLock) {
+                if (handlersWired)
+                {
+                    lock (_aliveReferencesLock)
+                    {
                         _sharedAliveReferences.Add(_engine);
                         _sharedAliveReferences.Add(ops);
                         _sharedAliveReferences.Add(outStream);
 
-                        if (!_comboBoxAliveReferences.TryGetValue(comboBox, out var comboAliveReferences)) {
+                        if (!_comboBoxAliveReferences.TryGetValue(comboBox, out var comboAliveReferences))
+                        {
                             comboAliveReferences = new List<object>();
                             _comboBoxAliveReferences.Add(comboBox, comboAliveReferences);
                         }
@@ -242,7 +274,8 @@ namespace PyRevitLoader {
 
                 return true;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Message = $"ComboBox executor error: {ex.Message}";
                 Log(Message);
                 return false;
@@ -252,12 +285,14 @@ namespace PyRevitLoader {
         /// <summary>
         /// Sets up search paths for a specific component, reusing cached base paths.
         /// </summary>
-        private void SetupSearchPathsForComponent(ScriptEngine engine, string componentDirectory, IEnumerable<string> additionalSearchPaths) {
+        private void SetupSearchPathsForComponent(ScriptEngine engine, string componentDirectory, IEnumerable<string> additionalSearchPaths)
+        {
             // Start with cached base paths
             var paths = new List<string>(_baseSearchPaths);
 
             // Add component directory
-            if (!string.IsNullOrEmpty(componentDirectory) && Directory.Exists(componentDirectory)) {
+            if (!string.IsNullOrEmpty(componentDirectory) && Directory.Exists(componentDirectory))
+            {
                 if (!paths.Contains(componentDirectory))
                     paths.Add(componentDirectory);
 
@@ -268,16 +303,19 @@ namespace PyRevitLoader {
             }
 
             // Find and add pyrevitlib (cached)
-            if (_pyrevitLibPath == null) {
+            if (_pyrevitLibPath == null)
+            {
                 _pyrevitLibPath = FindPyRevitLib(componentDirectory) ?? string.Empty;
             }
 
-            if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath)) {
+            if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath))
+            {
                 paths.Add(_pyrevitLibPath);
 
                 // Add site-packages
                 var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
-                if (!string.IsNullOrEmpty(pyrevitRoot)) {
+                if (!string.IsNullOrEmpty(pyrevitRoot))
+                {
                     var sitePackages = Path.Combine(pyrevitRoot, "site-packages");
                     if (Directory.Exists(sitePackages) && !paths.Contains(sitePackages))
                         paths.Add(sitePackages);
@@ -285,8 +323,10 @@ namespace PyRevitLoader {
             }
 
             // Add additional search paths
-            if (additionalSearchPaths != null) {
-                foreach (var path in additionalSearchPaths) {
+            if (additionalSearchPaths != null)
+            {
+                foreach (var path in additionalSearchPaths)
+                {
                     if (!string.IsNullOrEmpty(path) && !paths.Contains(path))
                         paths.Add(path);
                 }
@@ -295,14 +335,18 @@ namespace PyRevitLoader {
             engine.SetSearchPaths(paths);
         }
 
-        private string FindPyRevitLib(string componentDirectory) {
+        private string FindPyRevitLib(string componentDirectory)
+        {
             // Strategy 1: Navigate up from component directory
-            if (!string.IsNullOrEmpty(componentDirectory)) {
+            if (!string.IsNullOrEmpty(componentDirectory))
+            {
                 var current = new DirectoryInfo(componentDirectory);
                 int depth = 0;
-                while (current != null && depth < 20) {
+                while (current != null && depth < 20)
+                {
                     var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
-                    if (Directory.Exists(pyrevitLibPath)) {
+                    if (Directory.Exists(pyrevitLibPath))
+                    {
                         return pyrevitLibPath;
                     }
                     current = current.Parent;
@@ -311,15 +355,19 @@ namespace PyRevitLoader {
             }
 
             // Strategy 2: Find from this assembly location
-            try {
+            try
+            {
                 var assemblyPath = Assembly.GetExecutingAssembly().Location;
-                if (!string.IsNullOrEmpty(assemblyPath)) {
+                if (!string.IsNullOrEmpty(assemblyPath))
+                {
                     var assemblyDir = new DirectoryInfo(Path.GetDirectoryName(assemblyPath));
                     // Navigate up: engines -> netfx -> bin -> pyRevit root
                     var current = assemblyDir?.Parent?.Parent?.Parent?.Parent;
-                    if (current != null) {
+                    if (current != null)
+                    {
                         var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
-                        if (Directory.Exists(pyrevitLibPath)) {
+                        if (Directory.Exists(pyrevitLibPath))
+                        {
                             return pyrevitLibPath;
                         }
                     }
@@ -335,29 +383,35 @@ namespace PyRevitLoader {
     /// Stream implementation that forwards Write calls to a logger Action.
     /// Used to redirect IronPython print() output to the pyRevit logger.
     /// </summary>
-    internal class LoggerStream : Stream {
+    internal class LoggerStream : Stream
+    {
         private readonly Action<string> _logger;
         private readonly StringBuilder _buffer = new StringBuilder();
 
-        public LoggerStream(Action<string> logger) {
+        public LoggerStream(Action<string> logger)
+        {
             _logger = logger;
         }
 
-        public override void Write(byte[] buffer, int offset, int count) {
+        public override void Write(byte[] buffer, int offset, int count)
+        {
             var text = Encoding.UTF8.GetString(buffer, offset, count);
             _buffer.Append(text);
 
             // Flush complete lines
             int newlineIdx;
-            while ((newlineIdx = _buffer.ToString().IndexOf('\n')) >= 0) {
+            while ((newlineIdx = _buffer.ToString().IndexOf('\n')) >= 0)
+            {
                 var line = _buffer.ToString(0, newlineIdx).TrimEnd('\r');
                 _buffer.Remove(0, newlineIdx + 1);
                 _logger?.Invoke(line);
             }
         }
 
-        public override void Flush() {
-            if (_buffer.Length > 0) {
+        public override void Flush()
+        {
+            if (_buffer.Length > 0)
+            {
                 var remaining = _buffer.ToString();
                 _logger?.Invoke(remaining);
                 _buffer.Clear();
@@ -368,7 +422,8 @@ namespace PyRevitLoader {
         public override bool CanSeek => false;
         public override bool CanWrite => true;
         public override long Length => throw new NotSupportedException();
-        public override long Position {
+        public override long Position
+        {
             get => throw new NotSupportedException();
             set => throw new NotSupportedException();
         }

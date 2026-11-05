@@ -13,6 +13,8 @@ output = script.get_output()
 
 
 class UI(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 
@@ -87,7 +89,9 @@ class UI(forms.WPFWindow):
         for geo in geometry:
             if not isinstance(geo, DB.Solid) or geo.Volume == 0:
                 continue
-            solid_mesh = revit.dc3dserver.Mesh.from_solid(doc, geo, color=override_color)
+            solid_mesh = revit.dc3dserver.Mesh.from_solid(
+                doc, geo, color=override_color
+            )
             if not solid_mesh:
                 continue
             mesh.append(solid_mesh)
@@ -121,9 +125,7 @@ class UI(forms.WPFWindow):
         if mesh:
             self.server.meshes = [mesh]
             uidoc.RefreshActiveView()
-            forms.alert(
-                "STL loaded successfully!"
-            )
+            forms.alert("STL loaded successfully!")
         else:
             forms.alert(
                 "Failed to load STL",

@@ -21,6 +21,7 @@ Adicione um filtro a uma vista e tente novamente.</system:String>
     <system:String x:Key="Settings_Section_Behavior">Comportamento</system:String>
     <system:String x:Key="Settings_SortAlpha">Ordenar filtros alfabeticamente</system:String>
     <system:String x:Key="Settings_OpenLegend">Abrir a última legenda criada</system:String>
+    <system:String x:Key="Settings_TrackLegend">Rastrear e atualizar legendas existentes</system:String>
 
     <system:String x:Key="Header_FilterName">Nome do filtro</system:String>
     <system:String x:Key="Header_Parameter">Parâmetro</system:String>
@@ -28,6 +29,8 @@ Adicione um filtro a uma vista e tente novamente.</system:String>
     <system:String x:Key="Value_NA">N/D</system:String>
 
     <system:String x:Key="Msg_Done">{0} vista(s) de legenda criada(s).</system:String>
+    <system:String x:Key="Msg_Updated">{0} vista(s) de legenda atualizada(s).</system:String>
+    <system:String x:Key="Msg_DoneMixed">{0} vista(s) de legenda criada(s), {1} atualizada(s).</system:String>
     <system:String x:Key="Msg_Failed">Não foi possível criar nenhuma vista de legenda. Verifique o log para mais detalhes.</system:String>
 
 </ResourceDictionary>

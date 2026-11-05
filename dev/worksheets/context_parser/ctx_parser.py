@@ -7,6 +7,7 @@ import exts
 
 class CtxParser:
     """Testing context parser from bundle.yaml file"""
+
     def _parse_context_list(self, context):
         context_rules = []
 
@@ -14,7 +15,7 @@ class CtxParser:
         context_rules.append(
             exts.MDATA_COMMAND_CONTEXT_RULE.format(
                 rule=exts.MDATA_COMMAND_CONTEXT_ALL_SEP.join(str_items)
-                )
+            )
         )
 
         dict_items = [x for x in context if isinstance(x, dict)]
@@ -40,25 +41,28 @@ class CtxParser:
             key = ctx_key.lower()
             condition = ""
             # all
-            if key == exts.MDATA_COMMAND_CONTEXT_ALL \
-                    or key == exts.MDATA_COMMAND_CONTEXT_NOTALL:
+            if (
+                key == exts.MDATA_COMMAND_CONTEXT_ALL
+                or key == exts.MDATA_COMMAND_CONTEXT_NOTALL
+            ):
                 condition = exts.MDATA_COMMAND_CONTEXT_ALL_SEP
 
             # any
-            elif key == exts.MDATA_COMMAND_CONTEXT_ANY \
-                    or key == exts.MDATA_COMMAND_CONTEXT_NOTANY:
+            elif (
+                key == exts.MDATA_COMMAND_CONTEXT_ANY
+                or key == exts.MDATA_COMMAND_CONTEXT_NOTANY
+            ):
                 condition = exts.MDATA_COMMAND_CONTEXT_ANY_SEP
 
             # except
-            elif key == exts.MDATA_COMMAND_CONTEXT_EXACT \
-                    or key == exts.MDATA_COMMAND_CONTEXT_NOTEXACT:
+            elif (
+                key == exts.MDATA_COMMAND_CONTEXT_EXACT
+                or key == exts.MDATA_COMMAND_CONTEXT_NOTEXACT
+            ):
                 condition = exts.MDATA_COMMAND_CONTEXT_EXACT_SEP
 
-            context = condition.join(
-                [x for x in ctx_value if isinstance(x, str)]
-                )
-            formatted_rule = \
-                exts.MDATA_COMMAND_CONTEXT_RULE.format(rule=context)
+            context = condition.join([x for x in ctx_value if isinstance(x, str)])
+            formatted_rule = exts.MDATA_COMMAND_CONTEXT_RULE.format(rule=context)
             if key.startswith(exts.MDATA_COMMAND_CONTEXT_NOT):
                 formatted_rule = "!" + formatted_rule
             context_rules.append(formatted_rule)
@@ -68,9 +72,7 @@ class CtxParser:
         context_rules = []
 
         if isinstance(context, str):
-            context_rules.append(
-                exts.MDATA_COMMAND_CONTEXT_RULE.format(rule=context)
-            )
+            context_rules.append(exts.MDATA_COMMAND_CONTEXT_RULE.format(rule=context))
         elif isinstance(context, list):
             context_rules.extend(self._parse_context_list(context))
 
@@ -84,30 +86,27 @@ class CtxParser:
 
 
 p = CtxParser()
-with open('dev/worksheets/context_parser/test_contexts.yaml', 'r') as tf:
+with open("dev/worksheets/context_parser/test_contexts.yaml", "r") as tf:
     test_data = yaml.load(tf, Loader=yaml.FullLoader)
     for test, data in test_data.items():
-        if test.startswith('context') and not test.endswith('_result'):
+        if test.startswith("context") and not test.endswith("_result"):
             # grab expected result
             if isinstance(data, list):
                 for item in list(data):
-                    if isinstance(item, dict) and item.get('result', None):
-                        expected = item.get('result', None)
+                    if isinstance(item, dict) and item.get("result", None):
+                        expected = item.get("result", None)
                         data.remove(item)
-                        break;
+                        break
             elif isinstance(data, dict):
-                expected = data['result']
-                data.pop('result')
+                expected = data["result"]
+                data.pop("result")
             elif isinstance(data, str):
                 expected = test_data[test + "_result"]
 
             res = p._parse_context_directives(data)
-            print('-'* 60)
+            print("-" * 60)
             if not expected == res:
-                print(f'🍄 FAIL "{test}"\n'
-                      f'Expected: {expected}\n'
-                      f'Parsed:   {res}\n'
-                       'Data:')
+                print(f'🍄 FAIL "{test}"\nExpected: {expected}\nParsed:   {res}\nData:')
                 pprint.pprint(data)
             else:
                 print(f'🍏 PASS "{test}" --> {res}')

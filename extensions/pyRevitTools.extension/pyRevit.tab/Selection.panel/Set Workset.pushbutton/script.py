@@ -93,7 +93,9 @@ if set_phase:
                 with revit.Transaction("Set View Phase"):
                     vp_param.Set(phase.Id)
     else:
-        script.get_logger().warning("View phase cannot be modified (likely Temporary View Mode is active).")
+        script.get_logger().warning(
+            "View phase cannot be modified (likely Temporary View Mode is active)."
+        )
 
 # Not yet exposed by API
 # Idea Board: https://forums.autodesk.com/t5/revit-ideas/design-options-api/idi-p/9590221

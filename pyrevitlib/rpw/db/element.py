@@ -5,6 +5,7 @@ of commonly used elements.
 """  #
 
 import rpw
+import pyrevit_automation as automation
 from rpw import revit, DB
 from rpw.db.parameter import Parameter, ParameterSet
 from rpw.base import BaseObjectWrapper
@@ -16,6 +17,10 @@ from rpw.db.builtins import BicEnum, BipEnum
 from rpw.utils.coerce import to_element_ids
 
 
+@automation.type(
+    "rpw.types.element",
+    PlainEnglish="Wrap a Revit element with common type, name and parameter access.",
+)
 class Element(BaseObjectWrapper, CategoryMixin):
     """
     Inheriting from element extends wrapped elements with a new :class:`parameters`
@@ -90,17 +95,17 @@ class Element(BaseObjectWrapper, CategoryMixin):
 
         # If explicit constructor was called, use that and skip discovery
         if type(element) is _revit_object_class:
-            return super(Element, cls).__new__(cls, element, **kwargs)
+            return object.__new__(cls)
 
         for wrapper_class in defined_wrapper_classes:
             class_name = wrapper_class.__name__
             if type(element) is getattr(wrapper_class, '_revit_object_class', None):
                 # Found Mathing Class, Use Wrapper
                 # print('Found Mathing Class, Use Wrapper: {}'.format(class_name))
-                return super(Element, cls).__new__(wrapper_class, element, **kwargs)
+                return object.__new__(wrapper_class)
         else:
             # Could Not find a Matching Class, Use Element if related
-            return super(Element, cls).__new__(cls, element, **kwargs)
+            return object.__new__(cls)
 
         # No early return. Should not reach this point
         element_class_name = element.__class__.__name__
@@ -136,6 +141,11 @@ class Element(BaseObjectWrapper, CategoryMixin):
             self.parameters = ParameterSet(element)
 
     @property
+    @automation.operation(
+        "rpw.elements.type",
+        PlainEnglish="Read an element's wrapped Revit type.",
+        effects=("model.read",),
+    )
     def type(self):
         """
         Get's Element Type using the default GetTypeId() Method.
@@ -153,6 +163,11 @@ class Element(BaseObjectWrapper, CategoryMixin):
         return Element(element_type)
 
     @property
+    @automation.operation(
+        "rpw.elements.name",
+        PlainEnglish="Read an element's name through the rpw wrapper.",
+        effects=("model.read",),
+    )
     def name(self):
         """ Name Property """
         return DB.Element.Name.__get__(self.unwrap())
@@ -210,6 +225,11 @@ class Element(BaseObjectWrapper, CategoryMixin):
         return Element.from_id(element_id, doc=doc)
 
     @staticmethod
+    @automation.operation(
+        "rpw.elements.from-id",
+        PlainEnglish="Wrap an element resolved from an element identifier.",
+        effects=("model.read",),
+    )
     def from_id(element_id, doc=None):
         """
         Instantiate Element from an ElementId
@@ -227,6 +247,11 @@ class Element(BaseObjectWrapper, CategoryMixin):
         return Element(element)
 
     @staticmethod
+    @automation.operation(
+        "rpw.elements.from-list",
+        PlainEnglish="Wrap a list of Revit elements or element identifiers.",
+        effects=("model.read",),
+    )
     def from_list(element_references, doc=None):
         """
         Instantiate Elements from a list of DB.Element instances

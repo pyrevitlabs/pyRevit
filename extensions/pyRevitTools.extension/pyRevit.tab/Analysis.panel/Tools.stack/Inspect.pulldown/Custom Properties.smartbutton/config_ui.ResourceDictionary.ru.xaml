@@ -5,8 +5,10 @@
     <system:String x:Key="Window.Title">Свойства элемента – Настройка дополнительных параметров</system:String>
     <system:String x:Key="ChkEnableStartup">Загружать панель при запуске</system:String>
     <system:String x:Key="TbRestartHint">Для применения изменений параметров запуска требуется перезапуск Revit.</system:String>
-    <system:String x:Key="TbParamsHint">Введите по одному имени параметра в строку. Панель обновляется при следующем изменении выделения — перезапуск не требуется.</system:String>
-    <system:String x:Key="TbExamples">Примеры: Комментарии, Марка, Производитель, Комментарии к типу</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">Показывать информацию о совместной работе (Создал / Последнее изменение / Владелец)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">Включает/выключает строки «Создал», «Последнее изменение» и «Владелец» в панели. Перезапуск не требуется.</system:String>
+    <system:String x:Key="TbParamsHint">Введите по одному имени параметра в строку. Начните строку с # для заголовка раздела (например, "# Общее") — оставьте просто "#" для обычной разделительной линии. Панель обновляется при следующем изменении выделения — перезапуск не требуется.</system:String>
+    <system:String x:Key="TbExamples">Примеры: Комментарии, Марка, # Общее, Производитель, Комментарии к типу</system:String>
     <system:String x:Key="BtnCancel">Отмена</system:String>
     <system:String x:Key="BtnSave">Сохранить</system:String>
 

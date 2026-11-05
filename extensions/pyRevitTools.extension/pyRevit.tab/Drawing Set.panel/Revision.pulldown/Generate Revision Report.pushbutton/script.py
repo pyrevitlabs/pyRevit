@@ -177,7 +177,9 @@ class RevisedSheet:
     def get_comments(self):
         all_comments = set()
         for cloud in self._sheet_clouds:
-            cparam = cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+            cparam = cloud.get_Parameter(
+                DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS
+            )
             comment = cparam.AsString()
             if not coreutils.is_blank(comment):
                 all_comments.add(comment)
@@ -186,7 +188,7 @@ class RevisedSheet:
     def get_all_revision_marks(self):
         all_marks = set()
         for cloud in self._sheet_clouds:
-            cparam = cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+            cparam = cloud.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK)
             mark = cparam.AsString()
             if not coreutils.is_blank(mark):
                 all_marks.add(mark)

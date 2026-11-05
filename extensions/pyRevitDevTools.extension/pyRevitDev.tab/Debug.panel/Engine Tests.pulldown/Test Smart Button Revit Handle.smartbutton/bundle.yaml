@@ -1,0 +1,4 @@
+tooltip: >-
+  Runs the __revit__ host-handle checks through ScriptExecutor, the injection
+  site smart buttons and combo boxes use. The Test * Revit Handle pushbuttons
+  cover the runtime-engine site instead.

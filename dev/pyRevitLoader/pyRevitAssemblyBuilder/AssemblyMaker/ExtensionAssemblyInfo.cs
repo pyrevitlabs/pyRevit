@@ -1,4 +1,4 @@
-﻿namespace pyRevitAssemblyBuilder.AssemblyMaker
+namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
     public class ExtensionAssemblyInfo
     {

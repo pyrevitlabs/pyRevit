@@ -5,8 +5,10 @@
     <system:String x:Key="Window.Title">Elementeigenschaften – Zusätzliche Parameter konfigurieren</system:String>
     <system:String x:Key="ChkEnableStartup">Fenster beim Start laden</system:String>
     <system:String x:Key="TbRestartHint">Ein Neustart von Revit ist erforderlich, damit Startänderungen wirksam werden.</system:String>
-    <system:String x:Key="TbParamsHint">Einen Parameternamen pro Zeile eingeben. Das Fenster übernimmt Änderungen beim nächsten Auswahlwechsel — kein Neustart erforderlich.</system:String>
-    <system:String x:Key="TbExamples">Beispiele: Kommentare, Markierung, Hersteller, Typkommentare</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">Worksharing-Info anzeigen (Ersteller / Zuletzt geändert von / Eigentümer)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">Blendet die Zeilen Ersteller, Zuletzt geändert von und Eigentümer im Fenster ein/aus. Kein Neustart erforderlich.</system:String>
+    <system:String x:Key="TbParamsHint">Einen Parameternamen pro Zeile eingeben. Eine Zeile mit # beginnen, um eine Abschnittsüberschrift einzufügen (z. B. "# Allgemein") — nur "#" allein ergibt eine reine Trennlinie. Das Fenster übernimmt Änderungen beim nächsten Auswahlwechsel — kein Neustart erforderlich.</system:String>
+    <system:String x:Key="TbExamples">Beispiele: Kommentare, Markierung, # Allgemein, Hersteller, Typkommentare</system:String>
     <system:String x:Key="BtnCancel">Abbrechen</system:String>
     <system:String x:Key="BtnSave">Speichern</system:String>
 

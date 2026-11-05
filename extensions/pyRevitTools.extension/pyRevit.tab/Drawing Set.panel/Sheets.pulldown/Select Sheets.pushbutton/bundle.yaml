@@ -17,3 +17,5 @@ tooltip:
   de_de: >-
     Es öffnet sich ein Dialog, in dem man Pläne auswählen kann.  Diese Funktion ist vergleichbar, mit der Auswahl von Plänen im Projektbrowser.
   pt_br: Selecione várias folhas de uma lista
+context:
+  - doc-project

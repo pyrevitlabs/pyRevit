@@ -1,0 +1,112 @@
+{
+  "Uuid": "8a9a103f-d94c-4363-8a3c-430f19252414",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "script",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "Code": "import os\nfrom datetime import datetime\n\nfolder = r\"C:\\Temp\"\nif not os.path.exists(folder):\n    os.makedirs(folder)\n\nmarker_path = os.path.join(\n    folder,\n    \"Dynamo_Manual_Graph_SHOULD_NOT_RUN_{}.txt\".format(\n        datetime.now().strftime(\"%Y-%m-%d_%H-%M-%S\")\n    ),\n)\n\nwith open(marker_path, \"w\") as f:\n    f.write(\n        \"This graph is saved on Manual run. A headless automation run from pyRevit \"\n        \"must report it as not run and never execute it.\"\n    )\n\nOUT = marker_path",
+      "Engine": "PythonNet3",
+      "VariableInputPorts": true,
+      "Id": "a55eb79556c44983a4b860ff72a93318",
+      "NodeType": "PythonScriptNode",
+      "Inputs": [
+        {
+          "Id": "d43434145280443eb42814edf8c91fb4",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "ac369e6b27474269978e8e0932820b93",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    }
+  ],
+  "Connectors": [],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "EnableLegacyPolyCurveBehavior": true,
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "3.6",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "9.1",
+      "Data": {}
+    }
+  ],
+  "Author": "None provided",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "4.2.1.5887",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "_Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Id": "a55eb79556c44983a4b860ff72a93318",
+        "Name": "Should Not Run",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1486.144094886928,
+        "Y": 465.77340268564296
+      }
+    ],
+    "Annotations": [],
+    "X": -21.884808153769086,
+    "Y": -152.32292037674893,
+    "Zoom": 0.6751528997701232
+  }
+}

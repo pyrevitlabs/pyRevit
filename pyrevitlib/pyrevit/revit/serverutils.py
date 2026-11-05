@@ -6,12 +6,10 @@ from pyrevit.framework import sqlite3
 from pyrevit import DB
 
 
-MODEL_HISTORY_SQLDB = '/Data/Model.db3'
+MODEL_HISTORY_SQLDB = "/Data/Model.db3"
 
 
-SyncHistory = namedtuple('SyncHistory', ['index',
-                                         'userid',
-                                         'timestamp'])
+SyncHistory = namedtuple("SyncHistory", ["index", "userid", "timestamp"])
 """namedtuple for model sync history data in revit server
 
 Attributes:
@@ -63,7 +61,7 @@ def get_model_sync_history(server_path):
     conn = sqlite3.connect(db_path)
     sync_hist = []
     for row in conn.execute("SELECT * FROM ModelHistory"):
-        sync_hist.append(SyncHistory(index=int(row[0]),
-                                     userid=row[1],
-                                     timestamp=row[2][:-1]))
+        sync_hist.append(
+            SyncHistory(index=int(row[0]), userid=row[1], timestamp=row[2][:-1])
+        )
     return sync_hist

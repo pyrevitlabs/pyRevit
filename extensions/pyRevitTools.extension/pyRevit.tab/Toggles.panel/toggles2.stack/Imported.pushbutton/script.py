@@ -3,11 +3,10 @@
 from pyrevit import revit
 
 
-@revit.carryout('Toggle Imported')
+@revit.carryout("Toggle Imported")
 def toggle_imported():
     aview = revit.active_view
-    aview.AreImportCategoriesHidden = \
-        not aview.AreImportCategoriesHidden
+    aview.AreImportCategoriesHidden = not aview.AreImportCategoriesHidden
 
 
 toggle_imported()

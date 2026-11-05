@@ -24,7 +24,7 @@ namespace pyRevitExtensionParserTester
         {
             // This test verifies that ServiceFactory exists and can be used for testing
             // Actual integration tests would use ServiceFactory to inject mocks
-            
+
             // Assert
             Assert.IsNotNull(typeof(ServiceFactory), "ServiceFactory should exist for dependency injection");
         }

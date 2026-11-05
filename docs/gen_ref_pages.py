@@ -1,4 +1,5 @@
 """Generate the code reference pages."""
+
 from pathlib import Path
 
 import mkdocs_gen_files
@@ -13,7 +14,7 @@ for path in sorted(Path(containing_folder).rglob("*.py")):
     parts = list(module_path.parts)
     if parts[0] != "pyrevit":
         continue
-    
+
     doc_path = path.relative_to(containing_folder).with_suffix(".md")
     full_doc_path = Path("reference", doc_path)
     if parts[-1] == "__init__":
@@ -37,7 +38,7 @@ with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
 for md in Path(".").glob("*.md"):
     try:
         with mkdocs_gen_files.open(md, "w") as f:
-            f.write(Path(md).read_text(encoding='utf-8', errors='replace'))
+            f.write(Path(md).read_text(encoding="utf-8", errors="replace"))
     except UnicodeDecodeError:
         # Skip files that can't be decoded as UTF-8
         print(f"Warning: Skipping {md} due to encoding issues")

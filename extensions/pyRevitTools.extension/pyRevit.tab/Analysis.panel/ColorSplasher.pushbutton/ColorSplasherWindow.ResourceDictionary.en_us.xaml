@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Error Saving Scheme</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Error Loading Scheme</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">The file does not exist.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">Store Color Scheme In:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">Choose where the color scheme is saved to and loaded from.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">File</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">Save to or load from a .cschn file.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">Active View</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">Active View (no scheme stored)</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">Save to or load from the active view. A view stores one color scheme; saving replaces it.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">Color scheme saved to view: {0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">Color Elements by Parameter</system:String>

@@ -432,7 +432,7 @@ def split_runs(pts, idxs, closed):
                     has_real_wall = True
                     break
             if has_real_wall:
-                runs.append((pts[k0: k + 1], run_idxs))
+                runs.append((pts[k0 : k + 1], run_idxs))
             k0 = k
     return runs
 

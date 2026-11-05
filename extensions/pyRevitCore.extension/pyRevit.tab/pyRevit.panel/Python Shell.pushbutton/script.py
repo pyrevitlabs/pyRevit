@@ -5,11 +5,11 @@ How the shell opens (modal window, modeless window, dockable pane, or the same
 windows with a built-in code editor) is configurable: Shift+Click this button to
 choose the mode.
 """
-import sys
-import clr
 
-from pyrevit import script, forms
-from System import AppDomain
+import sys
+
+from pyrevit import script, forms, framework, HOST_APP
+from System import AppDomain, InvalidOperationException
 from System.IO import File, Path
 from System.Collections.Generic import List
 
@@ -34,9 +34,7 @@ def _load_shell():
             exitscript=True,
         )
 
-    shell_path = Path.Combine(
-        engine_dir, "pyRevitLabs.PyRevit.Shell.dll"
-    )
+    shell_path = Path.Combine(engine_dir, "pyRevitLabs.PyRevit.Shell.dll")
     if not File.Exists(shell_path):
         forms.alert(
             "Python Shell is not installed for the active engine:\n\n"
@@ -47,14 +45,11 @@ def _load_shell():
         )
 
     try:
-        clr.AddReferenceToFileAndPath(shell_path)
+        framework.add_reference_to_file(shell_path)
     except Exception as load_error:
         mlogger.exception("Failed to load Python Shell assembly")
         forms.alert(
-            "Python Shell could not load:\n\n"
-            + shell_path
-            + "\n\n"
-            + str(load_error),
+            "Python Shell could not load:\n\n" + shell_path + "\n\n" + str(load_error),
             title="Python Shell",
             exitscript=True,
         )
@@ -67,8 +62,11 @@ def _load_shell():
     return Shell, search_paths
 
 
+if HOST_APP.uiapp is None:
+    forms.alert("Python Shell requires a Revit UI session.", exitscript=True)
+
 if shell_mode in ("Docked", "Docked Editor"):
-    if __revit__.ActiveUIDocument is None:
+    if HOST_APP.uidoc is None:
         forms.alert(
             "Docked Python Shell requires an open Revit project.\n\n"
             "To use Python Shell without a project, Shift+Click this button "
@@ -77,7 +75,11 @@ if shell_mode in ("Docked", "Docked Editor"):
             exitscript=True,
         )
     try:
+        shell, paths = _load_shell()
+        shell.RegisterDockablePane(HOST_APP.uiapp, paths, shell_mode == "Docked Editor")
         forms.open_dockable_panel(DOCKABLE_PANEL_ID)
+    except InvalidOperationException as mode_error:
+        forms.alert(str(mode_error.Message), title="Python Shell", exitscript=True)
     except Exception:
         mlogger.exception("Failed to open dockable Python Shell pane")
         forms.alert(

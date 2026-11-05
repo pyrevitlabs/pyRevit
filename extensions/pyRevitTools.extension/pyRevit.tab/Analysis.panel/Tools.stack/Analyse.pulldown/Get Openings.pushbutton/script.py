@@ -1,79 +1,91 @@
 # -*- coding: utf-8 -*-
+"""Lists all openings in the project and creates
+a selection filter for them.
+"""
 
-"""Lists all openings in the project and creates 
-a selection filter for them."""
-
-# Sytem
 import time
 
-# pyRevit
-from pyrevit import revit, script, DB
+from pyrevit import script
+from pyrevit import revit, DB
+from pyrevit.compat import get_elementid_value_func
+from pyrevit.coreutils import applocales, escape_for_output
 from pyrevit.framework import List
-doc         =__revit__.ActiveUIDocument.Document
-uidoc       =__revit__.ActiveUIDocument
-output      = script.get_output()
-selection   = uidoc.Selection
-timer_start = time.time()
 
-# GET ALL OPENINGS IN THE PROJECT
+output = script.get_output()
 
-# List of categories
-cats = [DB.BuiltInCategory.OST_FloorOpening,
-        DB.BuiltInCategory.OST_SWallRectOpening,
-        DB.BuiltInCategory.OST_ShaftOpening,
-        DB.BuiltInCategory.OST_RoofOpening]
-list_cats = List[DB.BuiltInCategory](cats)
+RESOURCES = script.get_bundle_file("resources.xaml")
+OPENING_FILTER_NAME = "0_ShaftOpenings"
 
-# Create filter
-multi_cat_filter = DB.ElementMulticategoryFilter(list_cats)
 
-# Apply filter to filteredElementCollector
-all_elements = DB.FilteredElementCollector(doc)\
-                .WherePasses(multi_cat_filter)\
-                .WhereElementIsNotElementType()\
-                .ToElements()
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
-# Get elements for selection filter
-element_ids = DB.FilteredElementCollector(doc).OfClass(DB.Opening).ToElementIds()
-element_ids = List[DB.ElementId](element_ids)
 
-# Declaration of a list to contains list of wanted element properties
-data = []
+def collect_openings():
+    """Collect every ``DB.Opening`` of the project.
 
-# Collect information about the object and put it into in the data list.
-for e in all_elements:
-    el = []
-    el.append(e.Name)
-    el.append(e.Id)
-    # add IFC Classification if parameter exist
-    e_link = output.linkify(e.Id)
-    el.append(e_link)
-    data.append(el)
+    Note:
+        Collects by class instead of by category so that openings in arc walls,
+        columns, beams and any other host are included, not only floor, wall,
+        shaft and roof openings.
+    """
+    return list(DB.FilteredElementCollector(revit.doc).OfClass(DB.Opening))
 
-# Get All Selection Filters
-all_sel_filters  = DB.FilteredElementCollector(doc).OfClass(DB.SelectionFilterElement).ToElements()
-dict_sel_filters = {f.Name: f for f in all_sel_filters}
 
-# Transaction to create a new selection filter
-with revit.Transaction('Create Openings Filter'):
-    new_filter_name = '0_ShaftOpenings'
-    if new_filter_name not in dict_sel_filters:
-        new_fil = DB.SelectionFilterElement.Create(doc, new_filter_name)
-        new_fil.AddSet(element_ids)
-        print ('Created a filter called : {}'.format(new_filter_name))
-    else:
-        existing_fil = dict_sel_filters[new_filter_name]
-        existing_fil.AddSet(element_ids)
-        print ('Updated a filter called : {}'.format(new_filter_name))
+def sync_opening_filter(openings):
+    """Create the selection filter for the openings, or reset the existing one to them.
 
-# Report
-output.print_md("#### There are {} openings (floor, wall, shaft, roof) in the project.".format(len(all_elements))) # TO DO Output link for all.
-if data:
-    output.print_table(table_data=data, title="Shafts:", columns=["Family" ,"ElementId", "Select/Show Element"])
-    #output.print_md("#####Total {} WDB/WA elements has been updated.".format(len(data)))
-else:
-    output.print_md("#####There are no openings (floor, wall, shaft, roof) in the project")
+    Args:
+        openings: The openings of the project, the same set the report lists.
 
-# End
-output.print_md('---')
-output.print_md('#### Script has finished in {}s'.format(time.time() - timer_start))
+    Returns:
+        bool: True if the filter was created, False if an existing one was updated.
+    """
+    opening_ids = List[DB.ElementId](opening.Id for opening in openings)
+    existing_filters = {
+        selection_filter.Name: selection_filter
+        for selection_filter in DB.FilteredElementCollector(revit.doc).OfClass(
+            DB.SelectionFilterElement
+        )
+    }
+    with revit.Transaction(_t("transaction_name")):
+        created = OPENING_FILTER_NAME not in existing_filters
+        if created:
+            opening_filter = DB.SelectionFilterElement.Create(
+                revit.doc, OPENING_FILTER_NAME
+            )
+        else:
+            opening_filter = existing_filters[OPENING_FILTER_NAME]
+        opening_filter.SetElementIds(opening_ids)
+    return created
+
+
+def report(openings):
+    output.print_md("#### {}".format(_t("openings_in_project").format(len(openings))))
+    if not openings:
+        return
+    output.print_md(
+        output.linkify([opening.Id for opening in openings], title=_t("select_all"))
+    )
+    get_elementid_value = get_elementid_value_func()
+    output.print_table(
+        table_data=[
+            [
+                escape_for_output(opening.Name),
+                get_elementid_value(opening.Id),
+                output.linkify(opening.Id),
+            ]
+            for opening in openings
+        ],
+        title=_t("table_title"),
+        columns=[_t("column_name"), _t("column_id"), _t("column_show")],
+    )
+
+
+started = time.time()
+openings = collect_openings()
+filter_message = "created_filter" if sync_opening_filter(openings) else "updated_filter"
+output.print_md(_t(filter_message).format(OPENING_FILTER_NAME))
+report(openings)
+output.print_md("---")
+output.print_md("#### {}".format(_t("finished_in").format(time.time() - started)))
