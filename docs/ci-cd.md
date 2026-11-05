@@ -36,6 +36,10 @@ This split guarantees that:
 
 ## Revit integration tests
 
+!!! warning "Existing workflow differs from testing policy"
+
+    The [repository testing policy](testing.md#repository-testing-policy) requires every test using the Revit API or requiring installed/running Revit to run locally outside CI. All other first-party automated suites must be discovered and run in CI. The workflow described below still launches Revit on pushes to `develop`; moving Revit testing entirely out of CI is pending implementation. This section records current wiring, not the target policy.
+
 GitHub-hosted runners cannot run Revit, so [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) targets a self-hosted runner labelled `self-hosted, windows, revit`. It answers one question the unit tests cannot: **does Revit load the build without the unsigned add-in dialog?**
 
 The job builds `bin/`, signs it with a throwaway certificate via `dotnet run -- sign-test`, then launches each Revit year and reads the outcome out of that session's journal:

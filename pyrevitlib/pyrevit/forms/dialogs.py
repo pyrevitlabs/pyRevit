@@ -49,7 +49,9 @@ class TemplateUserInputWindow(WPFWindow):
                     if isinstance(localized_title, str)
                     else "User Input"
                 )
-            self.Width = width
+            self._requested_width = width
+            if width is not None:
+                self.Width = width
             self.Height = height
 
             self._context = context

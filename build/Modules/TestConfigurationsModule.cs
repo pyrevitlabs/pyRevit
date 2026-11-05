@@ -120,7 +120,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                     "-f",
                     framework,
                     "--filter",
-                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests|FullyQualifiedName~PyRevitInstallScopeTests",
                 ],
                 cancellationToken);
 
@@ -133,7 +133,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "-f",
                 "net8.0-windows",
                 "--filter",
-                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests",
+                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests",
             ],
             cancellationToken);
 
