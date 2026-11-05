@@ -118,8 +118,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
-            var timings = new AgentRunTimings();
-            timings.Add("queue_wait", (Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
+            var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
             if (doc == null && request.Mode == AgentRunMode.Modify)
@@ -188,8 +187,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             HasChanges = !guard.Changes.IsEmpty,
                             Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
                         });
-                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
                         timings.Lap("decide");
+                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
+                        timings.Lap("guard_release");
 
                         var approval = AgentRunDecision.Approval(verdict);
                         if (approval != null)

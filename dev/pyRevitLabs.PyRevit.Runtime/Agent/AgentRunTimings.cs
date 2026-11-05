@@ -19,7 +19,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentRunTimings {
         private readonly Stopwatch clock = Stopwatch.StartNew();
         private readonly List<KeyValuePair<string, double>> phases = new List<KeyValuePair<string, double>>();
+        private readonly double queueWaitMs;
         private double lastLapMs;
+
+        /// <summary>
+        /// Starts the clock and records <paramref name="queueWaitMs"/> as the <c>queue_wait</c> phase,
+        /// which happened before construction but still counts toward <see cref="TotalMilliseconds"/>.
+        /// </summary>
+        public AgentRunTimings(double queueWaitMs) {
+            this.queueWaitMs = queueWaitMs;
+            Add("queue_wait", queueWaitMs);
+        }
 
         /// <summary>
         /// Records the time since the previous lap (or since construction) as <paramref name="phase"/>.
@@ -40,7 +50,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             phases.Add(new KeyValuePair<string, double>(phase, milliseconds));
         }
 
-        public double TotalMilliseconds => clock.Elapsed.TotalMilliseconds;
+        public double TotalMilliseconds => queueWaitMs + clock.Elapsed.TotalMilliseconds;
 
         public JObject ToJson() {
             var json = new JObject();
