@@ -136,18 +136,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static Request Parse(JObject parameters) {
-            var mode = (parameters.Value<string>("mode") ?? "export").ToLowerInvariant();
+            var mode = (AgentParams.Get<string>(parameters, "mode") ?? "export").ToLowerInvariant();
             if (mode != "export" && mode != "viewport" && mode != "screen")
                 throw new AgentException("invalid_params", "'mode' must be export, viewport or screen.");
 
-            var width = parameters.Value<int?>("width") ?? DefaultWidth;
+            var width = AgentParams.Get<int?>(parameters, "width") ?? DefaultWidth;
             if (width < MinWidth || width > MaxWidth)
                 throw new AgentException("invalid_params", $"'width' must be from {MinWidth} to {MaxWidth} pixels.");
-            var direction = parameters.Value<string>("direction") ?? "southeast";
+            var direction = AgentParams.Get<string>(parameters, "direction") ?? "southeast";
             if (!Directions.ContainsKey(direction))
                 throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
             var request = new Request {
-                View = string.IsNullOrWhiteSpace(parameters.Value<string>("view")) ? "active" : parameters.Value<string>("view").Trim(),
+                View = string.IsNullOrWhiteSpace(AgentParams.Get<string>(parameters, "view")) ? "active" : AgentParams.Get<string>(parameters, "view").Trim(),
                 Mode = mode,
                 Width = width,
                 Direction = direction,

@@ -56,22 +56,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static AgentRunRequest FromJson(JObject parameters) {
-            var script = parameters.Value<string>("script");
+            var script = AgentParams.Get<string>(parameters, "script");
             if (string.IsNullOrWhiteSpace(script))
                 throw new AgentException("invalid_params", "'script' is required.");
 
             var inputs = parameters["inputs"];
-            var workspace = parameters.Value<string>("workspace");
+            var workspace = AgentParams.Get<string>(parameters, "workspace");
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");
-            var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
+            var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
-                Title = parameters.Value<string>("title") ?? "Agent run",
-                Mode = ParseMode(parameters.Value<string>("mode")),
-                Engine = ParseEngine(parameters.Value<string>("engine")),
+                Title = AgentParams.Get<string>(parameters, "title") ?? "Agent run",
+                Mode = ParseMode(AgentParams.Get<string>(parameters, "mode")),
+                Engine = ParseEngine(AgentParams.Get<string>(parameters, "engine")),
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
                     ? "{}"
                     : inputs.ToString(Formatting.None),

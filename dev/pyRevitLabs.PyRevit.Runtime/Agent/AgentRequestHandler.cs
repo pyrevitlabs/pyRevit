@@ -72,7 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
                     var ids = ParseParameters(() => AgentInspector.ParseIds(parameters));
-                    var includeParameters = ParseParameters(() => parameters.Value<bool?>("parameters") ?? true);
+                    var includeParameters = AgentParams.Get<bool?>(parameters, "parameters") ?? true;
                     return InvokeCapturingDialogs((app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters);
                 case "show":
                     var showRequest = ParseParameters(() => AgentPresenter.Parse(parameters));
@@ -81,7 +81,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var captureRequest = ParseParameters(() => AgentCapture.Parse(parameters));
                     return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters);
                 case "lookup_api":
-                    var query = ParseParameters(() => parameters.Value<string>("name"));
+                    var query = AgentParams.Get<string>(parameters, "name");
                     return AgentApiLookup.Lookup(query);
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
@@ -89,8 +89,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Runs a request's parameter parsing, turning a value of the wrong JSON type into
-        /// <c>invalid_params</c>.
+        /// Runs a request's parameter parsing, turning a value of the wrong JSON type that
+        /// <see cref="AgentParams"/> didn't catch, such as an array item, into <c>invalid_params</c>.
         /// </summary>
         /// <remarks>
         /// Only for parsing that happens before any work starts: once the request has run, these
@@ -101,7 +101,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return parse();
             }
             catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException) {
-                throw new AgentException("invalid_params", "A parameter has the wrong type or is out of range: " + ex.Message);
+                throw new AgentException("invalid_params", "A parameter has the wrong JSON type or is out of range.");
             }
         }
 
@@ -177,7 +177,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
-            var startTimeoutSeconds = ParseParameters(() => parameters.Value<double?>("start_timeout_s"));
+            var startTimeoutSeconds = AgentParams.Get<double?>(parameters, "start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
