@@ -161,6 +161,7 @@ LINE_PATTERN_ELEMENT = type("LinePatternElement", (), {})
 FILL_PATTERN_ELEMENT = type("FillPatternElement", (), {})
 SHARED_PARAMETER_ELEMENT = type("SharedParameterElement", (), {})
 VIEW = type("View", (), {})
+BUILTIN_CATEGORY_VALUES = (-2000500, -2000501, -2000502)
 PROJECTION = 1
 CUT = 2
 
@@ -242,9 +243,15 @@ class _View(object):
         return self._category_overrides.get(category_id, _overrides())
 
 
-def _collector_doc(categories=(), elements_by_class=None, bound_definitions=()):
+def _collector_doc(
+    categories=(),
+    elements_by_class=None,
+    bound_definitions=(),
+    builtin_categories=None,
+):
     return types.SimpleNamespace(
         Settings=types.SimpleNamespace(Categories=list(categories)),
+        builtin_categories=builtin_categories or {},
         ParameterBindings=types.SimpleNamespace(
             Contains=lambda definition: definition in bound_definitions
         ),
@@ -291,6 +298,12 @@ def _load_probe():
         FillPatternElement=FILL_PATTERN_ELEMENT,
         SharedParameterElement=SHARED_PARAMETER_ELEMENT,
         View=VIEW,
+        BuiltInCategory=types.SimpleNamespace(
+            GetValues=lambda _: list(BUILTIN_CATEGORY_VALUES)
+        ),
+        Category=types.SimpleNamespace(
+            GetCategory=lambda doc, value: doc.builtin_categories.get(value)
+        ),
     )
     revit = types.ModuleType("pyrevit.revit")
     revit.Transaction = _Transaction
@@ -350,8 +363,11 @@ class _Progress(object):
 
 
 class FindUnusedTests(unittest.TestCase):
+    """Check how a rolled-back trial deletion classifies a candidate."""
+
     @classmethod
     def setUpClass(cls):
+        """Load the probe once with the pyrevit and Revit stubs."""
         cls.probe = _load_probe()
 
     def _candidate(self, element_id, companions=()):
@@ -360,28 +376,34 @@ class FindUnusedTests(unittest.TestCase):
         )
 
     def test_deleting_only_itself_is_unused(self):
+        """Offer an item whose deletion removes nothing but itself."""
         doc = _FakeDoc({10: {"deleted": [10]}})
         result = self.probe.find_unused(doc, [self._candidate(10)])
         self.assertEqual([x.element_id for x in result], [10])
 
     def test_modifying_another_element_means_in_use(self):
+        """Keep an item whose deletion changes another element."""
         doc = _FakeDoc({10: {"deleted": [10], "modified": [99]}})
         self.assertEqual(self.probe.find_unused(doc, [self._candidate(10)]), [])
 
     def test_deleting_another_element_means_in_use(self):
+        """Keep an item whose deletion takes another element with it."""
         doc = _FakeDoc({10: {"deleted": [10, 11]}})
         self.assertEqual(self.probe.find_unused(doc, [self._candidate(10)]), [])
 
     def test_companion_ids_do_not_count_as_usage(self):
+        """Ignore changes to the item's own graphics styles."""
         doc = _FakeDoc({10: {"deleted": [10, 21, 22], "modified": [21]}})
         candidate = self._candidate(10, companions=[21, 22])
         self.assertEqual(self.probe.find_unused(doc, [candidate]), [candidate])
 
     def test_failures_mean_in_use(self):
+        """Keep an item whose deletion raises warnings or errors."""
         doc = _FakeDoc({10: {"deleted": [10], "failures": 1}})
         self.assertEqual(self.probe.find_unused(doc, [self._candidate(10)]), [])
 
     def test_refused_delete_means_in_use_and_is_logged(self):
+        """Keep a refused item, log why, and keep checking the rest."""
         doc = _FakeDoc({10: {"raises": True}, 11: {"deleted": [11]}})
         self.probe.logger.debug_calls[:] = []
         result = self.probe.find_unused(doc, [self._candidate(10), self._candidate(11)])
@@ -390,10 +412,12 @@ class FindUnusedTests(unittest.TestCase):
         self.assertIn("item 10", self.probe.logger.debug_calls[0])
 
     def test_no_change_event_means_in_use(self):
+        """Keep an item when the commit reports no change."""
         doc = _FakeDoc({10: {}})
         self.assertEqual(self.probe.find_unused(doc, [self._candidate(10)]), [])
 
     def test_commits_without_any_change_event_are_warned_about(self):
+        """Warn once when no check ever produced a change event."""
         doc = _FakeDoc({10: {}, 11: {}})
         self.probe.logger.warning_calls[:] = []
         self.probe.find_unused(doc, [self._candidate(10), self._candidate(11)])
@@ -401,23 +425,27 @@ class FindUnusedTests(unittest.TestCase):
         self.assertIn("2 checks", self.probe.logger.warning_calls[0])
 
     def test_no_warning_once_a_change_event_is_seen(self):
+        """Stay quiet when at least one check produced an event."""
         doc = _FakeDoc({10: {}, 11: {"deleted": [11]}})
         self.probe.logger.warning_calls[:] = []
         self.probe.find_unused(doc, [self._candidate(10), self._candidate(11)])
         self.assertEqual(self.probe.logger.warning_calls, [])
 
     def test_no_warning_when_every_delete_is_refused(self):
+        """Stay quiet when nothing was committed at all."""
         doc = _FakeDoc({10: {"raises": True}})
         self.probe.logger.warning_calls[:] = []
         self.probe.find_unused(doc, [self._candidate(10)])
         self.assertEqual(self.probe.logger.warning_calls, [])
 
     def test_line_style_is_unused_when_only_its_graphics_styles_are_deleted(self):
+        """Match line styles by graphics style, not subcategory id."""
         doc = _FakeDoc({5: {"deleted": [21, 22]}})
         candidate = self._candidate(5, companions=[21, 22])
         self.assertEqual(self.probe.find_unused(doc, [candidate]), [candidate])
 
     def test_rollback_events_are_not_taken_for_commits(self):
+        """Ignore the event raised by rolling back the group."""
         doc = _FakeDoc({10: {}})
         recorder = self.probe._ChangeRecorder(doc)
         recorder.record(None, _ChangedArgs(doc, [10], [], [], GROUP_ROLLED_BACK))
@@ -425,6 +453,7 @@ class FindUnusedTests(unittest.TestCase):
         self.assertFalse(recorder.commit_seen)
 
     def test_changes_in_other_documents_are_ignored(self):
+        """Ignore change events from other open documents."""
         doc = _FakeDoc({10: {"deleted": [10]}})
         other = _FakeDoc({})
         recorder = self.probe._ChangeRecorder(doc)
@@ -432,11 +461,13 @@ class FindUnusedTests(unittest.TestCase):
         self.assertFalse(recorder.changed)
 
     def test_handler_is_removed_after_checking(self):
+        """Unsubscribe from DocumentChanged after a normal run."""
         doc = _FakeDoc({10: {"deleted": [10]}})
         self.probe.find_unused(doc, [self._candidate(10)])
         self.assertEqual(doc.Application.DocumentChanged.handlers, [])
 
     def test_handler_is_removed_when_a_check_raises(self):
+        """Unsubscribe from DocumentChanged even when checking raises."""
         doc = _FakeDoc({10: {"deleted": [10]}})
         progress = types.SimpleNamespace(cancelled=False, update_progress=_raise)
         with self.assertRaises(RuntimeError):
@@ -444,6 +475,7 @@ class FindUnusedTests(unittest.TestCase):
         self.assertEqual(doc.Application.DocumentChanged.handlers, [])
 
     def test_cancelled_progress_stops_checking(self):
+        """Stop at the candidate where the progress bar was cancelled."""
         doc = _FakeDoc({x: {"deleted": [x]} for x in (10, 11, 12)})
         progress = _Progress(cancel_after=1)
         result = self.probe.find_unused(
@@ -454,14 +486,18 @@ class FindUnusedTests(unittest.TestCase):
 
 
 class CollectorTests(unittest.TestCase):
+    """Check usage that raises no change event is excluded before probing."""
+
     @classmethod
     def setUpClass(cls):
+        """Load the probe once with the pyrevit and Revit stubs."""
         cls.probe = _load_probe()
 
     def _collect(self, collector, doc):
         return collector(doc, self.probe._PatternUsage(doc))
 
     def test_line_patterns_set_in_object_styles_are_not_candidates(self):
+        """Exclude patterns set on categories or subcategories in Object Styles."""
         doc = _collector_doc(
             categories=[
                 _Category(101, subcategories=[_Category(-1, cut_pattern_id=102)])
@@ -474,6 +510,7 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual([x.element_id for x in candidates], [103])
 
     def test_patterns_in_view_category_overrides_are_not_candidates(self):
+        """Exclude line and fill patterns used by view category overrides."""
         view = _View(
             category_overrides={
                 1: _overrides(ProjectionLinePatternId=101),
@@ -500,6 +537,7 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual([x.element_id for x in fills], [303])
 
     def test_patterns_in_view_filter_overrides_are_not_candidates(self):
+        """Exclude line and fill patterns used by view filter overrides."""
         template = _View(
             filter_overrides={
                 900: _overrides(CutLinePatternId=101, CutForegroundPatternId=301)
@@ -517,7 +555,45 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual([x.element_id for x in lines], [102])
         self.assertEqual([x.element_id for x in fills], [302])
 
+    def test_patterns_in_overrides_of_categories_missing_from_settings_are_not_candidates(
+        self,
+    ):
+        """Scan overrides of categories such as Internal Origin."""
+        settings_category = _Category(-1, category_id=1)
+        internal_origin = _Category(-1, category_id=-2000500)
+        view = _View(
+            category_overrides={
+                -2000500: _overrides(
+                    ProjectionLinePatternId=101, SurfaceForegroundPatternId=301
+                ),
+            }
+        )
+        doc = _collector_doc(
+            categories=[settings_category],
+            builtin_categories={-2000500: internal_origin, -2000501: settings_category},
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102)],
+                FILL_PATTERN_ELEMENT: [_fill_pattern(x) for x in (301, 302)],
+                VIEW: [view],
+            },
+        )
+        lines = self._collect(self.probe._collect_line_patterns, doc)
+        fills = self._collect(self.probe._collect_fill_patterns, doc)
+        self.assertEqual([x.element_id for x in lines], [102])
+        self.assertEqual([x.element_id for x in fills], [302])
+
+    def test_categories_found_twice_are_checked_once(self):
+        """Check a category found by both lookups only once per view."""
+        settings_category = _Category(-1, category_id=1)
+        doc = _collector_doc(
+            categories=[settings_category],
+            builtin_categories={-2000501: settings_category},
+        )
+        category_ids = self.probe._get_overridable_category_ids(doc)
+        self.assertEqual(category_ids, [1])
+
     def test_views_without_overrides_and_unoverridable_categories_are_skipped(self):
+        """Skip views and categories Revit refuses to override."""
         doc = _collector_doc(
             categories=[_Category(-1, category_id=1), _Category(-1, category_id=2)],
             elements_by_class={
@@ -532,6 +608,7 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual([x.element_id for x in lines], [101])
 
     def test_bound_shared_parameters_are_not_candidates(self):
+        """Exclude shared parameters bound as project parameters."""
         doc = _collector_doc(
             elements_by_class={
                 SHARED_PARAMETER_ELEMENT: [_shared_parameter(x) for x in (201, 202)]
@@ -544,8 +621,11 @@ class CollectorTests(unittest.TestCase):
 
 
 class PurgeTests(unittest.TestCase):
+    """Check what the real purge reports as purged or failed."""
+
     @classmethod
     def setUpClass(cls):
+        """Load the probe once with the pyrevit and Revit stubs."""
         cls.probe = _load_probe()
 
     def _candidates(self, *element_ids):
@@ -555,6 +635,7 @@ class PurgeTests(unittest.TestCase):
         ]
 
     def test_refused_delete_is_reported_and_others_are_purged(self):
+        """Report a refused delete and still purge the others."""
         doc = _FakeDoc({10: {"raises": True}, 11: {"deleted": [11]}})
         purged, failed = self.probe.purge(doc, self._candidates(10, 11))
         self.assertEqual([x.element_id for x in purged], [11])
@@ -563,6 +644,7 @@ class PurgeTests(unittest.TestCase):
         )
 
     def test_rolled_back_commit_reports_every_item_as_failed(self):
+        """Report every item as failed when Revit rolls back the purge."""
         doc = _FakeDoc({10: {"deleted": [10]}, 11: {"deleted": [11], "failures": 1}})
         purged, failed = self.probe.purge(doc, self._candidates(10, 11))
         self.assertEqual(purged, [])
@@ -572,6 +654,7 @@ class PurgeTests(unittest.TestCase):
         )
 
     def test_line_style_counts_as_purged_once_its_graphics_style_is_gone(self):
+        """Confirm a line style is purged through its graphics style."""
         doc = _FakeDoc({5: {"deleted": [5, 6]}, 6: {}})
         candidate = self.probe._make_candidate(
             "Line Styles", 5, "style", companion_ids=[6]

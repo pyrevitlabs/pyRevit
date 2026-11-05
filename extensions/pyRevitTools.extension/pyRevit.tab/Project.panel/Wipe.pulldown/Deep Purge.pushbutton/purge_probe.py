@@ -12,6 +12,10 @@ line patterns set in Object Styles, line and fill patterns set in the
 category or filter overrides of any view or view template, and shared
 parameters bound as project parameters are never offered. Deleting a pattern
 used by a category override in the active view is not reliably reported.
+The override scan covers every category the document resolves from
+`BuiltInCategory`, not only `doc.Settings.Categories`, because categories
+such as Internal Origin are missing there and their override usage raises
+no `DocumentChanged` entry either.
 
 Note:
     Patterns used only by per-element graphic overrides are not scanned up
@@ -132,12 +136,25 @@ def _iter_view_overrides(view, category_ids):
             yield view.GetCategoryOverrides(category_id)
 
 
+def _iter_builtin_categories(doc):
+    for builtin_category in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
+        category = DB.Category.GetCategory(doc, builtin_category)
+        if category is not None:
+            yield category
+
+
+def _get_overridable_category_ids(doc):
+    category_ids = {}
+    for category in list(doc.Settings.Categories) + list(_iter_builtin_categories(doc)):
+        for style_category in [category] + list(category.SubCategories):
+            category_ids.setdefault(
+                get_elementid_value(style_category.Id), style_category.Id
+            )
+    return list(category_ids.values())
+
+
 def _get_view_override_pattern_ids(doc):
-    category_ids = [
-        style_category.Id
-        for category in doc.Settings.Categories
-        for style_category in [category] + list(category.SubCategories)
-    ]
+    category_ids = _get_overridable_category_ids(doc)
     pattern_ids = set()
     for view in query.get_elements_by_class(DB.View, doc=doc):
         if not view.AreGraphicsOverridesAllowed():
