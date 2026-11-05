@@ -139,13 +139,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return ScriptExecutor.ExecuteScript(scriptData, configs);
         }
 
+        /// <remarks>
+        /// The engine is reused between runs and pyrevitlib is loaded live, so a runner module
+        /// imported before its file changed on disk is dropped and imported again. Otherwise the
+        /// run executes the old code while tracebacks quote the lines of the new file.
+        /// </remarks>
         private static string BuildEntryScript(AgentEngine engine) {
             var builder = new StringBuilder();
             if (engine == AgentEngine.CPython)
                 builder.Append("#! python3\n");
             builder.Append(
                 "try:\n" +
-                "    from pyrevit.agent import _runner\n" +
+                "    import importlib\n" +
+                "    import os\n" +
+                "    import sys\n" +
+                "    _loaded = sys.modules.get('pyrevit.agent._runner')\n" +
+                "    if _loaded is not None and getattr(_loaded, '__agent_mtime__', None) != os.path.getmtime(_loaded.__file__):\n" +
+                "        del sys.modules['pyrevit.agent._runner']\n" +
+                "    _runner = importlib.import_module('pyrevit.agent._runner')\n" +
+                "    _runner.__agent_mtime__ = os.path.getmtime(_runner.__file__)\n" +
                 "except Exception:\n" +
                 "    import traceback\n" +
                 "    __agent__.SetError('RunnerImportError', 'Could not import pyrevit.agent', traceback.format_exc())\n" +
