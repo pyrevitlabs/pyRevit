@@ -19,6 +19,7 @@ mlogger = get_logger(__name__)
 _PENDING_SHOWS_SLOT = "pyRevit.forms.pendingDockablePaneShowTokens"
 _PENDING_SHOW_TIMEOUT_SECONDS = 60
 _PENDING_SHOW_STALE_SECONDS = 10
+_MAX_IDLING_STEP_SECONDS = 1.0
 
 
 def _pending_panel_shows():
@@ -112,7 +113,7 @@ def _defer_dockable_panel_show(pane_id):
             _show_deferred_pane(uiapp, pane_id)
             return
         if getattr(uiapp, "ActiveUIDocument", None) is not None:
-            waited[0] += now - last_tick[0]
+            waited[0] += min(now - last_tick[0], _MAX_IDLING_STEP_SECONDS)
         last_tick[0] = now
         if waited[0] >= _PENDING_SHOW_TIMEOUT_SECONDS:
             stop()
@@ -126,9 +127,11 @@ def _defer_dockable_panel_show(pane_id):
     def show_when_created(sender, args):
         try:
             wait_for_pane()
-        except Exception:
+        except Exception as error:
             stop()
-            raise
+            mlogger.error(
+                "Deferred show of dockable panel %s failed: %s", panel_key, error
+            )
 
     uiapp.Idling += show_when_created
 

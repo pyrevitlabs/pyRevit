@@ -142,6 +142,9 @@ class WPFPanel(_WPFMixin, _backend.Panel):
         return self._get_panel_output()
 
 
+_registered_panels = {}
+
+
 def is_registered_dockable_panel(panel_type):
     """Return whether Revit has registered the panel type's stable pane identifier."""
     return UI.DockablePane.PaneIsRegistered(_get_dockable_panel_id(panel_type))
@@ -155,7 +158,8 @@ def register_dockable_panel(panel_type, default_visible=True):
         default_visible (bool): Whether Revit initially shows the pane.
 
     Returns:
-        WPFPanel: The page instance Revit hosts in the pane.
+        WPFPanel: The page instance Revit hosts in the pane. It is kept
+            referenced for the session, so discarding it is safe.
 
     Raises:
         PyRevitException: The type is not a WPFPanel, or Revit already has a
@@ -173,6 +177,7 @@ def register_dockable_panel(panel_type, default_visible=True):
     with _backend.disposing(panel):
         provider = _backend.make_pane_provider(panel, default_visible)
         HOST_APP.uiapp.RegisterDockablePane(pane_id, panel.panel_title, provider)
+    _registered_panels[str(pane_id.Guid)] = panel
     return panel
 
 
@@ -206,7 +211,8 @@ def toggle_dockable_panel(panel_type_or_id, state):
     pane whose window does not exist yet returns immediately and shows it on
     a later ``Idling`` event. The wait has no limit while no document is open;
     once one is, it gives up with a warning after
-    ``_pane_show._PENDING_SHOW_TIMEOUT_SECONDS``. Hiding cancels a pending show, whichever
+    ``_pane_show._PENDING_SHOW_TIMEOUT_SECONDS`` of ``Idling`` ticks, each
+    counted as at most one second, so one long busy gap cannot use it up. Hiding cancels a pending show, whichever
     engine started it. A pending show whose handler stopped running, such as
     one left behind by a pyRevit reload, is replaced by the next show request.
 

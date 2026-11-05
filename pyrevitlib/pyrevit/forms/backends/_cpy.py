@@ -166,7 +166,11 @@ class _Root(object):
             object.__setattr__(self, name, value)
 
 
+_shown_windows = {}
+
+
 def _release(state):
+    _shown_windows.pop(id(state), None)
     state.events.release()
 
 
@@ -188,8 +192,14 @@ class Window(_Root):
     _pyrevit_root_type = Windows.Window
 
     def Show(self):
-        """Show the native window without creating a nested modal dispatcher."""
-        _state(self).root.Show()
+        """Show the native window without creating a nested modal dispatcher.
+
+        The controller stays referenced until the window closes, so a
+        modeless window driven only by bindings keeps its Python setters.
+        """
+        state = _state(self)
+        _shown_windows[id(state)] = self
+        state.root.Show()
 
     def ShowDialog(self):
         """Run the modal dialog and release its Python callbacks once it closes.
@@ -422,11 +432,20 @@ def _load_markup(markup, base_uri):
         stream.Dispose()
 
 
+def _uri_text(uri):
+    """Return the escaped form of ``uri``, so ``#`` and ``%20`` survive XAML."""
+    return uri.AbsoluteUri if uri.IsAbsoluteUri else str(uri)
+
+
 def _resource_sources(previous, pending):
     """Return dictionary URIs to merge into the markup, once each, in order."""
     sources = []
-    merged = [str(item.Source) for item in previous.Resources.MergedDictionaries]
-    queued = [str(Uri(path, UriKind.Absolute)) for path in pending]
+    merged = [
+        _uri_text(item.Source)
+        for item in previous.Resources.MergedDictionaries
+        if item.Source is not None
+    ]
+    queued = [_uri_text(Uri(path, UriKind.Absolute)) for path in pending]
     for source_uri in merged + queued:
         if source_uri not in sources:
             sources.append(source_uri)
