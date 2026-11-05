@@ -95,7 +95,7 @@ Tab Coloring remains underneath the temporary overlay and resumes when it ends.
 
 **Settings > Agent Runtime (MCP) > Highlight the document tab during agent runs** controls `[agent] tab_highlight`, which defaults to `true` and applies to the next run without reloading pyRevit.
 The configuration accessor is `PyRevitConfigs.GetAgentTabHighlight()` / `SetAgentTabHighlight(bool)`; no flat Python userconfig alias is provided.
-Three consecutive visual failures disable highlighting for the Revit process and produce one log entry without changing a run's outcome.
+Three consecutive visual failures disable highlighting until pyRevit is reloaded and produce one log entry without changing a run's outcome.
 
 ### MCP tools
 
@@ -264,6 +264,9 @@ Rules the host enforces:
 - When Revit rolls back one of the script's transactions because of an error-level
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
+- A failure in the host itself reports `host_error` with decision `rolled_back`, or
+  `committed` when the change set had already been kept, or `rollback_incomplete` when the
+  run's rollback failed and its changes may remain in the active document.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
   most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
@@ -350,7 +353,8 @@ Risks:
 - A runaway loop, or any script that never ends, blocks Revit until you end the Revit
   process from Task Manager. Unsaved work in every open document is lost.
 - A transaction the script leaves open is still rolled back when it is held in a global
-  variable, or in a list or dict held in one. A transaction left open inside a function,
+  variable, in a list or dict held in one, or in an attribute of an object held in one
+  (such as `pyrevit.revit.Transaction`). A transaction left open inside a function,
   and not returned or stored globally, is not found, and Revit can crash later when that
   abandoned transaction is finalized.
 
@@ -541,6 +545,7 @@ If process metadata or the registration timestamp cannot establish liveness, dis
 Any successful pipe check includes the registration in discovery.
 If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
 The host recreates its pipe between connections and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
+After ten failed attempts in a row to create the pipe, the host stops listening, logs an error and keeps no pipe until pyRevit is reloaded.
 Excluded registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on
