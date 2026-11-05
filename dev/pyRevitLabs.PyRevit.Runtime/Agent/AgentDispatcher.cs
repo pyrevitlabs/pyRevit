@@ -73,7 +73,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw AgentException.NotRun(BusyMessage(startTimeout));
             }
 
-            while (!item.Completion.Task.Wait(HungPollInterval)) {
+            var finished = ((IAsyncResult)item.Completion.Task).AsyncWaitHandle;
+            while (!finished.WaitOne(HungPollInterval)) {
                 var overdue = ScriptOverdue();
                 if (overdue.HasValue)
                     throw RunHung(overdue.Value);

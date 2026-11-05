@@ -49,6 +49,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void WorkThatFailsReachesTheCallerUnwrapped() {
+            var dispatcher = StartDispatcher();
+
+            var failure = Assert.Throws<AgentException>(() => dispatcher.Invoke(app => {
+                Thread.Sleep(1500);
+                throw new AgentException("no_active_document", "none");
+            }, Long));
+
+            Assert.Equal("no_active_document", failure.Code);
+        }
+
+        [Fact]
         public void WorkOutsideTheScriptPhaseIsWaitedForAsLongAsItTakes() {
             var dispatcher = StartDispatcher();
 
