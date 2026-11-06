@@ -52,7 +52,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return Describe(doc, id, includeParameters);
             }
             catch (Exception ex) {
-                return new JObject { ["id"] = AgentIds.ToValue(id), ["found"] = true, ["error"] = ex.Message };
+                var entry = new JObject { ["id"] = AgentIds.ToValue(id), ["found"] = true };
+                try {
+                    var element = doc.GetElement(id);
+                    entry["class"] = element.GetType().Name;
+                    entry["name"] = SafeName(element);
+                    entry["category"] = element.Category?.Name;
+                }
+                catch (Exception) {
+                }
+                entry["error"] = ex.Message;
+                return entry;
             }
         }
 

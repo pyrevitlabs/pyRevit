@@ -64,8 +64,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <remarks>
-        /// Revit accepts only a result that matches one of the dialog's buttons, so the declining
-        /// answers are tried first and Ok last. A dialog offering none of them, such as one with
+        /// Revit may reject a result that matches none of the dialog's buttons, so the declining
+        /// answers are tried first and Ok last. A dialog that rejects all of them, such as one with
         /// only command links, stays open for the user.
         /// </remarks>
         private static bool TryDismiss(DialogBoxShowingEventArgs e) {
