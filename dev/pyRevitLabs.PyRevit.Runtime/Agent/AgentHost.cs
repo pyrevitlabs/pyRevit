@@ -291,6 +291,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly Logger pathsLogger = LogManager.GetCurrentClassLogger();
         public static readonly TimeSpan RecordRetention = TimeSpan.FromDays(14);
         public static readonly TimeSpan PruneInterval = TimeSpan.FromDays(1);
+        private static readonly object pruneLock = new object();
         private static DateTime nextPrune = DateTime.MinValue;
 
         public static string RootDir => Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
@@ -303,13 +304,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static string CreateRunDir(string runId) {
             var runDir = Path.Combine(RunsDir, DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + runId);
             Directory.CreateDirectory(runDir);
-            if (DateTime.Now >= nextPrune)
-                PruneOldRecordsInBackground();
+            PruneOldRecordsInBackground();
             return runDir;
         }
 
+        /// <remarks>Does nothing when a prune started less than <see cref="PruneInterval"/> ago.</remarks>
         public static void PruneOldRecordsInBackground() {
-            nextPrune = DateTime.Now + PruneInterval;
+            lock (pruneLock) {
+                if (DateTime.Now < nextPrune)
+                    return;
+                nextPrune = DateTime.Now + PruneInterval;
+            }
             System.Threading.Tasks.Task.Run(() => PruneOldRecords(DateTime.Now - RecordRetention));
         }
 
