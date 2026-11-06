@@ -89,6 +89,7 @@ class _CappedOutput(StringIO):
     def __init__(self, limit):
         StringIO.__init__(self)
         self._room = limit
+        self._end = 0
 
     def write(self, text):
         if PY2 and not isinstance(text, _TEXT_TYPES):
@@ -96,8 +97,10 @@ class _CappedOutput(StringIO):
         if self._room > 0:
             kept = text[: self._room]
             self._room -= len(kept)
-            StringIO.seek(self, 0, 2)
+            if StringIO.tell(self) != self._end:
+                StringIO.seek(self, self._end)
             StringIO.write(self, kept)
+            self._end += len(kept)
         return len(text)
 
 
