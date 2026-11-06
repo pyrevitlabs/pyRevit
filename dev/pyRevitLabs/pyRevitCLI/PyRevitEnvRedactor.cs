@@ -36,7 +36,7 @@ namespace pyRevitCLI {
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         private static readonly Regex UrlPattern = new Regex(
-            @"(?<quote>')?(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/(?:(?(quote)[^\s""<>?#']|[^\s""<>?#]))*)?(?<query>[?#](?:(?(quote)[^\s""<>']|[^\s""<>]))*)?",
+            @"(?<quote>')?(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/(?:(?(quote)(?:[^\s""<>?#']|'(?=[\w\-~%/?#=&.:@+]))|[^\s""<>?#]))*)?(?<query>[?#](?:(?(quote)(?:[^\s""<>']|'(?=[\w\-~%/?#=&.:@+]))|[^\s""<>]))*)?",
             RegexOptions.Compiled);
 
         private static readonly Regex ScpUrlPattern = new Regex(
@@ -109,9 +109,11 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Masks URLs. A URL opened by a single quote ends at the next apostrophe;
-        /// any other URL treats apostrophes as part of its path or query, because
-        /// they are legal there and ending early would leave the rest visible.
+        /// Masks URLs. Apostrophes are legal in a path or query, so an unquoted URL
+        /// keeps them all. A URL opened by a single quote ends at an apostrophe only
+        /// when no URL-like character follows it. Where the two readings are
+        /// ambiguous the URL is extended, because over-masking is safe and
+        /// stopping early would leave the rest of the path or query visible.
         /// </summary>
         private static string RedactUrls(string text) =>
             UrlPattern.Replace(text, match => {

@@ -195,7 +195,9 @@ public class EnvRedactorTests {
     [InlineData("origin 'https://git.corp.example.com/team/private?token=abc' next", "origin 'https://***/***?***' next")]
     [InlineData("origin 'https://github.com/org/repo.git' next", "origin 'https://github.com/org/repo.git' next")]
     [InlineData("'https://git.corp.example.com/team/private.git'", "'https://***/***.git'")]
-    [InlineData("origin 'https://git.corp.example.com/team/private.git'/ next", "origin 'https://***/***.git'/ next")]
+    [InlineData("origin 'https://git.corp.example.com/team'private?token=secret' next", "origin 'https://***/***?***' next")]
+    [InlineData("'https://git.corp.example.com/team'private.git'", "'https://***/***.git'")]
+    [InlineData("'https://git.corp.example.com/team'/private?token=secret'", "'https://***/***?***'")]
     [InlineData("origin 'https://git.corp.example.com/team/private.git', next", "origin 'https://***/***.git', next")]
     [InlineData("(origin 'https://git.corp.example.com/team/private.git')", "(origin 'https://***/***.git')")]
     [InlineData("origin 'https://git.corp.example.com/team/private?token=abc'; next", "origin 'https://***/***?***'; next")]
@@ -213,6 +215,17 @@ public class EnvRedactorTests {
         Assert.Equal(expected, redacted);
         Assert.DoesNotContain("private", redacted);
         Assert.DoesNotContain("secret", redacted);
+    }
+
+    [Fact]
+    public void JsonValueWithASingleQuotedUrlContainingAnApostropheIsMaskedWithoutLeaking() {
+        var json = new JObject { ["origin"] = "origin 'https://git.corp.example.com/team'private?token=secret' next" }.ToString(pyRevitLabs.Json.Formatting.None);
+
+        var redacted = PyRevitEnvRedactor.RedactJson(json, Profile);
+
+        Assert.DoesNotContain("private", redacted);
+        Assert.DoesNotContain("secret", redacted);
+        Assert.Contains("origin 'https://***/***?***' next", redacted);
     }
 
     [Fact]
