@@ -274,14 +274,15 @@ namespace pyRevitCLI {
         }
 
         private JToken CallRevit(JObject arguments, string method, JObject parameters) {
-            var selector = arguments["revit"]?.ToString() ?? defaultRevit;
+            var selector = (arguments["revit"] as JValue)?.Value?.ToString() ?? defaultRevit;
             var instance = PyRevitAgentClient.Resolve(selector);
             var requestId = PyRevitAgentClient.NewRequestId();
-            if (method == "run" || sentRequestId.Value == null)
-                sentRequestId.Value = requestId;
             revitGate.Wait();
             try {
-                return PyRevitAgentClient.Call(instance, method, parameters, requestId);
+                var answer = PyRevitAgentClient.Call(instance, method, parameters, requestId);
+                if (method == "run" || sentRequestId.Value == null)
+                    sentRequestId.Value = requestId;
+                return answer;
             }
             finally {
                 revitGate.Release();
