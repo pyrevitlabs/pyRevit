@@ -230,6 +230,7 @@ namespace PythonConsoleControl
         /// <inheritdoc/>
         protected override void OnClosed(EventArgs e)
         {
+            updateDescription.Stop();
             base.OnClosed(e);
             if (toolTip != null)
             {

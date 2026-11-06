@@ -148,6 +148,13 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// a candidate set, never a proof: records whose product year contradicts
         /// the host's own year are dropped, and a candidate set that survives
         /// every tie-breaker resolves to null instead of an arbitrary first match.
+        /// <para>
+        /// File versions are not unique either: a hotfix can be re-released under the
+        /// same version with a new build (21.1.80.35 ships as both 20230515_0935 and
+        /// 20230515_1515). A bare version shared that way resolves to null without a
+        /// warning, because the database is correct and the caller's binary build
+        /// number is what identifies the release.
+        /// </para>
         /// </remarks>
         public static HostProductInfo FindProductInfo(IEnumerable<HostProductInfo> products,
                                                       string identifier,
@@ -190,6 +197,11 @@ namespace pyRevitLabs.TargetApps.Revit {
                 return named[0];
             if (named.Count == 0 && matches.Select(prodInfo => GetProductYearFromVersionString(prodInfo.version)).Distinct().Count() == 1)
                 return matches[0];
+            if (matches.All(prodInfo => prodInfo.version?.ToLower() == key)) {
+                logger.Debug("Host product version \"{0}\" is shared by {1}; only the build number tells them apart.",
+                             identifier, string.Join(", ", matches.Select(prodInfo => prodInfo.release + " (" + prodInfo.build + ")")));
+                return null;
+            }
 
             logger.Warn("Ambiguous host product \"{0}\": \"{1}\" matches {2}. Not guessing; report this to pyRevitLabs so the host database can disambiguate it.",
                         identifier, key, string.Join(", ", matches.Select(prodInfo => prodInfo.release + " (" + prodInfo.version + ")")));
@@ -430,6 +442,26 @@ namespace pyRevitLabs.TargetApps.Revit {
                     + "can be corrected.",
                 identifier, matched.Name, binaryFilePath);
             return null;
+        }
+
+        /// <summary>
+        /// Build a product known only by its year, for a Revit file whose build is not in the host
+        /// database.
+        /// </summary>
+        /// <remarks>
+        /// The result carries no <see cref="Version"/> and is flagged with
+        /// <see cref="IsListedInHostsDatabase"/> false, so it is good for year comparisons only and
+        /// must not be treated as an installed or attachable product.
+        /// </remarks>
+        /// <param name="productYear">Product year, e.g. the <c>Format:</c> year of BasicFileInfo.</param>
+        /// <param name="buildNumber">Build number recorded with the year, if any.</param>
+        public static RevitProduct FromProductYear(int productYear, string buildNumber = null) {
+            return new RevitProduct(
+                new HostProductInfo {
+                    release = string.Format("Autodesk Revit {0}", productYear),
+                    build = buildNumber ?? string.Empty,
+                },
+                isListedInHostsDatabase: false);
         }
 
         public static RevitProduct LookupRevitProduct(Version version) {

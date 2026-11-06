@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 
 using pyRevitLabs.Json;
@@ -25,10 +26,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Workspace { get; private set; }
 
         /// <summary>
+        /// The JSON-RPC <c>id</c> the client sent, kept in the run record so a caller that lost
+        /// the answer can find what became of its request. Set by the request handler.
+        /// </summary>
+        public string RequestId { get; set; }
+
+        /// <summary>
         /// Seconds the script may run before the runner stops it. Covers script execution
         /// only, not waiting to start or the approval prompt.
         /// </summary>
         public double TimeoutSeconds { get; private set; }
+
+        /// <summary>
+        /// <see cref="Stopwatch"/> timestamp of when the request was parsed on the pipe thread,
+        /// so the run record can show how long it waited for the Revit main thread.
+        /// </summary>
+        public long ReceivedTimestamp { get; } = Stopwatch.GetTimestamp();
 
         public const double DefaultTimeoutSeconds = 300;
         public const double MaxTimeoutSeconds = 3600;
@@ -78,6 +91,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["inputs"] = JToken.Parse(InputsJson),
                 ["workspace"] = Workspace,
                 ["timeout_s"] = TimeoutSeconds,
+                ["request_id"] = RequestId,
             };
         }
 

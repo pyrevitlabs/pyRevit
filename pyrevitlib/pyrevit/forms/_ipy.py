@@ -30,7 +30,9 @@ if not IRONPY:
 
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import applocales
 from pyrevit.coreutils import colors
+from pyrevit.coreutils import envvars
 
 _perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
@@ -496,8 +498,14 @@ class _WPFMixin(object):
         Elements that declare their own Foreground are left untouched, and so
         are theme-brush backgrounds, which already pair with the theme
         foreground. Translucent backgrounds are left untouched because their
-        effective color depends on the surface below them. Safe to call again
-        to re-evaluate after a theme change.
+        effective color depends on the surface below them. Contrast is supplied
+        by a style setter so disabled-state triggers remain authoritative,
+        including when IsEnabled changes after the window opens. Safe to call
+        again after a theme change; unchanged brushes reuse the managed style.
+        Previously managed elements that stop qualifying regain their original
+        style, unless a local Foreground has been authored. Detached elements
+        are dropped from tracking on the next pass, and a failed element does
+        not prevent the remaining controls from updating.
         """
         res = self.Resources
         try:
@@ -518,38 +526,56 @@ class _WPFMixin(object):
         if not candidates:
             return
 
-        managed = getattr(self, "_contrast_managed", None)
-        if managed is None:
-            managed = set()
-            self._contrast_managed = managed
+        previous_managed = getattr(self, "_contrast_managed", {})
+        managed = {}
+        self._contrast_managed = managed
 
         for element in _walk_logical_tree(self):
-            fore_prop = _foreground_property(element)
-            back_prop = _background_property(element)
-            if fore_prop is None or back_prop is None:
+            try:
+                if element in previous_managed:
+                    managed[element] = previous_managed[element]
+                fore_prop = _foreground_property(element)
+                back_prop = _background_property(element)
+                if fore_prop is None or back_prop is None:
+                    continue
+                if (
+                    element.ReadLocalValue(fore_prop)
+                    != framework.Windows.DependencyProperty.UnsetValue
+                ):
+                    continue
+                brush = (
+                    element.GetValue(back_prop)
+                    if _is_authored_value(element, back_prop)
+                    else None
+                )
+                if (
+                    not isinstance(brush, Media.SolidColorBrush)
+                    or brush.Color.A != 0xFF
+                    or _argb(brush.Color) in theme_argbs
+                ):
+                    contrast_style = managed.get(element)
+                    if contrast_style is not None:
+                        if element.Style is contrast_style:
+                            element.Style = contrast_style.BasedOn
+                        del managed[element]
+                    continue
+                background = brush.Color
+                best = max(
+                    candidates,
+                    key=lambda candidate: _contrast_ratio(background, candidate.Color),
+                )
+                base_style = element.Style
+                if element in managed and base_style is managed[element]:
+                    if base_style.Setters[0].Value is best:
+                        continue
+                    base_style = base_style.BasedOn
+                contrast_style = framework.Windows.Style(element.GetType(), base_style)
+                contrast_style.Setters.Add(framework.Windows.Setter(fore_prop, best))
+                element.Style = contrast_style
+                managed[element] = contrast_style
+            except Exception as contrast_error:
+                mlogger.debug("Could not apply contrast foreground: %s", contrast_error)
                 continue
-            if not _is_authored_value(element, back_prop):
-                continue
-            brush = element.GetValue(back_prop)
-            if not isinstance(brush, Media.SolidColorBrush):
-                continue
-            background = brush.Color
-            if background.A != 0xFF:
-                continue
-            if _argb(background) in theme_argbs:
-                continue
-            if (
-                element.ReadLocalValue(fore_prop)
-                != framework.Windows.DependencyProperty.UnsetValue
-                and element not in managed
-            ):
-                continue
-            best = max(
-                candidates,
-                key=lambda candidate: _contrast_ratio(background, candidate.Color),
-            )
-            element.SetValue(fore_prop, best)
-            managed.add(element)
 
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
@@ -970,6 +996,55 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         return WindowToggler(self)
 
 
+def activate_open_window(envvar):
+    """Bring a modeless window left open by an earlier run to the front.
+
+    Single-instance guard for modeless tools: the tool stores its window
+    under ``envvar`` with ``script.set_envvar`` when it opens it, and calls
+    this on every run before creating a new one. A minimized window is
+    restored before activation; a hidden one is left hidden.
+
+    Openness is judged by the window's native handle, which WPF releases on
+    close, not by ``IsLoaded``, which stays True after ``Close()``. Callers
+    therefore need not clear ``envvar`` in their ``Closed`` handler.
+
+    Args:
+        envvar (str): pyRevit environment variable holding the window.
+
+    Returns:
+        (bool): True when a window already exists, meaning the caller must
+            not open another. It does not promise the window is now in front:
+            Windows may refuse the foreground request, and a hidden window
+            stays hidden. False otherwise; a stale (closed) reference is
+            cleared.
+
+    Examples:
+        ```python
+        from pyrevit import forms, script
+
+        if not forms.activate_open_window("MYTOOL_WINDOW"):
+            window = MyToolWindow("MyTool.xaml")
+            script.set_envvar("MYTOOL_WINDOW", window)
+            window.show()
+        ```
+    """
+    window = envvars.get_pyrevit_env_var(envvar)
+    if window is None:
+        return False
+    try:
+        is_open = Interop.WindowInteropHelper(window).Handle != framework.IntPtr.Zero
+    except Exception:
+        is_open = False
+    if not is_open:
+        envvars.set_pyrevit_env_var(envvar, None)
+        return False
+    if window.IsVisible:
+        if window.WindowState == framework.Windows.WindowState.Minimized:
+            window.WindowState = framework.Windows.WindowState.Normal
+        window.Activate()
+    return True
+
+
 class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     r"""WPF panel base class for all pyRevit dockable panels.
 
@@ -1266,7 +1341,9 @@ class TemplateUserInputWindow(WPFWindow):
             self.Title = (
                 localized_title if isinstance(localized_title, str) else "User Input"
             )
-        self.Width = width
+        self._requested_width = width
+        if width is not None:
+            self.Width = width
         self.Height = height
 
         self._context = context
@@ -1565,8 +1642,6 @@ class SelectFromList(TemplateUserInputWindow):
 
     """
 
-    in_check = False
-    in_uncheck = False
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
     resolve_theme = True
@@ -1734,9 +1809,12 @@ class SelectFromList(TemplateUserInputWindow):
             return
 
         if isinstance(ctx, dict):
+            seen_ids = set()
             for group_items in ctx.values():
                 for item in group_items:
-                    yield item
+                    if id(item) not in seen_ids:
+                        seen_ids.add(id(item))
+                        yield item
         elif isinstance(ctx, (list, tuple, set)):
             for item in ctx:
                 yield item
@@ -1850,23 +1928,17 @@ class SelectFromList(TemplateUserInputWindow):
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
-    def check_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as checked."""
-        if not self.in_check:
-            try:
-                self.in_check = True
-                self._set_states(state=True, selected=True)
-            finally:
-                self.in_check = False
+    def checkbox_clicked(self, sender, args):  # pylint: disable=W0613
+        """Apply user toggles without treating binding updates as user input.
 
-    def uncheck_selected(self, sender, args):  # pylint: disable=W0613
-        """Mark selected checkboxes as unchecked."""
-        if not self.in_uncheck:
-            try:
-                self.in_uncheck = True
-                self._set_states(state=False, selected=True)
-            finally:
-                self.in_uncheck = False
+        Checked and Unchecked also fire when filtering rebuilds the item
+        containers. Only Click should propagate a toggle to selected rows.
+        """
+        state = bool(sender.IsChecked)
+        item = sender.DataContext
+        if isinstance(item, TemplateListItem):
+            item.checked = state
+        self._set_states(state=state, selected=True)
 
     def button_reset(self, sender, args):  # pylint: disable=W0613
         """Handle reset button click."""
@@ -1953,6 +2025,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
         recognize_access_key (bool): recognize '_' as mark of access key
+        width (int): window width
 
     Returns:
         (str | tuple[str, dict]): name of selected option.
@@ -1993,9 +2066,24 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     xaml_source = "CommandSwitchWindow.xaml"
 
+    RESOURCES = {
+        "command_switch_window_width": {
+            "en_us": DEFAULT_CMDSWITCHWND_WIDTH,
+            "fr_fr": 700,
+            "ru": 700,
+            "chinese_s": DEFAULT_CMDSWITCHWND_WIDTH,
+            "ko": 700,
+            "es_es": 750,
+            "de_de": 700,
+            "pt_br": 700,
+        },
+    }
+
+    def _ls(self, key):
+        return applocales.get_locale_string(self.RESOURCES[key])
+
     def _setup(self, **kwargs):
         self.selected_switch = ""
-        self.Width = DEFAULT_CMDSWITCHWND_WIDTH
         self.Title = "Command Options"
 
         message = kwargs.get("message", None)
@@ -2005,11 +2093,20 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         configs = kwargs.get("config", None)
 
-        self.message_label.Content = message if message else "Pick a command option:"
+        self.message_label.Content = (
+            message
+            if message
+            else self.get_locale_string(
+                "CommandSwitchWindow.MessageLabel.Content", "Pick a command option:"
+            )
+        )
 
         self.Resources["pyRevitRecognizesAccessKey"] = kwargs.get(
             "recognize_access_key", DEFAULT_RECOGNIZE_ACCESS_KEY
         )
+
+        if self._requested_width is None:
+            self.Width = self._ls("command_switch_window_width")
 
         # creates the switches first
         for switch, state in self._switches.items():
@@ -2031,6 +2128,23 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self._setup_response()
         self.search_tb.Focus()
         self._filter_options()
+
+    @classmethod
+    def show(
+        cls,
+        context,
+        title=None,
+        width=None,
+        height=DEFAULT_INPUTWINDOW_HEIGHT,
+        **kwargs
+    ):
+        return super(CommandSwitchWindow, cls).show(
+            context,
+            title=title,
+            width=width,
+            height=height,
+            **kwargs
+        )
 
     @staticmethod
     def _set_config(item, config_dict):
@@ -2056,7 +2170,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 else:
                     button.Visibility = WPF_VISIBLE
         else:
-            self.search_tb.Tag = (
+            self.search_tb.Tag = self.get_locale_string(
+                "CommandSwitchWindow.SearchTextBox.Tag",
                 "Type to Filter / Tab to Select / Enter or Click to Run"
             )
             for button in self.button_list.Children:
@@ -2812,6 +2927,14 @@ class SheetOption(TemplateListItem):
         return self.item.SheetNumber
 
 
+def _get_view_type_label(view):
+    view_type_el = view.Document.GetElement(view.GetTypeId())
+    family_name = getattr(view_type_el, "FamilyName", None)
+    if family_name:
+        return family_name
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", str(view.ViewType))
+
+
 class ViewOption(TemplateListItem):
     """View wrapper for :func:`select_views`."""
 
@@ -2821,7 +2944,10 @@ class ViewOption(TemplateListItem):
     @property
     def name(self):
         """View name."""
-        return "{} ({})".format(revit.query.get_name(self.item), self.item.ViewType)
+        return "{} ({})".format(
+            revit.query.get_name(self.item),
+            _get_view_type_label(self.item),
+        )
 
 
 class LevelOption(TemplateListItem):
@@ -3026,8 +3152,13 @@ def select_views(
     filterfunc=None,
     doc=None,
     use_selection=False,
+    group_by_view_type=True,
 ):
     """Standard form for selecting views.
+
+    Views are grouped by view type and the type can be selected from a
+    drop down box at the top of window. Type names are localized using
+    Revit's own labels.
 
     Args:
         title (str, optional): list window title
@@ -3041,6 +3172,9 @@ def select_views(
             source document for views; defaults to active document
         use_selection (bool, optional):
             ask if user wants to use currently selected views.
+        group_by_view_type (bool, optional):
+            show a view type drop down with an "All Views" entry first.
+            Defaults to True
 
     Returns:
         (list[DB.View]): list of selected views
@@ -3072,8 +3206,33 @@ def select_views(
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
 
+    view_ops = sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name)
+
+    if group_by_view_type:
+        ops_by_type = {}
+        for view_op in view_ops:
+            type_label = _get_view_type_label(view_op.item)
+            ops_by_type.setdefault(type_label, []).append(view_op)
+
+        all_ops = OrderedDict()
+        all_ops["All Views"] = view_ops
+        for type_label in sorted(ops_by_type):
+            all_ops[type_label] = ops_by_type[type_label]
+
+        return SelectFromList.show(
+            all_ops,
+            title=title,
+            group_selector_title="View Type:",
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True,
+            default_group="All Views",
+            sort_groups="unsorted",
+        )
+
     selected_views = SelectFromList.show(
-        sorted([ViewOption(x) for x in all_graphviews], key=lambda x: x.name),
+        view_ops,
         title=title,
         button_name=button_name,
         width=width,

@@ -52,7 +52,9 @@ class DecisionTests(TestCase):
         self.assertEqual(1, added["changes"]["added_count"])
         deleted = _modify(
             "t = DB.Transaction(doc, 'delete level')\nt.Start()\n"
-            "doc.Delete(DB.ElementId(inputs['id']))\nt.Commit()\n",
+            "doc.Delete({element})\nt.Commit()\n".format(
+                element=harness.INPUT_ELEMENT_ID
+            ),
             inputs={"id": added["result"]},
         )
         self.assertEqual(1, deleted["changes"]["deleted_count"])
@@ -153,8 +155,8 @@ class RollbackTests(TestCase):
         before = harness.comment(_wall())
         response = _modify(
             "t = DB.Transaction(doc, 'left open')\nt.Start()\n"
-            "doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-open')\n".format(
-                harness.COMMENTS
+            "doc.GetElement({element}).get_Parameter({}).Set('agent-open')\n".format(
+                harness.COMMENTS, element=harness.INPUT_ELEMENT_ID
             ),
             inputs={"id": _wall()},
         )
@@ -169,27 +171,45 @@ class RollbackTests(TestCase):
             "def change():\n"
             "    transaction = DB.Transaction(doc, 'helper transaction')\n"
             "    transaction.Start()\n"
-            "    doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-local')\n"
+            "    doc.GetElement({element}).get_Parameter({}).Set('agent-local')\n"
             "    raise ValueError('boom')\n"
-            "change()\n".format(harness.COMMENTS),
+            "change()\n".format(harness.COMMENTS, element=harness.INPUT_ELEMENT_ID),
             inputs={"id": _wall()},
         )
         self.assertEqual("ValueError", response["error"]["type"])
         self.assertEqual(before, harness.comment(_wall()))
         self.assertFalse(harness.session().project.IsModifiable)
 
-    def test_function_local_transaction_left_open_is_rolled_back_and_reported(self):
-        """A transaction a helper function never ends is rolled back and reported."""
+    def test_function_local_transaction_left_open_on_return_is_rolled_back(self):
+        """A helper that returns with its transaction still open cannot orphan it."""
         before = harness.comment(_wall())
         response = _modify(
             "def change():\n"
             "    transaction = DB.Transaction(doc, 'helper transaction')\n"
             "    transaction.Start()\n"
-            "    doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-local-open')\n"
-            "change()\n".format(harness.COMMENTS),
+            "    doc.GetElement({element}).get_Parameter({}).Set('agent-local')\n"
+            "change()\n".format(harness.COMMENTS, element=harness.INPUT_ELEMENT_ID),
             inputs={"id": _wall()},
         )
         self.assertEqual("transaction_left_open", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+        self.assertFalse(harness.session().project.IsModifiable)
+
+    def test_timeout_in_a_helper_rolls_back_its_open_transaction(self):
+        """A timeout inside a helper still finds the transaction only that helper holds."""
+        before = harness.comment(_wall())
+        response = _modify(
+            "def change():\n"
+            "    transaction = DB.Transaction(doc, 'helper transaction')\n"
+            "    transaction.Start()\n"
+            "    doc.GetElement({element}).get_Parameter({}).Set('agent-local')\n"
+            "    while True:\n"
+            "        pass\n"
+            "change()\n".format(harness.COMMENTS, element=harness.INPUT_ELEMENT_ID),
+            inputs={"id": _wall()},
+            timeout=2,
+        )
+        self.assertEqual("timeout", response["error"]["type"])
         self.assertEqual(before, harness.comment(_wall()))
         self.assertFalse(harness.session().project.IsModifiable)
 

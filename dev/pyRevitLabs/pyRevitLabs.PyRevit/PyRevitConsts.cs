@@ -137,6 +137,16 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsAgentUserSkillsEnabledDefault = false;
         public const string ConfigsAgentRequireSessionKey = "require_session";
         public const bool ConfigsAgentRequireSessionDefault = true;
+        /// <summary>
+        /// Runs agent scripts without the in-script timeout and transaction checks. Off unless
+        /// the user opts in.
+        /// </summary>
+        public const string ConfigsAgentRecklessKey = "reckless";
+        public const bool ConfigsAgentRecklessDefault = false;
+        /// <summary>Controls the temporary accent overlay on the document used by an agent run.</summary>
+        public const string ConfigsAgentTabHighlightKey = "tab_highlight";
+        /// <summary>Agent document identification is enabled unless explicitly disabled.</summary>
+        public const bool ConfigsAgentTabHighlightDefault = true;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";

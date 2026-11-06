@@ -477,9 +477,8 @@ namespace pyRevitExtensionParser
 
             // skip disabled extensions before walking the component tree
             var extConfig = GetConfig().ParseExtensionByName(extName);
-            if (extConfig != null && extConfig.Disabled)
-                return null;
-            if (extConfig == null && !IsExtensionDefaultEnabled(extDir))
+            var disabled = extConfig?.Disabled ?? !IsExtensionDefaultEnabled(extDir);
+            if (disabled)
                 return null;
 
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
@@ -857,6 +856,18 @@ namespace pyRevitExtensionParser
             }
         }
 
+        /// <summary>
+        /// Returns the directories searched for extensions: the clone's shipped
+        /// extensions, the per-user third-party default, then the user extension
+        /// paths of the active config.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: user extension paths come from the active config alone, the
+        /// same file the Settings window writes. Reading a second config here would
+        /// load paths the user can neither see nor remove (#3908). Machine paths
+        /// reach standard users of an all-users install through
+        /// <c>PyRevitConfigService.SyncMachineExtensionPaths</c> instead.
+        /// </remarks>
         internal static List<string> GetExtensionRoots()
         {
             var roots = new List<string>();
@@ -886,56 +897,6 @@ namespace pyRevitExtensionParser
             var userExtensions = GetConfig().UserExtensionsList
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-
-            if (PyRevitInstallScope.IsAllUsersInstall())
-            {
-                var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
-                var machinePath = PyRevitInstallScope.FindConfigIniInDirectory(machineRoot)
-                    ?? Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
-
-                if (!PyRevitInstallScope.HasReadOnlyAttribute(machinePath))
-                {
-                    var activeConfig = PyRevitInstallScope.GetActiveConfig(createIfMissing: false);
-                    string otherConfigPath = null;
-                    if (activeConfig.IsMachineConfig)
-                    {
-                        var perUserRoot = PyRevitLabsConsts.PyRevitPath;
-                        var perUserPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserRoot)
-                            ?? Path.Combine(perUserRoot, PyRevitLabsConsts.DefaultConfigsFileName);
-                        if (File.Exists(perUserPath) &&
-                            !string.Equals(perUserPath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            otherConfigPath = perUserPath;
-                        }
-                    }
-                    else
-                    {
-                        if (File.Exists(machinePath) &&
-                            !string.Equals(machinePath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            otherConfigPath = machinePath;
-                        }
-                    }
-
-                    if (otherConfigPath != null)
-                    {
-                        try
-                        {
-                            var otherConfig = PyRevitConfig.Load(otherConfigPath);
-                            var existingPaths = new HashSet<string>(userExtensions, StringComparer.OrdinalIgnoreCase);
-                            foreach (var path in otherConfig.UserExtensionsList)
-                            {
-                                if (existingPaths.Add(path))
-                                    userExtensions.Add(path);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Debug("Could not read extension paths from '{0}': {1}", otherConfigPath, ex.Message);
-                        }
-                    }
-                }
-            }
 
             var userExtensionsCount = 0;
             var userExtensionsAdded = 0;
@@ -1119,6 +1080,7 @@ namespace pyRevitExtensionParser
                             scriptPath = bundleDirFiles.FirstOrDefault(f =>
                                 (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
                                  (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) &&
+                                  !string.Equals(Path.GetFileName(f), $"config{scriptExt}", StringComparison.OrdinalIgnoreCase) &&
                                   !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
                             if (scriptPath != null)
                                 break;

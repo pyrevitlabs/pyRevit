@@ -225,8 +225,8 @@ def copy_view_contents(
 
 def copy_view_props(source_view, dest_view):
     dest_view.Scale = source_view.Scale
-    dest_view.Parameter[VIEW_TOS_PARAM].Set(
-        source_view.Parameter[VIEW_TOS_PARAM].AsString()
+    dest_view.get_Parameter(VIEW_TOS_PARAM).Set(
+        source_view.get_Parameter(VIEW_TOS_PARAM).AsString()
     )
 
 
@@ -549,9 +549,9 @@ def copy_sheet_revisions(activedoc, source_sheet, dest_doc, dest_sheet):
 
 def copy_sheet_guides(activedoc, source_sheet, dest_doc, dest_sheet):
     # sheet guide
-    source_sheet_guide_param = source_sheet.Parameter[
+    source_sheet_guide_param = source_sheet.get_Parameter(
         DB.BuiltInParameter.SHEET_GUIDE_GRID
-    ]
+    )
     source_sheet_guide_element = activedoc.GetElement(
         source_sheet_guide_param.AsElementId()
     )
@@ -575,9 +575,9 @@ def copy_sheet_guides(activedoc, source_sheet, dest_doc, dest_sheet):
         if dest_guide:
             # set the guide
             with revit.Transaction("Set Sheet Guide", doc=dest_doc):
-                dest_sheet_guide_param = dest_sheet.Parameter[
+                dest_sheet_guide_param = dest_sheet.get_Parameter(
                     DB.BuiltInParameter.SHEET_GUIDE_GRID
-                ]
+                )
                 dest_sheet_guide_param.Set(dest_guide.Id)
         else:
             logger.error(

@@ -403,6 +403,7 @@
     <system:String x:Key="Agent.Privacy">Todo lo que el agente lee (nombres de elementos, valores de parámetros, resultados) se envía al proveedor del modelo del agente.</system:String>
     <system:String x:Key="Agent.Check">Host de agentes (beta)</system:String>
     <system:String x:Key="Agent.RequireSession">Requerir una sesión: los agentes solo pueden leer o modificar el modelo después de que inicies una en el panel de agentes (recomendado)</system:String>
+    <system:String x:Key="Agent.TabHighlight">Resaltar la pestaña del documento durante la ejecución del agente</system:String>
     <system:String x:Key="Agent.Policy">Cambios en el modelo</system:String>
     <system:String x:Key="Agent.Policy.Ask">Pedir mi aprobación en Revit antes de cada cambio</system:String>
     <system:String x:Key="Agent.Policy.Auto">Automático: aplicar los cambios sin preguntar (cada cambio sigue siendo un solo paso de deshacer)</system:String>

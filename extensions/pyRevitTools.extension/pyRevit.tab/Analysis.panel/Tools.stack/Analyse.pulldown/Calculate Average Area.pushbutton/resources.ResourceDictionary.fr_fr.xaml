@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="kind_area">Surface</sys:String>
+    <sys:String x:Key="kind_room">Pièce</sys:String>
+    <sys:String x:Key="kind_space">Espace</sys:String>
+    <sys:String x:Key="column_element">Élément</sys:String>
+    <sys:String x:Key="column_number">Numéro</sys:String>
+    <sys:String x:Key="column_name">Nom</sys:String>
+    <sys:String x:Key="column_level">Niveau</sys:String>
+    <sys:String x:Key="column_area">Surface</sys:String>
+    <sys:String x:Key="skipped_title">Ignorés (non placés)</sys:String>
+    <sys:String x:Key="total_found">Total trouvé : {}</sys:String>
+    <sys:String x:Key="average_area">Surface moyenne : {}</sys:String>
+    <sys:String x:Key="average_area_alt">{:.4f} acres · {:.4f} hectares</sys:String>
+    <sys:String x:Key="select_spatial_element">Sélectionnez au moins une pièce, une surface ou un espace.</sys:String>
+</ResourceDictionary>

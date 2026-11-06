@@ -452,6 +452,7 @@ class SettingsWindow(forms.WPFWindow):
             PyRevit.PyRevitConfigs.GetAgentRequireSession()
         )
         self.agent_require_session_cb.IsChecked = self._agent_require_session_at_open
+        self.agent_tab_highlight_cb.IsChecked = PyRevit.PyRevitConfigs.GetAgentTabHighlight()
         policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
@@ -1069,6 +1070,9 @@ class SettingsWindow(forms.WPFWindow):
 
         PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
         PyRevit.PyRevitConfigs.SetAgentRequireSession(require_session)
+        PyRevit.PyRevitConfigs.SetAgentTabHighlight(
+            bool(self.agent_tab_highlight_cb.IsChecked)
+        )
         if self.agent_policy_readonly_rb.IsChecked:
             PyRevit.PyRevitConfigs.SetAgentPolicy("readonly")
         elif self.agent_policy_auto_rb.IsChecked:

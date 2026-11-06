@@ -1,115 +1,132 @@
-from __future__ import print_function
-from pyrevit import script, revit, DB, forms, EXEC_PARAMS
+# -*- coding: utf-8 -*-
+"""Place three model lines intersecting at the centroid of the selected elements."""
+
+from pyrevit import EXEC_PARAMS
+from pyrevit import forms, script
+from pyrevit import revit, DB
+from pyrevit.coreutils import applocales
+from pyrevit.revit import query
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
-doc = revit.doc
-uidoc = revit.uidoc
-
 logger = script.get_logger()
-output = script.get_output()
+
+RESOURCES = script.get_bundle_file("resources.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
 def merge_solids(solids):
-    """Merges the provided list of solids into a single unified solid
+    """Merge the solids into one by boolean union.
+
+    Solids that fail to merge are logged and left out of the result.
 
     Args:
-        solids (list(DB.Solid)): The solids to merge
-
-    Raises:
-        ValueError: If the input is an empty list
+        solids (list[DB.Solid]): Non-empty list of solids.
 
     Returns:
-        DB.Solid: The union of the solids
+        DB.Solid: The union of the solids.
     """
     union = None
-    if not solids:
-        raise ValueError("List of provided solids was empty.")
     for solid in solids:
         if not union:
             union = solid
-        else:
-            try:
-                union = DB.BooleanOperationsUtils.ExecuteBooleanOperation(
-                    union, solid, DB.BooleanOperationsType.Union
+            continue
+        try:
+            union = DB.BooleanOperationsUtils.ExecuteBooleanOperation(
+                union, solid, DB.BooleanOperationsType.Union
+            )
+        except InvalidOperationException:
+            logger.error(
+                "Failed to merge solid from element {}, "
+                "it will be excluded from the calculation".format(
+                    revit.ElementWrapper(solid_owner(solid)).name
                 )
-            except InvalidOperationException:
-                ref = solid.Faces[0].Reference.ConvertToStableRepresentation(doc)
-                uid = ref.split(":")[0]
-                e = doc.GetElement(uid)
-                logger.error(
-                    "Failed to merge solid from element {}, "
-                    "it will be excluded from the calculation".format(
-                        revit.ElementWrapper(e).name
-                    )
-                )
+            )
     return union
 
 
-cfg = script.get_config()
-logger.debug("loaded config {}".format(cfg))
-line_category = doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
-line_subcategories = line_category.SubCategories
-line_styles = [
-    lsc.GetGraphicsStyle(DB.GraphicsStyleType.Projection) for lsc in line_subcategories
-]
-line_styles.sort(key=lambda x: x.Name)
-logger.debug("got linestyles: {}".format([ls.Name for ls in line_styles]))
-try:
-    logger.debug("searching for line style {}".format(cfg.line_style))
-    line_style = next((ls for ls in line_styles if ls.Name == cfg.line_style), None)
-    logger.debug("line style found")
-except AttributeError:
-    logger.debug("no line style in config")
-    line_style = None
-if EXEC_PARAMS.config_mode:
+def solid_owner(solid):
+    stable_reference = solid.Faces[0].Reference.ConvertToStableRepresentation(revit.doc)
+    return revit.doc.GetElement(stable_reference.split(":")[0])
+
+
+def collect_solids(elements):
+    solids = []
+    for element in elements:
+        logger.debug("processing {}".format(element.Name))
+        solids.extend(
+            geometry
+            for geometry in query.get_geometry(element, compute_references=True) or []
+            if isinstance(geometry, DB.Solid) and geometry.Faces.Size > 0
+        )
+    return solids
+
+
+def collect_line_styles():
+    line_category = revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
+    line_styles = [
+        subcategory.GetGraphicsStyle(DB.GraphicsStyleType.Projection)
+        for subcategory in line_category.SubCategories
+    ]
+    return sorted(line_styles, key=lambda style: style.Name)
+
+
+def load_configured_line_style(line_styles):
+    configured_name = script.get_config().get_option("line_style", None)
+    logger.debug("configured line style: {}".format(configured_name))
+    return next((style for style in line_styles if style.Name == configured_name), None)
+
+
+def choose_line_style(line_styles):
     line_style = forms.SelectFromList.show(
-        line_styles, name_attr="Name", title="Select Line Style to be used"
+        line_styles, name_attr="Name", title=_t("select_line_style")
     )
-    if line_style:
-        cfg.line_style = line_style.Name
-        script.save_config()
-        logger.debug("saved selected line style to config")
+    if not line_style:
+        script.exit()
+    config = script.get_config()
+    config.line_style = line_style.Name
+    script.save_config()
+    return line_style
 
-selection = revit.get_selection()
-if not selection:
-    forms.alert("You must select one element.", exitscript=True)
-logger.debug("selection: {}".format(selection))
 
-extracted_solids = []
+def place_centroid_marker(centroid, line_style):
+    with revit.Transaction(_t("transaction_name")):
+        horizontal_plane = DB.SketchPlane.Create(
+            revit.doc, DB.Plane.CreateByNormalAndOrigin(DB.XYZ.BasisZ, centroid)
+        )
+        vertical_plane = DB.SketchPlane.Create(
+            revit.doc, DB.Plane.CreateByNormalAndOrigin(DB.XYZ.BasisY, centroid)
+        )
+        axes = (
+            (DB.XYZ.BasisX, horizontal_plane),
+            (DB.XYZ.BasisY, horizontal_plane),
+            (DB.XYZ.BasisZ, vertical_plane),
+        )
+        for direction, sketch_plane in axes:
+            line = DB.Line.CreateBound(centroid - direction, centroid + direction)
+            model_line = revit.doc.Create.NewModelCurve(line, sketch_plane)
+            if line_style:
+                model_line.LineStyle = line_style
 
-for element in selection:
-    logger.debug("processing {}".format(element.Name))
-    extracted_solids.extend(
-        [
-            g
-            for g in revit.query.get_geometry(element, compute_references=True)
-            if isinstance(g, DB.Solid) and g.Faces.Size > 0
-        ]
-    )
 
-logger.debug("extracted_solids: {}".format(extracted_solids))
+def main():
+    selection = revit.get_selection()
+    if not selection:
+        forms.alert(_t("select_element"), exitscript=True)
 
-merged_solid = merge_solids(extracted_solids)
-logger.debug("merged_solid: {}".format(merged_solid))
+    line_styles = collect_line_styles()
+    if EXEC_PARAMS.config_mode:
+        line_style = choose_line_style(line_styles)
+    else:
+        line_style = load_configured_line_style(line_styles)
 
-centroid = merged_solid.ComputeCentroid()
-logger.debug("centroid: {}".format(centroid))
+    solids = collect_solids(selection)
+    if not solids:
+        forms.alert(_t("no_solid_geometry"), exitscript=True)
 
-with revit.Transaction("Get Centroid"):
-    sp1 = DB.SketchPlane.Create(
-        doc, DB.Plane.CreateByNormalAndOrigin(DB.XYZ.BasisZ, centroid)
-    )
-    sp2 = DB.SketchPlane.Create(
-        doc, DB.Plane.CreateByNormalAndOrigin(DB.XYZ.BasisY, centroid)
-    )
-    c1 = DB.Line.CreateBound(centroid - DB.XYZ.BasisX, centroid + DB.XYZ.BasisX)
-    c2 = DB.Line.CreateBound(centroid - DB.XYZ.BasisY, centroid + DB.XYZ.BasisY)
-    c3 = DB.Line.CreateBound(centroid - DB.XYZ.BasisZ, centroid + DB.XYZ.BasisZ)
+    place_centroid_marker(merge_solids(solids).ComputeCentroid(), line_style)
 
-    l1 = doc.Create.NewModelCurve(c1, sp1)
-    l2 = doc.Create.NewModelCurve(c2, sp1)
-    l3 = doc.Create.NewModelCurve(c3, sp2)
 
-    if line_style:
-        for l in [l1, l2, l3]:
-            l.LineStyle = line_style
+main()

@@ -8,12 +8,12 @@ ends with **kwargs (PEP 448 grammar), but IPY2 raises ``SyntaxError: unexpected
 token ','`` at parse time, which makes the entire ``pyrevit.forms`` module
 unloadable.
 
-The formatter is opted out for ``pyrevitlib/pyrevit/forms/_ipy.py`` via a
-separate ``[tool.ruff] extend-exclude`` entry. This hook is the belt-and-
-suspenders line of defense: it tokenizes every ``pyrevitlib/`` Python file and
-fails the commit if executable code includes ``**kwargs,`` - including in
-modules that load before ``_ipy.py`` at IronPython startup - so the same bug
-cannot land again under a different path.
+The formatter is opted out for ``pyrevitlib/pyrevit/forms/_ipy.py`` via the
+``ruff-format`` hook's ``exclude`` in ``.pre-commit-config.yaml``. This hook
+is the belt-and-suspenders line of defense: it tokenizes every
+``pyrevitlib/`` Python file and fails the commit if executable code
+includes ``**kwargs,`` - including in modules that load before ``_ipy.py``
+at IronPython startup - so the same bug cannot land again under a different path.
 
 Run standalone for local checks::
 

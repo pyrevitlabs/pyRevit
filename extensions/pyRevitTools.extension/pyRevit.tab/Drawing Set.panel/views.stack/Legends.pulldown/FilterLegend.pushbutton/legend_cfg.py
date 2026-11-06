@@ -13,6 +13,8 @@ from pyrevit import DB
 from pyrevit.revit.db.query import is_metric
 from pyrevit.coreutils import applocales
 
+from legend.table import DEFAULT_LAYOUT_MM
+
 INI = "filterlegend"
 
 # Single source of truth for the *length* setting defaults, expressed in
@@ -20,12 +22,7 @@ INI = "filterlegend"
 # display_defaults() below convert this into whatever unit is actually
 # shown to the user for a given project. Never read these directly for
 # a UI label or a stored config value; go through display_defaults().
-DEFAULTS_MM = {
-    "row_height": 5.0,
-    "row_spacing": 2.0,
-    "swatch_width": 8.0,
-    "text_column_width": 60.0,
-}
+DEFAULTS_MM = DEFAULT_LAYOUT_MM
 
 # Non-length defaults are unit-independent.
 DEFAULTS_BOOL = {
@@ -142,7 +139,8 @@ def build_settings_schema(doc, text_type_names):
     def mm(value):
         """Express a millimeter value in this project's display unit,
         for min/max bounds that should scale sensibly whether the field
-        is showing mm or inches."""
+        is showing mm or inches.
+        """
         internal_ft = DB.UnitUtils.ConvertToInternalUnits(
             value, DB.UnitTypeId.Millimeters
         )

@@ -10,9 +10,11 @@ using ModularPipelines.Options;
 namespace Build.Modules;
 
 [DependsOn<BuildRunnersModule>]
+[DependsOn<BuildShellModule>]
 /// <summary>
-/// Runs configuration backend, CPython interpreter lifecycle, agent runtime guard, and
-/// compatibility tests after their build outputs are available.
+/// Runs configuration backend, CPython interpreter lifecycle, CPython env vars and event handler,
+/// agent runtime guard, renderer load-context, and compatibility tests after their build outputs
+/// are available.
 /// </summary>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
@@ -43,6 +45,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
 
         await RunTestsAsync(
             context,
+            PyRevitPaths.EnvVarsRuntimeTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
             PyRevitPaths.AgentRuntimeTestProject,
             configuration,
             [],
@@ -55,6 +64,24 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.RendererTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        foreach (var engine in new[] { "IPY2712PR", "IPY342" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.ShellTestProject,
+                configuration,
+                [
+                    $"-p:ShellEnginesDirectory={PyRevitPaths.EnginesNetCorePath}",
+                    $"-p:IronPythonVersion={engine}",
+                ],
+                cancellationToken);
+
         foreach (string framework in new[] { "net48", "net8.0-windows" })
             await RunTestsAsync(
                 context,
@@ -65,7 +92,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                     "-f",
                     framework,
                     "--filter",
-                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests|FullyQualifiedName~PyRevitInstallScopeTests",
                 ],
                 cancellationToken);
 
@@ -78,7 +105,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "-f",
                 "net8.0-windows",
                 "--filter",
-                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests",
+                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests",
             ],
             cancellationToken);
     }

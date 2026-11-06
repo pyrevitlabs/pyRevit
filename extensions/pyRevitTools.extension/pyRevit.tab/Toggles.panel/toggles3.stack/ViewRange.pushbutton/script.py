@@ -1,33 +1,14 @@
 # -*- coding: UTF-8 -*-
-# ── Duplicate-window guard ──────────────────────────────────────────
-# With engine: { persistent: true, clean: false }, the same IronPython
-# engine and scope persist across clicks. script.exit() is safe here —
-# it raises SystemExit which the runner catches without disposing the
-# engine. No new .NET objects created, no engine disposal side effects.
-from pyrevit import script
+from pyrevit import script, forms, revit, HOST_APP, DB, UI, EXEC_PARAMS
+from pyrevit.revit import events
+from pyrevit.framework import Convert, List, Color, SolidColorBrush
+from pyrevit.compat import get_elementid_value_func
+from collections import OrderedDict
 
 logger = script.get_logger()
 
 VIEWRANGE_WINDOW_KEY = "PYREVITTOOLS_VIEWRANGE_WINDOW"
 VIEWRANGE_EXECID_KEY = "PYREVITTOOLS_VIEWRANGE_EXECID"
-
-_existing = script.get_envvar(VIEWRANGE_WINDOW_KEY)
-if _existing:
-    try:
-        if _existing.IsVisible:
-            script.exit()
-    except SystemExit:
-        raise
-    except Exception:
-        script.set_envvar(VIEWRANGE_WINDOW_KEY, None)
-        script.set_envvar(VIEWRANGE_EXECID_KEY, None)
-
-# ── Full imports ────────────────────────────────────────────────────
-from pyrevit import forms, revit, HOST_APP, DB, UI, EXEC_PARAMS
-from pyrevit.revit import events
-from pyrevit.framework import Convert, List, Color, SolidColorBrush
-from pyrevit.compat import get_elementid_value_func
-from collections import OrderedDict
 
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
@@ -1232,19 +1213,9 @@ def _on_close_cleanup():
         uidoc.RefreshActiveView()
     except Exception as ex:
         logger.error("Error refreshing view: {}".format(ex))
-    # Clear window key AFTER all cleanup is complete, so the guard
-    # blocks re-entry until the server is fully removed.
     script.set_envvar(VIEWRANGE_WINDOW_KEY, None)
 
 
-# ── Event handlers & initialization ─────────────────────────────────
-# This code is ONLY reached on the first click. Subsequent clicks
-# hit script.exit() at the top of the file before even importing
-# pyrevit.revit.events, so no .NET ExternalEvent objects are created
-# and no event handlers are re-registered.
-
-
-@events.handle("view-activated")
 def view_activated(sender, args):
     try:
         context.active_view = args.CurrentActiveView
@@ -1252,7 +1223,6 @@ def view_activated(sender, args):
         logger.exception(ex)
 
 
-@events.handle("selection-changed")
 def selection_changed(sender, args):
     if not args.GetDocument().ActiveView.ViewType == DB.ViewType.ProjectBrowser:
         return
@@ -1269,7 +1239,6 @@ def selection_changed(sender, args):
         logger.exception(ex)
 
 
-@events.handle("doc-changed")
 def doc_changed(sender, args):
     try:
         affected_ids = list(args.GetModifiedElementIds()) + list(
@@ -1286,14 +1255,19 @@ def doc_changed(sender, args):
         logger.exception(ex)
 
 
-# Initialize
-server = revit.dc3dserver.Server(register=False)
-vm = MainViewModel()
-context = Context(vm)
-context.active_view = uidoc.ActiveGraphicalView
+if __name__ == "__main__":
+    if not forms.activate_open_window(VIEWRANGE_WINDOW_KEY):
+        events.handle("view-activated")(view_activated)
+        events.handle("selection-changed")(selection_changed)
+        events.handle("doc-changed")(doc_changed)
 
-main_window = MainWindow()
-main_window.DataContext = vm
-script.set_envvar(VIEWRANGE_WINDOW_KEY, main_window)
-script.set_envvar(VIEWRANGE_EXECID_KEY, EXEC_PARAMS.exec_id)
-main_window.show()
+        server = revit.dc3dserver.Server(register=False)
+        vm = MainViewModel()
+        context = Context(vm)
+        context.active_view = uidoc.ActiveGraphicalView
+
+        main_window = MainWindow()
+        main_window.DataContext = vm
+        script.set_envvar(VIEWRANGE_WINDOW_KEY, main_window)
+        script.set_envvar(VIEWRANGE_EXECID_KEY, EXEC_PARAMS.exec_id)
+        main_window.show()

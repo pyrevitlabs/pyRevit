@@ -120,13 +120,16 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             if PY2:
                 query_params = _decode_utf8_params(query_params)
 
-        return base.Request(
+        request = base.Request(
             path=path,
             method=method,
             data=data,
             params=router.extract_route_params(route.pattern, path),
             query_params=query_params,
         )
+        for key, value in self.headers.items():
+            request.add_header(key, value)
+        return request
 
     def _call_host_event(self, item):
         """Enqueue and raise, returning only a server rejection or None."""

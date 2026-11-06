@@ -31,9 +31,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Runs <paramref name="work"/> on the main thread and waits for its result.
         /// </summary>
         /// <exception cref="AgentException">
-        /// <c>revit_busy</c> when Revit refuses the ExternalEvent or does not become idle
-        /// within <paramref name="startTimeout"/>. Once the work has started, the call waits
-        /// for it to finish no matter how long it takes, because it can't be aborted safely.
+        /// <c>revit_busy</c> (see <see cref="AgentException.NotRun"/>) when Revit refuses the
+        /// ExternalEvent or does not become idle within <paramref name="startTimeout"/>. The work
+        /// is then removed from the queue and never runs. Once the work has started, the call
+        /// waits for it to finish no matter how long it takes, because it can't be aborted safely.
         /// </exception>
         public JToken Invoke(Func<UIApplication, JToken> work, TimeSpan startTimeout) {
             var item = new AgentWorkItem(work);
@@ -43,12 +44,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var response = externalEvent.Raise();
             if (response == ExternalEventRequest.Denied || response == ExternalEventRequest.TimedOut) {
                 if (TryRemove(item))
-                    throw new AgentException("revit_busy", "Revit rejected the agent request: " + response);
+                    throw AgentException.NotRun("Revit rejected the agent request: " + response + ".");
             }
 
             if (!item.Started.Wait(startTimeout)) {
                 if (TryRemove(item))
-                    throw new AgentException("revit_busy", BusyMessage(startTimeout));
+                    throw AgentException.NotRun(BusyMessage(startTimeout));
             }
 
             return item.Completion.Task.GetAwaiter().GetResult();

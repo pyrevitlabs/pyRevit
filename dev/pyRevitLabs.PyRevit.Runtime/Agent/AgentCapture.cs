@@ -30,10 +30,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// when another application's window covers the view, so it never returns that
     /// application's pixels. Revit's own floating windows over the view are captured as seen.</item>
     /// </list>
-    /// The <c>3d</c> view is a temporary isometric view created inside a transaction group that is
-    /// always rolled back. It shows model categories only, looks from <c>direction</c>, and has a
-    /// section box around the requested elements or, by default, the whole model, so the image
-    /// frames the building instead of level and grid extents.
+    /// The <c>3d</c> view is a temporary view created inside a transaction group that is
+    /// always rolled back. It shows model categories only. By default it is isometric, looks from
+    /// <c>direction</c>, and has a section box around the requested elements or, by default, the
+    /// whole model, so the image frames the building instead of level and grid extents.
+    /// <c>eye</c> and <c>target</c> make it a perspective view from that camera instead, without a
+    /// section box. <c>section</c> makes it a temporary section or elevation (horizontal normal) or
+    /// a plan cut at the origin's height (normal straight down), framed on the same elements.
+    /// <c>detail_level</c> and <c>display_style</c> apply to the temporary view and, for named
+    /// views in <c>export</c> and <c>viewport</c> modes, to the view for the capture only: a
+    /// view template that controls them is detached inside the rolled-back group.
     /// Invariant: capturing never leaves a change in the model.
     /// </remarks>
     internal static class AgentCapture {
@@ -42,6 +48,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxWidth = 2400;
 
         private const double SectionBoxPadding = 2.0;
+        private const double DirectionTolerance = 1e-3;
+        private const double MinSectionDepth = 1.0;
         private const int DwmaCloaked = 14;
         private const int DwmaExtendedFrameBounds = 9;
 
@@ -91,12 +99,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             ["top"] = new XYZ(0, 0.0001, -1),
         };
 
+        private static readonly Dictionary<string, ViewDetailLevel> DetailLevels = new Dictionary<string, ViewDetailLevel> {
+            ["coarse"] = ViewDetailLevel.Coarse,
+            ["medium"] = ViewDetailLevel.Medium,
+            ["fine"] = ViewDetailLevel.Fine,
+        };
+
+        private static readonly Dictionary<string, DisplayStyle> DisplayStyles = new Dictionary<string, DisplayStyle> {
+            ["wireframe"] = DisplayStyle.Wireframe,
+            ["hidden_line"] = DisplayStyle.HLR,
+            ["shaded"] = DisplayStyle.Shading,
+            ["shaded_edges"] = DisplayStyle.ShadingWithEdges,
+        };
+
+        public sealed class SectionPlane {
+            public XYZ Origin;
+            public XYZ Normal;
+            public double? Depth;
+
+            public bool IsPlan => Math.Abs(Normal.X) < DirectionTolerance && Math.Abs(Normal.Y) < DirectionTolerance;
+        }
+
         public sealed class Request {
             public string View;
             public string Mode;
             public int Width;
             public string Direction;
             public List<ElementId> Elements;
+            public string DetailLevel;
+            public string DisplayStyle;
+            public XYZ Eye;
+            public XYZ Target;
+            public SectionPlane Section;
+
+            public bool OverridesDisplay => DetailLevel != null || DisplayStyle != null;
         }
 
         public static Request Parse(JObject parameters) {
@@ -108,13 +144,96 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var direction = parameters.Value<string>("direction") ?? "southeast";
             if (!Directions.ContainsKey(direction))
                 throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
-            return new Request {
+            var request = new Request {
                 View = string.IsNullOrWhiteSpace(parameters.Value<string>("view")) ? "active" : parameters.Value<string>("view").Trim(),
                 Mode = mode,
                 Width = Math.Max(MinWidth, Math.Min(MaxWidth, width)),
                 Direction = direction,
                 Elements = (parameters["elements"] as JArray)?.Select(id => AgentIds.FromValue(id.Value<long>())).ToList(),
+                DetailLevel = ParseChoice(parameters, "detail_level", DetailLevels.Keys),
+                DisplayStyle = ParseChoice(parameters, "display_style", DisplayStyles.Keys),
+                Eye = ParsePoint(parameters["eye"], "eye"),
+                Target = ParsePoint(parameters["target"], "target"),
+                Section = ParseSection(parameters["section"]),
             };
+            ValidateCombination(request);
+            return request;
+        }
+
+        private static void ValidateCombination(Request request) {
+            if ((request.Eye == null) != (request.Target == null))
+                throw new AgentException("invalid_params", "'eye' and 'target' must be given together.");
+            if (request.Eye != null && request.Eye.DistanceTo(request.Target) < DirectionTolerance)
+                throw new AgentException("invalid_params", "'eye' and 'target' must be different points.");
+            if (request.Eye != null && request.Section != null)
+                throw new AgentException("invalid_params", "'section' and 'eye'/'target' can't be combined; each defines the camera.");
+            if ((request.Eye != null || request.Section != null) && !string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase))
+                throw new AgentException("invalid_params", "'eye', 'target' and 'section' need view '3d'.");
+            if ((request.Eye != null || request.Section != null) && request.Mode != "export")
+                throw new AgentException("invalid_params", "'eye', 'target' and 'section' need mode 'export'.");
+            if (request.OverridesDisplay && request.Mode == "screen")
+                throw new AgentException("invalid_params", "'detail_level' and 'display_style' don't apply to mode 'screen', which copies the window as it is.");
+        }
+
+        private static string ParseChoice(JObject parameters, string name, IEnumerable<string> choices) {
+            var token = parameters[name];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.String)
+                throw new AgentException("invalid_params", $"'{name}' must be a string.");
+            var value = token.Value<string>();
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+            var normalized = value.Trim().ToLowerInvariant();
+            if (!choices.Contains(normalized))
+                throw new AgentException("invalid_params", $"'{name}' must be one of: {string.Join(", ", choices)}.");
+            return normalized;
+        }
+
+        private static XYZ ParsePoint(JToken token, string name) {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            var coordinates = token as JArray;
+            if (coordinates == null || coordinates.Count != 3 || !coordinates.All(IsFiniteNumber))
+                throw new AgentException("invalid_params", $"'{name}' must be [x, y, z] in feet.");
+            return new XYZ(coordinates[0].Value<double>(), coordinates[1].Value<double>(), coordinates[2].Value<double>());
+        }
+
+        private static bool IsFiniteNumber(JToken token) {
+            if (token.Type != JTokenType.Float && token.Type != JTokenType.Integer)
+                return false;
+            var number = token.Value<double>();
+            return !double.IsNaN(number) && !double.IsInfinity(number);
+        }
+
+        private static SectionPlane ParseSection(JToken token) {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            var plane = token as JObject
+                ?? throw new AgentException("invalid_params", "'section' must be an object with 'origin', 'normal' and optional 'depth'.");
+            var origin = ParsePoint(plane["origin"], "section.origin")
+                ?? throw new AgentException("invalid_params", "'section.origin' is required.");
+            var normal = ParsePoint(plane["normal"], "section.normal")
+                ?? throw new AgentException("invalid_params", "'section.normal' is required.");
+            if (normal.IsZeroLength())
+                throw new AgentException("invalid_params", "'section.normal' must not be a zero vector.");
+            normal = normal.Normalize();
+
+            double? depth = null;
+            var depthToken = plane["depth"];
+            if (depthToken != null && depthToken.Type != JTokenType.Null) {
+                if (!IsFiniteNumber(depthToken) || depthToken.Value<double>() <= 0)
+                    throw new AgentException("invalid_params", "'section.depth' must be a number greater than zero.");
+                depth = depthToken.Value<double>();
+            }
+
+            var isHorizontal = Math.Abs(normal.Z) < DirectionTolerance;
+            var isPlanDown = Math.Abs(normal.X) < DirectionTolerance && Math.Abs(normal.Y) < DirectionTolerance && normal.Z < 0;
+            if (!isHorizontal && !isPlanDown)
+                throw new AgentException("invalid_params",
+                    "'section.normal' must be horizontal (section or elevation looking along it) or [0, 0, -1] (plan looking down).");
+            var snapped = isHorizontal ? new XYZ(normal.X, normal.Y, 0).Normalize() : XYZ.BasisZ.Negate();
+            return new SectionPlane { Origin = origin, Normal = snapped, Depth = depth };
         }
 
         public static JToken Capture(UIApplication app, Request request) {
@@ -122,7 +241,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
             if (doc.IsModifiable)
-                throw new AgentException("revit_busy", "Another transaction is open in the active document.");
+                throw AgentException.NotRun("Another transaction is open in the active document.");
 
             var directory = AgentPaths.CapturesDir;
             Directory.CreateDirectory(directory);
@@ -136,22 +255,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             else if (request.Mode == "viewport") {
                 captured = ResolveView(doc, uidoc, request.View);
-                path = ExportViewport(uidoc, captured, directory, baseName, request.Width);
+                path = ExportViewport(uidoc, captured, directory, baseName, request);
             }
             else if (string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)) {
                 captured = null;
-                path = ExportTemporary3D(doc, directory, baseName, request);
+                path = ExportTemporary(doc, directory, baseName, request);
             }
             else {
                 captured = ResolveView(doc, uidoc, request.View);
-                path = ExportView(doc, captured, directory, baseName, request.Width);
+                path = ExportWithDisplay(doc, captured, directory, baseName, request);
             }
 
             ScaleDown(path, request.Width, out var width, out var height);
-            return new JObject {
+            var result = new JObject {
                 ["mode"] = request.Mode,
                 ["view"] = captured == null
-                    ? new JObject { ["name"] = "temporary isometric 3D view", ["type"] = "ThreeD", ["direction"] = request.Direction }
+                    ? DescribeTemporary(request)
                     : new JObject {
                         ["id"] = AgentIds.ToValue(captured.Id),
                         ["name"] = captured.Name,
@@ -162,7 +281,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["height"] = height,
                 ["image_base64"] = Convert.ToBase64String(File.ReadAllBytes(path)),
             };
+            if (request.DetailLevel != null)
+                result["detail_level"] = request.DetailLevel;
+            if (request.DisplayStyle != null)
+                result["display_style"] = request.DisplayStyle;
+            return result;
         }
+
+        private static JObject DescribeTemporary(Request request) {
+            if (request.Section != null)
+                return new JObject {
+                    ["name"] = request.Section.IsPlan ? "temporary plan" : "temporary section",
+                    ["type"] = request.Section.IsPlan ? "FloorPlan" : "Section",
+                    ["origin"] = PointArray(request.Section.Origin),
+                    ["normal"] = PointArray(request.Section.Normal),
+                };
+            if (request.Eye != null)
+                return new JObject {
+                    ["name"] = "temporary perspective 3D view",
+                    ["type"] = "ThreeD",
+                    ["eye"] = PointArray(request.Eye),
+                    ["target"] = PointArray(request.Target),
+                };
+            return new JObject { ["name"] = "temporary isometric 3D view", ["type"] = "ThreeD", ["direction"] = request.Direction };
+        }
+
+        private static JArray PointArray(XYZ point) => new JArray(point.X, point.Y, point.Z);
 
         private static View ResolveView(Document doc, UIDocument uidoc, string selector) {
             if (string.Equals(selector, "active", StringComparison.OrdinalIgnoreCase))
@@ -207,7 +351,55 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("capture_failed", $"Revit did not write an image for view '{view.Name}'.");
         }
 
-        private static string ExportViewport(UIDocument uidoc, View view, string directory, string baseName, int width) {
+        private static string ExportWithDisplay(Document doc, View view, string directory, string baseName, Request request) {
+            if (!request.OverridesDisplay)
+                return ExportView(doc, view, directory, baseName, request.Width);
+            if (doc.IsReadOnly)
+                throw new AgentException("document_read_only", "'detail_level' and 'display_style' change the view temporarily, which a read-only document doesn't allow.");
+
+            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
+                group.Start();
+                try {
+                    using (var transaction = new Transaction(doc, "pyRevit Agent display override")) {
+                        transaction.Start();
+                        OverrideDisplay(view, request.DetailLevel, request.DisplayStyle);
+                        transaction.Commit();
+                    }
+                    return ExportView(doc, view, directory, baseName, request.Width);
+                }
+                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
+                    throw new AgentException("capture_failed", $"View '{view.Name}' could not be shown with the requested display settings: {ex.Message}");
+                }
+                finally {
+                    if (group.HasStarted() && !group.HasEnded())
+                        group.RollBack();
+                }
+            }
+        }
+
+        /// <remarks>
+        /// A view template that controls the detail level or display style would reject the change,
+        /// so the template is detached first. Only valid inside the rolled-back capture group.
+        /// </remarks>
+        private static void OverrideDisplay(View view, string detailLevel, string displayStyle) {
+            if (detailLevel == null && displayStyle == null)
+                return;
+            if (view is ViewSheet || view is ViewSchedule)
+                throw new AgentException("view_not_supported",
+                    $"View '{view.Name}' ({view.ViewType}) has no detail level or display style.");
+            if (view.ViewTemplateId != ElementId.InvalidElementId)
+                view.ViewTemplateId = ElementId.InvalidElementId;
+            ApplyDisplay(view, detailLevel, displayStyle);
+        }
+
+        private static void ApplyDisplay(View view, string detailLevel, string displayStyle) {
+            if (displayStyle != null)
+                view.DisplayStyle = DisplayStyles[displayStyle];
+            if (detailLevel != null)
+                view.DetailLevel = DetailLevels[detailLevel];
+        }
+
+        private static string ExportViewport(UIDocument uidoc, View view, string directory, string baseName, Request request) {
             var doc = uidoc.Document;
             if (view is ViewSheet || view is ViewSchedule || (view is View3D view3D && view3D.IsPerspective))
                 throw new AgentException("view_not_supported",
@@ -223,10 +415,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 try {
                     using (var transaction = new Transaction(doc, "pyRevit Agent crop to viewport")) {
                         transaction.Start();
+                        OverrideDisplay(view, request.DetailLevel, request.DisplayStyle);
                         CropToCorners(view, corners[0], corners[1]);
                         transaction.Commit();
                     }
-                    return ExportView(doc, view, directory, baseName, width);
+                    return ExportView(doc, view, directory, baseName, request.Width);
                 }
                 catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
                     throw new AgentException("capture_failed",
@@ -266,42 +459,141 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
-        private static string ExportTemporary3D(Document doc, string directory, string baseName, Request request) {
+        private static string ExportTemporary(Document doc, string directory, string baseName, Request request) {
             if (doc.IsReadOnly)
-                throw new AgentException("document_read_only", "A temporary 3D view can't be created in a read-only document.");
-
-            var viewType = new FilteredElementCollector(doc)
-                .OfClass(typeof(ViewFamilyType))
-                .Cast<ViewFamilyType>()
-                .FirstOrDefault(type => type.ViewFamily == ViewFamily.ThreeDimensional)
-                ?? throw new AgentException("view_not_supported", "The document has no 3D view type.");
+                throw new AgentException("document_read_only", "A temporary view can't be created in a read-only document.");
 
             using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
                 group.Start();
                 try {
-                    View3D view;
+                    View view;
                     using (var transaction = new Transaction(doc, "pyRevit Agent capture view")) {
                         transaction.Start();
-                        view = View3D.CreateIsometric(doc, viewType.Id);
-                        view.DisplayStyle = DisplayStyle.ShadingWithEdges;
-                        view.DetailLevel = ViewDetailLevel.Medium;
+                        view = CreateTemporary(doc, request);
+                        ApplyDisplay(view, request.DetailLevel ?? "medium", request.DisplayStyle ?? "shaded_edges");
                         ShowModelOnly(doc, view);
-                        view.SetOrientation(Orientation(Directions[request.Direction]));
-                        var box = ModelBox(doc, view, request.Elements);
-                        if (box != null) {
-                            view.SetSectionBox(box);
-                            view.IsSectionBoxActive = true;
-                            HideSectionBox(doc, view);
-                        }
                         transaction.Commit();
                     }
                     return ExportView(doc, view, directory, baseName, request.Width);
+                }
+                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
+                    throw new AgentException("capture_failed", $"The temporary view could not be created: {ex.Message}");
                 }
                 finally {
                     if (group.HasStarted() && !group.HasEnded())
                         group.RollBack();
                 }
             }
+        }
+
+        private static View CreateTemporary(Document doc, Request request) {
+            if (request.Section == null)
+                return CreateTemporary3D(doc, request);
+            if (request.Section.IsPlan)
+                return CreateTemporaryPlan(doc, request);
+            return CreateTemporarySection(doc, request);
+        }
+
+        private static ViewFamilyType FindViewType(Document doc, ViewFamily family) =>
+            new FilteredElementCollector(doc)
+                .OfClass(typeof(ViewFamilyType))
+                .Cast<ViewFamilyType>()
+                .FirstOrDefault(type => type.ViewFamily == family)
+            ?? throw new AgentException("view_not_supported", $"The document has no {family} view type.");
+
+        private static View3D CreateTemporary3D(Document doc, Request request) {
+            var viewType = FindViewType(doc, ViewFamily.ThreeDimensional);
+            if (request.Eye != null) {
+                var perspective = View3D.CreatePerspective(doc, viewType.Id);
+                perspective.SetOrientation(Orientation(request.Eye, request.Target - request.Eye));
+                return perspective;
+            }
+
+            var view = View3D.CreateIsometric(doc, viewType.Id);
+            var direction = Directions[request.Direction];
+            view.SetOrientation(Orientation(direction.Normalize().Negate().Multiply(1000), direction));
+            var box = ModelBox(doc, view.Id, request.Elements);
+            if (box != null) {
+                view.SetSectionBox(box);
+                view.IsSectionBoxActive = true;
+                HideSectionBox(doc, view);
+            }
+            return view;
+        }
+
+        /// <remarks>
+        /// The view looks along <c>Normal</c> from <c>Origin</c>. <c>CreateSection</c> takes the
+        /// creation transform's Z axis as the look direction and mirrors it to the viewer-facing
+        /// frame Revit reports, so the frame is built with Z along <c>Normal</c> and the visible
+        /// slab is Z from 0 (the cut plane) to <c>depth</c>. Passing Z toward the viewer instead
+        /// puts the viewer on the far side and the cut plane at the far clip.
+        /// </remarks>
+        private static ViewSection CreateTemporarySection(Document doc, Request request) {
+            var plane = request.Section;
+            var transform = Transform.Identity;
+            transform.Origin = plane.Origin;
+            transform.BasisX = XYZ.BasisZ.CrossProduct(plane.Normal).Normalize();
+            transform.BasisY = XYZ.BasisZ;
+            transform.BasisZ = plane.Normal;
+
+            var model = ModelBox(doc, null, request.Elements)
+                ?? throw new AgentException("capture_failed", "There are no model elements to frame in the section.");
+            var toLocal = transform.Inverse;
+            var local = Corners(model).Select(toLocal.OfPoint).ToList();
+            var depth = plane.Depth ?? Math.Max(MinSectionDepth, local.Max(point => point.Z));
+            var box = new BoundingBoxXYZ {
+                Transform = transform,
+                Min = new XYZ(local.Min(point => point.X), local.Min(point => point.Y), 0),
+                Max = new XYZ(local.Max(point => point.X), local.Max(point => point.Y), depth),
+            };
+
+            var view = ViewSection.CreateSection(doc, FindViewType(doc, ViewFamily.Section).Id, box);
+            view.CropBoxVisible = false;
+            return view;
+        }
+
+        /// <remarks>
+        /// The plan is cut at <c>Origin.Z</c> and looks down for <c>depth</c> feet, on the level
+        /// at or below that height (or the lowest level). The view range is expressed relative to
+        /// that level, so every clip plane is associated with it.
+        /// </remarks>
+        private static ViewPlan CreateTemporaryPlan(Document doc, Request request) {
+            var plane = request.Section;
+            var levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(candidate => candidate.ProjectElevation).ToList();
+            var level = levels.LastOrDefault(candidate => candidate.ProjectElevation <= plane.Origin.Z + DirectionTolerance)
+                ?? levels.FirstOrDefault()
+                ?? throw new AgentException("view_not_supported", "The document has no level to host a plan view.");
+
+            var model = ModelBox(doc, null, request.Elements);
+            var depth = plane.Depth ?? Math.Max(MinSectionDepth, model == null ? 0 : plane.Origin.Z - model.Min.Z);
+            var cutOffset = plane.Origin.Z - level.ProjectElevation;
+
+            var view = ViewPlan.Create(doc, FindViewType(doc, ViewFamily.FloorPlan).Id, level.Id);
+            var range = view.GetViewRange();
+            foreach (PlanViewPlane viewPlane in Enum.GetValues(typeof(PlanViewPlane)))
+                range.SetLevelId(viewPlane, level.Id);
+            range.SetOffset(PlanViewPlane.TopClipPlane, cutOffset);
+            range.SetOffset(PlanViewPlane.CutPlane, cutOffset);
+            range.SetOffset(PlanViewPlane.BottomClipPlane, cutOffset - depth);
+            range.SetOffset(PlanViewPlane.ViewDepthPlane, cutOffset - depth);
+            view.SetViewRange(range);
+
+            if (model != null) {
+                var crop = view.CropBox;
+                crop.Min = new XYZ(model.Min.X, model.Min.Y, crop.Min.Z);
+                crop.Max = new XYZ(model.Max.X, model.Max.Y, crop.Max.Z);
+                view.CropBox = crop;
+                view.CropBoxActive = true;
+                view.CropBoxVisible = false;
+            }
+            return view;
+        }
+
+        private static IEnumerable<XYZ> Corners(BoundingBoxXYZ box) {
+            foreach (var x in new[] { box.Min.X, box.Max.X })
+                foreach (var y in new[] { box.Min.Y, box.Max.Y })
+                    foreach (var z in new[] { box.Min.Z, box.Max.Z })
+                        yield return new XYZ(x, y, z);
         }
 
         private static void ShowModelOnly(Document doc, View view) {
@@ -317,19 +609,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 view.SetCategoryHidden(sectionBoxes.Id, true);
         }
 
-        private static ViewOrientation3D Orientation(XYZ direction) {
+        private static ViewOrientation3D Orientation(XYZ eye, XYZ direction) {
             var forward = direction.Normalize();
             var right = forward.CrossProduct(XYZ.BasisZ);
             if (right.IsZeroLength())
                 right = XYZ.BasisX;
             var up = right.Normalize().CrossProduct(forward).Normalize();
-            return new ViewOrientation3D(forward.Negate().Multiply(1000), up, forward);
+            return new ViewOrientation3D(eye, up, forward);
         }
 
-        private static BoundingBoxXYZ ModelBox(Document doc, View view, List<ElementId> ids) {
+        /// <remarks>
+        /// With no <paramref name="viewId"/> the whole document is scanned, which a view that
+        /// doesn't exist yet needs; otherwise only what that view shows counts. The document scan
+        /// skips view-specific elements such as detail lines in drafting views, whose coordinates
+        /// are not model coordinates and would stretch the frame away from the model.
+        /// </remarks>
+        private static BoundingBoxXYZ ModelBox(Document doc, ElementId viewId, List<ElementId> ids) {
             IEnumerable<Element> elements = ids != null && ids.Count > 0
                 ? ids.Select(doc.GetElement).Where(element => element != null)
-                : new FilteredElementCollector(doc, view.Id)
+                : (viewId == null
+                        ? new FilteredElementCollector(doc).WhereElementIsViewIndependent()
+                        : new FilteredElementCollector(doc, viewId))
                     .WhereElementIsNotElementType()
                     .Where(element => element.Category != null
                                       && element.Category.CategoryType == CategoryType.Model

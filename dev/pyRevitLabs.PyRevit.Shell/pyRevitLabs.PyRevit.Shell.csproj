@@ -10,6 +10,10 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Shell.Tests" />
+  </ItemGroup>
+
   <!-- Preserve resource names expected by the console highlighter. -->
   <ItemGroup>
     <None Remove="Resources\pyrevit.ico" />

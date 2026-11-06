@@ -555,22 +555,64 @@ tooltip: Bundle Tooltip
                 "Disabled extensions should not be returned by ParseInstalledExtensions");
         }
 
+        private string CreateOptOutExtension(string name)
+        {
+            var extensionDir = Path.Combine(TestTempDir, name + ".extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "AnyButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Any'\n");
+            File.WriteAllText(
+                Path.Combine(extensionDir, "extension.json"),
+                "{\"name\":\"" + name + "\",\"type\":\"extension\",\"default_enabled\":\"False\"}\n");
+            return extensionDir;
+        }
+
         [Test]
         public void TestDefaultDisabledExtension_SkipsParseTreeWithoutConfigSection()
         {
-            var extensionDir = Path.Combine(TestTempDir, "OptOutExt.extension");
-            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "AnyButton.pushbutton");
-            Directory.CreateDirectory(bundleDir);
-            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Should Not Load'\n");
-            File.WriteAllText(
-                Path.Combine(extensionDir, "extension.json"),
-                "{\"name\":\"OptOutExt\",\"type\":\"extension\",\"default_enabled\":\"False\"}\n");
+            var extensionDir = CreateOptOutExtension("OptOutExt");
 
             UseTestPyRevitConfig("[core]\nread_script_metadata = true\n\n");
 
             var extensions = ParseInstalledExtensions(extensionDir).ToList();
             Assert.AreEqual(0, extensions.Count,
                 "default_enabled=False should skip extension when no config section exists");
+        }
+
+        [Test]
+        public void TestDefaultDisabledExtension_SkipsParseTreeWhenSectionHasNoDisabledKey()
+        {
+            var extensionDir = CreateOptOutExtension("OptOutCredExt");
+            var iniContent =
+                "[core]\nread_script_metadata = true\n\n" +
+                "[OptOutCredExt.extension]\n" +
+                "credential = \"sealed-test-credential\"\n";
+
+            UseTestPyRevitConfig(iniContent);
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(0, extensions.Count,
+                "default_enabled=False should skip extension when its section has no disabled key");
+            Assert.AreEqual(
+                iniContent,
+                File.ReadAllText(Path.Combine(TestTempDir, "pyRevit_config.ini")),
+                "Resolving the load state must not write to the config file");
+        }
+
+        [Test]
+        public void TestDefaultDisabledExtension_LoadsWhenUserExplicitlyEnabled()
+        {
+            var extensionDir = CreateOptOutExtension("OptInExt");
+
+            UseTestPyRevitConfig(
+                "[core]\nread_script_metadata = true\n\n" +
+                "[OptInExt.extension]\n" +
+                "disabled = false\n");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count,
+                "An explicit disabled=false should load the extension regardless of its manifest");
+            Assert.AreEqual(false, extensions[0].Config?.Disabled);
         }
 
         [Test]

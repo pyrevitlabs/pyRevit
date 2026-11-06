@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Erreur lors de l'Enregistrement du Schéma</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Erreur lors du Chargement du Schéma</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">Le fichier n'existe pas.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">Stocker le jeu de couleurs dans :</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">Choisissez où le jeu de couleurs est enregistré et d'où il est chargé.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">Fichier</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">Enregistrer dans ou charger depuis un fichier .cschn.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">Vue active</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">Vue active (aucun jeu enregistré)</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">Enregistrer dans ou charger depuis la vue active. Une vue stocke un seul jeu de couleurs ; l'enregistrement le remplace.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">Jeu de couleurs enregistré dans la vue : {0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">Coloriser les Éléments par Paramètre</system:String>

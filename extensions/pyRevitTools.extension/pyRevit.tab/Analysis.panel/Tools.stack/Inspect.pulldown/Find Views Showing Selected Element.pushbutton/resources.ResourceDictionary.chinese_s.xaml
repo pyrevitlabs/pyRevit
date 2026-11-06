@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">正在搜索视图</sys:String>
+    <sys:String x:Key="views_containing">包含所选图元的视图</sys:String>
+    <sys:String x:Key="no_views">所选图元均未在任何视图中可见。</sys:String>
+    <sys:String x:Key="table_title">{} 个视图</sys:String>
+    <sys:String x:Key="column_view">视图</sys:String>
+    <sys:String x:Key="column_view_type">视图类型</sys:String>
+    <sys:String x:Key="column_matches">显示的所选图元数</sys:String>
+    <sys:String x:Key="column_show">选择/显示图元</sys:String>
+</ResourceDictionary>

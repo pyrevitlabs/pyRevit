@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_sloped_roofs">모델에서 경사를 정의하는 가장자리가 있는 외곽선 지붕을 찾을 수 없습니다.</sys:String>
+    <sys:String x:Key="table_title">지붕 경사</sys:String>
+    <sys:String x:Key="column_slope">경사</sys:String>
+    <sys:String x:Key="column_count">개수</sys:String>
+    <sys:String x:Key="column_roofs">지붕</sys:String>
+</ResourceDictionary>

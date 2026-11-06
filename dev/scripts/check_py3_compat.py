@@ -33,6 +33,9 @@ Checks:
     IPY-CLR     clr.AddReferenceToFileAndPath outside pyrevit.framework
     CLR-REF     clr.Reference out-param marshaling outside the sanctioned
                 engine-dispatch wrappers
+    CLR-NAMED-INDEXER
+                ``.Parameter[...]`` named indexed property read; pythonnet
+                (CPython) has no named indexers, use ``.get_Parameter(...)``
     SORT-KEY    sorted() over dict .items()/.values() without a key=
                 (tuple comparison can fall through to unorderable values)
     PY3-VIEW    a bare dict view (keys/values/items) or map/filter/zip that
@@ -43,6 +46,8 @@ Checks:
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
 NameError/ImportError fallback (the name-shim and import-fallback patterns).
+CLR-NAMED-INDEXER targets CPython instead, so it is skipped only in ``if``
+branches that cannot execute on CPython (``if IRONPY:``, else of ``if PY3:``).
 """
 
 import argparse
@@ -108,6 +113,13 @@ IPY3_FLAG_VALUES = {
     "IRONPY2": False,
     "IRONPY3": True,
 }
+CPYTHON_FLAG_VALUES = {
+    "PY2": False,
+    "PY3": True,
+    "IRONPY": False,
+    "IRONPY2": False,
+    "IRONPY3": False,
+}
 
 # Builtins removed in Python 3. Flagged only when CALLED, and skipped when the
 # name is imported (reduce/reload/intern have functools/importlib/sys homes) or
@@ -168,6 +180,8 @@ PY2_ONLY_MODULES = {
 PY3_VIEW_METHODS = {"keys", "values", "items"}
 PY3_LAZY_BUILTINS = {"map", "filter", "zip"}
 
+CLR_NAMED_INDEXERS = {"Parameter"}
+
 
 class Finding:
     """A source finding emitted by the Python 3 compatibility scan."""
@@ -208,17 +222,36 @@ def _receiver_name(node):
     return None
 
 
-def _ipy3_condition_value(node):
-    """Resolve an engine condition when its value is certain on IronPython 3."""
+def _is_compat_module(node):
+    """Return True for ``compat`` or ``pyrevit.compat``."""
     if isinstance(node, ast.Name):
-        return IPY3_FLAG_VALUES.get(node.id)
+        return node.id == "compat"
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "compat"
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "pyrevit"
+    )
+
+
+def _ipy3_condition_value(node, flag_values=IPY3_FLAG_VALUES):
+    """Resolve an engine condition when its value is certain on one engine.
+
+    ``flag_values`` names that engine; IronPython 3 by default. A flag read
+    off ``compat`` or ``pyrevit.compat`` resolves like the bare name; the same
+    attribute on any other object (``options.IRONPY``) is unknown.
+    """
+    if isinstance(node, ast.Name):
+        return flag_values.get(node.id)
+    if isinstance(node, ast.Attribute) and _is_compat_module(node.value):
+        return flag_values.get(node.attr)
     if isinstance(node, ast.Constant) and isinstance(node.value, bool):
         return node.value
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-        value = _ipy3_condition_value(node.operand)
+        value = _ipy3_condition_value(node.operand, flag_values)
         return None if value is None else not value
     if isinstance(node, ast.BoolOp):
-        values = [_ipy3_condition_value(value) for value in node.values]
+        values = [_ipy3_condition_value(value, flag_values) for value in node.values]
         if isinstance(node.op, ast.And):
             if False in values:
                 return False
@@ -230,18 +263,36 @@ def _ipy3_condition_value(node):
     return None
 
 
+def _is_branch_skipped(parent, child, flag_values):
+    """Return True when ``parent`` never evaluates ``child`` on the given engine.
+
+    Covers ``if`` statements, conditional expressions and the short-circuit
+    operands of ``and``/``or`` (``IRONPY and el.Parameter[bip]``).
+    """
+    if isinstance(parent, (ast.If, ast.IfExp)):
+        value = _ipy3_condition_value(parent.test, flag_values)
+        body = parent.body if isinstance(parent.body, list) else [parent.body]
+        orelse = parent.orelse if isinstance(parent.orelse, list) else [parent.orelse]
+        if value is False and child in body:
+            return True
+        if value is True and child in orelse:
+            return True
+    elif isinstance(parent, ast.BoolOp) and child in parent.values:
+        stop = False if isinstance(parent.op, ast.And) else True
+        for operand in parent.values[: parent.values.index(child)]:
+            if _ipy3_condition_value(operand, flag_values) is stop:
+                return True
+    return False
+
+
 def _is_engine_guarded(node, parents):
     """Return True when a branch cannot execute on IronPython 3."""
     current = node
     while current in parents:
         parent = parents[current]
-        if isinstance(parent, ast.If):
-            value = _ipy3_condition_value(parent.test)
-            if value is False and current in parent.body:
-                return True
-            if value is True and current in parent.orelse:
-                return True
-        elif isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if _is_branch_skipped(parent, current, IPY3_FLAG_VALUES):
+            return True
+        if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in parent.decorator_list:
                 if not isinstance(decorator, ast.Call) or not decorator.args:
                     continue
@@ -257,6 +308,21 @@ def _is_engine_guarded(node, parents):
                     {"NameError", "ImportError"} & set(_names_in(handler.type))
                 ):
                     return True
+        current = parent
+    return False
+
+
+def _is_cpython_unreachable(node, parents):
+    """Return True when an engine guard keeps a branch off CPython.
+
+    Separate from the IronPython 3 guard: ``if IRONPY:`` is reachable on
+    IronPython 3 but never on CPython, so CPython-only rules must not reuse it.
+    """
+    current = node
+    while current in parents:
+        parent = parents[current]
+        if _is_branch_skipped(parent, current, CPYTHON_FLAG_VALUES):
+            return True
         current = parent
     return False
 
@@ -315,6 +381,16 @@ def _bare_py3_view(node):
     if isinstance(func, ast.Attribute) and func.attr in PY3_VIEW_METHODS:
         return True
     return isinstance(func, ast.Name) and func.id in PY3_LAZY_BUILTINS
+
+
+def _is_named_indexer(node):
+    """Return True if node is a CLR named indexed property such as ``.Parameter``.
+
+    IronPython exposes named indexed properties as subscriptable attributes;
+    pythonnet does not, so ``el.Parameter[bip]`` raises on CPython while the
+    ``el.get_Parameter(bip)`` accessor works on every engine.
+    """
+    return isinstance(node, ast.Attribute) and node.attr in CLR_NAMED_INDEXERS
 
 
 def check_file(path):
@@ -548,6 +624,21 @@ def check_file(path):
                     "SORT-KEY",
                     "sorted() over dict view without key=; tuple comparison "
                     "can fall through to unorderable values in Python 3",
+                )
+            )
+
+        elif (
+            isinstance(node, ast.Subscript)
+            and _is_named_indexer(node.value)
+            and not _is_cpython_unreachable(node, parents)
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "CLR-NAMED-INDEXER",
+                    ".{0}[...] is an IronPython-only named indexer; "
+                    "use .get_{0}(...)".format(node.value.attr),
                 )
             )
 

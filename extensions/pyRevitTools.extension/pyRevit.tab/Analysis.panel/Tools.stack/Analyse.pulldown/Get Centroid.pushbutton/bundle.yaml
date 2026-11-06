@@ -5,7 +5,7 @@ title:
   ru: Получить центр тяжести ●
   chinese_s: 获取质心 ●
   es_es: Obtener el centroide ●
-  de_de: Schwerpunkt vom gewhälten Element markieren ●
+  de_de: Schwerpunkt vom gewählten Element markieren ●
   pt_br: Obter Centroide ●
 tooltip:
   en_us: |-
@@ -26,7 +26,7 @@ tooltip:
   ru: |-
     Вычисляет центр тяжести геометрии выбранных элементов и размещает три моделируемые линии, пересекающиеся в центре тяжести.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Выбрать стиль линий для обозначения центра тяжести.
   chinese_s: |-
     计算选定元素几何的质心，并在质心处放置三条相交的模型线。

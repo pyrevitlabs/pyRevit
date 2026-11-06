@@ -143,26 +143,47 @@ class _FakeRoute(object):
 
 
 class _FakeHeaders(object):
-    """Minimal HTTP headers stub (IronPython uses getheader, CPython uses get)."""
+    """HTTP headers stub matching the two shapes the routes server can be handed.
+
+    IronPython 2 parses request headers into a `mimetools.Message`, whose
+    `items()` yields lower-cased names. CPython 3 parses them into an
+    `email.message.Message`, whose `items()` yields the names as the client sent
+    them. Both shapes are reproduced here, because a header lookup has to
+    resolve the same way on either engine.
+    """
+
+    def __init__(self, headers=None, lower_case_names=False):
+        self._headers = {}
+        for key, value in (headers or {}).items():
+            name = key.lower() if lower_case_names else key
+            self._headers[name] = value
 
     def getheader(self, key, default=None):
-        return default
+        return self.get(key, default)
 
     # CPython 3 BaseHTTPRequestHandler uses headers[key] / headers.get()
     def get(self, key, default=None):
+        """Look up a header, ignoring the case of the name, as both engines do."""
+        lowered = key.lower()
+        for name, value in self._headers.items():
+            if name.lower() == lowered:
+                return value
         return default
 
     def __getitem__(self, key):
-        raise KeyError(key)
+        return self._headers[key]
+
+    def items(self):
+        return list(self._headers.items())
 
 
 class _FakeHttpHandlerForPrepare(server.HttpRequestHandler):
     """Minimal HttpRequestHandler stub for exercising _prepare_request."""
 
-    def __init__(self):
+    def __init__(self, headers=None, lower_case_names=False):
         # Bypass BaseHTTPRequestHandler.__init__ entirely; we only need
         # _prepare_request which reads self.headers and self.rfile.
-        self.headers = _FakeHeaders()
+        self.headers = _FakeHeaders(headers, lower_case_names=lower_case_names)
         self.rfile = None
 
 
@@ -260,6 +281,181 @@ class RoutesServerQueryParsingTests(unittest.TestCase):
         self.assertNotIn("filter", param_keys)
         # query params available via query_params
         self.assertEqual("active", request.query_params["filter"])
+
+
+# ---------------------------------------------------------------------------
+# Request header tests
+# ---------------------------------------------------------------------------
+
+
+class RoutesServerRequestHeadersTests(unittest.TestCase):
+    """Tests that incoming HTTP headers reach the handler on request.headers.
+
+    A route could not do header-based auth, content negotiation or an Origin
+    check before, because nothing ever copied the wire headers onto the
+    Request. What these pin down is that a header name resolves to the same
+    value whichever engine parsed it, since IronPython 2 hands them over
+    lower-cased and CPython 3 hands them over as sent.
+    """
+
+    INCOMING = {
+        "Authorization": "Bearer s3cr3t",
+        "Content-Type": "application/json",
+        "X-Request-Id": "abc-123",
+    }
+
+    def _prepare(self, lower_case_names):
+        http_handler = _FakeHttpHandlerForPrepare(
+            self.INCOMING, lower_case_names=lower_case_names
+        )
+        route = _FakeRoute(pattern="/items/")
+        return http_handler._prepare_request(route, "/items/", "GET", None)
+
+    def test_incoming_headers_are_not_empty(self):
+        """The headers of an incoming request must not be dropped.
+
+        Regression guard for the bug this fixes: request.headers was always {}.
+        """
+        for lower_case_names in (False, True):
+            request = self._prepare(lower_case_names)
+            self.assertTrue(
+                request.headers,
+                "request.headers was empty for lower_case_names=%s" % lower_case_names,
+            )
+
+    def test_every_incoming_header_reaches_the_request(self):
+        """Each header the client sent is readable on the prepared request."""
+        for lower_case_names in (False, True):
+            request = self._prepare(lower_case_names)
+            for name, value in self.INCOMING.items():
+                self.assertEqual(
+                    value,
+                    request.headers.get(name),
+                    "header %r lost on lower_case_names=%s" % (name, lower_case_names),
+                )
+
+    def test_authorization_resolves_regardless_of_name_case(self):
+        """The lookup a bearer-token check performs must work on both engines.
+
+        IronPython 2 reports 'authorization' and CPython 3 reports 'Authorization'
+        for the same request; `get("Authorization")` has to answer both.
+        """
+        for lower_case_names in (False, True):
+            request = self._prepare(lower_case_names)
+            self.assertEqual("Bearer s3cr3t", request.headers.get("Authorization"))
+            self.assertEqual("Bearer s3cr3t", request.headers.get("authorization"))
+            self.assertEqual("Bearer s3cr3t", request.headers["AUTHORIZATION"])
+
+    def test_header_name_membership_ignores_case(self):
+        """`in` resolves a header name without regard to case."""
+        for lower_case_names in (False, True):
+            request = self._prepare(lower_case_names)
+            self.assertIn("Authorization", request.headers)
+            self.assertIn("authorization", request.headers)
+            self.assertNotIn("X-Absent", request.headers)
+
+    def test_absent_header_reads_as_none(self):
+        """A header the client did not send has no value, rather than raising."""
+        request = self._prepare(lower_case_names=False)
+        self.assertIsNone(request.headers.get("X-Absent"))
+        self.assertEqual("fallback", request.headers.get("X-Absent", "fallback"))
+
+    def test_header_names_are_exposed_normalized(self):
+        """Names are stored lower-cased, so iterating is stable across engines."""
+        request = self._prepare(lower_case_names=False)
+        self.assertEqual(
+            sorted(k.lower() for k in self.INCOMING),
+            sorted(request.headers.keys()),
+        )
+
+    def test_repeated_header_collapses_to_a_single_value(self):
+        """A client repeating a name leaves one entry, whichever value wins.
+
+        Which of the repeats survives is not asserted: the order IronPython 2
+        reports repeated names in comes from a dict, which does not define one.
+        What must hold is that the repeats do not fan out into several entries.
+        """
+        http_handler = _FakeHttpHandlerForPrepare()
+        http_handler.headers._headers["X-Multi"] = "first"
+        http_handler.headers._headers["x-multi"] = "second"
+        route = _FakeRoute(pattern="/items/")
+
+        request = http_handler._prepare_request(route, "/items/", "GET", None)
+
+        self.assertEqual(1, len([k for k in request.headers if k == "x-multi"]))
+        self.assertIn(request.headers.get("X-Multi"), ("first", "second"))
+
+    def test_setting_the_same_name_differently_replaces_the_value(self):
+        """Writing one name twice leaves a single entry, not two."""
+        request = base.Request(path="/", method="GET")
+        request.add_header("X-Token", "first")
+        request.add_header("x-token", "second")
+
+        self.assertEqual(1, len(request.headers))
+        self.assertEqual("second", request.headers.get("X-Token"))
+
+    def test_headers_are_removed_by_name_regardless_of_case(self):
+        """Deleting and popping match without regard to case."""
+        request = base.Request(path="/", method="GET")
+        request.add_header("X-Drop", "value")
+        del request.headers["x-drop"]
+        self.assertNotIn("X-Drop", request.headers)
+
+        request.add_header("X-Pop", "value")
+        self.assertEqual("value", request.headers.pop("x-POP"))
+        self.assertNotIn("X-Pop", request.headers)
+
+    def test_setdefault_does_not_overwrite_an_existing_header(self):
+        """Setdefault fills an absent name only, matching plain dict semantics."""
+        request = base.Request(path="/", method="GET")
+        request.add_header("X-Set", "kept")
+
+        self.assertEqual("kept", request.headers.setdefault("x-set", "ignored"))
+        self.assertEqual("filled", request.headers.setdefault("X-New", "filled"))
+
+    def test_update_normalizes_every_name_it_adds(self):
+        """A bulk update routes through the same normalization as add_header."""
+        headers = base.CaseInsensitiveHeaders()
+        headers.update({"Content-Type": "application/json"})
+
+        self.assertEqual("application/json", headers.get("content-type"))
+        self.assertEqual("application/json", headers["CONTENT-TYPE"])
+
+    def test_copy_is_independent_and_case_insensitive(self):
+        """A copy keeps the case-insensitive behavior without sharing state."""
+        original = base.CaseInsensitiveHeaders({"Authorization": "Bearer s3cr3t"})
+        copied = original.copy()
+
+        copied["X-Extra"] = "value"
+
+        self.assertEqual("Bearer s3cr3t", copied.get("authorization"))
+        self.assertNotIn("X-Extra", original)
+
+    def test_headers_stay_out_of_the_query_and_path_parameters(self):
+        """Headers must not bleed into the handler's other injected arguments."""
+        request = self._prepare(lower_case_names=False)
+
+        self.assertEqual({}, request.query_params)
+        self.assertEqual([], request.params)
+        self.assertNotIn("authorization", request.query_params)
+        self.assertEqual("/items/", request.path)
+
+    def test_request_headers_are_a_plain_dict_for_consumers(self):
+        """Handlers copy the mapping wholesale, as the issue's repro does."""
+        request = self._prepare(lower_case_names=True)
+
+        copied = dict(request.headers)
+
+        self.assertIsInstance(copied, dict)
+        self.assertEqual("Bearer s3cr3t", copied.get("authorization"))
+
+    def test_response_headers_are_untouched(self):
+        """Only request headers gained case-insensitive lookup."""
+        response = base.Response(status=base.OK, data="x")
+        response.add_header("Content-Type", "text/html")
+
+        self.assertEqual("text/html", response.headers.get("Content-Type"))
+        self.assertIsNone(response.headers.get("content-type"))
 
 
 # ---------------------------------------------------------------------------

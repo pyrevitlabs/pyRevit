@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">Choisir le style de ligne des marqueurs du centre de gravité</sys:String>
+    <sys:String x:Key="transaction_name">Obtenir le centre de gravité</sys:String>
+    <sys:String x:Key="select_element">Sélectionnez au moins un élément.</sys:String>
+    <sys:String x:Key="no_solid_geometry">Les éléments sélectionnés ne contiennent aucune géométrie solide.</sys:String>
+</ResourceDictionary>

@@ -94,7 +94,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var doc = uidoc.Document;
             var view = uidoc.ActiveView;
             if (doc.IsModifiable)
-                throw new AgentException("revit_busy", "Another transaction is open in the active document.");
+                throw AgentException.NotRun("Another transaction is open in the active document.");
 
             var response = new JObject {
                 ["action"] = request.Action,

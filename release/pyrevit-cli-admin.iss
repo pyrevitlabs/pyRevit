@@ -28,6 +28,9 @@ DefaultDirName={autopf}\{#MyAppName}
 UsePreviousAppDir=yes
 ;     mode
 PrivilegesRequired=admin
+#if Ver >= EncodeVer(6, 7, 0)
+RedirectionGuard=no
+#endif
 ; Build info
 OutputDir=..\dist
 ; Keep this list aligned with the installer assets staged by build/.
@@ -56,6 +59,7 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Par
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemovePathEntry"; Parameters: "env path remove ""{app}\bin"" --scope=machine"; Flags: runhidden runascurrentuser
 
 [Code]
 function RunPyRevitCommand(const Params: String): Boolean;

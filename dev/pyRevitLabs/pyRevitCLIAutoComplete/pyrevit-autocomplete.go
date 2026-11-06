@@ -61,9 +61,10 @@ func main() {
 					},
 				},
 				Flags: complete.Flags{
-					"--help": complete.PredictNothing,
-					"--json": complete.PredictNothing,
-					"--log":  complete.PredictNothing,
+					"--help":   complete.PredictNothing,
+					"--json":   complete.PredictNothing,
+					"--log":    complete.PredictNothing,
+					"--redact": complete.PredictNothing,
 				},
 			},
 			"update": complete.Command{
@@ -1031,6 +1032,25 @@ func main() {
 										},
 									},
 									"no": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"reckless": complete.Command{
+								Sub: complete.Commands{
+									"enable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"disable": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,

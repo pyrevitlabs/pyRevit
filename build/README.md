@@ -6,7 +6,7 @@ C# ModularPipelines project for local product builds and GitHub Actions CI/CD.
 
 - .NET 10 SDK (preinstalled on `windows-2025` runners)
 - `dotnet`, `msbuild`, `go` on PATH
-- Inno Setup 6 (`ISCC.exe`) for installer builds — preinstalled on `windows-2025`
+- Inno Setup 6 (`ISCC.exe`) for installer builds — preinstalled on `windows-2025`. The scripts set `RedirectionGuard=no` (#3758) only when compiled with 6.7 or newer, the first version that has the directive.
 - WiX Toolset v3.x build tools for the legacy CLI MSI project — preinstalled on `windows-2025`
 - `choco` for Chocolatey packaging/publish
 - `wingetcreate` for WinGet manifest updates (release publish workflow)
@@ -107,7 +107,7 @@ Run unit tests:
 dotnet test tests/Build.Tests.csproj -c Release
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, and parser parity tests.
+The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
 
 ### Pipeline modes
 

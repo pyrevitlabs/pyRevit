@@ -29,6 +29,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
     /// <item>A script error always rolls back.</item>
+    /// <item><c>[agent] reckless</c> is read once before the script starts and only turns off
+    /// the Python runner's in-script checks (timeout, per-line transaction tracking). Every
+    /// guarantee in this list still holds for a reckless run, which the response marks with
+    /// <c>"reckless": true</c>.</item>
     /// <item>A run that changes any document other than the active one is rolled back and
     /// pauses the session, if one is open, whatever its mode, the policy or any other error; when
     /// nothing else failed, it fails with <c>other_document_modified</c>.</item>
@@ -60,7 +64,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static AgentRunVerdict CarryOut(
             AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, UIDocument uidoc,
-            AgentRunRequest request, string runId, int exitCode, JObject changes) {
+            AgentRunRequest request, string runId, int exitCode, JObject changes, AgentTabHighlight.Lease highlight,
+            AgentRunTimings timings) {
             switch (verdict) {
                 case AgentRunVerdict.TransactionLeftOpen:
                     SetErrorIfMissing(context, "transaction_left_open",
@@ -97,6 +102,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.AskUser:
                     guard.DisarmDialogCapture();
+                    timings.Lap("decide");
+                    AgentHost.AwaitTabApproval(highlight);
                     bool approved;
                     AgentHost.Activity.SetAwaitingApproval(true);
                     try {
@@ -105,6 +112,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     finally {
                         AgentHost.Activity.SetAwaitingApproval(false);
                     }
+                    timings.Lap("approval");
                     if (approved) {
                         Commit(guard, uidoc.Document, request, runId);
                         return AgentRunVerdict.UserApproved;
@@ -132,6 +140,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static JToken ExecuteRun(UIApplication app, AgentRunRequest request) {
+            var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
             if (doc == null && request.Mode == AgentRunMode.Modify)
@@ -139,149 +148,210 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
                 throw new AgentException("document_read_only", "The active document is read-only.");
             if (doc != null && doc.IsModifiable)
-                throw new AgentException("revit_busy", "Another transaction is open in the active document.");
+                throw AgentException.NotRun("Another transaction is open in the active document.");
 
-            var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
-            var runDir = AgentPaths.CreateRunDir(runId);
-            var sessionId = AgentSessions.Tracker.SessionId;
-            var requestRecord = request.ToJson();
-            requestRecord["session_id"] = sessionId;
-            requestRecord["document"] = doc?.Title;
-            File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
-            File.WriteAllText(Path.Combine(runDir, "request.json"), requestRecord.ToString(Formatting.Indented), Utf8);
+            var highlight = AgentHost.BeginTabHighlight(app, doc, request.Title);
+            try {
+                var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
+                var runDir = AgentPaths.CreateRunDir(runId);
+                var sessionId = AgentSessions.Tracker.SessionId;
+                WriteRequestRecord(runDir, request, sessionId, doc?.Title);
 
-            var warnings = new JArray();
-            var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
-            if (lostBefore != null)
-                warnings.Add(lostBefore);
+                var warnings = new JArray();
+                var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
+                if (lostBefore != null)
+                    warnings.Add(lostBefore);
 
-            AgentHost.RefreshConfigIfChanged();
-            var policyAtStart = ReadPolicy();
+                AgentHost.RefreshConfigIfChanged();
+                var policyAtStart = ReadPolicy();
+                var reckless = PyRevitConfigs.GetAgentReckless();
 
-            var stopwatch = Stopwatch.StartNew();
-            var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
-            var response = new JObject {
-                ["run_id"] = runId,
-                ["run_dir"] = runDir,
-                ["mode"] = request.ModeName,
-                ["title"] = request.Title,
-                ["reason"] = request.Reason,
-                ["session_id"] = sessionId,
-                ["document"] = doc?.Title,
-                ["document_path"] = string.IsNullOrEmpty(doc?.PathName) ? null : doc.PathName,
-            };
+                var stopwatch = Stopwatch.StartNew();
+                var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
+                    Timings = timings,
+                };
+                var response = new JObject {
+                    ["run_id"] = runId,
+                    ["run_dir"] = runDir,
+                    ["request_id"] = request.RequestId,
+                    ["mode"] = request.ModeName,
+                    ["title"] = request.Title,
+                    ["reason"] = request.Reason,
+                    ["session_id"] = sessionId,
+                    ["document"] = doc?.Title,
+                    ["document_path"] = string.IsNullOrEmpty(doc?.PathName) ? null : doc.PathName,
+                };
 
-            var openAtStart = AgentDocuments.Snapshot(app.Application);
-            var guard = new AgentRunGuard(app, doc);
-            using (guard) {
+                timings.Lap("prepare");
+                var openAtStart = AgentDocuments.Snapshot(app.Application);
+                var guard = new AgentRunGuard(app, doc);
+                using (guard) {
+                    try {
+                        guard.Arm("Agent: " + request.Title);
+                        timings.Lap("guard_arm");
+                        var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
+                        timings.Lap("engine");
+
+                        var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;
+                        if (guard.ErrorRollbacks > 0 && !context.HasError)
+                            context.SetError(
+                                "revit_failure",
+                                $"Revit rolled back {guard.ErrorRollbacks} transaction(s) because of errors: "
+                                + $"{guard.FirstErrorDescription} See 'failures' for every message. Fix the cause "
+                                + "(for example an opening wider than its host wall) and run again.",
+                                null);
+                        var changes = doc != null ? guard.Changes.Describe(doc, MaxChangeSamples) : guard.Changes.Summarize();
+                        var otherDocuments = guard.DescribeOtherDocuments();
+                        if (otherDocuments.Count > 0)
+                            changes["other_documents"] = otherDocuments;
+                        timings.Lap("changes");
+                        AgentHost.RefreshConfigIfChanged();
+                        var verdict = AgentRunDecision.Decide(new AgentRunFacts {
+                            Mode = request.Mode,
+                            HasDocument = doc != null,
+                            TransactionLeftOpen = transactionLeftOpen,
+                            ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
+                            ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
+                            HasChanges = !guard.Changes.IsEmpty,
+                            Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
+                        });
+                        timings.Lap("decide");
+                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
+                        timings.Lap("guard_release");
+
+                        var approval = AgentRunDecision.Approval(verdict);
+                        if (approval != null)
+                            response["approval"] = approval;
+                        response["status"] = AgentRunDecision.Status(verdict);
+                        response["decision"] = AgentRunDecision.Decision(verdict);
+                        response["exit_code"] = exitCode;
+                        response["changes"] = changes;
+                        response["failures"] = guard.Failures;
+                        response["dialogs"] = guard.Dialogs;
+                        response["blocked"] = guard.Blocked;
+                    }
+                    catch (Exception ex) {
+                        logger.Error(ex, "Agent run {0} failed in the host", runId);
+                        context.SetError("host_error", ex.Message, ex.ToString());
+                        response["status"] = "error";
+                        response["decision"] = "rolled_back";
+                        response["failures"] = guard.Failures;
+                        response["dialogs"] = guard.Dialogs;
+                        response["blocked"] = guard.Blocked;
+                    }
+                }
+                timings.Lap("guard_release");
+
+                if (doc != null && response.Value<string>("decision") != "committed") {
+                    var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
+                    if (lostByRollback != null) {
+                        logger.Error("Agent run {0}: {1}", runId, lostByRollback);
+                        warnings.Add(lostByRollback);
+                    }
+                }
                 try {
-                    guard.Arm("Agent: " + request.Title);
-                    var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
-
-                    var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;
-                    if (guard.ErrorRollbacks > 0 && !context.HasError)
-                        context.SetError(
-                            "revit_failure",
-                            $"Revit rolled back {guard.ErrorRollbacks} transaction(s) because of errors: "
-                            + $"{guard.FirstErrorDescription} See 'failures' for every message. Fix the cause "
-                            + "(for example an opening wider than its host wall) and run again.",
-                            null);
-                    var changes = doc != null ? guard.Changes.Describe(doc, MaxChangeSamples) : guard.Changes.Summarize();
-                    var otherDocuments = guard.DescribeOtherDocuments();
-                    if (otherDocuments.Count > 0)
-                        changes["other_documents"] = otherDocuments;
-                    AgentHost.RefreshConfigIfChanged();
-                    var verdict = AgentRunDecision.Decide(new AgentRunFacts {
-                        Mode = request.Mode,
-                        HasDocument = doc != null,
-                        TransactionLeftOpen = transactionLeftOpen,
-                        ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
-                        ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
-                        HasChanges = !guard.Changes.IsEmpty,
-                        Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
-                    });
-                    verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes);
-
-                    var approval = AgentRunDecision.Approval(verdict);
-                    if (approval != null)
-                        response["approval"] = approval;
-                    response["status"] = AgentRunDecision.Status(verdict);
-                    response["decision"] = AgentRunDecision.Decision(verdict);
-                    response["exit_code"] = exitCode;
-                    response["changes"] = changes;
-                    response["failures"] = guard.Failures;
-                    response["dialogs"] = guard.Dialogs;
-                    response["blocked"] = guard.Blocked;
+                    var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
+                    response["closed_documents"] = leftovers["closed"];
+                    response["unclosed_documents"] = leftovers["failed"];
+                    if (((JArray)leftovers["failed"]).Count > 0)
+                        warnings.Add("Could not close background documents the run left open: "
+                            + string.Join(", ", leftovers["failed"].Values<string>()));
                 }
                 catch (Exception ex) {
-                    logger.Error(ex, "Agent run {0} failed in the host", runId);
-                    context.SetError("host_error", ex.Message, ex.ToString());
+                    logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);
+                    warnings.Add("Closing leftover documents failed: " + ex.Message);
+                }
+                if (guard.ChangedOtherOpenDocument) {
+                    var changedTitles = guard.ChangedOtherOpenDocumentTitles;
+                    if (AgentSessions.PauseForOtherDocument(changedTitles))
+                        warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
+                            + "), so the agent session is paused until the user resumes it in Revit.");
+                }
+                var finalOtherDocuments = guard.DescribeOtherDocuments();
+                foreach (var failure in guard.CleanupFailures)
+                    warnings.Add("Guard cleanup failed: " + failure);
+                if (finalOtherDocuments.Count > 0) {
+                    var changes = response["changes"] as JObject;
+                    if (changes == null) {
+                        changes = new JObject();
+                        response["changes"] = changes;
+                    }
+                    changes["other_documents"] = finalOtherDocuments;
+                }
+                if (guard.HasUnrevertedOtherDocumentChanges) {
                     response["status"] = "error";
-                    response["decision"] = "rolled_back";
-                    response["failures"] = guard.Failures;
-                    response["dialogs"] = guard.Dialogs;
-                    response["blocked"] = guard.Blocked;
+                    response["decision"] = "rollback_incomplete";
+                    warnings.Add("Changes remain in another open document. Close it without saving to discard them. "
+                        + "See 'changes.other_documents' for the documents that were not reverted.");
+                    SetErrorIfMissing(context, "rollback_incomplete",
+                        "The host could not revert changes in another document. Close it without saving.");
                 }
-            }
+                response["warnings"] = warnings;
+                timings.Lap("cleanup");
 
-            if (doc != null && response.Value<string>("decision") != "committed") {
-                var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
-                if (lostByRollback != null) {
-                    logger.Error("Agent run {0}: {1}", runId, lostByRollback);
-                    warnings.Add(lostByRollback);
+                AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython", warnings);
+                response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;
+                timings.Lap("outcome");
+                if (reckless)
+                    response["reckless"] = true;
+                response["timings_ms"] = timings.ToJson();
+                logger.Debug("[PERF] agent run {0} ({1}, {2}): {3}", runId, request.ModeName, response["engine"]?["implementation"], timings.Describe());
+
+                try {
+                    File.WriteAllText(Path.Combine(runDir, "response.json"), response.ToString(Formatting.Indented), Utf8);
                 }
+                catch (Exception ex) {
+                    logger.Warn("Could not write agent run record: {0}", ex.Message);
+                    warnings.Add("Could not write the agent run record: " + ex.Message);
+                }
+
+                return response;
             }
+            finally {
+                AgentHost.EndTabHighlight(highlight);
+            }
+        }
+
+        private static void WriteRequestRecord(string runDir, AgentRunRequest request, string sessionId, string document) {
+            var record = request.ToJson();
+            record["session_id"] = sessionId;
+            record["document"] = document;
+            File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
+            File.WriteAllText(Path.Combine(runDir, "request.json"), record.ToString(Formatting.Indented), Utf8);
+        }
+
+        /// <summary>
+        /// Leaves a run folder for a request the host refused as <c>revit_busy</c>, with
+        /// <c>status</c> and <c>decision</c> <c>not_run</c>, and adds its <c>run_id</c> and
+        /// <c>run_dir</c> to <paramref name="refusal"/>.
+        /// </summary>
+        /// <remarks>
+        /// Without it a refused request leaves no trace, so a caller that got no answer can not tell
+        /// a request that never ran from one still queued. Best effort: a failure to write the
+        /// record only means the error carries no <c>run_id</c>.
+        /// </remarks>
+        public static void RecordNotRun(AgentRunRequest request, AgentException refusal) {
             try {
-                var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
-                response["closed_documents"] = leftovers["closed"];
-                response["unclosed_documents"] = leftovers["failed"];
-                if (((JArray)leftovers["failed"]).Count > 0)
-                    warnings.Add("Could not close background documents the run left open: "
-                        + string.Join(", ", leftovers["failed"].Values<string>()));
+                var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
+                var runDir = AgentPaths.CreateRunDir(runId);
+                WriteRequestRecord(runDir, request, AgentSessions.Tracker.SessionId, null);
+                var record = new JObject {
+                    ["run_id"] = runId,
+                    ["run_dir"] = runDir,
+                    ["request_id"] = request.RequestId,
+                    ["mode"] = request.ModeName,
+                    ["title"] = request.Title,
+                    ["status"] = "not_run",
+                    ["decision"] = "not_run",
+                    ["error"] = new JObject { ["type"] = refusal.Code, ["message"] = refusal.Message },
+                };
+                File.WriteAllText(Path.Combine(runDir, "response.json"), record.ToString(Formatting.Indented), Utf8);
+                refusal.Details["run_id"] = runId;
+                refusal.Details["run_dir"] = runDir;
             }
             catch (Exception ex) {
-                logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);
-                warnings.Add("Closing leftover documents failed: " + ex.Message);
+                logger.Warn("Could not write the record of a refused agent request: {0}", ex.Message);
             }
-            if (guard.ChangedOtherOpenDocument) {
-                var changedTitles = guard.ChangedOtherOpenDocumentTitles;
-                if (AgentSessions.PauseForOtherDocument(changedTitles))
-                    warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
-                        + "), so the agent session is paused until the user resumes it in Revit.");
-            }
-            var finalOtherDocuments = guard.DescribeOtherDocuments();
-            foreach (var failure in guard.CleanupFailures)
-                warnings.Add("Guard cleanup failed: " + failure);
-            if (finalOtherDocuments.Count > 0) {
-                var changes = response["changes"] as JObject;
-                if (changes == null) {
-                    changes = new JObject();
-                    response["changes"] = changes;
-                }
-                changes["other_documents"] = finalOtherDocuments;
-            }
-            if (guard.HasUnrevertedOtherDocumentChanges) {
-                response["status"] = "error";
-                response["decision"] = "rollback_incomplete";
-                warnings.Add("Changes remain in another open document. Close it without saving to discard them. "
-                    + "See 'changes.other_documents' for the documents that were not reverted.");
-                SetErrorIfMissing(context, "rollback_incomplete",
-                    "The host could not revert changes in another document. Close it without saving.");
-            }
-            response["warnings"] = warnings;
-
-            AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython", warnings);
-            response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;
-
-            try {
-                File.WriteAllText(Path.Combine(runDir, "response.json"), response.ToString(Formatting.Indented), Utf8);
-            }
-            catch (Exception ex) {
-                logger.Warn("Could not write agent run record: {0}", ex.Message);
-                warnings.Add("Could not write the agent run record: " + ex.Message);
-            }
-
-            return response;
         }
 
         private static void SetErrorIfMissing(AgentScriptContext context, string type, string message) {

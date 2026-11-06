@@ -3,7 +3,7 @@ Usage:
 	pyrevit (-V | --version)
 	pyrevit --usage
 	pyrevit (wiki | blog | docs | source | youtube | support)
-	pyrevit env [--json] [(-h | --help)] [--log=<log_file>]
+	pyrevit env [--json] [--redact] [(-h | --help)] [--log=<log_file>]
 	pyrevit env path [(-h | --help)]
 	pyrevit env path list [--scope=<scope>] [--log=<log_file>]
 	pyrevit env path ensure <dir> [--scope=<scope>] [--log=<log_file>]
@@ -115,6 +115,7 @@ Usage:
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs agent skills [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent requiresession [(yes | no)] [--log=<log_file>]
+	pyrevit configs agent reckless [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]

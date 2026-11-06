@@ -93,8 +93,22 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 | `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
 | `[agent] require_session` | `pyrevit configs agent requiresession (yes \| no)` | `yes` (default): model requests need a session the user starts in the agent panel. `no`: requests pass without one, as before sessions existed; a session the user starts still binds agents to its document, and only the user can end it. Read only when pyRevit loads, and a reload from inside an agent run can't turn it off. Also in pyRevit Settings. |
+| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. See [Reckless mode](#reckless-mode) for the risks. |
 
 Run any of these commands without a value to print the current setting.
+
+### Run document tab
+
+The document captured at the start of a run has an amber pyRevit accent tab with black text throughout execution and the Keep/Discard prompt.
+The tooltip reads `Agent: <run title>` during execution and `Agent: <run title> (awaiting approval)` during approval.
+The highlight identifies the run document, not a document inspected by an earlier `get_context` request.
+All tabs for the same native document identity are highlighted, even when document titles match.
+The first successful paint remains visible for at least 1.5 seconds; consecutive runs on that document share the highlight without an intermediate restore.
+Tab Coloring remains underneath the temporary overlay and resumes when it ends.
+
+**Settings > Agent Runtime (MCP) > Highlight the document tab during agent runs** controls `[agent] tab_highlight`, which defaults to `true` and applies to the next run without reloading pyRevit.
+The configuration accessor is `PyRevitConfigs.GetAgentTabHighlight()` / `SetAgentTabHighlight(bool)`; no flat Python userconfig alias is provided.
+Three consecutive visual failures disable highlighting for the Revit process and produce one log entry without changing a run's outcome.
 
 ### MCP tools
 
@@ -103,14 +117,17 @@ Run any of these commands without a value to print the current setting.
 | `get_skill` | no | Task guidance in markdown (see [Skills](#skills)); the server's instructions tell agents which skill to read first |
 | `list_revit_instances` | no | Running Revit sessions with the agent host, and each one's agent session state |
 | `request_session` | no | Ask the user to start an agent session. The agent panel opens with the `reason` (at most 300 characters), at most once a minute. Only the user can start the session |
-| `get_context` | no | Revit and pyRevit versions, agent policy, `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels |
+| `get_context` | no | Revit and pyRevit versions, agent policy (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
-| `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
+| `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there). Saved under `%APPDATA%\pyRevit\agent\captures`. |
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
 | `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
+| `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
+| `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
+| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source |
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
@@ -138,6 +155,37 @@ and adds a warning. The corresponding `get_run` record can be incomplete or unav
 Every tool that talks to Revit accepts an optional `revit` argument (a year such as
 `"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
 sets a default.
+
+### Automation operations
+
+pyrevitlib and rpw functions marked with `@automation.operation` (from `pyrevit_automation`)
+are listed by `list_automation` with a stable id, mode, effects, context and transaction.
+`run_automation` can call an operation when it is hand-wired in
+`dev/pyRevitLabs/pyRevitCLI/PyRevitAutomationOperations.cs`, or when its marker declares
+`inputs` on a module-level `query` or `pure` function that opens no transaction:
+
+```python
+@automation.operation(
+    "pyrevit.elements.name",
+    PlainEnglish="Read an element name, including a view title on a sheet when requested.",
+    effects=("model.read",),
+    inputs=("element: element", "title_on_sheet: boolean?"),
+)
+def get_name(element, title_on_sheet=False):
+```
+
+Each input is `"<name>: <type>"`, with `?` for an optional one, and is passed as the keyword
+argument of the same name. Types are `string` (non-blank, at most 256 characters), `number`,
+`integer`, `boolean`, `element` (an element id, resolved in the active document) and `scalar`
+(a string, number or boolean). `inputs=()` declares an operation that takes no inputs. A
+function with a `doc` parameter gets the active document. List results keep their first 200
+items and add `total` and `truncated`.
+
+The CLI validates the inputs, then sends a fixed script that calls
+`pyrevit.agent._operations.invoke`; the operation's module and function travel in the run's
+inputs, never in the script. `invoke` checks the live marker and the inputs again inside
+Revit. `dev/scripts/test_standalone_automation_marker.py` fails when declared inputs don't match the
+function they mark.
 
 !!! tip "Long approvals"
 
@@ -287,6 +335,8 @@ Rules the host enforces:
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
   it is reported there but doesn't fail the run, and isn't rolled back.
 - A script error rolls back everything, and the traceback points at the script's own lines.
+  Decorated functions, context-manager yields and rewritten exception handlers retain
+  their original script line numbers, including on IronPython.
   When a Revit call throws, the message carries the underlying .NET exception and its
   inner exceptions (`[.NET: Autodesk.Revit.Exceptions.… <- …]`), not only the generic
   "A managed exception was thrown".
@@ -294,20 +344,100 @@ Rules the host enforces:
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
-  most 3600) is stopped and fails with `timeout`. The runner checks the deadline between
-  Python lines, so it stops loops. A single blocking call, such as a long Revit API call or
-  `time.sleep`, can't be interrupted; the run fails with `timeout` once it returns.
-- Python drops a trace function after it raises once, so the runner compiles the script with
-  every bare `except` and `except BaseException` narrowed to `except Exception`. A script
-  can't swallow its own timeout, and can't catch `KeyboardInterrupt` or `SystemExit` that
-  way. Suppression through an alias or `contextlib.suppress(BaseException)` still bypasses
-  this; on CPython a watchdog thread is the backstop.
+  most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
+  the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
+  check that flag on each iteration; only the header expressions change, so line numbers and
+  tracebacks still match the submitted source. On CPython the watchdog also raises the
+  timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
+  modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
+  only stopped once the call returns. A single blocking call, such as a long Revit API call
+  or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns.
+  When that call was the script's last, the error says so and carries no traceback.
+- The runner compiles the script with every bare `except` and `except BaseException`
+  narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
+  `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
+  other way, such as through an alias, is stopped again at its next loop header. On
+  CPython 3.12 and later, a run still going a second after its deadline is also stopped at
+  the end of every loop iteration it reaches, which covers `async for` loops and code
+  compiled at run time.
+- To roll back a transaction the script leaves open, the runner rewrites every
+  `<expr>.Start(...)` call in the script to `__agent_start__(<expr>).Start(...)`, which
+  records the object if it is a Revit transaction before starting it. That finds a
+  transaction however it was created or named, in a helper, after its variable is rebound,
+  or when a timeout stops the script, so scripts that open transactions run at full speed.
+  Only the object expression is wrapped, so line numbers still match the submitted source.
+  The runner falls back to tracing the script's own frames line by line when the rewrite
+  can't see every start: the run uses a `workspace`, compiles code at run time, or reaches
+  `Start` another way (`getattr(t, "Start")`, `start = t.Start`). Other runs have no trace
+  function, which on IronPython makes them many times faster, but also means nothing checks
+  the deadline outside loop headers: unbounded recursion, or a callback passed to `map`,
+  `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
+  transaction a library function starts and returns to the script is only found if the
+  script still holds it in a global when the run ends.
+- Tracebacks of errors and timeouts show the script's frames and the library code it
+  called, never the runner's own frames, so a timeout points at the script line that was
+  running.
+- Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
+  builtin) can't have its loops rewritten, and neither can a loop inside an f-string on
+  IronPython 3.4, which reads the whole f-string as one token. On IronPython such a run
+  falls back to checking the deadline on every line of every frame, which is slower but
+  still stops it, unless that code catches the timeout in its own loop.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
-- The document can't be saved, closed or synchronized during a run.
+- Documents can't be saved or synchronized during a run.
+  Closing is blocked for documents open when the run started.
+  The script may close documents it creates or opens during the run.
+
+The timeout, loop rewriting, handler narrowing, start recording and transaction tracing
+above are skipped when [reckless mode](#reckless-mode) is on. Every other rule in this
+section still applies.
 
 The MCP server's instructions teach agents these conventions, plus units (internal
 feet) and `ElementId.Value` on Revit 2024+.
+
+### Reckless mode
+
+Reckless mode runs agent scripts the way a pyRevit button runs its script: compiled as
+submitted, with no trace function. It is for users who accept the risks below in exchange
+for speed. A script that loops or calls into Python many times can run many times faster
+on IronPython, where every traced line or checked loop header costs several microseconds
+([#3815](https://github.com/pyrevitlabs/pyRevit/issues/3815)).
+
+It is off by default. Turn it on or off with the CLI, or set `reckless = true` under
+`[agent]` in the pyRevit config:
+
+```shell
+pyrevit configs agent reckless enable
+pyrevit configs agent reckless disable
+pyrevit configs agent reckless          # prints the current setting
+```
+
+The host reads the setting at the start of each run, so a change applies to the next run
+without reloading pyRevit. A script can't turn it on for its own run. A reckless run's
+response, its `response.json` record and the compact MCP result carry `"reckless": true`,
+and `get_context` reports `agent.reckless: true` while it is on.
+
+What a reckless run skips:
+
+- The timeout. `timeout_s` is accepted but not enforced: no watchdog thread, no loop-header
+  rewriting, no deadline checks, and no `timeout` error.
+- Handler narrowing. Bare `except` and `except BaseException` stay as written.
+- Transaction tracking. `.Start(` calls are not rewritten to record their transaction, and
+  no `sys.settrace` function is installed, so transactions are not recorded while the
+  script runs.
+
+Risks:
+
+- A runaway loop, or any script that never ends, blocks Revit until you end the Revit
+  process from Task Manager. Unsaved work in every open document is lost.
+- A transaction the script leaves open is still rolled back when it is held in a global
+  variable, or in a list or dict held in one. A transaction left open inside a function,
+  and not returned or stored globally, is not found, and Revit can crash later when that
+  abandoned transaction is finalized.
+
+What still applies: the `[agent] policy`, the approval prompt under `ask`, rollback of
+queries and dry runs, rollback on any script error, the `transaction_left_open` check on the
+active document, the document, save and dialog guards, and the run record.
 
 ### Which Python runs the script
 
@@ -357,7 +487,7 @@ pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year>]
                   [--timeout=<seconds>] [--workspace=<folder>]
 pyrevit agent runs [--limit=<n>]           recent runs
-pyrevit agent show <run_id>                request, script and response of a run
+pyrevit agent show <run_id|req-id>           request, script and response of a run, by run id or request id
 pyrevit agent session (status | pause | end) [--revit=<year>]
 pyrevit agent session request [--reason=<reason>] [--revit=<year>]
                                            ask the user to start a session; the CLI
@@ -368,7 +498,7 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
                                            entries that point at another pyRevit install
 ```
 
-`--timeout` defaults to 300 and is capped at 3600. `--workspace` must be an existing folder.
+`--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it. `--workspace` must be an existing folder.
 
 The `agent` and `mcp` commands ship with the pyRevit CLI of the same build. An older `pyrevit`
 on `PATH` doesn't know them and prints the global usage; upgrade the CLI or call the one from
@@ -385,7 +515,62 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
   same session id and document, and the document's path
 - `result.json`: present when the result was too large to return inline
 
+For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's
+wall-clock breakdown in milliseconds. Host phases, in order: `queue_wait` (request parsed to
+Revit main thread),
+`prepare`, `guard_arm`, `engine` (the whole script engine call), `changes`, `decide`,
+`approval` (only when the user was asked), `guard_release` (rollback or assimilation),
+`cleanup` and `outcome`, plus `total`. The `script.*` phases the runner reports (`setup`,
+`compile`, `exec`, `result`, `rollback`, `cleanup`) are nested in `engine`, so `engine` minus their sum is
+engine startup and runner import. The same breakdown is logged as a `[PERF] agent run` debug
+line.
+
 Run records and `capture_view` images older than 14 days are deleted when the host starts.
+
+### Testing agent skills and library changes through MCP
+
+A change to a skill under `pyrevitlib/pyrevit/agent/skills` or to a pyrevitlib helper it describes
+is best checked by running its snippets through the MCP server in a Revit that has your clone
+attached (`pyrevit attach dev default --installed`, see the developer guide). The steps in between
+are easy to get wrong:
+
+1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
+   need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
+2. **Close Revit, stop the MCP servers, then rebuild.** Revit loads pyRevit from the clone's `bin\`
+   and keeps its DLLs open, and each client session runs `bin\pyrevit.exe mcp` from there too.
+   A build started while either runs fails with "The process cannot access the file ... because it
+   is being used by another process", for example on `pyRevitLabs.Language.dll` (Revit) or
+   `Colorful.Console.dll` (a server). Servers of other client sessions count too.
+
+    ```shell
+    pwsh dev/scripts/Stop-McpServers.ps1
+    cd build && dotnet run -c Debug -- ci
+    ```
+
+    `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
+    tool call, so don't call an MCP tool between the script and the build; afterwards the
+    new server starts by itself, or the client needs a reconnect.
+3. **Restart Revit after a build.** Accept the "Security - Unsigned Add-In" dialog with **Load Once**
+   every time; the MCP host doesn't answer before that. Python-only changes need no rebuild, but
+   they need a restart or reload to take effect: IronPython can `reload()` a changed module, while
+   CPython can't redefine classes that implement .NET interfaces (reloading `pyrevit.revit.db.create`
+   raises `Duplicate type name within an assembly`). Restarting Revit loads the edits on both engines.
+4. **Repeat full test runs on the other IronPython.** The attached IronPython is one setting per
+   clone: `ironpython` runs on 2.7.12 after `pyrevit attach <clone> default --installed` and on 3.4.2
+   after `pyrevit attach <clone> 342 --installed`, while `cpython` is unaffected. The switch
+   rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
+   (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
+   the version in use. Run the full tests once per IronPython. Attach `default` again, restart Revit
+   and accept **Load Once** before continuing.
+5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
+   document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
+   or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
+   Roll back an open transaction on that document first: `Close` raises while one is open, and the
+   error hides the original failure. Put back any user setting the snippet touched, such as
+   `app.SharedParametersFilename`.
+
+The [in-Revit agent tests](#in-revit-agent-tests) cover the shipped skills and the pyrevitlib side
+of the automation operations on both engines.
 
 ## Design
 
@@ -438,6 +623,13 @@ under the same account.
 
 Discovery: each host writes `%APPDATA%\pyRevit\agent\instances\<pid>.json` with the pipe
 name, the Revit version and the process id, and removes it when Revit exits.
+Discovery excludes registrations and attempts to delete their files only when the recorded process is missing, its readable name is not `Revit` (case-insensitive), or its readable start time exceeds the registration timestamp by more than two seconds.
+A matching process name and start time establish liveness without requiring an available pipe.
+If process metadata or the registration timestamp cannot establish liveness, discovery checks for the recorded named pipe without connecting, up to three times at 300 ms intervals.
+Any successful pipe check includes the registration in discovery.
+If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
+The host recreates its pipe between connections and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
+Excluded registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on
 
@@ -490,29 +682,60 @@ carry a stable `data.type`, such as `revit_busy`, `no_active_document`, `policy_
 `invalid_params` or one of the session refusals in
 [Sessions and the agent panel](#sessions-and-the-agent-panel).
 
+### What became of a request that got no answer
+
+A client that gets `revit_busy`, or loses the connection, has to know whether its request ran
+before it sends it again. Every request goes out under a request id (the CLI and MCP server
+use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what is known:
+
+| `outcome` | Meaning | What to do |
+|---|---|---|
+| `not_sent` | The request never reached the host: nobody was listening, another client held the pipe, or the pipe belongs to another process. | Send it again. |
+| `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
+| `unknown` | The request was sent and the answer was lost (the connection broke or closed). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
+
+Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
+run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
+error's `data`. Without it a refused request would leave no trace. A run that did start records
+the request id in `request.json` and `response.json` (`request_id`), so a request can be found
+either way:
+
+```
+pyrevit agent show req-0123456789ab
+```
+
+The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
+`outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
+queued has no record yet, and one that never arrived has none at all. Only a pipe error after
+sending, or an answer that cannot be read, leaves the outcome `unknown`.
+
+A missing record does not prove that resending is safe. A request waits to start for
+`start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and
+leaves no record until it starts or is refused, so it may still run. Look the request up again
+after that wait has passed, and send it again only if there is still no record.
+
 ### The guarded run
 
 Every run executes in one ExternalEvent callback on the Revit main thread:
 
 1. **Arm guards** (only while the run is active):
-    - `DocumentSynchronizingWithCentral` is cancelled, and so are `DocumentSaving`,
-      `DocumentSavingAs` and `DocumentClosing` for every document open when the run started.
-      `DocumentSaving` and `DocumentSavingAs` are also cancelled for a project or family the
-      script opens from a file (`DocumentOpened`); the script may still close it, and the
-      host closes it without saving when the run ends. A family from `EditFamily` or a new
-      document the script created has no file yet and may be saved and closed.
+    - `DocumentSynchronizingWithCentral`, `DocumentSaving` and `DocumentSavingAs` are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
+      `DocumentClosing` is cancelled only for documents open when the run started.
+      The script may close documents it creates or opens during the run, but cannot save them.
+      After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
       failing transaction, in every non-linked document. A failure in a family or a new
       document fails the run with `revit_failure` instead of raising a dialog.
     - `DocumentChanged` collects added, modified and deleted ids, per document.
-2. **`TransactionGroup.Start("Agent: <title>")`** on the active document and on every other
-   open, editable, non-linked document, and later on each project or family the script
-   opens from a file.
+2. **`TransactionGroup.Start("Agent: <title>")`** on the active document if it is writable, and on every other open, editable, non-linked document that has no transaction already open.
+   Documents the script creates or opens during the run get no rollback group.
+   Changes to documents opened from disk are discarded when they are closed without saving, not by rolling back a group.
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
-    - **any mode**, another open document changed: roll back every group. The run fails
-      with `other_document_modified`. Only the active document's group is ever assimilated.
+    - **any mode**, another document open at the start or opened from disk during the run changed: roll back every group.
+      The run fails with `other_document_modified` if the script completed successfully and left no transaction open.
+      Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
     - **modify** with policy `readonly`: the policy is read before the script and again here,
@@ -547,6 +770,8 @@ Honest limits:
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
   request is still running: a modal dialog Revit shows while idle, such as the save
   reminder, isn't part of any run and blocks every request until the user answers it.
+  The refused request is discarded and never runs after the dialog closes; see
+  [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer).
 - A rollback must not touch committed work, but rolling back a dry run once undid the
   previous committed run as well (that run used `StairsEditScope`; Revit's journal logged
   `UndoElement::simplify PROBLEMS`). The host remembers a sample of the elements each

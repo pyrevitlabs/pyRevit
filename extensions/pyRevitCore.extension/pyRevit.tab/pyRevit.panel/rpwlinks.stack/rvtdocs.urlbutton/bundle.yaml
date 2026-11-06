@@ -1,0 +1,20 @@
+title:
+  en_us: rvtdocs.com
+  ko: rvtdocs.com
+  fr_fr: rvtdocs.com
+  ru: rvtdocs.com
+  chinese_s: rvtdocs.com
+  es_es: rvtdocs.com
+  de_de: rvtdocs.com
+  pt_br: rvtdocs.com
+tooltip:
+  en_us: Opens modern version on Revit API Docs on rvtdocs.com
+  ko: rvtdocs.com에서 최신 버전의 Revit API 문서를 엽니다
+  fr_fr: Ouvre la dernière version de la documentation de l'API Revit sur rvtdocs.com
+  ru: Открывает последнюю версию документации Revit API на rvtdocs.com
+  chinese_s: 在 rvtdocs.com 上打开最新版本的 Revit API 文档
+  es_es: Abre la última versión de la documentación de la API de Revit en rvtdocs.com
+  de_de: Öffnet die aktuelle Version der Revit API Dokumentation auf rvtdocs.com
+  pt_br: Abre a versão mais recente da documentação da API do Revit no rvtdocs.com
+hyperlink: "https://rvtdocs.com?utm_source=pyrevit-tab"
+context: zero-doc

@@ -148,13 +148,13 @@ def get_number(target_element):
         return target_element.Number
 
     # determine target parameter
-    mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+    mark_param = target_element.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK)
     if isinstance(target_element, (DB.Level, DB.Grid)):
-        mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
+        mark_param = target_element.get_Parameter(DB.BuiltInParameter.DATUM_TEXT)
     if isinstance(target_element, DB.Viewport):
-        mark_param = target_element.Parameter[
+        mark_param = target_element.get_Parameter(
             DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
-        ]
+        )
     # get now
     if mark_param:
         return mark_param.AsString()
@@ -167,13 +167,13 @@ def set_number(target_element, new_number):
         return
 
     # determine target parameter
-    mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+    mark_param = target_element.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK)
     if isinstance(target_element, (DB.Level, DB.Grid)):
-        mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
+        mark_param = target_element.get_Parameter(DB.BuiltInParameter.DATUM_TEXT)
     if isinstance(target_element, DB.Viewport):
-        mark_param = target_element.Parameter[
+        mark_param = target_element.get_Parameter(
             DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
-        ]
+        )
     # set now
     if mark_param:
         mark_param.Set(new_number)

@@ -27,6 +27,9 @@ DefaultDirName={userappdata}\{#MyAppName}-Master
 UsePreviousAppDir=yes
 ;     mode
 PrivilegesRequired=lowest
+#if Ver >= EncodeVer(6, 7, 0)
+RedirectionGuard=no
+#endif
 ; Build info
 OutputDir=..\dist
 ; Keep this list aligned with the installer assets staged by build/.
@@ -81,6 +84,7 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Seeding extension defaults...";
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemovePathEntry"; Parameters: "env path remove ""{app}\bin"" --scope=user"; Flags: runhidden
 
 [Code]
 function RunPyRevitCommand(const Params: String): Boolean;

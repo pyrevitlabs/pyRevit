@@ -326,7 +326,7 @@ def remove_all_unnamed_reference_planes():
     unnamed_refplanes = [
         x
         for x in refplanes
-        if not x.Parameter[DB.BuiltInParameter.DATUM_TEXT].AsString()
+        if not x.get_Parameter(DB.BuiltInParameter.DATUM_TEXT).AsString()
     ]
     print_header("REMOVING REFERENCE PLANES")
     remove_action("Remove All Reference Planes", "Reference Plane", unnamed_refplanes)
@@ -412,7 +412,9 @@ def get_referenced_view_names():
 
     view_refs_names = set()
     for view_ref in view_refs:
-        ref_param = view_ref.Parameter[DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW]
+        ref_param = view_ref.get_Parameter(
+            DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW
+        )
         view_refs_names.add(ref_param.AsValueString())
     return list(view_refs_names)
 
@@ -474,8 +476,8 @@ def _purge_all_views(
     sheeted_view_ids = get_sheeted_view_ids()
 
     def is_referenced(view):
-        refsheet = view.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET]
-        refviewport = view.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL]
+        refsheet = view.get_Parameter(DB.BuiltInParameter.VIEW_REFERENCING_SHEET)
+        refviewport = view.get_Parameter(DB.BuiltInParameter.VIEW_REFERENCING_DETAIL)
         refprefix = VIEWREF_PREFIX.get(view.ViewType, "")
         if (
             refsheet

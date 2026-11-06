@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">Selecione o estilo de linha dos marcadores do centroide</sys:String>
+    <sys:String x:Key="transaction_name">Obter Centroide</sys:String>
+    <sys:String x:Key="select_element">Selecione pelo menos um elemento.</sys:String>
+    <sys:String x:Key="no_solid_geometry">Os elementos selecionados não têm geometria sólida.</sys:String>
+</ResourceDictionary>

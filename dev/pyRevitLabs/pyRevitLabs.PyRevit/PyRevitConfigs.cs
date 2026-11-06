@@ -301,6 +301,21 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentEnabledKey, state);
         }
 
+        /// <summary>Reads the agent document tab overlay setting, enabled by default.</summary>
+        public static bool GetAgentTabHighlight() {
+            var config = GetConfigFile();
+            return config.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentTabHighlightKey,
+                PyRevitConsts.ConfigsAgentTabHighlightDefault);
+        }
+
+        /// <summary>Persists the document tab overlay preference for subsequent agent runs.</summary>
+        public static void SetAgentTabHighlight(bool state) {
+            var config = GetConfigFile();
+            config.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentTabHighlightKey, state);
+        }
+
         /// <summary>
         /// What agent runs may do: <c>readonly</c> allows queries and dry runs only;
         /// <c>ask</c> also allows modify runs, each approved by the user in Revit;
@@ -393,6 +408,33 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetSectionKeyValue(
                 PyRevitConsts.ConfigsAgentSection,
                 PyRevitConsts.ConfigsAgentRequireSessionKey,
+                state);
+        }
+
+        /// <summary>
+        /// Whether agent runs skip the Python runner's in-script checks: the run timeout, the
+        /// loop and handler rewriting that enforces it, and per-line transaction tracking.
+        /// </summary>
+        /// <remarks>
+        /// Off by default. Approval, rollback, the policy and the host's run guard still apply.
+        /// A value that is not a boolean reads as off.
+        /// </remarks>
+        public static bool GetAgentReckless() {
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRecklessKey,
+                PyRevitConsts.ConfigsAgentRecklessDefault);
+        }
+
+        /// <summary>
+        /// Turns reckless agent runs on or off; the host reads it at the start of each run.
+        /// </summary>
+        public static void SetAgentReckless(bool state) {
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRecklessKey,
                 state);
         }
 

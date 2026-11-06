@@ -40,6 +40,9 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogDetails.cs" Link="Sources\AgentLogDetails.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogViewModel.cs" Link="Sources\AgentLogViewModel.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentAwareness.cs" Link="Sources\AgentAwareness.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunTimings.cs" Link="Sources\AgentRunTimings.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlight.cs" Link="Sources\AgentTabHighlight.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlightValue.cs" Link="Sources\AgentTabHighlightValue.cs"/>
     </ItemGroup>
 
 </Project>

@@ -403,6 +403,7 @@
     <system:String x:Key="Agent.Privacy">Whatever the agent reads (element names, parameter values, results) is sent to the agent's model provider.</system:String>
     <system:String x:Key="Agent.Check">Agent Host (Beta)</system:String>
     <system:String x:Key="Agent.RequireSession">Require a session: agents can read or change the model only after you start one in the Agent panel (recommended)</system:String>
+    <system:String x:Key="Agent.TabHighlight">Highlight the document tab during agent runs</system:String>
     <system:String x:Key="Agent.Policy">Model Changes</system:String>
     <system:String x:Key="Agent.Policy.Ask">Ask for my approval in Revit before every change</system:String>
     <system:String x:Key="Agent.Policy.Auto">Auto: apply changes without asking (each change is still one undo entry)</system:String>

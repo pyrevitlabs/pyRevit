@@ -23,7 +23,7 @@ wall_collector = (
 total_volume = 0.0
 
 for wall in wall_collector:
-    vol_param = wall.Parameter[BuiltInParameter.HOST_VOLUME_COMPUTED]
+    vol_param = wall.get_Parameter(BuiltInParameter.HOST_VOLUME_COMPUTED)
     if vol_param:
         total_volume = total_volume + vol_param.AsDouble()
 

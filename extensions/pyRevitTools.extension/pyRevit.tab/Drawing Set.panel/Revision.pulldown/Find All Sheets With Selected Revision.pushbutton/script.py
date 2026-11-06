@@ -38,8 +38,8 @@ for s in sheets:
     if hasSelectedRevision:
         print(
             "{0}\t{1}".format(
-                s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
-                s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString(),
+                s.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER).AsString(),
+                s.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString(),
             )
         )
 

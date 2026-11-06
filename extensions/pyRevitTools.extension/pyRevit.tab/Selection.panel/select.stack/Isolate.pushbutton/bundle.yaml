@@ -26,7 +26,7 @@ tooltip:
   ru: |-
     Временно изолирует в текущем виде элементы выбранной категории или типа.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Выбрать избранные категории для инструмента изоляции.
   chinese_s: |-
     在活动视图中临时隔离所选类别或类型的图元。
@@ -38,7 +38,7 @@ tooltip:
 
     Mayús-clic:
     Elegir las categorías favoritas de la herramienta de aislamiento.
-  de_de: >-
+  de_de: |-
     Isoliert vorübergehend Elemente einer ausgewählten Kategorie oder eines Typs in der aktiven Ansicht. Folgende Kategorien stehen als Schnellauswahl zur Verfügung:
     1) Flächenbegrenzungen
     2) Fenster

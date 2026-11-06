@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -37,21 +39,100 @@ namespace pyRevitCLI {
     }
 
     /// <summary>
+    /// What became of a request whose call failed.
+    /// </summary>
+    internal static class AgentOutcome {
+        /// <summary>The request never reached the host. Safe to send again.</summary>
+        public const string NotSent = "not_sent";
+
+        /// <summary>The host refused the request before running any of it. Safe to send again.</summary>
+        public const string NotRun = "not_run";
+
+        /// <summary>
+        /// The request was sent but no answer came back, so it may have run, may still run, or
+        /// may never run. Look it up by its request id before sending it again.
+        /// </summary>
+        public const string Unknown = "unknown";
+    }
+
+    /// <summary>
     /// Error returned by an agent host, or raised while reaching one. <see cref="Code"/> is the
     /// host's stable error type (for example <c>revit_busy</c> or <c>no_active_document</c>).
     /// </summary>
+    /// <remarks>
+    /// <see cref="Message"/> is the text the host sent, followed by the request id, and by the run
+    /// record or the lookup command when one can find the request; <see cref="HostMessage"/> is the
+    /// text alone.
+    /// </remarks>
     internal sealed class AgentClientException : Exception {
-        public AgentClientException(string code, string message, JObject details = null) : base(message) {
+        public AgentClientException(
+            string code, string message, string outcome = null, string requestId = null, string runId = null,
+            JObject details = null)
+            : base(message) {
             Code = code;
+            Outcome = outcome;
+            RequestId = requestId;
+            RunId = runId;
             Details = details;
         }
 
         public string Code { get; }
 
+        /// <summary>One of <see cref="AgentOutcome"/>, or null when the failure says nothing about it.</summary>
+        public string Outcome { get; }
+
+        /// <summary>The id the client gave the request, when it got as far as sending one.</summary>
+        public string RequestId { get; }
+
+        /// <summary>The run record the host left for a refused <c>run</c> request.</summary>
+        public string RunId { get; }
+
         /// <summary>
         /// Fields the MCP server adds to the error it returns, such as <c>since_last_call</c>.
         /// </summary>
         public JObject Details { get; }
+
+        public string HostMessage => base.Message;
+
+        public override string Message {
+            get {
+                if (Outcome == null || RequestId == null)
+                    return base.Message;
+                if (RunId != null)
+                    return base.Message + " (request " + RequestId + ", run record " + RunId + "; see 'pyrevit agent show " + RunId + "')";
+                if (Outcome == AgentOutcome.Unknown)
+                    return base.Message + " (request " + RequestId + "; look it up with 'pyrevit agent show " + RequestId + "')";
+                return base.Message + " (request " + RequestId + ")";
+            }
+        }
+
+        /// <summary>
+        /// The same error with <paramref name="details"/> added to <see cref="Details"/>, keeping
+        /// its outcome and ids, so an error rethrown with more context still says whether the
+        /// request is safe to send again.
+        /// </summary>
+        public AgentClientException WithDetails(JObject details) {
+            var merged = Details == null ? new JObject() : (JObject)Details.DeepClone();
+            merged.Merge(details);
+            return new AgentClientException(Code, HostMessage, Outcome, RequestId, RunId, merged);
+        }
+
+        /// <remarks>
+        /// <see cref="Details"/> never replaces the error's own fields.
+        /// </remarks>
+        public JObject ToJson() {
+            var json = new JObject { ["error"] = Code, ["message"] = HostMessage };
+            if (Outcome != null)
+                json["outcome"] = Outcome;
+            if (RequestId != null)
+                json["request_id"] = RequestId;
+            if (RunId != null)
+                json["run_id"] = RunId;
+            foreach (var property in Details?.Properties() ?? Enumerable.Empty<JProperty>())
+                if (json[property.Name] == null)
+                    json[property.Name] = property.Value.DeepClone();
+            return json;
+        }
     }
 
     /// <summary>
@@ -65,6 +146,7 @@ namespace pyRevitCLI {
     internal static class PyRevitAgentClient {
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
         private static readonly Regex RunIdPattern = new Regex("^[A-Za-z0-9]+$", RegexOptions.Compiled);
+        private static readonly Regex RequestIdPattern = new Regex("^req-[0-9a-f]{12}$", RegexOptions.Compiled);
 
         /// <summary>
         /// How long <see cref="Call"/> waits for the host's pipe. Shortened by tests.
@@ -77,13 +159,24 @@ namespace pyRevitCLI {
         /// </summary>
         internal static string AgentDirOverride;
 
+        internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
+        internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;
+        internal static Func<string, bool> PipeExists = pipeName => File.Exists(@"\\.\pipe\" + pipeName);
+        internal static Action<int> DiscoveryDelay = Thread.Sleep;
+
+        private enum InstanceLiveness {
+            Live,
+            Stale,
+            Uncertain,
+        }
+
         public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
         /// <summary>
-        /// Registered hosts whose Revit process is still alive, newest first. Registration
-        /// files left behind by crashed Revit processes are skipped.
+        /// Registered hosts whose process metadata or named pipe establishes liveness, newest first.
+        /// Only certainly stale registration files are removed best-effort.
         /// </summary>
         public static List<AgentInstance> GetInstances() {
             var instances = new List<AgentInstance>();
@@ -100,8 +193,11 @@ namespace pyRevitCLI {
                         RevitBuild = data.Value<string>("revit_build"),
                         Started = data["started"]?.ToString(Formatting.None).Trim('"'),
                     };
-                    if (IsAlive(instance.ProcessId))
+                    var liveness = GetLiveness(instance);
+                    if (liveness == InstanceLiveness.Live || (liveness == InstanceLiveness.Uncertain && HasPipe(instance)))
                         instances.Add(instance);
+                    else if (liveness == InstanceLiveness.Stale)
+                        File.Delete(file);
                 }
                 catch (Exception) {
                 }
@@ -111,11 +207,13 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Picks the target host. <paramref name="selector"/> is a Revit year (e.g. 2024) or a
-        /// Revit process id. Without a selector, exactly one running host is required.
+        /// Picks the target host. <paramref name="selector"/> is a Revit process id or a Revit
+        /// year (e.g. 2024); an exact process id match wins over a year, see <see cref="Match"/>.
+        /// Without a selector, exactly one running host is required.
         /// </summary>
         /// <exception cref="AgentClientException">
-        /// <c>no_revit</c> when nothing matches, <c>ambiguous_revit</c> when several hosts match.
+        /// <c>invalid_params</c> when the selector is not a number, <c>no_revit</c> when nothing
+        /// matches, <c>ambiguous_revit</c> when several hosts match.
         /// </exception>
         public static AgentInstance Resolve(string selector) {
             var instances = GetInstances();
@@ -125,18 +223,9 @@ namespace pyRevitCLI {
                     "No running Revit with the pyRevit agent host was found. Start Revit with "
                     + "'[agent] enabled = true' (pyrevit configs agent enable).");
 
-            var matches = instances;
-            if (!string.IsNullOrWhiteSpace(selector)) {
-                if (!int.TryParse(selector, out var number))
-                    throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
-                matches = instances
-                    .Where(instance => number >= 2000 && number < 2100
-                        ? instance.RevitVersion == selector
-                        : instance.ProcessId == number)
-                    .ToList();
-                if (matches.Count == 0)
-                    throw new AgentClientException("no_revit", "No running Revit matches '" + selector + "'.");
-            }
+            var matches = Match(instances, selector);
+            if (matches.Count == 0)
+                throw new AgentClientException("no_revit", "No running Revit matches '" + selector + "'.");
 
             if (matches.Count > 1)
                 throw new AgentClientException(
@@ -147,6 +236,31 @@ namespace pyRevitCLI {
             return matches[0];
         }
 
+        /// <summary>
+        /// Filters <paramref name="instances"/> by a Revit selector without checking liveness.
+        /// A blank selector keeps every instance.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: a selector equal to an instance's process id selects by process id, whatever
+        /// its value. Only when no process id matches is a number in [2000, 2100) read as a Revit
+        /// year; any other number is a process id that matched nothing. Windows can hand out
+        /// process ids in the year range, so the year rule must never shadow an exact pid match.
+        /// Years compare in canonical form, so " 2024 " or "02024" select Revit 2024.
+        /// </remarks>
+        /// <exception cref="AgentClientException"><c>invalid_params</c> when the selector is not a number.</exception>
+        internal static List<AgentInstance> Match(IReadOnlyList<AgentInstance> instances, string selector) {
+            if (string.IsNullOrWhiteSpace(selector))
+                return instances.ToList();
+            if (!int.TryParse(selector, out var number))
+                throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
+
+            var byProcessId = instances.Where(instance => instance.ProcessId == number).ToList();
+            if (byProcessId.Count > 0 || number < 2000 || number >= 2100)
+                return byProcessId;
+            var year = number.ToString(CultureInfo.InvariantCulture);
+            return instances.Where(instance => instance.RevitVersion == year).ToList();
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetNamedPipeServerProcessId(SafePipeHandle pipe, out uint serverProcessId);
 
@@ -155,21 +269,29 @@ namespace pyRevitCLI {
                 throw new AgentClientException(
                     "pipe_error",
                     $"The agent pipe of Revit {instance.RevitVersion} (pid {instance.ProcessId}) is served by another process; "
-                    + "no request was sent.");
+                    + "no request was sent.",
+                    AgentOutcome.NotSent);
         }
 
         /// <summary>
         /// Sends one request and waits for its response. There is no read timeout: a modify
         /// run legitimately waits for the user to answer the approval prompt in Revit.
         /// </summary>
+        /// <remarks>
+        /// The request goes out under a fresh <see cref="NewRequestId"/>, which the host keeps in
+        /// the run record. A failure carries an <see cref="AgentClientException.Outcome"/>: a
+        /// request that was never sent, one the host refused, or one whose answer was lost.
+        /// </remarks>
         public static JToken Call(AgentInstance instance, string method, JObject parameters = null) {
+            var requestId = NewRequestId();
             var request = new JObject {
                 ["jsonrpc"] = "2.0",
-                ["id"] = 1,
+                ["id"] = requestId,
                 ["method"] = method,
                 ["params"] = parameters ?? new JObject(),
             };
 
+            var sent = false;
             string responseLine;
             try {
                 using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut)) {
@@ -178,6 +300,7 @@ namespace pyRevitCLI {
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
                     var reader = new StreamReader(pipe, Utf8);
                     writer.WriteLine(request.ToString(Formatting.None));
+                    sent = true;
                     responseLine = reader.ReadLine();
                 }
             }
@@ -185,34 +308,99 @@ namespace pyRevitCLI {
                 throw new AgentClientException(
                     "revit_busy",
                     $"Could not connect to Revit {instance.RevitVersion} (pid {instance.ProcessId}); "
-                    + "another client may be using it.");
+                    + "another client may be using it. The request was not sent, so it is safe to send again.",
+                    AgentOutcome.NotSent,
+                    requestId);
             }
             catch (IOException ex) {
-                throw new AgentClientException("pipe_error", "Connection to Revit failed: " + ex.Message);
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Connection to Revit failed: " + ex.Message + LostAnswerNotice(sent),
+                    sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
             }
 
             if (responseLine == null)
-                throw new AgentClientException("pipe_error", "Revit closed the connection without answering.");
-
-            var response = JObject.Parse(responseLine);
-            if (response["error"] is JObject error)
                 throw new AgentClientException(
-                    error["data"]?.Value<string>("type") ?? "error",
-                    error.Value<string>("message"));
+                    "pipe_error",
+                    "Revit closed the connection without answering." + LostAnswerNotice(sent),
+                    sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+
+            JObject response;
+            try {
+                response = JObject.Parse(responseLine);
+            }
+            catch (JsonException) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Revit sent an answer that could not be read." + LostAnswerNotice(sent: true),
+                    AgentOutcome.Unknown,
+                    requestId);
+            }
+            if (response["error"] is JObject error) {
+                var data = error["data"] as JObject;
+                throw new AgentClientException(
+                    data?.Value<string>("type") ?? "error",
+                    error.Value<string>("message"),
+                    data?.Value<string>("outcome"),
+                    requestId,
+                    data?.Value<string>("run_id"));
+            }
             return response["result"];
         }
 
         /// <summary>
-        /// Finds a recorded run folder by its run id (the folder name ends with the id).
+        /// A fresh id for one request, in the form <c>req-</c> and twelve hex digits.
+        /// </summary>
+        public static string NewRequestId() {
+            return "req-" + Guid.NewGuid().ToString("N").Substring(0, 12);
+        }
+
+        private static string LostAnswerNotice(bool sent) {
+            return sent
+                ? " The request was sent and its outcome is unknown: it may have run or may still run. "
+                    + "Look it up by its request id before sending it again."
+                : " The request was not sent, so it is safe to send again.";
+        }
+
+        /// <summary>
+        /// Finds a recorded run folder by its run id (the folder name ends with the id), or by the
+        /// request id (<c>req-</c> and twelve hex digits) the host kept in the record.
         /// </summary>
         /// <remarks>
-        /// An id that isn't letters and digits matches nothing: it is used in a directory search
-        /// pattern, where a wildcard would match an unrelated run and a path segment would throw.
+        /// A request id is matched against <c>request.json</c>, see <see cref="FindRunDirByRequestId"/>.
+        /// Any other id that isn't letters and digits matches nothing: a run id is used in a directory
+        /// search pattern, where a wildcard would match an unrelated run and a path segment would throw.
         /// </remarks>
         public static string FindRunDir(string runId) {
-            if (string.IsNullOrWhiteSpace(runId) || !RunIdPattern.IsMatch(runId.Trim()) || !Directory.Exists(RunsDir))
+            if (string.IsNullOrWhiteSpace(runId) || !Directory.Exists(RunsDir))
                 return null;
-            return Directory.GetDirectories(RunsDir, "*-" + runId.Trim()).FirstOrDefault();
+            var trimmed = runId.Trim();
+            if (RequestIdPattern.IsMatch(trimmed))
+                return FindRunDirByRequestId(trimmed);
+            if (!RunIdPattern.IsMatch(trimmed))
+                return null;
+            return Directory.GetDirectories(RunsDir, "*-" + trimmed).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Finds the run folder the host recorded for a request id, newest first. The folder
+        /// is either a run that started or a <c>not_run</c> record of a refused request.
+        /// </summary>
+        public static string FindRunDirByRequestId(string requestId) {
+            if (!RequestIdPattern.IsMatch(requestId ?? string.Empty) || !Directory.Exists(RunsDir))
+                return null;
+            foreach (var runDir in GetRecentRunDirs(int.MaxValue)) {
+                try {
+                    var requestPath = Path.Combine(runDir, "request.json");
+                    if (File.Exists(requestPath) && JObject.Parse(File.ReadAllText(requestPath)).Value<string>("request_id") == requestId)
+                        return runDir;
+                }
+                catch (Exception) {
+                }
+            }
+            return null;
         }
 
         public static List<string> GetRecentRunDirs(int limit) {
@@ -224,14 +412,59 @@ namespace pyRevitCLI {
                 .ToList();
         }
 
-        private static bool IsAlive(int processId) {
+        private static InstanceLiveness GetLiveness(AgentInstance instance) {
             try {
-                using (var process = Process.GetProcessById(processId))
-                    return !process.HasExited;
+                using (var process = Process.GetProcessById(instance.ProcessId)) {
+                    try {
+                        if (process.HasExited)
+                            return InstanceLiveness.Stale;
+                    }
+                    catch (Exception) {
+                    }
+
+                    var hasRevitName = false;
+                    try {
+                        if (!string.Equals(ProcessNameReader(process), "Revit", StringComparison.OrdinalIgnoreCase))
+                            return InstanceLiveness.Stale;
+                        hasRevitName = true;
+                    }
+                    catch (Exception) {
+                    }
+
+                    if (DateTimeOffset.TryParse(instance.Started, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var started)) {
+                        try {
+                            if (ProcessStartTimeReader(process).ToUniversalTime() - started.UtcDateTime > TimeSpan.FromSeconds(2))
+                                return InstanceLiveness.Stale;
+                            if (hasRevitName)
+                                return InstanceLiveness.Live;
+                        }
+                        catch (Exception) {
+                        }
+                    }
+
+                    return InstanceLiveness.Uncertain;
+                }
+            }
+            catch (ArgumentException) {
+                return InstanceLiveness.Stale;
             }
             catch (Exception) {
-                return false;
+                return InstanceLiveness.Uncertain;
             }
+        }
+
+        private static bool HasPipe(AgentInstance instance) {
+            if (string.IsNullOrWhiteSpace(instance.Pipe))
+                return false;
+
+            for (var attempt = 0; attempt < 3; attempt++) {
+                if (attempt > 0)
+                    DiscoveryDelay(300);
+                if (PipeExists(instance.Pipe))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

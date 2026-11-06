@@ -42,6 +42,15 @@ public interface IConfigurationService
     ExtensionSection? GetExtensionSection(string extensionName);
 
     /// <summary>
+    /// Name of the section <see cref="GetExtensionSection"/> would read for this
+    /// extension ("{name}.extension" before "{name}.lib"), or null when neither
+    /// is present. Lets a caller read a key as stored, without the declared
+    /// defaults <see cref="GetExtensionSection"/> fills in for absent keys.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="extensionName"/> is null or whitespace.</exception>
+    string? ResolveExtensionSectionName(string extensionName);
+
+    /// <summary>
     /// Forces the typed section snapshots to be rebuilt on next access. Writes
     /// made through this service or its configuration are picked up on their
     /// own, so this is only needed when the configuration is replaced wholesale.

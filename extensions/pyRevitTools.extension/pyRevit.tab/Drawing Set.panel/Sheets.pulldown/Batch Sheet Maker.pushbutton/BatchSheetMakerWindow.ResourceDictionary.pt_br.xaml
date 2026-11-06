@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">Criar Folhas</system:String>
     <system:String x:Key="CreatePlaceholders">Criar Espaços Reservados</system:String>
     <system:String x:Key="CreateButton">Criar</system:String>
+    <system:String x:Key="SheetParametersLabel">Parâmetros da Folha</system:String>
+    <system:String x:Key="SheetParametersHint">Marque os parâmetros a definir em cada folha criada neste lote e informe um valor para cada um.</system:String>
 </ResourceDictionary>

@@ -23,6 +23,8 @@ tooltip:
   en_us: |-
     Print sheets in drawing-index order using the configured print settings.
 
+    Select <All Models> in the Model list to pick sheets from the host and all linked models and print them in one run. Each sheet uses the current print setting of its model, and combining into one file is not available.
+
     In Revit 2022 and earlier, combining prints into one file adds hidden characters to sheet numbers to preserve print order. Account for these characters when filtering sheet numbers. Add a Project Information parameter named 'Naming Format' to define the default print naming format for this project. Right-click the Naming Format dropdown to copy its name to the clipboard.
 
     Shift-click:
@@ -30,26 +32,30 @@ tooltip:
   ko: |-
     시트 인덱스 순서대로 시트를 인쇄합니다. Revit 2022 이하에서 '하나의 파일로 결합'을 사용하면 인쇄 순서를 유지하기 위해 시트 번호 앞에 비인쇄 문자가 추가될 수 있습니다. 시트 번호를 필터링할 때 이를 고려하세요. 프로젝트 정보에 'Naming Format' 매개변수를 추가하면 기본 인쇄 이름 형식을 설정할 수 있습니다.
 
+    모델 목록에서 <모든 모델>을 선택하면 호스트 모델과 모든 링크 모델의 시트를 함께 선택해 한 번에 인쇄할 수 있습니다. 각 시트는 해당 모델의 현재 인쇄 설정을 사용하며, 하나의 파일로 결합할 수 없습니다.
+
     Shift 키를 누르고 클릭:
     시트 번호에 남아 있는 비인쇄 문자를 제거합니다.
   fr_fr: |-
     Imprime les feuilles dans l'ordre de l'index. Dans Revit 2022 et versions antérieures, l'option `Combiner en un seul fichier` ajoute un caractère non imprimable au début des noms de feuille afin que le moteur d'impression respecte l'ordre de l'index. Tenez-en compte lors du filtrage des numéros de feuille. Ajoutez le paramètre « Format de nommage » aux informations du projet pour définir le format de nommage par défaut.
 
+    Sélectionnez <Tous les modèles> dans la liste Modèle pour choisir des feuilles du modèle hôte et de tous les modèles liés, puis les imprimer en une seule fois. Chaque feuille utilise le paramètre d'impression actuel de son modèle ; la combinaison en un seul fichier n'est pas disponible.
+
     Maj+clic :
     Supprimer les caractères non imprimables restés dans les numéros de feuille.
-  ru: >-
+  ru: |-
     Печатает листы по индексу листа.
-
-    Примечание: Когда используется опция 'Объединение листы в один файл' инструмент добавляет не печатаемый символ u'\u200e' (Left-To-Right Mark) в начале имен листов, чтобы использовать внутренний механизм печати Revit для корректной сортировки листов по индексу листа.
-
+    Примечание: В Revit 2022 и более ранних версиях при использовании опции 'Объединить в один PDF' инструмент добавляет не печатаемый символ u'\u200e' (Left-To-Right Mark) в начало имен листов, чтобы использовать внутренний механизм печати Revit для корректной сортировки листов по индексу листа.
     Убедитесь, что ваши индексы учитывают это при фильтрации по номерам листов.
+    Добавьте параметр «Naming Format» в 'Сведения о проекте', чтобы задать формат именования по умолчанию для печати листов. В раскрывающемся списке «Формат именования» можно щёлкнуть правой кнопкой мыши, чтобы скопировать имя в буфер обмена.
 
-    Добавьте параметр «Формат именования» в сведения о проекте, чтобы задать формат именования по умолчанию для печати листов. В раскрывающемся списке «Формат именования» можно щёлкнуть правой кнопкой мыши, чтобы скопировать имя в буфер обмена.
-
-    Щелчок с удержанием клавиши Shift:
-
+    Выберите <Все модели> в списке «Модель», чтобы выбрать листы основной и всех связанных моделей и напечатать их за один запуск. Каждый лист печатается с текущими параметрами печати своей модели, объединение в один файл недоступно.
+    Shift + Щелчок:
     Удаляет все непечатаемые символы из номеров листов, если скрипт отработал некорректно.
   chinese_s: "按图纸索引顺序打印图纸。
+
+
+    在「模型」列表中选择 <所有模型>，即可选择主模型和所有链接模型中的图纸并一次性打印。每张图纸使用其所属模型当前的打印设置，且无法合并为一个文件。
 
 
     注意：
@@ -66,6 +72,8 @@ tooltip:
     按住 Shift 键单击此工具，将从图纸编号中移除所有不可打印字符，以防工具出错导致这些字符残留。"
   es_es: |-
     Imprimir hojas en orden desde un índice de hojas.
+
+    Seleccione <Todos los modelos> en la lista Modelo para elegir hojas del modelo principal y de todos los modelos vinculados e imprimirlas en una sola ejecución. Cada hoja usa la configuración de impresión actual de su modelo y no se pueden combinar en un solo archivo.
 
     Nota:
     Cuando se usa la opción `Combinar en un archivo`
@@ -88,9 +96,11 @@ tooltip:
   de_de: |-
     Druckt Pläne in der Reihenfolge eines Planindexes.
 
+    Wählen Sie in der Modellliste <Alle Modelle> aus, um Pläne des Hauptmodells und aller verknüpften Modelle auszuwählen und in einem Durchgang zu drucken. Jeder Plan verwendet die aktuelle Druckeinstellung seines Modells, ein Zusammenfassen in eine Datei ist nicht möglich.
+
     Note:
     Wenn Sie die Option „In eine Datei zusammenfassen“ verwenden
-    in Revit 2022 und neueren Versionen,
+    in Revit 2022 und älteren Versionen,
     fügt das Werkzeug das nicht druckbare Zeichen u'\u200e'
     (Links-nach-Rechts-Markierung) an den Anfang der Plannamen
     um das interne Drucksystem von Revit zu veranlassen,
@@ -107,6 +117,8 @@ tooltip:
     Fehler bei der Ausführung dazu führt, dass diese Zeichen im Plan verbleiben.
   pt_br: |-
     Imprima folhas na ordem a partir de um índice de folhas.
+
+    Selecione <Todos os modelos> na lista Modelo para escolher folhas do modelo principal e de todos os modelos vinculados e imprimi-las de uma só vez. Cada folha usa a configuração de impressão atual do seu modelo, e não é possível combiná-las em um único arquivo.
 
     Nota:
     Ao usar a opção `Combinar em um único arquivo`

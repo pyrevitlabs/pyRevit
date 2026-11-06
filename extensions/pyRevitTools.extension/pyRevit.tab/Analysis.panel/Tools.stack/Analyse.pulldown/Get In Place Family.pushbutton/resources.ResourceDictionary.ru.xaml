@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="found_count">Найдено семейств в контексте: {}</sys:String>
+    <sys:String x:Key="column_element">Элемент</sys:String>
+    <sys:String x:Key="column_category">Категория</sys:String>
+    <sys:String x:Key="column_family">Семейство</sys:String>
+    <sys:String x:Key="transaction_name">Изолировать семейства в контексте</sys:String>
+    <sys:String x:Key="transaction_reset_isolation">Сбросить временное скрытие/изоляцию</sys:String>
+    <sys:String x:Key="transaction_isolate">Изолировать</sys:String>
+    <sys:String x:Key="no_inplace_families">В проекте не найдено семейств в контексте.</sys:String>
+</ResourceDictionary>

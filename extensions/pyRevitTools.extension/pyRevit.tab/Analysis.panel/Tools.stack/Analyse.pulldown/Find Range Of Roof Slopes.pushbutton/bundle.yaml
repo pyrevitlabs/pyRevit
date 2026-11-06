@@ -8,7 +8,7 @@ title:
   de_de: Liste alle Dachneigungen auf
   pt_br: Encontrar Intervalo de Inclinações de Telhado
 tooltip:
-  en_us: Lists all roof slopes in the model. This tool analyzes the slopes defined in roofs created from a profile. Extrusion roofs and roofs created from Mass faces are not included in the analysis
+  en_us: List all roof slopes in the model, with the roofs that use each slope. Only roofs created from a footprint profile are analyzed; extrusion roofs and roofs created from mass faces are not included.
   ko: 모델의 모든 지붕 경사를 나열합니다. 이 도구는 프로파일에서 생성된 지붕에 정의된 경사를 분석합니다. 돌출 지붕과 매스 면에서 생성된 지붕은 분석에 포함되지 않습니다
   fr_fr: Répertorie toutes les pentes de toit du modèle. Cet outil analyse les pentes définies dans les toits créés à partir d'un profil. Les toits d'extrusion et les toits créés à partir de faces de volume ne sont pas inclus dans l'analyse
   ru: Список всех уклонов крыш в модели. Данный инструмент анализурет уклоны крыш, созданных из профиля. Крыши сделанные выдавливанием и крыши сделанные формобразующим способом не включаются в анализ.

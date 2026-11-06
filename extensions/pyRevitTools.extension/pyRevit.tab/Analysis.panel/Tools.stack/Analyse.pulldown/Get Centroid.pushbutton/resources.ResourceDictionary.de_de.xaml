@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">Linienstil für die Schwerpunktmarkierungen auswählen</sys:String>
+    <sys:String x:Key="transaction_name">Schwerpunkt ermitteln</sys:String>
+    <sys:String x:Key="select_element">Wählen Sie mindestens ein Element aus.</sys:String>
+    <sys:String x:Key="no_solid_geometry">Die ausgewählten Elemente enthalten keine Volumenkörper-Geometrie.</sys:String>
+</ResourceDictionary>

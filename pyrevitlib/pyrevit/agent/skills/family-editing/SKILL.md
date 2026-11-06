@@ -5,7 +5,7 @@ description: Editing Revit families. Covers opening a family from the project, f
 
 # Family editing
 
-Read `revit-scripting` first. Check API names with `lookup_revit_api`.
+Read `revit-scripting` first. Check API names with `lookup_revit_api`. To create content inside a family (reference planes, dimensions, extrusions, nested families, visibility, materials), read `family-geometry` as well.
 
 ## Where the family lives
 
@@ -45,6 +45,8 @@ is_instance = False
 param = fm.AddParameter("Frame Width", DB.GroupTypeId.Geometry, DB.SpecTypeId.Length, is_instance)
 fm.SetFormula(param, "Width / 10")
 ```
+
+Create a type with `fm.NewType` before `SetFormula`. To get the parameter and formula named when Revit rejects one, call `pyrevit.revit.db.update.set_formula(fm, param, formula)`.
 
 - **Groups and specs** are `ForgeTypeId`s: `DB.GroupTypeId.*` and `DB.SpecTypeId.*`. Look them up with `lookup_revit_api("GroupTypeId")`.
 - **Existing parameters:** `fm.get_Parameter("Name")`, or `fm.Parameters`. pyRevit has helpers: `from pyrevit.revit.db import query`, then `query.get_family_parameter(name, fam_doc)` and `query.get_family_parameters(fam_doc)`.

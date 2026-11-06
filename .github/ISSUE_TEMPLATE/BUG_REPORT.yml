@@ -69,7 +69,8 @@ body:
     attributes:
       label: 🖥️ Hardware and Software Setup (please complete the following information)
       description: |
-        Open a command prompt 🖥 and run the command `pyrevit env`. Paste the output here. 
+        Open a command prompt 🖥 and run the command `pyrevit env --redact`. Paste the output here.
+        `--redact` masks your user name, user profile folders, server names and private Git URLs. Skim the output before posting; it cannot know which other folder names are confidential.
         **This is super important for us to know if there's something wrong/specific in your setup!**
         Not filling this may result in the issue to be closed without explanation.
       render: shell

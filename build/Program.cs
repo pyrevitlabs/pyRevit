@@ -45,6 +45,7 @@ if (modes.Ci)
     builder.Services.AddModule<ResolveVersioningModule>();
     builder.Services.AddModule<SetCopyrightYearModule>();
     builder.Services.AddModule<StampVersionModule>();
+    builder.Services.AddModule<CheckRevitApiCompatModule>();
     builder.Services.AddModule<SeedProductDataModule>();
     builder.Services.AddModule<SetProductDataModule>();
     builder.Services.AddModule<BuildLabsModule>();

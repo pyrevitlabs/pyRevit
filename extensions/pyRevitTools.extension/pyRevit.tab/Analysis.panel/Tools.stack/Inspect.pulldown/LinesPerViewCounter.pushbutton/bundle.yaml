@@ -26,7 +26,7 @@ tooltip:
   ru: |-
     Выводит отсортированное количество линий детализации для каждого вида текущего документа.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Включить количество линий детализации из связанных моделей Revit.
   chinese_s: |-
     列出当前文档中每个视图的详图线数量，并按数量排序。
@@ -49,4 +49,5 @@ tooltip:
     Clique mantendo a tecla Shift pressionada:
     Incluir também as linhas de detalhe dos modelos Revit vinculados.
 author: 'Original by Frederic Beaupere; Improvements by Jean-Marc Couffin'
+contact: 'https://github.com/frederic-beaupere'
 context: doc-project

@@ -15,7 +15,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <see cref="AgentDispatcher.Invoke"/>, except a request made in-process through
     /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
-    /// <c>data.type</c> carries the <see cref="AgentException.Code"/>.
+    /// <c>data.type</c> carries the <see cref="AgentException.Code"/> and whose other <c>data</c>
+    /// fields come from <see cref="AgentException.Details"/> (for example <c>outcome</c>).
     /// Invariant: every request that needs the Revit main thread reads or changes the model, so
     /// <see cref="InvokeOnMainThread"/> is the session gate. It checks the session when the
     /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
@@ -46,10 +47,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 id = request["id"];
                 var method = request.Value<string>("method") ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
-                return Success(id, Dispatch(method, parameters));
+                return Success(id, Dispatch(method, parameters, id));
             }
             catch (AgentException ex) {
-                return Failure(id, -32000, ex.Message, ex.Code);
+                return Failure(id, -32000, ex.Message, ex.Code, ex.Details);
             }
             catch (JsonException ex) {
                 return Failure(id, -32700, ex.Message, "parse_error");
@@ -60,7 +61,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static JToken Dispatch(string method, JObject parameters) {
+        private static JToken Dispatch(string method, JObject parameters, JToken id) {
             AgentHost.RefreshConfigIfChanged();
             AgentHost.Activity.NoteClient((parameters["client"] as JValue)?.Value as string);
             switch (method) {
@@ -94,15 +95,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         (app, _) => ReadContext(app, endHandshake: !keepChanges), parameters, "context", null, keepChanges);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
-                    return InvokeOnMainThread(
-                        app => AgentRunService.Execute(app, runRequest), parameters,
-                        runRequest.ModeName, runRequest.Title, runRequest.Reason, runRequest.Mode,
-                        result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), runRequest.Script),
-                        () => {
-                            AgentPermissions.CheckRun(runRequest.Mode, AgentRunService.ReadPolicy());
-                            AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
-                            RefuseNestedCPython(runRequest);
-                        });
+                    runRequest.RequestId = id?.ToString(Formatting.None).Trim('"');
+                    return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
@@ -187,6 +181,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return result;
                 }
             }, parameters, kind, title, AgentRequestText.Reason(parameters), keepChanges: keepChanges);
+        }
+
+        /// <summary>
+        /// Runs a <c>run</c> request on the main thread behind the session gate. A request refused
+        /// as <c>revit_busy</c> never ran, and leaves a <c>not_run</c> record so the caller can
+        /// confirm that later.
+        /// </summary>
+        private static JToken InvokeRunOnMainThread(AgentRunRequest request, JObject parameters) {
+            try {
+                return InvokeOnMainThread(
+                    app => AgentRunService.Execute(app, request), parameters,
+                    request.ModeName, request.Title, request.Reason, request.Mode,
+                    result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), request.Script),
+                    () => {
+                        AgentPermissions.CheckRun(request.Mode, AgentRunService.ReadPolicy());
+                        AgentScripting.EnsureAvailable(request.Engine, AgentHost.RevitVersion);
+                        RefuseNestedCPython(request);
+                    });
+            }
+            catch (AgentException ex) when (ex.Code == AgentException.NotRunCode) {
+                AgentRunService.RecordNotRun(request, ex);
+                throw;
+            }
         }
 
         /// <summary>
@@ -309,14 +326,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }.ToString(Formatting.None);
         }
 
-        private static string Failure(JToken id, int code, string message, string type) {
+        private static string Failure(JToken id, int code, string message, string type, JObject details = null) {
+            var data = new JObject { ["type"] = type };
+            if (details != null)
+                foreach (var property in details.Properties())
+                    data[property.Name] = property.Value;
             return new JObject {
                 ["jsonrpc"] = "2.0",
                 ["id"] = id,
                 ["error"] = new JObject {
                     ["code"] = code,
                     ["message"] = message,
-                    ["data"] = new JObject { ["type"] = type },
+                    ["data"] = data,
                 },
             }.ToString(Formatting.None);
         }
