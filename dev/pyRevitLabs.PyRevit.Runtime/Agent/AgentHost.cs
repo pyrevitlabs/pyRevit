@@ -41,6 +41,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static AgentTabHighlight tabHighlight;
         private static AgentTabHighlightVisuals tabHighlightVisuals;
         private static bool tabHighlightDisabled;
+        private static readonly AgentEngineWarmUp engineWarmUp = new AgentEngineWarmUp();
+        private static UIApplication warmUpApplication;
 
         internal static AgentTabHighlight.Lease BeginTabHighlight(UIApplication application, Autodesk.Revit.DB.Document document, string title) {
             RefreshConfigIfChanged();
@@ -206,6 +208,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            ScheduleEngineWarmUp(uiApp);
+
             lock (sync) {
                 if (dispatcher == null) {
                     dispatcher = new AgentDispatcher();
@@ -270,6 +274,37 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception ex) {
                 logger.Debug("Could not remove agent instance file: {0}", ex.Message);
+            }
+        }
+
+        private static void ScheduleEngineWarmUp(UIApplication uiApp) {
+            try {
+                if (!engineWarmUp.Schedule(uiApp.MainWindowHandle != IntPtr.Zero))
+                    return;
+                warmUpApplication = uiApp;
+                uiApp.Idling += WarmUpEngineOnIdling;
+            }
+            catch (Exception ex) {
+                engineWarmUp.TakeScheduled();
+                logger.Debug("Could not schedule the agent engine warm-up: {0}", ex.Message);
+            }
+        }
+
+        private static void WarmUpEngineOnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
+            var uiApp = warmUpApplication;
+            warmUpApplication = null;
+            var scheduled = engineWarmUp.TakeScheduled();
+            try {
+                uiApp.Idling -= WarmUpEngineOnIdling;
+                var defaultIsIronPython = PyRevitConfigs.GetAgentEngine() == PyRevitConsts.ConfigsAgentEngineIronPython;
+                if (!scheduled || !AgentEngineWarmUp.ShouldWarm(IsRunning, defaultIsIronPython))
+                    return;
+                var clock = Stopwatch.StartNew();
+                var exitCode = AgentScriptRunner.WarmUp(uiApp, SearchPaths);
+                logger.Debug("[PERF] agent engine warm-up: exit code {0} in {1} ms", exitCode, clock.ElapsedMilliseconds);
+            }
+            catch (Exception ex) {
+                logger.Debug("Agent engine warm-up failed: {0}", ex.Message);
             }
         }
     }

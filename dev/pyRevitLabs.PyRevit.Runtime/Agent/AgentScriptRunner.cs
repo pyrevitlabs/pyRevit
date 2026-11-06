@@ -105,29 +105,49 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentScriptRunner {
         private const string EntryFileName = "agent_entry.py";
         private const string AgentExtensionName = "pyRevitAgent";
+        private const string WarmUpFileName = "engine_warmup.py";
 
-        public static int Execute(
-            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
-            var entryPath = Path.Combine(runDir, EntryFileName);
-            File.WriteAllText(entryPath, BuildEntryScript(request.Engine), new UTF8Encoding(false));
+        /// <summary>
+        /// Starts the IronPython engine agent runs use and imports the runner into it, so the
+        /// first run reuses both. Runs nothing else: no transaction, document access or output.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: the engine is set up by the same <see cref="CreateScriptData"/> and
+        /// <see cref="CreateRuntimeConfigs"/> as <see cref="Execute"/>, so it is cached under the
+        /// key a real run asks for and with the same flags. Any difference makes the first run
+        /// start an engine of its own.
+        /// </remarks>
+        /// <returns>The <see cref="ScriptExecutorResultCodes"/> value of the warm-up script.</returns>
+        public static int WarmUp(UIApplication uiApp, IList<string> searchPaths) {
+            Directory.CreateDirectory(AgentPaths.RootDir);
+            var entryPath = Path.Combine(AgentPaths.RootDir, WarmUpFileName);
+            File.WriteAllText(entryPath, "from pyrevit.agent import _runner\n", new UTF8Encoding(false));
+            return ScriptExecutor.ExecuteScript(
+                CreateScriptData(entryPath, "Agent: engine warm-up"),
+                CreateRuntimeConfigs(uiApp, AgentEngine.IronPython, searchPaths, new Dictionary<string, object>()));
+        }
 
-            var scriptData = new ScriptData {
+        private static ScriptData CreateScriptData(string entryPath, string commandName) {
+            return new ScriptData {
                 ScriptPath = entryPath,
                 ConfigScriptPath = null,
                 CommandUniqueId = "pyrevit-agent",
-                CommandName = "Agent: " + request.Title,
+                CommandName = commandName,
                 CommandBundle = string.Empty,
                 CommandExtension = AgentExtensionName,
                 HelpSource = string.Empty,
             };
+        }
 
-            var configs = new ScriptRuntimeConfigs {
-                UIApp = context.UIApp,
+        private static ScriptRuntimeConfigs CreateRuntimeConfigs(
+            UIApplication uiApp, AgentEngine engine, IList<string> searchPaths, Dictionary<string, object> variables) {
+            return new ScriptRuntimeConfigs {
+                UIApp = uiApp,
                 SearchPaths = new List<string>(searchPaths),
                 Arguments = new List<string>(),
-                Variables = new Dictionary<string, object> { ["__agent__"] = context },
+                Variables = variables,
                 SuppressOutput = true,
-                EngineConfigs = request.Engine == AgentEngine.CPython
+                EngineConfigs = engine == AgentEngine.CPython
                     ? "{\"type\":\"CPython\",\"type_explicit\":true,\"clean\":false}"
                     : "{\"type\":\"IronPython\",\"type_explicit\":true,\"clean\":false,\"full_frame\":true,\"persistent\":false}",
                 RefreshEngine = false,
@@ -135,6 +155,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 DebugMode = false,
                 ExecutedFromUI = false,
             };
+        }
+
+        public static int Execute(
+            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
+            var entryPath = Path.Combine(runDir, EntryFileName);
+            File.WriteAllText(entryPath, BuildEntryScript(request.Engine), new UTF8Encoding(false));
+
+            var scriptData = CreateScriptData(entryPath, "Agent: " + request.Title);
+            var configs = CreateRuntimeConfigs(
+                context.UIApp, request.Engine, searchPaths, new Dictionary<string, object> { ["__agent__"] = context });
 
             return ScriptExecutor.ExecuteScript(scriptData, configs);
         }

@@ -399,6 +399,21 @@ Syntax measured in Revit on IronPython 3.4.2:
 IronPython 2.7.12 is Python 2.7 syntax. CPython 3.12 supports everything, but reaches the
 Revit API through pythonnet, and pyrevitlib features built for IronPython may be limited.
 
+### Engine warm-up
+
+Agent runs reuse one cached engine per session load, so only the first run starts the engine
+and imports `pyrevit.agent._runner`, which takes about two seconds on IronPython. When the
+host is enabled and `default_engine` is IronPython, the host does that work once per session
+load, on the first `Idling` after the load: it runs a script that only imports the runner,
+with the same engine cache key and flags as a real run. The warm-up touches no document,
+shows no output and is skipped when the agent is off or Revit has no user interface. It
+reports to the debug log only, as a `[PERF] agent engine warm-up` line, or as `Agent engine
+warm-up failed` without affecting the host.
+
+CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded assembly and
+keeps the interpreter up for the rest of the process, so the first CPython run still pays for
+it. A run that asks for an engine other than the default also starts cold.
+
 ### CLI
 
 ```text
