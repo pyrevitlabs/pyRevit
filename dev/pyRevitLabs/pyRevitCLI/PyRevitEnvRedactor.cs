@@ -36,11 +36,15 @@ namespace pyRevitCLI {
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         private static readonly Regex UrlPattern = new Regex(
-            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""'<>?#]*)?(?<query>[?#][^\s""'<>]*)?",
+            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""'<>?#]*)?(?<query>[?#][^\s""<>]*)?",
             RegexOptions.Compiled);
 
         private static readonly Regex ScpUrlPattern = new Regex(
             @"(?<![\w@.\-/:])(?<user>[\w.\-]+)@(?<host>[A-Za-z0-9][A-Za-z0-9.\-]*):(?<path>(?!//)[^\s""'<>]+)",
+            RegexOptions.Compiled);
+
+        private static readonly Regex ScpHostOnlyPattern = new Regex(
+            @"(?<![\w@.\-/:*])(?<host>[A-Za-z0-9][A-Za-z0-9\-]*(?:\.[A-Za-z0-9\-]+)+):(?<path>(?!//|\d+(?:/|\s|$)|\\)[^\s""'<>]+)",
             RegexOptions.Compiled);
 
         private static readonly Regex ProfileFolderPattern = new Regex(
@@ -57,6 +61,7 @@ namespace pyRevitCLI {
 
             text = RedactUrls(text);
             text = RedactScpUrls(text);
+            text = RedactScpHostOnlyUrls(text);
             text = RedactUserProfile(text, userProfilePath);
             text = ProfileFolderPattern.Replace(text, Mask);
             text = UncServerPattern.Replace(text, @"\\" + Mask);
@@ -132,6 +137,17 @@ namespace pyRevitCLI {
 
                 var gitSuffix = path.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? ".git" : string.Empty;
                 return string.Format("{0}@{0}:{0}{1}", Mask, gitSuffix);
+            });
+
+        private static string RedactScpHostOnlyUrls(string text) =>
+            ScpHostOnlyPattern.Replace(text, match => {
+                var host = match.Groups["host"].Value;
+                var path = match.Groups["path"].Value;
+                if (IsPublicHost(host))
+                    return match.Value;
+
+                var gitSuffix = path.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? ".git" : string.Empty;
+                return string.Format("{0}:{0}{1}", Mask, gitSuffix);
             });
 
         private static string RedactUserNameSegments(string text, string userName) {

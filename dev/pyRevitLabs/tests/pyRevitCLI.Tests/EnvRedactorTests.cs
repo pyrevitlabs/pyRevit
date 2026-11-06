@@ -100,6 +100,40 @@ public class EnvRedactorTests {
         Assert.Equal(expected, PyRevitEnvRedactor.RedactText(remote, Profile));
     }
 
+    [Theory]
+    [InlineData("git.corp.example.com:team/private.git", "***:***.git")]
+    [InlineData("git.corp.example.com:private-repo", "***:***")]
+    [InlineData("Origin \"git.corp.example.com:team/private.git\" cloned", "Origin \"***:***.git\" cloned")]
+    [InlineData("github.com:pyrevitlabs/pyRevit.git", "github.com:pyrevitlabs/pyRevit.git")]
+    public void ScpStyleRemotesWithoutAUserNameAreMasked(string remote, string expected) {
+        Assert.Equal(expected, PyRevitEnvRedactor.RedactText(remote, Profile));
+    }
+
+    [Theory]
+    [InlineData(@"C:\Users\***\repo")]
+    [InlineData("Version: 7.0.0.26278+2233")]
+    [InlineData("Latest Installed .Net Framework: 10.0.14")]
+    [InlineData("Engine: DEFAULT (2712)")]
+    [InlineData("localhost:8080/path")]
+    [InlineData("example.com:8080/path")]
+    public void TextThatOnlyLooksLikeAHostAndPathIsLeftAlone(string text) {
+        Assert.Equal(text, PyRevitEnvRedactor.RedactText(text, Profile));
+    }
+
+    [Fact]
+    public void BracketedIpv6HostsAreMaskedWithTheirQuery() {
+        var redacted = PyRevitEnvRedactor.RedactText("https://[fd00::abcd]:8443/repo.git?token=secret", Profile);
+
+        Assert.Equal("https://***/***.git?***", redacted);
+    }
+
+    [Fact]
+    public void QueryValuesWithApostrophesAreMaskedCompletely() {
+        var redacted = PyRevitEnvRedactor.RedactText("https://github.com/org/repo.git?token=abc'def", Profile);
+
+        Assert.Equal("https://github.com/org/repo.git?***", redacted);
+    }
+
     [Fact]
     public void OtherUsersProfileFolderWithSpacesAndApostrophesIsMaskedCompletely() {
         var redacted = PyRevitEnvRedactor.RedactText(
