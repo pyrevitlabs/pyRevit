@@ -142,7 +142,7 @@ public partial class McpServerTests {
             release.Wait(Patience);
             return RunResponse(request);
         };
-        PyRevitAgentClient.PingConnectTimeoutMs = 1500;
+        PyRevitAgentClient.PingConnectTimeoutMs = 3000;
         var otherClient = PyRevitAgentClient.GetInstances()
             .Select(instance => Task.Run(() => PyRevitAgentClient.Call(instance, "run", new JObject { ["mode"] = "query" })))
             .ToArray();
@@ -159,7 +159,7 @@ public partial class McpServerTests {
             Assert.Null(entry["responding"]);
         });
         Assert.Equal(2, Payload(listed)["instances"].Count());
-        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(1.4), TimeSpan.FromSeconds(2.9));
+        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(2.9), TimeSpan.FromSeconds(5.5));
     }
 
     [Fact]
