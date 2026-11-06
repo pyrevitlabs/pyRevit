@@ -617,11 +617,12 @@ namespace pyRevitCLI {
 
                 new McpTool("capture_view", readOnly: false, destructive: false, new string[0],
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
-                        + "through Revit and works for any view by name or id. mode 'viewport' renders an open view through Revit "
+                        + "through Revit and works for any view by name or id; a name shared by several views fails with "
+                        + "view_ambiguous listing their ids. mode 'viewport' renders an open view through Revit "
                         + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
                         + "selection highlight, and unaffected by other windows. mode 'screen' captures the active view's window "
-                        + "exactly as the user sees it, including selection and temporary isolate; it fails with view_obscured "
-                        + "when another application covers the view. view '3d' renders a temporary "
+                        + "exactly as the user sees it, including selection and temporary isolate; it fails with view_not_active "
+                        + "for any other view and with view_obscured when another application covers the view. view '3d' renders a temporary "
                         + "3D view of model categories only, framed by a section box around the whole model or around 'elements', "
                         + "seen from 'direction' (never saved); give 'eye' and 'target' for a perspective camera instead, "
                         + "or 'section' for a temporary section, elevation or plan cut at a height. 'detail_level' and "
