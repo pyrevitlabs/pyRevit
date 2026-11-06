@@ -295,6 +295,13 @@ namespace pyRevitCLI {
                     sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
                     requestId);
             }
+            catch (Exception ex) when (ex is not AgentClientException) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Connection to Revit failed (" + ex.GetType().Name + ")." + LostAnswerNotice(sent),
+                    sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+            }
 
             if (responseLine == null)
                 throw new AgentClientException(
