@@ -464,6 +464,21 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void HostErrorDetailsReachTheToolResult() {
+        var views = new JArray(
+            new JObject { ["id"] = 101, ["name"] = "QA Dup", ["type"] = "DraftingView" },
+            new JObject { ["id"] = 102, ["name"] = "QA Dup", ["type"] = "CeilingPlan" });
+        host.Handler = request => FakeAgentHost.Failure(request, "view_ambiguous", "2 views are named 'QA Dup'.", new JObject { ["views"] = views });
+
+        var response = Single(ToolCall(1, "capture_view", new JObject { ["view"] = "QA Dup" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("view_ambiguous", payload.Value<string>("error"));
+        Assert.True(JToken.DeepEquals(views, payload["views"]));
+    }
+
+    [Fact]
     public void AFailedRunIsFlaggedAsAnErrorResult() {
         host.Handler = request => RunResponse(request, "error", new JObject {
             ["error"] = new JObject { ["type"] = "ValueError", ["message"] = "bad" },
