@@ -908,6 +908,7 @@ def run(context):
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {"timed_out": False}
+    timed_out_after_script = False
     tracked_transactions = {}
     try:
         workspace = _enter_workspace(context.Workspace)
@@ -989,6 +990,7 @@ def run(context):
                 phases.lap("result")
 
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
+                timed_out_after_script = True
                 raise RunTimedOut(timeout_s)
         finally:
             if stop_watchdog:
@@ -996,13 +998,16 @@ def run(context):
             sys.settrace(None)
     except RunTimedOut:
         failed = True
-        context.SetError(
-            "timeout",
-            "The script ran longer than its {:g} second limit and was stopped; its "
-            "changes were rolled back. Pass a larger timeout_s if the work needs "
-            "more time.".format(timeout_s),
-            _format_script_traceback(),
-        )
+        if timed_out_after_script:
+            context.SetError("timeout", _late_timeout_message(timeout_s), "")
+        else:
+            context.SetError(
+                "timeout",
+                "The script ran longer than its {:g} second limit and was stopped; "
+                "its changes were rolled back. Pass a larger timeout_s if the work "
+                "needs more time.".format(timeout_s),
+                _format_script_traceback(),
+            )
     except Exception as ex:
         failed = True
         error_type, message = _describe_error(ex)
@@ -1030,6 +1035,15 @@ def run(context):
         return
     if failed or "result" not in namespace:
         return
+
+
+def _late_timeout_message(timeout_s):
+    return (
+        "The script passed its {:g} second limit inside a call that could not be "
+        "interrupted, such as a long Revit API call, and was stopped when it "
+        "finished; its changes were rolled back. Pass a larger timeout_s if the "
+        "work needs more time.".format(timeout_s)
+    )
 
 
 def _is_successful_exit(error):

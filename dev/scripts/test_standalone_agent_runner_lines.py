@@ -1237,6 +1237,18 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertTrue(text.startswith("Traceback (most recent call last):\n"))
         self.assertTrue(text.rstrip().endswith("RunTimedOut: 5"))
 
+    def test_timeout_noticed_after_the_script_ends_names_the_blocking_call(self):
+        """A limit passed inside one uninterruptible call says so, with no bare traceback."""
+        with mock.patch.object(
+            self.runner, "_async_exception_setter", return_value=None
+        ):
+            error_type, message, text = self._run(
+                "import time\ntime.sleep(0.4)\n", timeout_s=0.2
+            )
+        self.assertEqual("timeout", error_type)
+        self.assertIn("could not be interrupted", message)
+        self.assertEqual("", text)
+
     def test_error_traceback_keeps_the_script_frames(self):
         """A script error still names each script frame and the error."""
         source = "def fail():\n    raise ValueError('boom')\nfail()\n"

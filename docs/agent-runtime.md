@@ -273,6 +273,7 @@ Rules the host enforces:
   modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
   only stopped once the call returns. A single blocking call, such as a long Revit API call
   or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns.
+  When that call was the script's last, the error says so and carries no traceback.
 - The runner compiles the script with every bare `except` and `except BaseException`
   narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
   `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
