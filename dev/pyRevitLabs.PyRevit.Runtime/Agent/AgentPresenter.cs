@@ -201,13 +201,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var collector = view != null && !view.IsTemplate
                     ? new FilteredElementCollector(doc, view.Id)
                     : new FilteredElementCollector(doc);
-                foreach (var id in collector.OfCategory(category).WhereElementIsNotElementType().ToElementIds()) {
-                    if (seen.Add(AgentIds.ToValue(id)))
+                using (var ids = collector.OfCategory(category).WhereElementIsNotElementType().GetElementIdIterator()) {
+                    while (ids.MoveNext()) {
+                        var id = ids.Current;
+                        if (!seen.Add(AgentIds.ToValue(id)))
+                            continue;
+                        if (targets.Count >= MaxIds)
+                            throw new AgentException("too_many_elements",
+                                $"The categories match more than {MaxIds} elements in the active view; pass fewer categories or ids.");
                         targets.Add(id);
+                    }
                 }
-                if (targets.Count > MaxIds)
-                    throw new AgentException("too_many_elements",
-                        $"The categories match more than {MaxIds} elements in the active view; pass fewer categories or ids.");
             }
 
             return targets;
