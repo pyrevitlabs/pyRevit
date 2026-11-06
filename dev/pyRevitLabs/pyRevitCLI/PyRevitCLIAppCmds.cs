@@ -142,10 +142,10 @@ namespace pyRevitCLI {
             var userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             if (json) {
                 var envJson = CreateEnvJson();
-                Console.WriteLine(redact ? PyRevitEnvRedactor.RedactJson(envJson, userProfilePath) : envJson);
+                Console.WriteLine(redact ? PyRevitEnvRedactor.RedactJson(envJson, userProfilePath, Environment.UserName) : envJson);
             }
             else if (redact)
-                PyRevitEnvRedactor.RunRedacted(() => PrintEnvReport(redact: true), userProfilePath);
+                PyRevitEnvRedactor.RunRedacted(() => PrintEnvReport(redact: true), userProfilePath, Environment.UserName);
             else
                 PrintEnvReport(redact: false);
         }

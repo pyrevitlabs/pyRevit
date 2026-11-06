@@ -4,6 +4,8 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
+[Trait("Level", "Unit")]
+[Trait("Environment", "HostFree")]
 public class EnvRedactorTests {
     private const string Profile = @"C:\Users\jane.doe";
 
@@ -76,6 +78,67 @@ public class EnvRedactorTests {
         Assert.Equal(expected, redacted);
         Assert.DoesNotContain("s3cret", redacted);
         Assert.DoesNotContain("ghp_token", redacted);
+    }
+
+    [Theory]
+    [InlineData("https://user:sec'ret@git.corp.example.com/team/repo.git", "sec'ret")]
+    [InlineData("https://user:pa@ss@git.corp.example.com/team/repo.git", "pa@ss")]
+    [InlineData("https://user:pa@github.com@git.corp.example.com/team/repo.git", "pa@github.com")]
+    public void PasswordsWithApostrophesOrAtSignsAreMaskedCompletely(string url, string password) {
+        var redacted = PyRevitEnvRedactor.RedactText(url, Profile);
+
+        Assert.Equal("https://***@***/***.git", redacted);
+        Assert.DoesNotContain(password, redacted);
+    }
+
+    [Theory]
+    [InlineData("git@git.corp.example.com:team/private-repo.git", "***@***:***.git")]
+    [InlineData("git@git.corp.example.com:private-repo", "***@***:***")]
+    [InlineData("git@github.com:pyrevitlabs/pyRevit.git", "***@github.com:pyrevitlabs/pyRevit.git")]
+    [InlineData("Repo: \"git@git.corp.example.com:team/repo.git\" ", "Repo: \"***@***:***.git\" ")]
+    public void ScpStyleGitRemotesAreMasked(string remote, string expected) {
+        Assert.Equal(expected, PyRevitEnvRedactor.RedactText(remote, Profile));
+    }
+
+    [Fact]
+    public void OtherUsersProfileFolderWithSpacesAndApostrophesIsMaskedCompletely() {
+        var redacted = PyRevitEnvRedactor.RedactText(
+            @"""C:\Users\Jane Doe\repo"" ""C:\Users\O'Brien\repo""",
+            @"C:\Users\bob");
+
+        Assert.Equal(@"""C:\Users\***\repo"" ""C:\Users\***\repo""", redacted);
+    }
+
+    [Theory]
+    [InlineData(@"\\corp-fs01", @"\\***")]
+    [InlineData(@"""\\corp-fs01""", @"""\\***""")]
+    [InlineData(@"\\corp-fs01.example.com\share", @"\\***\share")]
+    [InlineData(@"\\?\C:\long\path", @"\\?\C:\long\path")]
+    public void ServerOnlyAndQualifiedUncEntriesAreMasked(string path, string expected) {
+        Assert.Equal(expected, PyRevitEnvRedactor.RedactText(path, Profile));
+    }
+
+    [Theory]
+    [InlineData(@"\\fileserver\profiles\jane.doe\AppData\Roaming", @"\\***\profiles\***\AppData\Roaming")]
+    [InlineData(@"D:\Redirected\Jane.Doe", @"D:\Redirected\***")]
+    public void UserNameSegmentsOutsideTheProfileAreMasked(string path, string expected) {
+        Assert.Equal(expected, PyRevitEnvRedactor.RedactText(path, Profile, "jane.doe"));
+    }
+
+    [Fact]
+    public void UserNameIsOnlyMaskedAsAWholePathSegment() {
+        const string path = @"C:\tools\jane.doe.tools\jane.doe-cache";
+
+        Assert.Equal(path, PyRevitEnvRedactor.RedactText(path, Profile, "jane.doe"));
+    }
+
+    [Fact]
+    public void JsonRedactionMasksTheUserNameInPathsOutsideTheProfile() {
+        var json = @"{""userEnv"":{""userAppdata"":""\\\\fileserver\\profiles\\jane.doe\\AppData\\Roaming""}}";
+
+        var redacted = JObject.Parse(PyRevitEnvRedactor.RedactJson(json, Profile, "jane.doe"));
+
+        Assert.Equal(@"\\***\profiles\***\AppData\Roaming", (string)redacted["userEnv"]["userAppdata"]);
     }
 
     [Fact]

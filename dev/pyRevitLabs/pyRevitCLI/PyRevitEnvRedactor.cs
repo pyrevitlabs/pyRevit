@@ -34,26 +34,31 @@ namespace pyRevitCLI {
         };
 
         private static readonly Regex UrlPattern = new Regex(
-            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""'<>@]*@)?(?<host>[^/\s""'<>:@]+)(?<port>:\d+)?(?<path>/[^\s""'<>]*)?",
+            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""'<>]*)?",
+            RegexOptions.Compiled);
+
+        private static readonly Regex ScpUrlPattern = new Regex(
+            @"(?<![\w@.\-/:])(?<user>[\w.\-]+)@(?<host>[A-Za-z0-9][A-Za-z0-9.\-]*):(?<path>(?!//)[^\s""'<>]+)",
             RegexOptions.Compiled);
 
         private static readonly Regex ProfileFolderPattern = new Regex(
-            @"(?<=[\\/]Users[\\/])[^\\/\s""'<>:*?|]+",
+            @"(?<=[\\/]Users[\\/])[^\\/""<>:*?|]*[^\\/\s""<>:*?|]",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private static readonly Regex UncServerPattern = new Regex(
-            @"(?<![\\\w])\\\\[^\\/\s""'<>]+(?=\\)",
+            @"(?<![\\\w])\\\\(?![?.]\\)[^\\/\s""'<>]+",
             RegexOptions.Compiled);
 
-        internal static string RedactText(string text, string userProfilePath = null) {
+        internal static string RedactText(string text, string userProfilePath = null, string userName = null) {
             if (string.IsNullOrEmpty(text))
                 return text;
 
             text = RedactUrls(text);
+            text = RedactScpUrls(text);
             text = RedactUserProfile(text, userProfilePath);
             text = ProfileFolderPattern.Replace(text, Mask);
             text = UncServerPattern.Replace(text, @"\\" + Mask);
-            return text;
+            return RedactUserNameSegments(text, userName);
         }
 
         /// <summary>
@@ -61,14 +66,14 @@ namespace pyRevitCLI {
         /// replaces the account names under <c>execUser</c> and <c>activeUser</c>
         /// with <see cref="Placeholder"/>. The document structure is preserved.
         /// </summary>
-        internal static string RedactJson(string json, string userProfilePath = null) {
+        internal static string RedactJson(string json, string userProfilePath = null, string userName = null) {
             var root = JsonConvert.DeserializeObject<JContainer>(
                 json,
                 new JsonSerializerSettings { DateParseHandling = DateParseHandling.None });
 
             foreach (var value in root.Descendants().OfType<JValue>().Where(v => v.Type == JTokenType.String).ToList()) {
                 var isAccount = value.Parent is JProperty property && AccountKeys.Contains(property.Name);
-                value.Value = isAccount ? Placeholder : RedactText((string)value.Value, userProfilePath);
+                value.Value = isAccount ? Placeholder : RedactText((string)value.Value, userProfilePath, userName);
             }
 
             return root.ToString(Formatting.None);
@@ -84,9 +89,9 @@ namespace pyRevitCLI {
         /// split over several calls, such as a URL written in two parts, is not
         /// matched; the report printers format each line into one string.
         /// </remarks>
-        internal static void RunRedacted(Action report, string userProfilePath = null) {
+        internal static void RunRedacted(Action report, string userProfilePath = null, string userName = null) {
             var original = Console.Out;
-            var filter = new RedactingWriter(original, userProfilePath);
+            var filter = new RedactingWriter(original, userProfilePath, userName);
             Console.SetOut(filter);
             try {
                 report();
@@ -114,6 +119,25 @@ namespace pyRevitCLI {
                 return string.Format("{0}://{1}{2}{3}", scheme, authMask, Mask, maskedPath);
             });
 
+        private static string RedactScpUrls(string text) =>
+            ScpUrlPattern.Replace(text, match => {
+                var host = match.Groups["host"].Value;
+                var path = match.Groups["path"].Value;
+                if (IsPublicHost(host))
+                    return string.Format("{0}@{1}:{2}", Mask, host, path);
+
+                var gitSuffix = path.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? ".git" : string.Empty;
+                return string.Format("{0}@{0}:{0}{1}", Mask, gitSuffix);
+            });
+
+        private static string RedactUserNameSegments(string text, string userName) {
+            if (string.IsNullOrWhiteSpace(userName))
+                return text;
+
+            var segment = @"(?<=[\\/])" + Regex.Escape(userName) + @"(?=[\\/\s""'<>]|$)";
+            return Regex.Replace(text, segment, Mask, RegexOptions.IgnoreCase);
+        }
+
         private static bool IsPublicHost(string host) =>
             PublicHosts.Any(publicHost =>
                 host.Equals(publicHost, StringComparison.OrdinalIgnoreCase)
@@ -129,25 +153,26 @@ namespace pyRevitCLI {
                 return text;
 
             var masked = Path.Combine(parent, Mask);
-            text = Regex.Replace(text, Regex.Escape(trimmed), masked.Replace("$", "$$"), RegexOptions.IgnoreCase);
-            var slashed = trimmed.Replace('\\', '/');
-            return Regex.Replace(text, Regex.Escape(slashed), masked.Replace('\\', '/').Replace("$", "$$"), RegexOptions.IgnoreCase);
+            text = text.Replace(trimmed, masked, StringComparison.OrdinalIgnoreCase);
+            return text.Replace(trimmed.Replace('\\', '/'), masked.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase);
         }
 
         private sealed class RedactingWriter : TextWriter {
             private readonly TextWriter inner;
             private readonly string userProfilePath;
+            private readonly string userName;
 
-            internal RedactingWriter(TextWriter inner, string userProfilePath) {
+            internal RedactingWriter(TextWriter inner, string userProfilePath, string userName) {
                 this.inner = inner;
                 this.userProfilePath = userProfilePath;
+                this.userName = userName;
             }
 
             public override Encoding Encoding => inner.Encoding;
 
             public override void Write(char value) => inner.Write(value);
 
-            public override void Write(string value) => inner.Write(RedactText(value, userProfilePath));
+            public override void Write(string value) => inner.Write(RedactText(value, userProfilePath, userName));
 
             public override void Write(char[] buffer, int index, int count) =>
                 Write(new string(buffer, index, count));
