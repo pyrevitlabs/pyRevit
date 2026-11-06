@@ -298,9 +298,10 @@ Rules the host enforces:
   called, never the runner's own frames, so a timeout points at the script line that was
   running.
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
-  builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
-  the deadline on every line of every frame, which is slower but still stops it, unless
-  that code catches the timeout in its own loop.
+  builtin) can't have its loops rewritten, and neither can a loop inside an f-string on
+  IronPython 3.4, which reads the whole f-string as one token. On IronPython such a run
+  falls back to checking the deadline on every line of every frame, which is slower but
+  still stops it, unless that code catches the timeout in its own loop.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - Documents can't be saved or synchronized during a run.

@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import time
+import tokenize
 import traceback
 import types
 import unittest
@@ -578,6 +579,48 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 self.assertFalse(self.runner._runs_dynamic_code(source))
+
+    def test_loops_in_single_token_fstrings_are_detected(self):
+        """Find loops in f-strings the tokenizer returns as one string token."""
+        cases = {
+            ("", 'f"{sum(1 for _ in range(9))}"'): True,
+            ("", "F'{[x for x in y]}'"): True,
+            ("", "rf'''{next(i for i in z)}'''"): True,
+            ("f", '"{sum(1 for _ in range(9))}"'): True,
+            ("rf", "'{[x for x in y]}'"): True,
+            ("", "f'{x} for {y}'"): False,
+            ("", "'{x for x in y}'"): False,
+            ("if", "'{x for x in y}'"): False,
+            ("f", "'{value}'"): False,
+        }
+        for (prefix, text), expected in sorted(cases.items()):
+            tokens = [(tokenize.STRING, text, (1, 7), (1, 9), "")]
+            if prefix:
+                tokens.insert(0, (tokenize.NAME, prefix, (1, 5), (1, 7), ""))
+            with (
+                self.subTest(prefix=prefix, token=text),
+                mock.patch.object(
+                    self.runner, "_significant_tokens", return_value=tokens
+                ),
+            ):
+                self.assertEqual(expected, self.runner._hides_loops_in_fstrings(""))
+
+    def test_hidden_fstring_loops_get_the_line_checker_without_a_watchdog(self):
+        """With no CPython watchdog, a loop the rewriter can't see is checked per line."""
+        for hidden in (True, False):
+            with (
+                self.subTest(hidden=hidden),
+                mock.patch.object(
+                    self.runner, "_async_exception_setter", return_value=None
+                ),
+                mock.patch.object(
+                    self.runner, "_hides_loops_in_fstrings", return_value=hidden
+                ),
+                mock.patch.object(sys, "settrace", wraps=sys.settrace) as settrace,
+            ):
+                self.assertEqual([], self._run_with_timeout("result = 1\n", 5))
+            installed = [call for call in settrace.call_args_list if call.args[0]]
+            self.assertEqual(hidden, bool(installed))
 
     def test_transaction_tracking_needs_an_unrecorded_start_or_a_workspace(self):
         """Skip the tracer only when every start the script can reach is recorded."""
