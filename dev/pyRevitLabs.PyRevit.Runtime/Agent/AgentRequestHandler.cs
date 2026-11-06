@@ -38,7 +38,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var id = request["id"];
             try {
-                var method = request.Value<string>("method") ?? string.Empty;
+                var method = (request["method"] as JValue)?.Value as string ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
                 return Success(id, Dispatch(method, parameters, id));
             }
