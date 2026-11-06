@@ -167,7 +167,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         guard.Arm("Agent: " + request.Title);
                         timings.Lap("guard_arm");
                         int exitCode;
-                        using (reckless ? null : AgentHost.Dispatcher?.BeginScript(TimeSpan.FromSeconds(request.TimeoutSeconds)))
+                        using (reckless ? null : AgentHost.Dispatcher?.BeginScript(TimeSpan.FromSeconds(request.TimeoutSeconds), runId, request.RequestId))
                             exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
                         timings.Lap("engine");
 

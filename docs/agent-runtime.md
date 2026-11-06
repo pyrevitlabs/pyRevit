@@ -275,7 +275,8 @@ Rules the host enforces:
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
   interrupted on any engine; the run fails with `timeout` once it returns. If such a call is
   still blocking 30 seconds after the deadline, the request fails with `run_hung` (outcome
-  `unknown`) so the caller stops waiting. The run itself keeps Revit busy until the call
+  `unknown`, plus the run's `run_id` and `request_id`) so the caller stops waiting. The run
+  itself keeps Revit busy until the call
   returns, then ends and is recorded as usual, so look it up with `get_run` before sending
   it again; meanwhile later requests fail with `revit_busy`, and the message says an
   earlier run is stuck past its time limit. Time spent waiting for approval doesn't count.
@@ -352,7 +353,8 @@ and `get_context` reports `agent.reckless: true` while it is on.
 What a reckless run skips:
 
 - The timeout. `timeout_s` is accepted but not enforced: no watchdog thread, no loop-header
-  rewriting, no deadline checks, and no `timeout` error.
+  rewriting, no deadline checks, no `timeout` error, and no `run_hung`: a call that blocks
+  keeps the caller waiting until it returns.
 - Handler narrowing. Bare `except` and `except BaseException` stay as written.
 - Transaction tracking. `.Start(` calls are not rewritten to record their transaction, and
   no `sys.settrace` function is installed, so transactions are not recorded while the

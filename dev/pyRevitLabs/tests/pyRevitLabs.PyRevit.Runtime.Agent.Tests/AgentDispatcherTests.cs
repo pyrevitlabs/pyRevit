@@ -31,12 +31,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var dispatcher = StartDispatcher();
             using (var blockingCall = new ManualResetEventSlim()) {
                 var hung = Assert.Throws<AgentException>(() => dispatcher.Invoke(app => {
-                    using (dispatcher.BeginScript(TimeSpan.Zero))
+                    using (dispatcher.BeginScript(TimeSpan.Zero, "run1", "req1"))
                         blockingCall.Wait();
                     return "hung";
                 }, Long));
                 Assert.Equal("run_hung", hung.Code);
                 Assert.Equal("unknown", hung.Details.Value<string>("outcome"));
+                Assert.Equal("run1", hung.Details.Value<string>("run_id"));
+                Assert.Equal("req1", hung.Details.Value<string>("request_id"));
 
                 var busy = Assert.Throws<AgentException>(
                     () => dispatcher.Invoke(app => "later", TimeSpan.FromMilliseconds(200)));
@@ -65,8 +67,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var dispatcher = StartDispatcher();
 
             var result = dispatcher.Invoke(app => {
-                using (dispatcher.BeginScript(TimeSpan.FromHours(1))) {
-                    using (dispatcher.BeginScript(TimeSpan.Zero)) { }
+                using (dispatcher.BeginScript(TimeSpan.FromHours(1), "outer", "req-outer")) {
+                    using (dispatcher.BeginScript(TimeSpan.Zero, "inner", "req-inner")) { }
                     Thread.Sleep(1500);
                 }
                 Thread.Sleep(1500);

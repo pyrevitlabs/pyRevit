@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +29,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly TimeSpan hungGrace;
         private ExternalEvent externalEvent;
         private DateTime? runningSince;
-        private long scriptDeadlineTicks;
+        private ScriptDeadline currentScript;
 
         public AgentDispatcher() : this(DefaultHungGrace) {
         }
@@ -73,11 +74,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw AgentException.NotRun(BusyMessage(startTimeout));
             }
 
-            var finished = ((IAsyncResult)item.Completion.Task).AsyncWaitHandle;
-            while (!finished.WaitOne(HungPollInterval)) {
-                var overdue = ScriptOverdue();
-                if (overdue.HasValue)
-                    throw RunHung(overdue.Value);
+            var completion = new Task[] { item.Completion.Task };
+            while (Task.WaitAny(completion, HungPollInterval) < 0) {
+                var stuck = OverdueScript();
+                if (stuck != null)
+                    throw RunHung(stuck);
             }
             return item.Completion.Task.GetAwaiter().GetResult();
         }
@@ -89,32 +90,33 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <remarks>
         /// Called on the main thread around the script only, so time spent waiting for the
         /// user's approval never counts. Disposing restores the previous deadline, so a nested run
-        /// can't clear the deadline of the run that started it.
+        /// can't clear the deadline of the run that started it. <paramref name="runId"/> and
+        /// <paramref name="requestId"/> go into the <c>run_hung</c> error.
         /// </remarks>
-        public IDisposable BeginScript(TimeSpan timeLimit) {
-            var previous = Interlocked.Exchange(ref scriptDeadlineTicks, (DateTime.UtcNow + timeLimit).Ticks);
-            return new ScriptDeadline(this, previous);
+        public IDisposable BeginScript(TimeSpan timeLimit, string runId, string requestId) {
+            var script = new ScriptDeadline(this, timeLimit, runId, requestId);
+            script.Previous = Interlocked.Exchange(ref currentScript, script);
+            return script;
         }
 
-        private TimeSpan? ScriptOverdue() {
-            var deadline = Interlocked.Read(ref scriptDeadlineTicks);
-            if (deadline == 0)
-                return null;
-            var overdue = DateTime.UtcNow - new DateTime(deadline, DateTimeKind.Utc);
-            return overdue > hungGrace ? overdue : (TimeSpan?)null;
+        private ScriptDeadline OverdueScript() {
+            var script = Volatile.Read(ref currentScript);
+            return script != null && script.Overdue > hungGrace ? script : null;
         }
 
-        private static AgentException RunHung(TimeSpan overdue) {
+        private static AgentException RunHung(ScriptDeadline script) {
             var exception = new AgentException(
                 RunHungCode,
                 string.Format(
                     "The script is still running {0:0}s past its time limit, stuck in a call its timeout "
                     + "can't interrupt, such as a long Revit API call, Thread.Sleep, or a printer or window "
-                    + "waiting for input. Revit stays busy, and later requests fail with revit_busy, until "
-                    + "that call returns; the run then ends and is recorded as usual. Look it up by its "
-                    + "request id before sending it again, and ask the user to check Revit.",
-                    overdue.TotalSeconds));
+                    + "waiting for input. Revit stays busy, and later requests that need it fail with "
+                    + "revit_busy, until that call returns; the run then ends and is recorded as usual. Look "
+                    + "it up by its request id before sending it again, and ask the user to check Revit.",
+                    script.Overdue.TotalSeconds));
             exception.Details["outcome"] = "unknown";
+            exception.Details["run_id"] = script.RunId;
+            exception.Details["request_id"] = script.RequestId;
             return exception;
         }
 
@@ -138,13 +140,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private string BusyMessage(TimeSpan startTimeout) {
             var message = string.Format("Revit did not become idle within {0:0}s.", startTimeout.TotalSeconds);
             var since = runningSince;
-            var overdue = ScriptOverdue();
-            if (since.HasValue && overdue.HasValue)
-                message += string.Format(
+            var stuck = OverdueScript();
+            if (since.HasValue && stuck != null)
+                return message + string.Format(
                     " An earlier agent run is stuck {0:0}s past its time limit in a call its timeout can't "
                     + "interrupt; Revit stays busy until that call returns.",
-                    overdue.Value.TotalSeconds);
-            else if (since.HasValue)
+                    stuck.Overdue.TotalSeconds);
+            if (since.HasValue)
                 message += string.Format(
                     " An earlier agent request has been running for {0:0}s; it may be waiting on a dialog.",
                     (DateTime.UtcNow - since.Value).TotalSeconds);
@@ -188,17 +190,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private sealed class ScriptDeadline : IDisposable {
             private readonly AgentDispatcher owner;
-            private readonly long previous;
+            private readonly long dueTimestamp;
             private int disposed;
 
-            public ScriptDeadline(AgentDispatcher owner, long previous) {
+            public ScriptDeadline(AgentDispatcher owner, TimeSpan timeLimit, string runId, string requestId) {
                 this.owner = owner;
-                this.previous = previous;
+                dueTimestamp = Stopwatch.GetTimestamp() + (long)(timeLimit.TotalSeconds * Stopwatch.Frequency);
+                RunId = runId;
+                RequestId = requestId;
             }
+
+            public string RunId { get; }
+            public string RequestId { get; }
+            public ScriptDeadline Previous { get; set; }
+
+            public TimeSpan Overdue =>
+                TimeSpan.FromSeconds((double)(Stopwatch.GetTimestamp() - dueTimestamp) / Stopwatch.Frequency);
 
             public void Dispose() {
                 if (Interlocked.Exchange(ref disposed, 1) == 0)
-                    Interlocked.Exchange(ref owner.scriptDeadlineTicks, previous);
+                    Interlocked.Exchange(ref owner.currentScript, Previous);
             }
         }
 
