@@ -67,6 +67,7 @@ namespace pyRevitCLI {
                         },
                         options: new Dictionary<string, string>() {
                             { "--json",                 "Switch output format to json" },
+                            { "--redact",               "Mask user names, user profile folders, server names and Git URLs so the report can be shared publicly" },
                             { "list | ensure | remove", "Report the PATH entries, add a directory when missing, or drop every copy of it" },
                             { "<dir>",                  "Directory to add to or remove from the PATH" },
                             { "--scope=<scope>",        "PATH to target: user (default) or machine" },

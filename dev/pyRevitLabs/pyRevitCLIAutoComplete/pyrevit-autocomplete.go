@@ -61,9 +61,10 @@ func main() {
 					},
 				},
 				Flags: complete.Flags{
-					"--help": complete.PredictNothing,
-					"--json": complete.PredictNothing,
-					"--log":  complete.PredictNothing,
+					"--help":   complete.PredictNothing,
+					"--json":   complete.PredictNothing,
+					"--log":    complete.PredictNothing,
+					"--redact": complete.PredictNothing,
 				},
 			},
 			"update": complete.Command{
