@@ -6,6 +6,9 @@
     <system:String x:Key="Model">Modelo</system:String>
     <system:String x:Key="LinkedPrefix">Vinculado: </system:String>
     <system:String x:Key="SheetIndex">Índice de folhas</system:String>
+    <system:String x:Key="AllModels">&lt;Todos os modelos&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;Configuração de impressão atual de cada modelo&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Folhas de modelos diferentes teriam o mesmo nome de arquivo. Adicione {index} ou {proj_number} ao formato de nomenclatura para diferenciá-las.</system:String>
     
     <system:String x:Key="SheetOrdering">Ordenação de folhas</system:String>
     <system:String x:Key="ReversePrintOrder">Inverter ordem de impressão</system:String>
