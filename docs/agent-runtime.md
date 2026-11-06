@@ -386,7 +386,9 @@ call; see [Script contract](#script-contract)), an IronPython run's recursion li
 instead of 1000, because frames with several `with` or `try` blocks overflow Revit's stack
 between 750 and 900 calls when traced. A script that raises its limit is put back to 500 on
 its next call, and the previous limit is restored when the script ends. CPython runs keep
-their limit.
+their limit. The cap lives in the runner's trace function, so a script that removes it with
+`sys.settrace(None)` and then raises its own limit is no longer held at 500; handler-dense
+recursion past about 750 calls can then still crash Revit.
 
 ### Which Python runs the script
 
