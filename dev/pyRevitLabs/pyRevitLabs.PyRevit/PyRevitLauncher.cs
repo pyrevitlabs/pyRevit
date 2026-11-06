@@ -127,17 +127,7 @@ Set Jrn = CrsJournalScript
                 WorkingDirectory = launch.Directory,
                 UseShellExecute = false,
             };
-            startInfo.EnvironmentVariables[PyRevitConsts.LaunchManifestEnvVar] = launch.ManifestFile;
-            startInfo.EnvironmentVariables[PyRevitConsts.LaunchRevitYearEnvVar] = launch.Product.ProductYear.ToString();
-            if (launch.ConfigRoot != null) {
-                startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitAgentDirOverrideEnvVar] = PyRevitLabsConsts.AgentPath;
-                startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitPathOverrideEnvVar] = launch.ConfigRoot;
-                startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] = "1";
-            }
-            else if (startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] == "1") {
-                startInfo.EnvironmentVariables.Remove(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar);
-                startInfo.EnvironmentVariables.Remove(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
-            }
+            ConfigureEnvironment(startInfo, launch.ManifestFile, launch.Product.ProductYear, launch.ConfigRoot);
 
             logger.Debug("Starting Revit {0} with \"{1}\"", launch.Product.ProductYear, arguments);
             var process = Process.Start(startInfo);
@@ -148,6 +138,31 @@ Set Jrn = CrsJournalScript
                 logger.Warn("Can not record the process id in \"{0}\" | {1}", launch.ProcessIdFile, exception.Message);
             }
             return process;
+        }
+
+        /// <summary>
+        /// Names the session's manifest and year, and sets or drops the session-only config overrides.
+        /// </summary>
+        /// <remarks>
+        /// An isolated session (<paramref name="configRoot"/> set) gets its own config folder and ignores
+        /// the clone's config. A session that is not isolated, started from one that is, drops those
+        /// two overrides instead of inheriting its parent's folder. Every other inherited variable,
+        /// including a deliberately set agent folder, is left as it is.
+        /// </remarks>
+        internal static void ConfigureEnvironment(ProcessStartInfo startInfo, string manifestFile, int revitYear, string configRoot) {
+            var environment = startInfo.EnvironmentVariables;
+            environment[PyRevitConsts.LaunchManifestEnvVar] = manifestFile;
+            environment[PyRevitConsts.LaunchRevitYearEnvVar] = revitYear.ToString();
+            if (configRoot != null) {
+                environment[PyRevitLabsConsts.PyRevitAgentDirOverrideEnvVar] = PyRevitLabsConsts.AgentPath;
+                environment[PyRevitLabsConsts.PyRevitPathOverrideEnvVar] = configRoot;
+                environment[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] = "1";
+            }
+            else if (environment.ContainsKey(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar)
+                     && environment[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] == "1") {
+                environment.Remove(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar);
+                environment.Remove(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
+            }
         }
 
         /// <summary>
@@ -196,8 +211,9 @@ Set Jrn = CrsJournalScript
         /// launcher itself was killed before it could clean up.
         /// </summary>
         /// <remarks>
-        /// Invariant: a directory with a file held open is never removed, because Revit keeps its
-        /// journal open for as long as it runs. A directory whose process id was not recorded, or
+        /// Invariant: a directory with a journal file held open is never removed, because Revit keeps
+        /// its journal open for as long as it runs. Only journal files are probed, never the manifest
+        /// or the isolated config, which a starting or running session reads. A directory whose process id was not recorded, or
         /// not readably, is otherwise only removed after <see cref="UnrecordedLaunchRetention"/>.
         /// </remarks>
         public static void PruneAbandoned() {
@@ -221,7 +237,7 @@ Set Jrn = CrsJournalScript
         }
 
         private static bool HasOpenFile(string directory) {
-            foreach (var file in Directory.GetFiles(directory)) {
+            foreach (var file in Directory.GetFiles(directory, "journal.*")) {
                 try {
                     using (File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None)) { }
                 }

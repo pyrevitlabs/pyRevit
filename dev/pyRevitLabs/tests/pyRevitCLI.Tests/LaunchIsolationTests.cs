@@ -1,4 +1,5 @@
 using pyRevitLabs.Common;
+using pyRevitLabs.PyRevit;
 
 namespace pyRevitCLI.Tests;
 
@@ -35,6 +36,61 @@ public class LaunchIsolationTests : IDisposable {
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar, null);
 
         Assert.Equal(Path.Combine(cloneDirectory, PyRevitLabsConsts.DefaultConfigsFileName), PyRevitInstallScope.GetLocalConfigFilePath());
+    }
+
+    private static System.Diagnostics.ProcessStartInfo ChildOf(params (string Name, string Value)[] inherited) {
+        var startInfo = new System.Diagnostics.ProcessStartInfo("revit.exe") { UseShellExecute = false };
+        foreach (var (name, value) in inherited)
+            startInfo.EnvironmentVariables[name] = value;
+        return startInfo;
+    }
+
+    /// <summary>
+    ///     Verifies that an isolated launch sets its own config folder and ignores the clone's config.
+    /// </summary>
+    [Fact]
+    public void AnIsolatedLaunchSetsTheSessionOverrides() {
+        var startInfo = ChildOf();
+
+        PyRevitLauncher.ConfigureEnvironment(startInfo, @"C:\launch\pyRevit.addin", 2026, @"C:\launch\pyRevit");
+
+        var environment = startInfo.EnvironmentVariables;
+        Assert.Equal(@"C:\launch\pyRevit.addin", environment[PyRevitConsts.LaunchManifestEnvVar]);
+        Assert.Equal("2026", environment[PyRevitConsts.LaunchRevitYearEnvVar]);
+        Assert.Equal(@"C:\launch\pyRevit", environment[PyRevitLabsConsts.PyRevitPathOverrideEnvVar]);
+        Assert.Equal("1", environment[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar]);
+        Assert.Equal(PyRevitLabsConsts.AgentPath, environment[PyRevitLabsConsts.PyRevitAgentDirOverrideEnvVar]);
+    }
+
+    /// <summary>
+    ///     Verifies that a launch that is not isolated, started from an isolated session, does not inherit the parent's overrides.
+    /// </summary>
+    [Fact]
+    public void ALaunchFromAnIsolatedSessionDropsTheInheritedConfigOverrides() {
+        var startInfo = ChildOf(
+            (PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar, "1"),
+            (PyRevitLabsConsts.PyRevitPathOverrideEnvVar, @"C:\parent\pyRevit"),
+            (PyRevitLabsConsts.PyRevitAgentDirOverrideEnvVar, @"C:\agent"));
+
+        PyRevitLauncher.ConfigureEnvironment(startInfo, @"C:\launch\pyRevit.addin", 2026, configRoot: null);
+
+        var environment = startInfo.EnvironmentVariables;
+        Assert.False(environment.ContainsKey(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar));
+        Assert.False(environment.ContainsKey(PyRevitLabsConsts.PyRevitPathOverrideEnvVar));
+        Assert.Equal(@"C:\agent", environment[PyRevitLabsConsts.PyRevitAgentDirOverrideEnvVar]);
+        Assert.Equal(@"C:\launch\pyRevit.addin", environment[PyRevitConsts.LaunchManifestEnvVar]);
+    }
+
+    /// <summary>
+    ///     Verifies that a deliberate config override survives a launch that is not isolated and has no isolated parent.
+    /// </summary>
+    [Fact]
+    public void ADeliberateConfigOverrideSurvivesALaunchThatIsNotIsolated() {
+        var startInfo = ChildOf((PyRevitLabsConsts.PyRevitPathOverrideEnvVar, @"C:\mine\pyRevit"));
+
+        PyRevitLauncher.ConfigureEnvironment(startInfo, @"C:\launch\pyRevit.addin", 2026, configRoot: null);
+
+        Assert.Equal(@"C:\mine\pyRevit", startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitPathOverrideEnvVar]);
     }
 
     /// <summary>

@@ -11,18 +11,26 @@ public class LaunchPruneTests : IDisposable {
 
     private readonly string temp = Path.Combine(Path.GetTempPath(), "pyRevit-prune-tests-" + Guid.NewGuid());
     private readonly string previousTemp = Environment.GetEnvironmentVariable("TEMP");
+    private readonly string previousTmp = Environment.GetEnvironmentVariable("TMP");
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="LaunchPruneTests"/> class with an isolated temporary folder.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The launch root does not resolve under the isolated folder, so pruning could reach real launch directories.</exception>
     public LaunchPruneTests() {
         Directory.CreateDirectory(temp);
         Environment.SetEnvironmentVariable("TEMP", temp);
+        Environment.SetEnvironmentVariable("TMP", temp);
+        if (!PyRevitLauncher.LaunchRoot.StartsWith(temp, StringComparison.OrdinalIgnoreCase)) {
+            Dispose();
+            throw new InvalidOperationException("The launch root does not resolve under the isolated temp folder: " + PyRevitLauncher.LaunchRoot);
+        }
     }
 
     /// <inheritdoc />
     public void Dispose() {
         Environment.SetEnvironmentVariable("TEMP", previousTemp);
+        Environment.SetEnvironmentVariable("TMP", previousTmp);
         Directory.Delete(temp, true);
     }
 
@@ -80,7 +88,20 @@ public class LaunchPruneTests : IDisposable {
     }
 
     /// <summary>
-    ///     Verifies that a directory with a file held open, as Revit holds its journal, is never pruned.
+    ///     Verifies that pruning never probes the manifest, which a starting session reads without write or exclusive access.
+    /// </summary>
+    [Fact]
+    public void AnOpenManifestDoesNotKeepADirectoryWhoseProcessIsGone() {
+        var directory = CreateLaunch("manifest-read", NoSuchProcessId.ToString(), old: false);
+        using var reader = new FileStream(Path.Combine(directory, "pyRevit.addin"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        PyRevitLauncher.PruneAbandoned();
+
+        Assert.False(Directory.Exists(directory));
+    }
+
+    /// <summary>
+    ///     Verifies that a directory with a journal file held open, as Revit holds it, is never pruned.
     /// </summary>
     [Theory]
     [InlineData(null, true)]
