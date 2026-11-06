@@ -130,6 +130,19 @@ class AgentRunnerTimeoutEscapeTests(unittest.TestCase):
         """IronPython has no injection; the loop headers alone stop every shape."""
         self._assert_stopped(without_injection=True)
 
+    def test_endless_result_stops_while_it_is_serialized(self):
+        """The watchdog still covers script code that runs while ``result`` is serialized."""
+        source = "exec('def endless():\\n    while True:\\n        yield 1')\nresult = endless()\n"
+        revit_types = types.SimpleNamespace(
+            ElementId=type("ElementId", (), {}),
+            Element=type("Element", (), {}),
+            XYZ=type("XYZ", (), {}),
+        )
+        started = time.time()
+        with mock.patch.object(self.runner, "DB", revit_types):
+            self.assertEqual(["timeout"], self._run(source))
+        self.assertLess(time.time() - started, 5)
+
 
 class AgentRunnerNarrowingTests(unittest.TestCase):
     """Handler narrowing covers attribute spellings and fails closed."""

@@ -669,8 +669,10 @@ def _start_watchdog(timeout_s, state):
     of a loop body, outside any ``try`` inside that body.
 
     Invariant:
-        The script thread sets ``state["finished"]`` with a plain store as
-        soon as the script returns or raises. From then on nothing new is
+        The script thread sets ``state["finished"]`` with a plain store once
+        the script and the serialization of its ``result``, which can still
+        run script code, are done, and at the latest when it stops the
+        watchdog. From then on nothing new is
         raised in that thread, even if ``RunTimedOut`` interrupts the runner
         before it calls the returned function, so an injection can never
         outlive the run and reach other Python code on Revit's main thread.
@@ -971,7 +973,6 @@ def run(context):
             except SystemExit as ex:
                 script_exit = ex
             finally:
-                state["finished"] = True
                 phases.lap("exec")
 
             if script_exit is not None:
@@ -998,6 +999,7 @@ def run(context):
                     )
                 phases.lap("result")
 
+            state["finished"] = True
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
                 raise RunTimedOut(timeout_s)
         finally:
