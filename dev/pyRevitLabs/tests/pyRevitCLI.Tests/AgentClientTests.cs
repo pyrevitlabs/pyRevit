@@ -238,6 +238,19 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void ABareCloneNameNeverSelectsAnotherCloneThroughAFolderOfThatName() {
+        var folderOfAnotherClone = new AgentInstance {
+            ProcessId = 500,
+            RevitVersion = "2026",
+            Clone = "other",
+            ClonePath = Path.Combine(Directory.GetCurrentDirectory(), "dev"),
+        };
+
+        Assert.Empty(PyRevitAgentClient.Match(new[] { folderOfAnotherClone }, "dev"));
+        Assert.Equal(500, Assert.Single(PyRevitAgentClient.Match(new[] { folderOfAnotherClone }, Path.Combine(".", "dev"))).ProcessId);
+    }
+
+    [Fact]
     public void ASelectorThatIsNotAPathIsNotAMatchByPath() {
         Assert.Empty(PyRevitAgentClient.Match(ClonedSessions, "bad|path?"));
     }

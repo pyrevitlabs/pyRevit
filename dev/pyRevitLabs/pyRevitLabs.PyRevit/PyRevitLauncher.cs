@@ -134,6 +134,10 @@ Set Jrn = CrsJournalScript
                 startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitPathOverrideEnvVar] = launch.ConfigRoot;
                 startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] = "1";
             }
+            else if (startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] == "1") {
+                startInfo.EnvironmentVariables.Remove(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar);
+                startInfo.EnvironmentVariables.Remove(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
+            }
 
             logger.Debug("Starting Revit {0} with \"{1}\"", launch.Product.ProductYear, arguments);
             var process = Process.Start(startInfo);

@@ -257,7 +257,9 @@ namespace pyRevitCLI {
         /// process ids in the year range, so the year rule must never shadow an exact pid match.
         /// Years compare in canonical form, so " 2024 " or "02024" select Revit 2024.
         /// A selector that is not a number selects the sessions whose clone has that name
-        /// (ignoring case) or that path; sessions that recorded no clone never match it.
+        /// (ignoring case) or that path; a bare word is only ever a name, so it can't select
+        /// another clone through a folder of that name under the current directory. Sessions
+        /// that recorded no clone never match it.
         /// A clone whose name is a number is selected as <c>clone:&lt;name&gt;</c>, which is never
         /// read as a process id or a year.
         /// </remarks>
@@ -282,8 +284,14 @@ namespace pyRevitCLI {
                 return false;
             if (string.Equals(instance.Clone, selector, StringComparison.OrdinalIgnoreCase))
                 return true;
+            if (!LooksLikePath(selector))
+                return false;
             var recordedPath = NormalizePath(instance.ClonePath);
             return recordedPath != null && string.Equals(recordedPath, NormalizePath(selector), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool LooksLikePath(string selector) {
+            return Path.IsPathRooted(selector) || selector.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0;
         }
 
         private static string NormalizePath(string path) {
