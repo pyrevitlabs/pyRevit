@@ -379,11 +379,12 @@ fixes for this:
 The fixes have not been released upstream, so other hosts running IronPython still crash.
 
 A trace function makes every IronPython frame larger. While the runner traces a script (it
-names a transaction, calls `.Start(`, uses a `workspace`, or needs line checks; see
-[Script contract](#script-contract)), an IronPython run's recursion limit is 500 instead of
-1000, because frames with several `with` or `try` blocks overflow Revit's stack between 750
-and 900 calls when traced. A script that raises its limit is put back to 500 on its next
-call, and the previous limit is restored when the script ends. CPython runs keep their limit.
+uses a `workspace`, compiles code at run time, or reaches `Start` other than by a direct
+call; see [Script contract](#script-contract)), an IronPython run's recursion limit is 500
+instead of 1000, because frames with several `with` or `try` blocks overflow Revit's stack
+between 750 and 900 calls when traced. A script that raises its limit is put back to 500 on
+its next call, and the previous limit is restored when the script ends. CPython runs keep
+their limit.
 
 ### Which Python runs the script
 
