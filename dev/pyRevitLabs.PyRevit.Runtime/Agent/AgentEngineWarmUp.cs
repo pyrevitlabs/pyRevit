@@ -4,7 +4,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Decides when the host warms the agent engine: starting it, importing the runner and
     /// running the runner's code paths once per session load, after the first request an agent
-    /// sends, so the first run doesn't pay about two seconds for them.
+    /// sends, so the first run doesn't pay two to three seconds for them.
     /// </summary>
     /// <remarks>
     /// Waiting for the first request keeps the cost off Revit sessions whose agent never

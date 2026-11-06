@@ -403,7 +403,7 @@ Revit API through pythonnet, and pyrevitlib features built for IronPython may be
 
 Agent runs reuse one cached engine per session load, so only the first run starts the engine,
 imports `pyrevit.agent._runner` and runs the runner's code for the first time, which costs
-about three seconds on IronPython. The host does that work ahead of time, once per session
+two to three seconds on IronPython. The host does that work ahead of time, once per session
 load, when an agent first makes contact: after the pipe handles the first request of the
 load (`ping`, `get_context` or any other method), it queues the warm-up on the Revit main
 thread, where it runs when Revit is next idle. A session whose agent never connects pays
@@ -424,7 +424,7 @@ warm-up reports to the debug log only, as a `[PERF] agent engine warm-up` line w
 script's exit code, or as `Agent engine warm-up failed`, and never affects the host.
 
 A request that arrives while the warm-up runs waits for it, as it would for a run. A run
-sent right after the first `ping` therefore takes about 0.1 to 0.3 s longer than a cold first
+sent right after the first `ping` therefore takes about 0.1 to 0.4 s longer than a cold first
 run would have, because it waits for the whole warm-up, which does a little more than a run
 needs. This is accepted: a run sent after the warm-up finishes starts in tens of
 milliseconds instead of two to three seconds.
