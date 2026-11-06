@@ -247,7 +247,6 @@ class AgentRunnerWatchdogStopTests(unittest.TestCase):
     def test_a_timeout_landing_during_shutdown_still_stops_the_watchdog(self):
         """A pending injection that hits the stop call is retried, not escaped."""
         runner = self.runner
-        state = {"timed_out": True, "finished": False}
         calls = []
 
         def stop_hit_once():
@@ -255,10 +254,76 @@ class AgentRunnerWatchdogStopTests(unittest.TestCase):
             if len(calls) == 1:
                 raise runner.RunTimedOut(1)
 
-        runner._finish_and_stop_watchdog(state, stop_hit_once)
+        state = {"timed_out": True, "finished": False, "stop_watchdog": stop_hit_once}
+        runner._finish_and_stop_watchdog(state)
 
         self.assertEqual([True, True], calls)
         self.assertTrue(state["finished"])
+
+    def test_a_timeout_landing_during_startup_still_stops_the_watchdog(self):
+        """An injection before the script starts can't leave the watchdog running."""
+        runner = self.runner
+        start_watchdog = runner._start_watchdog
+        stops = []
+
+        def recorded(timeout_s, state):
+            stops.append(start_watchdog(timeout_s, state))
+
+        def started_then_hit(timeout_s, state):
+            recorded(timeout_s, state)
+            raise runner.RunTimedOut(timeout_s)
+
+        def tracer_hit(*args):
+            raise runner.RunTimedOut(args[0])
+
+        landings = {
+            "after_start_returns": {"_start_watchdog": started_then_hit},
+            "while_installing_the_tracer": {
+                "_start_watchdog": recorded,
+                "_execution_tracer": tracer_hit,
+            },
+        }
+        for name, patches in sorted(landings.items()):
+            with self.subTest(landing=name):
+                del stops[:]
+                errors = []
+                context = types.SimpleNamespace(
+                    Source="result = eval('1')\n",
+                    Workspace=None,
+                    TimeoutSeconds=0.1,
+                    InputsJson="{}",
+                    UIApp=types.SimpleNamespace(
+                        ActiveUIDocument=None, Application=None
+                    ),
+                    SetEngine=lambda *args: None,
+                    SetResult=lambda *args: None,
+                    SetOutput=lambda *args: None,
+                    SetError=lambda *args: errors.append(args[0]),
+                )
+                previous_trace = sys.gettrace()
+                injected = False
+                try:
+                    with contextlib.ExitStack() as stack:
+                        for target, replacement in patches.items():
+                            stack.enter_context(
+                                mock.patch.object(
+                                    runner, target, side_effect=replacement
+                                )
+                            )
+                        runner.run(context)
+                    ended = time.time() + 0.6
+                    try:
+                        while time.time() < ended:
+                            pass
+                    except runner.RunTimedOut:
+                        injected = True
+                finally:
+                    sys.settrace(previous_trace)
+                    for stop in stops:
+                        stop()
+                self.assertEqual(["timeout"], errors)
+                self.assertEqual(1, len(stops))
+                self.assertFalse(injected)
 
 
 if __name__ == "__main__":

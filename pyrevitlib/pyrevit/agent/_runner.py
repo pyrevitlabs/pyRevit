@@ -712,6 +712,9 @@ def _start_watchdog(timeout_s, state):
 
     Returns:
         function: stops the watchdog and clears any injection still pending.
+        It is also stored as ``state["stop_watchdog"]`` before the watchdog
+        starts, so the runner can stop it even when ``RunTimedOut`` lands
+        before this function has returned.
     """
     stopped = threading.Event()
     thread_id = threading.current_thread().ident
@@ -733,7 +736,6 @@ def _start_watchdog(timeout_s, state):
 
     thread = threading.Thread(target=watch)
     thread.daemon = True
-    thread.start()
 
     def stop():
         state["finished"] = True
@@ -749,6 +751,8 @@ def _start_watchdog(timeout_s, state):
             except RunTimedOut:
                 pass
 
+    state["stop_watchdog"] = stop
+    thread.start()
     return stop
 
 
@@ -881,7 +885,7 @@ class _PhaseClock(object):
         self._last = now
 
 
-def _finish_and_stop_watchdog(state, stop_watchdog):
+def _finish_and_stop_watchdog(state):
     """Mark the script finished and stop its watchdog, whatever is still pending.
 
     Invariant:
@@ -892,6 +896,7 @@ def _finish_and_stop_watchdog(state, stop_watchdog):
     while True:
         try:
             state["finished"] = True
+            stop_watchdog = state.get("stop_watchdog")
             if stop_watchdog:
                 stop_watchdog()
             return
@@ -1011,16 +1016,15 @@ def run(context):
             guard_loops and unguarded_code and _set_async_exc_function() is None
         )
         started = time.time()
-        stop_watchdog = None
-        if timeout_s:
-            stop_watchdog = _start_watchdog(timeout_s, state)
-        if check_lines or track:
-            sys.settrace(
-                _execution_tracer(
-                    timeout_s, state, tracked_transactions, check_lines, track
-                )
-            )
         try:
+            if timeout_s:
+                _start_watchdog(timeout_s, state)
+            if check_lines or track:
+                sys.settrace(
+                    _execution_tracer(
+                        timeout_s, state, tracked_transactions, check_lines, track
+                    )
+                )
             script_exit = None
             try:
                 exec(code, namespace)
@@ -1058,7 +1062,7 @@ def run(context):
                 timed_out_after_script = True
                 raise RunTimedOut(timeout_s)
         finally:
-            _finish_and_stop_watchdog(state, stop_watchdog)
+            _finish_and_stop_watchdog(state)
             sys.settrace(None)
     except RunTimedOut:
         failed = True
