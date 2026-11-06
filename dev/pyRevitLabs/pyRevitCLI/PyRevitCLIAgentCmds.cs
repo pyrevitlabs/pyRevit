@@ -320,10 +320,10 @@ namespace pyRevitCLI {
                         $"'{tool} {arguments}' did not finish within {ClientCliTimeout.TotalSeconds:0} seconds and was stopped.");
                 }
                 var remaining = deadline - DateTime.UtcNow;
-                var streamsClosed = Task.WhenAll(outputRead, errorRead)
-                    .Wait(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
-                var output = streamsClosed ? outputRead.Result : string.Empty;
-                var error = streamsClosed ? errorRead.Result : string.Empty;
+                Task.WhenAny(Task.WhenAll(outputRead, errorRead), Task.Delay(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero))
+                    .GetAwaiter().GetResult();
+                var output = outputRead.IsCompletedSuccessfully ? outputRead.Result : string.Empty;
+                var error = errorRead.IsCompletedSuccessfully ? errorRead.Result : string.Empty;
                 if (ignoreFailure)
                     return;
                 if (!string.IsNullOrWhiteSpace(output))
