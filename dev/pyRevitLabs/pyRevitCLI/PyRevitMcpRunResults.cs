@@ -322,25 +322,18 @@ namespace pyRevitCLI {
             };
             if (changes["by_category"] is JObject byCategory && byCategory.Count > 0)
                 compact["by_category"] = byCategory;
-            if (changes["added"] is JArray added && added.Count > 0) {
+            if (changes["added"] is JArray added && added.Count > 0)
                 compact["added_ids"] = new JArray(added.Take(MaxChangeIds).Select(element => element["id"]));
-                var families = added.Where(IsFamilyElement).Take(MaxChangeIds).ToList();
-                if (families.Count > 0)
-                    compact["added_families"] = new JArray(families);
-            }
+            if (changes["added_families"] is JArray families && families.Count > 0)
+                compact["added_families"] = new JArray(families.Take(MaxChangeIds));
             if (changes["modified"] is JArray modified && modified.Count > 0)
                 compact["modified"] = new JArray(modified.Take(MaxChangeIds));
             if (changes["deleted"] is JArray deleted && deleted.Count > 0)
                 compact["deleted_ids"] = new JArray(deleted.Take(MaxChangeIds));
             CopyIfNotEmpty(changes, compact, "other_documents");
             if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > MaxChangeIds || changes.Value<int>("deleted_count") > MaxChangeIds)
-                compact["details"] = $"Only the first {MaxChangeIds} elements of each list are shown; get_run(run_id) has more, with names and classes of added elements.";
+                compact["details"] = $"Each list here stops at {MaxChangeIds} elements; get_run(run_id) lists up to 50 of each kind, with the names and classes of added elements.";
             return compact;
-        }
-
-        private static bool IsFamilyElement(JToken element) {
-            var elementClass = element.Value<string>("class");
-            return elementClass == "Family" || elementClass == "FamilySymbol";
         }
 
         private static bool HasChanges(JObject changes) {

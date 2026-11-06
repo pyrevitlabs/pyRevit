@@ -127,10 +127,10 @@ things.
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result`, `output`, and only the non-empty change
 set, failures, dialogs and blocked operations. The change set keeps counts, `by_category`,
-`added_ids`, `added_families` (id, category, name and class of loaded families and types),
-`modified` (the same fields) and `deleted_ids`, each capped at 20 entries. The full record
-stays available through `get_run`. `AttributeError` and `TypeError` failures carry a
-`hint` that names the `lookup_revit_api` call to make, for example `'Collector' does not exist in
+`added_ids`, `added_families` (id, category, name and class of the families and types
+found among all added elements), `modified` (the same fields) and `deleted_ids`, each
+capped at 20 entries. The full record, with up to 50 of each, stays available through
+`get_run`. `AttributeError` and `TypeError` failures carry a `hint` that names the `lookup_revit_api` call to make, for example `'Collector' does not exist in
 Autodesk.Revit.DB` or `check the overloads of 'FilteredElementCollector.OfCategory'`.
 
 If the host cannot persist a result or run record, the response keeps the final model decision

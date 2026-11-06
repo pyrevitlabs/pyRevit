@@ -122,7 +122,7 @@ public class McpRunResultsTests {
         }
 
         [Fact]
-        public void ModifiedAndDeletedListsAreCappedAtTwentyAndPointToGetRun() {
+        public void ModifiedAndDeletedListsAreCappedAtTwentyAndPointToGetRunForUpToFifty() {
             var changes = Changes(modified: 120, deleted: 30);
             changes["modified"] = new JArray(Enumerable.Range(1, 50).Select(id => new JObject { ["id"] = id }));
             changes["deleted"] = new JArray(Enumerable.Range(1, 30));
@@ -131,21 +131,30 @@ public class McpRunResultsTests {
 
             Assert.Equal(20, ((JArray)compact["modified"]).Count);
             Assert.Equal(20, ((JArray)compact["deleted_ids"]).Count);
-            Assert.Contains("get_run", compact.Value<string>("details"));
+            Assert.Contains("get_run(run_id) lists up to 50", compact.Value<string>("details"));
         }
 
         [Fact]
         public void LoadedFamiliesAndTypesAreNamed() {
             var changes = Changes(added: 3);
-            changes["added"] = new JArray(
+            changes["added_families"] = new JArray(
                 new JObject { ["id"] = 1, ["category"] = null, ["name"] = "Desk", ["class"] = "Family" },
-                new JObject { ["id"] = 2, ["category"] = "Furniture", ["name"] = "1200x600", ["class"] = "FamilySymbol" },
-                new JObject { ["id"] = 3, ["category"] = "Legend Components", ["name"] = "x", ["class"] = "Element" });
+                new JObject { ["id"] = 2, ["category"] = "Furniture", ["name"] = "1200x600", ["class"] = "FamilySymbol" });
 
             var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
 
             Assert.Equal(new[] { 1, 2, 3 }, compact["added_ids"].Select(id => id.Value<int>()));
             Assert.Equal(new[] { "Desk", "1200x600" }, compact["added_families"].Select(family => family.Value<string>("name")));
+        }
+
+        [Fact]
+        public void AddedFamiliesAreCappedAtTwenty() {
+            var changes = Changes(added: 50);
+            changes["added_families"] = new JArray(Enumerable.Range(1, 30).Select(id => new JObject { ["id"] = id, ["class"] = "FamilySymbol" }));
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal(20, ((JArray)compact["added_families"]).Count);
         }
 
         [Fact]
