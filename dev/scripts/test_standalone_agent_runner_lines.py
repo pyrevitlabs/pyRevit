@@ -1379,13 +1379,17 @@ class AgentRunnerTracedRecursionTests(unittest.TestCase):
         def outer_tracer(frame, event, arg):
             return None
 
+        results = []
+        errors = []
         sys.settrace(outer_tracer)
         with mock.patch.object(
             self.runner, "_implementation", return_value="ironpython"
         ):
-            self.runner.run(self._context(TRACED_LIMIT_SOURCE, [], []))
+            self.runner.run(self._context(TRACED_LIMIT_SOURCE, results, errors))
         restored = sys.gettrace()
         sys.settrace(previous)
+        self.assertEqual([], errors)
+        self.assertEqual(1, len(results))
         self.assertIs(outer_tracer, restored)
 
     def test_untraced_ironpython_run_keeps_the_engine_limit(self):
