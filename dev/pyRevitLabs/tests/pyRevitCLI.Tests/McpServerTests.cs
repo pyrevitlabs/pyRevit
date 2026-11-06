@@ -333,6 +333,7 @@ public partial class McpServerTests : IDisposable {
     [InlineData("capture_view", "{\"eye\":[0,0],\"target\":[1,1,1],\"view\":\"3d\"}", "eye")]
     [InlineData("capture_view", "{\"view\":\"3d\",\"section\":{\"origin\":[0,0,\"x\"],\"normal\":[1,0,0]}}", "section.origin[2]")]
     [InlineData("inspect_elements", "{\"ids\":[1,\"two\"]}", "ids[1]")]
+    [InlineData("inspect_elements", "{\"ids\":[Infinity]}", "ids[0]")]
     [InlineData("show_elements", "{\"zoom\":\"yes\"}", "zoom")]
     [InlineData("get_context", "{\"revit\":true}", "revit")]
     public void ArgumentsThatBreakTheSchemaAreRejectedBeforeReachingRevit(string tool, string arguments, string argument) {

@@ -840,7 +840,8 @@ namespace pyRevitCLI {
                     case "array": return value.Type == JTokenType.Array;
                     case "integer":
                         return value.Type == JTokenType.Integer
-                            || value.Type == JTokenType.Float && Math.Floor(value.Value<double>()) == value.Value<double>();
+                            || value.Type == JTokenType.Float && !double.IsInfinity(value.Value<double>())
+                                && Math.Floor(value.Value<double>()) == value.Value<double>();
                     case "number":
                         return value.Type == JTokenType.Integer
                             || value.Type == JTokenType.Float && !double.IsNaN(value.Value<double>()) && !double.IsInfinity(value.Value<double>());
