@@ -40,6 +40,15 @@ from pyrevit.api import DB, UI
 from pyrevit.compat import get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
+IRONPYTHON_TRACED_RECURSION_LIMIT = 500
+"""Python call depth a traced IronPython run may reach.
+
+Warning:
+    A trace function makes every IronPython frame larger, so on Revit's 1 MB
+    main thread a traced run with several ``with`` or ``try`` blocks per frame
+    overflows the stack and crashes Revit between 750 and 900 calls, below
+    the engine's limit of 1000. Untraced runs keep the engine's limit.
+"""
 
 _WATCHDOG_RETRY_SECONDS = 0.2
 _WATCHDOG_ESCALATE_SECONDS = 1.0
@@ -823,8 +832,13 @@ def run(context):
         workspace function the script calls; the run fails with ``timeout``
         once that call returns. On IronPython, a run with no trace function
         (see ``docs/agent-runtime.md``) has no check outside loop headers, so
-        unbounded recursion or a callback passed to ``map``, ``filter`` or
-        ``sorted`` over an endless iterable is not stopped.
+        a callback passed to ``map``, ``filter`` or ``sorted`` over an endless
+        iterable is not stopped.
+
+    Note:
+        While a trace function is installed, an IronPython run's recursion
+        limit is lowered to :data:`IRONPYTHON_TRACED_RECURSION_LIMIT` and the
+        previous limit is restored when the script ends.
 
     Note:
         Transactions the script leaves open are found by rewriting each
@@ -914,7 +928,9 @@ def run(context):
         stop_watchdog = None
         if timeout_s:
             stop_watchdog = _start_watchdog(timeout_s, state)
+        saved_recursion_limit = sys.getrecursionlimit()
         if check_lines or track:
+            _limit_traced_recursion()
             sys.settrace(
                 _execution_tracer(
                     timeout_s, state, tracked_transactions, check_lines, track
@@ -959,6 +975,7 @@ def run(context):
             if stop_watchdog:
                 stop_watchdog()
             sys.settrace(None)
+            sys.setrecursionlimit(saved_recursion_limit)
     except RunTimedOut:
         failed = True
         context.SetError(
@@ -1173,6 +1190,13 @@ def _reachable_values(namespace):
         if any(_transaction_rank(kind) is not None for kind in set(map(type, items))):
             for item in items:
                 yield item
+
+
+def _limit_traced_recursion():
+    if _implementation() == "ironpython":
+        sys.setrecursionlimit(
+            min(sys.getrecursionlimit(), IRONPYTHON_TRACED_RECURSION_LIMIT)
+        )
 
 
 def _implementation():
