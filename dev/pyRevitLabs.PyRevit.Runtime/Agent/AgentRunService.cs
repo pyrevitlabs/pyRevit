@@ -412,7 +412,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             dialog.DefaultButton = TaskDialogResult.CommandLink2;
 
             var approved = dialog.Show() == TaskDialogResult.CommandLink1;
-            preview.End();
+            try {
+                preview.End();
+            }
+            catch (Exception) when (!approved) {
+            }
             if (!approved) {
                 try {
                     uidoc.Selection.SetElementIds(previousSelection);
