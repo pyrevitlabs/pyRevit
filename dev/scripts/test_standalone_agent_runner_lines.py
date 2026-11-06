@@ -1359,22 +1359,40 @@ class AgentRunnerOutputTests(unittest.TestCase):
         captured.write("abc")
         self.assertEqual("abc", captured.getvalue())
 
-    def test_concurrent_writers_keep_every_character(self):
+    def test_a_second_writer_waits_for_the_first(self):
         """Script threads share one buffer for stdout and stderr."""
-        captured = self.runner._CappedOutput(100000)
+        real = self.runner.StringIO
+        inside = threading.Event()
+        release = threading.Event()
+        entered = []
 
-        def write_many(char):
-            for _ in range(2000):
-                captured.write(char)
+        class GatedStringIO(object):
+            tell = real.tell
+            seek = real.seek
 
-        threads = [threading.Thread(target=write_many, args=(char,)) for char in "ab"]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
-        text = captured.getvalue()
-        self.assertEqual((2000, 2000), (text.count("a"), text.count("b")))
-        self.assertNotIn("\x00", text)
+            @staticmethod
+            def write(stream, text):
+                entered.append(text)
+                if text == "first":
+                    inside.set()
+                    release.wait(5)
+                return real.write(stream, text)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", GatedStringIO):
+            first = threading.Thread(target=captured.write, args=("first",))
+            second = threading.Thread(target=captured.write, args=("second",))
+            first.start()
+            self.assertTrue(inside.wait(5))
+            second.start()
+            second.join(0.3)
+            entered_while_held = list(entered)
+            release.set()
+            first.join(5)
+            second.join(5)
+        self.assertFalse(first.is_alive() or second.is_alive())
+        self.assertEqual(["first"], entered_while_held)
+        self.assertEqual("firstsecond", captured.getvalue())
 
     def test_non_text_is_written_as_text_on_python_two(self):
         """IronPython 2.7 scripts may write any object, as StringIO allowed."""
