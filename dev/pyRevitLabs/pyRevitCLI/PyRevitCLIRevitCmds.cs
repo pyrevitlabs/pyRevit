@@ -310,6 +310,57 @@ namespace pyRevitCLI {
 
         }
 
+        /// <summary>
+        /// Starts Revit on a clone and engine through a per-launch manifest and blocks until that
+        /// Revit exits, then removes the launch directory. The shared per-year attachment is not read or written.
+        /// </summary>
+        internal static void
+        LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, bool isolated, string language) {
+            if (!int.TryParse(revitYear, out var revitYearNumber))
+                throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
+
+            var clone = ResolveLaunchClone(cloneNameOrPath);
+            PyRevitEngineVersion engineVer;
+            if (useDefaultEngine)
+                engineVer = PyRevitEngineVersion.Default;
+            else if (int.TryParse(engineVersion, out var engineNumber))
+                engineVer = (PyRevitEngineVersion)engineNumber;
+            else
+                engineVer = clone.GetConfiguredEngine(engineVersion).Version;
+
+            var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated);
+            try {
+                var process = PyRevitLauncher.Start(launch, language);
+                PyRevitCLIAppCmds.PrintHeader("Launched Revit");
+                Console.WriteLine(string.Format("Process Id: {0}", process.Id));
+                Console.WriteLine(string.Format("Product: {0}", launch.Product));
+                Console.WriteLine(string.Format("Clone: {0}", clone));
+                Console.WriteLine(string.Format("Engine: {0} ({1})", launch.Engine.Id, launch.Engine.Version));
+                Console.WriteLine(string.Format("Launch Directory: \"{0}\"", launch.Directory));
+                Console.WriteLine(string.Format("Config Root: \"{0}\"", launch.ConfigRoot ?? PyRevitLabsConsts.PyRevitPath));
+                process.WaitForExit();
+            }
+            finally {
+                PyRevitLauncher.Cleanup(launch);
+            }
+        }
+
+        private static PyRevitClone ResolveLaunchClone(string cloneNameOrPath) {
+            var registered = PyRevitClones.GetRegisteredClones().FirstOrDefault(clone => clone.Matches(cloneNameOrPath));
+            if (registered != null)
+                return registered;
+            if (Directory.Exists(cloneNameOrPath)) {
+                var clonePath = Path.GetFullPath(cloneNameOrPath);
+                try {
+                    return new PyRevitClone(clonePath, name: new DirectoryInfo(clonePath).Name);
+                }
+                catch (PyRevitException) {
+                    return new PyRevitClone(clonePath);
+                }
+            }
+            throw new PyRevitException(string.Format("Can not find clone \"{0}\"", cloneNameOrPath));
+        }
+
         // privates:
         // print info on a revit model
         private static void PrintModelInfo(RevitModelFile model) {

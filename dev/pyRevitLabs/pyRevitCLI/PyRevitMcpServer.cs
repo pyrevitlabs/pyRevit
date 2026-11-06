@@ -430,7 +430,7 @@ namespace pyRevitCLI {
         private static JObject RevitProperty() {
             return new JObject {
                 ["type"] = "string",
-                ["description"] = "Target Revit: a year (e.g. \"2024\") or a process id. Leave it out unless list_revit_instances shows more than one session.",
+                ["description"] = "Target Revit: a year (e.g. \"2024\"), a process id, or the name of the pyRevit clone the session runs. Leave it out unless list_revit_instances shows more than one session.",
             };
         }
 

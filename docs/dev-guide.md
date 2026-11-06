@@ -236,6 +236,22 @@ pyrevit attachments
     .\bin\pyrevit.exe attach dev default --installed
     ```
 
+## Running several clones at the same time
+
+`pyrevit attach` records one clone and engine per Revit year in `%APPDATA%\Autodesk\Revit\Addins\<year>\pyRevit.addin`, so parallel work (PR reviews, bisecting, a feature branch next to `develop`) fights over the attachment. `pyrevit launch` starts Revit on a clone and engine without touching that file:
+
+```shell
+pyrevit launch C:\work\pyrevit-review-1234 default 2026 --language=ENU
+pyrevit launch dev 342 2026 --isolated
+```
+
+The command prints the process id, clone, engine and launch directory, stays in the foreground while Revit runs, and removes its temporary manifest and journal (`%TEMP%\pyrevit\launch\<id>`) when Revit exits. Start it as a background process when you drive the session from a script or an agent. Leftovers of killed launchers are pruned by the next launch.
+
+- The clone is a registered name or the path of a built clone (a git worktree works); the engine is `default`, a version such as `342`, or an engine id.
+- `--isolated` gives the session its own pyRevit config folder, seeded with a copy of `pyRevit_config.ini`. Instance records, run records and captures stay in `%APPDATA%\pyRevit\agent`, where `pyrevit agent` and `pyrevit mcp` look for sessions.
+- Sessions of the same Revit year are told apart by clone: `pyrevit agent context --revit=<clone name>`, or `revit: "<clone name>"` in the MCP tools. See [Running several clones side by side](agent-runtime.md#running-several-clones-side-by-side).
+- A plain Revit start, and `pyrevit attach` or `detach`, keep working as before and ignore launched sessions.
+
 ## Debugging Code
 
 Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because of some build issues. Instead, follow this approach:
