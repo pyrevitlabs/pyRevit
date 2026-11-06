@@ -176,6 +176,23 @@ class SessionTests(TestCase):
         self.assertEqual("session_moved", raised.exception.code)
         self.assertIn(scratch.other.Title, raised.exception.message)
 
+    def test_a_read_elsewhere_without_a_session_stops_a_client_that_read_before(self):
+        """Another client's read in a new document, then a session there, refuses the old client."""
+        scratch = harness.session()
+        before = harness.request("get_context")["agent"]["session"]["generation"]
+        harness.end_session()
+        harness.require_sessions(False)
+        scratch.activate(scratch.other_path)
+        current = harness.request("get_context")["agent"]["session"]["generation"]
+        harness.start_session()
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.run("result = 1", generation=before)
+        self.assertEqual("session_moved", raised.exception.code)
+        self.assertEqual(
+            scratch.other.Title,
+            harness.run("result = doc.Title", generation=current)["result"],
+        )
+
     def test_a_client_that_read_before_a_move_waits_for_its_own_read(self):
         """Another client's context read doesn't let an older generation through."""
         scratch = harness.session()

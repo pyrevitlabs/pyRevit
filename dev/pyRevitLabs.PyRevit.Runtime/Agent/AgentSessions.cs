@@ -203,6 +203,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.CheckOnArrival(readsContext, contextGeneration);
         }
 
+        /// <summary>Records that the agent read the context in the active document.</summary>
+        /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
+        internal static void ContextRead(UIApplication app) {
+            var active = app.ActiveUIDocument?.Document;
+            Tracker.ContextRead(active, active?.Title, last => AgentDocuments.IsSame(last as Document, active));
+        }
+
         /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
         /// <param name="readsContext">Whether the request is <c>get_context</c>, which passes during a move's handshake.</param>
         /// <param name="contextGeneration">The session generation the request's client last read, when it says.</param>

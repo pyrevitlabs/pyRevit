@@ -483,7 +483,9 @@ requests `session_status`, `request_session`, `pause_session` and `end_session`.
 the handshake after a move; `run_automation` uses it to check for a document before its run.
 A model request can pass the `generation` from the session in its client's last `get_context`.
 Once the session's document has changed since, the request is refused with `session_moved`,
-even after another client read the context. `pyrevit mcp` does this for its agent. Errors
+even after another client read the context. That includes another client's context read in a
+different document while no session was open, followed by a session started there.
+`pyrevit mcp` does this for its agent. Errors
 carry a stable `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly`,
 `invalid_params` or one of the session refusals in
 [Sessions and the agent panel](#sessions-and-the-agent-panel).

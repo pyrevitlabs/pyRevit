@@ -143,8 +143,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var context = AgentContext.Describe(app);
             if (!endHandshake)
                 return context;
-            var active = app.ActiveUIDocument?.Document;
-            AgentSessions.Tracker.ContextRead(active, active?.Title);
+            AgentSessions.ContextRead(app);
             if (context["agent"] is JObject agent)
                 agent["session"] = AgentSessions.Describe();
             return context;

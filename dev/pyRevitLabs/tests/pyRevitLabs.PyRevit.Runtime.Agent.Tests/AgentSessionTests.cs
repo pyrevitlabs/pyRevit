@@ -435,6 +435,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AContextReadWithoutASessionInAnotherDocumentStopsAClientThatReadTheFirstOne() {
+            StartOnDocument();
+            var tower = tracker.Generation;
+            tracker.EndInRevit(Now);
+            var annex = new object();
+            tracker.ContextRead(annex, "Annex.rvt");
+
+            tracker.Start(annex, "Annex.rvt", Now);
+
+            var refused = Assert.Throws<AgentException>(() => tracker.CheckOnArrival(readsContext: false, contextGeneration: tower));
+            Assert.Equal("session_moved", refused.Code);
+            Assert.Contains("'Annex.rvt'", refused.Message);
+            tracker.CheckOnArrival(readsContext: false, contextGeneration: tracker.Generation);
+        }
+
+        [Fact]
+        public void AContextReadWithoutASessionInTheSameDocumentKeepsTheGeneration() {
+            tracker.ContextRead(document, "Tower.rvt");
+            var generation = tracker.Generation;
+
+            tracker.ContextRead(new object(), "Tower.rvt", last => ReferenceEquals(last, document));
+
+            Assert.Equal(generation, tracker.Generation);
+        }
+
+        [Fact]
         public void AContextReadWithNoActiveDocumentKeepsTheDocumentTheAgentReadBefore() {
             tracker.ContextRead(document, "Tower.rvt");
             tracker.ContextRead(null, null);

@@ -42,8 +42,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// last read the context in, every model request except a context read is refused with
     /// <c>session_moved</c> until the agent reads the context, because element ids from the old
     /// document don't apply in the new one. Each such change advances the
-    /// <see cref="Generation"/>, and a request from a client that last read an older one is
-    /// refused the same way, so one client reading the context doesn't end another's wait.</item>
+    /// <see cref="Generation"/>, and so does a context read in another document while no
+    /// session is open. While a session is open, a request from a client that last read an older
+    /// generation is refused the same way, so one client reading the context doesn't end
+    /// another's wait.</item>
     /// <item>Nothing that loosens the gate succeeds while an agent run executes, so run code can't
     /// grant itself access: starting, resuming, moving, making sessions optional, or ending a
     /// session while sessions aren't required. Pausing always succeeds, and so does ending while
@@ -122,9 +124,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Counts the changes of document that invalidate the agent's element ids: moves, and
-        /// sessions started on another document than the one the agent last read the context in.
-        /// It only grows, for the life of the process.
+        /// Counts the changes of document that invalidate the agent's element ids: moves,
+        /// sessions started on another document than the one the agent last read the context in,
+        /// and context reads, while no session is open, in another document than the one read
+        /// before. It only grows, for the life of the process.
         /// </summary>
         public int Generation {
             get {
@@ -263,19 +266,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <summary>
         /// Records that the agent read the context, which ends the handshake after a move or a
         /// session started elsewhere. With no session open, the document it read in is the one
-        /// the next session's document is compared with.
+        /// the next session's document is compared with, and a read in another document than
+        /// the one read before advances the <see cref="Generation"/>, so a client that read the
+        /// earlier one waits for its own read once a session opens.
         /// </summary>
         /// <param name="activeDocument">
         /// The active document the context described, or null when none was active, which keeps
         /// the document the agent read in before.
         /// </param>
-        public void ContextRead(object activeDocument, string activeTitle) {
+        /// <param name="isActiveDocument">
+        /// Whether the document the agent read in before is <paramref name="activeDocument"/>;
+        /// called under the tracker's lock. Without it, only the same reference counts.
+        /// </param>
+        public void ContextRead(object activeDocument, string activeTitle, Func<object, bool> isActiveDocument = null) {
             lock (sync) {
                 if (state == AgentSessionState.Inactive) {
-                    if (activeDocument != null) {
-                        lastDocument = activeDocument;
-                        lastDocumentTitle = activeTitle;
-                    }
+                    if (activeDocument == null)
+                        return;
+                    var isReadDocument = isActiveDocument ?? (candidate => ReferenceEquals(candidate, activeDocument));
+                    if (lastDocument != null && !isReadDocument(lastDocument))
+                        generation++;
+                    lastDocument = activeDocument;
+                    lastDocumentTitle = activeTitle;
                     return;
                 }
                 if (movedFrom == null)
