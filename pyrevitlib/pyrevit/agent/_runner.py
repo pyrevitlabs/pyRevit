@@ -543,7 +543,9 @@ class _UnboundStart(object):
         return self._kind.Start(transaction, *args)
 
 
-def _execution_tracer(timeout_s, state, transactions, check_lines, track):
+def _execution_tracer(
+    timeout_s, state, transactions, check_lines, track, recursion_cap=None
+):
     """Build the ``sys.settrace`` function for one run.
 
     With ``track`` on, which :func:`run` only asks for when
@@ -554,7 +556,8 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     through its globals. pyRevit, rpw and workspace code runs untraced. With
     ``check_lines`` on, every frame, the script's own and any code it
     compiles at run time or calls, also checks the watchdog's flag on each
-    line.
+    line. With ``recursion_cap`` set, every call puts a recursion limit the
+    script raised above it back down to it.
 
     Warning:
         On CPython 3.12, never read ``f_locals`` from a line event of a frame
@@ -605,6 +608,8 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
         return check_deadline
 
     def trace_call(frame, event, arg):
+        if recursion_cap and sys.getrecursionlimit() > recursion_cap:
+            sys.setrecursionlimit(recursion_cap)
         code = frame.f_code
         if not track or code.co_filename != SOURCE_NAME:
             return check_deadline if check_lines else None
@@ -837,8 +842,9 @@ def run(context):
 
     Note:
         While a trace function is installed, an IronPython run's recursion
-        limit is lowered to :data:`IRONPYTHON_TRACED_RECURSION_LIMIT` and the
-        previous limit is restored when the script ends.
+        limit is held at :data:`IRONPYTHON_TRACED_RECURSION_LIMIT`, even if
+        the script raises it, and the previous limit is restored when the
+        script ends.
 
     Note:
         Transactions the script leaves open are found by rewriting each
@@ -929,14 +935,18 @@ def run(context):
         if timeout_s:
             stop_watchdog = _start_watchdog(timeout_s, state)
         saved_recursion_limit = sys.getrecursionlimit()
-        if check_lines or track:
-            _limit_traced_recursion()
-            sys.settrace(
-                _execution_tracer(
-                    timeout_s, state, tracked_transactions, check_lines, track
-                )
-            )
         try:
+            if check_lines or track:
+                sys.settrace(
+                    _execution_tracer(
+                        timeout_s,
+                        state,
+                        tracked_transactions,
+                        check_lines,
+                        track,
+                        _limit_traced_recursion(),
+                    )
+                )
             script_exit = None
             try:
                 exec(code, namespace)
@@ -1193,10 +1203,11 @@ def _reachable_values(namespace):
 
 
 def _limit_traced_recursion():
-    if _implementation() == "ironpython":
-        sys.setrecursionlimit(
-            min(sys.getrecursionlimit(), IRONPYTHON_TRACED_RECURSION_LIMIT)
-        )
+    if _implementation() != "ironpython":
+        return None
+    limit = min(sys.getrecursionlimit(), IRONPYTHON_TRACED_RECURSION_LIMIT)
+    sys.setrecursionlimit(limit)
+    return limit
 
 
 def _implementation():
