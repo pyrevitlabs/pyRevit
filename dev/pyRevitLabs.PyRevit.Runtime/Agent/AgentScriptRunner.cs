@@ -142,7 +142,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <remarks>
         /// The engine is reused between runs and pyrevitlib is loaded live, so a runner module
         /// imported before its file changed on disk is dropped and imported again. Otherwise the
-        /// run executes the old code while tracebacks quote the lines of the new file.
+        /// run executes the old code while tracebacks quote the lines of the new file. The file's
+        /// size is compared with its modification time, which IronPython 2.7 reports in whole
+        /// seconds, so an edit saved in the second of the import is still seen.
         /// </remarks>
         private static string BuildEntryScript(AgentEngine engine) {
             var builder = new StringBuilder();
@@ -153,11 +155,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 "    import importlib\n" +
                 "    import os\n" +
                 "    import sys\n" +
+                "    def _file_stamp(module):\n" +
+                "        info = os.stat(module.__file__)\n" +
+                "        return (info.st_mtime, info.st_size)\n" +
                 "    _loaded = sys.modules.get('pyrevit.agent._runner')\n" +
-                "    if _loaded is not None and getattr(_loaded, '__agent_mtime__', None) != os.path.getmtime(_loaded.__file__):\n" +
+                "    if _loaded is not None and getattr(_loaded, '__agent_stamp__', None) != _file_stamp(_loaded):\n" +
                 "        del sys.modules['pyrevit.agent._runner']\n" +
                 "    _runner = importlib.import_module('pyrevit.agent._runner')\n" +
-                "    _runner.__agent_mtime__ = os.path.getmtime(_runner.__file__)\n" +
+                "    _runner.__agent_stamp__ = _file_stamp(_runner)\n" +
                 "except Exception:\n" +
                 "    import traceback\n" +
                 "    __agent__.SetError('RunnerImportError', 'Could not import pyrevit.agent', traceback.format_exc())\n" +
