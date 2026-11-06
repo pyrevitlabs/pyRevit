@@ -28,8 +28,10 @@ repositories ship, so they load wherever the NuGet assemblies do.
 | `IronPython.dll` | `pyrevitlabs/ironpython3`, from upstream tag `v3.4.2` (`f5bb69b2`) | `v3.4.2-rethrow-fix` | `688fca70e6c62896f6611244202dc5a55bc90c22` |
 | `Microsoft.Dynamic.dll` | `pyrevitlabs/dlr`, from upstream tag `v1.3.5` (`7e887d98`) | `v1.3.5-rethrow-fix` | `52a513e84329ae764ae25e676e9e1185c344e5f2` |
 
-The same fixes are on `fix/rethrow-stack-depth` in the `dev/modules` forks used by the
-IronPython 2.7.12 engine.
+The same fixes are on `fix/rethrow-stack-depth` in the `dev/modules/pyRevitLabs.dlr` and
+`dev/modules/pyRevitLabs.ironpython2` forks the IronPython 2.7.12 engine is built from. The
+`pyRevitLabs.dlr3` and `pyRevitLabs.ironpython3` submodules are not part of the build and
+stay unpatched.
 
 ## Rebuild
 
