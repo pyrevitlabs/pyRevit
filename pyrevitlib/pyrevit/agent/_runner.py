@@ -971,6 +971,7 @@ def run(context):
         if timeout_s:
             stop_watchdog = _start_watchdog(timeout_s, state)
         saved_recursion_limit = sys.getrecursionlimit()
+        saved_trace = getattr(sys, "gettrace", lambda: None)()
         try:
             if check_lines or track:
                 sys.settrace(
@@ -1021,7 +1022,7 @@ def run(context):
         finally:
             if stop_watchdog:
                 stop_watchdog()
-            sys.settrace(None)
+            sys.settrace(saved_trace)
             sys.setrecursionlimit(saved_recursion_limit)
     except RunTimedOut:
         failed = True

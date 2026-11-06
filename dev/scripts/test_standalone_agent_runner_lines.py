@@ -1371,6 +1371,23 @@ class AgentRunnerTracedRecursionTests(unittest.TestCase):
         self.assertEqual(["RuntimeError"], [error[0] for error in errors])
         self.assertEqual(before, sys.getrecursionlimit())
 
+    def test_a_nested_run_gives_the_caller_its_trace_function_back(self):
+        """An inner run restores the outer run's tracer instead of clearing it."""
+        previous = sys.gettrace()
+        self.addCleanup(sys.settrace, previous)
+
+        def outer_tracer(frame, event, arg):
+            return None
+
+        sys.settrace(outer_tracer)
+        with mock.patch.object(
+            self.runner, "_implementation", return_value="ironpython"
+        ):
+            self.runner.run(self._context(TRACED_LIMIT_SOURCE, [], []))
+        restored = sys.gettrace()
+        sys.settrace(previous)
+        self.assertIs(outer_tracer, restored)
+
     def test_untraced_ironpython_run_keeps_the_engine_limit(self):
         """Without a trace function the engine's own limit applies."""
         self.assertEqual(
