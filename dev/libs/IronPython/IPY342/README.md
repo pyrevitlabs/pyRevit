@@ -20,12 +20,16 @@ repositories ship, so they load wherever the NuGet assemblies do.
 - **Recursion check on light-throw targets.** After more than 20 exceptions passed through a
   function, IronPython swapped in a target without the recursion check, so the next deep
   recursion ignored the limit and overflowed the stack.
+- **Recursion enforcement toggles.** Setting the recursion limit to or from `2**31 - 1` (no
+  limit) never added or removed the check on existing code, so a function first called while
+  there was no limit stayed unchecked afterwards. Port of
+  IronLanguages/ironpython3#2125, which upstream merged after 3.4.2.
 
 ## Sources
 
 | Assembly | Repository | Branch | Commit |
 |---|---|---|---|
-| `IronPython.dll` | `pyrevitlabs/ironpython3`, from upstream tag `v3.4.2` (`f5bb69b2`) | `v3.4.2-rethrow-fix` | `688fca70e6c62896f6611244202dc5a55bc90c22` |
+| `IronPython.dll` | `pyrevitlabs/ironpython3`, from upstream tag `v3.4.2` (`f5bb69b2`) | `v3.4.2-rethrow-fix` | `f88f7bf9b3a0bbc462ed97f2da2b096873570c9a` |
 | `Microsoft.Dynamic.dll` | `pyrevitlabs/dlr`, from upstream tag `v1.3.5` (`7e887d98`) | `v1.3.5-rethrow-fix` | `52a513e84329ae764ae25e676e9e1185c344e5f2` |
 
 The same fixes are on `fix/rethrow-stack-depth` in the `dev/modules/pyRevitLabs.dlr` and
@@ -49,10 +53,10 @@ Copy `ipy342/bin/Release/<tfm>/IronPython.dll` and
 ## SHA-256
 
 ```text
-d21c960decea81dd62cc290ac434fed0156517e34dffbf6e963c7ca9c6c3db83  net462/IronPython.dll
-e1556ba17cc6c0899980c5eec1b6345bf21743e595b8ec687edd9c32da6b68bb  net462/Microsoft.Dynamic.dll
-9af1cc8b57784fa128cbe30aa9e5c3635b6e8988b27270808be05a4137588e53  net8.0/IronPython.dll
-2f21dddd6d185a069f352c94ff9acfe3c6789f0b99ec2d849d4fecbc0c98021a  net8.0/Microsoft.Dynamic.dll
+f552819ceaa339b6763f4f050791b7f7e20546c409fa93729102332789932154  net462/IronPython.dll
+489b7291015d2057f1b3c8ba61cafa99693c310995d9c6e817ceb14b5f7be13a  net462/Microsoft.Dynamic.dll
+697053b2e1cdd069127cef081485a7fe70232006699c52ae74ceb52897ebf649  net8.0/IronPython.dll
+f3ff594dc0324cd09d165bfd26fc856062aee5ff79bf601368a004f1f7f3fc6d  net8.0/Microsoft.Dynamic.dll
 ```
 
 Builds are not byte-for-byte reproducible, so a rebuild gives different hashes; update this
