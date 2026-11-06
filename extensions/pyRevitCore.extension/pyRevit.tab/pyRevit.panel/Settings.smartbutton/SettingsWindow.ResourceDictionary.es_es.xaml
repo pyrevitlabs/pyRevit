@@ -414,6 +414,7 @@
     <system:String x:Key="Agent.Connect.Description">Registra el servidor MCP de pyRevit en el cliente seleccionado y activa el host de agentes. Reinicia el cliente después.</system:String>
     <system:String x:Key="Agent.Running">El host de agentes escucha en la canalización {}</system:String>
     <system:String x:Key="Agent.NotRunning">El host de agentes no se está ejecutando</system:String>
+    <system:String x:Key="Agent.Managed">Algunos de estos ajustes los establece su administrador y no se pueden cambiar.</system:String>
     <system:String x:Key="Agent.Changed">La configuración del host de agentes ha cambiado. Es necesario recargar pyRevit para que el cambio surta efecto. ¿Quieres recargar ahora?</system:String>
     <system:String x:Key="Agent.InstallDone">Se registró el servidor MCP de pyRevit en {}. Reinícialo para empezar a usar las herramientas de pyRevit.</system:String>
     <system:String x:Key="Agent.InstallFailed">No se pudo registrar el servidor MCP de pyRevit en {}.</system:String>

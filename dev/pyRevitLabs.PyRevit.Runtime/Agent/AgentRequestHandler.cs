@@ -47,6 +47,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JToken Dispatch(string method, JObject parameters, JToken id) {
             AgentHost.RefreshConfigIfChanged();
+            if (method != "ping")
+                RefuseWhenDisabledByAdmin();
             switch (method) {
                 case "ping":
                     return new JObject {
@@ -54,6 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["pid"] = Process.GetCurrentProcess().Id,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
+                        ["disabled_by_admin"] = IsDisabledByAdmin(),
                     };
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
@@ -101,12 +104,37 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "A CPython agent run can't start from inside a CPython script. Use engine 'ironpython', or call from an IronPython command.");
         }
 
+        /// <summary>
+        /// Refuses every request except <c>ping</c> once an administrator has pinned the host off.
+        /// <c>ping</c> reports it as <c>disabled_by_admin</c> so a client can see it up front.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: the host keeps running until the next <see cref="AgentHost.Configure"/>, which
+        /// stops it, so a lock applied while Revit is open must be enforced here. The pin is read
+        /// from the machine config on every request, so no reload is needed. A user turning the host
+        /// off in their own config is not refused mid-session; only the administrator pin is.
+        /// </remarks>
+        private static void RefuseWhenDisabledByAdmin() {
+            if (IsDisabledByAdmin())
+                throw new AgentException(
+                    "disabled_by_admin",
+                    "The pyRevit agent host is disabled by your administrator.");
+        }
+
+        private static bool IsDisabledByAdmin() {
+            return PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey)
+                && !PyRevitConfigs.GetAgentEnabled();
+        }
+
         private static void EnforcePolicy(AgentRunRequest request) {
             if (request.Mode == AgentRunMode.Modify
                 && PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyReadOnly)
                 throw new AgentException(
                     "policy_readonly",
-                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+                    "The pyRevit agent policy is 'readonly'"
+                    + (PyRevitConfigs.GetAgentPolicyCeiling() == PyRevitConsts.ConfigsAgentPolicyReadOnly
+                        ? " (set by your administrator)" : string.Empty)
+                    + ": modify runs are disabled. Use query or dry_run.");
         }
 
         /// <summary>

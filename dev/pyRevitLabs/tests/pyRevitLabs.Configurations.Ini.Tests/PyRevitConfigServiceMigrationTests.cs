@@ -228,6 +228,29 @@ public class PyRevitConfigServiceMigrationTests {
     /// silently break the extension with nothing left anywhere.
     /// </summary>
     [Fact]
+    public void SeedToUserConfig_DoesNotCopyTheAgentAdminPins() {
+        string dir = Path.Combine(Path.GetTempPath(), "seedPins_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try {
+            string machine = Path.Combine(dir, "machine.ini");
+            string user = Path.Combine(dir, "user", "pyRevit_config.ini");
+            File.WriteAllText(machine,
+                "[core]\r\nuserlocale = en_us\r\n\r\n[agent.admin]\r\nenabled = false\r\n\r\n[agent]\r\npolicy = ask\r\n");
+
+            PyRevitConfigService.SeedToUserConfig(machine, user);
+
+            string copied = File.ReadAllText(user);
+            Assert.DoesNotContain("agent.admin", copied);
+            Assert.Contains("userlocale", copied);
+            Assert.Contains("policy", copied);
+            Assert.Contains("agent.admin", File.ReadAllText(machine));
+        }
+        finally {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void MergeAdminConfigFiles_KeepsASealedCredentialAlreadyInTheMachineConfig() {
         var dir = NewTempDir();
         try {

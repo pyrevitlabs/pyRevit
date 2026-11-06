@@ -401,6 +401,7 @@
     <system:String x:Key="Agent.Connect.Description">Enregistre le serveur MCP de pyRevit dans le client choisi et active l'hôte d'agents. Redémarrez ensuite le client.</system:String>
     <system:String x:Key="Agent.Running">L'hôte d'agents écoute sur le canal {}</system:String>
     <system:String x:Key="Agent.NotRunning">L'hôte d'agents n'est pas démarré</system:String>
+    <system:String x:Key="Agent.Managed">Certains de ces paramètres sont définis par votre administrateur et ne peuvent pas être modifiés.</system:String>
     <system:String x:Key="Agent.Changed">Le paramètre de l'hôte d'agents a changé. Le rechargement de pyRevit est nécessaire pour que ce changement prenne effet. Voulez-vous recharger maintenant ?</system:String>
     <system:String x:Key="Agent.InstallDone">Le serveur MCP de pyRevit a été enregistré dans {}. Redémarrez-le pour utiliser les outils pyRevit.</system:String>
     <system:String x:Key="Agent.InstallFailed">Impossible d'enregistrer le serveur MCP de pyRevit dans {}.</system:String>

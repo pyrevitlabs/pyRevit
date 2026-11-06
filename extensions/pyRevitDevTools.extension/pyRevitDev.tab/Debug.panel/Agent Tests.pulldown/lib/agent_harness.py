@@ -32,11 +32,13 @@ for _assembly in (
         pass
 
 import System
+import System.Reflection as Reflection
 from System.Diagnostics import Process, ProcessStartInfo
 
 from pyrevit import DB, HOME_DIR, HOST_APP
 from pyrevit.coreutils import assmutils
 from pyrevit.labs import Common, PyRevit
+from pyRevitLabs.Configurations.Ini import AgentAdminPolicy
 from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
@@ -51,6 +53,8 @@ PROGRESS_LOG = op.join(tempfile.gettempdir(), "pyrevit-agent-tests.log")
 _HOST_TYPE = assmutils.find_type_by_name(
     RUNTIME_ASSM, "PyRevitLabs.PyRevit.Runtime.Agent.AgentHost"
 )
+_ADMIN_POLICY_TYPE = clr.GetClrType(AgentAdminPolicy)
+_machine_config_stack = []
 _session = None
 
 
@@ -190,6 +194,41 @@ def policy(name):
         PyRevit.PyRevitConfigs.SetAgentPolicy(previous)
 
 
+def _override_machine_config(path):
+    method = _ADMIN_POLICY_TYPE.GetMethod(
+        "OverrideMachineConfigPath",
+        Reflection.BindingFlags.Static | Reflection.BindingFlags.NonPublic,
+    )
+    method.Invoke(None, System.Array[System.Object]([path]))
+
+
+@contextmanager
+def admin_pins(**pins):
+    """Replace the machine config for the block with a scratch one holding these pins.
+
+    The agent settings read administrator pins from the machine config. Calling this
+    without pins gives the block an empty one, so a lock deployed on the machine running
+    the tests can't change their results. Blocks nest; leaving one restores the outer one.
+    The real ``%ProgramData%`` config is never written.
+    """
+    folder = tempfile.mkdtemp(prefix="pyrevit-agent-admin-")
+    path = op.join(folder, "pyRevit_config.ini")
+    with open(path, "w") as handle:
+        handle.write("[agent.admin]\n")
+        for key, value in pins.items():
+            handle.write("{} = {}\n".format(key, value))
+    _machine_config_stack.append(path)
+    _override_machine_config(path)
+    try:
+        yield
+    finally:
+        _machine_config_stack.pop()
+        _override_machine_config(
+            _machine_config_stack[-1] if _machine_config_stack else None
+        )
+        shutil.rmtree(folder, True)
+
+
 def run_suites(modules):
     """Run test modules against fresh scratch documents and fail the button on any failure.
 
@@ -205,7 +244,7 @@ def run_suites(modules):
     problems = []
     try:
         _session.open()
-        with policy("auto"):
+        with admin_pins(), policy("auto"):
             for module in modules:
                 result = run_module_tests(module)
                 if result.failures or result.errors:
