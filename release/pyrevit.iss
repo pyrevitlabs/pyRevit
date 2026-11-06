@@ -27,7 +27,9 @@ DefaultDirName={userappdata}\{#MyAppName}-Master
 UsePreviousAppDir=yes
 ;     mode
 PrivilegesRequired=lowest
+#if Ver >= EncodeVer(6, 7, 0)
 RedirectionGuard=no
+#endif
 ; Build info
 OutputDir=..\dist
 ; Keep this list aligned with the installer assets staged by build/.
