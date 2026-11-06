@@ -1,0 +1,29 @@
+name: Extension catalog check
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [develop, master]
+    paths:
+      - 'extensions/extensions.json'
+      - 'dev/scripts/check_extension_catalog.py'
+      - '.github/workflows/catalog-validate.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalog-validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate extensions.json
+        run: python3 dev/scripts/check_extension_catalog.py extensions/extensions.json
