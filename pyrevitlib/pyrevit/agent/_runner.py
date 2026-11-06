@@ -37,7 +37,7 @@ except ImportError:
 import System
 
 from pyrevit.api import DB, UI
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import PY2, get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 
@@ -47,6 +47,7 @@ _ESCALATION_TOOL_IDS = (4, 3)
 _START_RECORDER = "__agent_start__"
 _CO_OPTIMIZED = 0x1
 _MAX_OUTPUT_CHARS = 64 * 1024
+_TEXT_TYPES = (type(""), type(b"".decode("ascii")))
 
 _clock = getattr(time, "perf_counter", None) or time.time
 
@@ -90,6 +91,8 @@ class _CappedOutput(StringIO):
         self._room = limit
 
     def write(self, text):
+        if PY2 and not isinstance(text, _TEXT_TYPES):
+            text = str(text)
         if self._room > 0:
             kept = text[: self._room]
             self._room -= len(kept)

@@ -47,6 +47,7 @@ def _load_runner():
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: int
+    compat.PY2 = False
     modules = {
         "System": system,
         "pyrevit": pyrevit,
@@ -1261,6 +1262,13 @@ class AgentRunnerOutputTests(unittest.TestCase):
         print("abc", file=captured)
         captured.writelines(["de", "fghijkl"])
         self.assertEqual("abc\ndefghi", captured.getvalue())
+
+    def test_non_text_is_written_as_text_on_python_two(self):
+        """IronPython 2.7 scripts may write any object, as StringIO allowed."""
+        captured = self.runner._CappedOutput(10)
+        with mock.patch.object(self.runner, "PY2", True):
+            captured.write(12345)
+        self.assertEqual("12345", captured.getvalue())
 
 
 class AgentRunnerSourceTests(unittest.TestCase):
