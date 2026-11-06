@@ -103,7 +103,7 @@ public partial class McpServerTests {
     public void CancellingAQueuedCallReportsItNotSentAndCancellingASentCallReportsItUnknown() {
         using var release = new ManualResetEventSlim(false);
         var runStarted = BlockRunsUntil(release);
-        PyRevitAgentClient.ConnectTimeoutMs = 300;
+        PyRevitAgentClient.PingConnectTimeoutMs = 300;
         using var session = new LiveSession();
 
         session.Send(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1" }));
@@ -128,8 +128,38 @@ public partial class McpServerTests {
         Assert.Equal(host.RequestsFor("run").Single().Value<string>("id"), Payload(sent).Value<string>("request_id"));
         Assert.Empty(host.RequestsFor("get_context"));
         Assert.Equal(3, listed.Value<int>("id"));
-        Assert.Null(Payload(listed)["instances"][0]["busy"]);
-        Assert.False(Payload(listed)["instances"][0].Value<bool>("responding"));
+        Assert.True(Payload(listed)["instances"][0].Value<bool>("busy"));
+        Assert.Null(Payload(listed)["instances"][0]["responding"]);
+    }
+
+    [Fact]
+    public async Task RevitSessionsServingAnotherClientAreListedBusyWithoutWaitingForEachOther() {
+        host.AddInstance("2091");
+        using var release = new ManualResetEventSlim(false);
+        using var received = new CountdownEvent(2);
+        host.Handler = request => {
+            received.Signal();
+            release.Wait(Patience);
+            return RunResponse(request);
+        };
+        PyRevitAgentClient.PingConnectTimeoutMs = 1500;
+        var otherClient = PyRevitAgentClient.GetInstances()
+            .Select(instance => Task.Run(() => PyRevitAgentClient.Call(instance, "run", new JObject { ["mode"] = "query" })))
+            .ToArray();
+        Assert.True(received.Wait(Patience));
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var listed = Single(ToolCall(1, "list_revit_instances"));
+        watch.Stop();
+        release.Set();
+        await Task.WhenAll(otherClient).WaitAsync(Patience);
+
+        Assert.All(Payload(listed)["instances"], entry => {
+            Assert.True(entry.Value<bool>("busy"));
+            Assert.Null(entry["responding"]);
+        });
+        Assert.Equal(2, Payload(listed)["instances"].Count());
+        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(1.4), TimeSpan.FromSeconds(2.9));
     }
 
     [Theory]

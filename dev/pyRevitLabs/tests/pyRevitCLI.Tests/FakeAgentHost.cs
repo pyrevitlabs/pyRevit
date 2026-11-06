@@ -18,6 +18,7 @@ internal sealed class FakeAgentHost : IDisposable {
     private readonly string previousAgentDir = PyRevitAgentClient.AgentDirOverride;
     private readonly int previousConnectTimeout = PyRevitAgentClient.ConnectTimeoutMs;
     private readonly int previousPingTimeout = PyRevitAgentClient.PingTimeoutMs;
+    private readonly int previousPingConnectTimeout = PyRevitAgentClient.PingConnectTimeoutMs;
     private readonly Func<System.Diagnostics.Process, string> previousProcessNameReader = PyRevitAgentClient.ProcessNameReader;
     private readonly Func<System.Diagnostics.Process, DateTime> previousProcessStartTimeReader = PyRevitAgentClient.ProcessStartTimeReader;
     private readonly Func<string, bool> previousPipeExists = PyRevitAgentClient.PipeExists;
@@ -147,6 +148,7 @@ internal sealed class FakeAgentHost : IDisposable {
         PyRevitAgentClient.AgentDirOverride = previousAgentDir;
         PyRevitAgentClient.ConnectTimeoutMs = previousConnectTimeout;
         PyRevitAgentClient.PingTimeoutMs = previousPingTimeout;
+        PyRevitAgentClient.PingConnectTimeoutMs = previousPingConnectTimeout;
         PyRevitAgentClient.ProcessNameReader = previousProcessNameReader;
         PyRevitAgentClient.ProcessStartTimeReader = previousProcessStartTimeReader;
         PyRevitAgentClient.PipeExists = previousPipeExists;

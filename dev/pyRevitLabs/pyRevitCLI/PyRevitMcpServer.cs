@@ -268,28 +268,37 @@ namespace pyRevitCLI {
         }
 
         private JToken ListInstances() {
-            var instances = new JArray();
-            foreach (var instance in PyRevitAgentClient.GetInstances()) {
-                var entry = instance.ToJson();
-                var gate = GateFor(instance);
-                if (!gate.Wait(0)) {
-                    entry["busy"] = true;
-                    instances.Add(entry);
-                    continue;
-                }
-                try {
-                    PyRevitAgentClient.Ping(instance);
-                    entry["responding"] = true;
-                }
-                catch (AgentClientException) {
-                    entry["responding"] = false;
-                }
-                finally {
-                    gate.Release();
-                }
-                instances.Add(entry);
+            var probes = PyRevitAgentClient.GetInstances()
+                .Select(instance => Task.Run(() => DescribeInstance(instance)))
+                .ToArray();
+            Task.WaitAll(probes);
+            return new JObject {
+                ["instances"] = new JArray(probes.Select(probe => probe.Result)),
+                ["default_selector"] = defaultRevit,
+            };
+        }
+
+        private JObject DescribeInstance(AgentInstance instance) {
+            var entry = instance.ToJson();
+            var gate = GateFor(instance);
+            if (!gate.Wait(0)) {
+                entry["busy"] = true;
+                return entry;
             }
-            return new JObject { ["instances"] = instances, ["default_selector"] = defaultRevit };
+            try {
+                PyRevitAgentClient.Ping(instance);
+                entry["responding"] = true;
+            }
+            catch (AgentClientException ex) when (ex.Code == "revit_busy") {
+                entry["busy"] = true;
+            }
+            catch (AgentClientException) {
+                entry["responding"] = false;
+            }
+            finally {
+                gate.Release();
+            }
+            return entry;
         }
 
         private JToken CallRevit(JObject arguments, string method, JObject parameters) {
@@ -555,7 +564,7 @@ namespace pyRevitCLI {
 
                 new McpTool("list_revit_instances", readOnly: true, new string[0],
                     () => ("List running Revit sessions that have the pyRevit agent host, with their version and process id. "
-                        + "'busy': true means a call from this session is still waiting on that Revit, so it was not pinged.",
+                        + "'busy': true means that Revit is serving another call, from this session or another client, so it could not be pinged.",
                         new JObject()),
                     _ => ListInstances()),
 

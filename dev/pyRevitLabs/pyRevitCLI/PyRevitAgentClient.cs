@@ -134,6 +134,13 @@ namespace pyRevitCLI {
         internal static int PingTimeoutMs = 5000;
 
         /// <summary>
+        /// How long <see cref="Ping"/> waits for the host's pipe. A host serving another client
+        /// never accepts, so a ping must not wait the full <see cref="ConnectTimeoutMs"/>.
+        /// Shortened by tests.
+        /// </summary>
+        internal static int PingConnectTimeoutMs = 1500;
+
+        /// <summary>
         /// Replaces the folder that holds host registrations and run records. Set by tests so
         /// they never read or write the real user profile.
         /// </summary>
@@ -264,12 +271,15 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Pings a host, waiting at most <see cref="PingTimeoutMs"/> for its answer, so a Revit
-        /// that accepted the connection but never answers can't hang a status check.
+        /// Pings a host, waiting at most <see cref="PingConnectTimeoutMs"/> for the pipe and
+        /// <see cref="PingTimeoutMs"/> for its answer, so a busy or hung Revit can't stall a status check.
         /// </summary>
-        /// <exception cref="AgentClientException">See <see cref="Call"/>; <c>no_answer</c> on timeout.</exception>
+        /// <exception cref="AgentClientException">
+        /// See <see cref="Call"/>; <c>revit_busy</c> when the pipe isn't accepted in time and
+        /// <c>no_answer</c> when the answer doesn't come in time.
+        /// </exception>
         public static void Ping(AgentInstance instance) {
-            Call(instance, "ping", answerTimeoutMs: PingTimeoutMs);
+            Call(instance, "ping", answerTimeoutMs: PingTimeoutMs, connectTimeoutMs: PingConnectTimeoutMs);
         }
 
         /// <summary>
@@ -290,7 +300,7 @@ namespace pyRevitCLI {
         /// </exception>
         public static JToken Call(
             AgentInstance instance, string method, JObject parameters = null,
-            CancellationToken cancellation = default, int? answerTimeoutMs = null) {
+            CancellationToken cancellation = default, int? answerTimeoutMs = null, int? connectTimeoutMs = null) {
             var requestId = NewRequestId();
             var request = new JObject {
                 ["jsonrpc"] = "2.0",
@@ -304,7 +314,7 @@ namespace pyRevitCLI {
             try {
                 using (var pipe = new NamedPipeClientStream(".", instance.Pipe, PipeDirection.InOut, PipeOptions.Asynchronous))
                 using (var answer = CancellationTokenSource.CreateLinkedTokenSource(cancellation)) {
-                    pipe.ConnectAsync(ConnectTimeoutMs, cancellation).GetAwaiter().GetResult();
+                    pipe.ConnectAsync(connectTimeoutMs ?? ConnectTimeoutMs, cancellation).GetAwaiter().GetResult();
                     RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
                     var reader = new StreamReader(pipe, Utf8);
