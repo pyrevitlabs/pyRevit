@@ -196,8 +196,9 @@ Set Jrn = CrsJournalScript
         /// launcher itself was killed before it could clean up.
         /// </summary>
         /// <remarks>
-        /// A directory without a recorded process id may still belong to a running Revit whose id
-        /// could not be written, so it is only removed after <see cref="UnrecordedLaunchRetention"/>.
+        /// Invariant: a directory with a file held open is never removed, because Revit keeps its
+        /// journal open for as long as it runs. A directory whose process id was not recorded, or
+        /// not readably, is otherwise only removed after <see cref="UnrecordedLaunchRetention"/>.
         /// </remarks>
         public static void PruneAbandoned() {
             if (!Directory.Exists(LaunchRoot))
@@ -205,9 +206,10 @@ Set Jrn = CrsJournalScript
 
             foreach (var directory in Directory.GetDirectories(LaunchRoot)) {
                 try {
-                    var processIdFile = Path.Combine(directory, "pid");
-                    var abandoned = File.Exists(processIdFile)
-                        ? !IsRevitRunning(processIdFile)
+                    if (HasOpenFile(directory))
+                        continue;
+                    var abandoned = TryReadProcessId(Path.Combine(directory, "pid"), out var processId)
+                        ? !IsRevitRunning(processId)
                         : DateTime.UtcNow - Directory.GetCreationTimeUtc(directory) > UnrecordedLaunchRetention;
                     if (abandoned)
                         DeleteDirectory(directory, attempts: 1);
@@ -218,9 +220,24 @@ Set Jrn = CrsJournalScript
             }
         }
 
-        private static bool IsRevitRunning(string processIdFile) {
-            if (!int.TryParse(File.ReadAllText(processIdFile).Trim(), out var processId))
-                return false;
+        private static bool HasOpenFile(string directory) {
+            foreach (var file in Directory.GetFiles(directory)) {
+                try {
+                    using (File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None)) { }
+                }
+                catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool TryReadProcessId(string processIdFile, out int processId) {
+            processId = 0;
+            return File.Exists(processIdFile) && int.TryParse(File.ReadAllText(processIdFile).Trim(), out processId);
+        }
+
+        private static bool IsRevitRunning(int processId) {
             try {
                 using (var process = Process.GetProcessById(processId))
                     return !process.HasExited && process.ProcessName.Equals("Revit", StringComparison.OrdinalIgnoreCase);
