@@ -63,9 +63,11 @@ def _marked_function(operation):
     """Import the operation's module and return its marked function and marker.
 
     Important:
-        The module's source must name the operation id before it is imported,
-        so a request naming any other pyrevitlib or rpw module never runs that
-        module's import side effects.
+        The module's source must pass the operation id as the first argument
+        of an ``operation(`` call before it is imported, so a request naming
+        any other pyrevitlib or rpw module never runs that module's import
+        side effects. This is a text check, not a parse: a module whose text
+        has such a call outside a marker still gets imported.
     """
     module_name = operation.get("module") or ""
     function_name = operation.get("function") or ""
@@ -74,11 +76,11 @@ def _marked_function(operation):
         module_name
     ):
         raise OperationError("'{}' is not in pyrevitlib or rpw.".format(module_name))
-    source = (_module_source(module_name) or "").lower()
-    if not automation_id or (
-        '"{}"'.format(automation_id.lower()) not in source
-        and "'{}'".format(automation_id.lower()) not in source
-    ):
+    marker_call = re.compile(
+        r"operation\(\s*(?:id\s*=\s*)?[\"']" + re.escape(automation_id) + r"[\"']",
+        re.IGNORECASE,
+    )
+    if not automation_id or not marker_call.search(_module_source(module_name) or ""):
         raise OperationError(
             "{} does not mark an operation '{}'.".format(module_name, automation_id)
         )

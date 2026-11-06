@@ -283,8 +283,11 @@ class AutomationInvokeTests(unittest.TestCase):
             "test.marker.none",
         )
         with io.open(op.join(package_dir, "fixtures.py"), "w", encoding="utf-8") as f:
-            f.write("".join('"{}"\n'.format(marked) for marked in marked_ids))
+            f.write(
+                "".join('operation("{}")\n'.format(marked) for marked in marked_ids)
+            )
         with io.open(op.join(package_dir, "sideeffect.py"), "w", encoding="utf-8") as f:
+            f.write('"""Mentions "test.elements.name" in its docstring."""\n')
             f.write("raise AssertionError('imported')\n")
         patcher = mock.patch.dict(
             sys.modules,
