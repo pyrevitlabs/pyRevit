@@ -194,12 +194,34 @@ public class EnvRedactorTests {
     [InlineData("origin 'https://git.corp.example.com/team/private.git' next", "origin 'https://***/***.git' next")]
     [InlineData("origin 'https://git.corp.example.com/team/private?token=abc' next", "origin 'https://***/***?***' next")]
     [InlineData("origin 'https://github.com/org/repo.git' next", "origin 'https://github.com/org/repo.git' next")]
-    [InlineData("'https://git.corp.example.com/team'private.git'", "'https://***/***.git'")]
+    [InlineData("'https://git.corp.example.com/team/private.git'", "'https://***/***.git'")]
+    [InlineData("origin 'https://git.corp.example.com/team/private.git'/ next", "origin 'https://***/***.git'/ next")]
     [InlineData("origin 'https://git.corp.example.com/team/private.git', next", "origin 'https://***/***.git', next")]
     [InlineData("(origin 'https://git.corp.example.com/team/private.git')", "(origin 'https://***/***.git')")]
     [InlineData("origin 'https://git.corp.example.com/team/private?token=abc'; next", "origin 'https://***/***?***'; next")]
     public void EnclosingSingleQuotesAreKeptAroundMaskedUrls(string text, string expected) {
         Assert.Equal(expected, PyRevitEnvRedactor.RedactText(text, Profile));
+    }
+
+    [Theory]
+    [InlineData("https://git.corp.example.com/team'/private?token=secret", "https://***/***?***")]
+    [InlineData("https://git.corp.example.com/team'private.git", "https://***/***.git")]
+    [InlineData("https://git.corp.example.com/team/pri'vate'?token=sec'ret", "https://***/***?***")]
+    public void UnquotedUrlsTreatApostrophesAsPartOfThePathAndQuery(string text, string expected) {
+        var redacted = PyRevitEnvRedactor.RedactText(text, Profile);
+
+        Assert.Equal(expected, redacted);
+        Assert.DoesNotContain("private", redacted);
+        Assert.DoesNotContain("secret", redacted);
+    }
+
+    [Fact]
+    public void JsonValueWithAnApostropheInTheUrlPathIsMaskedWhole() {
+        var json = new JObject { ["origin"] = "https://git.corp.example.com/team'/private?token=secret" }.ToString(pyRevitLabs.Json.Formatting.None);
+
+        var redacted = JObject.Parse(PyRevitEnvRedactor.RedactJson(json, Profile));
+
+        Assert.Equal("https://***/***?***", (string)redacted["origin"]);
     }
 
     [Fact]
