@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,18 +12,17 @@ namespace pyRevitLabs.Common {
     /// <c>\n</c> is returned at end of stream, like <see cref="TextReader.ReadLine"/>.
     /// An over-long line is read to its end and discarded before the exception is thrown, so the
     /// next call returns the line after it.
-    /// The reader buffers ahead of the line it returns, so the wrapped reader must not be read
-    /// directly once this one is in use.
+    /// Invariant: characters are read one at a time, never past the <c>\n</c> that ends the line.
+    /// A block read on a <see cref="StreamReader"/> keeps reading the stream while each read
+    /// fills its byte buffer, so it would wait for the client's next line before returning this one.
     /// </remarks>
     public sealed class BoundedLineReader {
         public const int DefaultMaxLineChars = 16 * 1024 * 1024;
 
         private readonly TextReader reader;
         private readonly int maxLineChars;
-        private readonly char[] buffer = new char[8192];
-        private readonly StringBuilder line = new StringBuilder();
-        private int position;
-        private int length;
+        private readonly char[] single = new char[1];
+        private StringBuilder line = new StringBuilder();
         private bool readAny;
         private bool tooLong;
 
@@ -36,46 +34,37 @@ namespace pyRevitLabs.Common {
         /// <returns>The next line, or null at end of stream.</returns>
         /// <exception cref="InvalidDataException">The line is longer than the limit.</exception>
         public string ReadLine() {
-            while (true) {
-                if (position == length) {
-                    length = reader.Read(buffer, 0, buffer.Length);
-                    position = 0;
-                    if (length == 0)
-                        return EndOfStream();
-                }
-                if (TakeLine())
+            int next;
+            while ((next = reader.Read()) >= 0) {
+                if (Take((char)next))
                     return Finish();
             }
+            return EndOfStream();
         }
 
         /// <returns>The next line, or null at end of stream.</returns>
         /// <exception cref="InvalidDataException">The line is longer than the limit.</exception>
         public async Task<string> ReadLineAsync() {
-            while (true) {
-                if (position == length) {
-                    length = await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    position = 0;
-                    if (length == 0)
-                        return EndOfStream();
-                }
-                if (TakeLine())
+            while (await reader.ReadAsync(single, 0, 1).ConfigureAwait(false) > 0) {
+                if (Take(single[0]))
                     return Finish();
             }
+            return EndOfStream();
         }
 
-        private bool TakeLine() {
+        private bool Take(char next) {
             readAny = true;
-            var start = position;
-            var newline = Array.IndexOf(buffer, '\n', position, length - position);
-            var end = newline < 0 ? length : newline;
-            position = newline < 0 ? length : newline + 1;
-            if (!tooLong && line.Length + (end - start) > maxLineChars + 1) {
+            if (next == '\n')
+                return true;
+            if (tooLong)
+                return false;
+            if (line.Length > maxLineChars) {
                 tooLong = true;
-                line.Clear();
+                line = new StringBuilder();
+                return false;
             }
-            if (!tooLong)
-                line.Append(buffer, start, end - start);
-            return newline >= 0;
+            line.Append(next);
+            return false;
         }
 
         private string EndOfStream() => readAny ? Finish() : null;
@@ -85,7 +74,7 @@ namespace pyRevitLabs.Common {
                 line.Length--;
             var refused = tooLong || line.Length > maxLineChars;
             var text = refused ? null : line.ToString();
-            line.Clear();
+            line = new StringBuilder();
             readAny = false;
             tooLong = false;
             if (refused)
