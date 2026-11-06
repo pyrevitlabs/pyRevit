@@ -86,6 +86,63 @@ class ErrorTests(TestCase):
             self.assertEqual("SyntaxError", response["error"]["type"], engine)
 
 
+DEEP_RAISE = (
+    "class Ctx(object):\n"
+    "    def __enter__(self):\n"
+    "        return self\n"
+    "    def __exit__(self, *args):\n"
+    "        return False\n"
+    "def r(n):\n"
+    "    if n == inputs['depth']:\n"
+    "        raise ValueError(n)\n"
+    "    with Ctx():\n"
+    "        try:\n"
+    "            return r(n + 1)\n"
+    "        finally:\n"
+    "            pass\n"
+    "try:\n"
+    "    r(1)\n"
+    "except ValueError as error:\n"
+    "    result = error.args[0]\n"
+)
+
+
+class RecursionTests(TestCase):
+    """Deep Python calls fail as script errors instead of crashing Revit (#3918)."""
+
+    def _engines_that_unwind_safely(self):
+        """IronPython 3.4.2 still ships the upstream engine, which overflows the stack."""
+        engines = []
+        for engine in ENGINES:
+            version = run("import sys\nresult = sys.version_info[0]", engine=engine)
+            if engine == "cpython" or version["result"] == 2:
+                engines.append(engine)
+        if not engines:
+            self.skipTest(
+                "Only IronPython 3.4.2 is available; it can crash Revit here."
+            )
+        return engines
+
+    def test_unbounded_recursion_is_a_script_error(self):
+        """Endless recursion ends the run with a recursion error, run after run."""
+        for engine in self._engines_that_unwind_safely():
+            for _ in range(2):
+                response = run("def r(n):\n    return r(n + 1)\nr(0)\n", engine=engine)
+                self.assertEqual("error", response["status"], engine)
+                self.assertIn(
+                    response["error"]["type"],
+                    ("RecursionError", "RuntimeError"),
+                    engine,
+                )
+
+    def test_an_error_raised_deep_in_handler_dense_frames_is_caught(self):
+        """An exception raised 300 calls deep, through with and finally blocks, is caught."""
+        for engine in self._engines_that_unwind_safely():
+            response = run(DEEP_RAISE, engine=engine, inputs={"depth": 300})
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual(300, response["result"], engine)
+
+
 class TimeoutTests(TestCase):
     """The run timeout."""
 
