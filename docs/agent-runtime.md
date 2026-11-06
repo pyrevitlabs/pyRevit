@@ -273,13 +273,15 @@ Rules the host enforces:
   modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
   only stopped once the call returns. A single blocking call, such as a long Revit API call,
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
-  interrupted on any engine; the run fails with `timeout` once it returns. If such a call is
-  still blocking 30 seconds after the deadline, the request fails with `run_hung` (outcome
-  `unknown`, plus the run's `run_id` and `request_id`) so the caller stops waiting. The run
-  itself keeps Revit busy until the call
-  returns, then ends and is recorded as usual, so look it up with `get_run` before sending
-  it again; meanwhile later requests fail with `revit_busy`, and the message says an
-  earlier run is stuck past its time limit. Time spent waiting for approval doesn't count.
+  interrupted on any engine; the run fails with `timeout` once it returns. When that call
+  was the script's last, the error says the limit passed inside a call that could not be
+  interrupted and carries no traceback. If such a call is still blocking 30 seconds after
+  the deadline, the request fails with `run_hung` (outcome `unknown`, plus the run's
+  `run_id` and `request_id`) so the caller stops waiting. The run itself keeps Revit busy
+  until the call returns, then ends and is recorded as usual with that `timeout`, so look
+  it up with `get_run` before sending it again; meanwhile later requests fail with
+  `revit_busy`, and the message says an earlier run is stuck past its time limit. Time spent
+  waiting for approval doesn't count.
 - The runner compiles the script with every bare `except` and `except BaseException`
   (also spelled as an attribute, such as `except builtins.BaseException`) narrowed to
   `except Exception`, so a script can't swallow its own timeout, and can't catch
@@ -309,10 +311,11 @@ Rules the host enforces:
   called, never the runner's own frames, so a timeout points at the script line that was
   running.
 - Code the script compiles at run time (`exec`, `eval`, `execfile`, the `compile`
-  builtin) can't have its loops rewritten. On IronPython such a run falls back to checking
-  the deadline on every line of every frame, which is slower but still stops it, unless
-  that code catches the timeout in its own loop, or the script removes that check with
-  `sys.settrace(None)` first.
+  builtin) can't have its loops rewritten, and neither can a loop inside an f-string on
+  IronPython 3.4, which reads the whole f-string as one token. On IronPython such a run
+  falls back to checking the deadline on every line of every frame, which is slower but
+  still stops it, unless that code catches the timeout in its own loop, or the script
+  removes that check with `sys.settrace(None)` first.
 - Threads the script starts are not stopped. They keep running after the run returns, with
   no timeout, outside the guard (see the limits under [The guarded run](#the-guarded-run)).
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed

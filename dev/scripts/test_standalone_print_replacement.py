@@ -36,7 +36,12 @@ def _load_replacement():
         method
         for method in window.body
         if getattr(method, "name", "")
-        in ("print_sheets", "_replace_existing_outputs", "_planned_output_files")
+        in (
+            "print_sheets",
+            "_replace_existing_outputs",
+            "_planned_output_files",
+            "_models_share_filenames",
+        )
     ]
     tree.body = selected + [window]
     namespace = {"os": os, "op": os.path, "logger": Mock(), "forms": Mock()}
@@ -108,19 +113,26 @@ class PrintFlowRecoveryTests(unittest.TestCase):
 
     def test_combined_individual_and_linked_failures_restore_previous_output(self):
         """An exception after writing a partial file restores the old export."""
-        for mode in ("combined", "individual", "linked"):
+        for mode in ("combined", "individual", "linked", "all_models"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
                 namespace = _load_replacement()
                 window = namespace["PrintSheetsWindow"]()
                 window.combine_print = mode == "combined"
                 window.selected_doc = SimpleNamespace(IsLinked=mode == "linked")
+                window.is_all_models = mode == "all_models"
                 window.selected_printer = "Revit Internal Printer"
                 window.selected_print_setting = SimpleNamespace(
                     allows_variable_paper=False
                 )
                 window.export_dwg = SimpleNamespace(IsChecked=False)
                 window.sheet_list = [
-                    SimpleNamespace(printable=True, print_filename="sheet.pdf")
+                    SimpleNamespace(
+                        printable=True,
+                        print_filename="sheet.pdf",
+                        revit_sheet=SimpleNamespace(
+                            Document=SimpleNamespace(GetHashCode=lambda: 1)
+                        ),
+                    )
                 ]
                 window.selected_sheets = []
                 window._get_output_dir = lambda: directory
