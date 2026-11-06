@@ -1360,7 +1360,7 @@ class AgentRunnerOutputTests(unittest.TestCase):
         self.assertEqual("abc", captured.getvalue())
 
     def test_concurrent_writers_keep_every_character(self):
-        """stdout and stderr share one buffer that script threads can write to."""
+        """Script threads share one buffer for stdout and stderr."""
         captured = self.runner._CappedOutput(100000)
 
         def write_many(char):
