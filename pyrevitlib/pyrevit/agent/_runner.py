@@ -90,18 +90,28 @@ class _CappedOutput(StringIO):
         StringIO.__init__(self)
         self._room = limit
         self._end = 0
+        self._lock = threading.Lock()
 
     def write(self, text):
         if PY2 and not isinstance(text, _TEXT_TYPES):
             text = str(text)
-        if self._room > 0:
-            kept = text[: self._room]
-            self._room -= len(kept)
-            if StringIO.tell(self) != self._end:
-                StringIO.seek(self, self._end)
-            StringIO.write(self, kept)
-            self._end += len(kept)
+        with self._lock:
+            if self._room > 0:
+                kept = text[: self._room]
+                self._room -= len(kept)
+                if StringIO.tell(self) != self._end:
+                    StringIO.seek(self, self._end)
+                StringIO.write(self, kept)
+                self._end += len(kept)
         return len(text)
+
+    def truncate(self, size=None):
+        with self._lock:
+            if size is None:
+                size = StringIO.tell(self)
+            result = StringIO.truncate(self, size)
+            self._end = min(self._end, size)
+            return result
 
 
 class _NarrowBroadHandlers(ast.NodeTransformer):
