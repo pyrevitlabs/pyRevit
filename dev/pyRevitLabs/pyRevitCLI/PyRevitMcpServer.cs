@@ -461,7 +461,7 @@ namespace pyRevitCLI {
         private static JObject TimeoutProperty() {
             return new JObject {
                 ["type"] = "number",
-                ["exclusiveMinimum"] = 0,
+                ["minimum"] = 0.001,
                 ["maximum"] = 3600,
                 ["description"] = "Seconds the script may run before it is stopped and rolled back with error 'timeout' (default 300, max 3600). "
                     + "Stops Python code, not a single long Revit API call. Not enforced when get_context shows "
