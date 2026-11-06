@@ -77,8 +77,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool Committed { get; private set; }
 
         /// <summary>
-        /// True when <see cref="Dispose"/> had to roll back the active document's group and the
-        /// rollback threw, so the run's changes may still be in the model.
+        /// True when rolling back the active document's group threw or did not report it rolled
+        /// back, so the run's changes may still be in the model.
         /// </summary>
         public bool RollbackFailed { get; private set; }
 
@@ -140,11 +140,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public void RollBack() {
             try {
-                if (HasOpenGroup)
-                    group.RollBack();
+                RollBackGroup();
             }
             finally {
                 RollBackOtherDocuments();
+            }
+        }
+
+        private void RollBackGroup() {
+            try {
+                if (HasOpenGroup && group.RollBack() != TransactionStatus.RolledBack)
+                    RollbackFailed = true;
+            }
+            catch (Exception) {
+                RollbackFailed = true;
+                throw;
             }
         }
 
@@ -183,11 +193,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public void Dispose() {
             try {
-                if (HasOpenGroup)
-                    group.RollBack();
+                RollBackGroup();
             }
             catch (Exception ex) {
-                RollbackFailed = true;
                 CleanupFailures.Add("Rolling back the run failed: " + ex.Message);
             }
             finally {
