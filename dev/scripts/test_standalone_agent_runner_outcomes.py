@@ -8,6 +8,9 @@ from unittest import mock
 
 from test_standalone_agent_runner_lines import _load_runner
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
 
 class AgentRunnerOutcomeTests(unittest.TestCase):
     """Every run ends in one reported outcome, never an exception out of run()."""
