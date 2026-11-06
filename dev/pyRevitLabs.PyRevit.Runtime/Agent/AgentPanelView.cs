@@ -37,11 +37,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private AgentPanelViewModel viewModel;
         private DispatcherTimer waitingTimer;
         private int refreshQueued;
+        private bool? appliedDark;
 
         public AgentPanelPage(bool dark) {
-            AgentPanelTheme.Apply(this, dark);
-            Background = (Brush)Resources["AgentPanel.Background"];
+            ApplyTheme(dark);
+            SetResourceReference(BackgroundProperty, "AgentPanel.Background");
             Loaded += OnLoaded;
+        }
+
+        /// <summary>
+        /// Switches the page to the light or dark palette in place, so an open panel follows a
+        /// theme change without a restart. Applying the palette it already shows does nothing.
+        /// Must run on the page's thread.
+        /// </summary>
+        internal void ApplyTheme(bool dark) {
+            if (appliedDark == dark)
+                return;
+            appliedDark = dark;
+            AgentPanelTheme.Apply(this, dark);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
@@ -66,12 +79,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception ex) {
                 logger.Error(ex, "Could not build the agent panel");
-                Content = new TextBlock {
+                var message = new TextBlock {
                     Text = "The agent panel could not be shown: " + ex.Message,
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(12),
-                    Foreground = (Brush)Resources["AgentPanel.Foreground"],
                 };
+                message.SetResourceReference(TextBlock.ForegroundProperty, "AgentPanel.Foreground");
+                Content = message;
             }
         }
 
@@ -276,10 +290,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <c>DynamicResource</c> references follow Revit's theme.
     /// </summary>
     /// <remarks>
-    /// Invariant: the role colors are pyRevit's forms palette (<c>_PALETTE_LIGHT</c> and
-    /// <c>_PALETTE_DARK</c> in <c>pyrevitlib/pyrevit/forms/_ipy.py</c>) under the same names, so
-    /// the panel matches pyRevit's own windows and panes; change them together. That palette has
-    /// no success text color, so <see cref="SuccessForeground"/> is the panel's own.
+    /// Invariant: the role colors are pyRevit's forms palette (<c>_PALETTE_LIGHT</c>,
+    /// <c>_PALETTE_DARK</c> and <c>_BRAND_ACCENT</c> in <c>pyrevitlib/pyrevit/forms/_ipy.py</c>)
+    /// under the same names, so the panel matches pyRevit's own windows and panes; change them
+    /// together. That palette has no success text color, so <see cref="SuccessForeground"/> is
+    /// the panel's own.
+    /// Invariant: the view refers to these brushes only through <c>DynamicResource</c>. A
+    /// <c>StaticResource</c> reference keeps the theme the panel opened with.
     /// </remarks>
     internal static class AgentPanelTheme {
         private static readonly (int Light, int Dark) WindowBackground = (0xF3F4F6, 0x2E3440);
@@ -293,6 +310,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly (int Light, int Dark) WarningForeground = (0x9A6300, 0xF0AD4E);
         private static readonly (int Light, int Dark) WarningBackground = (0xFDF0D5, 0x5C482E);
         private static readonly (int Light, int Dark) SuccessForeground = (0x3D9142, 0x6CC26C);
+        private static readonly (int Light, int Dark) ScrollBarThumb = (0xCCCCCC, 0x454F61);
+        private static readonly (int Light, int Dark) ScrollBarThumbHover = (0xAAAAAA, 0x525E73);
+        private static readonly (int Light, int Dark) BrandAccent = (0xF39C12, 0xF39C12);
 
         private static readonly Dictionary<string, (int Light, int Dark)> Palette = new Dictionary<string, (int, int)> {
             ["AgentPanel.Background"] = WindowBackground,
@@ -307,8 +327,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             ["AgentPanel.Paused"] = WarningForeground,
             ["AgentPanel.Idle"] = SubtleForeground,
             ["AgentPanel.Error"] = DangerForeground,
+            ["AgentPanel.ScrollThumb"] = ScrollBarThumb,
+            ["AgentPanel.ScrollThumbHover"] = ScrollBarThumbHover,
+            ["AgentPanel.Accent"] = BrandAccent,
         };
 
+        /// <summary>
+        /// Puts the palette's brushes on <paramref name="root"/>, replacing any it holds, so every
+        /// <c>DynamicResource</c> reference below it switches palette.
+        /// </summary>
+        /// <remarks>
+        /// Also replaces the system control brush, which stock <c>ScrollViewer</c> templates paint
+        /// the corner between two scroll bars with; it takes the panel's background.
+        /// </remarks>
         public static void Apply(FrameworkElement root, bool dark) {
             foreach (var entry in Palette) {
                 var rgb = dark ? entry.Value.Dark : entry.Value.Light;
@@ -316,6 +347,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 brush.Freeze();
                 root.Resources[entry.Key] = brush;
             }
+            root.Resources[SystemColors.ControlBrushKey] = root.Resources["AgentPanel.Background"];
+        }
+
+        /// <summary>
+        /// Whether the panel uses its dark palette: when Revit's theme is dark, from Revit 2024.
+        /// </summary>
+        /// <remarks>
+        /// Revit 2021-2023 report a dark theme while their window chrome stays light, so the panel
+        /// stays light there, as pyRevit's shell and ribbon icons do (#3742).
+        /// </remarks>
+        public static bool RevitIsDark() {
+#if REVIT2021 || REVIT2022 || REVIT2023
+            return false;
+#else
+            try {
+                return UIThemeManager.CurrentTheme == UITheme.Dark;
+            }
+            catch (Exception) {
+                return false;
+            }
+#endif
         }
     }
 }

@@ -20,6 +20,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// active through its events. Everything else the panel does only changes host state.
     /// Hiding the pane pauses the session, whether the user closed it or Revit hid it, for
     /// example on its Home screen; only the user resumes it.
+    /// From Revit 2024 the pane follows Revit's light or dark theme, including a change made
+    /// while it is open; see <see cref="AgentPanelTheme.RevitIsDark"/>.
     /// </remarks>
     public static class AgentPanel {
         public const string Title = "pyRevit Agent";
@@ -36,6 +38,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static DateTime lastRevealUtc = DateTime.MinValue;
         private static string activeDocumentTitle;
         private static UIApplication uiApplication;
+        private static AgentPanelProvider provider;
 
         /// <summary>
         /// Raised when the active document changes, on Revit's main thread.
@@ -78,13 +81,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             try {
                 if (DockablePane.PaneIsRegistered(PaneId))
                     return;
-                uiApp.RegisterDockablePane(PaneId, Title, new AgentPanelProvider(IsDarkTheme()));
+                provider = new AgentPanelProvider();
+                uiApp.RegisterDockablePane(PaneId, Title, provider);
                 uiApplication = uiApp;
                 uiApp.DockableFrameVisibilityChanged += OnVisibilityChanged;
                 uiApp.ViewActivated += OnViewActivated;
                 uiApp.Application.DocumentClosed += OnDocumentClosed;
                 uiApp.Application.DocumentSavedAs += OnDocumentSavedAs;
                 uiApp.Idling += HideOnFirstIdlingWhileHostIsOff;
+#if !(REVIT2021 || REVIT2022 || REVIT2023)
+                uiApp.ThemeChanged += OnThemeChanged;
+#endif
             }
             catch (Exception ex) {
                 logger.Warn("Could not register the agent panel: {0}", ex.Message);
@@ -169,31 +176,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        /// <summary>
-        /// Whether Revit uses its dark theme. Read through reflection because Revit versions before
-        /// 2024 have no theme API; any failure reads as light.
-        /// </summary>
-        private static bool IsDarkTheme() {
+#if !(REVIT2021 || REVIT2022 || REVIT2023)
+        /// <remarks>
+        /// Revit also raises this when only the canvas theme changes; the page ignores a palette
+        /// it already shows.
+        /// </remarks>
+        private static void OnThemeChanged(object sender, ThemeChangedEventArgs e) {
             try {
-                var themeManager = Type.GetType("Autodesk.Revit.UI.UIThemeManager, RevitAPIUI");
-                var theme = themeManager?.GetProperty("CurrentTheme")?.GetValue(null, null);
-                return string.Equals(theme?.ToString(), "Dark", StringComparison.OrdinalIgnoreCase);
+                provider?.Page?.ApplyTheme(AgentPanelTheme.RevitIsDark());
             }
-            catch (Exception) {
-                return false;
+            catch (Exception ex) {
+                logger.Debug("Could not switch the agent panel's theme: {0}", ex.Message);
             }
         }
+#endif
     }
 
     internal sealed class AgentPanelProvider : IDockablePaneProvider {
-        private readonly bool dark;
-
-        public AgentPanelProvider(bool dark) {
-            this.dark = dark;
-        }
+        /// <summary>The page Revit hosts in the pane, once Revit has asked for it; null before.</summary>
+        public AgentPanelPage Page { get; private set; }
 
         public void SetupDockablePane(DockablePaneProviderData data) {
-            data.FrameworkElement = new AgentPanelPage(dark);
+            Page = new AgentPanelPage(AgentPanelTheme.RevitIsDark());
+            data.FrameworkElement = Page;
             data.VisibleByDefault = false;
             data.InitialState = new DockablePaneState { DockPosition = DockPosition.Right };
         }
