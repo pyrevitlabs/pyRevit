@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
@@ -61,6 +64,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         public static bool ShouldWarm(bool agentEnabled, bool defaultEngineIsIronPython, bool engineCached) {
             return agentEnabled && defaultEngineIsIronPython && !engineCached;
+        }
+
+        /// <summary>
+        /// Writes <paramref name="source"/> as this process's warm-up entry script, hands its path
+        /// to <paramref name="execute"/>, and deletes it afterwards.
+        /// </summary>
+        /// <remarks>
+        /// One file per process (<c>engine_warmup.&lt;pid&gt;.py</c>): every Revit on the machine
+        /// shares <paramref name="folder"/>, and two of them warming at once must never write or
+        /// read the same file.
+        /// </remarks>
+        public static T WithEntryScript<T>(string folder, int processId, string source, Func<string, T> execute) {
+            Directory.CreateDirectory(folder);
+            var path = Path.Combine(folder, "engine_warmup." + processId + ".py");
+            File.WriteAllText(path, source, new UTF8Encoding(false));
+            try {
+                return execute(path);
+            }
+            finally {
+                File.Delete(path);
+            }
         }
     }
 }

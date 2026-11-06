@@ -414,8 +414,11 @@ The warm-up uses the same engine cache key and flags as a real run, and calls
 stand-in context with no Revit application: setup, source rewriting, compilation, loop
 guards, the watchdog, execution, transaction recording, result serialization and the
 rollback scan all run once. It reads no document, starts no transaction, writes no run
-record and shows no output. A `run` request never queues it: a run that executes starts the
-engine anyway, and one refused before it executes leaves the next request to warm. The
+record and shows no output. Its two-line entry script goes to a file of the Revit process's
+own, `%APPDATA%\pyRevit\agent\engine_warmup.<pid>.py`, which is deleted after it ran, so
+Revit sessions warming at the same time never share it. A `run` request never queues it: a
+run that executes starts the engine anyway, and one refused before it executes leaves the
+next request to warm. The
 warm-up is skipped when the engine is already cached, when the agent is off, and when
 `default_engine` is not IronPython. A request during which pyRevit reloads, such as a
 `run` that reloads it, counts for the old load, so the new load warms on its own first
