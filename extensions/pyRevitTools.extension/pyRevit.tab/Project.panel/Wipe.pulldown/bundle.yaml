@@ -8,6 +8,7 @@ title:
   de_de: Löschen
   pt_br: Remover
 layout:
+  - Deep Purge
   - Wipe Model Components
   - Wipe Attached Constraints
   - Wipe Selected Families
