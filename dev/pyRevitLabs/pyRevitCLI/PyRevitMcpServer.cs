@@ -289,7 +289,7 @@ namespace pyRevitCLI {
                 PyRevitAgentClient.Ping(instance);
                 entry["responding"] = true;
             }
-            catch (AgentClientException ex) when (ex.Code == "revit_busy") {
+            catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
                 entry["busy"] = true;
             }
             catch (AgentClientException) {

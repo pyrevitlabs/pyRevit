@@ -141,8 +141,8 @@ The MCP server sends one call at a time to each Revit, since the host serves one
 time; calls to different Revit sessions don't wait for each other. `list_revit_instances` doesn't
 wait for calls in progress: it pings every Revit at once, and reports `busy: true` for one that
 still has a call from this server open, or that doesn't accept the ping within 1.5 seconds because
-another client (such as `pyrevit agent run`) is using it. A ping that gets no answer within
-5 seconds reports `responding: false` (`pyrevit agent status` uses the same ping). A client's `notifications/cancelled` frees the call's
+another client (such as `pyrevit agent run`) is using it. A Revit whose pipe is not listening, or that gets no answer within
+5 seconds, reports `responding: false` (`pyrevit agent status` uses the same ping). A client's `notifications/cancelled` frees the call's
 turn. A call cancelled while it waited for its turn was not sent; one cancelled while waiting for
 Revit's answer keeps running in Revit, so its outcome is `unknown`.
 

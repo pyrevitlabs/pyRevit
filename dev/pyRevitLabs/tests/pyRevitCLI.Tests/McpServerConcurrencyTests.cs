@@ -162,6 +162,20 @@ public partial class McpServerTests {
         Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(1.4), TimeSpan.FromSeconds(2.9));
     }
 
+    [Fact]
+    public void ARevitWhosePipeIsNotListeningIsListedNotRespondingRatherThanBusy() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, "2091-nopipe.json", "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["pong"] = true });
+        PyRevitAgentClient.PingConnectTimeoutMs = 300;
+
+        var listed = Single(ToolCall(1, "list_revit_instances"));
+
+        var instances = Payload(listed)["instances"].ToDictionary(entry => entry.Value<string>("revit_version"));
+        Assert.False(instances["2091"].Value<bool>("responding"));
+        Assert.Null(instances["2091"]["busy"]);
+        Assert.True(instances["2090"].Value<bool>("responding"));
+    }
+
     [Theory]
     [InlineData("\"\"")]
     [InlineData("null")]
