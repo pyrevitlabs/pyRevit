@@ -61,6 +61,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'script' is required.");
 
             var inputs = parameters["inputs"];
+            if (inputs != null && inputs.Type != JTokenType.Null && inputs.Type != JTokenType.Object)
+                throw new AgentException("invalid_params", "'inputs' must be an object.");
             var workspace = AgentParams.Get<string>(parameters, "workspace");
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");

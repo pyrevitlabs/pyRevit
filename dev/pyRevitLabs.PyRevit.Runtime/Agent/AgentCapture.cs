@@ -151,7 +151,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Mode = mode,
                 Width = width,
                 Direction = direction,
-                Elements = (parameters["elements"] as JArray)?.Select(id => AgentIds.FromValue(id.Value<long>())).ToList(),
+                Elements = ParseElements(parameters["elements"]),
                 DetailLevel = ParseChoice(parameters, "detail_level", DetailLevels.Keys),
                 DisplayStyle = ParseChoice(parameters, "display_style", DisplayStyles.Keys),
                 Eye = ParsePoint(parameters["eye"], "eye"),
@@ -160,6 +160,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
             ValidateCombination(request);
             return request;
+        }
+
+        private static List<ElementId> ParseElements(JToken token) {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            var ids = token as JArray
+                ?? throw new AgentException("invalid_params", "'elements' must be an array of element ids.");
+            return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
         }
 
         private static void ValidateCombination(Request request) {
