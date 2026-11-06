@@ -10,6 +10,7 @@ namespace pyRevitLabs.Common {
         public const string PyRevitPathOverrideEnvVar = "PYREVIT_PATH_OVERRIDE";
         public const string PyRevitProgramDataPathOverrideEnvVar = "PYREVIT_PROGRAMDATA_PATH_OVERRIDE";
         public const string PyRevitAgentDirOverrideEnvVar = "PYREVIT_AGENT_DIR";
+        public const string PyRevitIgnoreLocalConfigEnvVar = "PYREVIT_IGNORE_LOCAL_CONFIG";
         // product
         public const string ProductName = "pyRevit";
 

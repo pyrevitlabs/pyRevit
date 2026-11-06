@@ -425,8 +425,9 @@ engine is `default`, a version such as `342` or `2712`, or an engine id.
 - **Closing one session** leaves the others, and the attachment, as they were. The next plain
   start of a Revit year loads whatever is attached.
 - **`--isolated`** points the session at its own pyRevit user folder (`PYREVIT_PATH_OVERRIDE`),
-  seeded with a copy of your `pyRevit_config.ini`, so config changes, caches and logs of the session
-  don't reach the others. Instance records, run records and captures stay under
+  seeded with a copy of the config the clone would load anyway (the clone's own config, else yours),
+  so config changes, caches and logs of the session don't reach the others. A config stored in the
+  clone is ignored by such a session (`PYREVIT_IGNORE_LOCAL_CONFIG`). Instance records, run records and captures stay under
   `%APPDATA%\pyRevit\agent` (`PYREVIT_AGENT_DIR`), because clients look for sessions there.
 - **No model argument.** Open the model through an agent run once the session is up.
 - **Unsigned Add-In dialog.** Revit may or may not ask about the per-launch manifest; handle it as
@@ -436,7 +437,8 @@ Each instance record, and so `list_revit_instances`, carries `clone`, `clone_pat
 `engine_version`, `commit`, `config_root` and `per_launch`; `get_context` reports the same
 under `pyrevit`. The `revit` selector of the MCP tools and of `pyrevit agent` accepts a clone name or
 path besides a year or process id, so two Revit 2026 sessions on different clones are told apart by
-`revit: "<clone name>"`. When several sessions match, `ambiguous_revit` lists each with its clone and
+`revit: "<clone name>"`. A clone whose name is a number is selected as `clone:<name>`, because a bare
+number is a process id or a year. When several sessions match, `ambiguous_revit` lists each with its clone and
 engine; pick one by clone name, or by process id when one clone runs in several sessions.
 
 ## Design

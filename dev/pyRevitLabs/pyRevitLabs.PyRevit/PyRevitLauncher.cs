@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 using pyRevitLabs.Common;
@@ -50,6 +51,8 @@ namespace pyRevitLabs.PyRevit {
 
         private const int DeleteAttempts = 15;
         private const int DeleteRetryDelayMs = 1000;
+        private static readonly TimeSpan UnrecordedLaunchRetention = TimeSpan.FromDays(1);
+        private static readonly Regex LanguageCodePattern = new Regex(@"\A[A-Za-z]{3}\z", RegexOptions.Compiled);
 
         private const string JournalTemplate = @"' pyrevit launch generated journal
 ' 0:< 'C {0};
@@ -86,9 +89,9 @@ Set Jrn = CrsJournalScript
             if (isolated) {
                 configRoot = Path.Combine(directory, PyRevitLabsConsts.AppdataDirName);
                 CommonUtils.EnsurePath(configRoot);
-                var sharedConfig = Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitLabsConsts.DefaultConfigsFileName);
-                if (File.Exists(sharedConfig))
-                    File.Copy(sharedConfig, Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName));
+                var sourceConfig = FindConfigToCopy(clone);
+                if (sourceConfig != null)
+                    File.Copy(sourceConfig, Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName));
             }
 
             var launch = new PyRevitLaunch(directory, product, clone, engine, configRoot);
@@ -109,10 +112,15 @@ Set Jrn = CrsJournalScript
         /// Starts Revit on the prepared session and records its process id in the launch directory.
         /// </summary>
         /// <param name="language">A Revit <c>/language</c> code such as ENU, or null for Revit's own choice.</param>
+        /// <exception cref="PyRevitException">The language is not a three-letter code.</exception>
         public static Process Start(PyRevitLaunch launch, string language = null) {
             var arguments = $"\"{launch.JournalFile}\"";
-            if (!string.IsNullOrWhiteSpace(language))
-                arguments += " /language " + language.Trim();
+            if (!string.IsNullOrWhiteSpace(language)) {
+                var languageCode = language.Trim();
+                if (!LanguageCodePattern.IsMatch(languageCode))
+                    throw new PyRevitException($"Revit language must be a three-letter code such as ENU, not \"{languageCode}\".");
+                arguments += " /language " + languageCode;
+            }
 
             var startInfo = new ProcessStartInfo(launch.Product.ExecutiveLocation) {
                 Arguments = arguments,
@@ -124,12 +132,33 @@ Set Jrn = CrsJournalScript
             if (launch.ConfigRoot != null) {
                 startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitAgentDirOverrideEnvVar] = PyRevitLabsConsts.AgentPath;
                 startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitPathOverrideEnvVar] = launch.ConfigRoot;
+                startInfo.EnvironmentVariables[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] = "1";
             }
 
             logger.Debug("Starting Revit {0} with \"{1}\"", launch.Product.ProductYear, arguments);
             var process = Process.Start(startInfo);
-            File.WriteAllText(launch.ProcessIdFile, process.Id.ToString());
+            try {
+                File.WriteAllText(launch.ProcessIdFile, process.Id.ToString());
+            }
+            catch (Exception exception) {
+                logger.Warn("Can not record the process id in \"{0}\" | {1}", launch.ProcessIdFile, exception.Message);
+            }
             return process;
+        }
+
+        /// <summary>
+        /// The config a session of <paramref name="clone"/> would load when started normally: the
+        /// clone's own config when it has one, otherwise the user's active config.
+        /// </summary>
+        private static string FindConfigToCopy(PyRevitClone clone) {
+            var cloneConfig = File.Exists(Path.Combine(clone.ClonePath, "pyRevitfile"))
+                ? PyRevitInstallScope.FindConfigIniInDirectory(clone.ClonePath)
+                : null;
+            if (cloneConfig != null)
+                return cloneConfig;
+
+            var userConfig = PyRevitInstallScope.GetActiveConfig(createIfMissing: false).ConfigPath;
+            return File.Exists(userConfig) ? userConfig : null;
         }
 
         /// <summary>
@@ -162,13 +191,21 @@ Set Jrn = CrsJournalScript
         /// Removes launch directories whose Revit is no longer running, left behind when the
         /// launcher itself was killed before it could clean up.
         /// </summary>
+        /// <remarks>
+        /// A directory without a recorded process id may still belong to a running Revit whose id
+        /// could not be written, so it is only removed after <see cref="UnrecordedLaunchRetention"/>.
+        /// </remarks>
         public static void PruneAbandoned() {
             if (!Directory.Exists(LaunchRoot))
                 return;
 
             foreach (var directory in Directory.GetDirectories(LaunchRoot)) {
                 try {
-                    if (!IsRevitRunning(Path.Combine(directory, "pid")) && IsOlderThanStartupWindow(directory))
+                    var processIdFile = Path.Combine(directory, "pid");
+                    var abandoned = File.Exists(processIdFile)
+                        ? !IsRevitRunning(processIdFile)
+                        : DateTime.UtcNow - Directory.GetCreationTimeUtc(directory) > UnrecordedLaunchRetention;
+                    if (abandoned)
                         DeleteDirectory(directory, attempts: 1);
                 }
                 catch (Exception exception) {
@@ -177,12 +214,8 @@ Set Jrn = CrsJournalScript
             }
         }
 
-        private static bool IsOlderThanStartupWindow(string directory) {
-            return DateTime.UtcNow - Directory.GetCreationTimeUtc(directory) > TimeSpan.FromMinutes(5);
-        }
-
         private static bool IsRevitRunning(string processIdFile) {
-            if (!File.Exists(processIdFile) || !int.TryParse(File.ReadAllText(processIdFile).Trim(), out var processId))
+            if (!int.TryParse(File.ReadAllText(processIdFile).Trim(), out var processId))
                 return false;
             try {
                 using (var process = Process.GetProcessById(processId))

@@ -329,19 +329,30 @@ namespace pyRevitCLI {
                 engineVer = clone.GetConfiguredEngine(engineVersion).Version;
 
             var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated);
+            Process process = null;
             try {
-                var process = PyRevitLauncher.Start(launch, language);
-                PyRevitCLIAppCmds.PrintHeader("Launched Revit");
-                Console.WriteLine(string.Format("Process Id: {0}", process.Id));
-                Console.WriteLine(string.Format("Product: {0}", launch.Product));
-                Console.WriteLine(string.Format("Clone: {0}", clone));
-                Console.WriteLine(string.Format("Engine: {0} ({1})", launch.Engine.Id, launch.Engine.Version));
-                Console.WriteLine(string.Format("Launch Directory: \"{0}\"", launch.Directory));
-                Console.WriteLine(string.Format("Config Root: \"{0}\"", launch.ConfigRoot ?? PyRevitLabsConsts.PyRevitPath));
+                process = PyRevitLauncher.Start(launch, language);
+                PrintLaunch(launch, process);
                 process.WaitForExit();
             }
             finally {
-                PyRevitLauncher.Cleanup(launch);
+                if (process == null || process.HasExited)
+                    PyRevitLauncher.Cleanup(launch);
+            }
+        }
+
+        private static void PrintLaunch(PyRevitLaunch launch, Process process) {
+            try {
+                PyRevitCLIAppCmds.PrintHeader("Launched Revit");
+                Console.WriteLine(string.Format("Process Id: {0}", process.Id));
+                Console.WriteLine(string.Format("Product: {0}", launch.Product));
+                Console.WriteLine(string.Format("Clone: {0}", launch.Clone));
+                Console.WriteLine(string.Format("Engine: {0} ({1})", launch.Engine.Id, launch.Engine.Version));
+                Console.WriteLine(string.Format("Launch Directory: \"{0}\"", launch.Directory));
+                Console.WriteLine(string.Format("Config Root: \"{0}\"", launch.ConfigRoot ?? PyRevitLabsConsts.PyRevitPath));
+            }
+            catch (IOException exception) {
+                logger.Debug("Can not print the launch summary | {0}", exception.Message);
             }
         }
 

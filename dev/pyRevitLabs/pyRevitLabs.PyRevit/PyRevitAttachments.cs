@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
@@ -251,12 +252,14 @@ namespace pyRevitLabs.PyRevit {
         /// A launched Revit loads pyRevit from a manifest outside the standard add-in folders, so the
         /// shared per-year manifests describe some other clone. The launcher names its manifest and
         /// Revit year in the environment of the process it starts; the year check keeps a lookup
-        /// for any other installed year from reporting this session's clone.
+        /// for any other installed year from reporting this session's clone. Only the Revit
+        /// process itself honors them: a pyrevit.exe started from that Revit inherits the
+        /// variables but manages the shared attachment.
         /// </remarks>
         private static PyRevitAttachment FindLaunchAttachment(RevitProduct revit) {
             var manifestFile = Environment.GetEnvironmentVariable(PyRevitConsts.LaunchManifestEnvVar);
             var launchYear = Environment.GetEnvironmentVariable(PyRevitConsts.LaunchRevitYearEnvVar);
-            if (string.IsNullOrWhiteSpace(manifestFile) || launchYear != revit.ProductYear.ToString())
+            if (string.IsNullOrWhiteSpace(manifestFile) || launchYear != revit.ProductYear.ToString() || !IsRevitProcess())
                 return null;
 
             try {
@@ -266,6 +269,11 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug("Can not read launch manifest \"{0}\" | {1}", manifestFile, exception.Message);
                 return null;
             }
+        }
+
+        private static bool IsRevitProcess() {
+            using (var process = Process.GetCurrentProcess())
+                return process.ProcessName.Equals("Revit", StringComparison.OrdinalIgnoreCase);
         }
 
         private static PyRevitAttachment FindAttachment(RevitProduct revit) {

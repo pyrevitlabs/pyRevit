@@ -154,6 +154,8 @@ namespace pyRevitCLI {
         /// </summary>
         internal static int ConnectTimeoutMs = 10000;
 
+        internal const string CloneSelectorPrefix = "clone:";
+
         /// <summary>
         /// Replaces the folder that holds host registrations and run records. Set by tests so
         /// they never read or write the real user profile.
@@ -256,12 +258,17 @@ namespace pyRevitCLI {
         /// Years compare in canonical form, so " 2024 " or "02024" select Revit 2024.
         /// A selector that is not a number selects the sessions whose clone has that name
         /// (ignoring case) or that path; sessions that recorded no clone never match it.
+        /// A clone whose name is a number is selected as <c>clone:&lt;name&gt;</c>, which is never
+        /// read as a process id or a year.
         /// </remarks>
         internal static List<AgentInstance> Match(IReadOnlyList<AgentInstance> instances, string selector) {
             if (string.IsNullOrWhiteSpace(selector))
                 return instances.ToList();
+            var trimmed = selector.Trim();
+            if (trimmed.StartsWith(CloneSelectorPrefix, StringComparison.OrdinalIgnoreCase))
+                return instances.Where(instance => MatchesClone(instance, trimmed.Substring(CloneSelectorPrefix.Length).Trim())).ToList();
             if (!int.TryParse(selector, out var number))
-                return instances.Where(instance => MatchesClone(instance, selector.Trim())).ToList();
+                return instances.Where(instance => MatchesClone(instance, trimmed)).ToList();
 
             var byProcessId = instances.Where(instance => instance.ProcessId == number).ToList();
             if (byProcessId.Count > 0 || number < 2000 || number >= 2100)
@@ -273,12 +280,19 @@ namespace pyRevitCLI {
         private static bool MatchesClone(AgentInstance instance, string selector) {
             if (instance.Clone == null)
                 return false;
-            return string.Equals(instance.Clone, selector, StringComparison.OrdinalIgnoreCase)
-                   || string.Equals(TrimTrailingSeparator(instance.ClonePath), TrimTrailingSeparator(selector), StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(instance.Clone, selector, StringComparison.OrdinalIgnoreCase))
+                return true;
+            var recordedPath = NormalizePath(instance.ClonePath);
+            return recordedPath != null && string.Equals(recordedPath, NormalizePath(selector), StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string TrimTrailingSeparator(string path) {
-            return path?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        private static string NormalizePath(string path) {
+            try {
+                return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch (Exception) {
+                return null;
+            }
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

@@ -233,6 +233,28 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void AClonePathSelectsRegardlessOfDotSegments() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\other\..\review-b")).ProcessId);
+    }
+
+    [Fact]
+    public void ASelectorThatIsNotAPathIsNotAMatchByPath() {
+        Assert.Empty(PyRevitAgentClient.Match(ClonedSessions, "bad|path?"));
+    }
+
+    [Fact]
+    public void ANumericCloneNameIsSelectedWithThePrefixAndNeverAsAProcessId() {
+        var numbered = new[] {
+            new AgentInstance { ProcessId = 342, RevitVersion = "2026" },
+            new AgentInstance { ProcessId = 400, RevitVersion = "2026", Clone = "342", ClonePath = @"C:\work\342" },
+        };
+
+        Assert.Equal(342, Assert.Single(PyRevitAgentClient.Match(numbered, "342")).ProcessId);
+        Assert.Equal(400, Assert.Single(PyRevitAgentClient.Match(numbered, "clone:342")).ProcessId);
+        Assert.Equal(400, Assert.Single(PyRevitAgentClient.Match(numbered, " CLONE: 342 ")).ProcessId);
+    }
+
+    [Fact]
     public void SeveralSessionsOfOneYearAreToldApartByClone() {
         Assert.Equal(3, PyRevitAgentClient.Match(ClonedSessions, "2026").Count);
         Assert.Equal(100, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, "review-a")).ProcessId);
