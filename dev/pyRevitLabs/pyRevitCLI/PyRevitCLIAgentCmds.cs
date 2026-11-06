@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
@@ -268,7 +269,7 @@ namespace pyRevitCLI {
         /// refused when it contains <c>%</c>. The tool gets <see cref="ClientCliTimeout"/> to finish
         /// and is killed after that.
         /// </remarks>
-        private static void RunClientCliProcess(string tool, string arguments, bool ignoreFailure) {
+        internal static void RunClientCliProcess(string tool, string arguments, bool ignoreFailure) {
             var executable = ResolveClientTool(tool);
             if (executable == null) {
                 if (ignoreFailure)
@@ -304,6 +305,7 @@ namespace pyRevitCLI {
             }
 
             using (process) {
+                var deadline = DateTime.UtcNow + ClientCliTimeout;
                 var outputRead = process.StandardOutput.ReadToEndAsync();
                 var errorRead = process.StandardError.ReadToEndAsync();
                 if (!process.WaitForExit((int)ClientCliTimeout.TotalMilliseconds)) {
@@ -317,9 +319,11 @@ namespace pyRevitCLI {
                     throw new PyRevitException(
                         $"'{tool} {arguments}' did not finish within {ClientCliTimeout.TotalSeconds:0} seconds and was stopped.");
                 }
-                process.WaitForExit();
-                var output = outputRead.GetAwaiter().GetResult();
-                var error = errorRead.GetAwaiter().GetResult();
+                var remaining = deadline - DateTime.UtcNow;
+                var streamsClosed = Task.WhenAll(outputRead, errorRead)
+                    .Wait(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
+                var output = streamsClosed ? outputRead.Result : string.Empty;
+                var error = streamsClosed ? errorRead.Result : string.Empty;
                 if (ignoreFailure)
                     return;
                 if (!string.IsNullOrWhiteSpace(output))
@@ -331,7 +335,7 @@ namespace pyRevitCLI {
             }
         }
 
-        private static readonly TimeSpan ClientCliTimeout = TimeSpan.FromMinutes(2);
+        internal static TimeSpan ClientCliTimeout = TimeSpan.FromMinutes(2);
 
         private static string ResolveClientTool(string tool) {
             foreach (var directory in ToolSearchDirectories())
