@@ -121,7 +121,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var missing = new List<long>();
             var targets = ResolveTargets(doc, view, request, missing);
             if (request.Action != "select" && request.Ids.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
-                var inView = new HashSet<ElementId>(new FilteredElementCollector(doc, view.Id).ToElementIds());
+                var inView = new HashSet<ElementId>(new FilteredElementCollector(doc, view.Id)
+                    .WherePasses(new LogicalOrFilter(
+                        new ElementIsElementTypeFilter(false),
+                        new ElementIsElementTypeFilter(true)))
+                    .ToElementIds());
                 var notInView = targets.Where(id => !inView.Contains(id)).ToList();
                 if (notInView.Count > 0) {
                     targets = targets.Where(inView.Contains).ToList();
@@ -230,8 +234,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (transaction.Start() != TransactionStatus.Started)
                     throw new AgentException("show_failed", "Revit did not start the transaction for the temporary view change.");
                 change();
-                if (transaction.Commit() != TransactionStatus.Committed)
+                var status = transaction.Commit();
+                if (status == TransactionStatus.RolledBack)
                     throw new AgentException("show_failed", "Revit rolled back the temporary view change; the view is unchanged.");
+                if (status != TransactionStatus.Committed)
+                    throw new AgentException("show_failed",
+                        $"Revit did not confirm the temporary view change (status {status}); check the view before relying on it.");
             }
         }
     }
