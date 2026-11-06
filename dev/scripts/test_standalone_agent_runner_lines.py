@@ -6,6 +6,7 @@ import importlib.util
 import os
 import re
 import sys
+import threading
 import time
 import tokenize
 import traceback
@@ -1327,6 +1328,53 @@ class AgentRunnerOutputTests(unittest.TestCase):
         captured.seek(0)
         captured.write("fg")
         self.assertEqual("abcdefg", captured.getvalue())
+
+    def test_appends_do_not_seek_while_the_cursor_is_at_the_end(self):
+        """IronPython 2.7's StringIO joins its buffer on every seek."""
+        real = self.runner.StringIO
+        seeks = []
+
+        class CountingStringIO(object):
+            tell = real.tell
+            write = real.write
+
+            @staticmethod
+            def seek(stream, *args):
+                seeks.append(args)
+                return real.seek(stream, *args)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", CountingStringIO):
+            for _ in range(5):
+                captured.write("x")
+        self.assertEqual([], seeks)
+        self.assertEqual("xxxxx", captured.getvalue())
+
+    def test_writes_after_a_truncate_leave_no_gap(self):
+        """Truncating the stream moves the end the next write appends at."""
+        captured = self.runner._CappedOutput(100)
+        captured.write("hello world")
+        captured.truncate(0)
+        captured.seek(0)
+        captured.write("abc")
+        self.assertEqual("abc", captured.getvalue())
+
+    def test_concurrent_writers_keep_every_character(self):
+        """stdout and stderr share one buffer that script threads can write to."""
+        captured = self.runner._CappedOutput(100000)
+
+        def write_many(char):
+            for _ in range(2000):
+                captured.write(char)
+
+        threads = [threading.Thread(target=write_many, args=(char,)) for char in "ab"]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        text = captured.getvalue()
+        self.assertEqual((2000, 2000), (text.count("a"), text.count("b")))
+        self.assertNotIn("\x00", text)
 
     def test_non_text_is_written_as_text_on_python_two(self):
         """IronPython 2.7 scripts may write any object, as StringIO allowed."""
