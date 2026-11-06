@@ -28,6 +28,7 @@ DefaultDirName={autopf}\{#MyAppName}
 UsePreviousAppDir=yes
 ;     mode
 PrivilegesRequired=lowest
+RedirectionGuard=no
 ; Build info
 OutputDir=..\dist
 ; Keep this list aligned with the installer assets staged by build/.
