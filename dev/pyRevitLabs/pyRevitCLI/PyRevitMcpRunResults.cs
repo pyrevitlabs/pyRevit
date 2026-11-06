@@ -322,12 +322,25 @@ namespace pyRevitCLI {
             };
             if (changes["by_category"] is JObject byCategory && byCategory.Count > 0)
                 compact["by_category"] = byCategory;
-            if (changes["added"] is JArray added && added.Count > 0)
+            if (changes["added"] is JArray added && added.Count > 0) {
                 compact["added_ids"] = new JArray(added.Take(MaxChangeIds).Select(element => element["id"]));
+                var families = added.Where(IsFamilyElement).Take(MaxChangeIds).ToList();
+                if (families.Count > 0)
+                    compact["added_families"] = new JArray(families);
+            }
+            if (changes["modified"] is JArray modified && modified.Count > 0)
+                compact["modified"] = new JArray(modified.Take(MaxChangeIds));
+            if (changes["deleted"] is JArray deleted && deleted.Count > 0)
+                compact["deleted_ids"] = new JArray(deleted.Take(MaxChangeIds));
             CopyIfNotEmpty(changes, compact, "other_documents");
-            if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > 0 || changes.Value<int>("deleted_count") > 0)
-                compact["details"] = "Element names, classes and modified or deleted ids are in get_run(run_id).";
+            if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > MaxChangeIds || changes.Value<int>("deleted_count") > MaxChangeIds)
+                compact["details"] = $"Only the first {MaxChangeIds} elements of each list are shown; get_run(run_id) has more, with names and classes of added elements.";
             return compact;
+        }
+
+        private static bool IsFamilyElement(JToken element) {
+            var elementClass = element.Value<string>("class");
+            return elementClass == "Family" || elementClass == "FamilySymbol";
         }
 
         private static bool HasChanges(JObject changes) {
