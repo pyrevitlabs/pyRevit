@@ -41,7 +41,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// views in <c>export</c> and <c>viewport</c> modes, to the view for the capture only: a
     /// view template that controls them is detached inside the rolled-back group. In a workshared
     /// model, a view the user doesn't own is duplicated in the group and the copy is changed.
-    /// A view name shared by several views fails with <c>view_ambiguous</c> listing their ids.
+    /// A view name shared by several views fails with <c>view_ambiguous</c> listing their ids,
+    /// unless <c>screen</c> mode can take the active view among them.
     /// Invariant: capturing never leaves a change in the model.
     /// </remarks>
     internal static class AgentCapture {
@@ -258,7 +259,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             string path;
             View captured;
             if (request.Mode == "screen") {
-                captured = ResolveView(doc, uidoc, request.View);
+                captured = ResolveView(doc, uidoc, request.View, preferActive: true);
                 if (captured.Id != uidoc.ActiveView.Id)
                     throw new AgentException("view_not_active",
                         $"Mode 'screen' copies the active view's window, and view '{captured.Name}' is not the active view; "
@@ -320,17 +321,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JArray PointArray(XYZ point) => new JArray(point.X, point.Y, point.Z);
 
-        private static View ResolveView(Document doc, UIDocument uidoc, string selector) {
+        private static View ResolveView(Document doc, UIDocument uidoc, string selector, bool preferActive = false) {
             if (string.Equals(selector, "active", StringComparison.OrdinalIgnoreCase))
                 return uidoc.ActiveView;
 
             var matches = AgentSelectors.FindView(
                 selector,
-                id => doc.GetElement(AgentIds.FromValue(id)) is View byId && !byId.IsTemplate ? byId : null,
+                id => ViewById(doc, id),
                 new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>().Where(view => !view.IsTemplate),
                 view => view.Name);
-            if (matches.Count == 0)
-                throw new AgentException("view_not_found", $"No view named '{selector}'. Use 'active', '3d', a view name or a view id.");
+            if (matches.Count == 0) {
+                var named = long.TryParse(selector, out _) ? $"with id or name '{selector}'" : $"named '{selector}'";
+                throw new AgentException("view_not_found", $"No view {named}. Use 'active', '3d', a view name or a view id.");
+            }
+            if (matches.Count > 1 && preferActive && matches.Any(view => view.Id == uidoc.ActiveView.Id))
+                return uidoc.ActiveView;
             if (matches.Count > 1) {
                 var error = new AgentException("view_ambiguous",
                     $"{matches.Count} views are named '{selector}'; pass the id of the one to capture.");
@@ -344,6 +349,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return matches[0];
         }
 
+        private static View ViewById(Document doc, long id) {
+            try {
+                return doc.GetElement(AgentIds.FromValue(id)) is View view && !view.IsTemplate ? view : null;
+            }
+            catch (OverflowException) {
+                return null;
+            }
+        }
+
         /// <summary>
         /// The view a capture may change inside its rolled-back group.
         /// </summary>
@@ -351,11 +365,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// In a workshared model, editing a view the user doesn't own borrows it from the central
         /// model, and the rollback does not give it back; another user's view fails with an
         /// ownership dialog. Such a view is duplicated inside the group and the copy is changed
-        /// instead. The copy doesn't carry the original's temporary hide/isolate.
+        /// instead. The copy doesn't carry the original's temporary hide/isolate, so
+        /// <c>viewport</c> refuses such a view while that mode is on.
         /// Invariant: only call inside a transaction of the rolled-back capture group.
         /// </remarks>
         private static View ViewToEdit(Document doc, View view) {
-            if (!doc.IsWorkshared || WorksharingUtils.GetCheckoutStatus(doc, view.Id) == CheckoutStatus.OwnedByCurrentUser)
+            if (!NeedsCopyToEdit(doc, view))
                 return view;
             var option = view.CanViewBeDuplicated(ViewDuplicateOption.WithDetailing)
                 ? ViewDuplicateOption.WithDetailing
@@ -366,6 +381,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     + "use mode 'export' without 'detail_level' and 'display_style'.");
             return (View)doc.GetElement(view.Duplicate(option));
         }
+
+        private static bool NeedsCopyToEdit(Document doc, View view) =>
+            doc.IsWorkshared && WorksharingUtils.GetCheckoutStatus(doc, view.Id) != CheckoutStatus.OwnedByCurrentUser;
 
         private static string ExportView(Document doc, View view, string directory, string baseName, int width) {
             if (!view.CanBePrinted)
@@ -450,6 +468,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var uiView = uidoc.GetOpenUIViews().FirstOrDefault(open => open.ViewId == view.Id)
                 ?? throw new AgentException("view_not_open", $"View '{view.Name}' is not open in Revit; use mode 'export' or open the view.");
 
+            if (view.IsTemporaryHideIsolateActive() && NeedsCopyToEdit(doc, view))
+                throw new AgentException("view_not_supported",
+                    $"View '{view.Name}' is not yours in this workshared model, so 'viewport' would crop a copy without its "
+                    + "temporary hide/isolate; use mode 'screen' to capture it as shown.");
             var corners = uiView.GetZoomCorners();
             using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
                 group.Start();
