@@ -109,10 +109,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
+        /// <param name="tabIconDecorator">Shows tab bundle icons before tab titles.</param>
         /// <returns>A new ITabBuilder instance.</returns>
-        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger)
+        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger, ITabIconDecorator tabIconDecorator)
         {
-            return new TabBuilder(uiApplication, logger);
+            return new TabBuilder(uiApplication, logger, tabIconDecorator);
         }
 
         /// <summary>
@@ -270,7 +271,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // so all readers observe the same value within a single BuildUI call.
             var buildContext = new BuildContext();
             var panelStyleManager = CreatePanelStyleManager(logger);
-            var tabBuilder = CreateTabBuilder(uiApplication, logger);
+            var themeDetector = new RevitThemeDetector(logger);
+            var tabIconDecorator = new TabIconDecorator(path => iconManager.LoadBitmapSource(path), themeDetector.IsDarkTheme);
+            var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator);
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
             var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
@@ -299,7 +302,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 hookManager,
                 uiManager,
                 ribbonScanner,
-                logger);
+                logger,
+                tabIconDecorator);
         }
 
         /// <summary>
