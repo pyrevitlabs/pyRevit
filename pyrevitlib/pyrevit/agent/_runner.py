@@ -276,6 +276,39 @@ def _runs_dynamic_code(source):
 
 _DYNAMIC_CODE_NAMES = ("exec", "eval", "execfile", "compile")
 
+
+def _hides_loops_in_fstrings(source):
+    """True when an f-string token holds a loop :func:`_guard_loop_headers` can't see.
+
+    CPython before 3.12 tokenizes an f-string, replacement fields included,
+    as one string token, and IronPython 3.4 as a name token for its prefix
+    followed by one string token, so a comprehension inside one is never
+    rewritten. Such a run falls back to checking the deadline on every line,
+    like code compiled at run time.
+    """
+    previous = None
+    for token in _significant_tokens(source):
+        if token[0] == tokenize.STRING and _FIELD_LOOP.search(token[1]):
+            prefix = re.match(r"[A-Za-z]*", token[1]).group()
+            if _is_split_prefix(previous, token):
+                prefix += previous[1]
+            if "f" in prefix.lower():
+                return True
+        previous = token
+    return False
+
+
+def _is_split_prefix(previous, token):
+    return (
+        previous is not None
+        and previous[0] == tokenize.NAME
+        and set(previous[1].lower()) <= set("rbuf")
+        and previous[3] == token[2]
+    )
+
+
+_FIELD_LOOP = re.compile(r"\{[^{}]*\b(?:for|while)\b")
+
 _LAYOUT_TOKENS = (
     tokenize.NL,
     tokenize.NEWLINE,
@@ -895,6 +928,7 @@ def run(context):
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {"timed_out": False}
+    timed_out_after_script = False
     tracked_transactions = {}
     try:
         workspace = _enter_workspace(context.Workspace)
@@ -919,7 +953,9 @@ def run(context):
             track = _needs_transaction_tracking(
                 context.Workspace, starts_recorded, dynamic_code
             )
-            unguarded_code = not loops_guarded or dynamic_code
+            unguarded_code = (
+                not loops_guarded or dynamic_code or _hides_loops_in_fstrings(source)
+            )
         phases.lap("compile")
         if rewrite_problem:
             print(
@@ -980,6 +1016,7 @@ def run(context):
                 phases.lap("result")
 
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
+                timed_out_after_script = True
                 raise RunTimedOut(timeout_s)
         finally:
             if stop_watchdog:
@@ -988,13 +1025,16 @@ def run(context):
             sys.setrecursionlimit(saved_recursion_limit)
     except RunTimedOut:
         failed = True
-        context.SetError(
-            "timeout",
-            "The script ran longer than its {:g} second limit and was stopped; its "
-            "changes were rolled back. Pass a larger timeout_s if the work needs "
-            "more time.".format(timeout_s),
-            _format_script_traceback(),
-        )
+        if timed_out_after_script:
+            context.SetError("timeout", _late_timeout_message(timeout_s), "")
+        else:
+            context.SetError(
+                "timeout",
+                "The script ran longer than its {:g} second limit and was stopped; "
+                "its changes were rolled back. Pass a larger timeout_s if the work "
+                "needs more time.".format(timeout_s),
+                _format_script_traceback(),
+            )
     except Exception as ex:
         failed = True
         error_type, message = _describe_error(ex)
@@ -1022,6 +1062,15 @@ def run(context):
         return
     if failed or "result" not in namespace:
         return
+
+
+def _late_timeout_message(timeout_s):
+    return (
+        "The script passed its {:g} second limit inside a call that could not be "
+        "interrupted, such as a long Revit API call, and was stopped when it "
+        "finished; its changes were rolled back. Pass a larger timeout_s if the "
+        "work needs more time.".format(timeout_s)
+    )
 
 
 def _is_successful_exit(error):

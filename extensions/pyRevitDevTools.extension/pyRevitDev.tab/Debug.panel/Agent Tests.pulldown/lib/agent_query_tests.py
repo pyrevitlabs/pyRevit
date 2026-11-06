@@ -172,10 +172,11 @@ class TimeoutTests(TestCase):
         """A handler the runner can't narrow still can't keep a loop running past the timeout."""
         for engine in ENGINES:
             response = run(
+                "import itertools\n"
                 "Base = BaseException\n"
                 "while True:\n"
                 "    try:\n"
-                "        for i in range(10 ** 9):\n"
+                "        for i in itertools.count():\n"
                 "            pass\n"
                 "    except Base:\n"
                 "        pass\n",
