@@ -1,7 +1,7 @@
 # IronPython 3.4.2 drop-in assemblies
 
 `IronPython.dll` and `Microsoft.Dynamic.dll` built from upstream IronPython 3.4.2 and DLR
-1.3.5 with three fixes for issue #3918. The pyRevit build copies them over the NuGet
+1.3.5 with the fixes for issue #3918 below. The pyRevit build copies them over the NuGet
 `IronPython` 3.4.2 / `DynamicLanguageRuntime` 1.3.5 assemblies it deploys to
 `bin/<netfx|netcore>/engines/IPY342` (see `dev/pyRevitLoader/Directory.Build.targets`).
 Every other IronPython and DLR assembly still comes from NuGet.

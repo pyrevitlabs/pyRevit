@@ -46,11 +46,6 @@
         <PackageReference Include="IronPython" Version="$(Version)"/>
     </ItemGroup>
 
-    <!--
-      Replaces the NuGet IronPython.dll and Microsoft.Dynamic.dll with patched builds of the
-      same version and identity, so a deep exception no longer overflows Revit's stack (#3918).
-      Sources and rebuild steps: dev/libs/IronPython/IPY342/README.md.
-    -->
     <PropertyGroup Condition="'$(UseIronPython)' != 'false' AND !$(IronPythonVersion.Contains('PR'))">
         <IronPythonDropInDir Condition="'$(NetFolder)' == 'netfx'">$(IronPythonStdLibDir)\$(IronPythonVersion)\net462</IronPythonDropInDir>
         <IronPythonDropInDir Condition="'$(NetFolder)' == 'netcore'">$(IronPythonStdLibDir)\$(IronPythonVersion)\net8.0</IronPythonDropInDir>
