@@ -47,7 +47,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
-                return Failure(id, -32603, ex.Message, "internal_error", new JObject { ["outcome"] = "unknown" });
+                return Failure(id, -32603, "The agent request failed inside Revit; the pyRevit log has the details.",
+                    "internal_error", new JObject { ["outcome"] = "unknown" });
             }
         }
 
