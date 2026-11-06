@@ -17,23 +17,39 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal sealed class AgentEngineWarmUp {
         private const string RunMethod = "run";
-        private int contacted;
+        private int load;
+        private int contactedLoad = -1;
 
         /// <summary>
-        /// Forgets the request seen in the previous session load. A reload drops the cached
-        /// engines, so the next request warms again.
+        /// The current session load, to pass back to <see cref="OnRequest"/> once the request
+        /// has been handled.
+        /// </summary>
+        public int Load => Volatile.Read(ref load);
+
+        /// <summary>
+        /// Starts a new session load. A reload drops the cached engines, so the next request
+        /// warms again.
         /// </summary>
         public void Reset() {
-            Interlocked.Exchange(ref contacted, 0);
+            Interlocked.Increment(ref load);
         }
 
         /// <summary>
-        /// Records an agent request and says whether it should queue the warm-up: only the first
-        /// request of the session load does, and not when it is a <c>run</c>, which starts the
-        /// engine itself.
+        /// Records a handled agent request and says whether it should queue the warm-up: only
+        /// the first request of the session load does, and not when it is a <c>run</c>, which
+        /// starts the engine itself.
         /// </summary>
-        public bool OnRequest(string method) {
-            if (Interlocked.Exchange(ref contacted, 1) != 0)
+        /// <param name="method">The request's JSON-RPC method.</param>
+        /// <param name="loadAtStart"><see cref="Load"/> read before the request was handled.</param>
+        /// <remarks>
+        /// A request during which a reload happened, such as a <c>run</c> that reloads pyRevit,
+        /// belongs to the previous load. It records nothing, so the new load stays unwarmed until
+        /// its own first request.
+        /// </remarks>
+        public bool OnRequest(string method, int loadAtStart) {
+            if (loadAtStart != Load)
+                return false;
+            if (Interlocked.Exchange(ref contactedLoad, loadAtStart) == loadAtStart)
                 return false;
             return method != RunMethod;
         }

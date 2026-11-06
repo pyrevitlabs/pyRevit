@@ -277,6 +277,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// The session load a request starts in; pass it to <see cref="NoteRequest"/>.
+        /// </summary>
+        internal static int SessionLoad => engineWarmUp.Load;
+
+        /// <summary>
         /// Queues the engine warm-up after the first agent request of a session load, so the
         /// first run finds the engine ready. Called on the pipe thread once a request is handled.
         /// </summary>
@@ -286,8 +291,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <see cref="HandleRequest"/> don't count: they come from a command, not an agent.
         /// Failures are logged at debug level only and never affect the host.
         /// </remarks>
-        internal static void NoteRequest(string method) {
-            if (inlineApplication != null || !engineWarmUp.OnRequest(method))
+        internal static void NoteRequest(string method, int loadAtStart) {
+            if (inlineApplication != null || !engineWarmUp.OnRequest(method, loadAtStart))
                 return;
             try {
                 Dispatcher?.Post(WarmUpEngine);

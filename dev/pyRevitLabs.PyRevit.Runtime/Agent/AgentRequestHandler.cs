@@ -27,6 +27,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static string Handle(string line) {
             JToken id = null;
             string method = null;
+            var loadAtStart = AgentHost.SessionLoad;
             try {
                 var request = JObject.Parse(line);
                 id = request["id"];
@@ -46,7 +47,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             finally {
                 if (method != null)
-                    AgentHost.NoteRequest(method);
+                    AgentHost.NoteRequest(method, loadAtStart);
             }
         }
 

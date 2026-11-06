@@ -1,6 +1,5 @@
 """Host-free tests for the agent runner's warm-up (issue #3911)."""
 
-import json
 import sys
 import types
 import unittest
@@ -26,7 +25,7 @@ class _XYZ(object):
 
 
 class AgentRunnerWarmUpTests(unittest.TestCase):
-    """``warm_up`` goes through the run's code paths without a Revit application."""
+    """``warm_up`` runs the paths a cold first run pays for, and nothing else."""
 
     @classmethod
     def setUpClass(cls):
@@ -34,7 +33,7 @@ class AgentRunnerWarmUpTests(unittest.TestCase):
         cls.runner = _load_runner()
 
     def setUp(self):
-        """Give the runner the Revit types the warm-up script uses."""
+        """Give the runner the Revit types the warm-up uses."""
         db = types.SimpleNamespace(
             ElementId=_ElementId,
             Element=type("Element", (), {}),
@@ -47,74 +46,66 @@ class AgentRunnerWarmUpTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_exercises_every_phase_of_a_guarded_run(self):
-        """Rewriting, compiling, watchdog, recording, serializing and rollback all run."""
-        runner = self.runner
-        spies = {
-            name: mock.patch.object(runner, name, wraps=getattr(runner, name))
-            for name in (
-                "_record_transaction_starts",
-                "_compile_source",
-                "_start_watchdog",
-                "_track_transaction",
-                "_to_jsonable",
-                "_roll_back_open_transactions",
+    def _spy(self, *names):
+        spies = {}
+        for name in names:
+            patcher = mock.patch.object(
+                self.runner, name, wraps=getattr(self.runner, name)
             )
-        }
-        started = {name: patch.start() for name, patch in spies.items()}
-        self.addCleanup(mock.patch.stopall)
+            spies[name] = patcher.start()
+            self.addCleanup(patcher.stop)
+        return spies
 
-        runner.warm_up()
-
-        for name, spy in started.items():
-            self.assertTrue(spy.called, name + " was not exercised")
-        _, guard_loops = started["_compile_source"].call_args.args
-        self.assertTrue(guard_loops)
-
-    def test_serializes_the_result_through_the_runs_converter(self):
-        """ElementId, XYZ and set values go through ``_to_jsonable``."""
-        results = []
-        context = self.runner._WarmUpContext()
-        context.SetResult = results.append
-
-        self.runner.run(context)
-
-        self.assertIsNone(context.error)
-        self.assertEqual(
-            {
-                "values": [0, 1, 2],
-                "unique": [0, 1, 2],
-                "id": -1,
-                "point": [1.0, 2.0, 3.0],
-            },
-            json.loads(results[0]),
+    def test_compiles_serializes_and_scans_for_transactions(self):
+        """The compile, result and rollback phases of a guarded run all get exercised."""
+        spies = self._spy(
+            "_record_transaction_starts",
+            "_compile_source",
+            "_guard_loop_headers",
+            "_to_jsonable",
+            "_roll_back_open_transactions",
+            "_transaction_rank",
         )
-
-    def test_needs_no_revit_application_or_document(self):
-        """The stand-in context has no document to read."""
-        context = self.runner._WarmUpContext()
-
-        self.assertIsNone(context.UIApp.ActiveUIDocument)
-        self.assertIsNone(context.UIApp.Application)
-        self.assertIsNone(context.Workspace)
-
-    def test_restores_stdout(self):
-        """The warm-up's captured output doesn't leak into the engine's stdout."""
-        stdout = sys.stdout
 
         self.runner.warm_up()
 
-        self.assertIs(stdout, sys.stdout)
+        for name, spy in spies.items():
+            self.assertTrue(spy.called, name + " was not exercised")
+        _, guard_loops = spies["_compile_source"].call_args.args
+        self.assertTrue(guard_loops)
 
-    def test_failure_raises_so_the_host_logs_a_non_zero_exit(self):
-        """A failing warm-up script surfaces as an exception, not silence."""
+    def test_does_nothing_a_cold_run_would_not_need(self):
+        """No run, no exec, no watchdog, no tracer: the main thread is held only as long as needed."""
+        spies = self._spy("run", "_start_watchdog", "_execution_tracer")
+        trace = sys.gettrace()
+
+        with mock.patch.object(sys, "settrace") as settrace:
+            self.runner.warm_up()
+
+        for name, spy in spies.items():
+            self.assertFalse(spy.called, name + " was called")
+        settrace.assert_not_called()
+        self.assertIs(trace, sys.gettrace())
+
+    def test_clears_the_transaction_type_caches_like_a_run(self):
+        """Cached types would keep the warm-up's values alive across runs."""
+        self.runner.warm_up()
+
+        self.assertEqual({}, self.runner._TRANSACTION_RANKS)
+        self.assertEqual(set(), self.runner._UNTRACKED_TYPES)
+        self.assertEqual(set(), self.runner._TRACKED_TYPES)
+
+    def test_a_source_it_cannot_rewrite_raises(self):
+        """The host logs a non-zero exit instead of silently skipping the warm-up."""
         with mock.patch.object(
-            self.runner._WarmUpContext, "Source", "raise ValueError('boom')\n"
+            self.runner,
+            "_compile_source",
+            return_value=(None, "tokenize failed", False),
         ):
             with self.assertRaises(RuntimeError) as raised:
                 self.runner.warm_up()
 
-        self.assertIn("boom", str(raised.exception))
+        self.assertIn("tokenize failed", str(raised.exception))
 
 
 if __name__ == "__main__":
