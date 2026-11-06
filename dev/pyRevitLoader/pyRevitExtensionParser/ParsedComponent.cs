@@ -43,6 +43,7 @@ namespace pyRevitExtensionParser
         public string Hyperlink { get; set; }
         public string HelpUrl { get; set; }
         public string Highlight { get; set; }
+        public List<string> Shortcuts { get; set; } = new List<string>();
         public string MinRevitVersion { get; set; }
         public string MaxRevitVersion { get; set; }
         public bool IsBeta { get; set; }
