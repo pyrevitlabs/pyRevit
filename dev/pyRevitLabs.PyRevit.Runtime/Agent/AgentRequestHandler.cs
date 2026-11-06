@@ -26,10 +26,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public static string Handle(string line) {
             JToken id = null;
+            string method = null;
             try {
                 var request = JObject.Parse(line);
                 id = request["id"];
-                var method = request.Value<string>("method") ?? string.Empty;
+                method = request.Value<string>("method") ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
                 return Success(id, Dispatch(method, parameters, id));
             }
@@ -42,6 +43,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
                 return Failure(id, -32603, ex.Message, "internal_error");
+            }
+            finally {
+                if (method != null)
+                    AgentHost.NoteRequest(method);
             }
         }
 

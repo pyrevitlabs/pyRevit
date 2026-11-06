@@ -401,14 +401,25 @@ Revit API through pythonnet, and pyrevitlib features built for IronPython may be
 
 ### Engine warm-up
 
-Agent runs reuse one cached engine per session load, so only the first run starts the engine
-and imports `pyrevit.agent._runner`, which takes about two seconds on IronPython. When the
-host is enabled and `default_engine` is IronPython, the host does that work once per session
-load, on the first `Idling` after the load: it runs a script that only imports the runner,
-with the same engine cache key and flags as a real run. The warm-up touches no document,
-shows no output and is skipped when the agent is off or Revit has no user interface. It
-reports to the debug log only, as a `[PERF] agent engine warm-up` line, or as `Agent engine
-warm-up failed` without affecting the host.
+Agent runs reuse one cached engine per session load, so only the first run starts the engine,
+imports `pyrevit.agent._runner` and runs the runner's code for the first time, which costs
+about three seconds on IronPython. The host does that work ahead of time, once per session
+load, when an agent first makes contact: after the pipe handles the first request of the
+load (`ping`, `get_context` or any other method), it queues the warm-up on the Revit main
+thread, where it runs when Revit is next idle. A session whose agent never connects pays
+nothing.
+
+The warm-up uses the same engine cache key and flags as a real run, and calls
+`_runner.warm_up()`, which passes a small script through `run()` against a stand-in context
+with no Revit application: source rewriting, compilation, loop guards, transaction recording,
+result serialization and the rollback scan all run once. It reads no document, starts no
+transaction, writes no run record and shows no output. It is skipped when the first request
+is itself a `run` (that run starts the engine anyway), when the engine is already cached,
+when the agent is off, and when `default_engine` is not IronPython. A request that arrives
+while the warm-up runs waits for it, as it would for a run. Requests made in-process through
+`AgentHost.HandleRequest` don't trigger it. The warm-up reports to the debug log only, as a
+`[PERF] agent engine warm-up` line with the script's exit code, or as `Agent engine warm-up
+failed`, and never affects the host.
 
 CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded assembly and
 keeps the interpreter up for the rest of the process, so the first CPython run still pays for

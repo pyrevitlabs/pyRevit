@@ -4,49 +4,65 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
     public sealed class AgentEngineWarmUpTests {
-        [Fact]
-        public void LoadsBeforeTheFirstIdlingScheduleOneWarmUp() {
+        [Theory]
+        [InlineData("ping")]
+        [InlineData("get_context")]
+        [InlineData("lookup_api")]
+        [InlineData("no_such_method")]
+        public void TheFirstRequestOfASessionLoadQueuesTheWarmUp(string method) {
             var warmUp = new AgentEngineWarmUp();
 
-            Assert.True(warmUp.Schedule(hasUserInterface: true));
-            Assert.False(warmUp.Schedule(hasUserInterface: true));
+            Assert.True(warmUp.OnRequest(method));
         }
 
         [Fact]
-        public void ALoadAfterTheWarmUpRanSchedulesAnother() {
+        public void LaterRequestsQueueNothing() {
             var warmUp = new AgentEngineWarmUp();
-            warmUp.Schedule(hasUserInterface: true);
+            warmUp.OnRequest("ping");
 
-            Assert.True(warmUp.TakeScheduled());
-            Assert.True(warmUp.Schedule(hasUserInterface: true));
+            Assert.False(warmUp.OnRequest("ping"));
+            Assert.False(warmUp.OnRequest("get_context"));
         }
 
         [Fact]
-        public void IdlingWithoutAScheduledWarmUpTakesNothing() {
+        public void AFirstRunQueuesNothingAndUsesUpTheSessionLoad() {
             var warmUp = new AgentEngineWarmUp();
 
-            Assert.False(warmUp.TakeScheduled());
-            warmUp.Schedule(hasUserInterface: true);
-            warmUp.TakeScheduled();
-            Assert.False(warmUp.TakeScheduled());
+            Assert.False(warmUp.OnRequest("run"));
+            Assert.False(warmUp.OnRequest("ping"));
         }
 
         [Fact]
-        public void RevitWithoutAUserInterfaceIsNotWarmed() {
+        public void AReloadLetsTheNextRequestWarmAgain() {
             var warmUp = new AgentEngineWarmUp();
+            warmUp.OnRequest("ping");
 
-            Assert.False(warmUp.Schedule(hasUserInterface: false));
-            Assert.False(warmUp.TakeScheduled());
+            warmUp.Reset();
+
+            Assert.True(warmUp.OnRequest("get_context"));
+        }
+
+        [Fact]
+        public void ConcurrentFirstRequestsQueueOneWarmUp() {
+            var warmUp = new AgentEngineWarmUp();
+            var queued = 0;
+
+            System.Threading.Tasks.Parallel.For(0, 64, _ => {
+                if (warmUp.OnRequest("ping"))
+                    System.Threading.Interlocked.Increment(ref queued);
+            });
+
+            Assert.Equal(1, queued);
         }
 
         [Theory]
-        [InlineData(true, true, true)]
-        [InlineData(false, true, false)]
-        [InlineData(true, false, false)]
-        [InlineData(false, false, false)]
-        public void WarmsOnlyARunningHostWhoseDefaultEngineIsIronPython(
-            bool hostRunning, bool defaultEngineIsIronPython, bool expected) {
-            Assert.Equal(expected, AgentEngineWarmUp.ShouldWarm(hostRunning, defaultEngineIsIronPython));
+        [InlineData(true, true, false, true)]
+        [InlineData(false, true, false, false)]
+        [InlineData(true, false, false, false)]
+        [InlineData(true, true, true, false)]
+        public void WarmsOnlyAnEnabledIronPythonDefaultWithNoCachedEngine(
+            bool agentEnabled, bool defaultEngineIsIronPython, bool engineCached, bool expected) {
+            Assert.Equal(expected, AgentEngineWarmUp.ShouldWarm(agentEnabled, defaultEngineIsIronPython, engineCached));
         }
     }
 }

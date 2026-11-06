@@ -1,50 +1,51 @@
+using System.Threading;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// Decides when the host warms the agent engine: starting it and importing the runner
-    /// once per session load, on the first Idling after the load, so the first agent run
-    /// doesn't pay about two seconds for both.
+    /// Decides when the host warms the agent engine: starting it, importing the runner and
+    /// running the runner's code paths once per session load, after the first request an agent
+    /// sends, so the first run doesn't pay about two seconds for them.
     /// </summary>
     /// <remarks>
+    /// Waiting for the first request keeps the cost off Revit sessions whose agent never
+    /// connects; warming on the first Idling froze Revit for up to 2.4 s as the model opened.
     /// Only the IronPython engine is warmed, and only when it is the configured default.
     /// CPython is left to its first run: pythonnet's first initialize scans every loaded
     /// assembly, can fail on missing add-in dependencies, and keeps the interpreter up for the
-    /// rest of the Revit process, which is not a safe thing to start unasked on Idling.
-    /// Not thread-safe: the host uses it on the Revit main thread only.
+    /// rest of the Revit process, which is not a safe thing to start unasked.
+    /// Thread-safe: requests arrive on pipe threads, reloads on the Revit main thread.
     /// </remarks>
     internal sealed class AgentEngineWarmUp {
-        private bool scheduled;
+        private const string RunMethod = "run";
+        private int contacted;
 
         /// <summary>
-        /// Whether the caller should subscribe the warm-up to the next Idling event.
+        /// Forgets the request seen in the previous session load. A reload drops the cached
+        /// engines, so the next request warms again.
+        /// </summary>
+        public void Reset() {
+            Interlocked.Exchange(ref contacted, 0);
+        }
+
+        /// <summary>
+        /// Records an agent request and says whether it should queue the warm-up: only the first
+        /// request of the session load does, and not when it is a <c>run</c>, which starts the
+        /// engine itself.
+        /// </summary>
+        public bool OnRequest(string method) {
+            if (Interlocked.Exchange(ref contacted, 1) != 0)
+                return false;
+            return method != RunMethod;
+        }
+
+        /// <summary>
+        /// Whether the queued warm-up should run when the main thread reaches it.
         /// </summary>
         /// <remarks>
-        /// False while a warm-up is already waiting, so loads before the first Idling subscribe
-        /// once, and false when Revit has no user interface, where Idling never comes.
+        /// A cached engine means a run got there first, so warming would only repeat its work.
         /// </remarks>
-        public bool Schedule(bool hasUserInterface) {
-            if (scheduled || !hasUserInterface)
-                return false;
-            scheduled = true;
-            return true;
-        }
-
-        /// <summary>
-        /// Consumes the scheduled warm-up, so the next load can schedule another one.
-        /// </summary>
-        /// <returns>Whether a warm-up was scheduled.</returns>
-        public bool TakeScheduled() {
-            var wasScheduled = scheduled;
-            scheduled = false;
-            return wasScheduled;
-        }
-
-        /// <summary>
-        /// Whether a taken warm-up should run: the host must still be running, because a
-        /// reload that turned the agent off happens before the Idling, and the default engine
-        /// must be IronPython.
-        /// </summary>
-        public static bool ShouldWarm(bool hostRunning, bool defaultEngineIsIronPython) {
-            return hostRunning && defaultEngineIsIronPython;
+        public static bool ShouldWarm(bool agentEnabled, bool defaultEngineIsIronPython, bool engineCached) {
+            return agentEnabled && defaultEngineIsIronPython && !engineCached;
         }
     }
 }

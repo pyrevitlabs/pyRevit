@@ -108,8 +108,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const string WarmUpFileName = "engine_warmup.py";
 
         /// <summary>
-        /// Starts the IronPython engine agent runs use and imports the runner into it, so the
-        /// first run reuses both. Runs nothing else: no transaction, document access or output.
+        /// Starts the IronPython engine agent runs use, imports the runner into it and runs
+        /// <c>_runner.warm_up</c>, so the first run finds the engine, the runner and its code
+        /// paths ready. No transaction, document access, run record or output.
         /// </summary>
         /// <remarks>
         /// Invariant: the engine is set up by the same <see cref="CreateScriptData"/> and
@@ -121,10 +122,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static int WarmUp(UIApplication uiApp, IList<string> searchPaths) {
             Directory.CreateDirectory(AgentPaths.RootDir);
             var entryPath = Path.Combine(AgentPaths.RootDir, WarmUpFileName);
-            File.WriteAllText(entryPath, "from pyrevit.agent import _runner\n", new UTF8Encoding(false));
+            File.WriteAllText(
+                entryPath, "from pyrevit.agent import _runner\n_runner.warm_up()\n", new UTF8Encoding(false));
             return ScriptExecutor.ExecuteScript(
                 CreateScriptData(entryPath, "Agent: engine warm-up"),
                 CreateRuntimeConfigs(uiApp, AgentEngine.IronPython, searchPaths, new Dictionary<string, object>()));
+        }
+
+        /// <summary>
+        /// Whether this session load already has the IronPython engine agent runs use.
+        /// </summary>
+        public static bool IsIronPythonEngineCached() {
+            var typeId = ScriptEngine.BuildTypeId(
+                new EnvDictionary().SessionUUID, ScriptEngineType.IronPython, AgentExtensionName);
+            return ScriptEngineManager.EngineDict.ContainsKey(typeId);
         }
 
         private static ScriptData CreateScriptData(string entryPath, string commandName) {

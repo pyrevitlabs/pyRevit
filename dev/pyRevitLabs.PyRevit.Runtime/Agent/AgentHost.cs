@@ -42,7 +42,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static AgentTabHighlightVisuals tabHighlightVisuals;
         private static bool tabHighlightDisabled;
         private static readonly AgentEngineWarmUp engineWarmUp = new AgentEngineWarmUp();
-        private static UIApplication warmUpApplication;
 
         internal static AgentTabHighlight.Lease BeginTabHighlight(UIApplication application, Autodesk.Revit.DB.Document document, string title) {
             RefreshConfigIfChanged();
@@ -208,7 +207,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
-            ScheduleEngineWarmUp(uiApp);
+            engineWarmUp.Reset();
 
             lock (sync) {
                 if (dispatcher == null) {
@@ -277,28 +276,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static void ScheduleEngineWarmUp(UIApplication uiApp) {
+        /// <summary>
+        /// Queues the engine warm-up after the first agent request of a session load, so the
+        /// first run finds the engine ready. Called on the pipe thread once a request is handled.
+        /// </summary>
+        /// <remarks>
+        /// The warm-up runs through the dispatcher on the Revit main thread, never on the pipe
+        /// thread, and a <c>run</c> queued after it waits for it. Requests made in-process through
+        /// <see cref="HandleRequest"/> don't count: they come from a command, not an agent.
+        /// Failures are logged at debug level only and never affect the host.
+        /// </remarks>
+        internal static void NoteRequest(string method) {
+            if (inlineApplication != null || !engineWarmUp.OnRequest(method))
+                return;
             try {
-                if (!engineWarmUp.Schedule(uiApp.MainWindowHandle != IntPtr.Zero))
-                    return;
-                warmUpApplication = uiApp;
-                uiApp.Idling += WarmUpEngineOnIdling;
+                Dispatcher?.Post(WarmUpEngine);
             }
             catch (Exception ex) {
-                engineWarmUp.TakeScheduled();
-                logger.Debug("Could not schedule the agent engine warm-up: {0}", ex.Message);
+                logger.Debug("Could not queue the agent engine warm-up: {0}", ex.Message);
             }
         }
 
-        private static void WarmUpEngineOnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
-            var uiApp = warmUpApplication;
-            warmUpApplication = null;
-            var scheduled = engineWarmUp.TakeScheduled();
+        private static JToken WarmUpEngine(UIApplication uiApp) {
             try {
-                uiApp.Idling -= WarmUpEngineOnIdling;
                 var defaultIsIronPython = PyRevitConfigs.GetAgentEngine() == PyRevitConsts.ConfigsAgentEngineIronPython;
-                if (!scheduled || !AgentEngineWarmUp.ShouldWarm(IsRunning, defaultIsIronPython))
-                    return;
+                if (!AgentEngineWarmUp.ShouldWarm(IsRunning && IsEnabled(), defaultIsIronPython, AgentScriptRunner.IsIronPythonEngineCached()))
+                    return null;
                 var clock = Stopwatch.StartNew();
                 var exitCode = AgentScriptRunner.WarmUp(uiApp, SearchPaths);
                 logger.Debug("[PERF] agent engine warm-up: exit code {0} in {1} ms", exitCode, clock.ElapsedMilliseconds);
@@ -306,6 +309,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Debug("Agent engine warm-up failed: {0}", ex.Message);
             }
+            return null;
         }
     }
 
