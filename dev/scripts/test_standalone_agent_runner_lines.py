@@ -789,6 +789,19 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         )
         self.assertEqual(["global", "local"], self._tracked(source))
 
+    def test_a_local_that_gains_a_transaction_attribute_later_is_tracked(self):
+        """Revisit an object whose type held no transaction the first time it was seen."""
+        source = (
+            "class Holder(object):\n"
+            "    pass\n"
+            "def helper():\n"
+            "    held = Holder()\n"
+            "    held.txn = Labelled('later')\n"
+            "    held = None\n"
+            "helper()\n"
+        )
+        self.assertEqual(["later"], self._tracked(source))
+
 
 LOOP_PAST_TIMEOUT = (
     "import time\n"
