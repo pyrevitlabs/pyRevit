@@ -190,6 +190,24 @@ public class EnvRedactorTests {
         Assert.DoesNotContain("private", redacted);
     }
 
+    [Theory]
+    [InlineData("origin 'https://git.corp.example.com/team/private.git' next", "origin 'https://***/***.git' next")]
+    [InlineData("origin 'https://git.corp.example.com/team/private?token=abc' next", "origin 'https://***/***?***' next")]
+    [InlineData("origin 'https://github.com/org/repo.git' next", "origin 'https://github.com/org/repo.git' next")]
+    [InlineData("'https://git.corp.example.com/team'private.git'", "'https://***/***.git'")]
+    public void EnclosingSingleQuotesAreKeptAroundMaskedUrls(string text, string expected) {
+        Assert.Equal(expected, PyRevitEnvRedactor.RedactText(text, Profile));
+    }
+
+    [Fact]
+    public void JsonValuesEndingInAQuoteAfterAUrlAreMaskedWithoutLosingTheQuote() {
+        var json = new JObject { ["origin"] = "'https://git.corp.example.com/team/private.git'" }.ToString(pyRevitLabs.Json.Formatting.None);
+
+        var redacted = JObject.Parse(PyRevitEnvRedactor.RedactJson(json, Profile));
+
+        Assert.Equal("'https://***/***.git'", (string)redacted["origin"]);
+    }
+
     [Fact]
     public void SiblingOfAProfileOutsideUsersIsMaskedWhole() {
         Assert.Equal(@"D:\Profiles\***\x", PyRevitEnvRedactor.RedactText(@"D:\Profiles\jdoe2\x", @"D:\Profiles\jdoe"));
