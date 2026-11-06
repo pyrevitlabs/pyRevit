@@ -7,6 +7,9 @@ import os.path as op
 import agent_harness as harness
 from agent_harness import ENGINES, TestCase, run
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "E2E"
+
 
 def _script_lines(response):
     traceback = (response.get("error") or {}).get("traceback") or ""

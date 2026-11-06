@@ -13,6 +13,8 @@ import types
 import unittest
 from unittest import mock
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RUNNER_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "agent", "_runner.py")
@@ -1352,6 +1354,7 @@ class AgentRunnerTracedRecursionTests(unittest.TestCase):
         errors = []
         before = sys.getrecursionlimit()
         real_settrace = sys.settrace
+        self.addCleanup(real_settrace, sys.gettrace())
 
         def refuse_tracers(tracer):
             if tracer is not None:
