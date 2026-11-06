@@ -172,6 +172,24 @@ public class EnvRedactorTests {
         Assert.Equal(expected, PyRevitEnvRedactor.RedactText(path, @"C:\Users\jane"));
     }
 
+    [Theory]
+    [InlineData(@"D:\Profiles\jdoe o'neil\x")]
+    [InlineData(@"D:\Profiles\jdoe two\x")]
+    [InlineData(@"D:\Profiles\jdoe'x\x")]
+    public void SiblingOfAProfileOutsideUsersWithSpacesOrApostrophesIsMaskedWhole(string path) {
+        Assert.Equal(@"D:\Profiles\***\x", PyRevitEnvRedactor.RedactText(path, @"D:\Profiles\jdoe"));
+    }
+
+    [Theory]
+    [InlineData("https://git.corp.example.com/team'private?token=secret", "https://***/***?***")]
+    [InlineData("\"https://git.corp.example.com/team'private.git\" next", "\"https://***/***.git\" next")]
+    public void PrivateUrlPathsWithApostrophesAreMaskedWhole(string text, string expected) {
+        var redacted = PyRevitEnvRedactor.RedactText(text, Profile);
+
+        Assert.Equal(expected, redacted);
+        Assert.DoesNotContain("private", redacted);
+    }
+
     [Fact]
     public void SiblingOfAProfileOutsideUsersIsMaskedWhole() {
         Assert.Equal(@"D:\Profiles\***\x", PyRevitEnvRedactor.RedactText(@"D:\Profiles\jdoe2\x", @"D:\Profiles\jdoe"));

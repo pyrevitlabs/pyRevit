@@ -36,7 +36,7 @@ namespace pyRevitCLI {
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         private static readonly Regex UrlPattern = new Regex(
-            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""'<>?#]*)?(?<query>[?#][^\s""<>]*)?",
+            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""<>?#]*)?(?<query>[?#][^\s""<>]*)?",
             RegexOptions.Compiled);
 
         private static readonly Regex ScpUrlPattern = new Regex(
@@ -180,7 +180,7 @@ namespace pyRevitCLI {
         private static string MaskFolder(string text, string folder, string masked) =>
             Regex.Replace(
                 text,
-                Regex.Escape(folder) + @"[^\\/\s""'<>:*?|]*",
+                Regex.Escape(folder) + @"(?:[^\\/""<>:*?|]*[^\\/\s""<>:*?|])?",
                 masked.Replace("$", "$$"),
                 RegexOptions.IgnoreCase,
                 RegexTimeout);
