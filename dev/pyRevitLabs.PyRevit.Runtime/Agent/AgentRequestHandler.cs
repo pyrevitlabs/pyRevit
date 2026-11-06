@@ -168,6 +168,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }.ToString(Formatting.None);
         }
 
+        /// <summary>The answer to a request line refused unread, so the client knows nothing ran.</summary>
+        public static string RefuseOversizedLine(string reason) {
+            return Failure(null, -32600, reason, "request_too_large", new JObject { ["outcome"] = "not_run" });
+        }
+
         private static string Failure(JToken id, int code, string message, string type, JObject details = null) {
             var data = new JObject { ["type"] = type };
             if (details != null)

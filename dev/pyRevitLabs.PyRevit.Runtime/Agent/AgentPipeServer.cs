@@ -24,7 +24,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// stalled client can't hold the only server instance and lock every other client out.
     /// The timeout covers waiting for a request only, never the time a request takes to run.
     /// Invariant: a request line longer than <see cref="BoundedLineReader.DefaultMaxLineChars"/>
-    /// closes the connection without being buffered whole, so a client can't exhaust Revit's memory.
+    /// is answered with a <c>request_too_large</c> error without being buffered whole, so a client
+    /// can't exhaust Revit's memory.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -91,16 +92,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void Serve(NamedPipeServerStream pipe) {
             var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
             var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-            string line;
-            try {
-                while (!stopping.IsCancellationRequested && (line = ReadLineUnlessIdle(reader)) != null) {
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-                    writer.WriteLine(handleLine(line));
+            while (!stopping.IsCancellationRequested) {
+                string line;
+                try {
+                    line = ReadLineUnlessIdle(reader);
                 }
-            }
-            catch (InvalidDataException ex) {
-                logger.Warn("Closing an agent pipe connection: {0}", ex.Message);
+                catch (InvalidDataException ex) {
+                    logger.Warn("Refusing an agent pipe request: {0}", ex.Message);
+                    writer.WriteLine(AgentRequestHandler.RefuseOversizedLine(ex.Message));
+                    continue;
+                }
+                if (line == null)
+                    return;
+                if (!string.IsNullOrWhiteSpace(line))
+                    writer.WriteLine(handleLine(line));
             }
         }
 

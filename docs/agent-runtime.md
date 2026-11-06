@@ -581,8 +581,10 @@ Deliberately **not** reused:
 ### Pipe protocol
 
 Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one connection
-at a time and closes one that sends nothing for 30 seconds, or a line longer than 16 MB
-(about 16 million characters); the CLI and MCP server refuse lines past the same limit.
+at a time and closes one that sends nothing for 30 seconds. A line longer than 16,777,216
+characters (up to three bytes each in UTF-8) is answered with a `request_too_large` error
+(outcome `not_run`) without being run; the CLI and MCP server refuse lines they read past
+the same limit.
 Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
