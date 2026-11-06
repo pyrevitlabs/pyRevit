@@ -108,7 +108,20 @@ DEEP_RAISE = (
 
 
 UNBOUNDED_RECURSION = "def r(n):\n    return r(n + 1)\nr(0)\n"
-TRACED_UNBOUNDED_RECURSION = "label = 'DB.Transaction'\n" + UNBOUNDED_RECURSION
+TRACED_UNBOUNDED_RECURSION = (
+    "start = getattr(object(), 'Start', None)\n" + UNBOUNDED_RECURSION
+)
+REPEATED_RECURSION = (
+    "def r(n):\n"
+    "    return r(n + 1)\n"
+    "caught = 0\n"
+    "for _ in range(inputs['runs']):\n"
+    "    try:\n"
+    "        r(0)\n"
+    "    except RuntimeError:\n"
+    "        caught += 1\n"
+    "result = caught\n"
+)
 
 
 class RecursionTests(TestCase):
@@ -126,6 +139,13 @@ class RecursionTests(TestCase):
                         ("RecursionError", "RuntimeError"),
                         engine,
                     )
+
+    def test_recursion_stays_limited_after_many_errors_in_one_function(self):
+        """A function that raised more than 20 times still stops at the limit."""
+        for engine in ENGINES:
+            response = run(REPEATED_RECURSION, engine=engine, inputs={"runs": 50})
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual(50, response["result"], engine)
 
     def test_an_error_raised_deep_in_handler_dense_frames_is_caught(self):
         """An exception raised 300 calls deep, through with and finally blocks, is caught."""
