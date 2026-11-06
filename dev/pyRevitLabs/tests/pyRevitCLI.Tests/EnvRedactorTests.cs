@@ -195,6 +195,9 @@ public class EnvRedactorTests {
     [InlineData("origin 'https://git.corp.example.com/team/private?token=abc' next", "origin 'https://***/***?***' next")]
     [InlineData("origin 'https://github.com/org/repo.git' next", "origin 'https://github.com/org/repo.git' next")]
     [InlineData("'https://git.corp.example.com/team'private.git'", "'https://***/***.git'")]
+    [InlineData("origin 'https://git.corp.example.com/team/private.git', next", "origin 'https://***/***.git', next")]
+    [InlineData("(origin 'https://git.corp.example.com/team/private.git')", "(origin 'https://***/***.git')")]
+    [InlineData("origin 'https://git.corp.example.com/team/private?token=abc'; next", "origin 'https://***/***?***'; next")]
     public void EnclosingSingleQuotesAreKeptAroundMaskedUrls(string text, string expected) {
         Assert.Equal(expected, PyRevitEnvRedactor.RedactText(text, Profile));
     }

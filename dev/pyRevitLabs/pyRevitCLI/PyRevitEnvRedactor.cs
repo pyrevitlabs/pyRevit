@@ -36,7 +36,7 @@ namespace pyRevitCLI {
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         private static readonly Regex UrlPattern = new Regex(
-            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/(?:[^\s""<>?#']|'(?=[^\s""<>]))*)?(?<query>[?#](?:[^\s""<>']|'(?=[^\s""<>]))*)?",
+            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>\[[^\]\s""'<>/]+\]|[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/(?:[^\s""<>?#']|'(?=[\w\-~%]))*)?(?<query>[?#](?:[^\s""<>']|'(?=[\w\-~%]))*)?",
             RegexOptions.Compiled);
 
         private static readonly Regex ScpUrlPattern = new Regex(
