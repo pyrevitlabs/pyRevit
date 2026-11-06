@@ -18,6 +18,7 @@ Invariant:
 
 import ast
 import json
+import keyword
 import linecache
 import os.path as op
 import re
@@ -26,6 +27,7 @@ import threading
 import time
 import tokenize
 import traceback
+from itertools import compress
 
 try:
     from StringIO import StringIO
@@ -39,8 +41,13 @@ from pyrevit.compat import get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 
-_DEADLINE_CHECK_INTERVAL = 100
 _WATCHDOG_RETRY_SECONDS = 0.2
+_WATCHDOG_ESCALATE_SECONDS = 1.0
+_ESCALATION_TOOL_IDS = (4, 3)
+_START_RECORDER = "__agent_start__"
+_CO_OPTIMIZED = 0x1
+
+_clock = getattr(time, "perf_counter", None) or time.time
 
 _elementid_value_raw = get_elementid_value_func()
 
@@ -59,20 +66,23 @@ class RunTimedOut(BaseException):
     """Raised inside the agent script once its time limit has passed.
 
     Derives from ``BaseException`` so a script's ``except Exception`` can't
-    swallow it. Python drops a trace function after its first raise on every
-    engine, so a handler that caught it would end the deadline checks. The
-    runner therefore narrows every bare ``except`` and ``except
+    swallow it. The runner narrows every bare ``except`` and ``except
     BaseException`` in the script to ``except Exception`` before compiling,
-    and also records that the deadline passed so :func:`run` fails the run
-    even if the script then ends normally.
+    and records that the deadline passed so :func:`run` fails the run even
+    if the script then ends normally. A handler that still catches it, such
+    as one reached through an alias, is stopped at the next rewritten loop
+    header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
 
 
 class _NarrowBroadHandlers(ast.NodeTransformer):
     """Turn handlers that would catch ``RunTimedOut`` into ``except Exception``.
 
-    A script that catches the timeout inside a loop can't be stopped again,
-    because Python removes the trace function once it has raised.
+    Narrowing keeps ``RunTimedOut`` away from the handlers the runner can
+    see. Code it does not rewrite, such as runtime-compiled code, relies on
+    the jump escalation on CPython 3.12+ and on the trace function on
+    IronPython, which Python removes once it has raised; a loop there that
+    catches the timeout can't be stopped again.
     """
 
     def __init__(self):
@@ -159,13 +169,176 @@ def _narrow_source_handlers(source, handlers):
     return source
 
 
-def _compile_source(source):
+def _guard_loop_headers(source):
+    """Make every loop in the source check the run deadline on each iteration.
+
+    ``for`` loops and comprehensions iterate ``__agent_loop__((iterable))``
+    and ``while`` conditions become ``__agent_tick__() and (condition)``.
+    Only the header expressions change and every newline stays in place, so
+    line numbers and tracebacks still match the submitted source. Closing
+    parentheses go right after the expression's last token, so columns on
+    the following lines stay put too. ``async for`` loops are left alone:
+    only CPython runs them, and its watchdog interrupts them.
+
+    Raises:
+        Exception: the source could not be tokenized; compile it unguarded.
+    """
+    lines = _source_lines(source)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+
+    def offset_of(position):
+        return offsets[position[0] - 1] + position[1]
+
+    insertions = []
+    open_headers = []
+    depth = 0
+    last_end = None
+    previous = None
+    for token in _significant_tokens(source):
+        token_type, text, start, end, _ = token
+        while open_headers and _ends_loop_header(open_headers[-1], token, depth):
+            header = open_headers.pop()
+            if header["guarded"]:
+                insertions.append((offset_of(last_end), header["close"]))
+        last_end = end
+        if token_type == tokenize.NAME:
+            if text == "while":
+                insertions.append((offset_of(end), " __agent_tick__() and ("))
+                open_headers.append(
+                    {"depth": depth, "close": ")", "iterating": True, "guarded": True}
+                )
+            elif text == "for":
+                open_headers.append(
+                    {
+                        "depth": depth,
+                        "close": "))",
+                        "iterating": False,
+                        "guarded": previous != "async",
+                    }
+                )
+            elif (
+                text == "in"
+                and open_headers
+                and not open_headers[-1]["iterating"]
+                and open_headers[-1]["depth"] == depth
+            ):
+                open_headers[-1]["iterating"] = True
+                if open_headers[-1]["guarded"]:
+                    insertions.append((offset_of(end), " __agent_loop__(("))
+        elif token_type == tokenize.OP:
+            if text in ("(", "[", "{"):
+                depth += 1
+            elif text in (")", "]", "}"):
+                depth -= 1
+        previous = text
+    if open_headers:
+        raise SyntaxError("unterminated loop header")
+    for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
+        source = source[:position] + text + source[position:]
+    return source
+
+
+def _significant_tokens(source):
+    token_source = source.replace("\r\n", "\n").replace("\r", "\n")
+    for token in tokenize.generate_tokens(StringIO(token_source).readline):
+        if token[0] not in _LAYOUT_TOKENS:
+            yield token
+
+
+def _runs_dynamic_code(source):
+    """True when the source can compile and run code at run time.
+
+    Code passed to ``exec``, ``eval``, ``execfile`` or the ``compile``
+    builtin is never seen by :func:`_guard_loop_headers`, and IronPython 2.7's
+    ``exec`` statement can't be intercepted, so such a run falls back to
+    checking the deadline on every line of every frame. ``re.compile`` and
+    other attribute calls named ``compile`` don't count.
+    """
+    previous = None
+    for token in _significant_tokens(source):
+        if token[0] == tokenize.NAME and token[1] in _DYNAMIC_CODE_NAMES:
+            if token[1] != "compile" or previous != ".":
+                return True
+        previous = token[1]
+    return False
+
+
+_DYNAMIC_CODE_NAMES = ("exec", "eval", "execfile", "compile")
+
+
+def _hides_loops_in_fstrings(source):
+    """True when an f-string token holds a loop :func:`_guard_loop_headers` can't see.
+
+    CPython before 3.12 tokenizes an f-string, replacement fields included,
+    as one string token, and IronPython 3.4 as a name token for its prefix
+    followed by one string token, so a comprehension inside one is never
+    rewritten. Such a run falls back to checking the deadline on every line,
+    like code compiled at run time.
+    """
+    previous = None
+    for token in _significant_tokens(source):
+        if token[0] == tokenize.STRING and _FIELD_LOOP.search(token[1]):
+            prefix = re.match(r"[A-Za-z]*", token[1]).group()
+            if _is_split_prefix(previous, token):
+                prefix += previous[1]
+            if "f" in prefix.lower():
+                return True
+        previous = token
+    return False
+
+
+def _is_split_prefix(previous, token):
+    return (
+        previous is not None
+        and previous[0] == tokenize.NAME
+        and set(previous[1].lower()) <= set("rbuf")
+        and previous[3] == token[2]
+    )
+
+
+_FIELD_LOOP = re.compile(r"\{[^{}]*\b(?:for|while)\b")
+
+_LAYOUT_TOKENS = (
+    tokenize.NL,
+    tokenize.NEWLINE,
+    tokenize.COMMENT,
+    tokenize.INDENT,
+    tokenize.DEDENT,
+)
+
+
+def _ends_loop_header(header, token, depth):
+    """True when ``token`` ends the guarded expression of an open loop header.
+
+    A statement header (depth 0) ends at its colon. A comprehension's
+    iterable ends at the next ``for``, ``if`` or ``async`` of the same
+    comprehension, or at the bracket that closes it.
+    """
+    if not header["iterating"] or depth != header["depth"]:
+        return False
+    token_type, text = token[0], token[1]
+    if header["depth"] == 0:
+        return token_type == tokenize.OP and text == ":"
+    if token_type == tokenize.NAME:
+        return text in ("for", "if", "async")
+    return token_type == tokenize.OP and text in (")", "]", "}")
+
+
+def _compile_source(source, guard_loops=False):
     """Compile the agent source with broad exception handlers narrowed.
 
+    Args:
+        source (str): the agent source.
+        guard_loops (bool): also rewrite loop headers with
+            :func:`_guard_loop_headers`.
+
     Returns:
-        tuple: the code object, and None or a description of why source rewriting
-        was skipped. If rewritten source does not compile, compile the narrowed
-        AST instead so broad handlers cannot swallow the timeout.
+        tuple: the code object, None or a description of why source rewriting
+        was skipped, and whether the loops are guarded. If rewritten source
+        does not compile, compile the narrowed AST instead so broad handlers
+        cannot swallow the timeout.
 
     Note:
         Prefer source text because IronPython reports every script frame as
@@ -175,65 +348,366 @@ def _compile_source(source):
     tree = ast.parse(source, SOURCE_NAME, "exec")
     narrower = _NarrowBroadHandlers()
     narrower.visit(tree)
-    if not narrower.narrowed:
-        return compile(source, SOURCE_NAME, "exec"), None
+    narrowed_source = source
+    if narrower.narrowed:
+        try:
+            narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
+            compile(narrowed_source, SOURCE_NAME, "exec")
+        except Exception as ex:
+            return (
+                compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"),
+                "{}: {}; compiled the narrowed AST instead; source line numbers "
+                "may be unavailable".format(type(ex).__name__, _safe_text(ex)),
+                False,
+            )
+    if guard_loops:
+        try:
+            guarded_source = _guard_loop_headers(narrowed_source)
+            return compile(guarded_source, SOURCE_NAME, "exec"), None, True
+        except Exception as ex:
+            return (
+                compile(narrowed_source, SOURCE_NAME, "exec"),
+                "{}: {}; loops check the deadline through line tracing instead".format(
+                    type(ex).__name__, _safe_text(ex)
+                ),
+                False,
+            )
+    return compile(narrowed_source, SOURCE_NAME, "exec"), None, False
+
+
+def _record_transaction_starts(source):
+    """Route every ``<expr>.Start(...)`` call through ``__agent_start__``.
+
+    ``t.Start()`` becomes ``__agent_start__(t).Start()``, which records ``t``
+    if it is a Revit transaction before starting it. The object a start is
+    called on is recorded whatever name, alias, factory or ``getattr`` it
+    came from, and stays recorded after its variable is rebound, so these
+    runs need no trace function to find a transaction left open. Only the
+    object expression is wrapped and no newline is added, so line numbers
+    still match the submitted source.
+
+    Returns:
+        tuple: the rewritten source, and whether every ``Start`` in the source
+        is a wrapped call. It is False, and the source is returned unchanged,
+        when the rewrite could not be proven to wrap exactly the ``.Start(``
+        calls the parser sees; it is also False when ``Start`` appears any
+        other way (``getattr(t, "Start")``, ``start = t.Start``, a name), since
+        a start through it would not be recorded.
+
+    Invariant:
+        The rewrite is checked against the AST: the rewritten source must
+        parse to the original tree with each ``.Start`` call's object wrapped
+        in ``__agent_start__(...)``, and nothing else changed. The check also
+        runs when the tokens show no ``Start`` call but the source contains
+        the word, because IronPython 3.4 keeps an f-string, calls included,
+        as one string token.
+    """
     try:
-        narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
-        return compile(narrowed_source, SOURCE_NAME, "exec"), None
-    except Exception as ex:
-        return compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"), (
-            "{}: {}; compiled the narrowed AST instead; source line numbers "
-            "may be unavailable".format(type(ex).__name__, _safe_text(ex))
-        )
+        tokens = list(_significant_tokens(source))
+    except Exception:
+        return source, False
+    lines = _source_lines(source)
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
 
+    def offset_of(position):
+        return offsets[position[0] - 1] + position[1]
 
-def _execution_tracer(timeout_s, state, transactions):
-    """Track script-local transactions and enforce the execution deadline."""
-    deadline = time.time() + timeout_s if timeout_s else None
-    events = [0]
-
-    def trace(frame, event, arg):
-        _track_frame_transactions(frame, transactions)
-        events[0] += 1
-        if (
-            deadline
-            and events[0] % _DEADLINE_CHECK_INTERVAL == 0
-            and time.time() > deadline
+    insertions = []
+    complete = True
+    for index, token in enumerate(tokens):
+        token_type, text = token[0], token[1]
+        if token_type == tokenize.STRING and _is_start_literal(text):
+            complete = False
+        if token_type != tokenize.NAME or text != "Start":
+            continue
+        if not (
+            0 < index < len(tokens) - 1
+            and _is_op(tokens[index - 1], ".")
+            and _is_op(tokens[index + 1], "(")
         ):
-            state["timed_out"] = True
-            raise RunTimedOut(timeout_s)
-        return trace
+            complete = False
+            continue
+        first = _primary_start(tokens, index - 2)
+        if first is None:
+            return source, False
+        insertions.append((offset_of(tokens[first][2]), _START_RECORDER + "("))
+        insertions.append((offset_of(tokens[index - 2][3]), ")"))
+    if not insertions and "Start" not in source:
+        return source, complete
+    rewritten = source
+    for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
+        rewritten = rewritten[:position] + text + rewritten[position:]
+    try:
+        expected = _WrapStartCalls().visit(ast.parse(source, SOURCE_NAME, "exec"))
+        if ast.dump(expected) != ast.dump(ast.parse(rewritten, SOURCE_NAME, "exec")):
+            return source, False
+    except Exception:
+        return source, False
+    return rewritten, complete
 
-    return trace
+
+class _WrapStartCalls(ast.NodeTransformer):
+    """The AST :func:`_record_transaction_starts` must produce, built from the tree."""
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "Start":
+            recorder = ast.parse(_START_RECORDER + "(target)", mode="eval").body
+            recorder.args[0] = node.func.value
+            node.func.value = recorder
+        return node
+
+
+def _is_op(token, text):
+    return token[0] == tokenize.OP and token[1] == text
+
+
+def _is_start_literal(text):
+    return text.lstrip("rRbBuUfF").strip("\"'") == "Start"
+
+
+_CLOSING_BRACKETS = {")": "(", "]": "[", "}": "{"}
+
+
+def _primary_start(tokens, index):
+    """Index of the first token of the primary expression ending at ``index``.
+
+    Walks back over names, attribute dots, strings and bracket groups: a
+    group preceded by a name, a string or another group is a call or a
+    subscript of it, while one preceded by a keyword or an operator starts
+    the expression. Returns None for anything else.
+    """
+    while index >= 0:
+        token_type, text = tokens[index][0], tokens[index][1]
+        if token_type == tokenize.OP and text in _CLOSING_BRACKETS:
+            index = _matching_bracket(tokens, index)
+            if index is None:
+                return None
+            if index > 0 and _continues_primary(tokens[index - 1]):
+                index -= 1
+                continue
+            return index
+        if token_type == tokenize.NAME and not keyword.iskeyword(text):
+            if index > 1 and _is_op(tokens[index - 1], "."):
+                index -= 2
+                continue
+            return index
+        if token_type == tokenize.STRING:
+            while index > 0 and tokens[index - 1][0] == tokenize.STRING:
+                index -= 1
+            return index
+        return None
+    return None
+
+
+def _matching_bracket(tokens, index):
+    depth = 0
+    while index >= 0:
+        token_type, text = tokens[index][0], tokens[index][1]
+        if token_type == tokenize.OP:
+            if text in _CLOSING_BRACKETS:
+                depth += 1
+            elif text in ("(", "[", "{"):
+                depth -= 1
+                if depth == 0:
+                    return index
+        index -= 1
+    return None
+
+
+def _continues_primary(token):
+    token_type, text = token[0], token[1]
+    if token_type == tokenize.NAME:
+        return not keyword.iskeyword(text)
+    if token_type == tokenize.OP:
+        return text in _CLOSING_BRACKETS
+    return token_type == tokenize.STRING
+
+
+def _needs_transaction_tracking(workspace, starts_recorded, dynamic_code):
+    """True when transactions left open must be found by tracing script frames.
+
+    A run whose every ``.Start(`` call goes through ``__agent_start__`` (see
+    :func:`_record_transaction_starts`) needs no trace function. Tracing stays
+    for starts the rewrite can't see: workspace helpers that return a
+    started transaction, code compiled at run time, and ``Start`` reached
+    any other way than a direct call.
+    """
+    return bool(workspace) or not starts_recorded or dynamic_code
+
+
+def _start_recorder(transactions):
+    """Return the ``__agent_start__`` function for one run.
+
+    It records its argument in ``transactions`` when it is a Revit
+    transaction and returns it, so the wrapped ``.Start(...)`` runs on the
+    same object. Called on a transaction class itself, as in
+    ``DB.Transaction.Start(t)``, it returns a stand-in whose ``Start``
+    records ``t`` instead.
+    """
+
+    def agent_start(target):
+        if isinstance(target, type) and _transaction_rank(target) is not None:
+            return _UnboundStart(target, transactions)
+        _track_transaction(target, transactions)
+        return target
+
+    return agent_start
+
+
+class _UnboundStart(object):
+    def __init__(self, kind, transactions):
+        self._kind = kind
+        self._transactions = transactions
+
+    def Start(self, transaction, *args):
+        _track_transaction(transaction, self._transactions)
+        return self._kind.Start(transaction, *args)
+
+
+def _execution_tracer(timeout_s, state, transactions, check_lines, track):
+    """Build the ``sys.settrace`` function for one run.
+
+    With ``track`` on, which :func:`run` only asks for when
+    :func:`_needs_transaction_tracking` says the start recorder can't see
+    every start, every frame running the agent source records the Revit
+    transactions it holds on every line, so a transaction stays found even
+    after its variable is rebound or deleted. The module frame does so
+    through its globals. pyRevit, rpw and workspace code runs untraced. With
+    ``check_lines`` on, every frame, the script's own and any code it
+    compiles at run time or calls, also checks the watchdog's flag on each
+    line.
+
+    Warning:
+        On CPython 3.12, never read ``f_locals`` from a line event of a frame
+        whose locals are a plain dict: the module or a class body. The trace
+        machinery writes the locals back into the frame, which clobbers the
+        loop variable of an inlined comprehension (PEP 709); a module-level
+        ``[v for v in values if v]`` silently came back empty. Function
+        frames (``CO_OPTIMIZED``) are safe, so class bodies are read only
+        when they return or an exception leaves them.
+
+    Note:
+        Line events are the dominant cost of a traced run: about 3
+        microseconds each on IronPython, plus the cost of reading
+        ``f_locals``. Tracing every line of every frame made a 200k-step
+        loop take seconds (issue #3815), so loops are normally stopped by
+        :func:`_guard_loop_headers` instead, and the module frame's globals
+        are checked by type (see :func:`_track_globals`).
+    """
+    dict_locals_on_lines = _implementation() != "cpython"
+
+    def raise_if_timed_out(frame):
+        if state["timed_out"]:
+            _track_stack_transactions(frame, transactions)
+            raise RunTimedOut(timeout_s)
+
+    def track_module(frame, event, arg):
+        _track_globals(frame.f_globals, transactions)
+        if event == "line":
+            raise_if_timed_out(frame)
+        return track_module
+
+    def track_every_line(frame, event, arg):
+        _track_frame_transactions(frame, transactions)
+        if event == "line":
+            raise_if_timed_out(frame)
+        return track_every_line
+
+    def track_on_exit(frame, event, arg):
+        if event == "line":
+            raise_if_timed_out(frame)
+        else:
+            _track_frame_transactions(frame, transactions)
+        return track_on_exit
+
+    def check_deadline(frame, event, arg):
+        if event == "line":
+            raise_if_timed_out(frame)
+        return check_deadline
+
+    def trace_call(frame, event, arg):
+        code = frame.f_code
+        if not track or code.co_filename != SOURCE_NAME:
+            return check_deadline if check_lines else None
+        if code.co_name == "<module>":
+            return track_module
+        if dict_locals_on_lines or code.co_flags & _CO_OPTIMIZED:
+            return track_every_line
+        return track_on_exit
+
+    return trace_call
+
+
+def _loop_guards(timeout_s, state, transactions):
+    """Return the ``__agent_tick__`` and ``__agent_loop__`` functions for one run.
+
+    Both raise ``RunTimedOut`` once the watchdog has set
+    ``state["timed_out"]``. They run in loop headers, outside any ``try`` in
+    the loop body, so the script cannot swallow the timeout and keep looping.
+    """
+
+    def raise_timed_out():
+        try:
+            _track_stack_transactions(sys._getframe(2), transactions)
+        except Exception:
+            pass
+        raise RunTimedOut(timeout_s)
+
+    def agent_tick():
+        if state["timed_out"]:
+            raise_timed_out()
+        return True
+
+    def agent_loop(iterable):
+        return guarded(iter(iterable))
+
+    def guarded(iterator):
+        for item in iterator:
+            if state["timed_out"]:
+                raise_timed_out()
+            yield item
+
+    return agent_tick, agent_loop
 
 
 def _start_watchdog(timeout_s, state):
-    """Keep raising ``RunTimedOut`` in the script thread on CPython.
+    """Set ``state["timed_out"]`` once ``timeout_s`` passes.
 
-    CPython removes the trace function as soon as it raises, so a script that
-    catches the first ``RunTimedOut`` inside a loop would never be checked
-    again. Returns a function that stops the watchdog, waits for it to exit and
-    clears any injection still pending, or None on engines where the tracer
-    keeps working.
+    The loop guards, or the line tracer when loops are unguarded, raise
+    ``RunTimedOut`` when they next see the flag. On CPython the watchdog also
+    keeps raising ``RunTimedOut`` in the script thread itself, which stops
+    code the guards never see, such as a loop in a library function.
+
+    An injection lands wherever the script happens to be, usually inside a
+    loop body, so a handler the runner could not narrow, such as one
+    reached through an alias or one in code compiled at run time, can
+    swallow every one of them. If the run is still going
+    ``_WATCHDOG_ESCALATE_SECONDS`` after the deadline, the watchdog arms a
+    :class:`_JumpEscalation`, which raises at every backward jump: the end
+    of a loop body, outside any ``try`` inside that body.
+
+    Returns:
+        function: stops the watchdog and clears any injection still pending.
     """
-    if _implementation() != "cpython":
-        return None
-    try:
-        import ctypes
-
-        set_async_exc = ctypes.pythonapi.PyThreadState_SetAsyncExc
-    except (ImportError, AttributeError):
-        return None
-
-    thread_id = ctypes.c_ulong(threading.current_thread().ident)
     stopped = threading.Event()
+    set_async_exc = _async_exception_setter()
+    thread_id = threading.current_thread().ident
+    escalation = _JumpEscalation(thread_id, timeout_s)
 
     def watch():
         if stopped.wait(timeout_s):
             return
+        state["timed_out"] = True
+        if set_async_exc is None:
+            return
+        escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
         while not stopped.is_set():
-            state["timed_out"] = True
-            set_async_exc(thread_id, ctypes.py_object(RunTimedOut))
+            set_async_exc(thread_id, RunTimedOut)
+            if _clock() >= escalate_at:
+                escalation.arm()
             stopped.wait(_WATCHDOG_RETRY_SECONDS)
 
     thread = threading.Thread(target=watch)
@@ -241,16 +715,124 @@ def _start_watchdog(timeout_s, state):
     thread.start()
 
     def stop():
+        escalation.halted = True
+        stopped.set()
+        if set_async_exc is None:
+            return
         while True:
             try:
-                stopped.set()
                 thread.join()
                 set_async_exc(thread_id, None)
+                escalation.release()
                 return
             except RunTimedOut:
                 pass
 
     return stop
+
+
+class _JumpEscalation(object):
+    """Raise ``RunTimedOut`` at every backward jump of one thread (CPython 3.12+).
+
+    Every loop iteration ends in a backward jump that sits after the loop
+    body, so a ``try`` inside the body can't catch what is raised there. An
+    enclosing loop that catches it hits its own backward jump next, so
+    nothing that keeps looping can keep the run alive: not an aliased
+    ``BaseException`` handler, an ``async for``, nor code compiled at run
+    time. Uses a ``sys.monitoring`` tool id, so it costs nothing until it is
+    armed and does nothing when no id is free or the engine lacks
+    ``sys.monitoring``.
+
+    Invariant:
+        Set ``halted`` before the runner's own code runs again after the
+        script: from then on the callback never raises, and :meth:`arm` does
+        nothing. :meth:`release` must follow once the watchdog has stopped.
+    """
+
+    def __init__(self, thread_id, timeout_s):
+        self.halted = False
+        self._thread_id = thread_id
+        self._timeout_s = timeout_s
+        self._tool_id = None
+        self._lock = threading.Lock()
+
+    def arm(self):
+        monitoring = getattr(sys, "monitoring", None)
+        with self._lock:
+            if monitoring is None or self.halted or self._tool_id is not None:
+                return
+            for tool_id in _ESCALATION_TOOL_IDS:
+                if monitoring.get_tool(tool_id) is None:
+                    break
+            else:
+                return
+            monitoring.use_tool_id(tool_id, "pyRevit agent timeout")
+            self._tool_id = tool_id
+            monitoring.register_callback(tool_id, monitoring.events.JUMP, self._on_jump)
+            monitoring.set_events(tool_id, monitoring.events.JUMP)
+
+    def release(self):
+        self.halted = True
+        with self._lock:
+            tool_id, self._tool_id = self._tool_id, None
+            if tool_id is None:
+                return
+            monitoring = sys.monitoring
+            monitoring.set_events(tool_id, 0)
+            monitoring.register_callback(tool_id, monitoring.events.JUMP, None)
+            monitoring.free_tool_id(tool_id)
+
+    def _on_jump(self, code, offset, destination):
+        if (
+            not self.halted
+            and destination < offset
+            and threading.get_ident() == self._thread_id
+        ):
+            raise RunTimedOut(self._timeout_s)
+
+
+def _async_exception_setter():
+    """Return ``fn(thread_id, exc_type)`` that raises in another thread, or None.
+
+    Only CPython can raise an exception in a running thread from outside it;
+    IronPython has no equivalent on .NET Core.
+    """
+    if _implementation() != "cpython":
+        return None
+    try:
+        import ctypes
+
+        raw = ctypes.pythonapi.PyThreadState_SetAsyncExc
+    except (ImportError, AttributeError):
+        return None
+
+    def set_async_exc(thread_id, exc_type):
+        raw(
+            ctypes.c_ulong(thread_id),
+            ctypes.py_object(exc_type) if exc_type is not None else None,
+        )
+
+    return set_async_exc
+
+
+class _PhaseClock(object):
+    """Report runner phase durations through ``context.ReportTiming``.
+
+    Hosts built before ``ReportTiming`` existed get nothing reported.
+    """
+
+    def __init__(self, context):
+        self._report = getattr(context, "ReportTiming", None)
+        self._last = _clock()
+
+    def lap(self, phase):
+        now = _clock()
+        if self._report is not None:
+            try:
+                self._report(phase, (now - self._last) * 1000.0)
+            except Exception:
+                self._report = None
+        self._last = now
 
 
 def run(context):
@@ -265,20 +847,47 @@ def run(context):
         roll the run back.
 
     Note:
-        ``context.TimeoutSeconds`` is enforced with ``sys.settrace``, so it
-        stops Python code, including loops, but not a single blocking call
-        such as a long Revit API call or ``time.sleep``; the run fails with
-        ``timeout`` once that call returns.
+        ``context.TimeoutSeconds`` is enforced by a watchdog thread that sets
+        a flag every loop header of the agent source checks (see
+        :func:`_guard_loop_headers`); on CPython it also raises
+        ``RunTimedOut`` in the script thread. It stops Python code, including
+        loops, but not a single blocking call such as a long Revit API call or
+        ``time.sleep``, nor, on IronPython, a long loop inside a library or
+        workspace function the script calls; the run fails with ``timeout``
+        once that call returns. On IronPython, a run with no trace function
+        (see ``docs/agent-runtime.md``) has no check outside loop headers, so
+        unbounded recursion or a callback passed to ``map``, ``filter`` or
+        ``sorted`` over an endless iterable is not stopped.
+
+    Note:
+        Transactions the script leaves open are found by rewriting each
+        ``<expr>.Start(...)`` call to record its object first (see
+        :func:`_record_transaction_starts`), so a script that opens
+        transactions runs as fast as one that doesn't. A line tracer is only
+        installed when that can't see every start: a ``workspace`` run, code
+        compiled at run time, or ``Start`` reached other than by a direct
+        call. Reported tracebacks leave out this module's frames.
 
     Warning:
-        Raising from the trace function ends tracing, so the script's own
-        handlers must not catch ``RunTimedOut``. The source is compiled with
-        every bare ``except`` and ``except BaseException`` narrowed to
-        ``except Exception``; a script can no longer catch ``KeyboardInterrupt``
-        or ``SystemExit`` that way. Suppression through an alias or
-        ``contextlib.suppress(BaseException)`` still bypasses this, and on
-        CPython the watchdog thread is the backstop.
+        When ``context.Reckless`` is true (``[agent] reckless``, see
+        ``docs/agent-runtime.md``), none of the above applies: the source is
+        compiled as submitted, no watchdog starts, no trace function is
+        installed, and ``context.TimeoutSeconds`` is not enforced at all, so a
+        runaway loop blocks Revit until the process is ended. Transactions
+        left open are still rolled back, but only those reachable from the
+        script's globals; one left open inside a function is not found and
+        can crash Revit when it is finalized.
+
+    Warning:
+        The source is compiled with every bare ``except`` and ``except
+        BaseException`` narrowed to ``except Exception``, so a script cannot
+        swallow ``RunTimedOut`` there, and can no longer catch
+        ``KeyboardInterrupt`` or ``SystemExit`` that way. A script that
+        suppresses it some other way, such as through an alias, is stopped
+        again at its next loop header, and on CPython 3.12+ at the end of
+        any loop it is still in a second later (see :func:`_start_watchdog`).
     """
+    phases = _PhaseClock(context)
     context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
     source = context.Source
     linecache.cache[SOURCE_NAME] = (
@@ -296,29 +905,65 @@ def run(context):
     workspace = None
     namespace = None
     left_open = 0
-    timeout_s = getattr(context, "TimeoutSeconds", None)
+    reckless = bool(getattr(context, "Reckless", False))
+    timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {"timed_out": False}
+    timed_out_after_script = False
     tracked_transactions = {}
     try:
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
-        code, rewrite_problem = _compile_source(source)
+        guard_loops = bool(timeout_s)
+        if guard_loops:
+            (
+                namespace["__agent_tick__"],
+                namespace["__agent_loop__"],
+            ) = _loop_guards(timeout_s, state, tracked_transactions)
+        phases.lap("setup")
+        if reckless:
+            code = compile(source, SOURCE_NAME, "exec")
+            rewrite_problem, track, unguarded_code = None, False, False
+        else:
+            namespace[_START_RECORDER] = _start_recorder(tracked_transactions)
+            recorded_source, starts_recorded = _record_transaction_starts(source)
+            code, rewrite_problem, loops_guarded = _compile_source(
+                recorded_source, guard_loops
+            )
+            dynamic_code = _runs_dynamic_code(source)
+            track = _needs_transaction_tracking(
+                context.Workspace, starts_recorded, dynamic_code
+            )
+            unguarded_code = (
+                not loops_guarded or dynamic_code or _hides_loops_in_fstrings(source)
+            )
+        phases.lap("compile")
         if rewrite_problem:
             print(
-                "[pyRevit agent] Could not rewrite the script's handler "
-                "headers ({}).".format(rewrite_problem)
+                "[pyRevit agent] Could not rewrite the script's headers ({}).".format(
+                    rewrite_problem
+                )
             )
+        check_lines = (
+            guard_loops and unguarded_code and _async_exception_setter() is None
+        )
         started = time.time()
         stop_watchdog = None
-        sys.settrace(_execution_tracer(timeout_s, state, tracked_transactions))
         if timeout_s:
             stop_watchdog = _start_watchdog(timeout_s, state)
+        if check_lines or track:
+            sys.settrace(
+                _execution_tracer(
+                    timeout_s, state, tracked_transactions, check_lines, track
+                )
+            )
         try:
             script_exit = None
             try:
                 exec(code, namespace)
             except SystemExit as ex:
                 script_exit = ex
+            finally:
+                phases.lap("exec")
 
             if script_exit is not None:
                 if not _is_successful_exit(script_exit):
@@ -342,8 +987,10 @@ def run(context):
                         _safe_text(ex),
                         _format_script_traceback(),
                     )
+                phases.lap("result")
 
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
+                timed_out_after_script = True
                 raise RunTimedOut(timeout_s)
         finally:
             if stop_watchdog:
@@ -351,13 +998,16 @@ def run(context):
             sys.settrace(None)
     except RunTimedOut:
         failed = True
-        context.SetError(
-            "timeout",
-            "The script ran longer than its {:g} second limit and was stopped; its "
-            "changes were rolled back. Pass a larger timeout_s if the work needs "
-            "more time.".format(timeout_s),
-            _format_script_traceback(),
-        )
+        if timed_out_after_script:
+            context.SetError("timeout", _late_timeout_message(timeout_s), "")
+        else:
+            context.SetError(
+                "timeout",
+                "The script ran longer than its {:g} second limit and was stopped; "
+                "its changes were rolled back. Pass a larger timeout_s if the work "
+                "needs more time.".format(timeout_s),
+                _format_script_traceback(),
+            )
     except Exception as ex:
         failed = True
         error_type, message = _describe_error(ex)
@@ -365,10 +1015,15 @@ def run(context):
     finally:
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
+        _TRANSACTION_RANKS.clear()
+        _UNTRACKED_TYPES.clear()
+        _TRACKED_TYPES.clear()
+        phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
         _leave_workspace(context.Workspace, workspace)
         context.SetOutput(captured.getvalue())
+        phases.lap("cleanup")
 
     if left_open and not failed:
         context.SetError(
@@ -380,6 +1035,15 @@ def run(context):
         return
     if failed or "result" not in namespace:
         return
+
+
+def _late_timeout_message(timeout_s):
+    return (
+        "The script passed its {:g} second limit inside a call that could not be "
+        "interrupted, such as a long Revit API call, and was stopped when it "
+        "finished; its changes were rolled back. Pass a larger timeout_s if the "
+        "work needs more time.".format(timeout_s)
+    )
 
 
 def _is_successful_exit(error):
@@ -402,9 +1066,12 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
 
     Revit keeps such a transaction open after the run, and the abandoned
     object is later finalized off the main thread, which crashes Revit. The
-    runner records transactions reachable from script-local frames while the
-    script executes, then also inspects script globals and their immediate
-    containers.
+    runner records every transaction the script starts through
+    ``__agent_start__`` (see :func:`_record_transaction_starts`), or, when
+    that rewrite can't see every start, the transactions script frames hold
+    while it executes; it then also inspects script globals and their
+    immediate containers. A reckless run records nothing while it executes,
+    so only the globals are inspected.
 
     Returns:
         int: how many transactions were rolled back.
@@ -425,33 +1092,135 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
 
 def _track_frame_transactions(frame, transactions):
     try:
-        if frame.f_code.co_filename != SOURCE_NAME:
+        code = frame.f_code
+        if code.co_filename != SOURCE_NAME:
             return
-        values = frame.f_locals.values()
+        if code.co_name == "<module>":
+            variables = frame.f_globals
+        else:
+            variables = frame.f_locals
+    except Exception:
+        return
+    _track_values(variables, transactions)
+
+
+def _track_values(variables, transactions):
+    try:
+        values = list(variables.values())
     except Exception:
         return
     for value in values:
+        if type(value) is _CELL_TYPE:
+            try:
+                value = value.cell_contents
+            except ValueError:
+                continue
+        if type(value) not in _UNTRACKED_TYPES:
+            _track_transaction(value, transactions)
+
+
+def _track_globals(variables, transactions):
+    """Record the transactions among the module's globals on a traced line.
+
+    Globals hold the whole run namespace, so walking them value by value on
+    every line of a module-level loop was the main cost of a traced run.
+    Their types are compared with the types already classified in builtins
+    instead, and only values of a transaction type are visited.
+    """
+    try:
+        values = list(variables.values())
+        kinds = set(map(type, values))
+    except Exception:
+        return
+    for kind in kinds.difference(_UNTRACKED_TYPES, _TRACKED_TYPES):
+        _transaction_rank(kind)
+    if kinds.isdisjoint(_TRACKED_TYPES):
+        return
+    for value in compress(values, map(_TRACKED_TYPES.__contains__, map(type, values))):
         _track_transaction(value, transactions)
 
 
+def _track_stack_transactions(frame, transactions):
+    while frame is not None:
+        _track_frame_transactions(frame, transactions)
+        frame = frame.f_back
+
+
 def _track_transaction(value, transactions):
-    for kind, rank in _TRANSACTION_ORDER:
+    if type(value) is _CELL_TYPE:
         try:
-            if isinstance(value, kind):
-                transactions[id(value)] = (rank, value)
-                return
+            value = value.cell_contents
+        except ValueError:
+            return
+    rank = _transaction_rank(type(value))
+    if rank is not None:
+        transactions[id(value)] = (rank, value)
+
+
+_TRANSACTION_RANKS = {}
+
+_UNTRACKED_TYPES = set()
+_TRACKED_TYPES = set()
+"""Types :func:`_transaction_rank` found not to be, or to be, transactions.
+
+Cleared with ``_TRANSACTION_RANKS`` for the same reason.
+"""
+
+_CELL_TYPE = type((lambda value: lambda: value)(None).__closure__[0])
+"""IronPython with full frames reports function locals as closure cells."""
+
+
+def _transaction_rank(value_type):
+    """Rollback order of a transaction type, or None for any other type.
+
+    Cached per type because the tracer asks for every local on every traced
+    line, and ``isinstance`` against .NET types is slow on both engines.
+
+    Invariant:
+        :func:`run` clears the cache when the run ends. The engine is reused
+        between runs, and a cached script class would keep that run's whole
+        namespace alive through its methods' globals.
+    """
+    try:
+        return _TRANSACTION_RANKS[value_type]
+    except KeyError:
+        pass
+    except TypeError:
+        return None
+    rank = None
+    for kind, kind_rank in _TRANSACTION_ORDER:
+        try:
+            if issubclass(value_type, kind):
+                rank = kind_rank
+                break
         except Exception:
             pass
+    _TRANSACTION_RANKS[value_type] = rank
+    if rank is None:
+        _UNTRACKED_TYPES.add(value_type)
+    else:
+        _TRACKED_TYPES.add(value_type)
+    return rank
 
 
 def _reachable_values(namespace):
+    """Yield script globals, and the items of global containers that hold a transaction.
+
+    A container's items are only walked when one of their types is a
+    transaction type, because a script often keeps every element of the
+    model in one list and walking it item by item costs about 3
+    microseconds per item on IronPython.
+    """
     for value in list(namespace.values()):
         yield value
         if isinstance(value, dict):
-            for item in list(value.values()):
-                yield item
+            items = list(value.values())
         elif isinstance(value, (list, tuple)):
-            for item in value:
+            items = value
+        else:
+            continue
+        if any(_transaction_rank(kind) is not None for kind in set(map(type, items))):
+            for item in items:
                 yield item
 
 
@@ -615,10 +1384,46 @@ def _clr_exception(ex):
 
 
 def _format_script_traceback():
+    """Format the exception being handled without this module's frames.
+
+    The runner's frames (``run`` itself, the loop guards, the tracer) say
+    nothing about the script, and a timeout raised inside one of them, such
+    as one CPython injects as ``__agent_tick__`` is entered, would otherwise
+    point at the runner instead of the script line that was running.
+    """
     exc_type, exc_value, exc_tb = sys.exc_info()
-    if exc_tb is not None:
-        exc_tb = exc_tb.tb_next
-    return "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    summary_type = getattr(traceback, "TracebackException", None)
+    if summary_type is not None:
+        summary = summary_type(exc_type, exc_value, exc_tb)
+        _drop_runner_frames(summary, set())
+        return "".join(summary.format())
+    entries = [
+        entry for entry in traceback.extract_tb(exc_tb) if entry[0] != _RUNNER_FILENAME
+    ]
+    lines = traceback.format_exception_only(exc_type, exc_value)
+    if entries:
+        lines = (
+            ["Traceback (most recent call last):\n"]
+            + traceback.format_list(entries)
+            + lines
+        )
+    return "".join(lines)
+
+
+def _drop_runner_frames(summary, seen):
+    if summary is None or id(summary) in seen:
+        return
+    seen.add(id(summary))
+    summary.stack = traceback.StackSummary.from_list(
+        [frame for frame in summary.stack if frame.filename != _RUNNER_FILENAME]
+    )
+    _drop_runner_frames(summary.__cause__, seen)
+    _drop_runner_frames(summary.__context__, seen)
+    for nested in getattr(summary, "exceptions", None) or ():
+        _drop_runner_frames(nested, seen)
+
+
+_RUNNER_FILENAME = _format_script_traceback.__code__.co_filename
 
 
 def _safe_text(value):

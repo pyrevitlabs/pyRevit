@@ -23,7 +23,7 @@ Read the `pyrevit-library` skill first and use `lookup_pyrevit_api` to find a ma
 - Open a Revit transaction for every model edit, then commit or roll it back before the script ends.
 - The active run blocks save, save-as, synchronize-with-central, file export, and view export. Do not rely on those operations.
 - The runtime uses the Windows user's permissions. Revit rollback does not undo Python or .NET file, network, or process side effects.
-- Timeouts are cooperative. Avoid unbounded loops and blocking calls.
+- Timeouts are cooperative. Avoid unbounded loops and blocking calls. When `get_context` shows `agent.reckless: true` there is no timeout at all, and a script that never ends hangs Revit.
 
 ## Query example
 
