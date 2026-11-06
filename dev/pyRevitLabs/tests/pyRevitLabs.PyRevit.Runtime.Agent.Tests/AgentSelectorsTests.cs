@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentSelectorsTests {
         private enum Category { OST_Walls = -2000011, OST_Doors = -2000023 }
 
