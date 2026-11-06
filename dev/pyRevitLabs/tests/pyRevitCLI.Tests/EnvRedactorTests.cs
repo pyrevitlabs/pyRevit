@@ -126,6 +126,36 @@ public class EnvRedactorTests {
     }
 
     [Fact]
+    public void DriveRelativePathsWithTheUserNameAreMasked() {
+        Assert.Equal(@"C:***\bin", PyRevitEnvRedactor.RedactText(@"C:jane.doe\bin", Profile, "jane.doe"));
+    }
+
+    [Theory]
+    [InlineData(@"C:\Users\janet\repo", @"C:\Users\***\repo")]
+    [InlineData(@"C:\Users\jane.doe2\repo", @"C:\Users\***\repo")]
+    [InlineData(@"C:/Users/jane.doe-old/repo", @"C:/Users/***/repo")]
+    public void SiblingFoldersSharingTheProfileNameAsPrefixAreMaskedWhole(string path, string expected) {
+        Assert.Equal(expected, PyRevitEnvRedactor.RedactText(path, @"C:\Users\jane"));
+    }
+
+    [Fact]
+    public void SiblingOfAProfileOutsideUsersIsMaskedWhole() {
+        Assert.Equal(@"D:\Profiles\***\x", PyRevitEnvRedactor.RedactText(@"D:\Profiles\jdoe2\x", @"D:\Profiles\jdoe"));
+    }
+
+    [Theory]
+    [InlineData("https://github.com/org/repo.git?access_token=secret", "https://github.com/org/repo.git?***", "secret")]
+    [InlineData("https://github.com?token=secret", "https://github.com?***", "secret")]
+    [InlineData("https://github.com/org/repo#secret", "https://github.com/org/repo#***", "secret")]
+    [InlineData("https://git.corp.example.com/team/repo.git?token=secret", "https://***/***.git?***", "secret")]
+    public void QueryStringsAndFragmentsOfUrlsAreMasked(string url, string expected, string secret) {
+        var redacted = PyRevitEnvRedactor.RedactText(url, Profile);
+
+        Assert.Equal(expected, redacted);
+        Assert.DoesNotContain(secret, redacted);
+    }
+
+    [Fact]
     public void UserNameIsOnlyMaskedAsAWholePathSegment() {
         const string path = @"C:\tools\jane.doe.tools\jane.doe-cache";
 

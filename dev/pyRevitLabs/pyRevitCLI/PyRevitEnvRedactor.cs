@@ -33,8 +33,10 @@ namespace pyRevitCLI {
             "bitbucket.org"
         };
 
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
         private static readonly Regex UrlPattern = new Regex(
-            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""'<>]*)?",
+            @"(?<scheme>[A-Za-z][A-Za-z0-9+.\-]*)://(?<auth>[^/\s""<>?#]*@)?(?<host>[^/\s""'<>:@?#]+)(?<port>:\d+)?(?<path>/[^\s""'<>?#]*)?(?<query>[?#][^\s""'<>]*)?",
             RegexOptions.Compiled);
 
         private static readonly Regex ScpUrlPattern = new Regex(
@@ -107,16 +109,18 @@ namespace pyRevitCLI {
                 var host = match.Groups["host"].Value;
                 var port = match.Groups["port"].Value;
                 var path = match.Groups["path"].Value;
+                var query = match.Groups["query"].Value;
                 var hasAuth = match.Groups["auth"].Success;
                 var authMask = hasAuth ? Mask + "@" : string.Empty;
+                var queryMask = query.Length == 0 ? string.Empty : query[0] + Mask;
 
                 if (IsPublicHost(host))
-                    return string.Format("{0}://{1}{2}{3}{4}", scheme, authMask, host, port, path);
+                    return string.Format("{0}://{1}{2}{3}{4}{5}", scheme, authMask, host, port, path, queryMask);
 
                 var maskedPath = path.Length == 0
                     ? string.Empty
                     : "/" + Mask + (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? ".git" : string.Empty);
-                return string.Format("{0}://{1}{2}{3}", scheme, authMask, Mask, maskedPath);
+                return string.Format("{0}://{1}{2}{3}{4}", scheme, authMask, Mask, maskedPath, queryMask);
             });
 
         private static string RedactScpUrls(string text) =>
@@ -134,8 +138,8 @@ namespace pyRevitCLI {
             if (string.IsNullOrWhiteSpace(userName))
                 return text;
 
-            var segment = @"(?<=[\\/])" + Regex.Escape(userName) + @"(?=[\\/\s""'<>]|$)";
-            return Regex.Replace(text, segment, Mask, RegexOptions.IgnoreCase);
+            var segment = @"(?<=[\\/:])" + Regex.Escape(userName) + @"(?=[\\/\s""'<>]|$)";
+            return Regex.Replace(text, segment, Mask, RegexOptions.IgnoreCase, RegexTimeout);
         }
 
         private static bool IsPublicHost(string host) =>
@@ -153,9 +157,17 @@ namespace pyRevitCLI {
                 return text;
 
             var masked = Path.Combine(parent, Mask);
-            text = text.Replace(trimmed, masked, StringComparison.OrdinalIgnoreCase);
-            return text.Replace(trimmed.Replace('\\', '/'), masked.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase);
+            text = MaskFolder(text, trimmed, masked);
+            return MaskFolder(text, trimmed.Replace('\\', '/'), masked.Replace('\\', '/'));
         }
+
+        private static string MaskFolder(string text, string folder, string masked) =>
+            Regex.Replace(
+                text,
+                Regex.Escape(folder) + @"[^\\/\s""'<>:*?|]*",
+                masked.Replace("$", "$$"),
+                RegexOptions.IgnoreCase,
+                RegexTimeout);
 
         private sealed class RedactingWriter : TextWriter {
             private readonly TextWriter inner;
