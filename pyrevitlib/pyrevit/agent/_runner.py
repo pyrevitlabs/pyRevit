@@ -802,6 +802,13 @@ class _PhaseClock(object):
         self._last = now
 
 
+def _raise_if_past_deadline(timeout_s, started, state):
+    if timeout_s and time.time() - started > timeout_s:
+        state["timed_out"] = True
+    if state["timed_out"]:
+        raise RunTimedOut(timeout_s)
+
+
 def run(context):
     """Execute ``context.Source`` and report the outcome on ``context``.
 
@@ -936,18 +943,14 @@ def run(context):
                     context.SetError(
                         "SystemExit", _system_exit_message(script_exit), ""
                     )
-            if timeout_s and time.time() - started > timeout_s:
-                state["timed_out"] = True
-            if state["timed_out"]:
-                raise RunTimedOut(timeout_s)
+            _raise_if_past_deadline(timeout_s, started, state)
             if not failed and "result" in namespace:
+                serialized = None
                 try:
-                    context.SetResult(
-                        json.dumps(
-                            namespace["result"],
-                            default=_to_jsonable,
-                            ensure_ascii=False,
-                        )
+                    serialized = json.dumps(
+                        namespace["result"],
+                        default=_to_jsonable,
+                        ensure_ascii=False,
                     )
                 except Exception as ex:
                     failed = True
@@ -957,6 +960,9 @@ def run(context):
                         _format_script_traceback(),
                     )
                 phases.lap("result")
+                _raise_if_past_deadline(timeout_s, started, state)
+                if serialized is not None:
+                    context.SetResult(serialized)
         finally:
             if stop_watchdog:
                 stop_watchdog()

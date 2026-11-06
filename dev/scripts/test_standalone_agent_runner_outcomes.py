@@ -1,6 +1,7 @@
 """Host-free tests of the outcomes the agent runner reports (issue #3921)."""
 
 import builtins
+import time
 import types
 import unittest
 from unittest import mock
@@ -43,6 +44,23 @@ class AgentRunnerOutcomeTests(unittest.TestCase):
             errors, results = self._run(
                 "import time\ntime.sleep(0.3)\nresult = 1\n", 0.05
             )
+        self.assertEqual(["timeout"], [error[0] for error in errors])
+        self.assertEqual([], results)
+
+    def test_a_result_that_outlives_the_deadline_while_converting_returns_no_result(
+        self,
+    ):
+        """Converting the result counts toward the limit, so it can't keep a late run."""
+
+        def slow_conversion(value):
+            time.sleep(0.3)
+            return "late"
+
+        with (
+            mock.patch.object(self.runner, "_async_exception_setter", lambda: None),
+            mock.patch.object(self.runner, "_to_jsonable", slow_conversion),
+        ):
+            errors, results = self._run("result = object()\n", 0.1)
         self.assertEqual(["timeout"], [error[0] for error in errors])
         self.assertEqual([], results)
 
