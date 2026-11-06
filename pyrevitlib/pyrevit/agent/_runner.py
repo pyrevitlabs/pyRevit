@@ -848,6 +848,24 @@ class _PhaseClock(object):
         self._last = now
 
 
+def _finish_and_stop_watchdog(state, stop_watchdog):
+    """Mark the script finished and stop its watchdog, whatever is still pending.
+
+    Invariant:
+        Retries until both are done: an injection already in flight can land on
+        any statement here, and leaving the watchdog running would keep raising
+        ``RunTimedOut`` into Revit's main thread after the run.
+    """
+    while True:
+        try:
+            state["finished"] = True
+            if stop_watchdog:
+                stop_watchdog()
+            return
+        except RunTimedOut:
+            pass
+
+
 def run(context):
     """Execute ``context.Source`` and report the outcome on ``context``.
 
@@ -1003,8 +1021,7 @@ def run(context):
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
                 raise RunTimedOut(timeout_s)
         finally:
-            if stop_watchdog:
-                stop_watchdog()
+            _finish_and_stop_watchdog(state, stop_watchdog)
             sys.settrace(None)
     except RunTimedOut:
         failed = True

@@ -1,6 +1,7 @@
 """Host-free tests for script shapes that tried to escape the run timeout (issue #3919)."""
 
 import contextlib
+import faulthandler
 import sys
 import time
 import types
@@ -8,6 +9,19 @@ import unittest
 from unittest import mock
 
 from test_standalone_agent_runner_lines import _load_runner
+
+HANG_LIMIT_SECONDS = 300
+
+
+def setUpModule():
+    """Fail the run with stack dumps instead of hanging CI if an escape returns."""
+    faulthandler.dump_traceback_later(HANG_LIMIT_SECONDS, exit=True)
+
+
+def tearDownModule():
+    """Cancel the hang guard once every test here finished."""
+    faulthandler.cancel_dump_traceback_later()
+
 
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
@@ -229,6 +243,22 @@ class AgentRunnerWatchdogStopTests(unittest.TestCase):
         if hasattr(sys, "monitoring"):
             for tool_id in runner._ESCALATION_TOOL_IDS:
                 self.assertIsNone(sys.monitoring.get_tool(tool_id))
+
+    def test_a_timeout_landing_during_shutdown_still_stops_the_watchdog(self):
+        """A pending injection that hits the stop call is retried, not escaped."""
+        runner = self.runner
+        state = {"timed_out": True, "finished": False}
+        calls = []
+
+        def stop_hit_once():
+            calls.append(state["finished"])
+            if len(calls) == 1:
+                raise runner.RunTimedOut(1)
+
+        runner._finish_and_stop_watchdog(state, stop_hit_once)
+
+        self.assertEqual([True, True], calls)
+        self.assertTrue(state["finished"])
 
 
 if __name__ == "__main__":
