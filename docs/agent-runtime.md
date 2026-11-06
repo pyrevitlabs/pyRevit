@@ -215,7 +215,8 @@ to return data. It is serialized to JSON:
 - `Element` becomes `{id, category, name, class}`.
 - `XYZ` becomes `[x, y, z]`.
 - .NET numbers become numbers, and collections become lists.
-- `bytes` and `bytearray` become text, decoded as UTF-8.
+- `bytes` and `bytearray` values become text, decoded as UTF-8. Dictionary keys must already be
+  text or numbers.
 
 Printed output is captured and returned too.
 
@@ -617,9 +618,11 @@ The MCP tool `get_run` accepts the same request id. Errors from the MCP server c
 `outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
 queued has no record yet, and one that never arrived has none at all. A pipe error after
 sending, an answer that cannot be read, a host `internal_error`, or an MCP `server_error` raised
-while processing the host's answer leaves the outcome `unknown`. The MCP server checks tool
-arguments against each tool's `inputSchema` before it sends anything, so an `invalid_params`
-from it means the request never reached Revit.
+while processing the host's answer leaves the outcome `unknown`. Before sending, the MCP server
+checks the type, numeric range and array length of each argument given against the tool's
+`inputSchema`; required arguments and enum values are left to the tool and the host. An
+`invalid_params` from that check has no `request_id`: nothing was sent. An `invalid_params`
+the host returns comes with the `request_id` of the request it refused.
 
 A missing record does not prove that resending is safe. A request waits to start for
 `start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and
