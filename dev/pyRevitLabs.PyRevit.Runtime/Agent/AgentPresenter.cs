@@ -108,9 +108,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 },
             };
 
-            if (request.Action != "select" && doc.IsReadOnly)
-                throw new AgentException("document_read_only", $"Action '{request.Action}' needs a transaction, which a read-only document doesn't allow.");
-
             if (request.Action == "reset") {
                 var wasActive = view != null && view.IsTemporaryHideIsolateActive();
                 if (wasActive)
@@ -227,6 +224,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void InTransaction(Document doc, string name, Action change) {
+            if (doc.IsReadOnly)
+                throw new AgentException("document_read_only", "Temporary hide/isolate needs a transaction, which a read-only document doesn't allow.");
             using (var transaction = new Transaction(doc, name)) {
                 if (transaction.Start() != TransactionStatus.Started)
                     throw new AgentException("show_failed", "Revit did not start the transaction for the temporary view change.");
