@@ -36,8 +36,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Records a handled agent request and says whether it should queue the warm-up: only
-        /// the first request of the session load does, and not when it is a <c>run</c>, which
-        /// starts the engine itself.
+        /// the first request of the session load other than a <c>run</c> does. A <c>run</c>
+        /// records nothing: one that executes starts the engine itself, and one refused before
+        /// it executes leaves the next request to warm.
         /// </summary>
         /// <param name="method">The request's JSON-RPC method.</param>
         /// <param name="loadAtStart"><see cref="Load"/> read before the request was handled.</param>
@@ -47,11 +48,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// its own first request.
         /// </remarks>
         public bool OnRequest(string method, int loadAtStart) {
-            if (loadAtStart != Load)
+            if (loadAtStart != Load || method == RunMethod)
                 return false;
-            if (Interlocked.Exchange(ref contactedLoad, loadAtStart) == loadAtStart)
-                return false;
-            return method != RunMethod;
+            return Interlocked.Exchange(ref contactedLoad, loadAtStart) != loadAtStart;
         }
 
         /// <summary>

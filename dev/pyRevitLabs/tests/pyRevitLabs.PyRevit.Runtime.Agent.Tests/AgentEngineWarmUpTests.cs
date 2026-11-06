@@ -25,11 +25,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AFirstRunQueuesNothingAndUsesUpTheSessionLoad() {
+        public void ARunQueuesNothingAndLeavesTheNextRequestToWarm() {
             var warmUp = new AgentEngineWarmUp();
 
             Assert.False(warmUp.OnRequest("run", warmUp.Load));
-            Assert.False(warmUp.OnRequest("ping", warmUp.Load));
+            Assert.True(warmUp.OnRequest("ping", warmUp.Load));
         }
 
         [Fact]
