@@ -106,6 +106,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const string EntryFileName = "agent_entry.py";
         private const string AgentExtensionName = "pyRevitAgent";
         private const string WarmUpFileName = "engine_warmup.py";
+        private const string WarmUpSource = "from pyrevit.agent import _runner\n_runner.warm_up()\n";
 
         /// <summary>
         /// Starts the IronPython engine agent runs use, imports the runner into it and runs
@@ -113,6 +114,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// paths ready. No transaction, document access, run record or output.
         /// </summary>
         /// <remarks>
+        /// Every Revit process shares the entry script file, so it is only written when missing
+        /// or out of date: rewriting it on each warm-up could truncate it while another process
+        /// reads it.
         /// Invariant: the engine is set up by the same <see cref="CreateScriptData"/> and
         /// <see cref="CreateRuntimeConfigs"/> as <see cref="Execute"/>, so it is cached under the
         /// key a real run asks for and with the same flags. Any difference makes the first run
@@ -122,8 +126,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static int WarmUp(UIApplication uiApp, IList<string> searchPaths) {
             Directory.CreateDirectory(AgentPaths.RootDir);
             var entryPath = Path.Combine(AgentPaths.RootDir, WarmUpFileName);
-            File.WriteAllText(
-                entryPath, "from pyrevit.agent import _runner\n_runner.warm_up()\n", new UTF8Encoding(false));
+            if (!File.Exists(entryPath) || File.ReadAllText(entryPath) != WarmUpSource)
+                File.WriteAllText(entryPath, WarmUpSource, new UTF8Encoding(false));
             return ScriptExecutor.ExecuteScript(
                 CreateScriptData(entryPath, "Agent: engine warm-up"),
                 CreateRuntimeConfigs(uiApp, AgentEngine.IronPython, searchPaths, new Dictionary<string, object>()));
