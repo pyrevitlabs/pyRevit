@@ -96,6 +96,7 @@ class _CappedOutput(StringIO):
         if self._room > 0:
             kept = text[: self._room]
             self._room -= len(kept)
+            StringIO.seek(self, 0, 2)
             StringIO.write(self, kept)
         return len(text)
 

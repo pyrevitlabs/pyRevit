@@ -1318,6 +1318,16 @@ class AgentRunnerOutputTests(unittest.TestCase):
         captured.writelines(["de", "fghijkl"])
         self.assertEqual("abc\ndefghi", captured.getvalue())
 
+    def test_a_seek_cannot_grow_the_output_past_the_cap(self):
+        """Writes after a seek append, so no padded gap bypasses the cap."""
+        captured = self.runner._CappedOutput(10)
+        captured.write("abc")
+        captured.seek(1000000)
+        captured.write("de")
+        captured.seek(0)
+        captured.write("fg")
+        self.assertEqual("abcdefg", captured.getvalue())
+
     def test_non_text_is_written_as_text_on_python_two(self):
         """IronPython 2.7 scripts may write any object, as StringIO allowed."""
         captured = self.runner._CappedOutput(10)
