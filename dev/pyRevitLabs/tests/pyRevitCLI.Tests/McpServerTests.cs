@@ -386,9 +386,10 @@ public partial class McpServerTests : IDisposable {
 
         Serve(
             ToolCall(1, "lookup_revit_api", new JObject { ["name"] = "Wall" }),
-            ToolCall(2, "lookup_revit_api", new JObject { ["query"] = "Floor" }));
+            ToolCall(2, "lookup_revit_api", new JObject { ["query"] = "Floor" }),
+            ToolCall(3, "lookup_revit_api", new JObject { ["name"] = "", ["query"] = "Roof" }));
 
-        Assert.Equal(new[] { "Floor", "Wall" }, host.RequestsFor("lookup_api").Select(request => request["params"].Value<string>("name")).OrderBy(name => name));
+        Assert.Equal(new[] { "Floor", "Roof", "Wall" }, host.RequestsFor("lookup_api").Select(request => request["params"].Value<string>("name")).OrderBy(name => name));
     }
 
     [Fact]

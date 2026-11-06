@@ -275,7 +275,9 @@ namespace pyRevitCLI {
         }
 
         private JToken LookupRevitApi(JObject arguments) {
-            var name = arguments.Value<string>("name") ?? arguments.Value<string>("query");
+            var name = arguments.Value<string>("name");
+            if (string.IsNullOrWhiteSpace(name))
+                name = arguments.Value<string>("query");
             if (string.IsNullOrWhiteSpace(name))
                 throw new AgentClientException("invalid_params", "'name' (or its alias 'query') is required.");
             return CallRevit(arguments, "lookup_api", new JObject { ["name"] = name });
