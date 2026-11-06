@@ -290,8 +290,9 @@ Rules the host enforces:
   can't see every start: the run uses a `workspace`, compiles code at run time, or reaches
   `Start` another way (`getattr(t, "Start")`, `start = t.Start`). Other runs have no trace
   function, which on IronPython makes them many times faster, but also means nothing checks
-  the deadline outside loop headers: unbounded recursion, or a callback passed to `map`,
-  `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
+  the deadline outside loop headers: a callback passed to `map`, `filter` or `sorted` over
+  an endless iterable is not stopped on IronPython. Unbounded recursion ends in a
+  `RecursionError`; see [Deep recursion on IronPython](#deep-recursion-on-ironpython). A
   transaction a library function starts and returns to the script is only found if the
   script still holds it in a global when the run ends.
 - Tracebacks of errors and timeouts show the script's frames and the library code it
@@ -358,7 +359,19 @@ What still applies: the `[agent] policy`, the approval prompt under `ask`, rollb
 queries and dry runs, rollback on any script error, the `transaction_left_open` check on the
 active document, the document, save and dialog guards, and the run record.
 
-### Which Python runs the script
+### Deep recursion on IronPython
+
+Scripts run on Revit's main thread, whose stack is 1 MB. The IronPython 2.7.12 engine pyRevit
+builds unwinds an exception without holding stack per Python frame, so unbounded recursion
+stops at the engine's limit of 1000 calls with `RecursionError` (`RuntimeError` on 2.7) like
+any other script error, and an exception raised deep in a call chain is caught as usual.
+
+IronPython 3.4.2 still comes from the upstream package, where every Python frame an exception
+passes holds about 8 to 24 KB of stack until it is caught. An exception raised more than
+about 100 calls deep, fewer in functions with several `with` or `try` blocks, can overflow
+the stack and crash Revit, and a function that has raised more than 20 times stops checking
+the recursion limit at all. Run deeply recursive code with `engine='cpython'` there.
+
 
 Agents must not guess the language level. `get_context.scripting` reports it:
 
