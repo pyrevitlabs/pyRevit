@@ -129,6 +129,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (notInView.Count > 0) {
                     targets = targets.Where(inView.Contains).ToList();
                     response["not_in_view_ids"] = new JArray(notInView.Take(100).Select(AgentIds.ToValue));
+                    if (view.IsTemporaryHideIsolateActive())
+                        response["note"] = "Some elements are not shown in the active view, possibly hidden by its temporary hide/isolate; "
+                            + "call action 'reset' first to include them.";
                 }
             }
             response["count"] = targets.Count;
@@ -136,7 +139,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 response["missing_ids"] = new JArray(missing.Take(100));
 
             if (targets.Count == 0) {
-                response["note"] = "Nothing to show: no matching elements in the active view.";
+                response["note"] = "Nothing to show: no matching elements in the active view."
+                    + (response["note"] == null ? string.Empty : " " + response.Value<string>("note"));
                 return response;
             }
 
