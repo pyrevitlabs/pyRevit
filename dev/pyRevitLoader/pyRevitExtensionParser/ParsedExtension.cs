@@ -233,6 +233,7 @@ namespace pyRevitExtensionParser
                 : fullPath;
         }
 
+        /// <summary>Determines whether a directory contributes to the extension cache hash.</summary>
         private static bool IsHashDirectory(string dirName)
         {
             if (string.IsNullOrEmpty(dirName))
