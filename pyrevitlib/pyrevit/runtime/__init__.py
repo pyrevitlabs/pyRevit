@@ -395,24 +395,45 @@ def _get_runtime_asm():
         return _generate_runtime_asm()
 
 
-def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
-    """Return the configuration for ipython engine.
+def create_ipyengine_configs(
+    clean=False,
+    full_frame=False,
+    persistent=False,
+    engine_type=None,
+    bundle_engine_type=None,
+):
+    """Return Python command engine configuration.
 
     Args:
         clean (bool, optional): Engine should be clean. Defaults to False.
         full_frame (bool, optional): Engine shoul be full frame. Defaults to False.
         persistent (bool, optional): Engine should persist. Defaults to False.
+        engine_type (str, optional): The extension-level Python engine
+            declaration. ``"cpython"`` becomes a default the script's shebang
+            cannot lose to; any other value preserves per-script selection.
+        bundle_engine_type (str, optional): The bundle's own ``engine.type``.
+            A non-blank value is passed through verbatim and marked explicit.
 
     Returns:
         (str): Configuration
+
+    Invariant:
+        Precedence matches the C# command generator: the bundle's
+        ``engine.type`` wins over the extension declaration. ``ScriptRuntime``
+        honors only ``CPython`` or an explicit ``IronPython`` and falls back to
+        ``exts.first_line_selects_cpython`` for any other value.
     """
-    return json.dumps(
-        {
-            exts.MDATA_ENGINE_CLEAN: clean,
-            exts.MDATA_ENGINE_FULLFRAME: full_frame,
-            exts.MDATA_ENGINE_PERSISTENT: persistent,
-        }
-    )
+    engine_configs = {
+        exts.MDATA_ENGINE_CLEAN: clean,
+        exts.MDATA_ENGINE_FULLFRAME: full_frame,
+        exts.MDATA_ENGINE_PERSISTENT: persistent,
+    }
+    if bundle_engine_type and bundle_engine_type.strip():
+        engine_configs[exts.MDATA_ENGINE_TYPE] = bundle_engine_type
+        engine_configs[exts.MDATA_ENGINE_TYPE_EXPLICIT] = True
+    elif engine_type == exts.PYTHON_ENGINE_CPYTHON:
+        engine_configs[exts.MDATA_ENGINE_TYPE] = exts.ENGINE_CONFIG_CPYTHON
+    return json.dumps(engine_configs)
 
 
 def create_ext_command_attrs():

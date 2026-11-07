@@ -208,5 +208,59 @@ namespace pyRevitExtensionParserTest
                     Directory.Delete(tempDir, true);
             }
         }
+
+        [Test]
+        public void StartupScripts_IncludesCPythonStartupWithoutPrimaryScript()
+        {
+            var extension = CreateExtensionWithFiles("startup.cpython.py");
+            try
+            {
+                Assert.IsNull(extension.StartupScript);
+                Assert.That(extension.StartupScripts.Select(Path.GetFileName),
+                    Is.EqualTo(new[] { "startup.cpython.py" }));
+            }
+            finally
+            {
+                Directory.Delete(extension.Directory, true);
+            }
+        }
+
+        [Test]
+        public void StartupScripts_RunsPrimaryScriptBeforeCPythonStartup()
+        {
+            var extension = CreateExtensionWithFiles("startup.cpython.py", "startup.py");
+            try
+            {
+                Assert.That(extension.StartupScripts.Select(Path.GetFileName),
+                    Is.EqualTo(new[] { "startup.py", "startup.cpython.py" }));
+            }
+            finally
+            {
+                Directory.Delete(extension.Directory, true);
+            }
+        }
+
+        [Test]
+        public void StartupScripts_IsEmptyWithoutStartupFiles()
+        {
+            var extension = CreateExtensionWithFiles("readme.md");
+            try
+            {
+                Assert.That(extension.StartupScripts, Is.Empty);
+            }
+            finally
+            {
+                Directory.Delete(extension.Directory, true);
+            }
+        }
+
+        private static ParsedExtension CreateExtensionWithFiles(params string[] fileNames)
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "TestExtensionStartupScripts_" + Guid.NewGuid());
+            Directory.CreateDirectory(directory);
+            foreach (var fileName in fileNames)
+                File.WriteAllText(Path.Combine(directory, fileName), string.Empty);
+            return new ParsedExtension { Name = "TestStartupScripts", Directory = directory };
+        }
     }
 }

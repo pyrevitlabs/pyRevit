@@ -15,6 +15,7 @@ Extensions follow this hierarchy:
 MyExtension.extension/
   extension.json          # optional extension-level manifest
   startup.py               # optional, runs once when the extension loads
+  startup.cpython.py       # optional, runs under CPython after startup.py
   MyTab.tab/
     MyPanel.panel/
       MyButton.pushbutton/
@@ -106,11 +107,43 @@ The script engine is picked by the `script.*` file extension found in the bundle
 - `.dyn` — Dynamo graph.
 - `.gh` / `.ghx` — Grasshopper definition.
 
+An extension can opt its Python commands into CPython in `extension.json`:
+
+```json
+{
+  "engine": "cpython"
+}
+```
+
+The bundle-style mapping `"engine": {"type": "cpython"}` is accepted too.
+Supported values are `cpython` and `ironpython`. The declaration is a default
+for Python scripts, including `startup.py`. An absent declaration
+preserves the legacy IronPython default, so extension authors can migrate
+incrementally. A declaration does not affect C#, VB, Ruby, Dynamo, or
+Grasshopper bundles. Event hooks and smart-button `__selfinit__` still choose
+their engine from their own shebang; add `#! python3` to run them under
+CPython.
+
+A Python command's engine is resolved in this order:
+
+1. A non-blank `engine.type` in the bundle's `bundle.yaml` replaces the
+   extension declaration. `cpython` or `ironpython` (any case) selects that
+   engine; any other value falls through to the first-line rule, ignoring the
+   extension declaration.
+2. An extension `cpython` declaration selects CPython.
+3. The first-line rule: a first line containing `python3` or `cpython`
+   (case-sensitive, anywhere on the line, with or without `#!`) selects
+   CPython; anything else runs under IronPython.
+
+`startup.cpython.py` always runs under CPython, with or without a shebang, after
+`startup.py` when both exist. Use it to register CPython dockable panels while
+the rest of the extension still starts under IronPython.
+
 Engine behavior (clean/full-frame/persistent/mainthread) is configured separately via the `engine:` block in `bundle.yaml`. See [Script engines](architecture.md#how-pyrevit-commands-run) in the architecture overview for how a button click reaches the engine at runtime.
 
 ## Extension manifest
 
-`extension.json` at the extension root is optional; when present it can declare metadata (`name`, `description`, `author`, `url`, `image`, `dependencies`, ...) and a `templates` block used to substitute values into every `bundle.yaml` under the extension at load time. See `extensions/pyRevitDevHooks.extension/extension.json` for a real example.
+`extension.json` at the extension root is optional; when present it can declare metadata (`name`, `description`, `author`, `url`, `image`, `dependencies`, `engine`, ...) and a `templates` block used to substitute values into every `bundle.yaml` under the extension at load time. See `extensions/pyRevitDevHooks.extension/extension.json` for a real example.
 
 This is different from the entry an extension gets in `extensions/extensions.json` (the catalog pyRevit's "Extensions" button reads from) — see [Proposing an External Extension](custom_extension.md) for that schema.
 

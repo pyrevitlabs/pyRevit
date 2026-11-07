@@ -11,6 +11,8 @@ using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 using pyRevitLabs.Common;
+using pyRevitLabs.Json;
+using pyRevitLabs.Json.Linq;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -206,7 +208,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // All assemblies are now loaded, so cross-extension imports work.
             foreach (var (ext, _) in assembledExtensions)
             {
-                if (!string.IsNullOrEmpty(ext.StartupScript))
+                if (ext.StartupScripts.Count > 0)
                 {
                     _logger.Info($"Running startup tasks for {ext.Name}");
                     var startupStep = timeline.StartSpan($"{ext.Name} - StartupScript");
@@ -768,7 +770,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Runs an extension's startup script. Shares the session engine (see
+        /// Runs an extension's startup scripts (<see cref="ParsedExtension.StartupScripts"/>), the
+        /// primary script before <c>startup.cpython.py</c>. Shares the session engine (see
         /// <see cref="CreateScriptRuntimeConfigs"/>) when the extension is Rocket Mode compatible
         /// and Rocket Mode is on - the same author-declared, user-gated trust signal that already
         /// lets an extension's own commands share a cached engine across repeated invocations
@@ -777,9 +780,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         private void ExecuteExtensionStartupScript(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
         {
-            if (string.IsNullOrEmpty(extension.StartupScript))
-                return;
+            foreach (var startupScript in extension.StartupScripts)
+                ExecuteExtensionStartupScript(extension, startupScript);
+        }
 
+        private void ExecuteExtensionStartupScript(ParsedExtension extension, string startupScript)
+        {
             try
             {
                 // Validate cached types
@@ -792,10 +798,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var searchPaths = BuildSearchPaths(extension);
 
                 // Create ScriptData
-                var scriptData = CreateScriptData(extension);
+                var scriptData = CreateScriptData(extension, startupScript);
 
                 var sharedSessionEngine = (_uiManager?.RocketMode ?? false) && extension.RocketModeCompatible;
-                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine);
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(
+                    searchPaths, sharedSessionEngine, engineType: StartupEngineType(extension, startupScript));
 
                 // Execute the script using cached method
                 if (scriptData == null || scriptRuntimeConfigs == null || _executeScriptMethod == null)
@@ -805,7 +812,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 try
                 {
-                    _logger.Info($"Executing startup script for extension: {extension.Name}");
+                    _logger.Info($"Executing startup script for extension: {extension.Name} ({startupScript})");
 
                     var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
 
@@ -822,14 +829,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 catch (System.Reflection.TargetInvocationException tie)
                 {
                     var ex = tie.InnerException ?? tie;
-                    _logger.Error($"Startup script failed for extension: {extension.Name}: {ex.Message}");
+                    _logger.Error($"Startup script failed for extension: {extension.Name} ({startupScript}): {ex.Message}");
                     throw ex;
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error($"Startup script '{extension?.Name}' failed: {ex.Message}");
-                Trace.WriteLine($"Startup script '{extension?.Name}' failed: {ex}");
+                _logger.Error($"Startup script '{extension?.Name}' ({startupScript}) failed: {ex.Message}");
+                Trace.WriteLine($"Startup script '{extension?.Name}' ({startupScript}) failed: {ex}");
             }
         }
 
@@ -991,14 +998,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="extension">The extension containing the startup script.</param>
         /// <returns>The created ScriptData object.</returns>
-        private object CreateScriptData(ParsedExtension extension)
+        private object CreateScriptData(ParsedExtension extension, string startupScript)
         {
             if (_scriptDataType == null)
                 throw new InvalidOperationException("ScriptData type not initialized");
 
             var scriptData = Activator.CreateInstance(_scriptDataType)
                 ?? throw new InvalidOperationException("Failed to create ScriptData instance");
-            SetMemberValue(_scriptDataType, scriptData, "ScriptPath", extension.StartupScript);
+            SetMemberValue(_scriptDataType, scriptData, "ScriptPath", startupScript);
             SetMemberValue(_scriptDataType, scriptData, "ConfigScriptPath", null);
             SetMemberValue(_scriptDataType, scriptData, "CommandUniqueId", string.Empty);
             SetMemberValue(_scriptDataType, scriptData, "CommandName", $"Starting {extension.Name}");
@@ -1007,6 +1014,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
             SetMemberValue(_scriptDataType, scriptData, "IsStartupScript", true);
             SetMemberValue(_scriptDataType, scriptData, "HelpSource", string.Empty);
             return scriptData;
+        }
+
+        private static string? StartupEngineType(ParsedExtension extension, string startupScript)
+        {
+            var isCPythonStartup = string.Equals(
+                System.IO.Path.GetFileName(startupScript),
+                ParsedExtension.CPythonStartupFileName,
+                StringComparison.OrdinalIgnoreCase);
+            return isCPythonStartup || extension.DeclaresCPython ? ParsedExtension.CPythonEngineType : null;
         }
 
         /// <summary>
@@ -1033,7 +1049,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// the load it describes. Scripts on a per-extension engine never see it.
         /// </remarks>
         private object CreateScriptRuntimeConfigs(
-            List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null)
+            List<string> searchPaths, bool sharedSessionEngine = false, bool? sessionFirstLoad = null,
+            string? engineType = null)
         {
             // Create temporary ExternalCommandData
 #if NETFRAMEWORK
@@ -1068,10 +1085,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
 
-            var engineConfigsJson = sharedSessionEngine
-                ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true}"
-                : "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
-            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
+            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs",
+                BuildStartupEngineConfigs(sharedSessionEngine, engineType));
             TrySetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
 
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
@@ -1089,6 +1104,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             return scriptRuntimeConfigs;
+        }
+
+        internal static string BuildStartupEngineConfigs(bool sharedSessionEngine, string? engineType)
+        {
+            var configs = new JObject
+            {
+                ["clean"] = !sharedSessionEngine,
+                ["full_frame"] = true,
+                ["persistent"] = true,
+            };
+            if (engineType != null)
+                configs["type"] = engineType;
+            return configs.ToString(Formatting.None);
         }
 
         private static void SetMemberValue(Type targetType, object? instance, string memberName, object? value)

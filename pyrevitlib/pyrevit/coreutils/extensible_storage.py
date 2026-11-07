@@ -210,9 +210,7 @@ class ElementDataStorage(object):
 
         Must be called inside an open transaction.
         """
-        known_fields = set(self._schema_cls.fields) | set(
-            self._schema_cls.array_fields
-        )
+        known_fields = set(self._schema_cls.fields) | set(self._schema_cls.array_fields)
         for field_name in field_values:
             if field_name not in known_fields:
                 raise KeyError(

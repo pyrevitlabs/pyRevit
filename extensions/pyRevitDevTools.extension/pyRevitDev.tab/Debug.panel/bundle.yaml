@@ -14,6 +14,7 @@ layout:
 - ">>>"
 - Log Output Tests[title:Log Output\nTests]
 - Engine Tests
+- Forms Tests
 - Agent Tests
 - Bundle Tests
 - Icon Inheritance Examples

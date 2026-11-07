@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 // cpython
@@ -48,6 +49,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private List<string> _sysPaths = new List<string>();
 
         private const string InterpreterSearchPathsKey = "PyRevitCPythonInterpreterSearchPaths";
+
+        private const string FormsBindingAssemblyName = "pyRevitLabs.PyRevit.Forms.Binding";
+
+        private static bool _pythonConversionsRegistered;
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
@@ -101,10 +106,43 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 StoreSearchPaths();
             }
 
+            RegisterPythonConversions();
+
             SetupStreams(ref runtime);
             SetupCaching(ref runtime);
             SetupSearchPaths(ref runtime);
             SetupArguments(ref runtime);
+        }
+
+        /// <summary>
+        /// Installs the <c>PythonBinding</c> conversions before the first script runs, so how a
+        /// Python list or object converts to a CLR argument never depends on whether an earlier
+        /// command imported <c>pyrevit.forms</c>.
+        /// </summary>
+        /// <remarks>
+        /// Uses the forms binding assembly already loaded in the process if there is one, as
+        /// <c>clr.AddReference</c> would, so scripts and the engine share the same registration.
+        /// Registered once per runtime assembly. A failure is logged with its exception and retried on
+        /// the next engine start; until then <c>pyrevit.forms</c> registers them on import.
+        /// </remarks>
+        private static void RegisterPythonConversions() {
+            if (_pythonConversionsRegistered)
+                return;
+            try {
+                var assembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(loaded => loaded.GetName().Name == FormsBindingAssemblyName)
+                    ?? Assembly.LoadFrom(Path.Combine(
+                        Path.GetDirectoryName(typeof(PyRevitConsts).Assembly.Location),
+                        FormsBindingAssemblyName + ".dll"));
+                assembly
+                    .GetType("PyRevitLabs.PyRevit.Forms.Binding.PythonBinding", throwOnError: true)
+                    .GetMethod("RegisterConversions", BindingFlags.Public | BindingFlags.Static)
+                    .Invoke(null, null);
+                _pythonConversionsRegistered = true;
+            }
+            catch (Exception ex) {
+                logger.Warn(ex, "CPython engine could not register the forms binding conversions.");
+            }
         }
 
         public override int Execute(ref ScriptRuntime runtime) {

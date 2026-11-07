@@ -77,6 +77,33 @@ class _Element(object):
         return None
 
 
+def _unwrap(value):
+    return getattr(value, "target", value)
+
+
+class _ClrWrapper(object):
+    """A fresh Python wrapper around one CLR object, as pythonnet hands out."""
+
+    def __init__(self, target):
+        self.target = target
+
+    def __getattr__(self, name):
+        return getattr(self.target, name)
+
+
+class _RewrappingElement(_Element):
+    """An element whose Style reads back as a new wrapper on every access."""
+
+    @property
+    def Style(self):
+        style = self.__dict__.get("_style")
+        return None if style is None else _ClrWrapper(style)
+
+    @Style.setter
+    def Style(self, value):
+        self.__dict__["_style"] = _unwrap(value)
+
+
 def _load_contrast_pass(test):
     """Compile production definitions without importing Revit or WPF."""
     source_path = os.path.abspath(
@@ -87,32 +114,29 @@ def _load_contrast_pass(test):
             "pyrevitlib",
             "pyrevit",
             "forms",
-            "_ipy.py",
+            "_theme.py",
         )
     )
     with io.open(source_path, encoding="utf-8") as source:
         tree = ast.parse(source.read())
-    names = {"_argb", "_srgb_component", "_relative_luminance", "_contrast_ratio"}
+    names = {
+        "_argb",
+        "_srgb_component",
+        "_relative_luminance",
+        "_contrast_ratio",
+        "_same_clr_object",
+        "apply_contrast_foregrounds",
+    }
     selected = [node for node in tree.body if getattr(node, "name", None) in names]
-    mixin = next(
-        (node for node in tree.body if getattr(node, "name", None) == "_WPFMixin"),
-        None,
-    )
-    if mixin is None:
-        test.fail("Production _WPFMixin class was not found")
-    contrast_pass = next(
-        (
-            node
-            for node in mixin.body
-            if getattr(node, "name", None) == "apply_contrast_foregrounds"
-        ),
-        None,
-    )
-    if contrast_pass is None:
-        test.fail("Production apply_contrast_foregrounds method was not found")
-    selected.append(contrast_pass)
+    if "apply_contrast_foregrounds" not in {node.name for node in selected}:
+        test.fail("Production apply_contrast_foregrounds function was not found")
     tree.body = selected
     scope = {
+        "System": _Namespace(
+            Object=_Namespace(
+                ReferenceEquals=lambda first, second: _unwrap(first) is _unwrap(second)
+            )
+        ),
         "framework": _Namespace(
             Windows=_Namespace(
                 DependencyProperty=_Namespace(UnsetValue=_UNSET),
@@ -272,6 +296,24 @@ class FormsContrastTests(unittest.TestCase):
         self.apply(self.window)
         self.assertIs(element.Style, contrast_style)
         self.assertIs(element.GetValue("Foreground"), self.disabled)
+
+    def test_rewrapped_styles_are_matched_by_reference(self):
+        """A style read back through a new wrapper is still the managed style."""
+        original = _Style(_RewrappingElement)
+        element = _RewrappingElement(_Brush(255, 200, 200), original)
+        element.disabled_brush = self.disabled
+        self.window.elements.append(element)
+
+        self.apply(self.window)
+        contrast_style = _unwrap(element.Style)
+        self.assertIsNot(contrast_style, original)
+
+        self.apply(self.window)
+        self.assertIs(_unwrap(element.Style), contrast_style)
+
+        element.local["Background"] = self.white
+        self.apply(self.window)
+        self.assertIs(_unwrap(element.Style), original)
 
     def test_dequalified_background_restores_original_style(self):
         """Every excluded background restores the exact pre-contrast style."""

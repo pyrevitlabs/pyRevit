@@ -27,6 +27,97 @@ public class CPythonInterpreterLifecycleTests {
     }
 
     /// <summary>
+    /// pythonnet caches the CLR type generated for a Python class that derives from a CLR type,
+    /// so repeated commands reuse it instead of colliding. A redefinition with the same shape must
+    /// reuse the cached type, while one that adds an explicit <c>clr.clrmethod</c> must get a fresh
+    /// type that exposes it rather than the stale cached one.
+    /// </summary>
+    [Fact]
+    public void RedefiningADerivedClass_ReusesItsTypeUnlessExplicitMembersChange() {
+        string? record = InterpreterLifecycleProbe.Record.DerivedTypeRedefinition;
+
+        Assert.Equal("True|False|True|False", record);
+    }
+
+    /// <summary>
+    /// The generated CLR type keeps the Python class's visible name, so it stays importable from
+    /// its <c>__namespace__</c> even when it derives from interfaces or generic types. Properties
+    /// that differ only in having a setter, and classes placed in different <c>__assembly__</c>
+    /// values, are different shapes and must not share a cached type.
+    /// </summary>
+    [Fact]
+    public void DerivedClassTypes_KeepTheirNameAndSeparateEveryShape() {
+        string? record = InterpreterLifecycleProbe.Record.DerivedTypeShapes;
+
+        Assert.Equal(
+            "pyrevit.tests.naming.NamedProbe|True|pyrevit.tests.naming.GenericProbe|False|True|pyrevit.tests.first|pyrevit.tests.second",
+            record);
+    }
+
+    /// <summary>
+    /// A Python class that only implements CLR interfaces needs no <c>__namespace__</c>, as under
+    /// IronPython: pythonnet generates its CLR type, so CLR callers reach its Python methods, and
+    /// redefining it with the same shape, as a re-run command does, reuses that type. Members an
+    /// interface inherits from its base interfaces are implemented too, as Revit's
+    /// <c>IDirectContext3DServer</c> requires for <c>IExternalServer.GetServerId</c>.
+    /// </summary>
+    [Fact]
+    public void ImplementingAnInterface_WithoutANamespace_GeneratesAReusableType() {
+        string? record = InterpreterLifecycleProbe.Record.ImplicitInterfaceTypes;
+
+        Assert.Equal("True|7|7|3|False|base+derived", record);
+    }
+
+    /// <summary>
+    /// A class whose CLR type pythonnet generates still runs the class-creation protocol of
+    /// <c>type.__new__</c>, with or without a <c>__namespace__</c>: descriptors such as
+    /// <c>functools.cached_property</c> receive <c>__set_name__</c>, and the parent's
+    /// <c>__init_subclass__</c> runs with the class keywords.
+    /// </summary>
+    [Fact]
+    public void GeneratedClassTypes_RunTheClassCreationProtocol() {
+        string? record = InterpreterLifecycleProbe.Record.ClassCreationHooks;
+
+        Assert.Equal("10|9|HookedChild|HookedChild:child|cached", record);
+    }
+
+    /// <summary>
+    /// Every CPython command runs as <c>__main__</c>, so an interface-only class's generated type
+    /// is keyed by the file that defines it too: same-named classes from two scripts get their own
+    /// types, and instances .NET creates run their own script's Python, while re-running one script
+    /// still reuses its type.
+    /// </summary>
+    [Fact]
+    public void InterfaceOnlyClassesFromDifferentScripts_NeverShareAType() {
+        string? record = InterpreterLifecycleProbe.Record.DefinitionSites;
+
+        Assert.Equal("False|True|1|2", record);
+    }
+
+    /// <summary>
+    /// pythonnet asks codecs whether they can decode outside its registry lock, so a codec that
+    /// runs Python, and with it lets the GIL go, cannot deadlock against another thread that holds
+    /// the GIL and converts a value of its own.
+    /// </summary>
+    [Fact]
+    public void CodecLookup_LetsOtherThreadsConvertWhileACodecRuns() {
+        Assert.True(InterpreterLifecycleProbe.Record.DecoderLookupLetOtherThreadsConvert);
+    }
+
+    /// <summary>
+    /// Like IronPython, a <see cref="bool"/> or <see cref="Nullable{Boolean}"/> property, field,
+    /// parameter or delegate return accepts any Python value by truthiness, while <c>None</c> stays
+    /// null for <see cref="Nullable{Boolean}"/>. A <see cref="bool"/> overload never wins over one
+    /// that takes the value itself.
+    /// </summary>
+    [Fact]
+    public void BooleanTargets_AcceptPythonTruthiness_WithoutStealingOverloads() {
+        string? record = InterpreterLifecycleProbe.Record.TruthyBooleans;
+
+        Assert.Equal("True|False|False|True|False|None|False|True|object|bool|True|False|True|False", record);
+    }
+
+    /// <summary>
     /// <c>CPythonEngine.Start</c> must only assign <c>Runtime.PythonDLL</c> while the runtime is
     /// down, because pythonnet rejects the assignment afterwards. Hoisting those initialize-only
     /// settings back out of the guard would make the first CPython command after a Reload fail with

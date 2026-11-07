@@ -27,7 +27,7 @@ Note:
 """
 from rpw import revit, DB
 import pyrevit_automation as automation
-from rpw.utils.dotnet import List
+from rpw.utils.dotnet import to_clr_list
 from rpw.base import BaseObjectWrapper, BaseObject
 from rpw.exceptions import RpwException, RpwTypeError, RpwCoerceError
 from rpw.db.element import Element
@@ -299,7 +299,7 @@ class FilterClasses():
                 wrapped_element = Element(element)
                 if not func(wrapped_element):
                     excluded_elements.add(element.Id)
-            excluded_elements = List[DB.ElementId](excluded_elements)
+            excluded_elements = to_clr_list(DB.ElementId, excluded_elements)
             if excluded_elements:
                 return collector.Excluding(excluded_elements)
             else:
@@ -432,10 +432,14 @@ class Collector(BaseObjectWrapper):
         elif 'elements' in filters:
             elements = filters.pop('elements')
             element_ids = to_element_ids(elements)
-            collector = DB.FilteredElementCollector(collector_doc, List[DB.ElementId](element_ids))
+            collector = DB.FilteredElementCollector(
+                collector_doc, to_clr_list(DB.ElementId, element_ids)
+            )
         elif 'element_ids' in filters:
             element_ids = filters.pop('element_ids')
-            collector = DB.FilteredElementCollector(collector_doc, List[DB.ElementId](element_ids))
+            collector = DB.FilteredElementCollector(
+                collector_doc, to_clr_list(DB.ElementId, element_ids)
+            )
         else:
             collector = DB.FilteredElementCollector(collector_doc)
 
@@ -676,8 +680,9 @@ class ParameterFilter(BaseObjectWrapper):
         if not rules:
             raise RpwException('malformed filter rule: {}'.format(conditions))
 
-        _revit_object = DB.ElementParameterFilter(List[DB.FilterRule](rules),
-                                                  reverse)
+        _revit_object = DB.ElementParameterFilter(
+            to_clr_list(DB.FilterRule, rules), reverse
+        )
         super(ParameterFilter, self).__init__(_revit_object)
         self.conditions = conditions
 

@@ -139,8 +139,8 @@ class OutputWindowPrintTests(unittest.TestCase):
         """Clicking a token link selects every registered element, and only those."""
         import re
         from System import Array
-        from System.Collections.Generic import List
         from pyrevit import DB, HOST_APP
+        from pyrevit.framework import to_clr_list
         from pyrevit.compat import get_elementid_value_func
 
         if HOST_APP.uidoc is None:
@@ -164,7 +164,7 @@ class OutputWindowPrintTests(unittest.TestCase):
             process_url.Invoke(None, Array[object]([HOST_APP.uiapp, url, window]))
 
         def select(ids):
-            HOST_APP.uidoc.Selection.SetElementIds(List[DB.ElementId](ids))
+            HOST_APP.uidoc.Selection.SetElementIds(to_clr_list(DB.ElementId, ids))
 
         get_value = get_elementid_value_func()
 

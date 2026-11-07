@@ -1,7 +1,6 @@
 """Revit events handler management."""
 
 # pylint: disable=unused-argument
-import uuid
 from collections import deque
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
@@ -13,17 +12,6 @@ from pyrevit.coreutils.logger import get_logger
 
 
 mlogger = get_logger(__name__)
-
-_CLR_NAMESPACE = "pyrevit.revit.events._" + uuid.uuid4().hex
-"""CLR namespace for the handler types this execution of the module defines.
-
-Warning:
-    Unique per module execution, not per script execution: pythonnet emits a
-    CLR type for each class declaring ``__namespace__`` and refuses a type name
-    it already emitted, so re-executing this module in the same interpreter
-    (``importlib.reload``, a runner unloading modules) would fail with a fixed
-    name, and ``EXEC_PARAMS.exec_id`` repeats within one execution.
-"""
 
 
 def _get_registered_handlers():
@@ -46,7 +34,7 @@ def _get_registered_handlers():
 class FuncAsEventHandler(UI.IExternalEventHandler):
     """Turns a function into an event handler."""
 
-    __namespace__ = _CLR_NAMESPACE
+    __namespace__ = "pyrevit.revit.events"
 
     def __init__(self, handler_func, purge=True):
         self.name = "FuncAsEventHandler"
@@ -332,7 +320,7 @@ def stop_events():
 
 
 class _GenericExternalEventHandler(UI.IExternalEventHandler):
-    __namespace__ = _CLR_NAMESPACE
+    __namespace__ = "pyrevit.revit.events"
 
     def __init__(self):
         self._queue = deque()

@@ -4,6 +4,7 @@ import os
 import os.path as op
 import json
 import codecs
+import re
 
 from pyrevit import PyRevitException, HOST_APP
 from pyrevit.compat import safe_strtype
@@ -475,6 +476,7 @@ class Extension(GenericUIContainer):
     def __init__(self, cmp_path=None):
         self.pyrvt_version = None
         self.dir_hash_value = None
+        self.script_engine = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer.__init__(self, cmp_path=cmp_path)
 
@@ -498,8 +500,8 @@ class Extension(GenericUIContainer):
         pat += "|(\\" + exts.CONTENT_BUTTON_POSTFIX + ")"
         pat += "|(\\" + exts.COMBOBOX_POSTFIX + ")"
         # tnteresting directories
-        pat += "|(\\" + exts.COMP_LIBRARY_DIR_NAME + ")"
-        pat += "|(\\" + exts.COMP_HOOKS_DIR_NAME + ")"
+        pat += "|(" + re.escape(exts.COMP_LIBRARY_DIR_NAME) + ")"
+        pat += "|(" + re.escape(exts.COMP_HOOKS_DIR_NAME) + ")"
         # search for scripts, setting files (future support), and layout files
         patfile = "(\\" + exts.PYTHON_SCRIPT_FILE_FORMAT + ")"
         patfile += "|(\\" + exts.CSHARP_SCRIPT_FILE_FORMAT + ")"
@@ -520,6 +522,14 @@ class Extension(GenericUIContainer):
     def _update_from_directory(self):  # pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer._update_from_directory(self)
+        manifest = self.get_manifest()
+        self.script_engine = exts.get_declared_python_engine(manifest)
+        declared_engine = exts.get_declared_engine_type(manifest)
+        if declared_engine is not None and self.script_engine is None:
+            mlogger.warning(
+                "Ignoring unsupported extension Python engine declaration: %s",
+                declared_engine,
+            )
         self.pyrvt_version = versionmgr.get_pyrevit_version().get_formatted()
 
         # extensions can store event hooks under

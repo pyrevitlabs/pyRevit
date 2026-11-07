@@ -822,6 +822,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>
+        /// Flushes output through the lowercase file-object API expected by Python code.
+        /// </summary>
+        public void flush() {
+            Flush();
+        }
+
         public override long Seek(long offset, SeekOrigin origin) {
             throw new NotImplementedException();
         }

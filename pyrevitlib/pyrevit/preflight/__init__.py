@@ -10,8 +10,8 @@ automatically by the preflight module. Each test case, can perform ``setUp()``,
 """
 
 import os.path as op
-import imp
 import inspect
+import sys
 
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import extensionmgr
@@ -32,6 +32,22 @@ def _grab_test_types(module):
         ):
             testtypes.append(mobj)
     return testtypes
+
+
+def _load_source(module_name, script_path):
+    try:
+        import imp
+    except ImportError:
+        imp = None
+    if imp is not None:
+        return imp.load_source(module_name, script_path)
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    spec = spec_from_file_location(module_name, script_path)
+    module = module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _get_check_name(check_script):
@@ -93,7 +109,7 @@ def get_all_preflight_checks():
         # find the checks in the extension
         for check_script in ext.get_checks():
             # load the check source file so all the checks can be extracted
-            check_mod = imp.load_source(_get_check_name(check_script), check_script)
+            check_mod = _load_source(_get_check_name(check_script), check_script)
             # extract the checks and wrap
             for check_type in _grab_test_types(check_mod):
                 preflight_checks.append(PreflightCheck(ext, check_type, check_script))

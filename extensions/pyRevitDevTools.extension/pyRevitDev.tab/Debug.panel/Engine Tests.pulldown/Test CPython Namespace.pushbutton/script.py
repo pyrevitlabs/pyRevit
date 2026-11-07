@@ -1,14 +1,10 @@
 #! python3
 # pylint: disable=import-error,invalid-name,broad-except
-from pyrevit import EXEC_PARAMS
 from pyrevit import revit, UI
 
 
-print(EXEC_PARAMS.exec_id)
-
-
 class CategoriesFilter(UI.Selection.ISelectionFilter):
-    __namespace__ = EXEC_PARAMS.exec_id
+    __namespace__ = "pyrevit.devtools.cpython_namespace"
 
     def __init__(self, names):
         self.names = names

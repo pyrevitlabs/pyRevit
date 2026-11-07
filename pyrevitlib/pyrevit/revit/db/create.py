@@ -79,6 +79,8 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
     """Handle copy and paste errors."""
 
+    __namespace__ = "pyrevit.revit.db.create"
+
     def OnDuplicateTypeNamesFound(self, args):  # pylint: disable=unused-argument
         """Use destination model types if duplicate."""
         return DB.DuplicateTypeAction.UseDestinationTypes
