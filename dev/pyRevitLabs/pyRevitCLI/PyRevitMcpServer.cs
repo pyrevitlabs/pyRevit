@@ -814,7 +814,7 @@ namespace pyRevitCLI {
 
                 new McpTool("get_recording", readOnly: true, new string[0],
                     () => ("Read a session recording the user made with 'pyrevit agent record start' and 'stop': a JSON timeline of element changes per transaction (category, family and type, location), pyRevit commands with their output, log messages and tracebacks, extension breadcrumbs from recorder.mark, view and selection changes, dialogs, warnings and screenshot file references. "
-                        + "Without recording_id it lists recent recordings. Screenshots are files under the recording's directory; the events carry their relative path. A recording still in progress can be read too. Recordings are local; nothing is uploaded.",
+                        + "Without recording_id it lists recent recordings. Screenshots are files under the recording's directory; the events carry their relative path. A recording still in progress can be read too. Recording files are stored locally; recording data returned to the client may be sent to its model provider.",
                         new JObject {
                             ["recording_id"] = new JObject { ["type"] = "string", ["description"] = "Id from the recordings list or from 'record start'." },
                             ["offset"] = new JObject { ["type"] = "integer", ["description"] = "Index of the first event to return (default 0)." },

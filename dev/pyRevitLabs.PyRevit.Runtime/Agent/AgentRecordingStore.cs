@@ -30,9 +30,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return options;
             options.Screenshots = parameters.Value<bool?>("screenshots") ?? options.Screenshots;
             options.ScreenshotIntervalSeconds = Bounded(parameters, "screenshot_interval_s", options.ScreenshotIntervalSeconds, 0, 3600);
-            options.MaxScreenshots = (int)Bounded(parameters, "max_screenshots", options.MaxScreenshots, 0, HardMaxScreenshots);
-            options.MaxEvents = (int)Bounded(parameters, "max_events", options.MaxEvents, 1, HardMaxEvents);
-            options.MaxDurationSeconds = (int)Bounded(parameters, "max_duration_s", options.MaxDurationSeconds, 1, HardMaxDurationSeconds);
+            options.MaxScreenshots = (int)Bounded(parameters, "max_screenshots", options.MaxScreenshots, 0, HardMaxScreenshots, whole: true);
+            options.MaxEvents = (int)Bounded(parameters, "max_events", options.MaxEvents, 1, HardMaxEvents, whole: true);
+            options.MaxDurationSeconds = (int)Bounded(parameters, "max_duration_s", options.MaxDurationSeconds, 1, HardMaxDurationSeconds, whole: true);
             return options;
         }
 
@@ -46,7 +46,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
-        private static double Bounded(JObject parameters, string name, double fallback, double min, double max) {
+        private static double Bounded(JObject parameters, string name, double fallback, double min, double max, bool whole = false) {
             var token = parameters[name];
             if (token == null || token.Type == JTokenType.Null)
                 return fallback;
@@ -55,6 +55,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var value = token.Value<double>();
             if (double.IsNaN(value) || value < min || value > max)
                 throw new AgentException("invalid_params", $"'{name}' must be between {min} and {max}.");
+            if (whole && value != Math.Floor(value))
+                throw new AgentException("invalid_params", $"'{name}' must be a whole number.");
             return value;
         }
     }

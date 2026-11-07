@@ -86,7 +86,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (store != null)
                     throw new AgentException("recording_active", "A recording is already active: " + store.Id + ". Stop it first.");
                 var root = AgentPaths.RecordingsDir;
-                AgentRecordingStore.Prune(root, DateTime.Now, null);
+                try {
+                    AgentRecordingStore.Prune(root, DateTime.Now, null);
+                }
+                catch (Exception ex) {
+                    logger.Debug("Could not prune old recordings: {0}", ex.Message);
+                }
                 var created = AgentRecordingStore.Create(root, options);
                 logger.Info("Session recording {0} started", created.Id);
                 var attaching = new AgentRecorderSession(app, created);

@@ -526,9 +526,9 @@ Decisions:
 - **Storage** is local plaintext under `%APPDATA%\pyRevit\agent\recordings\<timestamp>-<id>\`
   (`events.jsonl`, `recording.json`, `screenshots\`). Recordings older than 7 days, and all but
   the newest 20, are deleted when a recording starts and when the host starts; a recording another Revit is
-  still writing is never deleted. Nothing is uploaded; an
-  agent reads a recording only through `get_recording`, which sends it to the agent's model provider like
-  any other tool result. Element names and screenshots can contain client data, so review a recording
+  still writing is never deleted. The recorder uploads nothing itself; an
+  agent reads a recording only through `get_recording`, and what that returns may be sent to the agent's model
+  provider like any other tool result. Element names and screenshots can contain client data, so review a recording
   before sharing it.
 - A recording that has no `recording.json` is reported as `recording` while Revit still holds it and as
   `incomplete` when it was interrupted by a crash; either way `get_recording` returns the events written.

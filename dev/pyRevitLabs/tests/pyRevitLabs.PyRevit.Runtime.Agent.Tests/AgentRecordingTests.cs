@@ -280,6 +280,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 () => AgentRecordingOptions.FromJson(new JObject { ["max_events"] = 1000000 })).Code);
             Assert.Equal("invalid_params", Assert.Throws<AgentException>(
                 () => AgentRecordingOptions.FromJson(new JObject { ["max_screenshots"] = "many" })).Code);
+            Assert.Equal("invalid_params", Assert.Throws<AgentException>(
+                () => AgentRecordingOptions.FromJson(new JObject { ["max_duration_s"] = 1.9 })).Code);
+            Assert.Equal(2.5, AgentRecordingOptions.FromJson(new JObject { ["screenshot_interval_s"] = 2.5 }).ScreenshotIntervalSeconds);
+            Assert.Equal(60, AgentRecordingOptions.FromJson(new JObject { ["max_duration_s"] = 60.0 }).MaxDurationSeconds);
         }
 
         [Fact]

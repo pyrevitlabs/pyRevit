@@ -127,9 +127,9 @@ namespace pyRevitCLI {
                 case "start":
                     var parameters = new JObject { ["screenshots"] = screenshots };
                     AddNumber(parameters, "screenshot_interval_s", screenshotInterval, "--screenshot-interval");
-                    AddNumber(parameters, "max_screenshots", maxScreenshots, "--max-screenshots");
-                    AddNumber(parameters, "max_events", maxEvents, "--max-events");
-                    AddNumber(parameters, "max_duration_s", maxDuration, "--max-duration");
+                    AddNumber(parameters, "max_screenshots", maxScreenshots, "--max-screenshots", whole: true);
+                    AddNumber(parameters, "max_events", maxEvents, "--max-events", whole: true);
+                    AddNumber(parameters, "max_duration_s", maxDuration, "--max-duration", whole: true);
                     Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_start", parameters).ToString(Formatting.Indented));
                     break;
                 case "stop":
@@ -141,12 +141,14 @@ namespace pyRevitCLI {
             }
         }
 
-        private static void AddNumber(JObject parameters, string name, string value, string option) {
+        private static void AddNumber(JObject parameters, string name, string value, string option, bool whole = false) {
             if (value == null)
                 return;
             if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed)
                 || double.IsNaN(parsed) || double.IsInfinity(parsed))
                 throw new PyRevitException(option + " must be a number: " + value);
+            if (whole && parsed != Math.Floor(parsed))
+                throw new PyRevitException(option + " must be a whole number: " + value);
             parameters[name] = parsed;
         }
 
