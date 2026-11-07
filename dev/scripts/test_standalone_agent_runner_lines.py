@@ -1292,6 +1292,41 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         )
         self.assertEqual([], errors)
 
+    def test_bare_except_in_a_workspace_module_is_narrowed(self):
+        """Workspace handlers are narrowed like the script's own."""
+        folder = self._workspace(
+            {
+                "swallow.py": "def go():\n    try:\n        raise BaseException()\n"
+                "    except:\n        return 'swallowed'\n"
+            }
+        )
+        with self.assertRaises(BaseException):
+            self._run("import swallow\nswallow.go()\n", workspace=folder)
+
+    def test_workspace_source_honours_its_encoding_cookie(self):
+        """A latin-1 workspace module with a cookie imports intact."""
+        folder = self._workspace({})
+        with open(os.path.join(folder, "latin.py"), "wb") as handle:
+            handle.write(b"# -*- coding: latin-1 -*-\nNAME = '\xe9'\n")
+        errors, _, _ = self._run(
+            "import latin\nassert latin.NAME == '\xe9'\n", workspace=folder
+        )
+        self.assertEqual([], errors)
+
+    def test_the_pep302_protocol_loads_a_guarded_module(self):
+        """find_module and load_module, used by IronPython 2.7, work too."""
+        folder = self._workspace({"old.py": "VALUE = 7\n"})
+        guards = {"__agent_tick__": lambda: True, "__agent_loop__": iter}
+        hook = self.runner._WorkspaceLoopGuard(folder, guards)
+        sys.path.insert(0, folder)
+        self.addCleanup(sys.path.remove, folder)
+        self.addCleanup(sys.modules.pop, "old", None)
+        self.assertIs(hook, hook.find_module("old"))
+        module = hook.load_module("old")
+        self.assertEqual(7, module.VALUE)
+        self.assertIs(guards["__agent_tick__"], module.__agent_tick__)
+        self.assertIsNone(hook.find_module("json"))
+
     def test_the_workspace_hook_is_removed_after_the_run(self):
         """The import hook never outlives the run that installed it."""
         folder = self._workspace({"quiet.py": "VALUE = 1\n"})

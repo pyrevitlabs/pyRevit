@@ -17,6 +17,7 @@ Invariant:
 """
 
 import ast
+import io
 import json
 import keyword
 import linecache
@@ -266,8 +267,11 @@ class _WorkspaceLoopGuard(object):
     Note:
         Both the PEP 302 protocol (``find_module``/``load_module``, IronPython
         2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
-        implemented. A module whose source can't be rewritten is imported
-        unguarded.
+        implemented. Modules get the same broad-handler narrowing as the
+        script, so a bare ``except`` cannot swallow the timeout. Namespace
+        packages are not rewritten, and on IronPython a workspace module that
+        compiles code at runtime is not line-traced; its loops there are
+        stopped only if the script itself is traced.
     """
 
     def __init__(self, workspace, guards):
@@ -344,19 +348,24 @@ class _WorkspaceLoopGuard(object):
     def exec_module(self, module):
         with open(module.__file__, "rb") as handle:
             raw = handle.read()
-        try:
-            source = raw if isinstance(raw, str) else raw.decode("utf-8-sig")
-            code = compile(_guard_loop_headers(source), module.__file__, "exec")
-        except Exception as ex:
+        code, rewrite_problem, _ = _compile_source(
+            _decode_source(raw), True, module.__file__
+        )
+        if rewrite_problem:
             print(
-                "[pyRevit agent] Could not rewrite the loops of {} ({}: {}); "
-                "its loops are not stopped by the timeout.".format(
-                    module.__file__, type(ex).__name__, _safe_text(ex)
+                "[pyRevit agent] Could not fully rewrite {} ({}).".format(
+                    module.__file__, rewrite_problem
                 )
             )
-            code = compile(raw, module.__file__, "exec")
         module.__dict__.update(self._guards)
         exec(code, module.__dict__)
+
+
+def _decode_source(raw):
+    if isinstance(raw, str):
+        return raw
+    encoding = tokenize.detect_encoding(io.BytesIO(raw).readline)[0]
+    return raw.decode(encoding)
 
 
 def _significant_tokens(source):
@@ -445,13 +454,14 @@ def _ends_loop_header(header, token, depth):
     return token_type == tokenize.OP and text in (")", "]", "}")
 
 
-def _compile_source(source, guard_loops=False):
+def _compile_source(source, guard_loops=False, filename=SOURCE_NAME):
     """Compile the agent source with broad exception handlers narrowed.
 
     Args:
         source (str): the agent source.
         guard_loops (bool): also rewrite loop headers with
             :func:`_guard_loop_headers`.
+        filename (str): the name the code object reports.
 
     Returns:
         tuple: the code object, None or a description of why source rewriting
@@ -464,17 +474,17 @@ def _compile_source(source, guard_loops=False):
         line 1 when compiling an AST. The fallback sacrifices source locations,
         not timeout safety.
     """
-    tree = ast.parse(source, SOURCE_NAME, "exec")
+    tree = ast.parse(source, filename, "exec")
     narrower = _NarrowBroadHandlers()
     narrower.visit(tree)
     narrowed_source = source
     if narrower.narrowed:
         try:
             narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
-            compile(narrowed_source, SOURCE_NAME, "exec")
+            compile(narrowed_source, filename, "exec")
         except Exception as ex:
             return (
-                compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"),
+                compile(ast.fix_missing_locations(tree), filename, "exec"),
                 "{}: {}; compiled the narrowed AST instead; source line numbers "
                 "may be unavailable".format(type(ex).__name__, _safe_text(ex)),
                 False,
@@ -482,16 +492,16 @@ def _compile_source(source, guard_loops=False):
     if guard_loops:
         try:
             guarded_source = _guard_loop_headers(narrowed_source)
-            return compile(guarded_source, SOURCE_NAME, "exec"), None, True
+            return compile(guarded_source, filename, "exec"), None, True
         except Exception as ex:
             return (
-                compile(narrowed_source, SOURCE_NAME, "exec"),
+                compile(narrowed_source, filename, "exec"),
                 "{}: {}; loops check the deadline through line tracing instead".format(
                     type(ex).__name__, _safe_text(ex)
                 ),
                 False,
             )
-    return compile(narrowed_source, SOURCE_NAME, "exec"), None, False
+    return compile(narrowed_source, filename, "exec"), None, False
 
 
 def _record_transaction_starts(source):
