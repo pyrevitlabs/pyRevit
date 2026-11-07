@@ -155,12 +155,9 @@ namespace pyRevitExtensionParser
 
                     try
                     {
-                        // An extension itself can be a directory link. Its contents are the
-                        // extension state and must therefore affect the assembly cache key.
-                        // Continue to skip linked descendants so an extension can not make the
-                        // traversal follow arbitrary paths or a directory cycle.
-                        if (!pendingDirectory.isExtensionRoot
-                            && (dirInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+                        var isLinkedDescendant = !pendingDirectory.isExtensionRoot
+                            && (dirInfo.Attributes & FileAttributes.ReparsePoint) != 0;
+                        if (isLinkedDescendant)
                             continue;
                     }
                     catch
