@@ -48,7 +48,7 @@ namespace pyRevitCLI {
             foreach (var instance in instances) {
                 string state;
                 try {
-                    PyRevitAgentClient.Call(instance, "ping");
+                    PyRevitAgentClient.Ping(instance);
                     state = "responding";
                 }
                 catch (AgentClientException ex) {
