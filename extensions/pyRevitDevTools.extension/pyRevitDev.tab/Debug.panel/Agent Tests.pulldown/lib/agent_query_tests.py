@@ -40,6 +40,22 @@ class ResultTests(TestCase):
             self.assertEqual(result["wall"]["id"], result["id"], engine)
             self.assertEqual([1, "a", None], result["items"], engine)
 
+    def test_transaction_tracking_keeps_module_comprehensions_intact(self):
+        """Tracking transactions must not clobber a module-level comprehension (CPython 3.12)."""
+        for engine in ENGINES:
+            response = run(
+                "label = 'transaction'\n"
+                "values = [10, 20, 30]\n"
+                "result = [\n"
+                "    value\n"
+                "    for value in values\n"
+                "    if value is not None\n"
+                "]\n",
+                engine=engine,
+            )
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual([10, 20, 30], response["result"], engine)
+
     def test_timeout_applies_while_serializing_an_iterable_result(self):
         """Result materialization cannot continue after the run deadline."""
         script = (
@@ -86,6 +102,33 @@ class TimeoutTests(TestCase):
                 timeout=3,
             )
             self.assertEqual("timeout", response["error"]["type"], engine)
+
+    def test_timeout_stops_a_loop_that_swallows_it_through_an_alias(self):
+        """A handler the runner can't narrow still can't keep a loop running past the timeout."""
+        for engine in ENGINES:
+            response = run(
+                "import itertools\n"
+                "Base = BaseException\n"
+                "while True:\n"
+                "    try:\n"
+                "        for i in itertools.count():\n"
+                "            pass\n"
+                "    except Base:\n"
+                "        pass\n",
+                engine=engine,
+                timeout=2,
+            )
+            self.assertEqual("timeout", response["error"]["type"], engine)
+
+    def test_timeout_guard_does_not_slow_a_tight_loop(self):
+        """A 200k-step loop stays fast under the timeout guard (issue #3815)."""
+        for engine in ENGINES:
+            response = run(
+                "s = 0\nfor i in range(200000):\n    s += i\nresult = s\n",
+                engine=engine,
+            )
+            self.assertEqual("ok", response["status"], engine)
+            self.assertLess(response["timings_ms"]["script.exec"], 2000, engine)
 
 
 class ModelGuardTests(TestCase):
