@@ -169,7 +169,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.SaveAs(document);
 
                 Assert.Equal(
-                    "operation_blocked: save_as of 'Family23' not allowed in agent runs.",
+                    "operation_blocked: save_as of 'Family23' not allowed in agent runs; the user must do it in Revit.",
                     guard.DescribeBlockedOperations());
             }
         }
@@ -187,7 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.Save(document);
 
                 Assert.Equal(
-                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs.",
+                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs; the user must do it in Revit.",
                     guard.DescribeBlockedOperations());
             }
         }
