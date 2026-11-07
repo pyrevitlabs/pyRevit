@@ -57,7 +57,7 @@ flowchart LR
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **19 C# projects across 29 project/framework runs** and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Counts include each framework run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **19 C# projects across 29 runs** (28 project/framework runs plus the shell suite's second IronPython engine) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Counts include each framework and engine run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
