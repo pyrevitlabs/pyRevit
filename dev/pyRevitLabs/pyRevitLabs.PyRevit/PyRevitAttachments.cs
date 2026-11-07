@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
@@ -244,8 +245,45 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
+        /// <summary>
+        /// The attachment of a Revit started by <c>pyrevit launch</c>, or null for any other process.
+        /// </summary>
+        /// <remarks>
+        /// A launched Revit loads pyRevit from a manifest outside the standard add-in folders, so the
+        /// shared per-year manifests describe some other clone. The launcher names its manifest and
+        /// Revit year in the environment of the process it starts; the year check keeps a lookup
+        /// for any other installed year from reporting this session's clone. Only the Revit
+        /// process itself honors them: a pyrevit.exe started from that Revit inherits the
+        /// variables but manages the shared attachment.
+        /// </remarks>
+        private static PyRevitAttachment FindLaunchAttachment(RevitProduct revit) {
+            var manifestFile = Environment.GetEnvironmentVariable(PyRevitConsts.LaunchManifestEnvVar);
+            var launchYear = Environment.GetEnvironmentVariable(PyRevitConsts.LaunchRevitYearEnvVar);
+            if (string.IsNullOrWhiteSpace(manifestFile) || launchYear != revit.ProductYear.ToString() || !IsRevitProcess())
+                return null;
+
+            try {
+                return new PyRevitAttachment(new RevitAddonManifest(manifestFile), revit, PyRevitAttachmentType.PerLaunch);
+            }
+            catch (Exception exception) {
+                logger.Debug("Can not read launch manifest \"{0}\" | {1}", manifestFile, exception.Message);
+                return null;
+            }
+        }
+
+        private static bool IsRevitProcess() {
+            using (var process = Process.GetCurrentProcess())
+                return process.ProcessName.Equals("Revit", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static PyRevitAttachment FindAttachment(RevitProduct revit) {
             logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
+
+            var launchAttachment = FindLaunchAttachment(revit);
+            if (launchAttachment != null) {
+                logger.Debug("pyRevit (Per Launch) is attached to Revit \"{0}\"", revit.Version);
+                return launchAttachment;
+            }
 
             var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
             if (allUsersManifest != null) {

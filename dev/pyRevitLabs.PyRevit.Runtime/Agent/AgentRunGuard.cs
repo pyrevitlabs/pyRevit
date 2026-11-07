@@ -72,6 +72,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
         /// <summary>
+        /// True once the active document's group was assimilated, so its changes are kept.
+        /// </summary>
+        public bool Committed { get; private set; }
+
+        /// <summary>
+        /// True when rolling back the active document's group threw or did not report it rolled
+        /// back, so the run's changes may still be in the model.
+        /// </summary>
+        public bool RollbackFailed { get; private set; }
+
+        /// <summary>
         /// True when the script changed a document that was already open when the run started.
         /// Those changes are outside what the run may keep, so the run must fail.
         /// </summary>
@@ -114,7 +125,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
 
             group = new TransactionGroup(doc, groupName);
-            group.Start();
+            if (group.Start() != TransactionStatus.Started)
+                throw new InvalidOperationException(
+                    "Revit did not start the run's transaction group on the active document, so the run could not be rolled back; the script was not run.");
         }
 
         /// <summary>
@@ -127,18 +140,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public void RollBack() {
             try {
-                if (HasOpenGroup)
-                    group.RollBack();
+                RollBackGroup();
             }
             finally {
                 RollBackOtherDocuments();
             }
         }
 
+        private void RollBackGroup() {
+            try {
+                if (HasOpenGroup && group.RollBack() != TransactionStatus.RolledBack)
+                    RollbackFailed = true;
+            }
+            catch (Exception) {
+                RollbackFailed = true;
+                throw;
+            }
+        }
+
         public void Assimilate() {
             RollBackOtherDocuments();
-            if (HasOpenGroup)
+            if (HasOpenGroup) {
                 group.Assimilate();
+                Committed = true;
+            }
         }
 
         /// <summary>
@@ -168,10 +193,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public void Dispose() {
             try {
-                if (HasOpenGroup)
-                    group.RollBack();
+                RollBackGroup();
             }
-            catch (Exception) {
+            catch (Exception ex) {
+                CleanupFailures.Add("Rolling back the run failed: " + ex.Message);
             }
             finally {
                 TryCleanup(() => group?.Dispose());
