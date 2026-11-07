@@ -9,8 +9,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// Tracks the documents open in Revit around an agent run, and closes the background
-    /// documents a run leaves behind.
+    /// Tracks the documents open in Revit: the keys agents name them by, and the background
+    /// documents a run leaves behind, which it closes.
     /// </summary>
     /// <remarks>
     /// A background document is a non-linked document with no view open in Revit: one created
@@ -22,6 +22,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// open view (such as one opened with <c>OpenAndActivateDocument</c>) are never closed.
     /// </remarks>
     internal static class AgentDocuments {
+        /// <summary>The keys agents name open documents by in this Revit process.</summary>
+        public static readonly AgentDocumentKeys Keys = new AgentDocumentKeys();
+
         public static List<Document> Snapshot(Autodesk.Revit.ApplicationServices.Application app) {
             return app.Documents.Cast<Document>().ToList();
         }
@@ -81,6 +84,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static JArray Describe(UIApplication uiApp) {
             var active = uiApp.ActiveUIDocument?.Document;
             return new JArray(uiApp.Application.Documents.Cast<Document>().Select(open => new JObject {
+                ["key"] = Keys.KeyOf(open),
                 ["title"] = open.Title,
                 ["path"] = open.PathName,
                 ["active"] = active != null && active.Equals(open),
@@ -88,6 +92,67 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["background"] = IsBackground(open),
                 ["modified"] = open.IsModified,
             }));
+        }
+    }
+
+    /// <summary>
+    /// The keys agents name open documents by: <c>key</c> in the context's
+    /// <c>open_documents</c> and <c>document</c>.
+    /// </summary>
+    /// <remarks>
+    /// A key is an opaque id given to a document the first time it is described. Titles aren't
+    /// unique and unsaved documents have no path, so neither can name a document.
+    /// Invariants: a key names one document for the life of the process and is never given to
+    /// another. A closed document's key names nothing, and the same file opened again gets a new
+    /// key, so element ids read before it closed are never applied to what replaced it.
+    /// Comparing documents uses the Revit API, so call members on the Revit main thread.
+    /// </remarks>
+    internal sealed class AgentDocumentKeys {
+        private const string Prefix = "doc-";
+
+        private readonly object sync = new object();
+        private readonly List<(Document Document, string Key)> known = new List<(Document, string)>();
+        private int issued;
+
+        /// <summary>The document's key, given now if it has none yet.</summary>
+        public string KeyOf(Document document) {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+            lock (sync) {
+                ForgetClosed();
+                foreach (var entry in known)
+                    if (AgentDocuments.IsSame(entry.Document, document))
+                        return entry.Key;
+                var key = Prefix + ++issued;
+                known.Add((document, key));
+                return key;
+            }
+        }
+
+        /// <summary>The open document <paramref name="key"/> names, or null when it names none.</summary>
+        public Document Find(string key) {
+            if (string.IsNullOrEmpty(key))
+                return null;
+            lock (sync) {
+                ForgetClosed();
+                foreach (var entry in known)
+                    if (entry.Key == key)
+                        return entry.Document;
+                return null;
+            }
+        }
+
+        private void ForgetClosed() {
+            known.RemoveAll(entry => !IsOpen(entry.Document));
+        }
+
+        private static bool IsOpen(Document document) {
+            try {
+                return document.IsValidObject;
+            }
+            catch (Exception) {
+                return false;
+            }
         }
     }
 }

@@ -9,6 +9,15 @@ from agent_harness import AgentRequestError, TestCase, request
 PNG_SIGNATURE = b"\x89PNG"
 
 
+def _key_of(path):
+    """Return the key get_context gives the open document saved at ``path``."""
+    wanted = op.normcase(op.normpath(path))
+    for document in request("get_context")["open_documents"]:
+        if document["path"] and op.normcase(op.normpath(document["path"])) == wanted:
+            return document["key"]
+    raise AssertionError("{} is not open".format(path))
+
+
 class ContextTests(TestCase):
     """The get_context request and request-level errors."""
 
@@ -18,6 +27,33 @@ class ContextTests(TestCase):
         titles = [document["title"] for document in context["open_documents"]]
         self.assertEqual(harness.session().project_title, context["document"]["title"])
         self.assertIn(harness.session().other_title, titles)
+
+    def test_context_gives_each_open_document_a_lasting_key(self):
+        """Every open document has its own key, the active one's matches, and keys stay put."""
+        first = request("get_context")
+        keys = [document["key"] for document in first["open_documents"]]
+        self.assertEqual(len(keys), len(set(keys)))
+        active = [doc for doc in first["open_documents"] if doc["active"]]
+        self.assertEqual(active[0]["key"], first["document"]["key"])
+        second = request("get_context")
+        self.assertEqual(keys, [doc["key"] for doc in second["open_documents"]])
+
+    def test_a_reopened_document_gets_a_new_key(self):
+        """A closed document's key names nothing, and reopening the file gives a new one."""
+        scratch = harness.session()
+        path = scratch.create_extra("agent-test-keys.rvt")
+        opened = scratch.uiapp.Application.OpenDocumentFile(path)
+        try:
+            first = _key_of(path)
+        finally:
+            opened.Close(False)
+        open_keys = [doc["key"] for doc in request("get_context")["open_documents"]]
+        self.assertNotIn(first, open_keys)
+        reopened = scratch.uiapp.Application.OpenDocumentFile(path)
+        try:
+            self.assertNotEqual(first, _key_of(path))
+        finally:
+            reopened.Close(False)
 
     def test_context_reports_both_engines(self):
         """get_context reports IronPython and CPython as available."""

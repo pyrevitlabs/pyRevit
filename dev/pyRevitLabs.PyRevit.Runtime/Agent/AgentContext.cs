@@ -77,6 +77,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var doc = uidoc.Document;
             context["document"] = new JObject {
+                ["key"] = AgentDocuments.Keys.KeyOf(doc),
                 ["title"] = doc.Title,
                 ["path"] = doc.PathName,
                 ["is_family"] = doc.IsFamilyDocument,
