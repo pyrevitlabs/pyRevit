@@ -28,6 +28,33 @@ namespace pyRevitExtensionParserTest
             Assert.That(after, Is.Not.EqualTo(before));
         }
 
+        /// <summary>Renaming a command in a linked extension changes the cache key even when timestamps are restored.</summary>
+        [Test]
+        public void GetHash_DirectoryLinkedExtension_ChangesWhenACommandIsRenamedWithPreservedTimestamps()
+        {
+            var targetExtension = CreateExtension("Target.extension");
+            var linkedExtension = CreateDirectoryJunction("Linked.extension", targetExtension);
+            var tabDirectory = Path.Combine(targetExtension, "Root.tab");
+            var panelDirectory = Path.Combine(tabDirectory, "Root.panel");
+            var initialCommand = GetCommandDirectory(targetExtension, "Initial.pushbutton");
+            var renamedCommand = GetCommandDirectory(targetExtension, "Renamed.pushbutton");
+            var scriptPath = Path.Combine(initialCommand, "script.py");
+            var tabTimestamp = Directory.GetLastWriteTimeUtc(tabDirectory);
+            var panelTimestamp = Directory.GetLastWriteTimeUtc(panelDirectory);
+            var commandTimestamp = Directory.GetLastWriteTimeUtc(initialCommand);
+            var scriptTimestamp = File.GetLastWriteTimeUtc(scriptPath);
+
+            var before = GetHash(linkedExtension);
+            Directory.Move(initialCommand, renamedCommand);
+            File.SetLastWriteTimeUtc(Path.Combine(renamedCommand, "script.py"), scriptTimestamp);
+            Directory.SetLastWriteTimeUtc(renamedCommand, commandTimestamp);
+            Directory.SetLastWriteTimeUtc(panelDirectory, panelTimestamp);
+            Directory.SetLastWriteTimeUtc(tabDirectory, tabTimestamp);
+            var after = GetHash(linkedExtension);
+
+            Assert.That(after, Is.Not.EqualTo(before));
+        }
+
         /// <summary>Linked directories below an extension root remain excluded from hash traversal.</summary>
         [Test]
         public void GetHash_DoesNotFollowLinkedDescendantDirectories()
@@ -48,6 +75,7 @@ namespace pyRevitExtensionParserTest
             Assert.That(after, Is.EqualTo(before));
         }
 
+        /// <summary>Creates an extension fixture containing one command bundle.</summary>
         private string CreateExtension(string directoryName)
         {
             var extension = CreateSubDirectory(directoryName);
@@ -55,18 +83,16 @@ namespace pyRevitExtensionParserTest
             return extension;
         }
 
+        /// <summary>Calculates the Roslyn cache key for an extension fixture.</summary>
         private static string GetHash(string extensionDirectory)
         {
             return new ParsedExtension { Directory = extensionDirectory }.GetHash("Roslyn");
         }
 
+        /// <summary>Adds a command bundle with a script file and deterministic timestamps.</summary>
         private static void AddCommand(string extensionDirectory, string commandName, DateTime timestamp)
         {
-            var commandDirectory = Path.Combine(
-                extensionDirectory,
-                "Root.tab",
-                "Root.panel",
-                commandName);
+            var commandDirectory = GetCommandDirectory(extensionDirectory, commandName);
             Directory.CreateDirectory(commandDirectory);
 
             var scriptPath = Path.Combine(commandDirectory, "script.py");
@@ -75,6 +101,17 @@ namespace pyRevitExtensionParserTest
             Directory.SetLastWriteTimeUtc(commandDirectory, timestamp);
         }
 
+        /// <summary>Returns the fixture path for a command bundle.</summary>
+        private static string GetCommandDirectory(string extensionDirectory, string commandName)
+        {
+            return Path.Combine(
+                extensionDirectory,
+                "Root.tab",
+                "Root.panel",
+                commandName);
+        }
+
+        /// <summary>Creates a Windows directory junction pointing to a fixture directory.</summary>
         private string CreateDirectoryJunction(string linkName, string targetDirectory)
         {
             if (Environment.OSVersion.Platform != PlatformID.Win32NT)
