@@ -115,6 +115,11 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
 | `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source |
 
+`run_query`, `run_modify` and `run_automation` accept an optional `document`: the title or path of the document
+as returned by `get_context`. When it is given and the active document differs, Revit refuses the run with
+`document_changed` before anything runs, so a plan made for one model never lands in another after the user
+switches tabs. The approval prompt always names the document the changes apply to.
+
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
 

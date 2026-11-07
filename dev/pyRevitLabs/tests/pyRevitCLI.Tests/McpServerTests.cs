@@ -281,6 +281,7 @@ public partial class McpServerTests : IDisposable {
     [InlineData("run_query", "{\"script\":{}}")]
     [InlineData("run_query", "{\"script\":[]}")]
     [InlineData("run_query", "{\"script\":\"result = 1\",\"title\":{}}")]
+    [InlineData("run_modify", "{\"script\":\"x = 1\",\"title\":\"T\",\"document\":{}}")]
     [InlineData("navigate_revit_link", "{\"link\":{\"destination\":{},\"ids\":[1]}}")]
     [InlineData("navigate_revit_link", "{\"link\":{\"destination\":\"element\",\"ids\":[1],\"document\":{}},\"action\":{}}")]
     [InlineData("run_automation", "{\"id\":{}}")]
@@ -468,6 +469,20 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal("C:\\work", sent.Value<string>("workspace"));
         Assert.Equal(12, sent.Value<int>("timeout_s"));
         Assert.Equal(1, sent["inputs"].Value<int>("a"));
+    }
+
+    [Theory]
+    [InlineData("run_query")]
+    [InlineData("run_modify")]
+    public void TheDocumentIsForwardedWhenGivenAndOmittedOtherwise(string tool) {
+        host.Handler = request => RunResponse(request);
+
+        Serve(ToolCall(1, tool, new JObject { ["script"] = "x = 1", ["title"] = "T", ["document"] = "second" }));
+        Serve(ToolCall(2, tool, new JObject { ["script"] = "x = 1", ["title"] = "T" }));
+
+        var sent = host.RequestsFor("run").Select(request => request["params"]).ToList();
+        Assert.Equal("second", sent[0].Value<string>("document"));
+        Assert.Null(sent[1]["document"]);
     }
 
     [Fact]

@@ -369,6 +369,9 @@ namespace pyRevitCLI {
                 parameters["workspace"] = arguments["workspace"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
+            var document = arguments.Value<string>("document");
+            if (document != null)
+                parameters["document"] = document;
             return parameters;
         }
 
@@ -390,6 +393,9 @@ namespace pyRevitCLI {
                 parameters["engine"] = arguments["engine"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
+            var document = arguments.Value<string>("document");
+            if (document != null)
+                parameters["document"] = document;
             return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
         }
 
@@ -533,6 +539,13 @@ namespace pyRevitCLI {
             };
         }
 
+        private static JObject DocumentProperty() {
+            return new JObject {
+                ["type"] = "string",
+                ["description"] = "Title or path of the document the run is meant for, as returned by get_context. If the active document differs, the run is refused with document_changed before anything runs.",
+            };
+        }
+
         private static JObject WorkspaceProperty() {
             return new JObject {
                 ["type"] = "string",
@@ -629,6 +642,7 @@ namespace pyRevitCLI {
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     RunAutomation),
@@ -771,6 +785,7 @@ namespace pyRevitCLI {
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
                             ["workspace"] = WorkspaceProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     arguments => RunScript(arguments, "query")),
@@ -785,6 +800,7 @@ namespace pyRevitCLI {
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
                             ["workspace"] = WorkspaceProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify")),

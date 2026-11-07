@@ -25,6 +25,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Workspace { get; private set; }
 
         /// <summary>
+        /// Title or path of the document the caller inspected. When set, the run is refused with
+        /// <c>document_changed</c> unless it is the active document.
+        /// </summary>
+        public string Document { get; private set; }
+
+        /// <summary>
         /// The JSON-RPC <c>id</c> the client sent, kept in the run record so a caller that lost
         /// the answer can find what became of its request. Set by the request handler.
         /// </summary>
@@ -62,6 +68,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var inputs = parameters["inputs"];
             var workspace = parameters.Value<string>("workspace");
+            var documentToken = parameters["document"];
+            if (documentToken != null && documentToken.Type != JTokenType.Null && documentToken.Type != JTokenType.String)
+                throw new AgentException("invalid_params", "'document' must be the title or path string returned by get_context.");
+            var document = documentToken?.Type == JTokenType.String ? documentToken.Value<string>() : null;
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");
             var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
@@ -76,6 +86,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ? "{}"
                     : inputs.ToString(Formatting.None),
                 Workspace = string.IsNullOrWhiteSpace(workspace) ? null : Path.GetFullPath(workspace),
+                Document = string.IsNullOrWhiteSpace(document) ? null : document,
                 TimeoutSeconds = timeoutSeconds,
             };
         }
@@ -87,6 +98,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["engine"] = Engine == AgentEngine.CPython ? "cpython" : "ironpython",
                 ["inputs"] = JToken.Parse(InputsJson),
                 ["workspace"] = Workspace,
+                ["document"] = Document,
                 ["timeout_s"] = TimeoutSeconds,
                 ["request_id"] = RequestId,
             };

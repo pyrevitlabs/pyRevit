@@ -127,6 +127,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
+            if (request.Document != null && (doc == null || !AgentDocumentBinding.Matches(request.Document, doc.Title, doc.PathName)))
+                throw new AgentException(
+                    "document_changed",
+                    doc == null
+                        ? $"The run was meant for '{request.Document}' but Revit has no active document. Nothing ran."
+                        : $"The run was meant for '{request.Document}' but the active document is '{doc.Title}'. Nothing ran; activate the intended document or call get_context again.");
             if (doc == null && request.Mode == AgentRunMode.Modify)
                 throw new AgentException("no_active_document", "A modify run requires an active document.");
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
@@ -402,7 +408,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var dialog = new TaskDialog("pyRevit Agent") {
                 MainInstruction = "An agent wants to modify the model",
-                MainContent = BuildSummary(title, changes, failures, preview.Description),
+                MainContent = BuildSummary(uidoc.Document.Title, title, changes, failures, preview.Description),
                 ExpandedContent = changes.ToString(Formatting.Indented),
                 CommonButtons = TaskDialogCommonButtons.None,
                 AllowCancellation = true,
@@ -429,8 +435,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return approved;
         }
 
-        private static string BuildSummary(string title, JObject changes, JArray failures, string previewDescription) {
+        private static string BuildSummary(string documentTitle, string title, JObject changes, JArray failures, string previewDescription) {
             var summary = new StringBuilder();
+            summary.AppendLine("Document: " + documentTitle);
             summary.AppendLine("Operation: " + title);
             summary.AppendLine(string.Format(
                 "Added: {0}   Modified: {1}   Deleted: {2}",
