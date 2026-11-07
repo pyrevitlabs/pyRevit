@@ -33,6 +33,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Revit, so a script that rewrites the policy can't loosen it for later runs either. Only
     /// a modify run asks; a query or dry run never waits on the prompt.</item>
     /// <item>A script error always rolls back.</item>
+    /// <item><c>[agent] reckless</c> is read once before the script starts and only turns off
+    /// the Python runner's in-script checks (timeout, per-line transaction tracking). Every
+    /// guarantee in this list still holds for a reckless run, which the response marks with
+    /// <c>"reckless": true</c>.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
@@ -76,7 +80,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static AgentRunVerdict CarryOut(
             AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, UIDocument uidoc,
-            AgentRunRequest request, string runId, int exitCode, JObject changes, AgentTabHighlight.Lease highlight) {
+            AgentRunRequest request, string runId, int exitCode, JObject changes, AgentTabHighlight.Lease highlight,
+            AgentRunTimings timings) {
             switch (verdict) {
                 case AgentRunVerdict.TransactionLeftOpen:
                     SetErrorIfMissing(context, "transaction_left_open",
@@ -112,8 +117,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     Commit(guard, uidoc.Document, request, runId);
                     return verdict;
                 case AgentRunVerdict.AskUser:
+                    timings.Lap("decide");
                     AgentHost.AwaitTabApproval(highlight);
-                    if (AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures)) {
+                    var approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
+                    timings.Lap("approval");
+                    if (approved) {
                         Commit(guard, uidoc.Document, request, runId);
                         return AgentRunVerdict.UserApproved;
                     }
@@ -150,6 +158,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static bool runInProgress;
 
         private static JToken ExecuteRun(UIApplication app, AgentRunRequest request) {
+            var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
             if (doc == null && request.Mode == AgentRunMode.Modify)
@@ -180,9 +189,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (lostBefore != null)
                     warnings.Add(lostBefore);
 
+                var reckless = PyRevitConfigs.GetAgentReckless();
 
                 var stopwatch = Stopwatch.StartNew();
-                var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
+                var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
+                    Timings = timings,
+                };
                 var response = new JObject {
                     ["run_id"] = runId,
                     ["run_dir"] = runDir,
@@ -191,12 +203,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["title"] = request.Title,
                 };
 
+                timings.Lap("prepare");
                 var openAtStart = AgentDocuments.Snapshot(app.Application);
                 var guard = new AgentRunGuard(app, doc);
                 using (guard) {
                     try {
                         guard.Arm("Agent: " + request.Title);
-                        var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
+                        timings.Lap("guard_arm");
+                        int exitCode;
+                        using (reckless ? null : AgentHost.Dispatcher?.BeginScript(TimeSpan.FromSeconds(request.TimeoutSeconds), runId, request.RequestId))
+                            exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
+                        timings.Lap("engine");
 
                         var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;
                         if (guard.ErrorRollbacks > 0 && !context.HasError)
@@ -210,6 +227,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         var otherDocuments = guard.DescribeOtherDocuments();
                         if (otherDocuments.Count > 0)
                             changes["other_documents"] = otherDocuments;
+                        timings.Lap("changes");
                         AgentHost.RefreshConfigIfChanged();
                         var verdict = AgentRunDecision.Decide(new AgentRunFacts {
                             Mode = request.Mode,
@@ -220,7 +238,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             HasChanges = !guard.Changes.IsEmpty,
                             Policy = AgentRunDecision.Stricter(policyAtStart, policyInForce.Tighten(ReadPolicy())),
                         });
-                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight);
+                        timings.Lap("decide");
+                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
+                        timings.Lap("guard_release");
 
                         var approval = AgentRunDecision.Approval(verdict);
                         if (approval != null)
@@ -243,6 +263,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["blocked"] = guard.Blocked;
                     }
                 }
+                timings.Lap("guard_release");
 
                 if (doc != null && response.Value<string>("decision") != "committed") {
                     var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
@@ -283,9 +304,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         "The host could not revert changes in another document. Close it without saving.");
                 }
                 response["warnings"] = warnings;
+                timings.Lap("cleanup");
 
                 AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython", warnings);
                 response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;
+                timings.Lap("outcome");
+                if (reckless)
+                    response["reckless"] = true;
+                response["timings_ms"] = timings.ToJson();
+                logger.Debug("[PERF] agent run {0} ({1}, {2}): {3}", runId, request.ModeName, response["engine"]?["implementation"], timings.Describe());
 
                 try {
                     File.WriteAllText(Path.Combine(runDir, "response.json"), response.ToString(Formatting.Indented), Utf8);

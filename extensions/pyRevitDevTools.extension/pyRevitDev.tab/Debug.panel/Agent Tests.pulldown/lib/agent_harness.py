@@ -44,6 +44,14 @@ from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
 COMMENTS = "DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS"
+INPUT_ELEMENT_ID = (
+    "__import__('pyrevit.compat', fromlist=['compat'])"
+    ".get_elementid_from_value_func()(inputs['id'])"
+)
+"""Agent-script expression for the ElementId of ``inputs['id']``.
+
+``DB.ElementId(int)`` is ambiguous on IronPython 2.7 with Revit 2024+.
+"""
 CPYTHON_HOST = platform.python_implementation() == "CPython"
 ENGINES = ("ironpython",) if CPYTHON_HOST else ("ironpython", "cpython")
 
@@ -158,8 +166,9 @@ class TestCase(_TestCase):
 def comment(element_id):
     """The Comments value of an element in the active document, read through a query run."""
     return run(
-        "result = doc.GetElement(DB.ElementId(inputs['id']))"
-        ".get_Parameter({}).AsString()".format(COMMENTS),
+        "result = doc.GetElement({element}).get_Parameter({}).AsString()".format(
+            COMMENTS, element=INPUT_ELEMENT_ID
+        ),
         inputs={"id": element_id},
     ).get("result")
 
@@ -169,9 +178,9 @@ def set_comment_script():
     return (
         "t = DB.Transaction(doc, 'agent test comment')\n"
         "t.Start()\n"
-        "doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({})"
+        "doc.GetElement({element}).get_Parameter({})"
         ".Set(inputs['text'])\n"
-        "t.Commit()\n".format(COMMENTS)
+        "t.Commit()\n".format(COMMENTS, element=INPUT_ELEMENT_ID)
     )
 
 

@@ -472,10 +472,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Summarizes the change set. Must be called while the group is still open, because
         /// added and modified elements no longer exist in their changed form after a rollback.
         /// </summary>
+        /// <remarks>
+        /// <c>added_families</c> lists loaded families and types found among all added
+        /// elements, not only the first <paramref name="maxSamples"/>, so a family load stays
+        /// reviewable when regeneration adds many other elements.
+        /// </remarks>
         public JObject Describe(Document doc, int maxSamples) {
             var description = Summarize();
             description["by_category"] = CountByCategory(doc);
             description["added"] = DescribeElements(doc, added, maxSamples);
+            description["added_families"] = DescribeElements(doc, added.Where(id => IsFamilyOrType(doc.GetElement(id))), maxSamples);
             description["modified"] = DescribeElements(doc, modified, maxSamples);
             description["deleted"] = new JArray(deleted.Take(maxSamples).Select(AgentIds.ToValue));
             return description;
@@ -514,6 +520,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 });
             }
             return described;
+        }
+
+        private static bool IsFamilyOrType(Element element) {
+            return element is Family || element is FamilySymbol;
         }
 
         private static string SafeName(Element element) {

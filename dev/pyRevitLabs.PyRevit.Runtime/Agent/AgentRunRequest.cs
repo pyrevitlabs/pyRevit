@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -45,6 +46,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// only, not waiting to start or the approval prompt.
         /// </summary>
         public double TimeoutSeconds { get; private set; }
+
+        /// <summary>
+        /// <see cref="Stopwatch"/> timestamp of when the request was parsed on the pipe thread,
+        /// so the run record can show how long it waited for the Revit main thread.
+        /// </summary>
+        public long ReceivedTimestamp { get; } = Stopwatch.GetTimestamp();
 
         public const double DefaultTimeoutSeconds = 300;
         public const double MaxTimeoutSeconds = 3600;

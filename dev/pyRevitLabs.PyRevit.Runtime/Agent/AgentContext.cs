@@ -39,6 +39,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
+        /// <remarks>
+        /// <c>reckless</c> appears only when it is on, so the agent knows its runs have no timeout.
+        /// </remarks>
+        private static JObject DescribeAgent() {
+            var agent = new JObject {
+                ["policy"] = AgentRunService.PolicyNameInForce(),
+            };
+            if (PyRevitConfigs.GetAgentReckless())
+                agent["reckless"] = true;
+            return agent;
+        }
+
         public static JToken Describe(UIApplication app) {
             var env = new EnvDictionary();
             var context = new JObject {
@@ -49,9 +61,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["username"] = app.Application.Username,
                 },
                 ["pyrevit"] = DescribePyRevit(env, app.Application.VersionNumber),
-                ["agent"] = new JObject {
-                    ["policy"] = AgentRunService.PolicyNameInForce(),
-                },
+                ["agent"] = DescribeAgent(),
                 ["scripting"] = AgentScripting.Describe(env, app.Application.VersionNumber),
                 ["open_documents"] = AgentDocuments.Describe(app),
                 ["document"] = null,
