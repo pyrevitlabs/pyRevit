@@ -457,6 +457,24 @@ func main() {
 					"--revit":        complete.PredictNothing,
 				},
 			},
+			"launch": complete.Command{
+				Sub: complete.Commands{
+					"default": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--isolated": complete.PredictNothing,
+							"--language": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+						},
+					},
+				},
+				Flags: complete.Flags{
+					"--help":     complete.PredictNothing,
+					"--isolated": complete.PredictNothing,
+					"--language": complete.PredictNothing,
+					"--log":      complete.PredictNothing,
+				},
+			},
 			"agent": complete.Command{
 				Sub: complete.Commands{
 					"status": complete.Command{

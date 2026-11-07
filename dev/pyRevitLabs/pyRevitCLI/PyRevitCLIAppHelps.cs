@@ -36,6 +36,7 @@ namespace pyRevitCLI {
                             { "detach",                 "Detach pyRevit clone from installed Revit" },
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
+                            { "launch",                 "Start Revit on a clone and engine without changing the attachment" },
                             { "doctor",                 "Fix potential or real problems" },
                             { "mcp",                    "Run the pyRevit MCP server, or register it with an MCP client" },
                         },
@@ -311,6 +312,21 @@ namespace pyRevitCLI {
                         });
                     break;
 
+                case PyRevitCLICommandType.Launch:
+                    BuildHelp(
+                        new List<string>() { "launch" },
+                        header: "Start Revit on a pyRevit clone and engine without changing the attachment.\n"
+                                + "The command stays running while Revit runs and removes its temporary files when Revit exits.",
+                        options: new Dictionary<string, string>() {
+                            { "<clone_name_or_path>",   "Name of a registered clone, or the path of a clone" },
+                            { "<revit_year>",           "Revit version year e.g. 2026" },
+                            { "<engine_version>",       "Engine version to be used e.g. 2712" },
+                            { "DEFAULT",                "Use default engine" },
+                            { "--isolated",             "Give the session its own pyRevit config folder, seeded with a copy of the current config" },
+                            { "--language=<code>",      "Revit UI language code e.g. ENU" },
+                        });
+                    break;
+
                 case PyRevitCLICommandType.Caches:
                     BuildHelp(
                         new List<string>() { "caches" },
@@ -350,7 +366,7 @@ namespace pyRevitCLI {
                             { "--engine=<engine_name>", "ironpython or cpython (default: configured agent engine)" },
                             { "--title=<run_title>",    "Run title; used as the undo name for modify runs" },
                             { "--inputs=<inputs_json>", "JSON object exposed to the script as `inputs`" },
-                            { "--revit=<revit_year>",   "Target Revit year or process id when several are running" },
+                            { "--revit=<revit_year>",   "Target Revit year, process id or clone name when several are running" },
                             { "--timeout=<seconds>",    "Stop the script after this many seconds (default 300, max 3600)" },
                             { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
@@ -372,7 +388,7 @@ namespace pyRevitCLI {
                             { "cursor | vscode",        "Cursor, Visual Studio Code (configured through mcp.json)" },
                             { "opencode",               "OpenCode (configured through opencode.json / opencode.jsonc)" },
                             { "--project",              "Register for the current directory instead of the user" },
-                            { "--revit=<revit_year>",   "Default target Revit year or process id for the server" },
+                            { "--revit=<revit_year>",   "Default target Revit year, process id or clone name for the server" },
                         });
                     break;
 

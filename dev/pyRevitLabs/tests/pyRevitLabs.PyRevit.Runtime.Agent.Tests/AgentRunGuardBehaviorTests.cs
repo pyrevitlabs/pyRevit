@@ -268,6 +268,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             guard.Dispose();
 
             Assert.True(app.Application.Save(document));
+            Assert.True(guard.RollbackFailed);
+            Assert.False(guard.Committed);
+            Assert.Contains(guard.CleanupFailures, failure => failure.Contains("Rollback failed."));
+        }
+
+        [Fact]
+        public void ArmFailsWhenTheActiveGroupDoesNotStart() {
+            var document = new Document { StartStatus = TransactionStatus.Uninitialized };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                Assert.Throws<InvalidOperationException>(() => guard.Arm("Test"));
+                Assert.False(guard.HasOpenGroup);
+            }
+        }
+
+        [Fact]
+        public void OnlyAnAssimilatedRunCountsAsCommitted() {
+            var document = new Document();
+            var guard = new AgentRunGuard(new UIApplication(), document);
+            guard.Arm("Test");
+            guard.Assimilate();
+            guard.Dispose();
+
+            Assert.True(guard.Committed);
+            Assert.False(guard.RollbackFailed);
+            Assert.Equal(0, document.RollbackCalls);
         }
 
         [Fact]

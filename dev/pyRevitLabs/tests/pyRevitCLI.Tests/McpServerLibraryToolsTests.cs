@@ -272,6 +272,22 @@ public partial class McpServerTests {
         Assert.Empty(host.Requests);
     }
 
+    [Theory]
+    [InlineData("pyrevit.units.parse-length", "value")]
+    [InlineData("pyrevit.units.parse-slope", "value")]
+    [InlineData("pyrevit.levels.resolve", "name")]
+    [InlineData("pyrevit.elements.by-category", "categories,limit")]
+    public void TheListingShowsTheInputsOfAHandWiredOperation(string id, string names) {
+        var automation = Enumerable.Range(0, 10)
+            .SelectMany(page => Payload(Single(ToolCall(1, "list_automation", new JObject { ["offset"] = page * 50, ["limit"] = 50 })))["operations"])
+            .Select(operation => operation["automation"])
+            .Single(entry => entry.Value<string>("id") == id);
+
+        Assert.True(automation.Value<bool>("invocable"));
+        Assert.Equal(names.Split(','), automation["inputs"].Select(input => input.Value<string>("name")));
+        Assert.True(automation["inputs"][0].Value<bool>("required"));
+    }
+
     [Fact]
     public void AMarkedAutomationRunsTheFixedScriptAsAQuery() {
         host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);

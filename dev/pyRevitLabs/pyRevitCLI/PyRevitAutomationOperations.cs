@@ -163,6 +163,7 @@ namespace pyRevitCLI {
             public string Source { get; set; }
             public bool RequiresDocument { get; set; }
             public Func<JObject, JObject> ValidateInputs { get; set; }
+            public JArray Inputs { get; set; }
         }
 
         private static readonly Regex BuiltInCategoryName = new Regex("^OST_[A-Za-z0-9_]{1,124}$");
@@ -173,12 +174,14 @@ namespace pyRevitCLI {
                 Title = "Normalize length",
                 Source = "from pyrevit.revit import units\nresult = {'value': units.parse_length(inputs['value'])}\n",
                 ValidateInputs = inputs => ValidateSingleInput(inputs, "value", false),
+                Inputs = new JArray(Input("value", "scalar", true)),
             },
             ["pyrevit.units.parse-slope"] = new Operation {
                 Id = "pyrevit.units.parse-slope",
                 Title = "Normalize slope",
                 Source = "from pyrevit.revit import units\nresult = {'value': units.parse_slope(inputs['value'])}\n",
                 ValidateInputs = inputs => ValidateSingleInput(inputs, "value", false),
+                Inputs = new JArray(Input("value", "scalar", true)),
             },
             ["pyrevit.levels.resolve"] = new Operation {
                 Id = "pyrevit.levels.resolve",
@@ -186,6 +189,7 @@ namespace pyRevitCLI {
                 Source = "from pyrevit.revit.db import query\nresult = {'level': query.find_level(inputs['name'], doc=doc)}\n",
                 RequiresDocument = true,
                 ValidateInputs = inputs => ValidateSingleInput(inputs, "name", true),
+                Inputs = new JArray(Input("name", "string", true)),
             },
             ["pyrevit.elements.by-category"] = new Operation {
                 Id = "pyrevit.elements.by-category",
@@ -193,6 +197,9 @@ namespace pyRevitCLI {
                 Source = "from pyrevit.revit.db import query\nelements = list(query.get_elements_by_categories(inputs['categories'], doc=doc))\nlimited = elements[:inputs['limit']]\nunknown = [name for name in inputs['categories'] if query.get_category(name, doc=doc) is None]\nresult = {'elements': limited, 'total': len(elements), 'truncated': len(elements) > len(limited), 'unknown_categories': unknown}\n",
                 RequiresDocument = true,
                 ValidateInputs = ValidateCategoryCollection,
+                Inputs = new JArray(
+                    Input("categories", "array", true, "1 to 20 BuiltInCategory names such as OST_Walls."),
+                    Input("limit", "integer", false, "Elements to return, 1 to 200, default 50.")),
             },
         };
 
@@ -219,6 +226,34 @@ namespace pyRevitCLI {
         internal static bool IsInvocable(LibrarySymbol symbol) {
             return symbol?.Automation != null
                 && (Operations.ContainsKey(symbol.Automation.Id) || IsMarkedInvocable(symbol));
+        }
+
+        /// <summary>
+        /// The inputs run_automation takes for this symbol, as <c>name</c>, <c>type</c> and
+        /// <c>required</c> entries, or null when it declares none.
+        /// </summary>
+        /// <remarks>
+        /// A hand-wired operation's own inputs win over its marker, which declares none.
+        /// </remarks>
+        internal static JArray InputsOf(LibrarySymbol symbol) {
+            if (symbol?.Automation == null)
+                return null;
+            if (Operations.TryGetValue(symbol.Automation.Id, out var operation))
+                return (JArray)operation.Inputs.DeepClone();
+            return symbol.Automation.Inputs == null
+                ? null
+                : new JArray(symbol.Automation.Inputs.Select(input => input.ToJson()));
+        }
+
+        private static JObject Input(string name, string type, bool required, string description = null) {
+            var input = new JObject {
+                ["name"] = name,
+                ["type"] = type,
+                ["required"] = required,
+            };
+            if (description != null)
+                input["description"] = description;
+            return input;
         }
 
         /// <summary>

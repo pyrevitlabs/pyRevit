@@ -208,8 +208,94 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
-    public void ASelectorThatIsNotANumberIsInvalid() {
-        Assert.Equal("invalid_params", Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve("latest")).Code);
+    public void ASelectorThatNamesNoCloneIsNoRevit() {
+        Assert.Equal("no_revit", Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve("latest")).Code);
+    }
+
+    private static readonly AgentInstance[] ClonedSessions = {
+        new AgentInstance { ProcessId = 100, RevitVersion = "2026", Clone = "review-a", ClonePath = @"C:\work\review-a", Engine = "IPY2712PR" },
+        new AgentInstance { ProcessId = 200, RevitVersion = "2026", Clone = "review-b", ClonePath = @"C:\work\review-b\", Engine = "IPY342" },
+        new AgentInstance { ProcessId = 300, RevitVersion = "2026" },
+    };
+
+    [Fact]
+    public void ACloneNameSelectsTheSessionsOfThatCloneIgnoringCase() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, "REVIEW-B")).ProcessId);
+    }
+
+    [Fact]
+    public void ACloneSelectorTakesNoSessionWithoutARecordedClone() {
+        Assert.DoesNotContain(PyRevitAgentClient.Match(ClonedSessions, "review-a"), session => session.ProcessId == 300);
+    }
+
+    [Fact]
+    public void AClonePathSelectsRegardlessOfATrailingSeparator() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\review-b")).ProcessId);
+        Assert.Equal(100, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\review-a\")).ProcessId);
+    }
+
+    [Fact]
+    public void AClonePathSelectsRegardlessOfDotSegments() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\other\..\review-b")).ProcessId);
+    }
+
+    [Fact]
+    public void ABareCloneNameNeverSelectsAnotherCloneThroughAFolderOfThatName() {
+        var folderOfAnotherClone = new AgentInstance {
+            ProcessId = 500,
+            RevitVersion = "2026",
+            Clone = "other",
+            ClonePath = Path.Combine(Directory.GetCurrentDirectory(), "dev"),
+        };
+
+        Assert.Empty(PyRevitAgentClient.Match(new[] { folderOfAnotherClone }, "dev"));
+        Assert.Equal(500, Assert.Single(PyRevitAgentClient.Match(new[] { folderOfAnotherClone }, Path.Combine(".", "dev"))).ProcessId);
+    }
+
+    [Fact]
+    public void ASelectorThatIsNotAPathIsNotAMatchByPath() {
+        Assert.Empty(PyRevitAgentClient.Match(ClonedSessions, "bad|path?"));
+    }
+
+    [Fact]
+    public void ANumericCloneNameIsSelectedWithThePrefixAndNeverAsAProcessId() {
+        var numbered = new[] {
+            new AgentInstance { ProcessId = 342, RevitVersion = "2026" },
+            new AgentInstance { ProcessId = 400, RevitVersion = "2026", Clone = "342", ClonePath = @"C:\work\342" },
+        };
+
+        Assert.Equal(342, Assert.Single(PyRevitAgentClient.Match(numbered, "342")).ProcessId);
+        Assert.Equal(400, Assert.Single(PyRevitAgentClient.Match(numbered, "clone:342")).ProcessId);
+        Assert.Equal(400, Assert.Single(PyRevitAgentClient.Match(numbered, " CLONE: 342 ")).ProcessId);
+    }
+
+    [Fact]
+    public void SeveralSessionsOfOneYearAreToldApartByClone() {
+        Assert.Equal(3, PyRevitAgentClient.Match(ClonedSessions, "2026").Count);
+        Assert.Equal(100, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, "review-a")).ProcessId);
+    }
+
+    [Fact]
+    public void ARegisteredCloneIsReadFromTheInstanceRecordAndReportedInJson() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342");
+
+        var session = PyRevitAgentClient.Resolve("review-a");
+        var json = session.ToJson();
+
+        Assert.Equal("2091", session.RevitVersion);
+        Assert.Equal("review-a", json.Value<string>("clone"));
+        Assert.Equal("IPY342", json.Value<string>("engine"));
+        Assert.True(json.Value<bool>("per_launch"));
+    }
+
+    [Fact]
+    public void AmbiguityNamesTheCloneOfEachSession() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342");
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve(null));
+
+        Assert.Equal("ambiguous_revit", error.Code);
+        Assert.Contains("review-a IPY342", error.Message);
     }
 
     private static readonly AgentInstance[] Sessions = {

@@ -231,9 +231,14 @@ namespace pyRevitLabs.Common {
         /// <summary>
         /// Repo/clone-local config override: the first config file found in the
         /// resolved install root (typically a developer clone), or null when none
-        /// exists.
+        /// exists. Always null in a session started with
+        /// <see cref="PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar"/> set to 1, whose config
+        /// is the one under <see cref="PyRevitLabsConsts.PyRevitPath"/>.
         /// </summary>
         public static string GetLocalConfigFilePath() {
+            if (Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar) == "1")
+                return null;
+
             string installRoot = ResolveInstallRoot();
             return File.Exists(Path.Combine(installRoot, "pyRevitfile"))
                 ? FindConfigIniInDirectory(installRoot)
