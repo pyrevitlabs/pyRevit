@@ -10,13 +10,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     public sealed class AgentRecordingTests : IDisposable {
         private readonly string root = Path.Combine(Path.GetTempPath(), "pyrevit-recording-tests-" + Guid.NewGuid().ToString("N"));
 
+        private readonly System.Collections.Generic.List<AgentRecordingStore> stores = new System.Collections.Generic.List<AgentRecordingStore>();
+
         public void Dispose() {
+            foreach (var store in stores)
+                store.Stop("test");
             if (Directory.Exists(root))
                 Directory.Delete(root, recursive: true);
         }
 
         private AgentRecordingStore NewStore(int maxEvents = 100) =>
-            AgentRecordingStore.Create(root, new AgentRecordingOptions { MaxEvents = maxEvents });
+            Track(AgentRecordingStore.Create(root, new AgentRecordingOptions { MaxEvents = maxEvents }));
+
+        private AgentRecordingStore Track(AgentRecordingStore store) {
+            stores.Add(store);
+            return store;
+        }
 
         [Fact]
         public void EventsAreReadBackInOrderWithSequenceNumbers() {
@@ -44,6 +53,43 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(2, summary.Value<int>("event_count"));
             Assert.Equal(1, summary.Value<int>("dropped_events"));
             Assert.Equal(2, AgentRecordingReader.ReadRecording(store.Directory, 0, 10).Value<int>("total_events"));
+        }
+
+        [Fact]
+        public void EventsAfterTheMaximumDurationAreDroppedEvenBeforeStop() {
+            var store = Track(AgentRecordingStore.Create(root, new AgentRecordingOptions { MaxDurationSeconds = 1 }));
+            Assert.True(store.Append("early", null));
+            System.Threading.Thread.Sleep(1100);
+
+            Assert.False(store.Append("late", null));
+            Assert.Equal(1, store.Stop("max_duration").Value<int>("dropped_events"));
+        }
+
+        [Fact]
+        public void LargeMarkDataIsReplacedByAPreviewAndItsOriginalLength() {
+            var large = "\"" + new string('x', AgentRecordingStore.MaxMarkLength) + "\"";
+
+            var bounded = (JObject)AgentRecordingStore.ParseMarkData(large);
+
+            Assert.True(bounded.Value<bool>("truncated"));
+            Assert.Equal(large.Length, bounded.Value<int>("original_length"));
+            Assert.Equal(AgentRecordingStore.MaxTextLength, bounded.Value<string>("preview").Length);
+            Assert.Equal(1, AgentRecordingStore.ParseMarkData("{\"a\":1}").Value<int>("a"));
+            Assert.Equal("not json", AgentRecordingStore.ParseMarkData("not json").Value<string>());
+            Assert.Equal(JTokenType.Null, AgentRecordingStore.ParseMarkData(null).Type);
+        }
+
+        [Fact]
+        public void PruneNeverDeletesARecordingAnotherHostIsStillWriting() {
+            var live = NewStore();
+            for (var i = 0; i < AgentRecordingStore.MaxRecordings + 1; i++)
+                Directory.CreateDirectory(Path.Combine(root, "29990101-0000" + i.ToString("D2") + "-id" + i));
+
+            AgentRecordingStore.Prune(root, DateTime.Now, null);
+
+            Assert.True(Directory.Exists(live.Directory));
+            Assert.True(live.Append("still", null));
+            live.Stop("user");
         }
 
         [Fact]
@@ -140,6 +186,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [Fact]
         public void PruneRemovesExpiredRecordingsAndKeepsTheActiveOne() {
             var old = NewStore();
+            old.Stop("user");
             var active = NewStore();
             var expired = DateTime.Now - AgentRecordingStore.Retention - TimeSpan.FromDays(1);
             Directory.SetLastWriteTime(old.Directory, expired);

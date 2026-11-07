@@ -30,6 +30,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentRecorderSession : IDisposable {
         private const int MaxElementsPerChange = 25;
         private const int MaxSelectionIds = 20;
+        private const int MaxElementsScanned = 200;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -189,7 +190,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JArray DescribeElements(Document doc, ICollection<ElementId> ids) {
             var described = new JArray();
-            foreach (var id in ids.OrderBy(id => doc.GetElement(id)?.Category == null).Take(MaxElementsPerChange)) {
+            var candidates = ids.Take(MaxElementsScanned).OrderBy(id => doc.GetElement(id)?.Category == null);
+            foreach (var id in candidates.Take(MaxElementsPerChange)) {
                 var element = doc.GetElement(id);
                 described.Add(new JObject {
                     ["id"] = AgentIds.ToValue(id),

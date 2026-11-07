@@ -503,6 +503,7 @@ Each event in `events.jsonl` has `seq`, `t_ms` (since the start), `time` and a `
 | `element_changes` | One per `DocumentChanged`: document, operation, transaction names, counts, and up to 25 each of added and modified elements (id, category, family and type name, location as point, curve endpoints or bounding box) and deleted ids. No parameter values |
 | `command` | `start` and `end` of every pyRevit command or script, with result code and traceback |
 | `output` | Text a command printed to its output window or console |
+| `agent_run` | The outcome of each agent run (`run_query`, `run_modify`): status, decision, error with traceback, and its captured output. The `command` event of an agent run only brackets it, since agent scripts capture their own output and report failure here |
 | `log` | Logger messages at info level and above that pyRevit shows, with logger name and level (`20` info, `30` warning, `40` error) |
 | `mark` | Breadcrumbs from [`pyrevit.recorder.mark`](#extension-trace-api) |
 | `view_activated`, `selection_changed` | View changes, and selection changes seen when Revit is idle (first 20 ids) |
@@ -518,11 +519,13 @@ Decisions:
   `--max-screenshots`. Large models pay one view export per screenshot; `--no-screenshots` removes it. Locations are
   read for only the first 25 elements of each change, so there is no category filter yet.
 - **Limits.** `--max-events` stops storing events beyond the cap and counts them in `dropped_events`; output and
-  log text is cut at 4000 characters; a recording stops itself after `--max-duration`, when the host
+  log text is cut at 4000 characters, and a `mark` payload over 16000 characters is replaced by a preview and its
+  original length; events stop being stored at `--max-duration` even before the recording is stopped; a recording stops itself after `--max-duration`, when the host
   stops or Revit closes.
 - **Storage** is local plaintext under `%APPDATA%\pyRevit\agent\recordings\<timestamp>-<id>\`
   (`events.jsonl`, `recording.json`, `screenshots\`). Recordings older than 7 days, and all but
-  the newest 20, are deleted when a recording starts and when the host starts. Nothing is uploaded; an
+  the newest 20, are deleted when a recording starts and when the host starts; a recording another Revit is
+  still writing is never deleted. Nothing is uploaded; an
   agent reads a recording only through `get_recording`, which sends it to the agent's model provider like
   any other tool result. Element names and screenshots can contain client data, so review a recording
   before sharing it.

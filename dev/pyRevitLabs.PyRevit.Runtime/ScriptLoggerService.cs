@@ -144,9 +144,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (visible && !(runtime?.ScriptRuntimeConfigs?.SuppressOutput ?? _suppressOutput))
-                    using (Agent.AgentRecorder.SuppressOutput())
-                        WriteOutput(runtime, normalizedLevel, normalizedName, normalizedMessage,
-                            allowWindowCreation);
+                    WriteOutput(runtime, normalizedLevel, normalizedName, normalizedMessage,
+                        allowWindowCreation);
 
                 var hasFileSink = !string.IsNullOrWhiteSpace(explicitLogPath)
                     || !string.IsNullOrWhiteSpace(defaultLogPath);

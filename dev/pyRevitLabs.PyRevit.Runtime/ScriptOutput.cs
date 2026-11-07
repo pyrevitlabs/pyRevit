@@ -346,7 +346,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 mark_error();
 
             if (ScriptOutputUi.MayCreateOutputUi) {
-                write_line(content);
+                using (Agent.AgentRecorder.SuppressOutput())
+                    write_line(content);
                 return;
             }
 

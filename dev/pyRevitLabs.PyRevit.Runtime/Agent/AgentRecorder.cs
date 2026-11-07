@@ -57,14 +57,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static void Mark(string source, string dataJson) {
             if (store == null)
                 return;
-            JToken data;
+            Append("mark", new JObject { ["source"] = source, ["data"] = AgentRecordingStore.ParseMarkData(dataJson) });
+        }
+
+        internal static void RecordAgentRun(JObject response) {
+            if (store == null)
+                return;
             try {
-                data = string.IsNullOrEmpty(dataJson) ? JValue.CreateNull() : JToken.Parse(dataJson);
+                Append("agent_run", new JObject {
+                    ["run_id"] = response["run_id"],
+                    ["status"] = response["status"],
+                    ["decision"] = response["decision"],
+                    ["error"] = response["error"],
+                    ["output"] = AgentRecordingStore.Truncate(response["output"]?.ToString()),
+                });
             }
-            catch (Exception) {
-                data = new JValue(dataJson);
+            catch (Exception ex) {
+                logger.Debug("Could not record the agent run: {0}", ex.Message);
             }
-            Append("mark", new JObject { ["source"] = source, ["data"] = data });
         }
 
         internal static JObject Start(UIApplication app, AgentRecordingOptions options) {

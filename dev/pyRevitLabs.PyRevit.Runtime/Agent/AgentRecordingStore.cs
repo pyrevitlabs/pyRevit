@@ -105,6 +105,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public const int MaxTextLength = 4000;
         public static readonly TimeSpan Retention = TimeSpan.FromDays(7);
         public const int MaxRecordings = 20;
+        public const int MaxMarkLength = 16000;
+        private const string LockFileName = ".active";
+        private const int SharingViolation = 32;
+        private const int LockViolation = 33;
 
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
         private readonly object sync = new object();
@@ -113,11 +117,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private int sequence;
         private int dropped;
         private bool stopped;
+        private FileStream activeLock;
+        private JObject stoppedSummary;
 
         private AgentRecordingStore(string id, string directory, AgentRecordingOptions options) {
             Id = id;
             Directory = directory;
             Options = options;
+            activeLock = new FileStream(Path.Combine(directory, LockFileName), FileMode.Create, FileAccess.Write, FileShare.Read);
         }
 
         public string Id { get; }
@@ -130,7 +137,47 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var id = Guid.NewGuid().ToString("N").Substring(0, 8);
             var directory = Path.Combine(root, DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + "-" + id);
             System.IO.Directory.CreateDirectory(directory);
-            return new AgentRecordingStore(id, directory, options);
+            try {
+                return new AgentRecordingStore(id, directory, options);
+            }
+            catch (Exception) {
+                System.IO.Directory.Delete(directory, recursive: true);
+                throw;
+            }
+        }
+
+        public static JToken ParseMarkData(string json) {
+            if (string.IsNullOrEmpty(json))
+                return JValue.CreateNull();
+            if (json.Length > MaxMarkLength)
+                return new JObject {
+                    ["truncated"] = true,
+                    ["original_length"] = json.Length,
+                    ["preview"] = json.Substring(0, MaxTextLength),
+                };
+            try {
+                return JToken.Parse(json);
+            }
+            catch (JsonException) {
+                return new JValue(json);
+            }
+        }
+
+        private static bool IsLive(string directory) {
+            var lockPath = Path.Combine(directory, LockFileName);
+            if (!File.Exists(lockPath))
+                return false;
+            try {
+                using (new FileStream(lockPath, FileMode.Open, FileAccess.Write, FileShare.None)) {
+                }
+                return false;
+            }
+            catch (IOException ex) when ((ex.HResult & 0xFFFF) == SharingViolation || (ex.HResult & 0xFFFF) == LockViolation) {
+                return true;
+            }
+            catch (IOException) {
+                return false;
+            }
         }
 
         public static string Truncate(string text) {
@@ -143,6 +190,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             lock (sync) {
                 if (stopped)
                     return false;
+                if (clock.Elapsed.TotalSeconds >= Options.MaxDurationSeconds) {
+                    dropped++;
+                    return false;
+                }
                 if (sequence >= Options.MaxEvents) {
                     dropped++;
                     return false;
@@ -166,6 +217,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public JObject Stop(string reason) {
             lock (sync) {
+                if (stopped)
+                    return stoppedSummary;
                 stopped = true;
                 var summary = new JObject {
                     ["id"] = Id,
@@ -178,7 +231,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["dropped_events"] = dropped,
                     ["options"] = Options.ToJson(),
                 };
-                File.WriteAllText(Path.Combine(Directory, "recording.json"), summary.ToString(Formatting.Indented), Utf8);
+                try {
+                    File.WriteAllText(Path.Combine(Directory, "recording.json"), summary.ToString(Formatting.Indented), Utf8);
+                }
+                finally {
+                    activeLock.Dispose();
+                }
+                stoppedSummary = summary;
                 return summary;
             }
         }
@@ -196,7 +255,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 .ToList();
             for (var index = 0; index < directories.Count; index++) {
                 var directory = directories[index];
-                if (string.Equals(directory, keep, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(directory, keep, StringComparison.OrdinalIgnoreCase) || IsLive(directory))
                     continue;
                 var expired = System.IO.Directory.GetLastWriteTime(directory) < now - Retention;
                 if (!expired && index < MaxRecordings)
