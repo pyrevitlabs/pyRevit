@@ -96,4 +96,21 @@ public class AgentSkillsTests {
         Assert.Contains(Core, skill.Message);
         Assert.Equal("skill_not_found", file.Code);
     }
+
+    [Fact]
+    public void FrontMatterValuesLoseTheirYamlQuotes() {
+        var parsed = PyRevitAgentSkills.ParseFrontMatter(new[] {
+            "---", "name: 'it''s'", "description: \"Covers \\\"this\\\": that\"", "plain: a: b", "---", "body: ignored",
+        });
+
+        Assert.Equal("it's", parsed["name"]);
+        Assert.Equal("Covers \"this\": that", parsed["description"]);
+        Assert.Equal("a: b", parsed["plain"]);
+        Assert.False(parsed.ContainsKey("body"));
+    }
+
+    [Fact]
+    public void UnclosedFrontMatterIsIgnored() {
+        Assert.Empty(PyRevitAgentSkills.ParseFrontMatter(new[] { "---", "name: other", "# Body", "Note: text" }));
+    }
 }
