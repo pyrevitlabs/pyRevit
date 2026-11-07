@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Target Condition="'$(PermitDeploy)' == '' or '$(PermitDeploy)' == 'false'" Name="Deploy" AfterTargets="AfterBuild">
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitBinDir)"
-              Condition="'$(SkipPyRevitDeploy)' != 'true'" />
+    <Target Condition="'$(IsTestProject)' != 'true' AND '$(SkipPyRevitDeploy)' != 'true' AND ('$(PermitDeploy)' == '' or '$(PermitDeploy)' == 'false')" Name="Deploy" AfterTargets="AfterBuild">
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitBinDir)" />
     </Target>
 
     <Import Project="../Directory.Build.targets" />

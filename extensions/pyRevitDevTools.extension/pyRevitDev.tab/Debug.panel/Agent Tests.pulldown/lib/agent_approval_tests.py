@@ -4,6 +4,10 @@ If Revit doesn't raise ``DialogBoxShowing`` for the prompt, it stays on screen;
 click the button named in its title to let the test finish.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 from contextlib import contextmanager
 
 from pyrevit import HOST_APP, UI

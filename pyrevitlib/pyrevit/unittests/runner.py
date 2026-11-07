@@ -169,12 +169,9 @@ class PyRevitTestResult(TestResult):
         if stop_test_run is not None:
             stop_test_run()
 
-        try:
-            written = self._junit.write()
-            if written:
-                mlogger.debug("Wrote JUnit report: %s", written)
-        except Exception as report_error:
-            mlogger.warning("Could not write JUnit report: %s", report_error)
+        written = self._junit.write()
+        if written:
+            mlogger.debug("Wrote JUnit report: %s", written)
 
     def startTest(self, test):
         """Starts the test.
@@ -431,11 +428,13 @@ def assert_module_tests_successful(test_module):
         IronPython 2.7's `TestResult.wasSuccessful` ignores
         `unexpectedSuccesses` (`unittest/result.py` returns
         `len(self.failures) == len(self.errors) == 0`), so on the default engine
-        an `@expectedFailure` that starts passing does not fail the command.
-        CPython does count them, which is why the third count is listed.
+        relying on that result alone would let an `@expectedFailure` that
+        starts passing leave the command successful.
+        CPython does count them. This assertion explicitly checks them on both
+        engines so an unexpected success always fails the command.
     """
     result = run_module_tests(test_module)
-    if result.wasSuccessful():
+    if result.wasSuccessful() and not result.unexpectedSuccesses:
         return result
 
     counts = [

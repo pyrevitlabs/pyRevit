@@ -14,9 +14,13 @@ namespace Dynamo.Applications {
         Failed
     }
 
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class FakeRevitUIApplication {
     }
 
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class FakeRevitDynamoModel {
         public string State { get; set; } = "StartedUI";
     }
@@ -33,6 +37,8 @@ namespace Dynamo.Applications {
     /// Stands in for the Dynamo add-in type. It must keep this exact name so that the interop
     /// resolution finds it the same way it finds the real add-in.
     /// </summary>
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class DynamoRevitApp {
         public static readonly List<IDictionary<string, string>> ReceivedJournalData =
             new List<IDictionary<string, string>>();
@@ -66,6 +72,8 @@ namespace Dynamo.Applications {
 
 namespace pyRevitLabs.UnitTests.DynamoRevit {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class DynamoRevitInteropTests {
         private const string GraphPath = @"C:\scripts\report.dyn";
 

@@ -8,6 +8,8 @@ namespace PyRevitLabs.PyRevit.Runtime.EnvVars.Tests;
 /// <c>from pyrevit import revit</c> does through <c>output.set_stylesheet</c> under
 /// <c>pyrevit run</c>.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 [Collection(CPythonEngineCollection.Name)]
 public class CPythonEnvVarsTests {
     /// <summary>Starts the engine and checks no IronPython context exists yet.</summary>

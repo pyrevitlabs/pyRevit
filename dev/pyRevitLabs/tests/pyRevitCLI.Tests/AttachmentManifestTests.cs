@@ -7,18 +7,28 @@ namespace pyRevitCLI.Tests;
 /// <summary>
 ///     Verifies attachment replacement ordering, temporary-file cleanup, and bulk failure reporting.
 /// </summary>
+/// <remarks>
+///     The per-user and all-users add-in folders are redirected into the test directory, so no
+///     case writes a manifest into the machine's real Revit add-in folders.
+/// </remarks>
+[Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AttachmentManifestTests : IDisposable {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "pyRevit-attach-tests-" + Guid.NewGuid());
+    private readonly Func<Environment.SpecialFolder, string> previousFolderResolver = RevitAddons.SpecialFolderResolver;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="AttachmentManifestTests"/> class with an isolated temporary directory.
     /// </summary>
     public AttachmentManifestTests() {
         Directory.CreateDirectory(directory);
+        RevitAddons.SpecialFolderResolver = folder => Path.Combine(directory, "system", folder.ToString());
     }
 
     /// <inheritdoc />
     public void Dispose() {
+        RevitAddons.SpecialFolderResolver = previousFolderResolver;
         Directory.Delete(directory, true);
     }
 
@@ -161,6 +171,8 @@ public class AttachmentManifestTests : IDisposable {
         var addinName = "pyRevit-attach-tests-" + Guid.NewGuid();
         var currentUser = RevitAddons.GetRevitAddonsFilePath(2026, addinName);
         var allUsers = RevitAddons.GetRevitAddonsFilePath(2026, addinName, allusers: true);
+        Assert.StartsWith(directory, currentUser);
+        Assert.StartsWith(directory, allUsers);
         try {
             RevitAddons.CreateManifestFile(2026, addinName, addinName, "missing-loader.dll",
                 "test-id", "Loader.Application", "TEST");

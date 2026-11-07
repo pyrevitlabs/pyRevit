@@ -8,6 +8,10 @@ file, an unresolvable session value degrades to the version file instead of
 leaking "Unknown" into the About window, and both feed the same formatter.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import unittest
 
 from pyrevit import versionmgr

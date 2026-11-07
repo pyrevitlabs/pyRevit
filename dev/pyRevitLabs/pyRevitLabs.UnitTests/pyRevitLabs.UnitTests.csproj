@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
@@ -23,5 +24,8 @@
     <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.PyRevit.Runtime.Shared\pyRevitLabs.PyRevit.Runtime.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\release\pyrevit-hosts.json" Link="pyrevit-hosts.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

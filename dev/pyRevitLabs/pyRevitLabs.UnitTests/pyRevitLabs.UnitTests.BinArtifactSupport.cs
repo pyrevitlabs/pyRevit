@@ -6,6 +6,8 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.UnitTests.Common {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class BinArtifactSupportTests {
         private string _tempRoot;
 

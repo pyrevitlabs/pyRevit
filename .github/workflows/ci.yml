@@ -3,9 +3,13 @@ name: pyRevit CI
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-    branches: [develop, master]
     paths:
       - '.github/workflows/**'
+      - 'Pipfile'
+      - 'Pipfile.lock'
+      - 'pyproject.toml'
+      - 'conftest.py'
+      - '.pre-commit-config.yaml'
       - 'build/**'
       - 'dev/**'
       - 'extensions/**'
@@ -17,6 +21,11 @@ on:
     tags: ['v*']
     paths:
       - '.github/workflows/**'
+      - 'Pipfile'
+      - 'Pipfile.lock'
+      - 'pyproject.toml'
+      - 'conftest.py'
+      - '.pre-commit-config.yaml'
       - 'build/**'
       - 'dev/**'
       - 'extensions/**'
@@ -63,6 +72,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+
+      - name: Install test dependencies
+        run: python dev/tests/run_tests.py --install-dependencies
+
+      - name: Run API-free Python tests
+        run: python dev/tests/run_tests.py --language python
+
       - name: Run CI pipeline
         working-directory: build
         env:
@@ -70,16 +90,17 @@ jobs:
           Build__Channel: ${{ github.ref == 'refs/heads/develop' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'wip' || ((github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) && 'release') || 'none' }}
         run: dotnet run -c Release -- ci
 
-      - name: Run build unit tests
-        working-directory: build
-        run: dotnet test tests/Build.Tests.csproj -c Release
+      - name: Run all API-free C# tests
+        run: python dev/tests/run_tests.py --language dotnet
 
-      - name: Run standalone Python unit tests
-        shell: pwsh
-        working-directory: ${{ github.workspace }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: test-results-${{ github.sha }}
+          path: .test-results/**
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Capture build versions
         id: versionmeta

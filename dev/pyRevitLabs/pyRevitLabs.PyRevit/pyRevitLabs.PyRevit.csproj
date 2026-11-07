@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="pyRevitCLI.Tests" />
+    <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Tests" />
   </ItemGroup>
 
   <ItemGroup>

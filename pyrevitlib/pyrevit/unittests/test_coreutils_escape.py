@@ -8,6 +8,9 @@ brackets, otherwise the entities written for ``<`` and ``>`` would be escaped
 again and show up as literal ``&lt;`` text.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Unit"
+
 import unittest
 
 from pyrevit.coreutils import escape_for_output

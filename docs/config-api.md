@@ -7,7 +7,7 @@ hand-rolled INI parser with the typed C# configuration service.
 
 It is a **contract**, not a proposal. The API it describes is the one that
 merged in #3450; what is new here is that the parts #3450 left open are now
-written down, and that `dev/scripts/check_config_api.py` fails the build when
+written down, and that `dev/checks/check_config_api.py` fails the build when
 the code and this page disagree.
 
 ## Status
@@ -34,9 +34,9 @@ which one is *the* API for extension authors, and what happens to the other.
 
 ## Inventory
 
-`PyRevitConfig` has 35 flat aliases. `dev/scripts/check_config_api.py` derives
+`PyRevitConfig` has 35 flat aliases. `dev/checks/check_config_api.py` derives
 this table from the source; the counts below are asserted by
-`dev/scripts/test_check_config_api.py` so the two cannot drift.
+`dev/tests/python/tooling/test_check_config_api.py` so the two cannot drift.
 
 ### 31 direct delegations
 

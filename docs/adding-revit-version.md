@@ -301,8 +301,8 @@ until the catalog's years match the `REVIT<year>` constants):
 
 ```bash
 pip install dnfile
-python dev/scripts/build_revit_api_catalog.py
-python dev/scripts/check_revit_api_compat.py --baseline
+python dev/checks/build_revit_api_catalog.py
+python dev/checks/check_revit_api_compat.py --baseline
 ```
 
 Then run **Revit API Catalog Tests** from DevTools in the new Revit to confirm the

@@ -5,6 +5,8 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class AgentClientTests : IDisposable {
     private readonly FakeAgentHost host = new FakeAgentHost();
 

@@ -3,6 +3,8 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.UnitTests.Common {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class GithubRepoHelperTests {
         [TestMethod]
         public void ParseRepoId_HttpsGitUrl_Test() {

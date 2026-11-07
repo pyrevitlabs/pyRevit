@@ -1,6 +1,8 @@
 using PyRevitLabs.PyRevit.Runtime.Agent;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentRunDecisionTests {
         private static AgentRunFacts CleanModifyRun(AgentPolicy policy = AgentPolicy.Ask) {
             return new AgentRunFacts {

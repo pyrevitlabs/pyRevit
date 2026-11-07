@@ -6,6 +6,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentRunGuardFailureTests {
         [Fact]
         public void WarningsAreRecordedDeletedAndDoNotRollBack() {
@@ -118,6 +120,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentRunGuardBlockTests {
         [Fact]
         public void NonCancellableEventsAreNeitherCancelledNorReported() {
@@ -192,6 +196,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentRunGuardGroupTests {
         [Fact]
         public void TheActiveDocumentGetsAGroupThatRollBackCloses() {
@@ -307,6 +313,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentChangeSetTests {
         [Fact]
         public void ModifyingAnElementTheRunAddedCountsItOnlyAsAdded() {

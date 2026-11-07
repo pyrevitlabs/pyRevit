@@ -9,6 +9,8 @@ using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class CommonUtilsPathTests {
         private string _tempRoot;
         private string _previousPyRevitPathOverride;

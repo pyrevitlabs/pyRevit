@@ -32,6 +32,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// process.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class WebView2IsolationSpikeTests {
         private const string CoreTypeName = "Microsoft.Web.WebView2.Core.CoreWebView2Environment";
         private const string EnvironmentOptionsTypeName =

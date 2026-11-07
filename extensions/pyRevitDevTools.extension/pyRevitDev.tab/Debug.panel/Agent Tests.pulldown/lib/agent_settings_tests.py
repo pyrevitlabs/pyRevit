@@ -3,6 +3,10 @@
 These tests change the real pyRevit config and put every value back afterwards.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os.path as op
 
 import System

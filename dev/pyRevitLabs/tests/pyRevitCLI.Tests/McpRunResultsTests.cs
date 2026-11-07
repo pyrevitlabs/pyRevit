@@ -3,6 +3,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class McpRunResultsTests {
     private static JObject Error(string type, string message, string failingLine = null) {
         var error = new JObject { ["type"] = type, ["message"] = message };
@@ -40,6 +42,8 @@ public class McpRunResultsTests {
         return run;
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class CompactTests {
         [Fact]
         public void StatusAndRunIdLeadTheResult() {
@@ -230,6 +234,8 @@ public class McpRunResultsTests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class HintTests {
         [Fact]
         public void ChangingTheDocumentOutsideATransactionPointsToShowElements() {
@@ -364,6 +370,8 @@ public class McpRunResultsTests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class LookupTests {
         [Theory]
         [InlineData("AttributeError", "'Autodesk.Revit.DB' object has no attribute 'Wal'", "Wal")]

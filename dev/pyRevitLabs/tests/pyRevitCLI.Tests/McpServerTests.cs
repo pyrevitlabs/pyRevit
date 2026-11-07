@@ -5,6 +5,8 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
         "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",

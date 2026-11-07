@@ -17,6 +17,8 @@ public sealed class CPythonEngineCollection {
 /// back a new <c>Application</c> wrapper on every access, which pythonnet's own <c>-=</c> cannot
 /// handle.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 [Collection(CPythonEngineCollection.Name)]
 public class CPythonEventsTests {
     /// <summary>Starts the CPython engine with <c>events.py</c> loaded.</summary>

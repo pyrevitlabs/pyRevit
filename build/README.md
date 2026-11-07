@@ -107,7 +107,7 @@ Run unit tests:
 dotnet test tests/Build.Tests.csproj -c Release
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
+Product builds do not execute tests. From the repository root, run `python dev/tests/run_tests.py` for shared C#/Python discovery, reports, and per-module coverage gates. CI runs the same language selections. Revit API tests remain local; see `docs/testing.md`.
 
 ### Pipeline modes
 
