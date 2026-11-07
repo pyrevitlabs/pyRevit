@@ -27,8 +27,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// no selection highlight.</item>
     /// <item><c>screen</c> copies the active view's window from the screen: exactly what the user
     /// sees, including selection and temporary hide/isolate. It fails with <c>view_not_active</c>
-    /// for any other view, and with <c>view_obscured</c> when another application's window covers the view, so it never returns that
-    /// application's pixels. Revit's own floating windows over the view are captured as seen.</item>
+    /// for any other view, and with <c>view_obscured</c> when another application's window covers
+    /// the view, so it never returns that application's pixels. Revit's own floating windows over
+    /// the view are captured as seen.</item>
     /// </list>
     /// The <c>3d</c> view is a temporary view created inside a transaction group that is
     /// always rolled back. It shows model categories only. By default it is isometric, looks from
