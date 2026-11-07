@@ -1,6 +1,6 @@
 # pyRevitLabs.PyRevit.Tests
 
-The Labs configuration facade and script-file classification. Values written through PyRevitConfigs must be readable and persisted through the shared backend; classifying a script must not require an installed interpreter.
+The Labs configuration facade and script-file classification. Values written through PyRevitConfigs must be readable and persisted through the shared backend; classifying a script must not require an installed interpreter. Per-session launches must isolate their config and prune only abandoned launch folders.
 
 Owner: the owning module maintainers; unassigned failures and quarantines belong to the change author. Quarantines require an issue and review within 14 days.
 
