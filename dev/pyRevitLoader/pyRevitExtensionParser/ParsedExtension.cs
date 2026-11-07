@@ -171,7 +171,7 @@ namespace pyRevitExtensionParser
                     {
                         var directoryPath = pendingDirectory.isExtensionRoot
                             ? dirInfo.Name
-                            : Path.GetRelativePath(extensionRootPath, fullPath);
+                            : GetHashRelativePath(extensionRootPath, fullPath);
                         hashEntries.Add($"D:{directoryPath}:{dirInfo.LastWriteTimeUtc.Ticks}");
 
                         try
@@ -180,7 +180,7 @@ namespace pyRevitExtensionParser
                             {
                                 if (_scriptExtensions.Contains(fileInfo.Extension))
                                 {
-                                    var filePath = Path.GetRelativePath(extensionRootPath, fileInfo.FullName);
+                                    var filePath = GetHashRelativePath(extensionRootPath, fileInfo.FullName);
                                     hashEntries.Add($"F:{filePath}:{fileInfo.LastWriteTimeUtc.Ticks}");
                                 }
                             }
@@ -221,6 +221,16 @@ namespace pyRevitExtensionParser
                 // Fallback to simple hash if directory scanning fails
                 return Directory.GetHashCode().ToString("X");
             }
+        }
+
+        /// <summary>Returns a path relative to an extension root without requiring newer .NET path APIs.</summary>
+        private static string GetHashRelativePath(string extensionRootPath, string fullPath)
+        {
+            var rootPrefix = extensionRootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            return fullPath.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase)
+                ? fullPath.Substring(rootPrefix.Length)
+                : fullPath;
         }
 
         private static bool IsHashDirectory(string dirName)
