@@ -135,6 +135,12 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentEngineDefault = ConfigsAgentEngineIronPython;
         public const string ConfigsAgentUserSkillsEnabledKey = "user_skills";
         public const bool ConfigsAgentUserSkillsEnabledDefault = false;
+        /// <summary>
+        /// Runs agent scripts without the in-script timeout and transaction checks. Off unless
+        /// the user opts in.
+        /// </summary>
+        public const string ConfigsAgentRecklessKey = "reckless";
+        public const bool ConfigsAgentRecklessDefault = false;
         /// <summary>Controls the temporary accent overlay on the document used by an agent run.</summary>
         public const string ConfigsAgentTabHighlightKey = "tab_highlight";
         /// <summary>Agent document identification is enabled unless explicitly disabled.</summary>
