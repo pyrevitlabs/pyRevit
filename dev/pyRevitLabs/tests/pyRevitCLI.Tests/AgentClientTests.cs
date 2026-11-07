@@ -481,4 +481,57 @@ public class AgentClientTests : IDisposable {
         Assert.Empty(PyRevitAgentClient.GetRecentRunDirs(5));
         Assert.Null(PyRevitAgentClient.FindRunDir("abc123def456"));
     }
+
+    [Fact]
+    public void APingThatGetsNoAnswerInTimeFailsInsteadOfHanging() {
+        using var release = new ManualResetEventSlim(false);
+        host.Handler = request => {
+            release.Wait(TimeSpan.FromSeconds(10));
+            return FakeAgentHost.Result(request, new JObject());
+        };
+        PyRevitAgentClient.PingTimeoutMs = 200;
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Ping(ThisHost()));
+        release.Set();
+
+        Assert.Equal("no_answer", error.Code);
+        Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+    }
+
+    [Fact]
+    public async Task CancellingASentCallClosesItWithAnUnknownOutcome() {
+        using var release = new ManualResetEventSlim(false);
+        using var received = new ManualResetEventSlim(false);
+        host.Handler = request => {
+            received.Set();
+            release.Wait(TimeSpan.FromSeconds(10));
+            return FakeAgentHost.Result(request, new JObject());
+        };
+        using var cancellation = new CancellationTokenSource();
+        var instance = ThisHost();
+
+        var call = Task.Run(() => PyRevitAgentClient.Call(instance, "run", cancellation: cancellation.Token));
+        Assert.True(received.Wait(TimeSpan.FromSeconds(10)));
+        cancellation.Cancel();
+        var error = await Assert.ThrowsAsync<AgentClientException>(() => call);
+        release.Set();
+
+        Assert.Equal("cancelled", error.Code);
+        Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+        Assert.Equal(host.Requests.Single().Value<string>("id"), error.RequestId);
+    }
+
+    [Fact]
+    public async Task CheckingThatAPipeExistsDoesNotConnectToIt() {
+        var pipeName = "pyrevit-probe-" + Guid.NewGuid().ToString("N");
+        using var server = new System.IO.Pipes.NamedPipeServerStream(
+            pipeName, System.IO.Pipes.PipeDirection.InOut, 1,
+            System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+        var connection = server.WaitForConnectionAsync();
+
+        Assert.True(PyRevitAgentClient.PipeExists(pipeName));
+        Assert.False(PyRevitAgentClient.PipeExists("pyrevit-missing-" + Guid.NewGuid().ToString("N")));
+        await Task.Delay(200);
+        Assert.False(connection.IsCompleted);
+    }
 }

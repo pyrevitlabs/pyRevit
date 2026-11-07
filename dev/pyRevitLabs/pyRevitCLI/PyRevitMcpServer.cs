@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,6 +28,9 @@ namespace pyRevitCLI {
     /// newline-delimited JSON-RPC 2.0; no SDK dependency.
     /// Malformed request fields receive JSON-RPC errors; notifications receive no response.
     /// Unexpected dispatch failures receive an internal error without ending the session.
+    /// Calls to one Revit are serialized, because its host serves one connection at a time; calls
+    /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
+    /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -38,7 +42,9 @@ namespace pyRevitCLI {
 
         private readonly string defaultRevit;
         private readonly object writeLock = new object();
-        private readonly SemaphoreSlim revitGate = new SemaphoreSlim(1, 1);
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> revitGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> pendingCalls = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private readonly AsyncLocal<CancellationToken> callCancellation = new AsyncLocal<CancellationToken>();
         private readonly List<McpTool> tools;
         private TextWriter output;
 
@@ -87,8 +93,11 @@ namespace pyRevitCLI {
 
                 var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
-                if (id == null)
+                if (id == null) {
+                    if (method == "notifications/cancelled")
+                        Cancel((message["params"] as JObject)?["requestId"]);
                     continue;
+                }
                 if (id.Type != JTokenType.Integer && id.Type != JTokenType.Float
                     && id.Type != JTokenType.String && id.Type != JTokenType.Null) {
                     Write(Error(null, -32600, "Invalid Request"));
@@ -117,7 +126,18 @@ namespace pyRevitCLI {
                             break;
                         case "tools/call":
                             inFlight.RemoveAll(task => task.IsCompleted);
-                            inFlight.Add(Task.Run(() => CallTool(id, parameters)));
+                            var cancellation = new CancellationTokenSource();
+                            var key = id.ToString(Formatting.None);
+                            var tracked = pendingCalls.TryAdd(key, cancellation);
+                            inFlight.Add(Task.Run(() => {
+                                try {
+                                    CallTool(id, parameters, cancellation.Token);
+                                }
+                                finally {
+                                    if (tracked)
+                                        pendingCalls.TryRemove(key, out _);
+                                }
+                            }));
                             break;
                         default:
                             Write(Error(id, -32601, "Method not found"));
@@ -146,7 +166,13 @@ namespace pyRevitCLI {
             };
         }
 
-        private void CallTool(JToken id, JObject parameters) {
+        private void Cancel(JToken requestId) {
+            if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
+                cancellation.Cancel();
+        }
+
+        private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
+            callCancellation.Value = cancellation;
             Timer progress = null;
             try {
                 JObject result;
@@ -237,35 +263,64 @@ namespace pyRevitCLI {
             return run;
         }
 
+        private SemaphoreSlim GateFor(AgentInstance instance) {
+            return revitGates.GetOrAdd(instance.Pipe ?? string.Empty, _ => new SemaphoreSlim(1, 1));
+        }
+
         private JToken ListInstances() {
-            var instances = new JArray();
-            foreach (var instance in PyRevitAgentClient.GetInstances()) {
-                var entry = instance.ToJson();
-                revitGate.Wait();
-                try {
-                    PyRevitAgentClient.Call(instance, "ping");
-                    entry["responding"] = true;
-                }
-                catch (AgentClientException) {
-                    entry["responding"] = false;
-                }
-                finally {
-                    revitGate.Release();
-                }
-                instances.Add(entry);
+            var probes = PyRevitAgentClient.GetInstances()
+                .Select(instance => Task.Run(() => DescribeInstance(instance)))
+                .ToArray();
+            Task.WaitAll(probes);
+            return new JObject {
+                ["instances"] = new JArray(probes.Select(probe => probe.Result)),
+                ["default_selector"] = defaultRevit,
+            };
+        }
+
+        private JObject DescribeInstance(AgentInstance instance) {
+            var entry = instance.ToJson();
+            var gate = GateFor(instance);
+            if (!gate.Wait(0)) {
+                entry["busy"] = true;
+                return entry;
             }
-            return new JObject { ["instances"] = instances, ["default_selector"] = defaultRevit };
+            try {
+                PyRevitAgentClient.Ping(instance);
+                entry["responding"] = true;
+            }
+            catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
+                entry["busy"] = true;
+            }
+            catch (AgentClientException) {
+                entry["responding"] = false;
+            }
+            finally {
+                gate.Release();
+            }
+            return entry;
         }
 
         private JToken CallRevit(JObject arguments, string method, JObject parameters) {
-            var selector = arguments["revit"]?.ToString() ?? defaultRevit;
-            var instance = PyRevitAgentClient.Resolve(selector);
-            revitGate.Wait();
+            var requested = arguments["revit"]?.ToString();
+            var instance = PyRevitAgentClient.Resolve(string.IsNullOrWhiteSpace(requested) ? defaultRevit : requested);
+            var gate = GateFor(instance);
+            var cancellation = callCancellation.Value;
             try {
-                return PyRevitAgentClient.Call(instance, method, parameters);
+                gate.Wait(cancellation);
+            }
+            catch (OperationCanceledException) {
+                throw new AgentClientException(
+                    "cancelled",
+                    "The call was cancelled while it waited for an earlier call to the same Revit. "
+                    + "The request was not sent, so it is safe to send again.",
+                    AgentOutcome.NotSent);
+            }
+            try {
+                return PyRevitAgentClient.Call(instance, method, parameters, cancellation);
             }
             finally {
-                revitGate.Release();
+                gate.Release();
             }
         }
 
@@ -518,7 +573,8 @@ namespace pyRevitCLI {
                     arguments => new JValue(PyRevitAgentSkills.Read(arguments.Value<string>("name"), arguments.Value<string>("file")))),
 
                 new McpTool("list_revit_instances", readOnly: true, new string[0],
-                    () => ("List running Revit sessions that have the pyRevit agent host, with their version and process id.",
+                    () => ("List running Revit sessions that have the pyRevit agent host, with their version and process id. "
+                        + "'busy': true means that Revit is serving another call, from this session or another client, so it could not be pinged.",
                         new JObject()),
                     _ => ListInstances()),
 
