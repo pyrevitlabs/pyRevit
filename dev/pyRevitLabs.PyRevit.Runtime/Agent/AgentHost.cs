@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Principal;
 using System.Text;
 
 using Autodesk.Revit.UI;
@@ -26,6 +27,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// first start creates an ExternalEvent.
     /// Warning: off unless <c>[agent] enabled = true</c> is set in the pyRevit config. Agent
     /// scripts run with the user's full rights; the pipe ACL is the only access control.
+    /// Important: the host never starts in an elevated Revit. The pipe ACL admits any process of
+    /// the user, including unelevated ones, which would let them run code as administrator.
     /// </remarks>
     public static class AgentHost {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -224,6 +227,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            if (IsElevated()) {
+                Stop();
+                logger.Warn("pyRevit agent host not started: Revit is running as administrator.");
+                return;
+            }
+
             lock (sync) {
                 if (dispatcher == null) {
                     dispatcher = new AgentDispatcher();
@@ -264,6 +273,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             logger.Info("pyRevit agent host stopped");
+        }
+
+        private static bool IsElevated() {
+            using (var identity = WindowsIdentity.GetCurrent())
+                return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
         }
 
         private static void WriteInstanceFile(UIApplication uiApp) {
