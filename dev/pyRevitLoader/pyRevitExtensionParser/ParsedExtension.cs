@@ -100,7 +100,7 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Calculates a hash from relevant bundle paths and modification times in the extension directory.
         /// </summary>
-        /// <param name="seed">Optional seed to include in hash calculation. Use empty string for Python, 'Roslyn' for Roslyn build strategy</param>
+        /// <param name="seed">Optional seed to distinguish build strategies. Use 'Roslyn' for the Roslyn build strategy.</param>
         public string GetHash(string seed = "")
         {
             // Check cache first
