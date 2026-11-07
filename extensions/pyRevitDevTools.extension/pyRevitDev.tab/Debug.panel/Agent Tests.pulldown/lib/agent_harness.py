@@ -118,8 +118,13 @@ def pipe_name():
 
 
 def agent_dir():
-    """The folder holding host registrations, run records and captures."""
-    return op.join(str(Common.PyRevitLabsConsts.PyRevitPath), "agent")
+    """The folder holding host registrations, run records and captures.
+
+    Note:
+        Resolved like the host does, so a per-launch session that pins the agent
+        folder (``pyrevit launch --isolated``) is followed.
+    """
+    return str(Common.PyRevitLabsConsts.AgentPath)
 
 
 def run_cli(*arguments):
