@@ -6,7 +6,9 @@ import importlib.util
 import linecache
 import os
 import re
+import shutil
 import sys
+import tempfile
 import time
 import tokenize
 import traceback
@@ -1221,6 +1223,55 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertEqual([], errors)
         self.assertEqual(1, len(created))
         self.assertEqual([], traces)
+
+    def _workspace(self, files):
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        for name, body in files.items():
+            path = os.path.join(folder, name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(body)
+        return folder
+
+    def test_loops_in_workspace_modules_are_guarded_for_the_run(self):
+        """A loop inside a workspace module or package stops at the deadline."""
+        folder = self._workspace(
+            {
+                "spin.py": "def go():\n    while True:\n        pass\n",
+                "pkg/__init__.py": "",
+                "pkg/inner.py": "def go():\n    for _ in iter(int, 1):\n        pass\n",
+            }
+        )
+        for source in (
+            "import spin\nspin.go()\n",
+            "from pkg import inner\ninner.go()\n",
+        ):
+            with self.subTest(source=source):
+                started = time.time()
+                with mock.patch.object(
+                    self.runner, "_set_async_exc_function", lambda: None
+                ):
+                    errors, _, _ = self._run(source, timeout_s=0.3, workspace=folder)
+                self.assertEqual(["timeout"], errors)
+                self.assertLess(time.time() - started, 3)
+
+    def test_the_workspace_hook_is_removed_after_the_run(self):
+        """The import hook never outlives the run that installed it."""
+        folder = self._workspace({"quiet.py": "VALUE = 1\n"})
+        before = list(sys.meta_path)
+        self._run("import quiet\nresult = quiet.VALUE\n", workspace=folder)
+        self.assertEqual(before, sys.meta_path)
+
+    def test_modules_outside_the_workspace_stay_unguarded(self):
+        """Only workspace code is rewritten; other imports are untouched."""
+        folder = self._workspace({"quiet.py": "VALUE = 1\n"})
+        errors, _, _ = self._run(
+            "import quiet, json\nassert '__agent_tick__' not in vars(json)\n"
+            "assert '__agent_tick__' in vars(quiet)\n",
+            workspace=folder,
+        )
+        self.assertEqual([], errors)
 
     def test_workspace_and_indirect_starts_keep_the_tracer(self):
         """Starts the rewrite can't see still get the trace function."""

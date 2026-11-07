@@ -27,6 +27,7 @@ import threading
 import time
 import tokenize
 import traceback
+import types
 from itertools import compress
 
 try:
@@ -250,6 +251,107 @@ def _guard_loop_headers(source):
     for position, text in sorted(insertions, key=lambda item: item[0], reverse=True):
         source = source[:position] + text + source[position:]
     return source
+
+
+class _WorkspaceLoopGuard(object):
+    """Import hook that compiles the workspace's modules with guarded loops.
+
+    Active only while a run is, on ``sys.meta_path``. A module found under the
+    run's workspace folder is compiled through :func:`_guard_loop_headers` and
+    gets the run's ``__agent_tick__`` and ``__agent_loop__``, so a timeout
+    stops loops inside workspace code. Everything outside the workspace,
+    pyrevitlib and rpw included, imports as usual and stays unguarded.
+
+    Note:
+        Both the PEP 302 protocol (``find_module``/``load_module``, IronPython
+        2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
+        implemented. A module whose source can't be rewritten is imported
+        unguarded.
+    """
+
+    def __init__(self, workspace, guards):
+        self._root = _folder_root(workspace)
+        self._guards = guards
+        self._paths = {}
+
+    def _locate(self, fullname, path):
+        if path is None and fullname in sys.builtin_module_names:
+            return None
+        if path is not None and not self._owns_parent(fullname):
+            return None
+        name = fullname.rpartition(".")[2]
+        for folder in path if path is not None else [self._root]:
+            if not _is_under(op.join(folder, "x"), self._root):
+                continue
+            package = op.join(folder, name, "__init__.py")
+            if op.isfile(package):
+                return package, True
+            module = op.join(folder, name + ".py")
+            if op.isfile(module):
+                return module, False
+        return None
+
+    def _owns_parent(self, fullname):
+        parent = sys.modules.get(fullname.rpartition(".")[0])
+        return getattr(parent, "__loader__", None) is self
+
+    def find_module(self, fullname, path=None):
+        if not self._locate(fullname, path):
+            return None
+        self._paths[fullname] = path
+        return self
+
+    def load_module(self, fullname):
+        filename, is_package = self._locate(fullname, self._paths.pop(fullname))
+        module = types.ModuleType(fullname)
+        module.__file__ = filename
+        module.__loader__ = self
+        if is_package:
+            module.__path__ = [op.dirname(filename)]
+            module.__package__ = fullname
+        else:
+            module.__package__ = fullname.rpartition(".")[0]
+        sys.modules[fullname] = module
+        try:
+            self.exec_module(module)
+        except BaseException:
+            sys.modules.pop(fullname, None)
+            raise
+        return module
+
+    def find_spec(self, fullname, path=None, target=None):
+        located = self._locate(fullname, path)
+        if not located:
+            return None
+        import importlib.util
+
+        filename, is_package = located
+        return importlib.util.spec_from_file_location(
+            fullname,
+            filename,
+            loader=self,
+            submodule_search_locations=[op.dirname(filename)] if is_package else None,
+        )
+
+    def create_module(self, spec):
+        return None
+
+    def exec_module(self, module):
+        with open(module.__file__, "rb") as handle:
+            raw = handle.read()
+        try:
+            source = raw if isinstance(raw, str) else raw.decode("utf-8-sig")
+            code = compile(_guard_loop_headers(source), module.__file__, "exec")
+        except Exception as ex:
+            print(
+                "[pyRevit agent] Could not rewrite the loops of {} ({}: {}); "
+                "its loops are not stopped by the timeout.".format(
+                    module.__file__, type(ex).__name__, _safe_text(ex)
+                )
+            )
+            code = compile(raw, module.__file__, "exec")
+        module.__dict__.update(self._guards)
+        exec(code, module.__dict__)
 
 
 def _significant_tokens(source):
@@ -921,9 +1023,12 @@ def run(context):
         :func:`_guard_loop_headers`); on CPython it also raises
         ``RunTimedOut`` in the script thread. It stops Python code, including
         loops, but not a single blocking call such as a long Revit API call or
-        ``time.sleep``, nor, on IronPython, a long loop inside a library or
-        workspace function the script calls; the run fails with ``timeout``
-        once that call returns. On IronPython, a run with no trace function
+        ``time.sleep``, nor, on IronPython, a long loop inside a
+        pyrevitlib or rpw function the script calls; the run fails with
+        ``timeout`` once that call returns. Modules imported from the
+        ``workspace`` folder get the same loop rewrite through an import hook
+        (:class:`_WorkspaceLoopGuard`) that lives only as long as the run.
+        On IronPython, a run with no trace function
         (see ``docs/agent-runtime.md``) has no check outside loop headers, so
         unbounded recursion or a callback passed to ``map``, ``filter`` or
         ``sorted`` over an endless iterable is not stopped.
@@ -972,6 +1077,8 @@ def run(context):
     sys.stderr = captured
     failed = False
     workspace = None
+    workspace_guard = None
+    workspace_folder = context.Workspace
     namespace = None
     left_open = 0
     reckless = bool(getattr(context, "Reckless", False))
@@ -988,6 +1095,15 @@ def run(context):
                 namespace["__agent_tick__"],
                 namespace["__agent_loop__"],
             ) = _loop_guards(timeout_s, state, tracked_transactions)
+            if workspace_folder:
+                workspace_guard = _WorkspaceLoopGuard(
+                    workspace_folder,
+                    {
+                        name: namespace[name]
+                        for name in ("__agent_tick__", "__agent_loop__")
+                    },
+                )
+                sys.meta_path.insert(0, workspace_guard)
         phases.lap("setup")
         if reckless:
             code = compile(source, SOURCE_NAME, "exec")
@@ -1091,6 +1207,10 @@ def run(context):
         phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
+        if workspace_guard is not None:
+            sys.meta_path[:] = [
+                finder for finder in sys.meta_path if finder is not workspace_guard
+            ]
         _leave_workspace(context.Workspace, workspace)
         context.SetOutput(captured.getvalue())
         phases.lap("cleanup")
@@ -1419,8 +1539,12 @@ def _is_under(module_file, root):
         return False
 
 
+def _folder_root(folder):
+    return op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+
+
 def _unload_modules_under(folder):
-    root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+    root = _folder_root(folder)
     for name, module in list(sys.modules.items()):
         if _is_under(getattr(module, "__file__", None), root):
             del sys.modules[name]
