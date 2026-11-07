@@ -19,7 +19,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentInspector {
         private const int MaxElements = 50;
 
-        public static List<ElementId> ParseIds(JObject parameters) {
+        /// <remarks>Repeated ids are described once, in the order they first appear.</remarks>
+        public static List<long> ParseIds(JObject parameters) {
             var ids = parameters["ids"] as JArray;
             if (ids == null || ids.Count == 0)
                 throw new AgentException("invalid_params", "'ids' must be a non-empty array of element ids.");
@@ -29,14 +30,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     string.Format("At most {0} elements can be inspected per call.", MaxElements));
 
             try {
-                return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
+                return ids.Select(id => id.Value<long>()).Distinct().ToList();
             }
             catch (Exception) {
                 throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
             }
         }
 
-        public static JToken Inspect(UIApplication app, List<ElementId> ids, bool includeParameters) {
+        public static JToken Inspect(UIApplication app, List<long> ids, bool includeParameters) {
             var uidoc = app.ActiveUIDocument
                 ?? throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
@@ -46,10 +47,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
-        private static JObject Describe(Document doc, ElementId id, bool includeParameters) {
+        private static JObject Describe(Document doc, long value, bool includeParameters) {
+            var id = AgentIds.FromValue(value);
             var element = doc.GetElement(id);
             if (element == null)
-                return new JObject { ["id"] = AgentIds.ToValue(id), ["found"] = false };
+                return new JObject { ["id"] = value, ["found"] = false };
 
             var description = new JObject {
                 ["id"] = AgentIds.ToValue(id),

@@ -6,6 +6,7 @@ import importlib.util
 import os
 import re
 import sys
+import threading
 import time
 import tokenize
 import traceback
@@ -48,6 +49,7 @@ def _load_runner():
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: int
+    compat.PY2 = False
     modules = {
         "System": system,
         "pyrevit": pyrevit,
@@ -1281,6 +1283,123 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertNotIn("_runner.py", text)
         self.assertIn("RunTimedOut", text)
         self.assertEqual([4, 8, 7], self._script_lines(text))
+
+
+class AgentRunnerOutputTests(unittest.TestCase):
+    """Printed output is capped while the script runs (issue #3922)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def test_output_is_capped_while_printing(self):
+        """Keep one character past the host cap so it still reports truncation."""
+        outputs = []
+        context = types.SimpleNamespace(
+            Source="import sys\nfor _ in range(200):\n    print('x' * 4096)\n"
+            "sys.stderr.write('tail')\nresult = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=outputs.append,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertEqual([self.runner._MAX_OUTPUT_CHARS + 1], [len(o) for o in outputs])
+        self.assertEqual(64 * 1024, self.runner._MAX_OUTPUT_CHARS)
+
+    def test_writes_past_the_cap_are_dropped(self):
+        """Print and writelines both stop at the cap."""
+        captured = self.runner._CappedOutput(10)
+        print("abc", file=captured)
+        captured.writelines(["de", "fghijkl"])
+        self.assertEqual("abc\ndefghi", captured.getvalue())
+
+    def test_a_seek_cannot_grow_the_output_past_the_cap(self):
+        """Writes after a seek append, so no padded gap bypasses the cap."""
+        captured = self.runner._CappedOutput(10)
+        captured.write("abc")
+        captured.seek(1000000)
+        captured.write("de")
+        captured.seek(0)
+        captured.write("fg")
+        self.assertEqual("abcdefg", captured.getvalue())
+
+    def test_appends_do_not_seek_while_the_cursor_is_at_the_end(self):
+        """IronPython 2.7's StringIO joins its buffer on every seek."""
+        real = self.runner.StringIO
+        seeks = []
+
+        class CountingStringIO(object):
+            tell = real.tell
+            write = real.write
+
+            @staticmethod
+            def seek(stream, *args):
+                seeks.append(args)
+                return real.seek(stream, *args)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", CountingStringIO):
+            for _ in range(5):
+                captured.write("x")
+        self.assertEqual([], seeks)
+        self.assertEqual("xxxxx", captured.getvalue())
+
+    def test_writes_after_a_truncate_leave_no_gap(self):
+        """Truncating the stream moves the end the next write appends at."""
+        captured = self.runner._CappedOutput(100)
+        captured.write("hello world")
+        captured.truncate(0)
+        captured.seek(0)
+        captured.write("abc")
+        self.assertEqual("abc", captured.getvalue())
+
+    def test_a_second_writer_waits_for_the_first(self):
+        """Script threads share one buffer for stdout and stderr."""
+        real = self.runner.StringIO
+        inside = threading.Event()
+        release = threading.Event()
+        entered = []
+
+        class GatedStringIO(object):
+            tell = real.tell
+            seek = real.seek
+
+            @staticmethod
+            def write(stream, text):
+                entered.append(text)
+                if text == "first":
+                    inside.set()
+                    release.wait(5)
+                return real.write(stream, text)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", GatedStringIO):
+            first = threading.Thread(target=captured.write, args=("first",))
+            second = threading.Thread(target=captured.write, args=("second",))
+            first.start()
+            self.assertTrue(inside.wait(5))
+            second.start()
+            second.join(0.3)
+            entered_while_held = list(entered)
+            release.set()
+            first.join(5)
+            second.join(5)
+        self.assertFalse(first.is_alive() or second.is_alive())
+        self.assertEqual(["first"], entered_while_held)
+        self.assertEqual("firstsecond", captured.getvalue())
+
+    def test_non_text_is_written_as_text_on_python_two(self):
+        """IronPython 2.7 scripts may write any object, as StringIO allowed."""
+        captured = self.runner._CappedOutput(10)
+        with mock.patch.object(self.runner, "PY2", True):
+            captured.write(12345)
+        self.assertEqual("12345", captured.getvalue())
 
 
 class AgentRunnerSourceTests(unittest.TestCase):

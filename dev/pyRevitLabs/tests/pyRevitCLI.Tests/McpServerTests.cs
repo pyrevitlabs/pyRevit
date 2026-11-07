@@ -1,4 +1,5 @@
 using pyRevitCLI;
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 
@@ -120,6 +121,16 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(-32700, responses[1]["error"].Value<int>("code"));
         Assert.Equal(JTokenType.Null, responses[1]["id"].Type);
         Assert.Equal(2, responses[2].Value<int>("id"));
+    }
+
+    /// <summary>A request line past the 16 MB limit is refused without ending the session (issue #3922).</summary>
+    [Fact]
+    public void OverLongRequestLineIsRefusedAndTheSessionContinues() {
+        var responses = Serve(new string('x', BoundedLineReader.DefaultMaxLineChars + 2), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(-32700, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
     }
 
     [Theory]
@@ -750,6 +761,18 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(200 * 1024, capped["result_page"].Value<int>("length"));
         Assert.Equal(0, negative["result_page"].Value<int>("offset"));
         Assert.Equal(0, beyond["result_page"].Value<int>("length"));
+    }
+
+    /// <summary>A page is cut by characters even across read buffers and multi-byte text (issue #3922).</summary>
+    [Fact]
+    public void ResultPagesSpanningReadBuffersKeepCharacterOffsets() {
+        var result = new string('é', 65530) + "0123456789" + new string('x', 70000);
+        host.AddRun("abc123def456", response: "{}", result: result);
+
+        var page = Payload(Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "abc123def456", ["offset"] = 65528, ["length"] = 14 })))["result_page"];
+
+        Assert.Equal(result.Substring(65528, 14), page.Value<string>("text"));
+        Assert.Equal(result.Length, page.Value<int>("total_length"));
     }
 
     [Theory]

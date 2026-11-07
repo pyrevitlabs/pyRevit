@@ -273,7 +273,7 @@ namespace pyRevitCLI {
                     pipe.Connect(ConnectTimeoutMs);
                     RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-                    var reader = new StreamReader(pipe, Utf8);
+                    var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
                     writer.WriteLine(request.ToString(Formatting.None));
                     sent = true;
                     responseLine = reader.ReadLine();
@@ -292,6 +292,13 @@ namespace pyRevitCLI {
                     "pipe_error",
                     "Connection to Revit failed: " + ex.Message + LostAnswerNotice(sent),
                     sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+            }
+            catch (InvalidDataException ex) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Revit's answer was refused: " + ex.Message + LostAnswerNotice(sent),
+                    AgentOutcome.Unknown,
                     requestId);
             }
 

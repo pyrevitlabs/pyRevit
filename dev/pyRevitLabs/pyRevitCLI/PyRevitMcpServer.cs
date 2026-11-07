@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
@@ -63,13 +64,24 @@ namespace pyRevitCLI {
             new PyRevitMcpServer(defaultRevit).Run(input, output);
         }
 
+        private string ReadRequestLine(BoundedLineReader lines) {
+            try {
+                return lines.ReadLine();
+            }
+            catch (InvalidDataException ex) {
+                Write(Error(null, -32700, "Parse error: " + ex.Message));
+                return string.Empty;
+            }
+        }
+
         private void Run(TextReader input, TextWriter output) {
             LogManager.Configuration = new LoggingConfiguration();
             this.output = output;
 
             var inFlight = new List<Task>();
+            var lines = new BoundedLineReader(input);
             string line;
-            while ((line = input.ReadLine()) != null) {
+            while ((line = ReadRequestLine(lines)) != null) {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
@@ -350,18 +362,33 @@ namespace pyRevitCLI {
 
             var resultPath = Path.Combine(runDir, "result.json");
             if (File.Exists(resultPath)) {
-                var full = File.ReadAllText(resultPath);
                 var offset = Math.Max(0, arguments.Value<int?>("offset") ?? 0);
                 var length = Math.Min(MaxRunResultPage, Math.Max(1, arguments.Value<int?>("length") ?? MaxRunResultPage));
-                var page = offset < full.Length ? full.Substring(offset, Math.Min(length, full.Length - offset)) : string.Empty;
-                run["result_page"] = new JObject {
-                    ["offset"] = offset,
-                    ["length"] = page.Length,
-                    ["total_length"] = full.Length,
-                    ["text"] = page,
-                };
+                run["result_page"] = ReadResultPage(resultPath, offset, length);
             }
             return run;
+        }
+
+        private static JObject ReadResultPage(string path, int offset, int length) {
+            var page = new StringBuilder();
+            var buffer = new char[64 * 1024];
+            long total = 0;
+            using (var reader = new StreamReader(path)) {
+                int read;
+                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0) {
+                    var from = Math.Max(offset, total);
+                    var to = Math.Min((long)offset + length, total + read);
+                    if (to > from)
+                        page.Append(buffer, (int)(from - total), (int)(to - from));
+                    total += read;
+                }
+            }
+            return new JObject {
+                ["offset"] = offset,
+                ["length"] = page.Length,
+                ["total_length"] = total,
+                ["text"] = page.ToString(),
+            };
         }
 
         private static string ReadIfExists(string path) {

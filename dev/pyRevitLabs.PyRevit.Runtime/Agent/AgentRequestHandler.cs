@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 using pyRevitLabs.Json;
@@ -51,7 +50,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "ping":
                     return new JObject {
                         ["pong"] = true,
-                        ["pid"] = Process.GetCurrentProcess().Id,
+                        ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
                     };
@@ -167,6 +166,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["id"] = id,
                 ["result"] = result,
             }.ToString(Formatting.None);
+        }
+
+        /// <summary>The answer to a request line refused unread, so the client knows nothing ran.</summary>
+        public static string RefuseOversizedLine(string reason) {
+            return Failure(null, -32600, reason, "request_too_large", new JObject { ["outcome"] = "not_run" });
         }
 
         private static string Failure(JToken id, int code, string message, string type, JObject details = null) {
