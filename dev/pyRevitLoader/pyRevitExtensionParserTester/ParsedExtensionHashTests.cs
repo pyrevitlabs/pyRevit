@@ -7,9 +7,14 @@ using pyRevitExtensionParserTest.TestHelpers;
 
 namespace pyRevitExtensionParserTest
 {
+    /// <summary>Regression coverage for #3940 directory-linked extension cache keys.</summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Integration")]
+    [Category("Regression")]
     public class ParsedExtensionHashTests : TempFileTestBase
     {
+        /// <summary>Changing a command inside a linked extension changes its generated cache key.</summary>
         [Test]
         public void GetHash_DirectoryLinkedExtension_ChangesWhenACommandIsAdded()
         {
@@ -23,6 +28,7 @@ namespace pyRevitExtensionParserTest
             Assert.That(after, Is.Not.EqualTo(before));
         }
 
+        /// <summary>Linked directories below an extension root remain excluded from hash traversal.</summary>
         [Test]
         public void GetHash_DoesNotFollowLinkedDescendantDirectories()
         {
