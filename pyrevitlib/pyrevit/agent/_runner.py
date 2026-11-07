@@ -1352,6 +1352,7 @@ def _folder_prefix(folder):
 
 
 _LIBRARY_PATHS = [entry for entry in sys.path if isinstance(entry, str) and entry]
+_PYREVITLIB_PATH = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def _unload_modules_under(folder):
@@ -1363,7 +1364,8 @@ def _unload_modules_under(folder):
         workspace stays loaded. A workspace such as a drive root or the pyRevit
         clone never unloads the standard library, .NET namespace modules,
         pyrevitlib or this runner from the shared engine, while a folder the
-        agent's own scripts put on ``sys.path`` is still reloaded.
+        agent's own scripts put on ``sys.path`` is still reloaded. pyrevitlib
+        stays loaded even when it is the workspace itself.
     """
     root = _folder_prefix(folder)
     nested = [
@@ -1371,6 +1373,7 @@ def _unload_modules_under(folder):
         for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
         if prefix != root and prefix.startswith(root)
     ]
+    nested.append(_folder_prefix(_PYREVITLIB_PATH))
     for name, module in list(sys.modules.items()):
         module_file = getattr(module, "__file__", None)
         if (

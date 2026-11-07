@@ -1348,6 +1348,19 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
         )
         self.assertEqual(["scratch_ws"], unloaded)
 
+    def test_pyrevitlib_as_the_workspace_stays_loaded(self):
+        """A workspace that is pyrevitlib itself doesn't unload pyrevit or the runner."""
+        library = os.path.dirname(os.path.dirname(os.path.dirname(RUNNER_PATH)))
+        unloaded = self._unloaded(
+            library,
+            [library],
+            {
+                "pyrevit_ws": os.path.join(library, "pyrevit", "__init__.py"),
+                "runner_ws": RUNNER_PATH,
+            },
+        )
+        self.assertEqual([], unloaded)
+
     def test_helper_folders_the_agent_adds_to_sys_path_are_reloaded(self):
         """A workspace subfolder on sys.path that isn't a library folder is still unloaded."""
         workspace = os.path.abspath("work")
