@@ -84,6 +84,9 @@ namespace pyRevitCLI {
             CopyIfNotEmpty(run, compact, "failures");
             CopyIfNotEmpty(run, compact, "dialogs");
             CopyIfNotEmpty(run, compact, "blocked");
+            CopyIfNotEmpty(run, compact, "opened_documents");
+            CopyIfNotEmpty(run, compact, "closed_documents");
+            CopyIfNotEmpty(run, compact, "unclosed_documents");
 
             if (run["engine"] is JObject engine)
                 compact["engine"] = engine["implementation"] + " " + engine["python"];

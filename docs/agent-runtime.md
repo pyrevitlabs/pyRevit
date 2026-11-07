@@ -43,10 +43,10 @@ runtime is independent of the Routes server and doesn't need it enabled.
 
 3. **Start Revit** (or reload pyRevit), and open a model.
 4. **Start an agent session.** Open **pyRevit → Agent Panel** (next to Python Shell) and
-   click **Start on &lt;document&gt;**. Agents can read or change models only while a session
-   is active, and only in its documents; **Add &lt;document&gt;** adds the active one. When an
-   agent asks for a session first, the panel opens with the agent's reason; click **Start** or
-   **Decline**. See [Sessions and the agent panel](#sessions-and-the-agent-panel).
+   tick the documents agents may work in (the active one is ticked), then click **Start**.
+   Agents can read or change models only while a session is active, and only in its documents;
+   **Add** next to another open document adds it later. When an agent asks for a session first,
+   the panel opens with the agent's reason; click **Start** or **Decline**. See [Sessions and the agent panel](#sessions-and-the-agent-panel).
 5. **Check the connection:**
 
     ```shell
@@ -206,12 +206,15 @@ The **pyRevit Agent** panel is a dockable pane where the user decides when agent
 Open it with **pyRevit → Agent Panel**. The button is hidden while the agent host is
 disabled.
 
-- **Start on &lt;document&gt;** starts a session on the active document. Only a click in the
-  panel starts or resumes a session. Agents and the CLI can only ask for one, pause it, or end
-  it.
-- **Add &lt;document&gt;** appears while a document outside the session is active, and adds it.
-  The session keeps its id and state, and the agent's next response reports the document in
-  `since_last_call`.
+- **Start** starts a session on the documents ticked under *Documents agents may work in*.
+  The active document is ticked until you tick another. Documents with no window, such as a
+  family an agent opened, aren't offered. Only a click in the panel starts or resumes a session.
+  Agents and the CLI can only ask for one, pause it, or end it.
+- *In the session* lists the session's documents. **Remove** takes one out while another
+  remains; documents an agent opened are marked and have **Close** instead, which closes the
+  document without saving. *Other open documents* lists the rest, each with **Add**. The
+  session keeps its id and state, and the agent's next response reports a document that joined
+  or left in `since_last_call`.
 - **Pause** and **Resume** stop and restart model requests. A request already waiting for
   Revit is refused when Revit picks it up.
 - **End** ends the session. Closing the session's last document ends it too; closing one of

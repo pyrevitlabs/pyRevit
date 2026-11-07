@@ -165,6 +165,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ARemovedDocumentGoesIntoTheHistoryAsAMarkerToo() {
+            activity.RecordRemoved("Annex.rvt", ("s1", "Tower.rvt"), Now);
+
+            var removed = activity.History.Last();
+            Assert.Equal("remove", removed.Kind);
+            Assert.Equal("Annex.rvt", removed.Title);
+            Assert.Equal("removed", removed.Outcome);
+            Assert.Null(activity.Last);
+        }
+
+        [Fact]
         public void ContextAndLookupRequestsAreLookups() {
             Assert.True(Arrive("context").IsLookup);
             Assert.True(Arrive("lookup").IsLookup);

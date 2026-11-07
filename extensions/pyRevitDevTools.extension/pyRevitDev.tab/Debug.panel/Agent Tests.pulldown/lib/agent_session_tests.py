@@ -204,6 +204,32 @@ class SessionTests(TestCase):
         self.assertEqual("refused", harness.run(END_SCRIPT)["result"])
         self.assertEqual("active", harness.session_status()["state"])
 
+    def test_a_document_the_user_takes_out_leaves_the_session_and_is_reported(self):
+        """Taking a document out keeps the session on the rest, and the agent hears it left."""
+        scratch = harness.session()
+        other_key = harness.key_of(scratch.other_path)
+        try:
+            scratch.activate(scratch.other_path)
+            harness.add_document()
+        finally:
+            scratch.activate(scratch.project_path)
+        harness.request("get_context")
+        harness.remove_document(other_key)
+        left = harness.request("get_context")["since_last_call"]["documents"]["left"]
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.run("result = 1", document=other_key)
+        self.assertEqual([scratch.project.Title], harness.session_titles())
+        self.assertEqual([other_key], [document["key"] for document in left])
+        self.assertEqual("document_not_in_session", raised.exception.code)
+
+    def test_the_sessions_only_document_can_not_be_taken_out(self):
+        """A session ends instead, so taking out its last document is refused."""
+        project_key = harness.key_of(harness.session().project_path)
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.remove_document(project_key)
+        self.assertEqual("last_document", raised.exception.code)
+        self.assertEqual("active", harness.session_status()["state"])
+
     def test_adding_a_document_already_in_the_session_is_refused(self):
         """The panel decides by title, so the host refuses to add the same document twice."""
         with self.assertRaises(AgentRequestError) as raised:

@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
+using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
@@ -15,9 +18,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Registered by <see cref="AgentHost.Configure"/> on the first pyRevit load, whether or not
     /// the host is enabled, because Revit accepts a dockable pane only during startup and never
     /// removes one. While the host is disabled the pane is hidden at startup and says so.
-    /// Invariant: the panel never calls the Revit API from its own UI events. Starting a session
-    /// goes through the agent dispatcher's ExternalEvent; Revit tells the panel which document is
-    /// active through its events. Everything else the panel does only changes host state.
+    /// Invariant: the panel never calls the Revit API from its own UI events. Starting, adding,
+    /// ending and closing go through the agent dispatcher's ExternalEvent; the open documents and
+    /// the active one are read in Revit's events and kept for the panel. Everything else the panel
+    /// does only changes host state.
     /// Hiding the pane pauses the session, whether the user closed it or Revit hid it, for
     /// example on its Home screen; only the user resumes it.
     /// From Revit 2024 the pane follows Revit's light or dark theme, including a change made
@@ -36,21 +40,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly object sync = new object();
         private static bool registrationAttempted;
         private static DateTime lastRevealUtc = DateTime.MinValue;
-        private static string activeDocumentTitle;
+        private static List<AgentPanelOpenDocument> openDocuments = new List<AgentPanelOpenDocument>();
         private static UIApplication uiApplication;
         private static AgentPanelProvider provider;
 
         /// <summary>
-        /// Raised when the active document changes, on Revit's main thread.
+        /// Raised when a document opens, closes or is renamed, or another one becomes active, on
+        /// Revit's main thread.
         /// </summary>
-        internal static event Action ActiveDocumentChanged;
+        internal static event Action DocumentsChanged;
 
         internal static DockablePaneId PaneId => new DockablePaneId(PaneGuid);
 
-        internal static string ActiveDocumentTitle {
+        /// <summary>
+        /// The open documents, links left out, as Revit last reported them.
+        /// </summary>
+        internal static IList<AgentPanelOpenDocument> OpenDocuments {
             get {
                 lock (sync)
-                    return activeDocumentTitle;
+                    return openDocuments.ToList();
             }
         }
 
@@ -64,7 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 TaskDialog.Show(Title, "The agent panel becomes available after Revit restarts.");
                 return;
             }
-            NoteActiveDocument(uiApp.ActiveUIDocument?.Document?.Title);
+            NoteDocuments(uiApp);
             uiApp.GetDockablePane(PaneId).Show();
         }
 
@@ -86,6 +94,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 uiApplication = uiApp;
                 uiApp.DockableFrameVisibilityChanged += OnVisibilityChanged;
                 uiApp.ViewActivated += OnViewActivated;
+                uiApp.Application.DocumentOpened += OnDocumentOpened;
+                uiApp.Application.DocumentCreated += OnDocumentCreated;
                 uiApp.Application.DocumentClosed += OnDocumentClosed;
                 uiApp.Application.DocumentSavedAs += OnDocumentSavedAs;
                 uiApp.Idling += HideOnFirstIdlingWhileHostIsOff;
@@ -114,7 +124,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 try {
                     if (!DockablePane.PaneIsRegistered(PaneId))
                         return;
-                    NoteActiveDocument(app.ActiveUIDocument?.Document?.Title);
+                    NoteDocuments(app);
                     var pane = app.GetDockablePane(PaneId);
                     if (!pane.IsShown())
                         pane.Show();
@@ -125,13 +135,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             });
         }
 
-        private static void NoteActiveDocument(string title) {
-            lock (sync) {
-                if (title == activeDocumentTitle)
-                    return;
-                activeDocumentTitle = title;
+        /// <remarks>Must run in a Revit API context, because it reads the documents' views.</remarks>
+        private static void NoteDocuments(UIApplication app) {
+            List<AgentPanelOpenDocument> snapshot;
+            try {
+                var active = app?.ActiveUIDocument?.Document;
+                snapshot = app == null
+                    ? new List<AgentPanelOpenDocument>()
+                    : app.Application.Documents.Cast<Document>()
+                        .Where(doc => !doc.IsLinked)
+                        .Select(doc => new AgentPanelOpenDocument(
+                            AgentDocuments.Keys.KeyOf(doc), doc.Title, AgentDocuments.IsSame(active, doc), AgentDocuments.IsBackground(doc)))
+                        .ToList();
             }
-            ActiveDocumentChanged?.Invoke();
+            catch (Exception ex) {
+                logger.Debug("Could not read the open documents for the agent panel: {0}", ex.Message);
+                return;
+            }
+            lock (sync) {
+                if (snapshot.SequenceEqual(openDocuments))
+                    return;
+                openDocuments = snapshot;
+            }
+            DocumentsChanged?.Invoke();
         }
 
         private static void OnVisibilityChanged(object sender, DockableFrameVisibilityChangedEventArgs e) {
@@ -141,24 +167,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void OnViewActivated(object sender, ViewActivatedEventArgs e) {
-            NoteActiveDocument(e.Document?.Title);
+            NoteDocuments(sender as UIApplication ?? uiApplication);
+        }
+
+        private static void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            NoteDocuments(uiApplication);
+        }
+
+        private static void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            NoteDocuments(uiApplication);
         }
 
         private static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
-            NoteCurrentActiveDocument();
+            NoteDocuments(uiApplication);
         }
 
         private static void OnDocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
-            NoteCurrentActiveDocument();
-        }
-
-        private static void NoteCurrentActiveDocument() {
-            try {
-                NoteActiveDocument(uiApplication?.ActiveUIDocument?.Document?.Title);
-            }
-            catch (Exception) {
-                NoteActiveDocument(null);
-            }
+            NoteDocuments(uiApplication);
         }
 
         private static void HideOnFirstIdlingWhileHostIsOff(object sender, IdlingEventArgs e) {

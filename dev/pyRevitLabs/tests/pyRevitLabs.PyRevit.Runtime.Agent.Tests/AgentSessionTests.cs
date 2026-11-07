@@ -430,6 +430,46 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void TheUserCanTakeOutADocumentButNotTheLastOne() {
+            tracker.Start(new[] { Tower, Annex }, Now);
+
+            Assert.Equal("Annex.rvt", tracker.RemoveDocumentByUser("doc-2").Title);
+            Assert.Equal(new[] { "Tower.rvt" }, Titles(tracker.Describe()));
+            Assert.Equal("last_document", CodeOf(() => tracker.RemoveDocumentByUser("doc-1")));
+            Assert.Equal(AgentSessionState.Active, tracker.State);
+        }
+
+        [Fact]
+        public void AKeyTheSessionDoesNotHaveTakesNothingOut() {
+            tracker.Start(new[] { Tower, Annex }, Now);
+
+            Assert.Null(tracker.RemoveDocumentByUser("doc-9"));
+            Assert.Equal(2, tracker.Documents.Count);
+        }
+
+        [Fact]
+        public void TakingOutIsRefusedWithoutASessionInAnAutomaticOneAndDuringARun() {
+            Assert.Equal("session_inactive", CodeOf(() => tracker.RemoveDocumentByUser("doc-2")));
+
+            tracker.Start(new[] { Tower, Annex }, Now);
+            using (tracker.BeginRun())
+                Assert.Equal("session_locked", CodeOf(() => tracker.RemoveDocumentByUser("doc-2")));
+            tracker.EndInRevit(Now);
+
+            StartAutomatically();
+            Assert.Equal("session_locked", CodeOf(() => tracker.RemoveDocumentByUser("doc-2")));
+        }
+
+        [Fact]
+        public void ADocumentAnAgentOpenedClosesInsteadOfBeingTakenOut() {
+            StartOnDocument();
+            tracker.AdoptOpenedDocument(Annex);
+
+            Assert.Equal("opened_by_agent", CodeOf(() => tracker.RemoveDocumentByUser("doc-2")));
+            Assert.Equal(2, tracker.Documents.Count);
+        }
+
+        [Fact]
         public void RetitlingKeepsTheAgentsMark() {
             StartOnDocument();
             tracker.AdoptOpenedDocument(Annex);

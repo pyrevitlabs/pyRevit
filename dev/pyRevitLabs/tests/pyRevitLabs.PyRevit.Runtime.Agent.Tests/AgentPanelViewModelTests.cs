@@ -18,9 +18,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Document.NoDocument"] = "no document",
             ["AgentPanel.Document.Ready"] = "ready",
             ["AgentPanel.Document.Auto"] = "automatic",
-            ["AgentPanel.Document.Bound"] = "{0} since {1}",
+            ["AgentPanel.Document.Since"] = "since {0}",
+            ["AgentPanel.Documents.Active"] = "(active)",
+            ["AgentPanel.Documents.OpenedByAgent"] = "(agent)",
             ["AgentPanel.Start"] = "Start on {0}",
-            ["AgentPanel.Add"] = "Add {0}",
+            ["AgentPanel.Start.Many"] = "Start on {0} documents",
             ["AgentPanel.Document.NotInSession"] = "{0} not in session",
             ["AgentPanel.Resume"] = "Resume",
             ["AgentPanel.Paused.ByHost"] = "paused: {0}",
@@ -50,6 +52,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return utc.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture);
         }
 
+        private static string Key(string title) {
+            return "doc-" + title;
+        }
+
+        private static AgentPanelOpenDocument Open(string title, bool active = false, bool background = false) {
+            return new AgentPanelOpenDocument(Key(title), title, active, background);
+        }
+
+        private void OpenOnly(params AgentPanelOpenDocument[] documents) {
+            backend.Documents.Clear();
+            backend.Documents.AddRange(documents);
+        }
+
         private static JObject Session(string state, string start = "user", JObject request = null, params string[] documents) {
             var open = state != "inactive";
             var titles = documents.Length == 0 ? new[] { "Tower.rvt" } : documents;
@@ -58,11 +73,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 ["state"] = state,
                 ["automatic"] = open && start == "auto",
                 ["documents"] = open
-                    ? new JArray(titles.Select((title, index) => new JObject { ["key"] = "doc-" + (index + 1), ["title"] = title }))
+                    ? new JArray(titles.Select(title => new JObject { ["key"] = Key(title), ["title"] = title, ["opened_by_agent"] = false }))
                     : null,
                 ["started"] = open ? Started.ToString("o") : null,
                 ["pending_request"] = request,
             };
+        }
+
+        private static JObject OpenedByAgent(JObject session, string title) {
+            foreach (var entry in session["documents"].OfType<JObject>().Where(entry => entry.Value<string>("title") == title))
+                entry["opened_by_agent"] = true;
+            return session;
         }
 
         [Fact]
@@ -75,28 +96,101 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("off", panel.StateKind);
             Assert.Equal("AGENT HOST OFF", panel.StateLabel);
             Assert.Equal("host off", panel.DocumentLine);
-            Assert.False(panel.CanStart || panel.CanPause || panel.CanResume || panel.CanEnd || panel.HasRequest);
+            Assert.False(panel.CanStart || panel.CanPause || panel.CanResume || panel.CanEnd || panel.HasRequest || panel.IsChoosing);
         }
 
         [Fact]
-        public void WithoutASessionTheActiveDocumentCanBeStarted() {
+        public void WithoutASessionTheActiveDocumentIsTickedToStartOn() {
             var panel = Panel();
 
             Assert.Equal("NO SESSION", panel.StateLabel);
+            Assert.True(panel.IsChoosing);
+            var row = Assert.Single(panel.ChoiceDocuments);
+            Assert.True(row.IsChosen);
+            Assert.Equal("(active)", row.Note);
             Assert.True(panel.CanStart);
             Assert.Equal("Start on Tower.rvt", panel.StartLabel);
             Assert.Equal("ready", panel.DocumentLine);
-            Assert.False(panel.CanPause || panel.CanResume || panel.CanEnd);
+            Assert.False(panel.CanPause || panel.CanResume || panel.CanEnd || panel.HasChooseHint);
         }
 
         [Fact]
         public void WithoutADocumentNothingCanBeStarted() {
-            backend.ActiveDocumentTitle = null;
+            OpenOnly();
 
             var panel = Panel();
 
-            Assert.False(panel.CanStart);
+            Assert.False(panel.CanStart || panel.IsChoosing);
             Assert.Equal("no document", panel.DocumentLine);
+        }
+
+        [Fact]
+        public void TickingMoreDocumentsStartsOnAllOfThem() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+
+            panel.ChoiceDocuments[1].IsChosen = true;
+            panel.StartCommand.Execute(null);
+
+            Assert.Equal("Start on 2 documents", panel.StartLabel);
+            Assert.Equal(new[] { Key("Tower.rvt"), Key("Annex.rvt") }, Assert.Single(backend.Starts));
+        }
+
+        [Fact]
+        public void UntickingEveryDocumentLeavesNothingToStartOn() {
+            var panel = Panel();
+
+            panel.ChoiceDocuments[0].IsChosen = false;
+
+            Assert.False(panel.CanStart);
+            Assert.True(panel.HasChooseHint);
+            Assert.Equal(string.Empty, panel.StartLabel);
+        }
+
+        [Fact]
+        public void TheUsersChoiceStandsWhenAnotherDocumentBecomesActive() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+            panel.ChoiceDocuments[1].IsChosen = true;
+            panel.ChoiceDocuments[0].IsChosen = false;
+
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+            panel.Refresh();
+
+            Assert.Equal(new[] { false, true }, panel.ChoiceDocuments.Select(row => row.IsChosen));
+            Assert.Equal("Start on Annex.rvt", panel.StartLabel);
+        }
+
+        [Fact]
+        public void UntouchedTheTickFollowsTheActiveDocument() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+            panel.Refresh();
+
+            Assert.Equal(new[] { false, true }, panel.ChoiceDocuments.Select(row => row.IsChosen));
+        }
+
+        [Fact]
+        public void DocumentsWithNoViewAreNotOffered() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Family1", background: true));
+
+            var panel = Panel();
+
+            Assert.Equal(new[] { "Tower.rvt" }, panel.ChoiceDocuments.Select(row => row.Title));
+        }
+
+        [Fact]
+        public void ARowsTickChangesWithoutTheListBeingRebuilt() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+            var annex = panel.ChoiceDocuments[1];
+
+            annex.IsChosen = true;
+
+            Assert.Same(annex, panel.ChoiceDocuments[1]);
+            Assert.True(annex.IsChosen);
         }
 
         [Fact]
@@ -106,19 +200,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var panel = Panel();
 
             Assert.Equal("automatic", panel.DocumentLine);
-            Assert.False(panel.CanStart);
+            Assert.False(panel.CanStart || panel.IsChoosing);
         }
 
         [Fact]
-        public void AnAutomaticSessionCanBePausedButNotEnded() {
+        public void AnAutomaticSessionListsItsDocumentsButCanOnlyBePaused() {
             backend.Session = Session("active", "auto", null, "Tower.rvt", "Annex.rvt");
-            backend.ActiveDocumentTitle = "Site.rvt";
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt"), Open("Site.rvt", active: true));
 
             var panel = Panel();
 
             Assert.True(panel.CanPause);
-            Assert.False(panel.CanEnd || panel.CanAdd || panel.IsActiveOutside);
-            Assert.Equal("Tower.rvt, Annex.rvt since " + Local(Started), panel.DocumentLine);
+            Assert.False(panel.CanEnd || panel.IsActiveOutside || panel.HasOtherDocuments);
+            Assert.Equal(new[] { "Tower.rvt", "Annex.rvt" }, panel.SessionDocuments.Select(row => row.Title));
+            Assert.DoesNotContain(panel.SessionDocuments, row => row.CanRemove);
+            Assert.Equal("since " + Local(Started), panel.DocumentLine);
         }
 
         [Fact]
@@ -128,9 +224,46 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var panel = Panel();
 
             Assert.Equal("ACTIVE", panel.StateLabel);
-            Assert.Equal("Tower.rvt since " + Local(Started), panel.DocumentLine);
+            Assert.Equal("since " + Local(Started), panel.DocumentLine);
             Assert.True(panel.CanPause && panel.CanEnd);
-            Assert.False(panel.CanStart || panel.CanResume);
+            Assert.False(panel.CanStart || panel.CanResume || panel.IsChoosing);
+        }
+
+        [Fact]
+        public void TheSessionsOnlyDocumentCanNotBeTakenOut() {
+            backend.Session = Session("active");
+
+            var row = Assert.Single(Panel().SessionDocuments);
+
+            Assert.False(row.CanRemove || row.CanClose);
+        }
+
+        [Fact]
+        public void TakingADocumentOutCallsTheBackendAndShowsARefusal() {
+            backend.Session = Session("active", "user", null, "Tower.rvt", "Annex.rvt");
+            var panel = Panel();
+
+            panel.SessionDocuments[1].RemoveCommand.Execute(null);
+            backend.Refusal = new AgentException("session_locked", "Not while a run executes.");
+            panel.SessionDocuments[1].RemoveCommand.Execute(null);
+
+            Assert.Equal(new[] { "Remove " + Key("Annex.rvt") }, backend.Calls);
+            Assert.Equal("Not while a run executes.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void ADocumentAnAgentOpenedIsMarkedAndClosesInsteadOfLeaving() {
+            backend.Session = OpenedByAgent(Session("active", "user", null, "Tower.rvt", "Family1"), "Family1");
+            var panel = Panel();
+
+            var family = panel.SessionDocuments[1];
+            family.CloseCommand.Execute(null);
+
+            Assert.Equal("(agent)", family.Note);
+            Assert.True(family.CanClose);
+            Assert.False(family.CanRemove);
+            Assert.True(panel.SessionDocuments[0].CanRemove);
+            Assert.Equal(new[] { Key("Family1") }, backend.Closes);
         }
 
         [Fact]
@@ -188,7 +321,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void APendingRequestShowsItsReasonAndCanBeAccepted() {
+        public void APendingRequestShowsItsReasonAndStartsOnTheTickedDocuments() {
             backend.Session = Session("inactive", request: new JObject { ["reason"] = "Renumber doors", ["requested"] = Started.ToString("o") });
 
             var panel = Panel();
@@ -198,7 +331,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("Renumber doors", panel.RequestReason);
             Assert.Equal("asked " + Local(Started), panel.RequestTime);
             Assert.Equal("Start on Tower.rvt", panel.AcceptLabel);
-            Assert.Equal(1, backend.Starts);
+            Assert.Equal(new[] { Key("Tower.rvt") }, Assert.Single(backend.Starts));
         }
 
         [Fact]
@@ -214,26 +347,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AnOpenSessionCanAddTheActiveDocument() {
+        public void OtherOpenDocumentsAreOfferedToAdd() {
             backend.Session = Session("active");
-            backend.ActiveDocumentTitle = "Annex.rvt";
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true), Open("Family1", background: true));
 
             var panel = Panel();
-
-            Assert.True(panel.CanAdd);
-            Assert.Equal("Add Annex.rvt", panel.AddLabel);
-            Assert.False(panel.CanStart);
-            panel.AddCommand.Execute(null);
-            Assert.Equal(1, backend.Adds);
-
+            var annex = Assert.Single(panel.OtherDocuments);
+            annex.AddCommand.Execute(null);
             backend.AddFailure("'Annex.rvt' is already part of the agent session.");
+
+            Assert.True(panel.HasOtherDocuments);
+            Assert.Equal("Annex.rvt", annex.Title);
+            Assert.Equal("(active)", annex.Note);
+            Assert.Equal(new[] { Key("Annex.rvt") }, backend.Adds);
             Assert.Equal("'Annex.rvt' is already part of the agent session.", panel.ErrorText);
         }
 
         [Fact]
         public void AnActiveDocumentOutsideTheSessionIsPointedOutButNothingIsPaused() {
             backend.Session = Session("active");
-            backend.ActiveDocumentTitle = "Annex.rvt";
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
 
             var panel = Panel();
 
@@ -242,12 +375,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("ACTIVE", panel.StateLabel);
             Assert.True(panel.CanPause);
 
-            backend.ActiveDocumentTitle = null;
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt"));
             panel.Refresh();
             Assert.False(panel.IsActiveOutside);
-            Assert.False(panel.CanAdd);
 
-            backend.ActiveDocumentTitle = "Tower.rvt";
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
             panel.Refresh();
             Assert.False(panel.IsActiveOutside);
             Assert.Equal(string.Empty, panel.ActiveOutsideText);
@@ -256,20 +388,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [Fact]
         public void ADocumentAlreadyInTheSessionIsNotOfferedAgain() {
             backend.Session = Session("paused", "user", null, "Tower.rvt", "Annex.rvt");
-            backend.ActiveDocumentTitle = "Annex.rvt";
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
 
             var panel = Panel();
 
-            Assert.False(panel.CanAdd || panel.IsActiveOutside);
-            Assert.Equal("Tower.rvt, Annex.rvt since " + Local(Started), panel.DocumentLine);
+            Assert.False(panel.HasOtherDocuments || panel.IsActiveOutside);
+            Assert.All(panel.SessionDocuments, row => Assert.True(row.CanRemove));
         }
 
         [Fact]
         public void NothingToAddWithoutASession() {
             backend.Session = Session("inactive");
-            backend.ActiveDocumentTitle = "Annex.rvt";
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
 
-            Assert.False(Panel().CanAdd);
+            var panel = Panel();
+
+            Assert.False(panel.HasOtherDocuments || panel.HasSessionDocuments);
         }
 
         [Fact]
@@ -283,7 +417,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             panel.StartCommand.Execute(null);
 
             Assert.Equal(new[] { "Pause", "Resume", "End", "Decline" }, backend.Calls);
-            Assert.Equal(1, backend.Starts);
+            Assert.Single(backend.Starts);
+        }
+
+        [Fact]
+        public void AnEndThatFailsLaterShowsTheError() {
+            backend.Session = Session("active");
+            var panel = Panel();
+
+            panel.EndCommand.Execute(null);
+            backend.EndFailure("Revit is busy.");
+
+            Assert.Equal("Revit is busy.", panel.ErrorText);
         }
 
         [Fact]
@@ -296,7 +441,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("There is no agent session to pause.", panel.ErrorText);
 
             backend.Refusal = null;
-            panel.EndCommand.Execute(null);
+            panel.ResumeCommand.Execute(null);
             Assert.False(panel.HasError);
         }
 
@@ -391,29 +536,39 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             public bool HostRunning { get; set; } = true;
             public string Policy { get; set; } = "ask";
-            public string ActiveDocumentTitle { get; set; } = "Tower.rvt";
+            public List<AgentPanelOpenDocument> Documents { get; } = new List<AgentPanelOpenDocument> { Open("Tower.rvt", active: true) };
+            public IList<AgentPanelOpenDocument> OpenDocuments => Documents;
             public JObject Session { get; set; } = AgentPanelViewModelTests.Session("inactive");
             public AgentActivity Activity { get; } = new AgentActivity();
             public List<string> Dialogs { get; } = new List<string>();
             public List<string> Calls { get; } = new List<string>();
-            public int Starts { get; private set; }
+            public List<IList<string>> Starts { get; } = new List<IList<string>>();
+            public List<string> Adds { get; } = new List<string>();
+            public List<string> Closes { get; } = new List<string>();
+            public Action<string> AddFailure { get; private set; }
+            public Action<string> EndFailure { get; private set; }
             public AgentException Refusal { get; set; }
 
             public IList<string> OpenDialogs() {
                 return Dialogs;
             }
 
-            public void Start(Action<string> onError) {
-                Starts++;
+            public void Start(IList<string> keys, Action<string> onError) {
+                Starts.Add(keys);
                 startFailure = onError;
             }
 
-            public int Adds { get; private set; }
-            public Action<string> AddFailure { get; private set; }
-
-            public void Add(Action<string> onError) {
-                Adds++;
+            public void Add(string key, Action<string> onError) {
+                Adds.Add(key);
                 AddFailure = onError;
+            }
+
+            public void Remove(string key) {
+                Record("Remove " + key);
+            }
+
+            public void Close(string key, Action<string> onError) {
+                Closes.Add(key);
             }
 
             public void ReportStartFailure(string message) {
@@ -437,8 +592,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 Record("Resume");
             }
 
-            public void End() {
+            public void End(Action<string> onError) {
                 Record("End");
+                EndFailure = onError;
             }
 
             public void Decline() {

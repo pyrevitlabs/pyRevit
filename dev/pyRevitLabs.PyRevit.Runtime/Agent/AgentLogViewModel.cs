@@ -51,9 +51,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             Id = record.Id;
             IsLookup = record.IsLookup;
-            if (record.Kind == "add") {
-                Title = log.Format("AgentPanel.Log.Added", record.Title);
-                StatusKind = "added";
+            if (record.Kind == "add" || record.Kind == "remove") {
+                Title = log.Format(record.Kind == "add" ? "AgentPanel.Log.Added" : "AgentPanel.Log.Removed", record.Title);
+                StatusKind = record.Outcome;
                 Summary = AgentLogText.LocalTime(record.ArrivedUtc, "HH:mm:ss");
             }
             else {

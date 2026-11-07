@@ -74,13 +74,36 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static string Start(UIApplication app) {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
-            if (!ScriptExecutor.IsOnMainThread)
-                throw new InvalidOperationException("Agent sessions must be started on the Revit main thread.");
             var doc = app.ActiveUIDocument?.Document
                 ?? throw new AgentException("no_active_document", "Open the document the agent should work on, then start the session.");
+            return Start(app, new[] { doc });
+        }
+
+        /// <summary>
+        /// Starts a session on the documents the user chose in the panel, by their keys.
+        /// </summary>
+        /// <returns>The new session's id.</returns>
+        /// <exception cref="InvalidOperationException">Called off the Revit main thread.</exception>
+        /// <exception cref="AgentException">
+        /// <c>no_active_document</c> when no key is given; <c>unknown_document</c> when one names
+        /// no open document; <c>session_active</c> or <c>session_locked</c> as for
+        /// <see cref="Start(UIApplication)"/>.
+        /// </exception>
+        internal static string Start(UIApplication app, IEnumerable<string> keys) {
+            if (app == null)
+                throw new ArgumentNullException(nameof(app));
+            var chosen = (keys ?? Enumerable.Empty<string>()).Select(FindOpen).ToList();
+            if (chosen.Count == 0)
+                throw new AgentException("no_active_document", "Choose at least one document for the session.");
+            return Start(app, chosen);
+        }
+
+        private static string Start(UIApplication app, IList<Document> chosen) {
+            if (!ScriptExecutor.IsOnMainThread)
+                throw new InvalidOperationException("Agent sessions must be started on the Revit main thread.");
             WatchDocuments(app.Application);
             AgentAwarenessWatch.Attach(app);
-            var id = Tracker.Start(new[] { SessionDocument(doc) }, DateTime.UtcNow);
+            var id = Tracker.Start(chosen.Select(SessionDocument), DateTime.UtcNow);
             AgentAwarenessWatch.Restart(app);
             return id;
         }
@@ -98,15 +121,64 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static void Add(UIApplication app) {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
+            Add(app.ActiveUIDocument?.Document
+                ?? throw new AgentException("no_active_document", "Open the document to add, then add it to the session."));
+        }
+
+        /// <summary>
+        /// Adds the open document with <paramref name="key"/> to the open session, as
+        /// <see cref="Add(UIApplication)"/> does for the active one.
+        /// </summary>
+        /// <exception cref="AgentException">
+        /// <c>unknown_document</c> when the key names no open document, and the refusals of
+        /// <see cref="Add(UIApplication)"/>.
+        /// </exception>
+        internal static void Add(string key) {
+            Add(FindOpen(key));
+        }
+
+        private static void Add(Document doc) {
             if (!ScriptExecutor.IsOnMainThread)
                 throw new InvalidOperationException("Documents must be added to agent sessions on the Revit main thread.");
-            var doc = app.ActiveUIDocument?.Document
-                ?? throw new AgentException("no_active_document", "Open the document to add, then add it to the session.");
             var added = SessionDocument(doc);
             if (Tracker.StartedAutomatically || !Tracker.AddDocument(added, byUser: true))
                 throw new AgentException("already_in_session", $"'{doc.Title}' is already part of the agent session.");
             AgentAwarenessWatch.Awareness.RecordJoined(added.Key, added.Title);
             AgentHost.Activity.RecordAdded(added.Title, Tracker.CurrentSession, DateTime.UtcNow);
+        }
+
+        /// <summary>
+        /// Takes a document the user chose out of the open session, and the agent's next summary of
+        /// changes reports that it left.
+        /// </summary>
+        /// <exception cref="AgentException">The refusals of <see cref="AgentSessionTracker.RemoveDocumentByUser"/>.</exception>
+        public static void Remove(string key) {
+            var removed = Tracker.RemoveDocumentByUser(key);
+            if (removed == null)
+                return;
+            AgentAwarenessWatch.Awareness.RecordLeft(removed.Key, removed.Title);
+            AgentHost.Activity.RecordRemoved(removed.Title, Tracker.CurrentSession, DateTime.UtcNow);
+        }
+
+        /// <summary>
+        /// Closes, without saving, a document an agent opened in the session. It leaves the session
+        /// as any closed document does.
+        /// </summary>
+        /// <remarks>Must run in a Revit API context, as the panel's posted actions do.</remarks>
+        /// <exception cref="AgentException">
+        /// <c>unknown_document</c> when the session has no document an agent opened with that key;
+        /// <c>wrong_document</c> while it is the active document, which Revit can't close.
+        /// </exception>
+        internal static void CloseOpenedDocument(UIApplication app, string key) {
+            var entry = Tracker.Documents.FirstOrDefault(candidate => candidate.Key == key && candidate.OpenedByAgent);
+            var doc = entry?.Document as Document;
+            if (!IsOpen(doc))
+                throw new AgentException("unknown_document", "That document is no longer open.");
+            if (AgentDocuments.IsSame(app.ActiveUIDocument?.Document, doc))
+                throw new AgentException("wrong_document",
+                    $"'{entry.Title}' is the active document, which Revit can't close. Switch to another document first.");
+            if (!doc.Close(false))
+                throw new AgentException("not_run", $"Revit kept '{entry.Title}' open.");
         }
 
         /// <summary>
@@ -259,6 +331,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 default:
                     throw new ArgumentException($"Agent sessions start '{StartUser}' or '{StartAuto}', not '{mode}'.", nameof(mode));
             }
+        }
+
+        private static Document FindOpen(string key) {
+            var doc = AgentDocuments.Keys.Find(key);
+            if (doc == null || doc.IsLinked)
+                throw new AgentException("unknown_document", "That document is no longer open. Choose again.");
+            return doc;
         }
 
         private static AgentSessionDocument SessionDocument(Document doc) {

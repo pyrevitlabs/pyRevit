@@ -287,6 +287,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// Takes a document the user chose out of the open session.
+        /// </summary>
+        /// <returns>The document taken out, or null when the session doesn't have it.</returns>
+        /// <exception cref="AgentException">
+        /// <c>session_inactive</c> when there is no session; <c>session_locked</c> while an agent
+        /// run executes or when the session started automatically, since it covers every open
+        /// document; <c>opened_by_agent</c> for a document an agent opened, which closes instead
+        /// of staying open outside the session; <c>last_document</c> for the session's only
+        /// document, since a session ends instead.
+        /// </exception>
+        public AgentSessionDocument RemoveDocumentByUser(string key) {
+            AgentSessionDocument removed;
+            lock (sync) {
+                if (state == AgentSessionState.Inactive)
+                    throw new AgentException("session_inactive", "There is no agent session to take a document out of.");
+                RefuseWhileRunExecutes("Documents can't be taken out of the agent session while an agent run executes.");
+                if (startedAutomatically)
+                    throw new AgentException("session_locked", "A session that started automatically covers every open document.");
+                removed = documents.FirstOrDefault(entry => entry.Key == key);
+                if (removed == null)
+                    return null;
+                if (removed.OpenedByAgent)
+                    throw new AgentException("opened_by_agent",
+                        $"An agent opened '{removed.Title}', so it closes instead of leaving the session.");
+                if (documents.Count == 1)
+                    throw new AgentException("last_document",
+                        $"'{removed.Title}' is the session's only document. End the session instead.");
+                documents.Remove(removed);
+            }
+            OnChanged();
+            return removed;
+        }
+
+        /// <summary>
         /// Keeps a document an agent's run opened or created in the open session, marked as the
         /// agent's. A document already in the session, as in one that started automatically, is
         /// marked.

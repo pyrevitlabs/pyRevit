@@ -232,9 +232,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <param name="document">The title of the document added.</param>
         /// <param name="session">The session after the add.</param>
         public void RecordAdded(string document, (string Id, string Document) session, DateTime nowUtc) {
+            RecordMarker("add", "added", document, session, nowUtc);
+        }
+
+        /// <summary>
+        /// Records that the user took a document out of the session, as a marker like
+        /// <see cref="RecordAdded"/>.
+        /// </summary>
+        /// <param name="session">The session after the document left it.</param>
+        public void RecordRemoved(string document, (string Id, string Document) session, DateTime nowUtc) {
+            RecordMarker("remove", "removed", document, session, nowUtc);
+        }
+
+        private void RecordMarker(string kind, string outcome, string document, (string Id, string Document) session, DateTime nowUtc) {
             lock (sync) {
-                var record = new AgentRequestRecord(++nextId, "add", document, null, session.Id, session.Document, nowUtc);
-                AddToHistory(record.AsFinished("added", nowUtc, null));
+                var record = new AgentRequestRecord(++nextId, kind, document, null, session.Id, session.Document, nowUtc);
+                AddToHistory(record.AsFinished(outcome, nowUtc, null));
             }
             OnChanged();
         }

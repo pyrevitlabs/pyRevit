@@ -149,6 +149,11 @@ def add_document():
     _sessions("Add", HOST_APP.uiapp)
 
 
+def remove_document(key):
+    """Take the document with ``key`` out of the agent session, as the user does in the panel."""
+    _sessions("Remove", key)
+
+
 def resume_session():
     """Resume a paused agent session."""
     _sessions("Resume")

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
@@ -17,8 +18,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <summary><c>readonly</c>, <c>ask</c> or <c>auto</c>.</summary>
         string Policy { get; }
 
-        /// <summary>Title of the active document, or null when none is active.</summary>
-        string ActiveDocumentTitle { get; }
+        /// <summary>The open documents, links left out, with the active one marked.</summary>
+        IList<AgentPanelOpenDocument> OpenDocuments { get; }
 
         /// <summary>The session as <c>session_status</c> describes it.</summary>
         JObject Session { get; }
@@ -29,16 +30,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         IList<string> OpenDialogs();
 
         /// <summary>
-        /// Starts a session on the active document. Revit does the work later, so a failure is
-        /// reported through <paramref name="onError"/> on the UI thread.
+        /// Starts a session on the documents with <paramref name="keys"/>. Revit does the work
+        /// later, so a failure is reported through <paramref name="onError"/> on the UI thread.
         /// </summary>
-        void Start(Action<string> onError);
+        void Start(IList<string> keys, Action<string> onError);
 
         /// <summary>
-        /// Adds the active document to the open session. Revit does the work later, so a failure
-        /// is reported through <paramref name="onError"/> on the UI thread.
+        /// Adds the document with <paramref name="key"/> to the open session. Revit does the work
+        /// later, so a failure is reported through <paramref name="onError"/> on the UI thread.
         /// </summary>
-        void Add(Action<string> onError);
+        void Add(string key, Action<string> onError);
+
+        /// <summary>Takes the document with <paramref name="key"/> out of the open session.</summary>
+        /// <exception cref="AgentException">When the session refuses.</exception>
+        void Remove(string key);
+
+        /// <summary>
+        /// Closes, without saving, a document an agent opened in the session. Revit does the work
+        /// later, so a failure is reported through <paramref name="onError"/> on the UI thread.
+        /// </summary>
+        void Close(string key, Action<string> onError);
 
         /// <summary>
         /// Selects and zooms to elements of <paramref name="document"/>, refusing when another
@@ -50,8 +61,104 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         void Pause();
         void Resume();
-        void End();
+
+        /// <summary>
+        /// Ends the session. Revit does the work later, because ending closes the documents agents
+        /// opened, so a failure is reported through <paramref name="onError"/> on the UI thread.
+        /// </summary>
+        void End(Action<string> onError);
+
         void Decline();
+    }
+
+    /// <summary>
+    /// An open document as the panel knows it from Revit's events.
+    /// </summary>
+    internal sealed class AgentPanelOpenDocument : IEquatable<AgentPanelOpenDocument> {
+        public AgentPanelOpenDocument(string key, string title, bool isActive, bool isBackground) {
+            Key = key;
+            Title = title;
+            IsActive = isActive;
+            IsBackground = isBackground;
+        }
+
+        public string Key { get; }
+        public string Title { get; }
+        public bool IsActive { get; }
+
+        /// <summary>
+        /// Open with no view in Revit, as a family an agent opened is. The user can't see it, so
+        /// the panel doesn't offer it.
+        /// </summary>
+        public bool IsBackground { get; }
+
+        public bool Equals(AgentPanelOpenDocument other) {
+            return other != null && Key == other.Key && Title == other.Title && IsActive == other.IsActive
+                && IsBackground == other.IsBackground;
+        }
+
+        public override bool Equals(object obj) {
+            return Equals(obj as AgentPanelOpenDocument);
+        }
+
+        public override int GetHashCode() {
+            return (Key ?? string.Empty).GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// A document in one of the panel's lists: one to choose for a new session, one in the
+    /// session, or one open beside it. Each action is offered only when its command is set.
+    /// </summary>
+    internal sealed class AgentPanelDocumentRow : INotifyPropertyChanged {
+        private bool isChosen;
+
+        public AgentPanelDocumentRow(string key, string title, string note) {
+            Key = key;
+            Title = title;
+            Note = note;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string Key { get; }
+        public string Title { get; }
+
+        /// <summary>A muted word after the title, such as that the document is the active one.</summary>
+        public string Note { get; }
+
+        public bool HasNote => !string.IsNullOrEmpty(Note);
+
+        /// <summary>Whether the user ticked the document to start a session on.</summary>
+        public bool IsChosen {
+            get => isChosen;
+            set {
+                if (isChosen == value)
+                    return;
+                ShowChosen(value);
+                ChosenChanged?.Invoke();
+            }
+        }
+
+        public ICommand RemoveCommand { get; set; }
+        public ICommand CloseCommand { get; set; }
+        public ICommand AddCommand { get; set; }
+        public bool CanRemove => RemoveCommand != null;
+        public bool CanClose => CloseCommand != null;
+        public bool CanAdd => AddCommand != null;
+
+        internal Action ChosenChanged { get; set; }
+
+        /// <summary>What the row shows apart from its tick, so a list is rebuilt only when that changes.</summary>
+        internal string Signature => string.Join("|", Key, Title, Note, CanRemove, CanClose, CanAdd);
+
+        /// <summary>Sets the tick without telling the panel, as the panel does when it rereads.</summary>
+        internal void ShowChosen(bool chosen) {
+            if (isChosen == chosen)
+                return;
+            isChosen = chosen;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsChosen)));
+        }
     }
 
     internal sealed class AgentPanelCommand : ICommand {
@@ -76,8 +183,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// The agent panel's state and actions: the session, what an agent is waiting for, the
-    /// last request it made, and the log of everything agents did in this Revit session.
+    /// The agent panel's state and actions: the session and its documents, what an agent is
+    /// waiting for, the last request it made, and the log of everything agents did in this Revit
+    /// session.
     /// </summary>
     /// <remarks>
     /// Must be used on the UI thread. <see cref="Refresh"/> rereads everything from the backend,
@@ -85,6 +193,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// All text comes through <c>text</c>, keyed like <c>AgentPanel.State.Active</c>, so the
     /// panel's strings live in its resource dictionary and can be translated there.
     /// Buttons are shown only when their action applies, so the commands are always executable.
+    /// Documents are told apart by key, never by title, since titles aren't unique. Before a
+    /// session starts, the active document is ticked until the user ticks another; after that the
+    /// user's choice stands until a session starts.
     /// </remarks>
     internal sealed class AgentPanelViewModel : INotifyPropertyChanged {
         private const string TimeFormat = "HH:mm";
@@ -92,20 +203,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly IAgentPanelBackend backend;
         private readonly AgentLogText strings;
         private string errorText;
+        private HashSet<string> chosenKeys;
 
         public AgentPanelViewModel(IAgentPanelBackend backend, Func<string, string> text) {
             this.backend = backend;
             strings = new AgentLogText(text);
-            StartCommand = new AgentPanelCommand(() => Post(backend.Start));
-            AddCommand = new AgentPanelCommand(() => Post(backend.Add));
+            StartCommand = new AgentPanelCommand(StartChosen);
             PauseCommand = new AgentPanelCommand(() => Act(backend.Pause));
             ResumeCommand = new AgentPanelCommand(() => Act(backend.Resume));
-            EndCommand = new AgentPanelCommand(() => Act(backend.End));
+            EndCommand = new AgentPanelCommand(() => Post(backend.End));
             AcceptCommand = new AgentPanelCommand(() => {
                 if (StateKind == "paused")
                     Act(backend.Resume);
                 else
-                    Post(backend.Start);
+                    StartChosen();
             });
             DeclineCommand = new AgentPanelCommand(() => Act(backend.Decline));
             Log = new AgentLogViewModel(text, ShowElement);
@@ -121,8 +232,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string DocumentLine { get; private set; }
         public bool HasPausedReason { get; private set; }
         public string PausedReason { get; private set; }
+
+        /// <summary>Whether the user picks the documents for a new session.</summary>
+        public bool IsChoosing { get; private set; }
+
+        /// <summary>Open documents to tick for a new session, the active one first ticked.</summary>
+        public ObservableCollection<AgentPanelDocumentRow> ChoiceDocuments { get; } = new ObservableCollection<AgentPanelDocumentRow>();
+
+        /// <summary>Whether no document is ticked, so there is nothing to start on.</summary>
+        public bool HasChooseHint { get; private set; }
+
         public string StartLabel { get; private set; }
         public bool CanStart { get; private set; }
+
+        public bool HasSessionDocuments { get; private set; }
+
+        /// <summary>
+        /// The session's documents. The user's can be taken out while more than one remains;
+        /// the ones an agent opened can be closed.
+        /// </summary>
+        public ObservableCollection<AgentPanelDocumentRow> SessionDocuments { get; } = new ObservableCollection<AgentPanelDocumentRow>();
+
+        public bool HasOtherDocuments { get; private set; }
+
+        /// <summary>Open documents outside a session the user started, each offered to add.</summary>
+        public ObservableCollection<AgentPanelDocumentRow> OtherDocuments { get; } = new ObservableCollection<AgentPanelDocumentRow>();
 
         /// <summary>
         /// Whether the active document is outside a session the user started, so agents can't work
@@ -131,8 +265,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool IsActiveOutside { get; private set; }
 
         public string ActiveOutsideText { get; private set; }
-        public bool CanAdd { get; private set; }
-        public string AddLabel { get; private set; }
         public bool CanPause { get; private set; }
         public bool CanResume { get; private set; }
         public bool CanEnd { get; private set; }
@@ -154,7 +286,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string ErrorText => errorText;
 
         public ICommand StartCommand { get; }
-        public ICommand AddCommand { get; }
         public ICommand PauseCommand { get; }
         public ICommand ResumeCommand { get; }
         public ICommand EndCommand { get; }
@@ -166,24 +297,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void Refresh() {
             var session = backend.Session ?? new JObject();
             var running = backend.HostRunning;
-            var activeTitle = backend.ActiveDocumentTitle;
+            var open = backend.OpenDocuments ?? new List<AgentPanelOpenDocument>();
+            var visible = open.Where(document => !document.IsBackground).ToList();
+            var active = open.FirstOrDefault(document => document.IsActive);
             StateKind = running ? session.Value<string>("state") ?? "inactive" : "off";
 
             var startsAutomatically = session.Value<string>("start") == "auto";
+            var automatic = session.Value<bool?>("automatic") == true;
             StateLabel = strings.Text("AgentPanel.State." + Capitalize(StateKind));
-            CanStart = StateKind == "inactive" && activeTitle != null && !startsAutomatically;
             CanPause = StateKind == "active";
             CanResume = StateKind == "paused";
             var isOpen = CanPause || CanResume;
             CanEnd = isOpen && !startsAutomatically;
-            StartLabel = activeTitle == null ? string.Empty : strings.Format("AgentPanel.Start", activeTitle);
-            var titles = isOpen ? Titles(session) : new List<string>();
-            IsActiveOutside = isOpen && session.Value<bool?>("automatic") != true
-                && activeTitle != null && !titles.Contains(activeTitle);
-            CanAdd = IsActiveOutside;
-            AddLabel = CanAdd ? strings.Format("AgentPanel.Add", activeTitle) : string.Empty;
-            ActiveOutsideText = IsActiveOutside ? strings.Format("AgentPanel.Document.NotInSession", activeTitle) : string.Empty;
-            DocumentLine = DescribeDocument(session, titles, activeTitle, startsAutomatically);
+            var inSession = isOpen ? Entries(session) : new List<JObject>();
+            var sessionKeys = new HashSet<string>(inSession.Select(entry => entry.Value<string>("key")));
+
+            DescribeChoice(visible, StateKind == "inactive" && !startsAutomatically);
+            DescribeSession(inSession, automatic);
+            DescribeOthers(isOpen && !automatic
+                ? visible.Where(document => !sessionKeys.Contains(document.Key)).ToList()
+                : new List<AgentPanelOpenDocument>());
+            IsActiveOutside = isOpen && !automatic && active != null && !active.IsBackground && !sessionKeys.Contains(active.Key);
+            ActiveOutsideText = IsActiveOutside ? strings.Format("AgentPanel.Document.NotInSession", active.Title) : string.Empty;
+            DocumentLine = DescribeDocument(session, visible.Count > 0, startsAutomatically);
             DescribePause(session);
 
             var request = running ? session["pending_request"] as JObject : null;
@@ -201,6 +337,79 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Log.Update(activity?.History ?? new AgentRequestRecord[0]);
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        }
+
+        private void StartChosen() {
+            var keys = ChoiceDocuments.Where(row => row.IsChosen).Select(row => row.Key).ToList();
+            Post(onError => backend.Start(keys, onError));
+        }
+
+        private void OnChosenChanged() {
+            chosenKeys = new HashSet<string>(ChoiceDocuments.Where(row => row.IsChosen).Select(row => row.Key));
+            Refresh();
+        }
+
+        private void DescribeChoice(List<AgentPanelOpenDocument> visible, bool canChoose) {
+            IsChoosing = canChoose && visible.Count > 0;
+            if (!IsChoosing) {
+                chosenKeys = null;
+                Sync(ChoiceDocuments, new List<AgentPanelDocumentRow>());
+                CanStart = false;
+                HasChooseHint = false;
+                StartLabel = string.Empty;
+                return;
+            }
+            var chosen = new HashSet<string>(chosenKeys ?? visible.Where(document => document.IsActive).Select(document => document.Key));
+            Sync(ChoiceDocuments, visible.Select(document => {
+                var row = new AgentPanelDocumentRow(document.Key, document.Title, ActiveNote(document)) { ChosenChanged = OnChosenChanged };
+                row.ShowChosen(chosen.Contains(document.Key));
+                return row;
+            }).ToList());
+            var titles = visible.Where(document => chosen.Contains(document.Key)).Select(document => document.Title).ToList();
+            CanStart = titles.Count > 0;
+            HasChooseHint = titles.Count == 0;
+            StartLabel = titles.Count == 1
+                ? strings.Format("AgentPanel.Start", titles[0])
+                : titles.Count > 1 ? strings.Format("AgentPanel.Start.Many", titles.Count) : string.Empty;
+        }
+
+        private void DescribeSession(List<JObject> entries, bool automatic) {
+            HasSessionDocuments = entries.Count > 0;
+            var removable = !automatic && entries.Count > 1;
+            Sync(SessionDocuments, entries.Select(entry => {
+                var key = entry.Value<string>("key");
+                var byAgent = entry.Value<bool?>("opened_by_agent") == true;
+                return new AgentPanelDocumentRow(key, entry.Value<string>("title"), byAgent ? strings.Text("AgentPanel.Documents.OpenedByAgent") : null) {
+                    RemoveCommand = removable && !byAgent ? new AgentPanelCommand(() => Act(() => backend.Remove(key))) : null,
+                    CloseCommand = byAgent ? new AgentPanelCommand(() => Post(onError => backend.Close(key, onError))) : null,
+                };
+            }).ToList());
+        }
+
+        private void DescribeOthers(List<AgentPanelOpenDocument> others) {
+            HasOtherDocuments = others.Count > 0;
+            Sync(OtherDocuments, others.Select(document => new AgentPanelDocumentRow(document.Key, document.Title, ActiveNote(document)) {
+                AddCommand = new AgentPanelCommand(() => Post(onError => backend.Add(document.Key, onError))),
+            }).ToList());
+        }
+
+        private string ActiveNote(AgentPanelOpenDocument document) {
+            return document.IsActive ? strings.Text("AgentPanel.Documents.Active") : null;
+        }
+
+        /// <remarks>
+        /// Keeps the rows the list shows when only ticks changed, so a click isn't lost to a list
+        /// rebuilt under the mouse.
+        /// </remarks>
+        private static void Sync(ObservableCollection<AgentPanelDocumentRow> rows, List<AgentPanelDocumentRow> fresh) {
+            if (rows.Select(row => row.Signature).SequenceEqual(fresh.Select(row => row.Signature))) {
+                for (var index = 0; index < rows.Count; index++)
+                    rows[index].ShowChosen(fresh[index].IsChosen);
+                return;
+            }
+            rows.Clear();
+            foreach (var row in fresh)
+                rows.Add(row);
         }
 
         private void ShowElement(AgentLogElement element) {
@@ -230,27 +439,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Refresh();
         }
 
-        private string DescribeDocument(JObject session, List<string> titles, string activeTitle, bool startsAutomatically) {
+        private string DescribeDocument(JObject session, bool anyDocument, bool startsAutomatically) {
             switch (StateKind) {
                 case "off":
                     return strings.Text("AgentPanel.Document.HostOff");
                 case "active":
                 case "paused":
-                    return strings.Format("AgentPanel.Document.Bound", string.Join(", ", titles), LocalTime(session.Value<string>("started")));
+                    return strings.Format("AgentPanel.Document.Since", LocalTime(session.Value<string>("started")));
                 default:
                     if (startsAutomatically)
                         return strings.Text("AgentPanel.Document.Auto");
-                    if (activeTitle == null)
+                    if (!anyDocument)
                         return strings.Text("AgentPanel.Document.NoDocument");
                     return strings.Text("AgentPanel.Document.Ready");
             }
         }
 
-        private static List<string> Titles(JObject session) {
+        private static List<JObject> Entries(JObject session) {
             return (session["documents"] as JArray ?? new JArray())
                 .OfType<JObject>()
-                .Select(document => document.Value<string>("title"))
-                .Where(title => !string.IsNullOrEmpty(title))
+                .Where(document => !string.IsNullOrEmpty(document.Value<string>("key")))
                 .ToList();
         }
 

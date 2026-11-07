@@ -246,6 +246,77 @@
                                Margin="18,-6,0,12"
                                Visibility="{Binding IsActiveOutside, Converter={StaticResource Shown}}" />
 
+                    <StackPanel Margin="18,0,0,10" Visibility="{Binding IsChoosing, Converter={StaticResource Shown}}">
+                        <TextBlock Text="{DynamicResource AgentPanel.Documents.Choose}" Style="{StaticResource Heading}" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding ChoiceDocuments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsChosen, Mode=TwoWay}" Margin="0,0,0,6">
+                                        <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                                            <Run Text="{Binding Title, Mode=OneWay}" />
+                                            <Run Text="{Binding Note, Mode=OneWay}" Foreground="{DynamicResource AgentPanel.Muted}" />
+                                        </TextBlock>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{DynamicResource AgentPanel.Documents.ChooseHint}"
+                                   Style="{StaticResource Muted}"
+                                   Visibility="{Binding HasChooseHint, Converter={StaticResource Shown}}" />
+                    </StackPanel>
+
+                    <StackPanel Margin="18,0,0,10" Visibility="{Binding HasSessionDocuments, Converter={StaticResource Shown}}">
+                        <TextBlock Text="{DynamicResource AgentPanel.Documents.InSession}" Style="{StaticResource Heading}" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding SessionDocuments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,2">
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource Chip}"
+                                                Command="{Binding RemoveCommand}"
+                                                Visibility="{Binding CanRemove, Converter={StaticResource Shown}}">
+                                            <TextBlock Text="{DynamicResource AgentPanel.Remove}" />
+                                        </Button>
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource Chip}"
+                                                Command="{Binding CloseCommand}"
+                                                Visibility="{Binding CanClose, Converter={StaticResource Shown}}">
+                                            <TextBlock Text="{DynamicResource AgentPanel.Close}" />
+                                        </Button>
+                                        <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                                            <Run Text="{Binding Title, Mode=OneWay}" />
+                                            <Run Text="{Binding Note, Mode=OneWay}" Foreground="{DynamicResource AgentPanel.Muted}" />
+                                        </TextBlock>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Margin="18,0,0,10" Visibility="{Binding HasOtherDocuments, Converter={StaticResource Shown}}">
+                        <TextBlock Text="{DynamicResource AgentPanel.Documents.Others}" Style="{StaticResource Heading}" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding OtherDocuments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,2">
+                                        <Button DockPanel.Dock="Right"
+                                                Style="{StaticResource Chip}"
+                                                Command="{Binding AddCommand}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" />
+                                                <TextBlock Text="{DynamicResource AgentPanel.Add}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                                            <Run Text="{Binding Title, Mode=OneWay}" />
+                                            <Run Text="{Binding Note, Mode=OneWay}" Foreground="{DynamicResource AgentPanel.Muted}" />
+                                        </TextBlock>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
                     <WrapPanel>
                         <Button Style="{StaticResource Action}"
                                 Command="{Binding StartCommand}"
@@ -253,14 +324,6 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Glyph}" Text="&#xE768;" />
                                 <TextBlock Text="{Binding StartLabel}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource Action}"
-                                Command="{Binding AddCommand}"
-                                Visibility="{Binding CanAdd, Converter={StaticResource Shown}}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" />
-                                <TextBlock Text="{Binding AddLabel}" />
                             </StackPanel>
                         </Button>
                         <Button Style="{StaticResource Action}"

@@ -21,6 +21,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Log.Approval.user"] = "you decided",
             ["AgentPanel.Log.Reason"] = "Why: {0}",
             ["AgentPanel.Log.Added"] = "added {0}",
+            ["AgentPanel.Log.Removed"] = "removed {0}",
             ["AgentPanel.Log.Changes"] = "+{0} ~{1} -{2}",
             ["AgentPanel.Log.Flag.OtherDocument"] = "other document",
             ["AgentPanel.Log.Flag.CloseWithoutSaving"] = "close {0} unsaved",
@@ -111,6 +112,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("added", marker.StatusKind);
             Assert.Equal(Local(Now.AddMinutes(5), "HH:mm:ss"), marker.Summary);
             Assert.True(marker.IsVisible);
+        }
+
+        [Fact]
+        public void ARemovedDocumentShowsAsAMarker() {
+            activity.RecordRemoved("Annex.rvt", ("s1", "Tower.rvt"), Now);
+            log.Update(activity.History);
+
+            var marker = Assert.Single(Assert.Single(log.Groups).Entries);
+            Assert.Equal("removed Annex.rvt", marker.Title);
+            Assert.Equal("removed", marker.StatusKind);
         }
 
         [Fact]

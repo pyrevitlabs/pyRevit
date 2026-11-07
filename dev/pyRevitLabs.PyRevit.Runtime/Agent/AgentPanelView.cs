@@ -71,7 +71,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentHost.Activity.Changed += QueueRefresh;
                 AgentHost.StateChanged += QueueRefresh;
                 AgentHost.ConfigChanged += QueueRefresh;
-                AgentPanel.ActiveDocumentChanged += QueueRefresh;
+                AgentPanel.DocumentsChanged += QueueRefresh;
                 waitingTimer = new DispatcherTimer(WaitingRefreshInterval, DispatcherPriority.Background, (_, __) => Refresh(), Dispatcher);
                 new DispatcherTimer(
                     ConfigCheckInterval, DispatcherPriority.Background, (_, __) => AgentHost.RefreshConfigIfChanged(), Dispatcher);
@@ -131,7 +131,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        public string ActiveDocumentTitle => AgentPanel.ActiveDocumentTitle;
+        public IList<AgentPanelOpenDocument> OpenDocuments => AgentPanel.OpenDocuments;
 
         public JObject Session => AgentSessions.Describe();
 
@@ -141,16 +141,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return AgentWindows.OpenDialogs();
         }
 
-        public void Start(Action<string> onError) {
+        public void Start(IList<string> keys, Action<string> onError) {
+            var chosen = keys.ToList();
             PostToRevit("start the session", onError, app => {
-                AgentSessions.Start(app);
+                AgentSessions.Start(app, chosen);
                 return null;
             });
         }
 
-        public void Add(Action<string> onError) {
+        public void Add(string key, Action<string> onError) {
             PostToRevit("add the document to the session", onError, app => {
-                AgentSessions.Add(app);
+                AgentSessions.Add(key);
+                return null;
+            });
+        }
+
+        public void Remove(string key) {
+            AgentSessions.Remove(key);
+        }
+
+        public void Close(string key, Action<string> onError) {
+            PostToRevit("close the document", onError, app => {
+                AgentSessions.CloseOpenedDocument(app, key);
                 return null;
             });
         }
@@ -187,8 +199,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentSessions.Resume();
         }
 
-        public void End() {
-            AgentSessions.End();
+        /// <remarks>
+        /// Posted, unlike pausing, because ending closes the documents agents opened, which needs
+        /// a Revit API context.
+        /// </remarks>
+        public void End(Action<string> onError) {
+            PostToRevit("end the session", onError, app => {
+                AgentSessions.End();
+                return null;
+            });
         }
 
         public void Decline() {
