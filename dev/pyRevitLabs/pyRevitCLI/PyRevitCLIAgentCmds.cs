@@ -201,14 +201,19 @@ namespace pyRevitCLI {
                 Console.WriteLine("Agent user skills are {0}", PyRevitConfigs.GetAgentUserSkillsEnabled() ? "Enabled" : "Disabled");
         }
 
-        public static void ConfigureRequireSession(bool? required) {
-            if (required.HasValue) {
-                PyRevitConfigs.SetAgentRequireSession(required.Value);
-                Console.WriteLine("Agent sessions {0}. Reload pyRevit or restart Revit to apply.",
-                    required.Value ? "required" : "not required");
+        /// <summary>
+        /// <c>pyrevit configs agent sessionstart</c>: sets how agent sessions start, or prints it
+        /// when <paramref name="start"/> is null.
+        /// </summary>
+        public static void ConfigureSessionStart(string start) {
+            if (start != null) {
+                PyRevitConfigs.SetAgentSessionStart(start);
+                Console.WriteLine(start == PyRevitConsts.ConfigsAgentSessionStartAuto
+                    ? "Agent sessions start automatically, on every open document. Reload pyRevit or restart Revit to apply."
+                    : "Agent sessions start when you start one in the agent panel. Reload pyRevit or restart Revit to apply.");
             }
             else
-                Console.WriteLine("Agent sessions are {0}", PyRevitConfigs.GetAgentRequireSession() ? "required" : "not required");
+                Console.WriteLine("Agent sessions start: " + PyRevitConfigs.GetAgentSessionStart());
         }
 
         /// <summary>

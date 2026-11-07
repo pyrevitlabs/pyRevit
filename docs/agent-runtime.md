@@ -43,10 +43,10 @@ runtime is independent of the Routes server and doesn't need it enabled.
 
 3. **Start Revit** (or reload pyRevit), and open a model.
 4. **Start an agent session.** Open **pyRevit → Agent Panel** (next to Python Shell) and
-   click **Start on &lt;document&gt;**. Agents can read or change the model only while a session
-   is active, and only in its document. When an agent asks for a session first, the panel
-   opens with the agent's reason; click **Start** or **Decline**. See
-   [Sessions and the agent panel](#sessions-and-the-agent-panel).
+   click **Start on &lt;document&gt;**. Agents can read or change models only while a session
+   is active, and only in its documents; **Add &lt;document&gt;** adds the active one. When an
+   agent asks for a session first, the panel opens with the agent's reason; click **Start** or
+   **Decline**. See [Sessions and the agent panel](#sessions-and-the-agent-panel).
 5. **Check the connection:**
 
     ```shell
@@ -61,10 +61,10 @@ runtime is independent of the Routes server and doesn't need it enabled.
 
 !!! note "Upgrading from an earlier build"
 
-    Sessions are required by default. Until the user starts one in the agent panel, model
-    tools answer `session_inactive`, and agents call `request_session` to ask for one. To keep
-    the earlier behaviour on a dedicated agent machine, run
-    `pyrevit configs agent requiresession no` and reload pyRevit.
+    Agents need a session. Until the user starts one in the agent panel, model tools answer
+    `session_inactive`, and agents call `request_session` to ask for one. On a dedicated agent
+    machine, run `pyrevit configs agent sessionstart auto` and reload pyRevit: the first model
+    request then starts a session on every open document.
 
 To remove the server: `pyrevit mcp uninstall <client>`. `pyrevit mcp uninstall --all` removes
 the user-level entry from every client, and the pyRevit uninstaller runs it with `--owned`, which
@@ -92,7 +92,7 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 | `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
 | `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
-| `[agent] require_session` | `pyrevit configs agent requiresession (yes \| no)` | `yes` (default): model requests need a session the user starts in the agent panel. `no`: requests pass without one, as before sessions existed; a session the user starts still binds agents to its document, and only the user can end it. Read only when pyRevit loads, and a reload from inside an agent run can't turn it off. Also in pyRevit Settings. |
+| `[agent] session_start` | `pyrevit configs agent sessionstart (user \| auto)` | `user` (default): model requests need a session the user starts in the agent panel. `auto`: the first model request starts a session on every open document, and documents opened later join it; nothing but the user's **Pause** stops agents. Read only when pyRevit loads, and a reload from inside an agent run can't set it to `auto`. Also in pyRevit Settings. |
 | `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. See [Reckless mode](#reckless-mode) for the risks. |
 
 Run any of these commands without a value to print the current setting.
@@ -206,21 +206,28 @@ The **pyRevit Agent** panel is a dockable pane where the user decides when agent
 Open it with **pyRevit → Agent Panel**. The button is hidden while the agent host is
 disabled.
 
-- **Start on &lt;document&gt;** starts a session bound to the active document. Only a click in the
-  panel starts or resumes a session. Agents and the CLI can only ask for one or pause it, and
-  end it while sessions are required.
+- **Start on &lt;document&gt;** starts a session on the active document. Only a click in the
+  panel starts or resumes a session. Agents and the CLI can only ask for one, pause it, or end
+  it.
+- **Add &lt;document&gt;** appears while a document outside the session is active, and adds it.
+  The session keeps its id and state, and the agent's next response reports the document in
+  `since_last_call`.
 - **Pause** and **Resume** stop and restart model requests. A request already waiting for
   Revit is refused when Revit picks it up.
-- **End** ends the session. Closing the session's document ends it too.
-- **Move session to &lt;document&gt;** appears while another document is active. The session keeps
-  its id and state. From then on, requests that name the document it left are refused with
-  `document_not_in_session`.
-- Closing the panel pauses the session. Reopening the panel shows why, and only the user
-  resumes it.
+- **End** ends the session. Closing the session's last document ends it too; closing one of
+  several takes only that one out.
+- Closing the panel pauses a session the user started. Reopening the panel shows why, and only
+  the user resumes it.
 
-While another document, or none, is active, the panel says so. Agents still work in the
-session's document by its key; only `show_elements`, and captures of the window, need it to be
-active, and get `wrong_document` until the user switches back.
+With `[agent] session_start` set to `auto`, the first model request starts a session on every
+open document, and each document opened or created after that joins it. The panel shows the
+activity as usual, without **Start**, **Add** or **End**: **Pause** is how to stop agents, and
+closing the panel doesn't pause. Agents and the CLI can't end the session either. It ends when
+its last document closes, and the next request starts another.
+
+While a document outside the session, or none, is active, the panel says so. Agents still work in
+the session's documents by their keys; only `show_elements`, and captures of the window, need
+the document to be active, and get `wrong_document` until the user switches to it.
 
 The panel also shows the policy, the MCP client that called last, the last request, and what a
 waiting request is held up by (the approval prompt or a Revit dialog). Its activity log lists
@@ -234,23 +241,25 @@ session requests always pass.
 
 | Error type | When | What the agent does |
 |---|---|---|
-| `session_inactive` | Sessions are required and none is active | Call `request_session`, tell the user, and wait |
+| `session_inactive` | No session is active, and sessions start in the panel | Call `request_session`, tell the user, and wait |
 | `paused_by_user` | The user paused the session | Wait until the user resumes it |
 | `paused_by_host` | pyRevit paused it: a run changed another open document, or the panel was closed. The message says which | Tell the user; only they can resume it |
 | `paused_by_agent` | An agent paused it, with `pyrevit agent session pause` or from code in a run | Tell the user; only they can resume it |
-| `document_not_in_session` | The request names another document than the session's, or names none while another document is active | Work in the session's document, or ask the user to move the session |
+| `document_not_in_session` | The request names a document outside the session, or names none while one outside it is active | Work in the session's documents, or ask the user to add the document in the agent panel |
 | `unknown_document` | No open document has the key: it was closed, or the key is wrong | Call `get_context` for the open documents' keys, and drop ids from a closed document |
 | `wrong_document` | `show_elements`, or a capture of the window, names a document that isn't active | Ask the user to switch to it, or export a named view or `3d` instead |
-| `session_locked` | Code running inside an agent run tried to start, resume or move the session or make sessions optional, or an agent tried to end it while sessions aren't required | Nothing; an agent can't loosen its own session. Pause it to stop |
+| `session_locked` | Code running inside an agent run tried to start, resume or add to the session or make sessions start automatically, or an agent tried to end it while sessions start automatically | Nothing; an agent can't loosen its own session. Pause it to stop |
 
-When the user changed the session's document, view or selection since the agent's previous
-model request, the next response carries `since_last_call`:
+When the user changed a document in the session, the view or the selection since the agent's
+previous model request, or documents joined or left the session, the next response carries
+`since_last_call`:
 
 - `edits`: added, modified and deleted counts, up to 20 ids of each, the transaction names,
   and how many were undone or redone.
 - `active_view`: the view now active, when it changed.
 - `selection`: the count and up to 200 ids, when it changed.
-- `session_moved`: `from` and `to`, when the user moved the session.
+- `documents`: `joined` and `left`, each a list of `key` and `title`, when the user added a
+  document, a document opened while the session started automatically, or one closed.
 
 Nothing the host does for the agent is reported back to it. The active view and the
 selection are compared when the next request arrives, so switching away and back reports
@@ -668,7 +677,7 @@ Deliberately **not** reused:
 | `pyRevitCore` `pyRevit.panel/Agent Panel.smartbutton` | Opens the agent panel; hides itself while the host is disabled. |
 | `pyRevitAssemblyBuilder` `SessionManagerService` | Starts, refreshes or stops the host on every `LoadSession` to match the config. |
 | `pyrevitlib/pyrevit/agent/` | In-engine runner: executes the agent source, captures output, serializes `result`. Must stay parseable by IronPython 2.7, IronPython 3.4 and CPython 3. |
-| `pyRevitLabs.PyRevit` `PyRevitConfigs` | `Get/SetAgentEnabled`, `Get/SetAgentPolicy`, `Get/SetAgentEngine`, `Get/SetAgentRequireSession`. |
+| `pyRevitLabs.PyRevit` `PyRevitConfigs` | `Get/SetAgentEnabled`, `Get/SetAgentPolicy`, `Get/SetAgentEngine`, `Get/SetAgentSessionStart`. |
 | `pyRevitCLI` | `PyRevitAgentClient` (discovery and pipe protocol), `PyRevitCLIAgentCmds` (`agent`, `configs agent`, `mcp install` and `uninstall`), `PyRevitMcpServer` (`pyrevit mcp`). |
 | `pyRevitDevTools` `Debug.panel/Agent Tests.pulldown` | In-Revit end-to-end tests that drive the host through `AgentHost.HandleRequest`. |
 | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles, and of the parts with no Revit dependency: sessions, the activity log, change awareness and the panel's view models; run in CI. |
@@ -854,16 +863,17 @@ itself: the pipe executes requests through an ExternalEvent that never fires whi
 
 | Button | Covers |
 |---|---|
-| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; sessions (start, pause, end, requests, the wrong document, moves, closing documents); change awareness; the agent panel (pane, log, refused runs, closing it pauses the session); the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
+| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; sessions (start, pause, end, requests, the wrong document, added documents, automatic sessions, closing documents); change awareness; the agent panel (pane, log, refused runs, closing it pauses the session); the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
 | Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
 | Run Agent Library Tests | The shipped and user skills, `lookup_pyrevit_api` and `list_automation` through a short-lived `pyrevit mcp` process, and the pyrevitlib side of the automation operations on both engines |
 | Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
 
-The tests create two scratch projects in the temp folder, require sessions and start one on the
-scratch project, and set the policy to `auto` (or `ask` for the approval tests) while they run.
+The tests create two scratch projects in the temp folder, make sessions start in the panel and
+start one on the scratch project, and set the policy to `auto` (or `ask` for the approval tests) while they run.
 Then they end their session, close the projects without saving, reactivate the document that was
 open before, and restore the policy and the session setting. They refuse to start while an agent
-session is open, so end yours in the panel first. The settings tests change the real pyRevit config and
+session the user started is open, so end yours in the panel first; one that started
+automatically is ended for them. The settings tests change the real pyRevit config and
 put every value back. The pipe tests are skipped when the host is disabled, and the other tests have
 only been run with it enabled.
 Each test is written to `%TEMP%\pyrevit-agent-tests.log` before it starts, so if Revit ever hangs, the

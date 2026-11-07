@@ -329,10 +329,10 @@ class BlockTests(TestCase):
             harness.request("get_context")
         self.assertEqual("paused_by_host", raised.exception.code)
 
-    def test_without_a_session_a_cross_document_run_claims_no_pause(self):
-        """With sessions optional and none open, nothing is paused and no warning says it is."""
+    def test_a_cross_document_run_pauses_an_automatic_session_too(self):
+        """A session that started automatically covers both documents, but a run still changes only its own."""
         harness.end_session()
-        harness.require_sessions(False)
+        harness.set_session_start("auto")
         title = harness.session().other_title
         response = _modify(
             "other = [d for d in app.Documents if d.Title == inputs['title']][0]\n"
@@ -340,7 +340,9 @@ class BlockTests(TestCase):
             inputs={"title": title},
         )
         self.assertEqual("other_document_modified", response["error"]["type"])
-        self.assertFalse(any("paused" in warning for warning in response["warnings"]))
+        self.assertTrue(any("paused" in warning for warning in response["warnings"]))
+        self.assertTrue(harness.session_status()["automatic"])
+        self.assertEqual("paused", harness.session_status()["state"])
 
     def test_warnings_are_reported(self):
         """Revit warnings raised during a run are reported as failures."""

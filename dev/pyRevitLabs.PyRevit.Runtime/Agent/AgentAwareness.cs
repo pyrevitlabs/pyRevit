@@ -6,8 +6,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// What the user changed between an agent's calls: edits to the session's document, a view
-    /// switch, a selection change and a move of the session to another document. Pure logic with
+    /// What the user changed between an agent's calls: edits to the session's documents, a view
+    /// switch, a selection change, and documents that joined or left the session. Pure logic with
     /// no Revit dependency;
     /// <see cref="AgentAwarenessWatch"/> feeds it from Revit's events.
     /// </summary>
@@ -32,8 +32,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private int redone;
         private bool viewChanged;
         private bool selectionChanged;
-        private string movedFrom;
-        private string movedTo;
+        private readonly Dictionary<string, string> joined = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> left = new Dictionary<string, string>();
         private int suppressed;
 
         public bool IsSuppressed {
@@ -62,8 +62,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 redone = 0;
                 viewChanged = false;
                 selectionChanged = false;
-                movedFrom = null;
-                movedTo = null;
+                joined.Clear();
+                left.Clear();
             }
         }
 
@@ -121,14 +121,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Records that the user moved the session. Callers clear the earlier changes first, since
-        /// they belong to the old document.
+        /// Records a document that joined the session. A document that left since the last call
+        /// and joined again counts as joined.
         /// </summary>
-        /// <param name="from">The document the agent last read the context in.</param>
-        public void RecordMove(string from, string to) {
+        public void RecordJoined(string key, string title) {
             lock (sync) {
-                movedFrom = from;
-                movedTo = to;
+                if (suppressed > 0)
+                    return;
+                left.Remove(key);
+                joined[key] = title;
+            }
+        }
+
+        /// <summary>
+        /// Records a document that left the session, as when it closed. A document that joined
+        /// since the last call and left again leaves no trace.
+        /// </summary>
+        public void RecordLeft(string key, string title) {
+            lock (sync) {
+                if (suppressed > 0)
+                    return;
+                if (!joined.Remove(key))
+                    left[key] = title;
             }
         }
 
@@ -143,18 +157,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             bool view;
             bool selection;
             JObject edits;
-            JObject moved;
+            JObject documents;
             lock (sync) {
                 view = viewChanged;
                 selection = selectionChanged;
                 edits = DescribeEditsLocked();
-                moved = movedTo == null ? null : new JObject { ["from"] = movedFrom, ["to"] = movedTo };
+                documents = DescribeDocumentsLocked();
             }
-            if (!view && !selection && edits == null && moved == null)
+            if (!view && !selection && edits == null && documents == null)
                 return null;
             var summary = new JObject();
-            if (moved != null)
-                summary["session_moved"] = moved;
+            if (documents != null)
+                summary["documents"] = documents;
             if (edits != null)
                 summary["edits"] = edits;
             if (view)
@@ -162,6 +176,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (selection)
                 summary["selection"] = describeSelection();
             return summary;
+        }
+
+        private JObject DescribeDocumentsLocked() {
+            if (joined.Count == 0 && left.Count == 0)
+                return null;
+            var documents = new JObject();
+            if (joined.Count > 0)
+                documents["joined"] = Describe(joined);
+            if (left.Count > 0)
+                documents["left"] = Describe(left);
+            return documents;
+        }
+
+        private static JArray Describe(Dictionary<string, string> documents) {
+            return new JArray(documents.Select(entry => new JObject { ["key"] = entry.Key, ["title"] = entry.Value }));
         }
 
         private JObject DescribeEditsLocked() {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Windows.Input;
 
 using pyRevitLabs.Json.Linq;
@@ -34,10 +35,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         void Start(Action<string> onError);
 
         /// <summary>
-        /// Moves the open session to the active document. Revit does the work later, so a failure
+        /// Adds the active document to the open session. Revit does the work later, so a failure
         /// is reported through <paramref name="onError"/> on the UI thread.
         /// </summary>
-        void Move(Action<string> onError);
+        void Add(Action<string> onError);
 
         /// <summary>
         /// Selects and zooms to elements of <paramref name="document"/>, refusing when another
@@ -96,7 +97,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             this.backend = backend;
             strings = new AgentLogText(text);
             StartCommand = new AgentPanelCommand(() => Post(backend.Start));
-            MoveCommand = new AgentPanelCommand(() => Post(backend.Move));
+            AddCommand = new AgentPanelCommand(() => Post(backend.Add));
             PauseCommand = new AgentPanelCommand(() => Act(backend.Pause));
             ResumeCommand = new AgentPanelCommand(() => Act(backend.Resume));
             EndCommand = new AgentPanelCommand(() => Act(backend.End));
@@ -124,23 +125,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool CanStart { get; private set; }
 
         /// <summary>
-        /// Whether the session can move to the active document. Decided by title; the move itself
-        /// compares the documents and refuses when they are the same one.
+        /// Whether the active document is outside a session the user started, so agents can't work
+        /// in it until the user adds it.
         /// </summary>
-        public bool CanMove { get; private set; }
+        public bool IsActiveOutside { get; private set; }
 
-        public string MoveLabel { get; private set; }
-
-        /// <summary>
-        /// Whether another document, or none, is active than the session's. Agents still work in
-        /// the session's document, but get <c>wrong_document</c> when they try to show its
-        /// elements; this isn't a pause, since nothing needs resuming.
-        /// </summary>
-        public bool IsOnHold { get; private set; }
-
-        public string OnHoldText { get; private set; }
-        public bool HasMoved { get; private set; }
-        public string MovedText { get; private set; }
+        public string ActiveOutsideText { get; private set; }
+        public bool CanAdd { get; private set; }
+        public string AddLabel { get; private set; }
         public bool CanPause { get; private set; }
         public bool CanResume { get; private set; }
         public bool CanEnd { get; private set; }
@@ -162,7 +154,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string ErrorText => errorText;
 
         public ICommand StartCommand { get; }
-        public ICommand MoveCommand { get; }
+        public ICommand AddCommand { get; }
         public ICommand PauseCommand { get; }
         public ICommand ResumeCommand { get; }
         public ICommand EndCommand { get; }
@@ -177,24 +169,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var activeTitle = backend.ActiveDocumentTitle;
             StateKind = running ? session.Value<string>("state") ?? "inactive" : "off";
 
+            var startsAutomatically = session.Value<string>("start") == "auto";
             StateLabel = strings.Text("AgentPanel.State." + Capitalize(StateKind));
-            CanStart = StateKind == "inactive" && activeTitle != null;
+            CanStart = StateKind == "inactive" && activeTitle != null && !startsAutomatically;
             CanPause = StateKind == "active";
             CanResume = StateKind == "paused";
-            CanEnd = CanPause || CanResume;
+            var isOpen = CanPause || CanResume;
+            CanEnd = isOpen && !startsAutomatically;
             StartLabel = activeTitle == null ? string.Empty : strings.Format("AgentPanel.Start", activeTitle);
-            var boundTitle = session.Value<string>("document");
-            IsOnHold = CanEnd && activeTitle != boundTitle;
-            CanMove = IsOnHold && activeTitle != null;
-            MoveLabel = CanMove ? strings.Format("AgentPanel.Move", activeTitle) : string.Empty;
-            if (!IsOnHold)
-                OnHoldText = string.Empty;
-            else if (activeTitle == null)
-                OnHoldText = strings.Format("AgentPanel.Document.OnHoldNoDocument", boundTitle);
-            else
-                OnHoldText = strings.Format("AgentPanel.Document.OnHold", boundTitle, activeTitle);
-            DocumentLine = DescribeDocument(session, activeTitle);
-            DescribeMove(session);
+            var titles = isOpen ? Titles(session) : new List<string>();
+            IsActiveOutside = isOpen && session.Value<bool?>("automatic") != true
+                && activeTitle != null && !titles.Contains(activeTitle);
+            CanAdd = IsActiveOutside;
+            AddLabel = CanAdd ? strings.Format("AgentPanel.Add", activeTitle) : string.Empty;
+            ActiveOutsideText = IsActiveOutside ? strings.Format("AgentPanel.Document.NotInSession", activeTitle) : string.Empty;
+            DocumentLine = DescribeDocument(session, titles, activeTitle, startsAutomatically);
             DescribePause(session);
 
             var request = running ? session["pending_request"] as JObject : null;
@@ -241,18 +230,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Refresh();
         }
 
-        private string DescribeDocument(JObject session, string activeTitle) {
+        private string DescribeDocument(JObject session, List<string> titles, string activeTitle, bool startsAutomatically) {
             switch (StateKind) {
                 case "off":
                     return strings.Text("AgentPanel.Document.HostOff");
                 case "active":
                 case "paused":
-                    return strings.Format("AgentPanel.Document.Bound", session.Value<string>("document"), LocalTime(session.Value<string>("started")));
+                    return strings.Format("AgentPanel.Document.Bound", string.Join(", ", titles), LocalTime(session.Value<string>("started")));
                 default:
+                    if (startsAutomatically)
+                        return strings.Text("AgentPanel.Document.Auto");
                     if (activeTitle == null)
                         return strings.Text("AgentPanel.Document.NoDocument");
-                    return strings.Text(session.Value<bool?>("required") == false ? "AgentPanel.Document.Optional" : "AgentPanel.Document.Ready");
+                    return strings.Text("AgentPanel.Document.Ready");
             }
+        }
+
+        private static List<string> Titles(JObject session) {
+            return (session["documents"] as JArray ?? new JArray())
+                .OfType<JObject>()
+                .Select(document => document.Value<string>("title"))
+                .Where(title => !string.IsNullOrEmpty(title))
+                .ToList();
         }
 
         private void DescribePause(JObject session) {
@@ -266,16 +265,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 PausedReason = strings.Text("AgentPanel.Paused.ByAgent");
             else
                 PausedReason = strings.Format("AgentPanel.Paused.ByHost", pausedReason);
-        }
-
-        private void DescribeMove(JObject session) {
-            var documents = CanEnd ? session["documents"] as JArray : null;
-            HasMoved = documents != null && documents.Count > 1;
-            if (!HasMoved) {
-                MovedText = string.Empty;
-                return;
-            }
-            MovedText = strings.Format("AgentPanel.Document.MovedFrom", documents[documents.Count - 2].Value<string>());
         }
 
         private void DescribeLast(AgentRequestRecord last) {

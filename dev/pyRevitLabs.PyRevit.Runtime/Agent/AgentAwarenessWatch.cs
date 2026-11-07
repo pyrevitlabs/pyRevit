@@ -9,18 +9,18 @@ using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// Watches Revit for what the user changes in the session's document between an agent's
+    /// Watches Revit for what the user changes in the session's documents between an agent's
     /// calls, and builds the <c>since_last_call</c> summary from <see cref="Awareness"/>.
     /// </summary>
     /// <remarks>
     /// Edits come from <c>DocumentChanged</c>. The active view and the selection are compared,
-    /// when the next request arrives, with the ones the last request left behind in the session's
+    /// when the next request arrives, with the ones the last request left behind in a session
     /// document, on every Revit version. Events would report a round trip to another document as
     /// a view change, <c>SelectionChanged</c> exists only from Revit 2023, and when Revit raises
     /// either for the host's own changes is not something to rely on. They are recorded again
     /// when Revit next goes idle after a request, because a view change the request asked for
     /// with <c>RequestViewChange</c> happens only after it returns.
-    /// Invariant: only the session's document is watched, and nothing is recorded while the
+    /// Invariant: only the session's documents are watched, and nothing is recorded while the
     /// host handles a request; see <see cref="AgentAwareness"/>.
     /// </remarks>
     internal static class AgentAwarenessWatch {
@@ -58,7 +58,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Call on the main thread before the request's own work.
         /// </summary>
         public static JObject SinceLastCall(UIApplication app) {
-            if (AgentSessions.Tracker.BoundDocument == null)
+            if (AgentSessions.Tracker.State == AgentSessionState.Inactive)
                 return null;
             var uidoc = app.ActiveUIDocument;
             CompareViewAndSelection(uidoc);
@@ -108,23 +108,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <remarks>
-        /// Only from the session's document, so a request made while another document is active
-        /// keeps the earlier baseline.
+        /// Only from a session document, so a request made while another document is active keeps
+        /// the earlier baseline.
         /// </remarks>
         private static void RememberViewAndSelection(UIDocument uidoc) {
-            if (uidoc == null || !IsBound(uidoc.Document))
+            if (uidoc == null || !InSession(uidoc.Document))
                 return;
             viewBaseline = ActiveViewId(uidoc);
             selectionBaseline = SelectionIds(uidoc);
         }
 
-        private static bool IsBound(Document document) {
-            var bound = AgentSessions.Tracker.BoundDocument as Document;
-            return bound != null && AgentDocuments.IsSame(bound, document);
+        private static bool InSession(Document document) {
+            return AgentSessions.Tracker.Contains(candidate => AgentDocuments.IsSame(candidate as Document, document));
         }
 
         private static void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
-            if (Awareness.IsSuppressed || IsRollback(e.Operation) || !IsBound(e.GetDocument()))
+            if (Awareness.IsSuppressed || IsRollback(e.Operation) || !InSession(e.GetDocument()))
                 return;
             Awareness.RecordEdit(
                 e.GetAddedElementIds().Select(AgentIds.ToValue),
@@ -135,7 +134,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void CompareViewAndSelection(UIDocument uidoc) {
-            if (uidoc == null || !IsBound(uidoc.Document))
+            if (uidoc == null || !InSession(uidoc.Document))
                 return;
             if (ActiveViewId(uidoc) != viewBaseline)
                 Awareness.RecordViewChange();

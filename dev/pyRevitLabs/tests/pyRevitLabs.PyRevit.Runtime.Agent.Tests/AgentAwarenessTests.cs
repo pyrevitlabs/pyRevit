@@ -120,14 +120,45 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AMoveIsReportedUntilCleared() {
-            awareness.RecordMove("Tower.rvt", "Annex.rvt");
+        public void DocumentsThatJoinedOrLeftAreReportedUntilCleared() {
+            awareness.RecordJoined("doc-2", "Annex.rvt");
+            awareness.RecordLeft("doc-3", "Site.rvt");
 
-            var moved = Peek()["session_moved"];
+            var documents = Peek()["documents"];
 
-            Assert.Equal("Tower.rvt", moved.Value<string>("from"));
-            Assert.Equal("Annex.rvt", moved.Value<string>("to"));
+            Assert.Equal("doc-2", documents["joined"][0].Value<string>("key"));
+            Assert.Equal("Annex.rvt", documents["joined"][0].Value<string>("title"));
+            Assert.Equal("Site.rvt", documents["left"][0].Value<string>("title"));
             awareness.Clear();
+            Assert.Null(Peek());
+        }
+
+        [Fact]
+        public void ADocumentThatJoinedAndLeftBetweenCallsLeavesNoTrace() {
+            awareness.RecordJoined("doc-2", "Annex.rvt");
+            awareness.RecordLeft("doc-2", "Annex.rvt");
+
+            Assert.Null(Peek());
+        }
+
+        [Fact]
+        public void ADocumentThatLeftAndCameBackCountsAsJoined() {
+            awareness.RecordLeft("doc-2", "Annex.rvt");
+            awareness.RecordJoined("doc-2", "Annex.rvt");
+
+            var documents = Peek()["documents"];
+
+            Assert.Equal("doc-2", documents["joined"][0].Value<string>("key"));
+            Assert.Null(documents["left"]);
+        }
+
+        [Fact]
+        public void DocumentsJoiningWhileTheHostWorksAreNotReported() {
+            using (awareness.Suppress()) {
+                awareness.RecordJoined("doc-2", "Annex.rvt");
+                awareness.RecordLeft("doc-3", "Site.rvt");
+            }
+
             Assert.Null(Peek());
         }
 

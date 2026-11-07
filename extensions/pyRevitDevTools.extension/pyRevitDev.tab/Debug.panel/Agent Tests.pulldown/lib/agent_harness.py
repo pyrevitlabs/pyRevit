@@ -5,8 +5,8 @@ pipe carries, executed synchronously on the Revit main thread, so a command can
 exercise the runtime end to end without an external client.
 
 Tests run against scratch documents this module creates in the temp folder and
-closes again, never against the user's model. Every suite runs with agent
-sessions required and a session started on the scratch project, the way a user
+closes again, never against the user's model. Every suite runs with sessions
+started by the user and a session started on the scratch project, the way a user
 would start one in Revit.
 """
 
@@ -144,9 +144,9 @@ def end_session():
     _sessions("End")
 
 
-def move_session():
-    """Move the agent session to the active document, as the user does in the panel."""
-    _sessions("Move", HOST_APP.uiapp)
+def add_document():
+    """Add the active document to the agent session, as the user does in the panel."""
+    _sessions("Add", HOST_APP.uiapp)
 
 
 def resume_session():
@@ -154,14 +154,20 @@ def resume_session():
     _sessions("Resume")
 
 
-def sessions_required():
-    """Whether model requests need an active agent session."""
-    return bool(_SESSIONS_TYPE.GetProperty("Required").GetValue(None))
+def session_start():
+    """How agent sessions start: ``"user"`` or ``"auto"``."""
+    automatic = _SESSIONS_TYPE.GetProperty("StartsAutomatically").GetValue(None)
+    return "auto" if automatic else "user"
 
 
-def require_sessions(state):
-    """Require an agent session for model requests, or stop requiring one."""
-    _sessions("SetRequired", bool(state))
+def set_session_start(mode):
+    """Make agent sessions start ``"user"`` (in the panel) or ``"auto"``."""
+    _sessions("SetSessionStart", mode)
+
+
+def session_titles():
+    """Titles of the agent session's documents; empty when there is no session."""
+    return [document["title"] for document in session_status()["documents"] or []]
 
 
 def session_status():
@@ -170,14 +176,14 @@ def session_status():
 
 
 def restore_session():
-    """Leave sessions required and a session active on the scratch project.
+    """Leave sessions started by the user and one active on the scratch project.
 
     Tests that change the session call this afterwards, so the next test starts
     from the state ``run_suites`` set up.
     """
-    require_sessions(True)
+    set_session_start("user")
     scratch = session()
-    if session_status()["document"] not in (None, scratch.project.Title):
+    if session_titles() not in ([], [scratch.project.Title]):
         end_session()
     scratch.activate(scratch.project_path)
     state = session_status()["state"]
@@ -287,7 +293,8 @@ def run_suites(modules):
     """Run test modules against fresh scratch documents and fail the button on any failure.
 
     Important: the tests start and end their own session, so they refuse to run while
-    the user has one open rather than end it.
+    the user has one open rather than end it. A session that started automatically is
+    ended, since the next agent request starts another anyway.
 
     Raises:
         AssertionError: when an agent session is already open, or when any module has
@@ -295,20 +302,25 @@ def run_suites(modules):
     """
     global _session
     print("Host engine: {}".format(sys.version.split()[0]))
+    start = session_start()
     open_session = session_status()
-    if open_session["state"] != "inactive":
+    if open_session["automatic"]:
+        set_session_start("user")
+        end_session()
+    elif open_session["state"] != "inactive":
         raise AssertionError(
             "End the agent session on '{}' in the agent panel first: the tests start "
-            "their own session on scratch documents.".format(open_session["document"])
+            "their own session on scratch documents.".format(
+                ", ".join(session_titles())
+            )
         )
     with open(PROGRESS_LOG, "w") as handle:
         handle.write("progress log of the last agent test run\n")
     _session = ScratchSession()
     problems = []
-    required = sessions_required()
     try:
         _session.open()
-        require_sessions(True)
+        set_session_start("user")
         start_session()
         with policy("auto"):
             for module in modules:
@@ -320,8 +332,9 @@ def run_suites(modules):
                         )
                     )
     finally:
+        set_session_start("user")
         end_session()
-        require_sessions(required)
+        set_session_start(start)
         _session.close()
         _session = None
         log_progress("finished")

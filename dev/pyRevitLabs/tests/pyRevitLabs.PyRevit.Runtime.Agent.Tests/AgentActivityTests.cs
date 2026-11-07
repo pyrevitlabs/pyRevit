@@ -149,18 +149,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AMoveGoesIntoTheHistoryAsAMarkerButIsNeverTheLastRequest() {
+        public void AnAddedDocumentGoesIntoTheHistoryAsAMarkerButIsNeverTheLastRequest() {
             var record = Arrive("query", "Before");
             activity.Finish(record, "ok", Now);
 
-            activity.RecordMove("Tower.rvt", ("s1", "Annex.rvt"), Now.AddSeconds(1));
+            activity.RecordAdded("Annex.rvt", ("s1", "Tower.rvt, Annex.rvt"), Now.AddSeconds(1));
 
-            var move = activity.History.Last();
-            Assert.Equal("move", move.Kind);
-            Assert.Equal("Tower.rvt", move.Title);
-            Assert.Equal("Annex.rvt", move.SessionDocument);
-            Assert.Equal("moved", move.Outcome);
-            Assert.False(move.IsLookup);
+            var added = activity.History.Last();
+            Assert.Equal("add", added.Kind);
+            Assert.Equal("Annex.rvt", added.Title);
+            Assert.Equal("Tower.rvt, Annex.rvt", added.SessionDocument);
+            Assert.Equal("added", added.Outcome);
+            Assert.False(added.IsLookup);
             Assert.Equal("Before", activity.Last.Title);
         }
 

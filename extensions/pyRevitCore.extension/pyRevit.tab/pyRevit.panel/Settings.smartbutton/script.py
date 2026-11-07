@@ -448,11 +448,18 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_agent(self):
         self._agent_enabled_at_open = PyRevit.PyRevitConfigs.GetAgentEnabled()
         self.agent_cb.IsChecked = self._agent_enabled_at_open
-        self._agent_require_session_at_open = (
-            PyRevit.PyRevitConfigs.GetAgentRequireSession()
+        self._agent_session_start_at_open = (
+            PyRevit.PyRevitConfigs.GetAgentSessionStart()
         )
-        self.agent_require_session_cb.IsChecked = self._agent_require_session_at_open
-        self.agent_tab_highlight_cb.IsChecked = PyRevit.PyRevitConfigs.GetAgentTabHighlight()
+        self.agent_session_auto_rb.IsChecked = (
+            self._agent_session_start_at_open == "auto"
+        )
+        self.agent_session_user_rb.IsChecked = (
+            self._agent_session_start_at_open != "auto"
+        )
+        self.agent_tab_highlight_cb.IsChecked = (
+            PyRevit.PyRevitConfigs.GetAgentTabHighlight()
+        )
         policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
@@ -1059,17 +1066,17 @@ class SettingsWindow(forms.WPFWindow):
     def _save_agent(self):
         request_reload = False
         enabled = bool(self.agent_cb.IsChecked)
-        require_session = bool(self.agent_require_session_cb.IsChecked)
-        require_session_changed = require_session != self._agent_require_session_at_open
+        session_start = "auto" if self.agent_session_auto_rb.IsChecked else "user"
+        session_start_changed = session_start != self._agent_session_start_at_open
         if enabled != self._agent_enabled_at_open or (
-            enabled and require_session_changed
+            enabled and session_start_changed
         ):
             request_reload = forms.alert(
                 self.get_locale_string("Agent.Changed"), yes=True, no=True
             )
 
         PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
-        PyRevit.PyRevitConfigs.SetAgentRequireSession(require_session)
+        PyRevit.PyRevitConfigs.SetAgentSessionStart(session_start)
         PyRevit.PyRevitConfigs.SetAgentTabHighlight(
             bool(self.agent_tab_highlight_cb.IsChecked)
         )

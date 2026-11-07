@@ -148,9 +148,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             });
         }
 
-        public void Move(Action<string> onError) {
-            PostToRevit("move the session", onError, app => {
-                AgentSessions.Move(app);
+        public void Add(Action<string> onError) {
+            PostToRevit("add the document to the session", onError, app => {
+                AgentSessions.Add(app);
                 return null;
             });
         }

@@ -387,7 +387,7 @@ namespace pyRevitCLI {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
                             { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
                             { "routes",                 "Routes configurations" },
-                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, required session, reckless runs)" },
+                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, session start, reckless runs)" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },
                         },

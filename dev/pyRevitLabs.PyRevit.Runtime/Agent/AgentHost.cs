@@ -198,13 +198,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             ConfigChanged?.Invoke();
         }
 
-        private static bool ReadRequireSession() {
+        private static string ReadSessionStart() {
             try {
-                return PyRevitConfigs.GetAgentRequireSession();
+                return PyRevitConfigs.GetAgentSessionStart();
             }
             catch (Exception ex) {
-                logger.Warn("Could not read [agent] require_session, so a session is required: {0}", ex.Message);
-                return true;
+                logger.Warn("Could not read [agent] session_start, so sessions start in the agent panel: {0}", ex.Message);
+                return AgentSessions.StartUser;
             }
         }
 
@@ -223,8 +223,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// session manager on every load and reload.
         /// </summary>
         /// <remarks>
-        /// <c>[agent] require_session</c> is applied here only, so a config edit from outside
-        /// Revit can't turn the session gate off mid-session.
+        /// <c>[agent] session_start</c> is applied here only, so a config edit from outside Revit
+        /// can't make sessions start automatically mid-session.
         /// The agent panel is registered here on the first load, even when the host is disabled:
         /// Revit accepts a dockable pane only during startup and never removes one, so turning
         /// the host on later needs just a reload.
@@ -244,7 +244,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
-            AgentSessions.Configure(uiApp.Application, ReadRequireSession());
+            AgentSessions.Configure(uiApp.Application, ReadSessionStart());
             AgentAwarenessWatch.Attach(uiApp);
 
             var started = false;

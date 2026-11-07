@@ -50,7 +50,7 @@ A guarded run can inspect template paths and make reversible changes to an exist
 
 ## Opening a document for the user
 
-Model tools work only in the document the agent session is on, and only the user can start or move a session, in the agent panel. To work in another model, ask the user to open it in Revit and start the session there, or move the session to it.
+Model tools work only in the agent session's documents, and only the user can start a session or add a document to it, in the agent panel. To work in another model, ask the user to open it in Revit and add it to the session. A session that started automatically takes in every document as it opens.
 
 A run can also open and show a file itself:
 
@@ -62,9 +62,9 @@ except Exception as error:
 result = {"active": uiapp.ActiveUIDocument.Document.Title if uiapp.ActiveUIDocument else None}
 ```
 
-- **The session stays on its document.** Requests that name the new file answer `document_not_in_session` until the user moves the session to it in the agent panel; requests that name the session's document keep working. Ask them to move it, then call `get_context` for the new file's key.
+- **A session the user started doesn't take the new file in.** Requests that name it answer `document_not_in_session` until the user adds it to the session in the agent panel; requests that name the session's documents keep working. Ask them to add it, then call `get_context` for the new file's key.
 - **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` in the result.
-- **With no document open, nothing runs while sessions are required**, because a session needs a document to start on: ask the user to open one. Only with `[agent] require_session` set to `no` do runs execute with `doc` and `uidoc` set to `None` and the decision `no_document`, and `OpenAndActivateDocument` returns normally there.
+- **With no document open, nothing runs while sessions start in the panel**, because a session needs a document to start on: ask the user to open one. Only with `[agent] session_start` set to `auto` do runs execute with `doc` and `uidoc` set to `None` and the decision `no_document`, and `OpenAndActivateDocument` returns normally there.
 - `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started, or a project or family you opened from a file, fails the run with `other_document_modified`, and it can't be saved.
 
 ## Before you report done

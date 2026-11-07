@@ -65,7 +65,7 @@ public partial class McpServerTests {
 
     [Fact]
     public void AnAutomationChecksTheContextWithoutTakingTheAgentsChanges() {
-        var moved = new JObject { ["session_moved"] = new JObject { ["from"] = "Tower", ["to"] = "Annex" } };
+        var moved = new JObject { ["documents"] = new JObject { ["joined"] = new JArray(new JObject { ["key"] = "doc-2", ["title"] = "Annex" }) } };
         host.Handler = request => request.Value<string>("method") == "get_context"
             ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Annex" }, ["since_last_call"] = moved })
             : FakeAgentHost.Failure(request, "document_not_in_session", "The agent session is on 'Annex', and 'Tower' isn't part of it.");
@@ -79,7 +79,7 @@ public partial class McpServerTests {
         Assert.True(Assert.Single(host.RequestsFor("get_context"))["params"].Value<bool>("keep_changes"));
         Assert.True(IsError(response));
         Assert.Equal("document_not_in_session", Payload(response).Value<string>("error"));
-        Assert.Equal("Annex", Payload(response)["since_last_call"]["session_moved"].Value<string>("to"));
+        Assert.Equal("Annex", Payload(response)["since_last_call"]["documents"]["joined"][0].Value<string>("title"));
     }
 
     [Fact]

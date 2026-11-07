@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
@@ -16,13 +17,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Document.HostOff"] = "host off",
             ["AgentPanel.Document.NoDocument"] = "no document",
             ["AgentPanel.Document.Ready"] = "ready",
-            ["AgentPanel.Document.Optional"] = "optional",
+            ["AgentPanel.Document.Auto"] = "automatic",
             ["AgentPanel.Document.Bound"] = "{0} since {1}",
             ["AgentPanel.Start"] = "Start on {0}",
-            ["AgentPanel.Move"] = "Move to {0}",
-            ["AgentPanel.Document.OnHold"] = "on hold: {0} not {1}",
-            ["AgentPanel.Document.OnHoldNoDocument"] = "on hold: {0} not open",
-            ["AgentPanel.Document.MovedFrom"] = "from {0}",
+            ["AgentPanel.Add"] = "Add {0}",
+            ["AgentPanel.Document.NotInSession"] = "{0} not in session",
             ["AgentPanel.Resume"] = "Resume",
             ["AgentPanel.Paused.ByHost"] = "paused: {0}",
             ["AgentPanel.Paused.PanelHidden"] = "panel hidden",
@@ -51,12 +50,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return utc.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture);
         }
 
-        private static JObject Session(string state, bool required = true, JObject request = null) {
+        private static JObject Session(string state, string start = "user", JObject request = null, params string[] documents) {
             var open = state != "inactive";
+            var titles = documents.Length == 0 ? new[] { "Tower.rvt" } : documents;
             return new JObject {
-                ["required"] = required,
+                ["start"] = start,
                 ["state"] = state,
-                ["document"] = open ? "Tower.rvt" : null,
+                ["automatic"] = open && start == "auto",
+                ["documents"] = open
+                    ? new JArray(titles.Select((title, index) => new JObject { ["key"] = "doc-" + (index + 1), ["title"] = title }))
+                    : null,
                 ["started"] = open ? Started.ToString("o") : null,
                 ["pending_request"] = request,
             };
@@ -97,10 +100,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void WhenSessionsAreOptionalThePanelSaysSo() {
-            backend.Session = Session("inactive", required: false);
+        public void WhenSessionsStartAutomaticallyThePanelSaysSoAndOffersNoStart() {
+            backend.Session = Session("inactive", start: "auto");
 
-            Assert.Equal("optional", Panel().DocumentLine);
+            var panel = Panel();
+
+            Assert.Equal("automatic", panel.DocumentLine);
+            Assert.False(panel.CanStart);
+        }
+
+        [Fact]
+        public void AnAutomaticSessionCanBePausedButNotEnded() {
+            backend.Session = Session("active", "auto", null, "Tower.rvt", "Annex.rvt");
+            backend.ActiveDocumentTitle = "Site.rvt";
+
+            var panel = Panel();
+
+            Assert.True(panel.CanPause);
+            Assert.False(panel.CanEnd || panel.CanAdd || panel.IsActiveOutside);
+            Assert.Equal("Tower.rvt, Annex.rvt since " + Local(Started), panel.DocumentLine);
         }
 
         [Fact]
@@ -196,78 +214,62 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AnOpenSessionCanMoveToAnotherActiveDocument() {
+        public void AnOpenSessionCanAddTheActiveDocument() {
             backend.Session = Session("active");
             backend.ActiveDocumentTitle = "Annex.rvt";
 
             var panel = Panel();
 
-            Assert.True(panel.CanMove);
-            Assert.Equal("Move to Annex.rvt", panel.MoveLabel);
+            Assert.True(panel.CanAdd);
+            Assert.Equal("Add Annex.rvt", panel.AddLabel);
             Assert.False(panel.CanStart);
-            panel.MoveCommand.Execute(null);
-            Assert.Equal(1, backend.Moves);
+            panel.AddCommand.Execute(null);
+            Assert.Equal(1, backend.Adds);
 
-            backend.MoveFailure("The agent session is already on 'Annex.rvt'.");
-            Assert.Equal("The agent session is already on 'Annex.rvt'.", panel.ErrorText);
+            backend.AddFailure("'Annex.rvt' is already part of the agent session.");
+            Assert.Equal("'Annex.rvt' is already part of the agent session.", panel.ErrorText);
         }
 
         [Fact]
-        public void ASessionWhoseDocumentIsNotActiveIsOnHoldButNotPaused() {
+        public void AnActiveDocumentOutsideTheSessionIsPointedOutButNothingIsPaused() {
             backend.Session = Session("active");
             backend.ActiveDocumentTitle = "Annex.rvt";
 
             var panel = Panel();
 
-            Assert.True(panel.IsOnHold);
-            Assert.Equal("on hold: Tower.rvt not Annex.rvt", panel.OnHoldText);
+            Assert.True(panel.IsActiveOutside);
+            Assert.Equal("Annex.rvt not in session", panel.ActiveOutsideText);
             Assert.Equal("ACTIVE", panel.StateLabel);
             Assert.True(panel.CanPause);
 
             backend.ActiveDocumentTitle = null;
             panel.Refresh();
-            Assert.Equal("on hold: Tower.rvt not open", panel.OnHoldText);
-            Assert.False(panel.CanMove);
+            Assert.False(panel.IsActiveOutside);
+            Assert.False(panel.CanAdd);
 
             backend.ActiveDocumentTitle = "Tower.rvt";
             panel.Refresh();
-            Assert.False(panel.IsOnHold);
-            Assert.Equal(string.Empty, panel.OnHoldText);
+            Assert.False(panel.IsActiveOutside);
+            Assert.Equal(string.Empty, panel.ActiveOutsideText);
         }
 
         [Fact]
-        public void APausedSessionOnAnotherDocumentIsOnHoldTooAndAnInactiveOneNever() {
-            backend.Session = Session("paused");
+        public void ADocumentAlreadyInTheSessionIsNotOfferedAgain() {
+            backend.Session = Session("paused", "user", null, "Tower.rvt", "Annex.rvt");
             backend.ActiveDocumentTitle = "Annex.rvt";
-            Assert.True(Panel().IsOnHold);
-
-            backend.Session = Session("inactive");
-            Assert.False(Panel().IsOnHold);
-        }
-
-        [Fact]
-        public void NothingToMoveToWithoutASessionOrAnotherDocument() {
-            backend.Session = Session("active");
-            Assert.False(Panel().CanMove);
-
-            backend.ActiveDocumentTitle = null;
-            Assert.False(Panel().CanMove);
-
-            backend.Session = Session("inactive");
-            backend.ActiveDocumentTitle = "Annex.rvt";
-            Assert.False(Panel().CanMove);
-        }
-
-        [Fact]
-        public void AMovedSessionSaysWhereItCameFrom() {
-            backend.Session = Session("paused");
-            backend.Session["document"] = "Annex.rvt";
-            backend.Session["documents"] = new JArray("Tower.rvt", "Annex.rvt");
 
             var panel = Panel();
 
-            Assert.True(panel.HasMoved);
-            Assert.Equal("from Tower.rvt", panel.MovedText);
+            Assert.False(panel.CanAdd || panel.IsActiveOutside);
+            Assert.Equal("Tower.rvt, Annex.rvt since " + Local(Started), panel.DocumentLine);
+        }
+
+        [Fact]
+        public void NothingToAddWithoutASession() {
+            backend.Session = Session("inactive");
+            backend.ActiveDocumentTitle = "Annex.rvt";
+
+            Assert.False(Panel().CanAdd);
         }
 
         [Fact]
@@ -406,12 +408,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 startFailure = onError;
             }
 
-            public int Moves { get; private set; }
-            public Action<string> MoveFailure { get; private set; }
+            public int Adds { get; private set; }
+            public Action<string> AddFailure { get; private set; }
 
-            public void Move(Action<string> onError) {
-                Moves++;
-                MoveFailure = onError;
+            public void Add(Action<string> onError) {
+                Adds++;
+                AddFailure = onError;
             }
 
             public void ReportStartFailure(string message) {

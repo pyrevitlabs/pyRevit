@@ -10,17 +10,15 @@
     <system:String x:Key="AgentPanel.Document.HostOff">The agent host is off. Turn it on in pyRevit Settings, then reload pyRevit.</system:String>
     <system:String x:Key="AgentPanel.Document.NoDocument">Open the document agents should work on, then start a session.</system:String>
     <system:String x:Key="AgentPanel.Document.Ready">Agents can't read or change the model until you start a session.</system:String>
-    <system:String x:Key="AgentPanel.Document.Optional">Sessions are optional in pyRevit Settings, so agents can work without one. Start a session to keep them to one document.</system:String>
+    <system:String x:Key="AgentPanel.Document.Auto">Sessions start automatically: an agent's first request starts one on every open document.</system:String>
     <system:String x:Key="AgentPanel.Document.Bound">{0} · since {1}</system:String>
-    <system:String x:Key="AgentPanel.Document.MovedFrom">Moved from {0}.</system:String>
-    <system:String x:Key="AgentPanel.Document.OnHold">{0} is the session's document, and {1} is active. Agents still work in {0}, but can show you its elements only while it's active. Move the session to let them work in {1}.</system:String>
-    <system:String x:Key="AgentPanel.Document.OnHoldNoDocument">No document is active. Agents still work in {0}, but can show you its elements only while it's active.</system:String>
+    <system:String x:Key="AgentPanel.Document.NotInSession">{0} isn't part of the session, so agents can't work in it. Add it to let them.</system:String>
     <system:String x:Key="AgentPanel.Paused.ByHost">pyRevit paused the session because {0} Resume when you've checked the model.</system:String>
     <system:String x:Key="AgentPanel.Paused.PanelHidden">The session paused when this panel was closed or hidden. Resume when you want the agent to carry on.</system:String>
     <system:String x:Key="AgentPanel.Paused.ByAgent">An agent paused the session. Resume when you want it to carry on.</system:String>
 
     <system:String x:Key="AgentPanel.Start">Start on {0}</system:String>
-    <system:String x:Key="AgentPanel.Move">Move session to {0}</system:String>
+    <system:String x:Key="AgentPanel.Add">Add {0}</system:String>
     <system:String x:Key="AgentPanel.Pause">Pause</system:String>
     <system:String x:Key="AgentPanel.Resume">Resume</system:String>
     <system:String x:Key="AgentPanel.End">End</system:String>
@@ -68,7 +66,7 @@
     <system:String x:Key="AgentPanel.Log.Approval.auto">applied without asking</system:String>
     <system:String x:Key="AgentPanel.Log.Approval.user">you decided</system:String>
     <system:String x:Key="AgentPanel.Log.Reason">Why: {0}</system:String>
-    <system:String x:Key="AgentPanel.Log.Moved">You moved the session from {0} to {1}.</system:String>
+    <system:String x:Key="AgentPanel.Log.Added">You added {0} to the session.</system:String>
     <system:String x:Key="AgentPanel.Log.Changes">{0} added · {1} modified · {2} deleted</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed another open document; pyRevit undid those changes.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>
@@ -81,5 +79,5 @@
     <system:String x:Key="AgentPanel.Log.Engine">Engine: {0}</system:String>
     <system:String x:Key="AgentPanel.Log.RunFolder">Run record: {0}</system:String>
 
-    <system:String x:Key="AgentPanel.Footer">Agents work only in the session's document, and only while the session is active. Closing this panel pauses the session.</system:String>
+    <system:String x:Key="AgentPanel.Footer">Agents work only in the session's documents, and only while the session is active. Closing this panel pauses a session you started.</system:String>
 </ResourceDictionary>

@@ -37,8 +37,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// One request in the agent log: a one-line summary, and details shown when expanded. A move
-    /// of the session shows as a one-line marker.
+    /// One request in the agent log: a one-line summary, and details shown when expanded. A
+    /// document the user added to the session shows as a one-line marker.
     /// </summary>
     internal sealed class AgentLogEntryViewModel : INotifyPropertyChanged {
         private bool isExpanded;
@@ -51,9 +51,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             Id = record.Id;
             IsLookup = record.IsLookup;
-            if (record.Kind == "move") {
-                Title = log.Format("AgentPanel.Log.Moved", record.Title, record.SessionDocument);
-                StatusKind = "moved";
+            if (record.Kind == "add") {
+                Title = log.Format("AgentPanel.Log.Added", record.Title);
+                StatusKind = "added";
                 Summary = AgentLogText.LocalTime(record.ArrivedUtc, "HH:mm:ss");
             }
             else {

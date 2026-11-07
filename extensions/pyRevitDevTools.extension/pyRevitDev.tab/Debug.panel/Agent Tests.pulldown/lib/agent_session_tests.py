@@ -1,7 +1,7 @@
 """Agent sessions: the user's consent in Revit, checked on every model request.
 
-``run_suites`` requires sessions and starts one on the scratch project before
-the modules run. Every test here restores that session when it ends.
+``run_suites`` makes sessions start in the panel and starts one on the scratch
+project before the modules run. Every test here restores that session when it ends.
 """
 
 import agent_harness as harness
@@ -15,7 +15,7 @@ SELF_GRANT_SCRIPT = (
     "    RUNTIME_ASSM, 'PyRevitLabs.PyRevit.Runtime.Agent.AgentSessions')\n"
     "sessions.GetMethod('Pause').Invoke(None, None)\n"
     "result = []\n"
-    "for name, args in (('Resume', None), ('SetRequired', Array[Object]([False]))):\n"
+    "for name, args in (('Resume', None), ('SetSessionStart', Array[Object](['auto']))):\n"
     "    try:\n"
     "        sessions.GetMethod(name).Invoke(None, args)\n"
     "        result.append('allowed')\n"
@@ -43,12 +43,13 @@ class SessionTests(TestCase):
         """Put back the session every test starts from."""
         harness.restore_session()
 
-    def test_the_session_is_bound_to_the_active_scratch_project(self):
-        """The suite's session is active, required, and names its document."""
+    def test_the_session_is_on_the_active_scratch_project(self):
+        """The suite's session is active, started by the user, and names its document."""
         status = harness.session_status()
         self.assertEqual("active", status["state"])
-        self.assertTrue(status["required"])
-        self.assertEqual(harness.session().project.Title, status["document"])
+        self.assertEqual("user", status["start"])
+        self.assertFalse(status["automatic"])
+        self.assertEqual([harness.session().project.Title], harness.session_titles())
 
     def test_ping_and_get_context_report_the_session(self):
         """Clients see the session without asking for it separately."""
@@ -86,11 +87,20 @@ class SessionTests(TestCase):
                 harness.run("result = 1", mode="modify")
         self.assertEqual("session_inactive", raised.exception.code)
 
-    def test_when_sessions_are_optional_requests_pass_without_one(self):
-        """With sessions optional and none started, runs work as they did before sessions."""
+    def test_when_sessions_start_automatically_a_request_starts_one_on_every_document(
+        self,
+    ):
+        """The first request starts a session that covers every open document."""
+        scratch = harness.session()
         harness.end_session()
-        harness.require_sessions(False)
-        self.assertEqual(1, harness.run("result = 1")["result"])
+        harness.set_session_start("auto")
+        other_key = harness.key_of(scratch.other_path)
+        response = harness.run("result = doc.Title", document=other_key)
+        status = harness.session_status()
+        self.assertEqual(scratch.other.Title, response["result"])
+        self.assertTrue(status["automatic"])
+        self.assertIn(scratch.project.Title, harness.session_titles())
+        self.assertIn(scratch.other.Title, harness.session_titles())
 
     def test_a_request_for_another_document_is_refused(self):
         """A run named for, or defaulting to, a document outside the session is refused."""
@@ -140,34 +150,42 @@ class SessionTests(TestCase):
             harness.start_session()
         self.assertEqual("session_active", raised.exception.code)
 
-    def test_run_code_can_not_resume_or_unrequire_its_session(self):
-        """A run may pause its own session, but can't resume it or make sessions optional."""
+    def test_run_code_can_not_resume_its_session_or_make_sessions_start_automatically(
+        self,
+    ):
+        """A run may pause its own session, but can't resume it or loosen how sessions start."""
         response = harness.run(SELF_GRANT_SCRIPT)
         status = harness.session_status()
         self.assertEqual(["refused", "refused"], response["result"])
         self.assertEqual("paused", status["state"])
-        self.assertTrue(status["required"])
+        self.assertEqual("user", status["start"])
 
-    def test_a_moved_session_refuses_the_document_it_left(self):
-        """After a move, the old document's key is refused and the move is reported."""
+    def test_an_added_document_joins_the_session_and_is_reported(self):
+        """Adding a document keeps the session and its first document, and the agent hears of it."""
         scratch = harness.session()
         session_id = harness.session_status()["id"]
-        left_key = harness.key_of(scratch.project_path)
-        scratch.activate(scratch.other_path)
-        harness.move_session()
-        status = harness.session_status()
-        self.assertEqual(session_id, status["id"])
+        project_key = harness.key_of(scratch.project_path)
+        other_key = harness.key_of(scratch.other_path)
+        try:
+            scratch.activate(scratch.other_path)
+            harness.add_document()
+        finally:
+            scratch.activate(scratch.project_path)
+        self.assertEqual(session_id, harness.session_status()["id"])
         self.assertEqual(
-            [scratch.project.Title, scratch.other.Title], status["documents"]
+            [scratch.project.Title, scratch.other.Title], harness.session_titles()
         )
-        with self.assertRaises(AgentRequestError) as raised:
-            harness.run("result = 1", document=left_key)
-        self.assertEqual("document_not_in_session", raised.exception.code)
-        moved = harness.request("get_context")["since_last_call"]["session_moved"]
-        self.assertEqual(scratch.project.Title, moved["from"])
-        self.assertEqual(scratch.other.Title, moved["to"])
+        joined = harness.request("get_context")["since_last_call"]["documents"][
+            "joined"
+        ]
+        self.assertEqual([other_key], [document["key"] for document in joined])
         self.assertEqual(
-            scratch.other.Title, harness.run("result = doc.Title")["result"]
+            scratch.other.Title,
+            harness.run("result = doc.Title", document=other_key)["result"],
+        )
+        self.assertEqual(
+            scratch.project.Title,
+            harness.run("result = doc.Title", document=project_key)["result"],
         )
 
     def test_an_unknown_key_is_refused(self):
@@ -177,46 +195,47 @@ class SessionTests(TestCase):
         self.assertEqual("unknown_document", raised.exception.code)
         self.assertIn("get_context", raised.exception.message)
 
-    def test_while_sessions_are_optional_agents_can_not_end_the_session(self):
-        """Ending it would open every document to agents, so the pipe and run code can't."""
-        harness.require_sessions(False)
+    def test_while_sessions_start_automatically_nothing_can_end_the_session(self):
+        """Ending it would only let the next request start another, so pause is the stop."""
+        harness.set_session_start("auto")
         with self.assertRaises(AgentRequestError) as raised:
             harness.request("end_session")
         self.assertEqual("session_locked", raised.exception.code)
         self.assertEqual("refused", harness.run(END_SCRIPT)["result"])
         self.assertEqual("active", harness.session_status()["state"])
 
-    def test_moving_to_the_document_the_session_is_on_is_refused(self):
-        """The panel decides by title, so the host refuses a move to the same document."""
+    def test_adding_a_document_already_in_the_session_is_refused(self):
+        """The panel decides by title, so the host refuses to add the same document twice."""
         with self.assertRaises(AgentRequestError) as raised:
-            harness.move_session()
-        self.assertEqual("already_bound", raised.exception.code)
+            harness.add_document()
+        self.assertEqual("already_in_session", raised.exception.code)
 
-    def test_a_moved_session_ends_with_its_new_document_only(self):
-        """Closing the document the session left keeps it; closing its new one ends it."""
+    def test_a_session_ends_with_its_last_document(self):
+        """Closing one of the session's documents keeps it; closing the last ends it."""
         scratch = harness.session()
-        left_path = scratch.create_extra("agent-test-move-from.rvt")
-        moved_path = scratch.create_extra("agent-test-move-to.rvt")
+        first_path = scratch.create_extra("agent-test-first.rvt")
+        second_path = scratch.create_extra("agent-test-second.rvt")
         try:
-            scratch.activate(left_path)
-            left = scratch.uiapp.ActiveUIDocument.Document
+            scratch.activate(first_path)
+            first = scratch.uiapp.ActiveUIDocument.Document
             harness.end_session()
             harness.start_session()
-            scratch.activate(moved_path)
-            moved = scratch.uiapp.ActiveUIDocument.Document
-            harness.move_session()
+            scratch.activate(second_path)
+            second = scratch.uiapp.ActiveUIDocument.Document
+            harness.add_document()
         finally:
             scratch.activate(scratch.project_path)
-        left.Close(False)
-        state_after_leaving = harness.session_status()["state"]
-        moved.Close(False)
+        second_title = second.Title
+        first.Close(False)
+        titles_after_first = harness.session_titles()
+        second.Close(False)
         status = harness.session_status()
-        self.assertEqual("active", state_after_leaving)
+        self.assertEqual([second_title], titles_after_first)
         self.assertEqual("inactive", status["state"])
         self.assertEqual("document_closed", status["last_ended"]["reason"])
 
-    def test_closing_the_bound_document_ends_the_session(self):
-        """A session ends with its document, and the host says why."""
+    def test_closing_the_sessions_only_document_ends_the_session(self):
+        """A session ends with its only document, and the host says why."""
         scratch = harness.session()
         path = scratch.create_extra("agent-test-closing.rvt")
         scratch.activate(path)

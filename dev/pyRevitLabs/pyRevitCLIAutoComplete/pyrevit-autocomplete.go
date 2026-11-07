@@ -1024,15 +1024,15 @@ func main() {
 									"--log": complete.PredictNothing,
 								},
 							},
-							"requiresession": complete.Command{
+							"sessionstart": complete.Command{
 								Sub: complete.Commands{
-									"yes": complete.Command{
+									"user": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,
 										},
 									},
-									"no": complete.Command{
+									"auto": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,

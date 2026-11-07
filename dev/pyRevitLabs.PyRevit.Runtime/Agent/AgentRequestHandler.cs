@@ -23,8 +23,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <see cref="InvokeOnMainThread"/> is the session gate. It checks the session when the
     /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
     /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
-    /// The pipe can request and pause a session, and end one while sessions are required, but
-    /// never start or resume one.
+    /// The pipe can request and pause a session, and end one the user started, but never start
+    /// or resume one, or add a document to it. While sessions start automatically, Revit starts
+    /// one when it picks up a request.
     /// A model request names the document it works in with <c>document</c>, a key from
     /// <c>get_context</c>; without one it works in the active document. The key is resolved on
     /// the main thread, and the gate refuses a document the session isn't on.
@@ -228,7 +229,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
                     AgentHost.Activity.Start(record, DateTime.UtcNow);
                     var target = namesDocument ? ResolveDocument(app, documentKey) : null;
-                    AgentSessions.CheckOnDequeue(target);
+                    AgentSessions.CheckOnDequeue(app, target);
                     if (runMode.HasValue) {
                         AgentHost.RefreshConfigIfChanged();
                         AgentPermissions.CheckRun(runMode.Value, AgentRunService.ReadPolicy());

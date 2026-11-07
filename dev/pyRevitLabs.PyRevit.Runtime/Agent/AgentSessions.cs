@@ -12,46 +12,54 @@ using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// In-process controls of the agent session: the user's consent for agents to work on one
-    /// document, given in Revit.
+    /// In-process controls of the agent session: the user's consent for agents to work in a set of
+    /// documents, given in Revit, or given once for every document with
+    /// <c>[agent] session_start = auto</c>.
     /// </summary>
     /// <remarks>
-    /// Only code running inside Revit can start or resume a session. The pipe can only request and
-    /// pause one, and end one while sessions are required, so an agent can't grant itself access by
-    /// running the CLI. This guards against well-behaved agents acting unseen, not against a
-    /// hostile script: any code inside Revit can call these methods too, except while an agent run
-    /// executes.
-    /// The bound document is held by reference and compared with <see cref="AgentDocuments.IsSame"/>,
-    /// never by title or path. Closing it ends the session; after a move, closing the document the
-    /// session left doesn't. Saving it under another name changes the session's title.
+    /// Only code running inside Revit can start or resume a session, or add a document to it. The
+    /// pipe can only request and pause one, and end one the user started, so an agent can't grant
+    /// itself access by running the CLI. This guards against well-behaved agents acting unseen, not
+    /// against a hostile script: any code inside Revit can call these methods too, except while an
+    /// agent run executes.
+    /// Session documents are held by reference and compared with <see cref="AgentDocuments.IsSame"/>,
+    /// never by title or path. Closing one removes it, and closing the last ends the session.
+    /// Saving one under another name changes its title. A session that started automatically
+    /// takes in every document opened while it is open.
     /// </remarks>
     public static class AgentSessions {
+        public const string StartUser = "user";
+        public const string StartAuto = "auto";
+
         internal static readonly AgentSessionTracker Tracker = new AgentSessionTracker();
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly object sync = new object();
         private static bool eventsAttached;
-        private static object closingDocument;
+        private static Document closingDocument;
         private static int closingDocumentId;
 
         /// <summary>
-        /// Whether model requests need an active session. Set from <c>[agent] require_session</c>
-        /// each time pyRevit loads, so editing the config mid-session changes nothing until then.
+        /// Whether the first model request starts a session on every open document. Set from
+        /// <c>[agent] session_start</c> each time pyRevit loads, so editing the config mid-session
+        /// changes nothing until then.
         /// </summary>
-        public static bool Required => Tracker.Required;
+        public static bool StartsAutomatically => Tracker.StartMode == AgentSessionStart.Auto;
 
         /// <summary>
-        /// Requires a session, or stops requiring one, until pyRevit loads again.
+        /// Sets how sessions start, <see cref="StartUser"/> or <see cref="StartAuto"/>, until
+        /// pyRevit loads again.
         /// </summary>
+        /// <exception cref="ArgumentException">Any other value.</exception>
         /// <exception cref="AgentException">
-        /// <c>session_locked</c> when making sessions optional while an agent run executes.
+        /// <c>session_locked</c> when making sessions start automatically while an agent run executes.
         /// </exception>
-        public static void SetRequired(bool required) {
-            Tracker.SetRequired(required);
+        public static void SetSessionStart(string mode) {
+            Tracker.SetStartMode(ParseStart(mode));
         }
 
         /// <summary>
-        /// Starts a session bound to the active document.
+        /// Starts a session on the active document.
         /// </summary>
         /// <returns>The new session's id.</returns>
         /// <exception cref="InvalidOperationException">Called off the Revit main thread.</exception>
@@ -68,34 +76,33 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("no_active_document", "Open the document the agent should work on, then start the session.");
             WatchDocuments(app.Application);
             AgentAwarenessWatch.Attach(app);
-            var id = Tracker.Start(doc, doc.Title, DateTime.UtcNow);
+            var id = Tracker.Start(new[] { SessionDocument(doc) }, DateTime.UtcNow);
             AgentAwarenessWatch.Restart(app);
             return id;
         }
 
         /// <summary>
-        /// Moves the open session to the active document. Requests that name the document it
-        /// left are refused from then on, and the agent's next summary of changes reports the move.
+        /// Adds the active document to the open session, and the agent's next summary of changes
+        /// reports it.
         /// </summary>
         /// <exception cref="InvalidOperationException">Called off the Revit main thread.</exception>
         /// <exception cref="AgentException">
-        /// <c>no_active_document</c>; <c>already_bound</c> when the session is on the active
-        /// document; <c>session_inactive</c> when there is no session; <c>session_locked</c> while
-        /// an agent run executes.
+        /// <c>no_active_document</c>; <c>already_in_session</c> when the session has the active
+        /// document; <c>session_inactive</c> when there is no session; <c>session_locked</c> while an
+        /// agent run executes.
         /// </exception>
-        public static void Move(UIApplication app) {
+        public static void Add(UIApplication app) {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
             if (!ScriptExecutor.IsOnMainThread)
-                throw new InvalidOperationException("Agent sessions must be moved on the Revit main thread.");
+                throw new InvalidOperationException("Documents must be added to agent sessions on the Revit main thread.");
             var doc = app.ActiveUIDocument?.Document
-                ?? throw new AgentException("no_active_document", "Open the document the agent should move to, then move the session.");
-            if (Tracker.BoundDocument is Document bound && AgentDocuments.IsSame(bound, doc))
-                throw new AgentException("already_bound", $"The agent session is already on '{doc.Title}'.");
-            var left = Tracker.Move(doc, doc.Title, DateTime.UtcNow);
-            AgentAwarenessWatch.Restart(app);
-            AgentAwarenessWatch.Awareness.RecordMove(left, doc.Title);
-            AgentHost.Activity.RecordMove(left, Tracker.CurrentSession, DateTime.UtcNow);
+                ?? throw new AgentException("no_active_document", "Open the document to add, then add it to the session.");
+            var added = SessionDocument(doc);
+            if (Tracker.StartedAutomatically || !Tracker.AddDocument(added, byUser: true))
+                throw new AgentException("already_in_session", $"'{doc.Title}' is already part of the agent session.");
+            AgentAwarenessWatch.Awareness.RecordJoined(added.Key, added.Title);
+            AgentHost.Activity.RecordAdded(added.Title, Tracker.CurrentSession, DateTime.UtcNow);
         }
 
         /// <summary>
@@ -115,8 +122,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <exception cref="AgentException">
-        /// <c>session_locked</c> while an agent run executes and sessions aren't required, since
-        /// ending the session would then let agents work in any document.
+        /// <c>session_locked</c> while sessions start automatically: Pause is the way to stop agents then.
         /// </exception>
         public static void End() {
             Tracker.EndInRevit(DateTime.UtcNow);
@@ -139,16 +145,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.PauseForAgent();
         }
 
-        /// <exception cref="AgentException"><c>session_locked</c> while sessions aren't required.</exception>
+        /// <exception cref="AgentException"><c>session_locked</c> while sessions start automatically.</exception>
         internal static void EndByClient() {
             Tracker.EndForAgent(DateTime.UtcNow);
         }
 
         /// <summary>
-        /// Pauses the session when the agent panel is hidden, whether the user closed it or Revit
-        /// hid it, for example on its Home screen. The user resumes it in the panel.
+        /// Pauses a session the user started when the agent panel is hidden, whether the user closed
+        /// it or Revit hid it, for example on its Home screen. The user resumes it in the panel. A
+        /// session that started automatically carries on, so the panel can be opened to watch and
+        /// closed again.
         /// </summary>
         internal static void PauseForPanelHidden() {
+            if (Tracker.StartedAutomatically)
+                return;
             Tracker.PauseByHost(AgentSessionPauseCauses.PanelHidden, "the agent panel in Revit was closed or hidden.");
         }
 
@@ -162,7 +172,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var names = string.Join(", ", documents.Where(name => !string.IsNullOrEmpty(name)).Distinct().Select(name => "'" + name + "'"));
             Tracker.PauseByHost(
                 AgentSessionPauseCauses.OtherDocument,
-                $"the last run changed another open document ({names}), and agents may change only the session's document.");
+                $"the last run changed another open document ({names}), and a run may change only the document it names.");
             return Tracker.State == AgentSessionState.Paused;
         }
 
@@ -171,20 +181,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Applies <c>[agent] require_session</c>. Called on every pyRevit load while the host is
+        /// Applies <c>[agent] session_start</c>. Called on every pyRevit load while the host is
         /// enabled.
         /// </summary>
         /// <remarks>
-        /// A reload from inside an agent run can't make sessions optional. The refusal is logged
-        /// and never thrown, so the rest of the host's configuration still runs.
+        /// A reload from inside an agent run can't make sessions start automatically. The refusal
+        /// is logged and never thrown, so the rest of the host's configuration still runs.
         /// </remarks>
-        internal static void Configure(Application app, bool required) {
+        internal static void Configure(Application app, string start) {
             WatchDocuments(app);
             try {
-                Tracker.SetRequired(required);
+                Tracker.SetStartMode(ParseStart(start));
             }
             catch (AgentException ex) when (ex.Code == "session_locked") {
-                logger.Warn("Agent sessions stay required until pyRevit reloads outside an agent run: {0}", ex.Message);
+                logger.Warn("Agent sessions keep starting in the agent panel until pyRevit reloads outside an agent run: {0}", ex.Message);
             }
         }
 
@@ -195,22 +205,70 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Tracker.CheckOnArrival();
         }
 
+        /// <summary>
+        /// The gate when Revit picks a request up. Starts a session on every open document first
+        /// when sessions start automatically and none is open, and forgets session documents that
+        /// closed without Revit saying so.
+        /// </summary>
         /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
         /// <param name="target">The document the request names, or null when it names none.</param>
         /// <exception cref="AgentException">
         /// <c>paused_by_user</c>, <c>paused_by_host</c>, <c>paused_by_agent</c>, <c>session_inactive</c> or
         /// <c>document_not_in_session</c>.
         /// </exception>
-        internal static void CheckOnDequeue(Document target) {
-            if (Tracker.BoundDocument is Document bound && !bound.IsValidObject)
-                Tracker.EndIfBoundTo(bound, AgentSessionEndReasons.DocumentClosed, DateTime.UtcNow);
+        internal static void CheckOnDequeue(UIApplication app, Document target) {
+            if (Tracker.StartMode == AgentSessionStart.Auto && Tracker.State == AgentSessionState.Inactive) {
+                WatchDocuments(app.Application);
+                AgentAwarenessWatch.Attach(app);
+                if (Tracker.StartAutomatically(OpenDocuments(app.Application), DateTime.UtcNow))
+                    AgentAwarenessWatch.Restart(app);
+            }
+            foreach (var closed in Tracker.Documents.Where(entry => !IsOpen(entry.Document as Document)))
+                Leave(closed.Document as Document, closed);
             Tracker.CheckOnDequeue(candidate => AgentDocuments.IsSame(candidate as Document, target), target?.Title);
+        }
+
+        private static AgentSessionStart ParseStart(string mode) {
+            switch ((mode ?? string.Empty).Trim().ToLowerInvariant()) {
+                case StartUser:
+                    return AgentSessionStart.User;
+                case StartAuto:
+                    return AgentSessionStart.Auto;
+                default:
+                    throw new ArgumentException($"Agent sessions start '{StartUser}' or '{StartAuto}', not '{mode}'.", nameof(mode));
+            }
+        }
+
+        private static AgentSessionDocument SessionDocument(Document doc) {
+            return new AgentSessionDocument(doc, AgentDocuments.Keys.KeyOf(doc), doc.Title);
+        }
+
+        private static IEnumerable<AgentSessionDocument> OpenDocuments(Application app) {
+            return app.Documents.Cast<Document>().Where(doc => !doc.IsLinked).Select(SessionDocument).ToList();
+        }
+
+        private static bool IsOpen(Document doc) {
+            try {
+                return doc != null && doc.IsValidObject;
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
+        private static void Leave(Document closed, AgentSessionDocument entry) {
+            var removed = Tracker.RemoveDocument(
+                candidate => ReferenceEquals(candidate, closed), AgentSessionEndReasons.DocumentClosed, DateTime.UtcNow);
+            if (removed != null)
+                AgentAwarenessWatch.Awareness.RecordLeft(entry.Key, entry.Title);
         }
 
         private static void WatchDocuments(Application app) {
             lock (sync) {
                 if (eventsAttached)
                     return;
+                app.DocumentOpened += OnDocumentOpened;
+                app.DocumentCreated += OnDocumentCreated;
                 app.DocumentClosing += OnDocumentClosing;
                 app.DocumentClosed += OnDocumentClosed;
                 app.DocumentSavedAs += OnDocumentSavedAs;
@@ -218,33 +276,53 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        private static void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            if (e.Status == RevitAPIEventStatus.Succeeded)
+                JoinAutomaticSession(e.Document);
+        }
+
+        private static void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            if (e.Status == RevitAPIEventStatus.Succeeded)
+                JoinAutomaticSession(e.Document);
+        }
+
+        private static void JoinAutomaticSession(Document doc) {
+            if (doc == null || doc.IsLinked || !Tracker.StartedAutomatically)
+                return;
+            var joined = SessionDocument(doc);
+            if (Tracker.AddDocument(joined, byUser: false))
+                AgentAwarenessWatch.Awareness.RecordJoined(joined.Key, joined.Title);
+        }
+
         private static void OnDocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
             if (e.Status != RevitAPIEventStatus.Succeeded)
                 return;
-            if (Tracker.BoundDocument is Document bound && AgentDocuments.IsSame(bound, e.Document))
-                Tracker.Retitle(e.Document.Title);
+            Tracker.Retitle(candidate => AgentDocuments.IsSame(candidate as Document, e.Document), e.Document.Title);
         }
 
         private static void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
-            var bound = Tracker.BoundDocument as Document;
-            if (bound == null || !AgentDocuments.IsSame(bound, e.Document))
+            var entry = Tracker.Documents.FirstOrDefault(candidate => AgentDocuments.IsSame(candidate.Document as Document, e.Document));
+            if (entry == null)
                 return;
             lock (sync) {
-                closingDocument = bound;
+                closingDocument = entry.Document as Document;
                 closingDocumentId = e.DocumentId;
             }
         }
 
         private static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
-            object closed;
+            Document closed;
             lock (sync) {
                 if (closingDocument == null || e.DocumentId != closingDocumentId)
                     return;
                 closed = closingDocument;
                 closingDocument = null;
             }
-            if (e.Status == RevitAPIEventStatus.Succeeded)
-                Tracker.EndIfBoundTo(closed, AgentSessionEndReasons.DocumentClosed, DateTime.UtcNow);
+            if (e.Status != RevitAPIEventStatus.Succeeded)
+                return;
+            var entry = Tracker.Documents.FirstOrDefault(candidate => ReferenceEquals(candidate.Document, closed));
+            if (entry != null)
+                Leave(closed, entry);
         }
     }
 }

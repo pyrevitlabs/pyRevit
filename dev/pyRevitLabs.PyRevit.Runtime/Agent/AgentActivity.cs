@@ -226,15 +226,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Records that the user moved the session, as a marker in the history between the
-        /// requests made in each document. Like a lookup, it never becomes the last request.
+        /// Records that the user added a document to the session, as a marker in the history. Like
+        /// a lookup, it never becomes the last request.
         /// </summary>
-        /// <param name="from">The document the session left.</param>
-        /// <param name="session">The session after the move.</param>
-        public void RecordMove(string from, (string Id, string Document) session, DateTime nowUtc) {
+        /// <param name="document">The title of the document added.</param>
+        /// <param name="session">The session after the add.</param>
+        public void RecordAdded(string document, (string Id, string Document) session, DateTime nowUtc) {
             lock (sync) {
-                var record = new AgentRequestRecord(++nextId, "move", from, null, session.Id, session.Document, nowUtc);
-                AddToHistory(record.AsFinished("moved", nowUtc, null));
+                var record = new AgentRequestRecord(++nextId, "add", document, null, session.Id, session.Document, nowUtc);
+                AddToHistory(record.AsFinished("added", nowUtc, null));
             }
             OnChanged();
         }

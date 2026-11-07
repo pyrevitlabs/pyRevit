@@ -391,24 +391,28 @@ namespace pyRevitLabs.PyRevit {
         }
 
         /// <summary>
-        /// Whether agent requests that read or change the model need a session the user started
-        /// in Revit. The host reads it only when pyRevit loads, so a change applies after the next
-        /// reload.
+        /// How agent sessions start: <c>user</c> when the user starts one in the agent panel, or
+        /// <c>auto</c> when an agent's first model request starts one on every open document. The
+        /// host reads it only when pyRevit loads, so a change applies after the next reload.
+        /// Unknown values read as <c>user</c>, so a typo never opens the model to agents.
         /// </summary>
-        public static bool GetAgentRequireSession() {
+        public static string GetAgentSessionStart() {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.GetSectionKeyValueOrDefault(
+            var start = cfg.GetSectionKeyValueOrDefault(
                 PyRevitConsts.ConfigsAgentSection,
-                PyRevitConsts.ConfigsAgentRequireSessionKey,
-                PyRevitConsts.ConfigsAgentRequireSessionDefault);
+                PyRevitConsts.ConfigsAgentSessionStartKey,
+                PyRevitConsts.ConfigsAgentSessionStartDefault);
+            return string.Equals(start?.Trim(), PyRevitConsts.ConfigsAgentSessionStartAuto, StringComparison.OrdinalIgnoreCase)
+                ? PyRevitConsts.ConfigsAgentSessionStartAuto
+                : PyRevitConsts.ConfigsAgentSessionStartUser;
         }
 
-        public static void SetAgentRequireSession(bool state) {
+        public static void SetAgentSessionStart(string start) {
+            if (start != PyRevitConsts.ConfigsAgentSessionStartUser && start != PyRevitConsts.ConfigsAgentSessionStartAuto)
+                throw new PyRevitException($"Unknown agent session start \"{start}\"");
+
             IConfigurationService cfg = GetConfigFile();
-            cfg.SetSectionKeyValue(
-                PyRevitConsts.ConfigsAgentSection,
-                PyRevitConsts.ConfigsAgentRequireSessionKey,
-                state);
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentSessionStartKey, start);
         }
 
         /// <summary>

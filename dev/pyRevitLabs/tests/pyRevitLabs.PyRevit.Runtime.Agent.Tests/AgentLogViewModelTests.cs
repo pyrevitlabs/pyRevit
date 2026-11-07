@@ -20,7 +20,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Log.WithApproval"] = "{0} | {1}",
             ["AgentPanel.Log.Approval.user"] = "you decided",
             ["AgentPanel.Log.Reason"] = "Why: {0}",
-            ["AgentPanel.Log.Moved"] = "moved {0} -> {1}",
+            ["AgentPanel.Log.Added"] = "added {0}",
             ["AgentPanel.Log.Changes"] = "+{0} ~{1} -{2}",
             ["AgentPanel.Log.Flag.OtherDocument"] = "other document",
             ["AgentPanel.Log.Flag.CloseWithoutSaving"] = "close {0} unsaved",
@@ -93,22 +93,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AMoveShowsAsAMarkerAndTheHeaderNamesTheCurrentDocument() {
+        public void AnAddedDocumentShowsAsAMarkerAndTheHeaderNamesTheSessionsDocuments() {
             Finish("query", "Before", "s1");
             log.Update(activity.History);
             var group = Assert.Single(log.Groups);
             Assert.Equal("Tower.rvt from " + Local(Now, "HH:mm"), group.Header);
 
-            activity.RecordMove("Tower.rvt", ("s1", "Annex.rvt"), Now.AddMinutes(5));
-            var after = activity.Arrive("query", "After", null, ("s1", "Annex.rvt"), Now.AddMinutes(6));
+            activity.RecordAdded("Annex.rvt", ("s1", "Tower.rvt, Annex.rvt"), Now.AddMinutes(5));
+            var after = activity.Arrive("query", "After", null, ("s1", "Tower.rvt, Annex.rvt"), Now.AddMinutes(6));
             activity.Finish(after, "ok", Now.AddMinutes(6));
             log.Update(activity.History);
 
             Assert.Same(group, Assert.Single(log.Groups));
-            Assert.Equal("Annex.rvt from " + Local(Now, "HH:mm"), group.Header);
-            Assert.Equal(new[] { "After", "moved Tower.rvt -> Annex.rvt", "Before" }, group.Entries.Select(entry => entry.Title));
+            Assert.Equal("Tower.rvt, Annex.rvt from " + Local(Now, "HH:mm"), group.Header);
+            Assert.Equal(new[] { "After", "added Annex.rvt", "Before" }, group.Entries.Select(entry => entry.Title));
             var marker = group.Entries[1];
-            Assert.Equal("moved", marker.StatusKind);
+            Assert.Equal("added", marker.StatusKind);
             Assert.Equal(Local(Now.AddMinutes(5), "HH:mm:ss"), marker.Summary);
             Assert.True(marker.IsVisible);
         }
