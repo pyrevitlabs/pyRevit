@@ -38,5 +38,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.Equal("Door \U0001F6AA fix Added: 0 x y z", request.Title);
         }
+
+        [Fact]
+        public void LongTitlesAreCutWithoutSplittingACharacter() {
+            var request = AgentRunRequest.FromJson(Run(title: new string('a', 198) + "\U0001F6AA" + new string('b', 500)));
+
+            Assert.Equal(new string('a', 198) + "…", request.Title);
+        }
     }
 }

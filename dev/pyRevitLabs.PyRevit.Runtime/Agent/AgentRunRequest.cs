@@ -19,6 +19,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     internal sealed class AgentRunRequest {
         private static readonly Regex TitleBreaks = new Regex(@"[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+");
+        private const int MaxTitleLength = 200;
 
         public string Script { get; private set; }
 
@@ -27,7 +28,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         /// <remarks>
         /// Invariant: holds no line breaks or other control and format characters, so a title
-        /// can't add lines that pass for the change counts in the prompt.
+        /// can't add lines that pass for the change counts in the prompt, and is at most
+        /// 200 characters, so it can't push the rest of the prompt off screen.
         /// </remarks>
         public string Title { get; private set; }
         public AgentRunMode Mode { get; private set; }
@@ -80,7 +82,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
-                Title = TitleBreaks.Replace(parameters.Value<string>("title") ?? "Agent run", " ").Trim(),
+                Title = Shorten(TitleBreaks.Replace(parameters.Value<string>("title") ?? "Agent run", " ").Trim()),
                 Mode = ParseMode(parameters.Value<string>("mode")),
                 Engine = ParseEngine(parameters.Value<string>("engine")),
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
@@ -113,6 +115,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["timeout_s"] = TimeoutSeconds,
                 ["request_id"] = RequestId,
             };
+        }
+
+        private static string Shorten(string title) {
+            if (title.Length <= MaxTitleLength)
+                return title;
+            var length = MaxTitleLength - 1;
+            if (char.IsHighSurrogate(title[length - 1]))
+                length--;
+            return title.Substring(0, length) + "…";
         }
 
         private static AgentRunMode ParseMode(string mode) {
