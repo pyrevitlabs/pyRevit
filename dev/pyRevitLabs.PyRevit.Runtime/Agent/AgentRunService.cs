@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using Autodesk.Revit.DB;
@@ -28,11 +29,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// stricter of the two (<c>readonly</c> over <c>ask</c> over <c>auto</c>) decides. A switch
     /// to <c>readonly</c> while a run was queued or running still stops its commit, and a script
     /// that rewrites the policy can't loosen it for its own run.</item>
+    /// <item>A looser policy than the one in force applies only after the user confirms it in
+    /// Revit, so a script that rewrites the policy can't loosen it for later runs either. Only
+    /// a modify run asks; a query or dry run never waits on the prompt.</item>
     /// <item>A script error always rolls back.</item>
     /// <item><c>[agent] reckless</c> is read once before the script starts and only turns off
     /// the Python runner's in-script checks (timeout, per-line transaction tracking). Every
     /// guarantee in this list still holds for a reckless run, which the response marks with
-    /// <c>"reckless": true</c>.</item>
+    /// <c>"reckless": true</c>. Turning it on applies only after the user confirms it in Revit,
+    /// like a looser policy, so a script that rewrites the config can't make later runs
+    /// reckless. Unlike the policy prompt, any run mode asks, since reckless also affects
+    /// queries and dry runs.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
@@ -60,6 +67,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly)
                 return AgentPolicy.ReadOnly;
             return policy == PyRevitConsts.ConfigsAgentPolicyAuto ? AgentPolicy.Auto : AgentPolicy.Ask;
+        }
+
+        private static readonly AgentPolicyInForce policyInForce = new AgentPolicyInForce();
+
+        /// <summary>
+        /// The policy the next run starts under unless the user confirms a looser one; never
+        /// prompts. Main thread only.
+        /// </summary>
+        /// <remarks>
+        /// Records a stricter configured policy, like every other place the host acts on one,
+        /// so a policy reported as in force can't be loosened later without confirmation.
+        /// </remarks>
+        internal static string PolicyNameInForce() {
+            return AgentApproval.Name(policyInForce.Tighten(ReadPolicy()));
+        }
+
+        private static readonly AgentRecklessInForce recklessInForce = new AgentRecklessInForce();
+
+        /// <summary>
+        /// Whether the next run is reckless unless the user confirms turning it on; never
+        /// prompts. Main thread only.
+        /// </summary>
+        internal static bool RecklessInForce() {
+            return recklessInForce.Tighten(PyRevitConfigs.GetAgentReckless());
         }
 
         private static AgentRunVerdict CarryOut(
@@ -101,7 +132,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     Commit(guard, uidoc.Document, request, runId);
                     return verdict;
                 case AgentRunVerdict.AskUser:
-                    guard.DisarmDialogCapture();
                     timings.Lap("decide");
                     AgentHost.AwaitTabApproval(highlight);
                     var approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
@@ -123,7 +153,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
         }
 
+        /// <remarks>
+        /// Invariant: runs never nest. A script that calls <see cref="AgentHost.HandleRequest"/>
+        /// would otherwise start a run inside its own guard, whose rollback undoes a change the
+        /// inner run reports as kept.
+        /// </remarks>
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
+            if (runInProgress)
+                throw new AgentException("nested_run", "An agent run can't start from inside another agent run.");
+            runInProgress = true;
+            try {
+                return ExecuteRun(app, request);
+            }
+            finally {
+                runInProgress = false;
+            }
+        }
+
+        private static bool runInProgress;
+
+        private static JToken ExecuteRun(UIApplication app, AgentRunRequest request) {
             var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
@@ -136,6 +185,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc != null && doc.IsModifiable)
                 throw AgentException.NotRun("Another transaction is open in the active document.");
 
+            AgentHost.RefreshConfigIfChanged();
+            var policyAtStart = request.Mode == AgentRunMode.Modify
+                ? policyInForce.Start(ReadPolicy(),
+                    (inForce, configured) => AgentApproval.ConfirmLoosening(app.MainWindowHandle, inForce, configured))
+                : policyInForce.Tighten(ReadPolicy());
+            if (request.Mode == AgentRunMode.Modify && policyAtStart == AgentPolicy.ReadOnly)
+                throw new AgentException(
+                    "policy_readonly",
+                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+            var reckless = recklessInForce.Start(PyRevitConfigs.GetAgentReckless(),
+                (inForce, configured) => AgentApproval.ConfirmReckless(app.MainWindowHandle));
+
             var highlight = AgentHost.BeginTabHighlight(app, doc, request.Title);
             try {
                 var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
@@ -146,10 +207,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
                 if (lostBefore != null)
                     warnings.Add(lostBefore);
-
-                AgentHost.RefreshConfigIfChanged();
-                var policyAtStart = ReadPolicy();
-                var reckless = PyRevitConfigs.GetAgentReckless();
 
                 var stopwatch = Stopwatch.StartNew();
                 var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
@@ -196,7 +253,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
                             ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
                             HasChanges = !guard.Changes.IsEmpty,
-                            Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
+                            Policy = AgentRunDecision.Stricter(policyAtStart, policyInForce.Tighten(ReadPolicy())),
                         });
                         timings.Lap("decide");
                         verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
@@ -395,28 +452,44 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// selected and temporarily isolated in the live active view while the user decides.
     /// Invariant: the preview never outlives the prompt. Isolation is switched off again
     /// before this returns, so a kept change set never leaves the view isolated.
+    /// Important: the prompt is a native Windows message box, not a Revit <c>TaskDialog</c>.
+    /// Revit raises <c>DialogBoxShowing</c> for a <c>TaskDialog</c>, so a handler the script
+    /// subscribed could answer the prompt for the user.
     /// </remarks>
     internal static class AgentApproval {
         private const int MaxListedCategories = 15;
+        private const uint YesNoQuestionDefaultNo = 0x4 | 0x20 | 0x100;
+        private const int Yes = 6;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int MessageBox(IntPtr owner, string text, string caption, uint type);
+
+        public static bool ConfirmLoosening(IntPtr owner, AgentPolicy inForce, AgentPolicy configured) {
+            var text = string.Format(
+                "The pyRevit agent policy changed from '{0}' to '{1}'.{2}{2}"
+                + "Allow agents to work under '{1}'? No keeps '{0}' until Revit restarts.",
+                Name(inForce), Name(configured), Environment.NewLine);
+            return MessageBox(owner, text, "pyRevit Agent policy", YesNoQuestionDefaultNo) == Yes;
+        }
+
+        public static bool ConfirmReckless(IntPtr owner) {
+            var text = "pyRevit agent reckless mode was turned on." + Environment.NewLine + Environment.NewLine
+                + "Reckless runs have no timeout and no in-script transaction checks. "
+                + "Allow agents to run reckless? No keeps it off until Revit restarts or the setting changes again.";
+            return MessageBox(owner, text, "pyRevit Agent reckless mode", YesNoQuestionDefaultNo) == Yes;
+        }
+
+        internal static string Name(AgentPolicy policy) => policy.ToString().ToLowerInvariant();
 
         public static bool Ask(UIDocument uidoc, string title, AgentChangeSet changeSet, JObject changes, JArray failures) {
             var previousSelection = uidoc.Selection.GetElementIds();
             var preview = AgentViewPreview.Show(uidoc, changeSet.Touched);
 
-            var dialog = new TaskDialog("pyRevit Agent") {
-                MainInstruction = "An agent wants to modify the model",
-                MainContent = BuildSummary(uidoc.Document.Title, title, changes, failures, preview.Description),
-                ExpandedContent = changes.ToString(Formatting.Indented),
-                CommonButtons = TaskDialogCommonButtons.None,
-                AllowCancellation = true,
-            };
-            dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Keep these changes",
-                "Commit them as a single undoable operation.");
-            dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Discard these changes",
-                "Roll the model back to its state before the run.");
-            dialog.DefaultButton = TaskDialogResult.CommandLink2;
-
-            var approved = dialog.Show() == TaskDialogResult.CommandLink1;
+            var text = "An agent wants to modify the model." + Environment.NewLine + Environment.NewLine
+                + BuildSummary(uidoc.Document.Title, title, changes, failures, preview.Description) + Environment.NewLine + Environment.NewLine
+                + "Keep these changes? Yes commits them as a single undoable operation. "
+                + "No rolls the model back to its state before the run.";
+            var approved = MessageBox(uidoc.Application.MainWindowHandle, text, "pyRevit Agent", YesNoQuestionDefaultNo) == Yes;
             try {
                 preview.End();
             }
@@ -435,12 +508,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static string BuildSummary(string documentTitle, string title, JObject changes, JArray failures, string previewDescription) {
             var summary = new StringBuilder();
             summary.AppendLine("Document: " + documentTitle);
-            summary.AppendLine("Operation: " + title);
             summary.AppendLine(string.Format(
                 "Added: {0}   Modified: {1}   Deleted: {2}",
                 changes.Value<int>("added_count"),
                 changes.Value<int>("modified_count"),
                 changes.Value<int>("deleted_count")));
+            summary.AppendLine("Operation: " + title);
 
             var byCategory = changes["by_category"] as JObject;
             if (byCategory != null && byCategory.Count > 0) {
