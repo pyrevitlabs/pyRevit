@@ -90,6 +90,7 @@ namespace PyRevitLoader
                 // Load the session directly through the C# session manager. The Python
                 // pre/post-load services are driven from within LoadSession, so Revit
                 // startup no longer bootstraps an IronPython engine to reach the loader.
+                UiHostIntegration.Start(LoaderPath);
                 var result = LoadSessionInternal(
                     firstLoad: true,
                     startTimestamp: startupTimestamp,
@@ -101,12 +102,14 @@ namespace PyRevitLoader
                 }
                 else
                 {
+                    UiHostIntegration.Stop();
                     DisposeThemeChangeMonitor();
                 }
                 return result;
             }
             catch (Exception ex)
             {
+                UiHostIntegration.Stop();
                 DisposeThemeChangeMonitor();
                 TaskDialog.Show("Error Loading pyRevit Session", ex.ToString());
                 return Result.Failed;
@@ -240,6 +243,7 @@ namespace PyRevitLoader
 
         Result IExternalApplication.OnShutdown(UIControlledApplication application)
         {
+            UiHostIntegration.Stop();
             DisposeThemeChangeMonitor();
             // FIXME: deallocate the python shell...
             return Result.Succeeded;
