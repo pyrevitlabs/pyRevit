@@ -105,7 +105,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `list_revit_instances` | no | Running Revit sessions with the agent host |
 | `get_context` | no | Revit and pyRevit versions, agent policy (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
-| `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
+| `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums. Takes `name`, or `query` as an alias to match `lookup_pyrevit_api` |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there). Saved under `%APPDATA%\pyRevit\agent\captures`. |
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
@@ -126,7 +126,10 @@ things.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result`, `output`, and only the non-empty change
-set, failures, dialogs and blocked operations. The full record stays available through
+set, failures, dialogs and blocked operations. The change set keeps counts, `by_category`,
+`added_ids`, `added_families` (id, category, name and class of the families and types
+found among all added elements), `modified` (the same fields) and `deleted_ids`, each
+capped at 20 entries. The full record, with up to 50 of each, stays available through
 `get_run`. `AttributeError` and `TypeError` failures carry a `hint` that names the
 `lookup_revit_api` call to make, for example `'Collector' does not exist in
 Autodesk.Revit.DB` or `check the overloads of 'FilteredElementCollector.OfCategory'`.
@@ -274,13 +277,25 @@ Rules the host enforces:
   tracebacks still match the submitted source. On CPython the watchdog also raises the
   timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
   modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
-  only stopped once the call returns. A single blocking call, such as a long Revit API call
-  or `time.sleep`, can't be interrupted either; the run fails with `timeout` once it returns.
-  When that call was the script's last, the error says so and carries no traceback.
+  only stopped once the call returns. A single blocking call, such as a long Revit API call,
+  `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
+  interrupted on any engine; the run fails with `timeout` once it returns. When that call
+  was the script's last, the error says the limit passed inside a call that could not be
+  interrupted and carries no traceback. If such a call is still blocking 30 seconds after
+  the deadline, the request fails with `run_hung` (outcome `unknown`, plus the run's
+  `run_id` and `request_id`) so the caller stops waiting. The run itself keeps Revit busy
+  until the call returns, then ends and is recorded as usual with that `timeout`, so look
+  it up with `get_run` before sending it again; meanwhile later requests fail with
+  `revit_busy`, and the message says an earlier run is stuck past its time limit. Time spent
+  waiting for approval doesn't count.
 - The runner compiles the script with every bare `except` and `except BaseException`
-  narrowed to `except Exception`, so a script can't swallow its own timeout, and can't catch
-  `KeyboardInterrupt` or `SystemExit` that way. A script that suppresses the timeout some
-  other way, such as through an alias, is stopped again at its next loop header. On
+  (also spelled as an attribute, such as `except builtins.BaseException`) narrowed to
+  `except Exception`, so a script can't swallow its own timeout, and can't catch
+  `KeyboardInterrupt` or `SystemExit` that way. If a handler can't be rewritten in the
+  source, the run compiles the narrowed syntax tree instead, at the cost of line numbers,
+  rather than keep the broad handler. A script that suppresses the timeout some
+  other way, such as through an alias, `except tuple(...)`, a library's bare `except`, or
+  `sys.settrace(None)`, is stopped again at its next loop header. On
   CPython 3.12 and later, a run still going a second after its deadline is also stopped at
   the end of every loop iteration it reaches, which covers `async for` loops and code
   compiled at run time.
@@ -305,7 +320,10 @@ Rules the host enforces:
   builtin) can't have its loops rewritten, and neither can a loop inside an f-string on
   IronPython 3.4, which reads the whole f-string as one token. On IronPython such a run
   falls back to checking the deadline on every line of every frame, which is slower but
-  still stops it, unless that code catches the timeout in its own loop.
+  still stops it, unless that code catches the timeout in its own loop, or the script
+  removes that check with `sys.settrace(None)` first.
+- Threads the script starts are not stopped. They keep running after the run returns, with
+  no timeout, outside the guard (see the limits under [The guarded run](#the-guarded-run)).
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - Documents can't be saved or synchronized during a run.
@@ -344,7 +362,8 @@ and `get_context` reports `agent.reckless: true` while it is on.
 What a reckless run skips:
 
 - The timeout. `timeout_s` is accepted but not enforced: no watchdog thread, no loop-header
-  rewriting, no deadline checks, and no `timeout` error.
+  rewriting, no deadline checks, no `timeout` error, and no `run_hung`: a call that blocks
+  keeps the caller waiting until it returns.
 - Handler narrowing. Bare `except` and `except BaseException` stay as written.
 - Transaction tracking. `.Start(` calls are not rewritten to record their transaction, and
   no `sys.settrace` function is installed, so transactions are not recorded while the
@@ -601,7 +620,7 @@ use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what 
 |---|---|---|
 | `not_sent` | The request never reached the host: nobody was listening, another client held the pipe, or the pipe belongs to another process. | Send it again. |
 | `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
-| `unknown` | The request was sent and the answer was lost (the connection broke or closed). It may have run, may still be waiting to run, or may never run. | Look it up by request id before sending it again. |
+| `unknown` | The request was sent and the answer was lost (the connection broke or closed), or the host stopped waiting for a run stuck past its time limit (`run_hung`). It may have run, may still be running or waiting to run, or may never run. | Look it up by request id before sending it again. |
 
 Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
 run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
@@ -673,7 +692,8 @@ Honest limits:
   are neither approved nor recorded. Approval and `readonly` stop an agent's mistakes, not a
   hostile script: connect only agents you trust, and don't feed them untrusted content.
 - Revit serves one agent request at a time. While one session's run is executing, which can
-  last until its `timeout_s`, a second agent session can't connect and gets `revit_busy`
+  last until its `timeout_s` (plus 30 seconds before a stuck run fails with `run_hung`), a
+  second agent session can't connect and gets `revit_busy`
   after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
@@ -688,8 +708,9 @@ Honest limits:
   loss comes back as `warnings` in the run result.
 - Revit regeneration inflates change sets: two new walls can report 100+ modified
   elements (rooms, tags, paths of travel, schedules). The MCP tools therefore return only
-  counts, categories and the first added ids; the element list is in `get_run`. Phase 2
-  will rank the elements the script touched ahead of these side effects.
+  counts, categories and the first 20 added, modified and deleted elements; the longer
+  sample is in `get_run`. Phase 2 will rank the elements the script touched ahead of
+  these side effects.
 
 ### pyRevit commands as agent tools (Phase 3)
 

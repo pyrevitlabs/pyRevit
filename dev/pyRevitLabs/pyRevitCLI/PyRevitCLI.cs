@@ -225,7 +225,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
                 else
-                    PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue);
+                    PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue, redact: arguments["--redact"].IsTrue);
             }
 
             else if (all("update") && !any("clones", "extensions")) {

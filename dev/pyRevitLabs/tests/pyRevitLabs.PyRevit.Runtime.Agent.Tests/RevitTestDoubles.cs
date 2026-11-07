@@ -10,10 +10,12 @@ namespace Autodesk.Revit.DB {
     internal enum FailureProcessingResult { Continue, ProceedWithRollBack }
     internal sealed class ElementId { }
     internal sealed class Category { public string Name { get; set; } }
-    internal sealed class Element {
+    internal class Element {
         public Category Category { get; set; }
         public string Name { get; set; }
     }
+    internal sealed class Family : Element { }
+    internal sealed class FamilySymbol : Element { }
     internal sealed class Document {
         public string Title { get; set; } = "Test document";
         public string PathName { get; set; } = "";
@@ -37,7 +39,12 @@ namespace Autodesk.Revit.DB {
             return CloseSucceeds;
         }
         public HashSet<ElementId> Deleted { get; } = new HashSet<ElementId>();
-        public Element GetElement(ElementId id) => Deleted.Contains(id) ? null : new Element();
+        public Dictionary<ElementId, Element> Elements { get; } = new Dictionary<ElementId, Element>();
+        public Element GetElement(ElementId id) {
+            if (Deleted.Contains(id))
+                return null;
+            return Elements.TryGetValue(id, out var element) ? element : new Element();
+        }
     }
     internal sealed class TransactionGroup : IDisposable {
         private readonly Document document;
@@ -204,6 +211,15 @@ namespace Autodesk.Revit.UI {
         public UIDocument(Document document) { Document = document; }
         public Document Document { get; }
         public List<int> GetOpenUIViews() => Document.HasView ? new List<int> { 1 } : new List<int>();
+    }
+    internal enum ExternalEventRequest { Accepted, Pending, Denied, TimedOut }
+    internal interface IExternalEventHandler {
+        void Execute(UIApplication app);
+        string GetName();
+    }
+    internal sealed class ExternalEvent {
+        public Func<ExternalEventRequest> OnRaise { get; set; }
+        public ExternalEventRequest Raise() => OnRaise();
     }
 }
 namespace PyRevitLabs.PyRevit.Runtime.Agent {

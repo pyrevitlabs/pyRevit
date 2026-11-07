@@ -613,7 +613,7 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
             with (
                 self.subTest(hidden=hidden),
                 mock.patch.object(
-                    self.runner, "_async_exception_setter", return_value=None
+                    self.runner, "_set_async_exc_function", return_value=None
                 ),
                 mock.patch.object(
                     self.runner, "_hides_loops_in_fstrings", return_value=hidden
@@ -1285,7 +1285,7 @@ class AgentRunnerTracebackTests(unittest.TestCase):
     def test_timeout_noticed_after_the_script_ends_names_the_blocking_call(self):
         """A limit passed inside one uninterruptible call says so, with no bare traceback."""
         with mock.patch.object(
-            self.runner, "_async_exception_setter", return_value=None
+            self.runner, "_set_async_exc_function", return_value=None
         ):
             error_type, message, text = self._run(
                 "import time\ntime.sleep(0.4)\n", timeout_s=0.2
