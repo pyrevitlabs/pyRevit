@@ -40,6 +40,8 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlight.cs" Link="Sources\AgentTabHighlight.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlightValue.cs" Link="Sources\AgentTabHighlightValue.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSelectors.cs" Link="Sources\AgentSelectors.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRecordingStore.cs" Link="Sources\AgentRecordingStore.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRecordingReader.cs" Link="Sources\AgentRecordingReader.cs"/>
     </ItemGroup>
 
 </Project>

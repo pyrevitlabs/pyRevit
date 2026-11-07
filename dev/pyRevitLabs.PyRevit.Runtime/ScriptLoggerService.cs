@@ -126,6 +126,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 var normalizedName = string.IsNullOrEmpty(loggerName) ? "root" : loggerName;
                 var normalizedMessage = message ?? string.Empty;
                 var visible = IsVisibleEnabled(level, runtime);
+                if (visible)
+                    Agent.AgentRecorder.RecordLog(normalizedName, (int)normalizedLevel, normalizedMessage);
                 var explicitLogPath = runtime?.ScriptRuntimeConfigs?.LogFilePath ?? _logFilePath;
                 var defaultLogPath = IsDefaultFileLoggingEnabled()
                     ? GetDefaultLogFilePath(runtime)
@@ -142,8 +144,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (visible && !(runtime?.ScriptRuntimeConfigs?.SuppressOutput ?? _suppressOutput))
-                    WriteOutput(runtime, normalizedLevel, normalizedName, normalizedMessage,
-                        allowWindowCreation);
+                    using (Agent.AgentRecorder.SuppressOutput())
+                        WriteOutput(runtime, normalizedLevel, normalizedName, normalizedMessage,
+                            allowWindowCreation);
 
                 var hasFileSink = !string.IsNullOrWhiteSpace(explicitLogPath)
                     || !string.IsNullOrWhiteSpace(defaultLogPath);

@@ -8,7 +8,7 @@ namespace pyRevitCLI.Tests;
 public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
         "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
-        "run_automation", "lookup_revit_api", "get_run",
+        "run_automation", "lookup_revit_api", "get_run", "get_recording",
     };
 
     private static readonly string[] PresentationTools = { "show_elements", "navigate_revit_link", "capture_view" };
@@ -359,7 +359,7 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(
             new[] {
                 "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
-                "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "run_query", "run_modify", "get_run",
+                "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "run_query", "run_modify", "get_run", "get_recording",
             },
             tools.Select(tool => tool.Value<string>("name")));
         foreach (var tool in tools) {
@@ -746,6 +746,22 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal("invalid_params", Payload(traversal).Value<string>("error"));
         Assert.Equal("invalid_params", Payload(notMarkdown).Value<string>("error"));
         Assert.Equal("skill_not_found", Payload(unknown).Value<string>("error"));
+    }
+
+    [Fact]
+    public void ARecordingIsListedAndReadWithoutRevit() {
+        var directory = Path.Combine(host.AgentDir, "recordings", "20260101-000000-abc12345");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "events.jsonl"), "{\"seq\":1,\"kind\":\"mark\"}\n{\"seq\":2,\"kind\":\"output\"}\n");
+
+        var listed = Payload(Single(ToolCall(1, "get_recording", new JObject())));
+        var read = Payload(Single(ToolCall(2, "get_recording", new JObject { ["recording_id"] = "abc12345", ["limit"] = 1 })));
+        var missing = Payload(Single(ToolCall(3, "get_recording", new JObject { ["recording_id"] = "nope" })));
+
+        Assert.Equal("abc12345", listed["recordings"][0].Value<string>("id"));
+        Assert.Equal("mark", read["events"][0].Value<string>("kind"));
+        Assert.True(read.Value<bool>("truncated"));
+        Assert.Equal("recording_not_found", missing.Value<string>("error"));
     }
 
     [Fact]

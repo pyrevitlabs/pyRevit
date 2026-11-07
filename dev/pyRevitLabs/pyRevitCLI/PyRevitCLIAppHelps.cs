@@ -359,6 +359,8 @@ namespace pyRevitCLI {
                             { "run",                    "Run a Python script in Revit through the agent host" },
                             { "runs",                   "List recent agent runs" },
                             { "show",                   "Print the record of an agent run" },
+                            { "record",                 "Start, stop or check a session recording of what happens in Revit" },
+                            { "recordings",             "List recent session recordings" },
                         },
                         options: new Dictionary<string, string>() {
                             { "<script_file>",          "Python script to run" },
@@ -371,6 +373,12 @@ namespace pyRevitCLI {
                             { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
+                            { "<action>",               "start, stop or status, for 'agent record'" },
+                            { "--no-screenshots",       "Record without screenshots" },
+                            { "--screenshot-interval=<seconds>", "Minimum seconds between screenshots (default 5)" },
+                            { "--max-screenshots=<count>", "Most screenshots in one recording (default 20, max 100)" },
+                            { "--max-events=<count>",   "Most events in one recording (default 5000, max 20000)" },
+                            { "--max-duration=<seconds>", "Stop the recording after this long (default 1800, max 14400)" },
                             { "--json",                 "Print status as json" },
                         });
                     break;

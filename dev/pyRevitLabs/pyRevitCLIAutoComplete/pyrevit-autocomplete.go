@@ -511,6 +511,23 @@ func main() {
 						Sub:   complete.Commands{},
 						Flags: complete.Flags{},
 					},
+					"record": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--max-duration":        complete.PredictNothing,
+							"--max-events":          complete.PredictNothing,
+							"--max-screenshots":     complete.PredictNothing,
+							"--no-screenshots":      complete.PredictNothing,
+							"--revit":               complete.PredictNothing,
+							"--screenshot-interval": complete.PredictNothing,
+						},
+					},
+					"recordings": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--limit": complete.PredictNothing,
+						},
+					},
 				},
 				Flags: complete.Flags{
 					"--help": complete.PredictNothing,

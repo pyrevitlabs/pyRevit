@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
+using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 
@@ -39,6 +40,8 @@ namespace pyRevitCLI {
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
+        private const int DefaultRecordingEvents = 200;
+        private const int MaxRecordingEvents = 1000;
 
         private readonly string defaultRevit;
         private readonly object writeLock = new object();
@@ -416,6 +419,17 @@ namespace pyRevitCLI {
                 };
             }
             return run;
+        }
+
+        private static JToken GetRecording(JObject arguments) {
+            var recordingId = arguments.Value<string>("recording_id");
+            if (string.IsNullOrWhiteSpace(recordingId))
+                return new JObject { ["recordings"] = new JArray(AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, 20)) };
+            var directory = AgentRecordingReader.FindDirectory(PyRevitAgentClient.RecordingsDir, recordingId)
+                ?? throw new AgentClientException("recording_not_found", "No recording with id " + recordingId);
+            var offset = Math.Max(0, arguments.Value<int?>("offset") ?? 0);
+            var limit = Math.Min(MaxRecordingEvents, Math.Max(1, arguments.Value<int?>("limit") ?? DefaultRecordingEvents));
+            return AgentRecordingReader.ReadRecording(directory, offset, limit);
         }
 
         private static string ReadIfExists(string path) {
@@ -797,6 +811,16 @@ namespace pyRevitCLI {
                             ["length"] = new JObject { ["type"] = "integer", ["description"] = "Characters to return (max 204800)." },
                         }),
                     GetRun),
+
+                new McpTool("get_recording", readOnly: true, new string[0],
+                    () => ("Read a session recording the user made with 'pyrevit agent record start' and 'stop': a JSON timeline of element changes per transaction (category, family and type, location), pyRevit commands with their output, log messages and tracebacks, extension breadcrumbs from recorder.mark, view and selection changes, dialogs, warnings and screenshot file references. "
+                        + "Without recording_id it lists recent recordings. Screenshots are files under the recording's directory; the events carry their relative path. A recording still in progress can be read too. Recordings are local; nothing is uploaded.",
+                        new JObject {
+                            ["recording_id"] = new JObject { ["type"] = "string", ["description"] = "Id from the recordings list or from 'record start'." },
+                            ["offset"] = new JObject { ["type"] = "integer", ["description"] = "Index of the first event to return (default 0)." },
+                            ["limit"] = new JObject { ["type"] = "integer", ["description"] = "Events to return (default 200, max 1000)." },
+                        }),
+                    GetRecording),
             };
         }
 
