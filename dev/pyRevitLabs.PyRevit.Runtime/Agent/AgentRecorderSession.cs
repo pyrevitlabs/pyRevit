@@ -40,7 +40,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly AgentScreenshotThrottle throttle;
         private string pendingScreenshot;
         private string lastSelection = string.Empty;
-        private bool attached;
+        private (int Count, long Sum) lastFingerprint = (-1, 0);
 
         public AgentRecorderSession(UIApplication uiApp, AgentRecordingStore store) {
             this.uiApp = uiApp;
@@ -56,13 +56,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             uiApp.ViewActivated += OnViewActivated;
             uiApp.DialogBoxShowing += OnDialogBoxShowing;
             uiApp.Idling += OnIdling;
-            attached = true;
         }
 
         public void Dispose() {
-            if (!attached)
-                return;
-            attached = false;
             app.DocumentChanged -= OnDocumentChanged;
             app.FailuresProcessing -= OnFailuresProcessing;
             uiApp.ViewActivated -= OnViewActivated;
@@ -130,7 +126,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
+            if (!AgentRecorder.IsCurrent(store)) {
+                Dispose();
+                return;
+            }
             Guarded(() => {
+                AgentRecorder.FlushOutput();
                 if (store.Elapsed.TotalSeconds >= store.Options.MaxDurationSeconds) {
                     AgentRecorder.StopIfActive("max_duration");
                     return;
@@ -144,7 +145,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var uidoc = uiApp.ActiveUIDocument;
             if (uidoc == null)
                 return;
-            var ids = uidoc.Selection.GetElementIds().Select(AgentIds.ToValue).OrderBy(id => id).ToList();
+            var selected = uidoc.Selection.GetElementIds();
+            var fingerprint = (selected.Count, selected.Sum(id => AgentIds.ToValue(id)));
+            if (fingerprint == lastFingerprint)
+                return;
+            lastFingerprint = fingerprint;
+            var ids = selected.Select(AgentIds.ToValue).OrderBy(id => id).ToList();
             var key = string.Join(",", ids);
             if (key == lastSelection)
                 return;
@@ -234,7 +240,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JArray ToArray(XYZ point) => new JArray(point.X, point.Y, point.Z);
 
-        private static void Guarded(Action action) {
+        private void Guarded(Action action) {
+            if (!AgentRecorder.IsCurrent(store))
+                return;
             try {
                 action();
             }

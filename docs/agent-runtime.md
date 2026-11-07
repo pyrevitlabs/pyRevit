@@ -502,7 +502,7 @@ Each event in `events.jsonl` has `seq`, `t_ms` (since the start), `time` and a `
 |---|---|
 | `element_changes` | One per `DocumentChanged`: document, operation, transaction names, counts, and up to 25 each of added and modified elements (id, category, family and type name, location as point, curve endpoints or bounding box) and deleted ids. No parameter values |
 | `command` | `start` and `end` of every pyRevit command or script, with result code and traceback |
-| `output` | Text a command printed to its output window or console |
+| `output` | Text a command printed to its output window or console; consecutive writes are merged into one event, flushed at the next other event or when Revit is idle |
 | `agent_run` | The outcome of each agent run (`run_query`, `run_modify`): status, decision, error with traceback, and its captured output. The `command` event of an agent run only brackets it, since agent scripts capture their own output and report failure here |
 | `log` | Logger messages at info level and above that pyRevit shows, with logger name and level (`20` info, `30` warning, `40` error) |
 | `mark` | Breadcrumbs from [`pyrevit.recorder.mark`](#extension-trace-api) |
@@ -515,7 +515,8 @@ Decisions:
 - **Native Revit commands** are visible only through their transaction names, plus dialogs, failures,
   view and selection changes. Revit has no event for an arbitrary command; journal parsing was left out.
 - **Screenshots** trigger after a change and on a dialog, are taken on the next `Idling` (Revit can't
-  export inside a transaction or a modal dialog), and are limited by `--screenshot-interval` and
+  export inside a transaction or a modal dialog, and `Idling` does not fire while a modal dialog is open, so a
+  dialog's screenshot shows the view after it closes; the `dialog` event itself carries its text), and are limited by `--screenshot-interval` and
   `--max-screenshots`. Large models pay one view export per screenshot; `--no-screenshots` removes it. Locations are
   read for only the first 25 elements of each change, so there is no category filter yet.
 - **Limits.** `--max-events` stops storing events beyond the cap and counts them in `dropped_events`; output and
@@ -529,8 +530,9 @@ Decisions:
   agent reads a recording only through `get_recording`, which sends it to the agent's model provider like
   any other tool result. Element names and screenshots can contain client data, so review a recording
   before sharing it.
-- A recording interrupted by a crash has no `recording.json`; `get_recording` reports it as `incomplete`
-  and still returns the events written.
+- A recording that has no `recording.json` is reported as `recording` while Revit still holds it and as
+  `incomplete` when it was interrupted by a crash; either way `get_recording` returns the events written.
+  A page stops at about 200 KB: use `next_offset` to continue.
 
 #### Extension trace API
 

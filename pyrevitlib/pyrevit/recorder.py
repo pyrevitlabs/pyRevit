@@ -14,20 +14,20 @@ Note:
 
 import json
 
+_UNAVAILABLE = object()
 _recorder_type = None
 
 
 def _resolve():
     global _recorder_type
-    if _recorder_type is not None:
-        return _recorder_type
-    try:
-        from PyRevitLabs.PyRevit.Runtime.Agent import AgentRecorder
+    if _recorder_type is None:
+        try:
+            from PyRevitLabs.PyRevit.Runtime.Agent import AgentRecorder
 
-        _recorder_type = AgentRecorder
-    except Exception:
-        return None
-    return _recorder_type
+            _recorder_type = AgentRecorder
+        except Exception:
+            _recorder_type = _UNAVAILABLE
+    return None if _recorder_type is _UNAVAILABLE else _recorder_type
 
 
 def _serialize(data):

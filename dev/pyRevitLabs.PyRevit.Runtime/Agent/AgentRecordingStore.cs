@@ -106,7 +106,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static readonly TimeSpan Retention = TimeSpan.FromDays(7);
         public const int MaxRecordings = 20;
         public const int MaxMarkLength = 16000;
-        private const string LockFileName = ".active";
         private const int SharingViolation = 32;
         private const int LockViolation = 33;
 
@@ -118,13 +117,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private int dropped;
         private bool stopped;
         private FileStream activeLock;
+        private FileStream events;
         private JObject stoppedSummary;
 
         private AgentRecordingStore(string id, string directory, AgentRecordingOptions options) {
             Id = id;
             Directory = directory;
             Options = options;
-            activeLock = new FileStream(Path.Combine(directory, LockFileName), FileMode.Create, FileAccess.Write, FileShare.Read);
+            activeLock = new FileStream(Path.Combine(directory, AgentRecordingReader.LockFileName), FileMode.Create, FileAccess.Write, FileShare.Read);
+            events = new FileStream(Path.Combine(directory, "events.jsonl"), FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         }
 
         public string Id { get; }
@@ -163,23 +164,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static bool IsLive(string directory) {
-            var lockPath = Path.Combine(directory, LockFileName);
-            if (!File.Exists(lockPath))
-                return false;
-            try {
-                using (new FileStream(lockPath, FileMode.Open, FileAccess.Write, FileShare.None)) {
-                }
-                return false;
-            }
-            catch (IOException ex) when ((ex.HResult & 0xFFFF) == SharingViolation || (ex.HResult & 0xFFFF) == LockViolation) {
-                return true;
-            }
-            catch (IOException) {
-                return false;
-            }
-        }
-
         public static string Truncate(string text) {
             if (text == null || text.Length <= MaxTextLength)
                 return text;
@@ -209,8 +193,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     foreach (var property in data.Properties())
                         entry[property.Name] = property.Value;
                 var line = Utf8.GetBytes(entry.ToString(Formatting.None) + "\n");
-                using (var stream = new FileStream(Path.Combine(Directory, "events.jsonl"), FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-                    stream.Write(line, 0, line.Length);
+                events.Write(line, 0, line.Length);
+                events.Flush();
                 return true;
             }
         }
@@ -235,6 +219,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     File.WriteAllText(Path.Combine(Directory, "recording.json"), summary.ToString(Formatting.Indented), Utf8);
                 }
                 finally {
+                    events.Dispose();
                     activeLock.Dispose();
                 }
                 stoppedSummary = summary;
@@ -255,7 +240,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 .ToList();
             for (var index = 0; index < directories.Count; index++) {
                 var directory = directories[index];
-                if (string.Equals(directory, keep, StringComparison.OrdinalIgnoreCase) || IsLive(directory))
+                if (string.Equals(directory, keep, StringComparison.OrdinalIgnoreCase) || AgentRecordingReader.IsLive(directory))
                     continue;
                 var expired = System.IO.Directory.GetLastWriteTime(directory) < now - Retention;
                 if (!expired && index < MaxRecordings)
@@ -268,6 +253,33 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
             }
             return removed;
+        }
+    }
+}
+
+namespace PyRevitLabs.PyRevit.Runtime.Agent {
+    /// <summary>
+    /// Merges consecutive output writes into one event, so a chatty script does not use up the
+    /// event cap one line at a time.
+    /// </summary>
+    internal sealed class AgentOutputBuffer {
+        private readonly StringBuilder text = new StringBuilder();
+
+        public void Add(string chunk) {
+            lock (text) {
+                if (text.Length < AgentRecordingStore.MaxTextLength * 2)
+                    text.Append(chunk);
+            }
+        }
+
+        public string Drain() {
+            lock (text) {
+                if (text.Length == 0)
+                    return null;
+                var drained = AgentRecordingStore.Truncate(text.ToString());
+                text.Clear();
+                return drained;
+            }
         }
     }
 }

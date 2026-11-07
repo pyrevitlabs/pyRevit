@@ -241,10 +241,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
                 if (!exitHandlerRegistered) {
                     AppDomain.CurrentDomain.ProcessExit += (s, e) => DeleteInstanceFile();
-                    uiApp.ApplicationClosing += (s, e) => {
-                        AgentRecorder.StopIfActive("revit_closing");
-                        Stop();
-                    };
+                    uiApp.ApplicationClosing += (s, e) => Stop();
                     exitHandlerRegistered = true;
                 }
             }

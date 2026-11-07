@@ -16,7 +16,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// stay in <c>%APPDATA%\pyRevit\agent\recordings</c>; nothing leaves the machine unless the
     /// user shares the folder, or an agent reads it through <c>get_recording</c>.
     /// Invariant: at most one recording is active per Revit process.
-    /// Important: <see cref="Start"/> and <see cref="Stop"/> must run in a valid Revit API
+    /// Important: <see cref="Start"/> must run in a valid Revit API context. A stop requested off
+    /// the Revit main thread ends the recording but leaves unsubscribing to the session's next
+    /// <c>Idling</c>, so shutdown never touches Revit events from the wrong thread. Both must run in a valid Revit API
     /// context, because they subscribe to and unsubscribe from Revit events.
     /// </remarks>
     public static class AgentRecorder {
@@ -31,6 +33,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         [ThreadStatic]
         private static bool outputSuppressed;
+
+        private static readonly AgentOutputBuffer pendingOutput = new AgentOutputBuffer();
 
         private sealed class OutputSuppression : IDisposable {
             private readonly bool previous = outputSuppressed;
@@ -113,7 +117,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 session = null;
                 JObject summary;
                 try {
-                    ending?.Dispose();
+                    if (ScriptExecutor.IsOnMainThread)
+                        ending?.Dispose();
                 }
                 finally {
                     summary = active.Stop(reason);
@@ -146,7 +151,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         internal static string ActiveDirectory => store?.Directory;
 
+        internal static bool IsCurrent(AgentRecordingStore candidate) => ReferenceEquals(store, candidate);
+
+        internal static void FlushOutput() {
+            var drained = pendingOutput.Drain();
+            if (drained != null)
+                AppendEntry("output", new JObject { ["text"] = drained });
+        }
+
         internal static void Append(string kind, JObject data) {
+            FlushOutput();
+            AppendEntry(kind, data);
+        }
+
+        private static void AppendEntry(string kind, JObject data) {
             if (appending)
                 return;
             appending = true;
@@ -177,7 +195,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         internal static void RecordOutput(string text) {
             if (store == null || outputSuppressed || string.IsNullOrEmpty(text))
                 return;
-            Append("output", new JObject { ["text"] = AgentRecordingStore.Truncate(text) });
+            pendingOutput.Add(text);
         }
 
         internal static void RecordLog(string loggerName, int level, string message) {

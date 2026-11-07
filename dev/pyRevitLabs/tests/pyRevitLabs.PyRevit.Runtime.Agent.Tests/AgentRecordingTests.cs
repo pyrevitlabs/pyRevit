@@ -93,6 +93,43 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ARecordingStillHeldByAWriterIsReportedAsRecordingWithItsEventCount() {
+            var store = NewStore();
+            store.Append("a", null);
+            store.Append("b", null);
+
+            var recording = AgentRecordingReader.ReadRecording(store.Directory, 0, 10);
+
+            Assert.Equal("recording", recording.Value<string>("status"));
+            Assert.Equal(2, recording.Value<int>("event_count"));
+            Assert.NotNull(recording["started"]);
+        }
+
+        [Fact]
+        public void APageStopsAtTheSizeCapAndPointsToTheNextOffset() {
+            var store = NewStore();
+            for (var i = 0; i < 5; i++)
+                store.Append("e", new JObject { ["text"] = new string('x', 1000) });
+            store.Stop("user");
+
+            var page = AgentRecordingReader.ReadRecording(store.Directory, 0, 100, maxChars: 2500);
+
+            Assert.Equal(2, page["events"].Count());
+            Assert.Equal(2, page.Value<int>("next_offset"));
+            Assert.True(page.Value<bool>("truncated"));
+        }
+
+        [Fact]
+        public void OutputBufferMergesWritesAndDrainsOnce() {
+            var buffer = new AgentOutputBuffer();
+            buffer.Add("one\n");
+            buffer.Add("two\n");
+
+            Assert.Equal("one\ntwo\n", buffer.Drain());
+            Assert.Null(buffer.Drain());
+        }
+
+        [Fact]
         public void NothingIsAppendedAfterStop() {
             var store = NewStore();
             store.Stop("user");
@@ -104,6 +141,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void ARecordingWithoutSummaryIsReportedIncompleteAndStillReadable() {
             var store = NewStore();
             store.Append("a", null);
+            store.Stop("test");
+            File.Delete(Path.Combine(store.Directory, "recording.json"));
 
             var recording = AgentRecordingReader.ReadRecording(store.Directory, 0, 10);
 
@@ -116,6 +155,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void APartialLastLineAndACorruptSummaryDoNotBreakReading() {
             var store = NewStore();
             store.Append("a", null);
+            store.Stop("test");
             File.AppendAllText(Path.Combine(store.Directory, "events.jsonl"), "{\"seq\": 2, \"ki");
             File.WriteAllText(Path.Combine(store.Directory, "recording.json"), "{ truncated");
 
