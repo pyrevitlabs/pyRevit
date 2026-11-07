@@ -58,6 +58,10 @@ namespace pyRevitLabs.PyRevit {
         public const string VendorId = "eirannejad";
         public const string LegacyEngineDllName = "pyRevitLoader.dll";
 
+        public const string LaunchManifestEnvVar = "PYREVIT_LAUNCH_MANIFEST";
+        public const string LaunchRevitYearEnvVar = "PYREVIT_LAUNCH_REVIT_YEAR";
+        public const string LaunchDirName = "launch";
+
         // install scope marker (all-users installer creates this under %ProgramData%\pyRevit\)
         public const string InstallAllUsersMarkerFileName = PyRevitLabsConsts.InstallAllUsersMarkerFileName;
 

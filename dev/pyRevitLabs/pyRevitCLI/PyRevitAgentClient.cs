@@ -28,13 +28,39 @@ namespace pyRevitCLI {
         public string RevitBuild { get; set; }
         public string Started { get; set; }
 
+        /// <summary>Name of the pyRevit clone the session runs; null when the host did not record it.</summary>
+        public string Clone { get; set; }
+        public string ClonePath { get; set; }
+        public string Engine { get; set; }
+        public string EngineVersion { get; set; }
+        public string Commit { get; set; }
+        public string ConfigRoot { get; set; }
+
+        /// <summary>True for a session started by <c>pyrevit launch</c> rather than through the shared attachment.</summary>
+        public bool PerLaunch { get; set; }
+
         public JObject ToJson() {
-            return new JObject {
+            var json = new JObject {
                 ["pid"] = ProcessId,
                 ["revit_version"] = RevitVersion,
                 ["revit_build"] = RevitBuild,
                 ["started"] = Started,
             };
+            if (Clone != null) {
+                json["clone"] = Clone;
+                json["clone_path"] = ClonePath;
+                json["engine"] = Engine;
+                json["engine_version"] = EngineVersion;
+                json["commit"] = Commit;
+                json["config_root"] = ConfigRoot;
+                json["per_launch"] = PerLaunch;
+            }
+            return json;
+        }
+
+        public string Describe() {
+            var description = $"{RevitVersion} (pid {ProcessId})";
+            return Clone == null ? description : $"{description} on {Clone}" + (Engine == null ? "" : $" {Engine}");
         }
     }
 
@@ -142,6 +168,8 @@ namespace pyRevitCLI {
         /// </summary>
         internal static int ConnectTimeoutMs = 10000;
 
+        internal const string CloneSelectorPrefix = "clone:";
+
         /// <summary>
         /// How long <see cref="Ping"/> waits for the answer once connected. Shortened by tests.
         /// </summary>
@@ -181,7 +209,7 @@ namespace pyRevitCLI {
             Uncertain,
         }
 
-        public static string AgentDir => AgentDirOverride ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
+        public static string AgentDir => AgentDirOverride ?? PyRevitLabsConsts.AgentPath;
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
@@ -203,6 +231,13 @@ namespace pyRevitCLI {
                         RevitVersion = data.Value<string>("revit_version"),
                         RevitBuild = data.Value<string>("revit_build"),
                         Started = data["started"]?.ToString(Formatting.None).Trim('"'),
+                        Clone = data.Value<string>("clone"),
+                        ClonePath = data.Value<string>("clone_path"),
+                        Engine = data.Value<string>("engine"),
+                        EngineVersion = data.Value<string>("engine_version"),
+                        Commit = data.Value<string>("commit"),
+                        ConfigRoot = data.Value<string>("config_root"),
+                        PerLaunch = data.Value<bool?>("per_launch") ?? false,
                     };
                     var liveness = GetLiveness(instance);
                     if (liveness == InstanceLiveness.Live || (liveness == InstanceLiveness.Uncertain && HasPipe(instance)))
@@ -218,13 +253,13 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Picks the target host. <paramref name="selector"/> is a Revit process id or a Revit
-        /// year (e.g. 2024); an exact process id match wins over a year, see <see cref="Match"/>.
+        /// Picks the target host. <paramref name="selector"/> is a Revit process id, a Revit
+        /// year (e.g. 2024) or the name or path of the pyRevit clone the session runs; an exact
+        /// process id match wins over a year, see <see cref="Match"/>.
         /// Without a selector, exactly one running host is required.
         /// </summary>
         /// <exception cref="AgentClientException">
-        /// <c>invalid_params</c> when the selector is not a number, <c>no_revit</c> when nothing
-        /// matches, <c>ambiguous_revit</c> when several hosts match.
+        /// <c>no_revit</c> when nothing matches, <c>ambiguous_revit</c> when several hosts match.
         /// </exception>
         public static AgentInstance Resolve(string selector) {
             var instances = GetInstances();
@@ -241,8 +276,8 @@ namespace pyRevitCLI {
             if (matches.Count > 1)
                 throw new AgentClientException(
                     "ambiguous_revit",
-                    "Several Revit sessions are running; pick one with a year or process id: "
-                    + string.Join(", ", matches.Select(m => $"{m.RevitVersion} (pid {m.ProcessId})")));
+                    "Several Revit sessions are running; pick one with a year, process id or clone name: "
+                    + string.Join(", ", matches.Select(m => m.Describe())));
 
             return matches[0];
         }
@@ -257,19 +292,51 @@ namespace pyRevitCLI {
         /// year; any other number is a process id that matched nothing. Windows can hand out
         /// process ids in the year range, so the year rule must never shadow an exact pid match.
         /// Years compare in canonical form, so " 2024 " or "02024" select Revit 2024.
+        /// A selector that is not a number selects the sessions whose clone has that name
+        /// (ignoring case) or that path; a bare word is only ever a name, so it can't select
+        /// another clone through a folder of that name under the current directory. Sessions
+        /// that recorded no clone never match it.
+        /// A clone whose name is a number is selected as <c>clone:&lt;name&gt;</c>, which is never
+        /// read as a process id or a year.
         /// </remarks>
-        /// <exception cref="AgentClientException"><c>invalid_params</c> when the selector is not a number.</exception>
         internal static List<AgentInstance> Match(IReadOnlyList<AgentInstance> instances, string selector) {
             if (string.IsNullOrWhiteSpace(selector))
                 return instances.ToList();
+            var trimmed = selector.Trim();
+            if (trimmed.StartsWith(CloneSelectorPrefix, StringComparison.OrdinalIgnoreCase))
+                return instances.Where(instance => MatchesClone(instance, trimmed.Substring(CloneSelectorPrefix.Length).Trim())).ToList();
             if (!int.TryParse(selector, out var number))
-                throw new AgentClientException("invalid_params", "Revit selector must be a year or a process id.");
+                return instances.Where(instance => MatchesClone(instance, trimmed)).ToList();
 
             var byProcessId = instances.Where(instance => instance.ProcessId == number).ToList();
             if (byProcessId.Count > 0 || number < 2000 || number >= 2100)
                 return byProcessId;
             var year = number.ToString(CultureInfo.InvariantCulture);
             return instances.Where(instance => instance.RevitVersion == year).ToList();
+        }
+
+        private static bool MatchesClone(AgentInstance instance, string selector) {
+            if (instance.Clone == null)
+                return false;
+            if (string.Equals(instance.Clone, selector, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (!LooksLikePath(selector))
+                return false;
+            var recordedPath = NormalizePath(instance.ClonePath);
+            return recordedPath != null && string.Equals(recordedPath, NormalizePath(selector), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool LooksLikePath(string selector) {
+            return Path.IsPathRooted(selector) || selector.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0;
+        }
+
+        private static string NormalizePath(string path) {
+            try {
+                return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch (Exception) {
+                return null;
+            }
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

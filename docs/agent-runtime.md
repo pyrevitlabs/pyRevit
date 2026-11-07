@@ -506,7 +506,9 @@ are easy to get wrong:
    rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
    (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
    the version in use. Run the full tests once per IronPython. Attach `default` again, restart Revit
-   and accept **Load Once** before continuing.
+   and accept **Load Once** before continuing. When other sessions share the machine, don't switch
+   the attachment: start the second IronPython with `pyrevit launch <clone> 342 <year>` instead, see
+   [Running several clones side by side](#running-several-clones-side-by-side).
 5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
    document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
    or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
@@ -516,6 +518,47 @@ are easy to get wrong:
 
 The [in-Revit agent tests](#in-revit-agent-tests) cover the shipped skills and the pyrevitlib side
 of the automation operations on both engines.
+
+### Running several clones side by side
+
+`pyrevit attach` writes one `pyRevit.addin` per Revit year, so only one clone and engine can be
+attached to a year at a time, and rewriting it changes what the next Revit of that year loads.
+Parallel review or test sessions should not attach at all. `pyrevit launch` starts Revit with a
+manifest of its own and leaves the shared one alone:
+
+```shell
+pyrevit launch <clone name or path> default 2026 --language=ENU
+pyrevit launch <clone name or path> 342 2026 --isolated
+```
+
+Run it as a background process: it prints the process id, the clone, the engine and the launch
+directory, stays running while that Revit runs, and deletes its temporary files when Revit exits.
+The clone may be a registered name or any path to a built clone, such as a git worktree. The
+engine is `default`, a version such as `342` or `2712`, or an engine id.
+
+- **Per-launch manifest.** Revit reads add-in manifests from the folder of the journal it is
+  started with, and a manifest there replaces a standard-folder manifest with the same add-in id.
+  A manifest merely sitting in the working directory is ignored, so the launcher always starts
+  Revit with a journal. The shared `Addins\<year>\pyRevit.addin` is neither read nor written, and
+  the session reports the clone it loaded, not the one attached.
+- **Closing one session** leaves the others, and the attachment, as they were. The next plain
+  start of a Revit year loads whatever is attached.
+- **`--isolated`** points the session at its own pyRevit user folder (`PYREVIT_PATH_OVERRIDE`),
+  seeded with a copy of the config the clone would load anyway (the clone's own config, else yours),
+  so config changes, caches and logs of the session don't reach the others. A config stored in the
+  clone is ignored by such a session (`PYREVIT_IGNORE_LOCAL_CONFIG`). Instance records, run records and captures stay under
+  `%APPDATA%\pyRevit\agent` (`PYREVIT_AGENT_DIR`), because clients look for sessions there.
+- **No model argument.** Open the model through an agent run once the session is up.
+- **Unsigned Add-In dialog.** Revit may or may not ask about the per-launch manifest; handle it as
+  after any rebuild (**Load Once**).
+
+Each instance record, and so `list_revit_instances`, carries `clone`, `clone_path`, `engine`,
+`engine_version`, `commit`, `config_root` and `per_launch`; `get_context` reports the same
+under `pyrevit`. The `revit` selector of the MCP tools and of `pyrevit agent` accepts a clone name or
+path besides a year or process id, so two Revit 2026 sessions on different clones are told apart by
+`revit: "<clone name>"`. A clone whose name is a number is selected as `clone:<name>`, because a bare
+number is a process id or a year. When several sessions match, `ambiguous_revit` lists each with its clone and
+engine; pick one by clone name, or by process id when one clone runs in several sessions.
 
 ## Design
 
@@ -566,7 +609,8 @@ carries the Network SID, so connecting fails with `UnauthorizedAccessException`,
 under the same account.
 
 Discovery: each host writes `%APPDATA%\pyRevit\agent\instances\<pid>.json` with the pipe
-name, the Revit version and the process id, and removes it when Revit exits.
+name, the Revit version, the process id and the clone and engine the session runs, and removes it
+when Revit exits.
 Discovery excludes registrations and attempts to delete their files only when the recorded process is missing, its readable name is not `Revit` (case-insensitive), or its readable start time exceeds the registration timestamp by more than two seconds.
 A matching process name and start time establish liveness without requiring an available pipe.
 If process metadata or the registration timestamp cannot establish liveness, discovery checks for the recorded named pipe without connecting, up to three times at 300 ms intervals.

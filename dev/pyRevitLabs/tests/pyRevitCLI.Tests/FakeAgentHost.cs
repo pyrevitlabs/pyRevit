@@ -82,17 +82,22 @@ internal sealed class FakeAgentHost : IDisposable {
     }
 
     /// <summary>Writes a registration independently of the process and pipe it describes.</summary>
-    public void Register(string revitVersion, int processId, DateTime started, string fileName = null, string pipeName = null) {
+    public void Register(string revitVersion, int processId, DateTime started, string fileName = null, string pipeName = null, string clone = null, string clonePath = null, string engine = null) {
         var instances = Directory.CreateDirectory(Path.Combine(AgentDir, "instances")).FullName;
-        File.WriteAllText(
-            Path.Combine(instances, fileName ?? (revitVersion + "-" + processId + ".json")),
-            new JObject {
-                ["pid"] = processId,
-                ["pipe"] = pipeName ?? PipeName,
-                ["revit_version"] = revitVersion,
-                ["revit_build"] = "build-" + revitVersion,
-                ["started"] = started.ToString("O"),
-            }.ToString());
+        var record = new JObject {
+            ["pid"] = processId,
+            ["pipe"] = pipeName ?? PipeName,
+            ["revit_version"] = revitVersion,
+            ["revit_build"] = "build-" + revitVersion,
+            ["started"] = started.ToString("O"),
+        };
+        if (clone != null) {
+            record["clone"] = clone;
+            record["clone_path"] = clonePath;
+            record["engine"] = engine;
+            record["per_launch"] = true;
+        }
+        File.WriteAllText(Path.Combine(instances, fileName ?? (revitVersion + "-" + processId + ".json")), record.ToString());
     }
 
     public string AddRun(string runId, string response = null, string script = null, string result = null, string stamp = "20260101-000000", string requestId = null) {

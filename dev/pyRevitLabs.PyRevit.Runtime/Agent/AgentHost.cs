@@ -252,6 +252,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["revit_build"] = uiApp.Application.VersionBuild,
                     ["started"] = DateTime.UtcNow.ToString("o"),
                 };
+                if (int.TryParse(uiApp.Application.VersionNumber, out var revitYear))
+                    instance.Merge(AgentSessionIdentity.Describe(revitYear));
                 File.WriteAllText(
                     AgentPaths.InstanceFile,
                     instance.ToString(Formatting.Indented),
@@ -283,7 +285,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly Logger pathsLogger = LogManager.GetCurrentClassLogger();
         public static readonly TimeSpan RecordRetention = TimeSpan.FromDays(14);
 
-        public static string RootDir => Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
+        public static string RootDir => PyRevitLabsConsts.AgentPath;
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
         public static string CapturesDir => Path.Combine(RootDir, "captures");
