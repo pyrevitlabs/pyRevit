@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 from pyrevit import script, forms, revit, HOST_APP, DB, UI, EXEC_PARAMS
 from pyrevit.revit import events
-from pyrevit.framework import Convert, List, Color, SolidColorBrush
+from pyrevit.framework import Convert, Color, SolidColorBrush, to_clr_list
 from pyrevit.compat import get_elementid_value_func
 from collections import OrderedDict
 
@@ -36,7 +36,7 @@ INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
 class Context(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "instance"):
-            cls.instance = super(Context, cls).__new__(cls, *args, **kwargs)
+            cls.instance = super(Context, cls).__new__(cls)
         return cls.instance
 
     def __init__(self, view_model):
@@ -1183,7 +1183,9 @@ def refresh_active_view():
             uidoc.ActiveView = context.active_view
         uidoc.RefreshActiveView()
         if context.source_view:
-            uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_view.Id]))
+            uidoc.Selection.SetElementIds(
+                to_clr_list(DB.ElementId, [context.source_view.Id])
+            )
     except Exception as ex:
         logger.exception(ex)
 

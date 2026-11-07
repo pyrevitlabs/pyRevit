@@ -35,7 +35,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import revit, DB
 from pyrevit import coreutils, framework
 from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import clr_implementation, get_elementid_value_func
 from pyrevit.coreutils import applocales, pathtemplate
 
 
@@ -505,11 +505,10 @@ class ViewSheetListItem(forms.Reactive):
         self.number = (
             self._sheet.SheetNumber if hasattr(self._sheet, "SheetNumber") else ""
         )
-        self.issue_date = (
-            self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE).AsString()
-            if self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE)
-            else ""
+        issue_date_param = self._sheet.get_Parameter(
+            DB.BuiltInParameter.SHEET_ISSUE_DATE
         )
+        self.issue_date = issue_date_param.AsString() if issue_date_param else ""
         self.printable = self._sheet.CanBePrinted
         self.revision_date_sortable = ""
         self._print_index = 0
@@ -1488,15 +1487,14 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.printsettings_cb.ItemsSource = psetting_items
 
         print_mgr = self._get_printmanager()
-        if isinstance(
-            print_mgr.PrintSetup.CurrentPrintSetting, DB.InSessionPrintSetting
-        ):
-            in_session = PrintSettingListItem(print_mgr.PrintSetup.CurrentPrintSetting)
+        current_psetting = clr_implementation(print_mgr.PrintSetup.CurrentPrintSetting)
+        if isinstance(current_psetting, DB.InSessionPrintSetting):
+            in_session = PrintSettingListItem(current_psetting)
             psetting_items.append(in_session)
             self.printsettings_cb.SelectedItem = in_session
         else:
-            self._init_psettings = print_mgr.PrintSetup.CurrentPrintSetting
-            cur_psetting_name = print_mgr.PrintSetup.CurrentPrintSetting.Name
+            self._init_psettings = current_psetting
+            cur_psetting_name = current_psetting.Name
             for psetting_item in psetting_items:
                 if psetting_item.name == cur_psetting_name:
                     self.printsettings_cb.SelectedItem = psetting_item

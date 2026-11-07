@@ -388,8 +388,9 @@ class ExecuteInRevitContextTests(unittest.TestCase):
         def callback(value, key=None):
             calls.append((value, key))
 
-        self.events.execute_in_revit_context(callback, "value", key="option")
+        queued = self.events.execute_in_revit_context(callback, "value", key="option")
 
+        self.assertIs(True, queued)
         self.assertEqual([], calls)
         handler = self.events._EXTERNAL_EVENT.handler
         handler.Execute(None)
@@ -405,9 +406,10 @@ class ExecuteInRevitContextTests(unittest.TestCase):
             calls.append("ran")
 
         self.events._EXTERNAL_EVENT.response = "Denied"
-        self.events.execute_in_revit_context(callback)
+        queued = self.events.execute_in_revit_context(callback)
         self.events._EXTERNAL_EVENT.handler.Execute(None)
 
+        self.assertIs(False, queued)
         self.assertEqual([], calls)
         self.assertTrue(self.logger.errors)
 

@@ -254,8 +254,6 @@
     <system:String x:Key="CADAuditInstances">审核CAD实例：</system:String>
     <system:String x:Key="CADAuditInProject">在此项目中</system:String>
     <system:String x:Key="CADAuditInActiveView">仅在活动视图中</system:String>
-    <system:String x:Key="CADAuditCancel">取消</system:String>
-    <system:String x:Key="CADAuditOK">确定</system:String>
     <system:String x:Key="CADAuditTitle">当前项目中的CAD实例审核</system:String>
     <system:String x:Key="CADAuditNoInstances">未找到CAD实例</system:String>
     <system:String x:Key="CADAuditSelect">选择</system:String>

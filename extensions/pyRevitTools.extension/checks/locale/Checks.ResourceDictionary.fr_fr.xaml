@@ -257,8 +257,6 @@ telle que définie par une liste de types de murs dans Revit.</system:String>
     <system:String x:Key="CADAuditInstances">Vérifier les instances CAD:</system:String>
     <system:String x:Key="CADAuditInProject">dans ce projet</system:String>
     <system:String x:Key="CADAuditInActiveView">uniquement dans la vue active</system:String>
-    <system:String x:Key="CADAuditCancel">ANNULER</system:String>
-    <system:String x:Key="CADAuditOK">OK</system:String>
     <system:String x:Key="CADAuditTitle">Audit des instances CAD dans le projet actuel</system:String>
     <system:String x:Key="CADAuditNoInstances">Aucune instance CAD trouvée</system:String>
     <system:String x:Key="CADAuditSelect">Sélectionner</system:String>
