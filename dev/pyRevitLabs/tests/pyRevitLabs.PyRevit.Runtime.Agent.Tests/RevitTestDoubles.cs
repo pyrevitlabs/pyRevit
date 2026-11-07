@@ -10,10 +10,12 @@ namespace Autodesk.Revit.DB {
     internal enum FailureProcessingResult { Continue, ProceedWithRollBack }
     internal sealed class ElementId { }
     internal sealed class Category { public string Name { get; set; } }
-    internal sealed class Element {
+    internal class Element {
         public Category Category { get; set; }
         public string Name { get; set; }
     }
+    internal sealed class Family : Element { }
+    internal sealed class FamilySymbol : Element { }
     internal sealed class Document {
         public string Title { get; set; } = "Test document";
         public string PathName { get; set; } = "";
@@ -36,7 +38,8 @@ namespace Autodesk.Revit.DB {
                 IsValidObject = false;
             return CloseSucceeds;
         }
-        public Element GetElement(ElementId id) => new Element();
+        public Dictionary<ElementId, Element> Elements { get; } = new Dictionary<ElementId, Element>();
+        public Element GetElement(ElementId id) => Elements.TryGetValue(id, out var element) ? element : new Element();
     }
     internal sealed class TransactionGroup : IDisposable {
         private readonly Document document;
