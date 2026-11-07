@@ -38,18 +38,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// title. Immutable.
     /// </summary>
     internal sealed class AgentSessionDocument {
-        public AgentSessionDocument(object document, string key, string title) {
+        public AgentSessionDocument(object document, string key, string title, bool openedByAgent = false) {
             Document = document ?? throw new ArgumentNullException(nameof(document));
             Key = key;
             Title = title;
+            OpenedByAgent = openedByAgent;
         }
 
         public object Document { get; }
         public string Key { get; }
         public string Title { get; }
 
+        /// <summary>
+        /// A document an agent's run opened or created. The host closes it, without saving, when
+        /// the session ends.
+        /// </summary>
+        public bool OpenedByAgent { get; }
+
         public AgentSessionDocument WithTitle(string title) {
-            return new AgentSessionDocument(Document, Key, title);
+            return new AgentSessionDocument(Document, Key, title, OpenedByAgent);
+        }
+
+        public AgentSessionDocument AsOpenedByAgent() {
+            return OpenedByAgent ? this : new AgentSessionDocument(Document, Key, Title, openedByAgent: true);
         }
     }
 
@@ -86,6 +97,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private readonly object sync = new object();
         private readonly List<AgentSessionDocument> documents = new List<AgentSessionDocument>();
+        private List<AgentSessionDocument> releasedByEnd;
         private AgentSessionState state = AgentSessionState.Inactive;
         private AgentSessionStart startMode = AgentSessionStart.User;
         private bool startedAutomatically;
@@ -99,6 +111,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private JObject lastEnded;
 
         public event Action Changed;
+
+        /// <summary>
+        /// Raised after a session ends, outside the lock, with the documents agents opened that were
+        /// still part of it, so the host can close them.
+        /// </summary>
+        public event Action<IReadOnlyList<AgentSessionDocument>> EndedWithOpenedDocuments;
 
         public AgentSessionStart StartMode {
             get {
@@ -266,6 +284,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             OnChanged();
             return removed;
+        }
+
+        /// <summary>
+        /// Keeps a document an agent's run opened or created in the open session, marked as the
+        /// agent's. A document already in the session, as in one that started automatically, is
+        /// marked.
+        /// </summary>
+        /// <returns>False when there is no session to keep it in.</returns>
+        public bool AdoptOpenedDocument(AgentSessionDocument document) {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+            lock (sync) {
+                if (state == AgentSessionState.Inactive)
+                    return false;
+                var index = documents.FindIndex(entry => entry.Key == document.Key);
+                if (index >= 0)
+                    documents[index] = documents[index].AsOpenedByAgent();
+                else
+                    documents.Add(document.AsOpenedByAgent());
+            }
+            OnChanged();
+            return true;
         }
 
         /// <summary>
@@ -511,7 +551,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["id"] = isOpen ? sessionId : null,
                     ["automatic"] = isOpen && startedAutomatically,
                     ["documents"] = isOpen
-                        ? new JArray(documents.Select(entry => new JObject { ["key"] = entry.Key, ["title"] = entry.Title }))
+                        ? new JArray(documents.Select(entry => new JObject {
+                            ["key"] = entry.Key,
+                            ["title"] = entry.Title,
+                            ["opened_by_agent"] = entry.OpenedByAgent,
+                        }))
                         : null,
                     ["started"] = isOpen ? startedUtc.ToString("o") : null,
                     ["paused_cause"] = state == AgentSessionState.Paused ? pausedCause : null,
@@ -583,6 +627,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             state = AgentSessionState.Inactive;
             sessionId = null;
             startedAutomatically = false;
+            var opened = documents.Where(entry => entry.OpenedByAgent).ToList();
+            if (opened.Count > 0)
+                (releasedByEnd ?? (releasedByEnd = new List<AgentSessionDocument>())).AddRange(opened);
             documents.Clear();
             pausedCause = null;
             pausedReason = null;
@@ -615,7 +662,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnChanged() {
+            List<AgentSessionDocument> released;
+            lock (sync) {
+                released = releasedByEnd;
+                releasedByEnd = null;
+            }
             Changed?.Invoke();
+            if (released != null)
+                EndedWithOpenedDocuments?.Invoke(released);
         }
 
         private static string StateName(AgentSessionState value) {

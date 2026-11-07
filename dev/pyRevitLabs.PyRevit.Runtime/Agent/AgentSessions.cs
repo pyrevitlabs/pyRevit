@@ -39,6 +39,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static Document closingDocument;
         private static int closingDocumentId;
 
+        static AgentSessions() {
+            Tracker.EndedWithOpenedDocuments += CloseOpenedDocuments;
+        }
+
         /// <summary>
         /// Whether the first model request starts a session on every open document. Set from
         /// <c>[agent] session_start</c> each time pyRevit loads, so editing the config mid-session
@@ -176,6 +180,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return Tracker.State == AgentSessionState.Paused;
         }
 
+        /// <summary>
+        /// Keeps the documents a modify run opened or created in the open session, as the agent's.
+        /// </summary>
+        /// <returns>
+        /// The kept documents' keys and titles, or null when there is no session to keep them in.
+        /// </returns>
+        /// <remarks>Must run on the Revit main thread, because it describes documents.</remarks>
+        internal static JArray AdoptOpenedDocuments(IEnumerable<Document> opened) {
+            var adopted = new JArray();
+            foreach (var doc in opened) {
+                var entry = SessionDocument(doc);
+                if (!Tracker.AdoptOpenedDocument(entry))
+                    return null;
+                adopted.Add(new JObject { ["key"] = entry.Key, ["title"] = entry.Title });
+            }
+            return adopted;
+        }
+
         internal static void EndForHostStop() {
             Tracker.End(AgentSessionEndReasons.HostStopped, DateTime.UtcNow);
         }
@@ -253,6 +275,42 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception) {
                 return false;
+            }
+        }
+
+        /// <remarks>
+        /// Closing needs a Revit API context. On the main thread the caller is in one: the panel,
+        /// a pyRevit command, or a request Revit picked up. A session ended from the pipe thread
+        /// closes them through the dispatcher.
+        /// </remarks>
+        private static void CloseOpenedDocuments(IReadOnlyList<AgentSessionDocument> released) {
+            if (ScriptExecutor.IsOnMainThread) {
+                Close(released);
+                return;
+            }
+            var dispatcher = AgentHost.Dispatcher;
+            if (dispatcher == null) {
+                logger.Warn("Could not close the documents agents opened, because the agent host is stopped: {0}",
+                    string.Join(", ", released.Select(entry => entry.Title)));
+                return;
+            }
+            if (!dispatcher.Post(_ => Close(released)))
+                logger.Warn("Could not close the documents agents opened, because Revit refused the request: {0}",
+                    string.Join(", ", released.Select(entry => entry.Title)));
+        }
+
+        private static void Close(IEnumerable<AgentSessionDocument> released) {
+            foreach (var entry in released) {
+                var doc = entry.Document as Document;
+                if (!IsOpen(doc) || doc.IsLinked)
+                    continue;
+                try {
+                    if (!doc.Close(false))
+                        logger.Warn("Revit kept '{0}', which an agent opened, open after its session ended.", entry.Title);
+                }
+                catch (Exception ex) {
+                    logger.Warn("Could not close '{0}', which an agent opened, after its session ended: {1}", entry.Title, ex.Message);
+                }
             }
         }
 

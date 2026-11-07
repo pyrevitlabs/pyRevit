@@ -40,9 +40,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// else failed, it fails with <c>other_document_modified</c>.</item>
     /// <item>A modify run requires a document. Query and dry-run requests with no document
     /// remain subject to their individual operation restrictions.</item>
-    /// <item>Background documents the run created or opened are closed without saving when it
-    /// ends, whatever its outcome, and listed in <c>closed_documents</c>. The guard blocks their
-    /// save and save-as operations while the run is active.</item>
+    /// <item>Documents a modify run opened or created stay open when it is committed or changes
+    /// nothing: they join the session as the agent's, are listed in <c>opened_documents</c> with
+    /// their keys, and are closed without saving when the session ends. After any other run,
+    /// background ones are closed without saving and listed in <c>closed_documents</c>; see
+    /// <see cref="AgentRunDecision.KeepsOpenedDocuments"/>. The guard blocks their save and
+    /// save-as operations while the run is active.</item>
     /// </list>
     /// The host attempts to write <c>script.py</c>, <c>request.json</c> and <c>response.json</c>
     /// under <c>%APPDATA%\pyRevit\agent\runs\</c>; both JSON records carry the session id and the
@@ -184,6 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
                 timings.Lap("prepare");
                 var openAtStart = AgentDocuments.Snapshot(app.Application);
+                AgentRunVerdict? finalVerdict = null;
                 var guard = new AgentRunGuard(app, doc);
                 using (guard) {
                     try {
@@ -217,6 +221,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         });
                         timings.Lap("decide");
                         verdict = CarryOut(verdict, guard, context, doc, uidoc, request, runId, exitCode, changes, highlight, timings);
+                        finalVerdict = verdict;
                         timings.Lap("guard_release");
 
                         var approval = AgentRunDecision.Approval(verdict);
@@ -250,12 +255,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                 }
                 try {
-                    var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
-                    response["closed_documents"] = leftovers["closed"];
-                    response["unclosed_documents"] = leftovers["failed"];
-                    if (((JArray)leftovers["failed"]).Count > 0)
-                        warnings.Add("Could not close background documents the run left open: "
-                            + string.Join(", ", leftovers["failed"].Values<string>()));
+                    var kept = finalVerdict.HasValue && AgentRunDecision.KeepsOpenedDocuments(request.Mode, finalVerdict.Value)
+                        ? AgentSessions.AdoptOpenedDocuments(AgentDocuments.OpenedSince(app.Application, openAtStart))
+                        : null;
+                    response["opened_documents"] = kept ?? new JArray();
+                    if (kept != null) {
+                        response["closed_documents"] = new JArray();
+                        response["unclosed_documents"] = new JArray();
+                    }
+                    else {
+                        var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
+                        response["closed_documents"] = leftovers["closed"];
+                        response["unclosed_documents"] = leftovers["failed"];
+                        if (((JArray)leftovers["failed"]).Count > 0)
+                            warnings.Add("Could not close background documents the run left open: "
+                                + string.Join(", ", leftovers["failed"].Values<string>()));
+                    }
                 }
                 catch (Exception ex) {
                     logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);

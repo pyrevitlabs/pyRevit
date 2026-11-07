@@ -102,6 +102,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Whether the documents a run opened or created stay open in the session afterwards.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: only a modify run that went through keeps them. A query, a dry run, and a
+        /// run that failed or was refused or discarded leave nothing behind: a family from
+        /// <c>EditFamily</c> can be changed in any run, and closing it without saving is what
+        /// discards those changes.
+        /// </remarks>
+        public static bool KeepsOpenedDocuments(AgentRunMode mode, AgentRunVerdict verdict) {
+            if (mode != AgentRunMode.Modify)
+                return false;
+            switch (verdict) {
+                case AgentRunVerdict.AutoCommit:
+                case AgentRunVerdict.UserApproved:
+                case AgentRunVerdict.NoChanges:
+                case AgentRunVerdict.NoDocument:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static string Approval(AgentRunVerdict verdict) {
             switch (verdict) {
                 case AgentRunVerdict.AutoCommit: return "auto";

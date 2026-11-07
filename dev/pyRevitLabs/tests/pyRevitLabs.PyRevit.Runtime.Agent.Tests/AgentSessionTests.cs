@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
@@ -357,6 +358,85 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.False(tracker.Retitle(Is(annex), "Annex v2.rvt"));
             Assert.False(tracker.Retitle(Is(annex), null));
             Assert.False(tracker.Retitle(_ => false, "Site.rvt"));
+        }
+
+        [Fact]
+        public void ADocumentARunOpenedJoinsTheSessionAsTheAgents() {
+            StartOnDocument();
+
+            Assert.True(tracker.AdoptOpenedDocument(Annex));
+
+            var documents = tracker.Describe()["documents"];
+            Assert.False(documents[0].Value<bool>("opened_by_agent"));
+            Assert.Equal("doc-2", documents[1].Value<string>("key"));
+            Assert.True(documents[1].Value<bool>("opened_by_agent"));
+            Dequeue(Is(annex), "Annex.rvt");
+        }
+
+        [Fact]
+        public void AdoptingADocumentAlreadyInTheSessionMarksIt() {
+            StartAutomatically();
+
+            Assert.True(tracker.AdoptOpenedDocument(Annex));
+
+            Assert.Equal(new[] { "Tower.rvt", "Annex.rvt" }, Titles(tracker.Describe()));
+            Assert.True(tracker.Documents.Single(entry => entry.Key == "doc-2").OpenedByAgent);
+        }
+
+        [Fact]
+        public void NothingIsAdoptedWithoutASession() {
+            Assert.False(tracker.AdoptOpenedDocument(Annex));
+            Assert.Empty(tracker.Documents);
+        }
+
+        [Fact]
+        public void EndingASessionReleasesTheDocumentsAgentsOpenedOnce() {
+            var released = new List<string>();
+            tracker.EndedWithOpenedDocuments += documents => released.AddRange(documents.Select(entry => entry.Title));
+            StartOnDocument();
+            tracker.AdoptOpenedDocument(Annex);
+
+            tracker.EndInRevit(Now);
+            tracker.EndInRevit(Now);
+
+            Assert.Equal(new[] { "Annex.rvt" }, released);
+        }
+
+        [Fact]
+        public void AnAgentsDocumentKeepsTheSessionGoingAfterTheUsersLastOneCloses() {
+            var released = new List<string>();
+            tracker.EndedWithOpenedDocuments += documents => released.AddRange(documents.Select(entry => entry.Title));
+            StartOnDocument();
+            tracker.AdoptOpenedDocument(Annex);
+
+            tracker.RemoveDocument(Is(document), AgentSessionEndReasons.DocumentClosed, Now);
+            Assert.Equal(AgentSessionState.Active, tracker.State);
+            Assert.Empty(released);
+
+            tracker.RemoveDocument(Is(annex), AgentSessionEndReasons.DocumentClosed, Now);
+            Assert.Equal(AgentSessionState.Inactive, tracker.State);
+            Assert.Equal(new[] { "Annex.rvt" }, released);
+        }
+
+        [Fact]
+        public void ASessionWithoutAgentDocumentsReleasesNothing() {
+            var raised = 0;
+            tracker.EndedWithOpenedDocuments += _ => raised++;
+            StartOnDocument();
+
+            tracker.EndInRevit(Now);
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void RetitlingKeepsTheAgentsMark() {
+            StartOnDocument();
+            tracker.AdoptOpenedDocument(Annex);
+
+            tracker.Retitle(Is(annex), "Annex v2.rvt");
+
+            Assert.True(tracker.Documents.Single(entry => entry.Key == "doc-2").OpenedByAgent);
         }
 
         [Fact]

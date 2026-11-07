@@ -37,7 +37,7 @@ generic_model = os.path.join(family_templates, "English", "Metric Generic Model.
 
 ## Saving: what a run can and can't do
 
-- **Guarded runs cannot save documents.** The host blocks `Save` and `SaveAs` for documents that were open, created, or opened from disk during a run. It also closes background documents it created or opened without saving when the run ends. Use a run to inspect or prepare a document, then have the user save it in Revit after the run.
+- **Guarded runs cannot save documents.** The host blocks `Save` and `SaveAs` for documents that were open, created, or opened from disk during a run. Documents a modify run creates or opens stay open in the agent session when the run is committed or changes nothing, and close without saving when the session ends; after a query, a dry run, or a failed or discarded run, the host closes them without saving. Use a run to inspect or prepare a document, then have the user save it in Revit after the run.
 - **The document that was open when the run started can't be saved from a run.** Revit refuses with "Operation is not permitted when there is any open transaction phase started by API client", because the run holds a transaction group on it. Ask the user to save it in Revit.
 - **Files written during a dry run stay on disk.** A dry run rolls back model changes, not files.
 - **Check cleanup outcomes.** `changes.other_documents` reports `rolled_back` only after a successful transaction-group rollback, and `discarded_on_close` only after a document opened from disk has actually closed. `rollback_incomplete` means changes remain in memory: tell the user to close that document without saving. Check `unclosed_documents` and `warnings` before reporting success.
@@ -62,10 +62,10 @@ except Exception as error:
 result = {"active": uiapp.ActiveUIDocument.Document.Title if uiapp.ActiveUIDocument else None}
 ```
 
-- **A session the user started doesn't take the new file in.** Requests that name it answer `document_not_in_session` until the user adds it to the session in the agent panel; requests that name the session's documents keep working. Ask them to add it, then call `get_context` for the new file's key.
+- **A file a committed or unchanged modify run opens joins the session.** Its key is in the run's `opened_documents`. A file the user opens doesn't: requests that name it answer `document_not_in_session` until the user adds it to a session they started, in the agent panel. Ask them to add it, then call `get_context` for its key.
 - **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` in the result.
 - **With no document open, nothing runs while sessions start in the panel**, because a session needs a document to start on: ask the user to open one. Only with `[agent] session_start` set to `auto` do runs execute with `doc` and `uidoc` set to `None` and the decision `no_document`, and `OpenAndActivateDocument` returns normally there.
-- `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started, or a project or family you opened from a file, fails the run with `other_document_modified`, and it can't be saved.
+- `app.OpenDocumentFile(path)` opens a file in the background, with no window. In a query it closes when the run ends. To read it over several calls, open it in a modify run that changes nothing, then name its key from `opened_documents`. It stays open until the session ends: a later run can't close it, because runs can't close documents that were open when they started. Changing a document that was already open when the run started, or a project or family you opened from a file, fails the run with `other_document_modified`, and it can't be saved.
 
 ## Before you report done
 

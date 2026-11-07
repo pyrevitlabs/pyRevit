@@ -11,7 +11,7 @@ Scripts run in-process with the Windows user's permissions. The model guard is n
 
 Every tool that reads, shows or changes the model takes a `document`: the key of the document to work in, from `get_context`. Element ids belong to that document. In a script, `doc` is that document, and `uidoc` is set only when it is the active one. `show_elements` and `capture_view` need it to be active.
 
-`run_modify` changes only the document it names. Use a dry run first, then submit a focused modify run for approval. The host blocks save, save-as, synchronize and export operations while a run is active.
+`run_modify` changes only the document it names. Use a dry run first, then submit a focused modify run for approval. Documents a committed or unchanged modify run opens or creates stay open in the session, with their keys in `opened_documents`; they close without saving when the session ends. The host blocks save, save-as, synchronize and export operations while a run is active.
 
 Every such tool also takes a `title`: say in a few words what the call is for. The user sees it in Revit's agent panel, next to the code you ran, so make it honest and specific. Add a `reason` when the purpose isn't obvious from the title.
 

@@ -229,6 +229,71 @@ class RollbackTests(TestCase):
         self.assertEqual("timeout", response["error"]["type"])
 
 
+class OpenedDocumentTests(TestCase):
+    """Documents a run opens: kept in the session after a modify run that went through, closed otherwise."""
+
+    def tearDown(self):
+        """End the session that holds the opened documents, which closes them, and start over."""
+        harness.restore_session()
+
+    def _copy(self, name):
+        copy = op.join(harness.session().folder, name + ".rvt")
+        shutil.copyfile(harness.session().other_path, copy)
+        return copy
+
+    def _open_titles(self):
+        return [document.Title for document in harness.session().app.Documents]
+
+    def test_a_document_a_modify_run_opens_stays_open_in_the_session(self):
+        """A modify run that changes nothing keeps what it opened, and later runs name it by key."""
+        copy = self._copy("kept")
+        response = _modify(
+            "app.OpenDocumentFile(inputs['path'])\n", inputs={"path": copy}
+        )
+        self.assertEqual("no_changes", response["decision"])
+        [opened] = response["opened_documents"]
+        self.assertEqual("kept", opened["title"])
+        entry = [
+            document
+            for document in harness.session_status()["documents"]
+            if document["key"] == opened["key"]
+        ][0]
+        self.assertTrue(entry["opened_by_agent"])
+        result = harness.run("result = doc.Title", document=opened["key"])["result"]
+        self.assertEqual("kept", result)
+
+    def test_ending_the_session_closes_the_documents_agents_opened(self):
+        """Without a window the user could close it with, an agent's document closes with the session."""
+        copy = self._copy("closed-at-end")
+        _modify("app.OpenDocumentFile(inputs['path'])\n", inputs={"path": copy})
+        kept = "closed-at-end" in self._open_titles()
+        harness.end_session()
+        self.assertTrue(kept)
+        self.assertNotIn("closed-at-end", self._open_titles())
+
+    def test_a_dry_run_closes_the_documents_it_opens(self):
+        """A dry run leaves nothing behind, so what it opened closes when it ends."""
+        copy = self._copy("dry")
+        response = _modify(
+            "app.OpenDocumentFile(inputs['path'])\n",
+            dry_run=True,
+            inputs={"path": copy},
+        )
+        self.assertEqual([], response["opened_documents"])
+        self.assertEqual(["dry"], response["closed_documents"])
+        self.assertNotIn("dry", self._open_titles())
+
+    def test_a_query_closes_the_documents_it_opens(self):
+        """A query changes nothing that lasts, so what it opened closes when it ends."""
+        copy = self._copy("read")
+        response = harness.run(
+            "result = app.OpenDocumentFile(inputs['path']).Title", inputs={"path": copy}
+        )
+        self.assertEqual("read", response["result"])
+        self.assertEqual(["read"], response["closed_documents"])
+        self.assertNotIn("read", self._open_titles())
+
+
 class BlockTests(TestCase):
     """Operations the run guard blocks or reports."""
 

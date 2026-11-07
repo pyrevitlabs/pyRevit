@@ -112,6 +112,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             AssertResponse(AgentRunVerdict.NoDocument, "ok", "no_document", null);
         }
 
+        [Fact]
+        public void OnlyAModifyRunThatWentThroughKeepsTheDocumentsItOpened() {
+            foreach (var verdict in new[] { AgentRunVerdict.AutoCommit, AgentRunVerdict.UserApproved, AgentRunVerdict.NoChanges, AgentRunVerdict.NoDocument })
+                Assert.True(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.Modify, verdict), verdict.ToString());
+            foreach (var verdict in new[] {
+                AgentRunVerdict.UserDiscarded, AgentRunVerdict.PolicyReadOnly, AgentRunVerdict.ScriptFailed,
+                AgentRunVerdict.TransactionLeftOpen, AgentRunVerdict.OtherDocumentChanged,
+            })
+                Assert.False(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.Modify, verdict), verdict.ToString());
+        }
+
+        [Fact]
+        public void QueriesAndDryRunsNeverKeepTheDocumentsTheyOpened() {
+            foreach (var verdict in new[] { AgentRunVerdict.QueryRolledBack, AgentRunVerdict.NoChanges, AgentRunVerdict.NoDocument })
+                Assert.False(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.Query, verdict), verdict.ToString());
+            foreach (var verdict in new[] { AgentRunVerdict.DryRunRolledBack, AgentRunVerdict.NoChanges, AgentRunVerdict.NoDocument })
+                Assert.False(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.DryRun, verdict), verdict.ToString());
+        }
+
         private static void AssertResponse(AgentRunVerdict verdict, string status, string decision, string approval) {
             Assert.Equal(status, AgentRunDecision.Status(verdict));
             Assert.Equal(decision, AgentRunDecision.Decision(verdict));

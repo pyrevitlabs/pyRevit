@@ -215,7 +215,8 @@ disabled.
 - **Pause** and **Resume** stop and restart model requests. A request already waiting for
   Revit is refused when Revit picks it up.
 - **End** ends the session. Closing the session's last document ends it too; closing one of
-  several takes only that one out.
+  several takes only that one out. Documents an agent's modify run opened, such as a family from
+  `EditFamily`, are part of the session and are closed without saving when it ends.
 - Closing the panel pauses a session the user started. Reopening the panel shows why, and only
   the user resumes it.
 
@@ -340,10 +341,12 @@ Rules the host enforces:
 - A query that changes the model fails with `query_modified_model` and is rolled back.
 - `run_modify` requires a document, and may change only the one it names. The run's approval
   prompt names the document, and isolates the changes in a view only when it is the active one.
-- Background documents a run created or opened (no view in Revit, not linked, not open when
-  the run started) are closed without saving when the run ends, whatever its outcome, and
-  listed in `closed_documents`. The host blocks their save and save-as operations while a run is
-  active.
+- Documents a modify run created or opened (not linked, not open when the run started) stay
+  open when the run is committed or changes nothing. They join the agent session as the agent's,
+  are listed with their keys in `opened_documents`, and are closed without saving when the session
+  ends. After a query, a dry run, or a run that fails or is discarded, the background ones (no
+  view in Revit) are closed without saving and listed in `closed_documents`. The host blocks
+  their save and save-as operations while a run is active.
   `get_context.open_documents` lists every open document and marks the background ones.
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
   save-as, synchronize-with-central, file-export and view-export events. The response lists a
@@ -742,7 +745,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
     - `DocumentSynchronizingWithCentral`, `DocumentSaving` and `DocumentSavingAs` are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
       `DocumentClosing` is cancelled only for documents open when the run started.
       The script may close documents it creates or opens during the run, but cannot save them.
-      After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.
+      After the guard is disposed, a committed or unchanged modify run's documents join the session; after any other run, the host closes the ones still open in the background without saving, and documents with an open view are left open.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
       failing transaction, in every non-linked document. A failure in a family or a new
@@ -870,7 +873,7 @@ itself: the pipe executes requests through an ExternalEvent that never fires whi
 
 | Button | Covers |
 |---|---|
-| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; sessions (start, pause, end, requests, the wrong document, added documents, automatic sessions, closing documents); change awareness; the agent panel (pane, log, refused runs, closing it pauses the session); the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
+| Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, documents a run keeps open, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; sessions (start, pause, end, requests, the wrong document, added documents, automatic sessions, closing documents); change awareness; the agent panel (pane, log, refused runs, closing it pauses the session); the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
 | Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
 | Run Agent Library Tests | The shipped and user skills, `lookup_pyrevit_api` and `list_automation` through a short-lived `pyrevit mcp` process, and the pyrevitlib side of the automation operations on both engines |
 | Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
