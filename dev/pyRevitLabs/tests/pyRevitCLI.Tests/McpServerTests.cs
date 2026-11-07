@@ -8,8 +8,10 @@ namespace pyRevitCLI.Tests;
 public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
         "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
-        "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "get_run",
+        "run_automation", "lookup_revit_api", "get_run",
     };
+
+    private static readonly string[] PresentationTools = { "show_elements", "navigate_revit_link", "capture_view" };
 
     private readonly FakeAgentHost host = new FakeAgentHost();
 
@@ -60,6 +62,13 @@ public partial class McpServerTests : IDisposable {
         if (extra != null)
             run.Merge(extra);
         return FakeAgentHost.Result(request, run);
+    }
+
+    [Fact]
+    public void ANewerProtocolVersionIsAnsweredWithTheImplementedOne() {
+        var newer = Single(Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-11-25" }));
+
+        Assert.Equal("2025-06-18", newer["result"].Value<string>("protocolVersion"));
     }
 
     [Fact]
@@ -362,7 +371,7 @@ public partial class McpServerTests : IDisposable {
                 Assert.True(properties[required.Value<string>()] != null, name + " requires an undeclared property");
             var readOnly = ReadOnlyTools.Contains(name);
             Assert.Equal(readOnly, tool["annotations"].Value<bool>("readOnlyHint"));
-            Assert.Equal(!readOnly, tool["annotations"].Value<bool>("destructiveHint"));
+            Assert.Equal(!readOnly && !PresentationTools.Contains(name), tool["annotations"].Value<bool>("destructiveHint"));
         }
     }
 
@@ -490,6 +499,21 @@ public partial class McpServerTests : IDisposable {
         Assert.True(IsError(response));
         Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
         Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void HostErrorDetailsReachTheToolResult() {
+        var views = new JArray(
+            new JObject { ["id"] = 101, ["name"] = "QA Dup", ["type"] = "DraftingView" },
+            new JObject { ["id"] = 102, ["name"] = "QA Dup", ["type"] = "CeilingPlan" });
+        host.Handler = request => FakeAgentHost.Failure(request, "view_ambiguous", "2 views are named 'QA Dup'.", new JObject { ["views"] = views });
+
+        var response = Single(ToolCall(1, "capture_view", new JObject { ["view"] = "QA Dup" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("view_ambiguous", payload.Value<string>("error"));
+        Assert.True(JToken.DeepEquals(views, payload["views"]));
     }
 
     [Fact]

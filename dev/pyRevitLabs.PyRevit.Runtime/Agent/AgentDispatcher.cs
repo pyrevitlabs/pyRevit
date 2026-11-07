@@ -28,7 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly Queue<AgentWorkItem> queue = new Queue<AgentWorkItem>();
         private readonly TimeSpan hungGrace;
         private ExternalEvent externalEvent;
-        private DateTime? runningSince;
+        private long runningSinceTicks;
         private ScriptDeadline currentScript;
 
         public AgentDispatcher() : this(DefaultHungGrace) {
@@ -141,7 +141,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentWorkItem item;
             while (TryDequeue(out item)) {
                 item.Started.Set();
-                runningSince = DateTime.UtcNow;
+                Interlocked.Exchange(ref runningSinceTicks, DateTime.UtcNow.Ticks);
                 try {
                     item.Completion.TrySetResult(item.Work(app));
                 }
@@ -149,24 +149,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     item.Completion.TrySetException(ex);
                 }
                 finally {
-                    runningSince = null;
+                    Interlocked.Exchange(ref runningSinceTicks, 0);
                 }
             }
         }
 
         private string BusyMessage(TimeSpan startTimeout) {
             var message = string.Format("Revit did not become idle within {0:0}s.", startTimeout.TotalSeconds);
-            var since = runningSince;
+            var since = Interlocked.Read(ref runningSinceTicks);
             var stuck = OverdueScript();
-            if (since.HasValue && stuck != null)
+            if (since != 0 && stuck != null)
                 return message + string.Format(
                     " An earlier agent run is stuck {0:0}s past its time limit in a call its timeout can't "
                     + "interrupt; Revit stays busy until that call returns.",
                     stuck.Overdue.TotalSeconds);
-            if (since.HasValue)
+            if (since != 0)
                 message += string.Format(
                     " An earlier agent request has been running for {0:0}s; it may be waiting on a dialog.",
-                    (DateTime.UtcNow - since.Value).TotalSeconds);
+                    TimeSpan.FromTicks(DateTime.UtcNow.Ticks - since).TotalSeconds);
             var dialogs = AgentWindows.OpenDialogs();
             if (dialogs.Count > 0)
                 message += " Open Revit windows: " + string.Join(", ", dialogs)

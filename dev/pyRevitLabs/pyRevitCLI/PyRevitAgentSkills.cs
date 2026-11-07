@@ -158,7 +158,7 @@ namespace pyRevitCLI {
 
             var text = File.ReadAllText(path);
             var others = MarkdownFiles(skill.Directory)
-                .Select(other => other.Substring(root.Length).Replace('\\', '/'))
+                .Select(other => Path.GetRelativePath(skill.Directory, other).Replace('\\', '/'))
                 .Where(other => !string.Equals(Path.GetFullPath(Path.Combine(skill.Directory, other)), path, StringComparison.OrdinalIgnoreCase))
                 .ToList();
             if (others.Count > 0)
@@ -171,15 +171,7 @@ namespace pyRevitCLI {
             if (IsReparsePoint(skillDir) || !File.Exists(path) || new FileInfo(path).Length > MaxSkillBytes)
                 return null;
 
-            var lines = File.ReadAllLines(path);
-            var frontMatter = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (lines.Length > 0 && lines[0].Trim() == "---") {
-                for (var index = 1; index < lines.Length && lines[index].Trim() != "---"; index++) {
-                    var separator = lines[index].IndexOf(':');
-                    if (separator > 0)
-                        frontMatter[lines[index].Substring(0, separator).Trim()] = lines[index].Substring(separator + 1).Trim();
-                }
-            }
+            var frontMatter = ParseFrontMatter(File.ReadAllLines(path));
 
             var name = frontMatter.TryGetValue("name", out var declaredName) && declaredName.Length > 0 ? declaredName : Path.GetFileName(skillDir);
             if (!SkillName.IsMatch(name))
@@ -194,6 +186,36 @@ namespace pyRevitCLI {
                 Source = source,
                 Hash = Hash(path),
             };
+        }
+
+        /// <summary>
+        /// Reads the <c>key: value</c> lines between a leading <c>---</c> and the next <c>---</c>.
+        /// </summary>
+        /// <remarks>
+        /// Only the flat one-line scalars skills use are understood. A value in single or double
+        /// quotes loses its quotes, with <c>''</c> and <c>\"</c> unescaped. A file whose front
+        /// matter is never closed has none, so its body is never read as metadata.
+        /// </remarks>
+        internal static Dictionary<string, string> ParseFrontMatter(IReadOnlyList<string> lines) {
+            var frontMatter = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (lines.Count == 0 || lines[0].Trim() != "---")
+                return frontMatter;
+            for (var index = 1; index < lines.Count; index++) {
+                if (lines[index].Trim() == "---")
+                    return frontMatter;
+                var separator = lines[index].IndexOf(':');
+                if (separator > 0)
+                    frontMatter[lines[index].Substring(0, separator).Trim()] = Unquote(lines[index].Substring(separator + 1).Trim());
+            }
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string Unquote(string value) {
+            if (value.Length >= 2 && value[0] == '\'' && value[value.Length - 1] == '\'')
+                return value.Substring(1, value.Length - 2).Replace("''", "'");
+            if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"')
+                return value.Substring(1, value.Length - 2).Replace("\\\"", "\"");
+            return value;
         }
 
         private static IEnumerable<(string Root, string Source)> SkillRoots() {
