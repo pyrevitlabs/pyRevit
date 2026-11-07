@@ -21,6 +21,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// UI thread would block the caller and the <c>revit_busy</c> answer would never be sent.
     /// </remarks>
     internal static class AgentWindows {
+        /// <summary>The agent panel's window title, which is never a dialog that blocks Revit.</summary>
+        internal const string AgentPanelTitle = "pyRevit Agent";
+
         private const int MaxWindows = 6;
 
         private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
@@ -58,7 +61,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     GetClassName(window, className, className.Capacity);
                     if (text.Length == 0 && className.ToString().StartsWith("Tooltip", StringComparison.OrdinalIgnoreCase))
                         return true;
-                    if (text.ToString() == AgentPanel.Title)
+                    if (text.ToString() == AgentPanelTitle)
                         return true;
                     found.Add(string.Format("'{0}' ({1})", text, className));
                     return found.Count < MaxWindows;

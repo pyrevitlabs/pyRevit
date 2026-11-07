@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
@@ -18,6 +19,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     internal sealed class AgentRunRequest {
         public string Script { get; private set; }
+
+        /// <summary>
+        /// The agent's one-line name for the run, shown in the approval prompt.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: holds no line breaks or other control and format characters, so a title
+        /// can't add lines that pass for the change counts in the prompt, and is at most
+        /// 200 characters, so it can't push the rest of the prompt off screen.
+        /// </remarks>
         public string Title { get; private set; }
         public string Reason { get; private set; }
         public AgentRunMode Mode { get; private set; }
@@ -63,8 +73,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var inputs = parameters["inputs"];
             var workspace = parameters.Value<string>("workspace");
-            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
-                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");
+            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
+                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
             var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
@@ -80,6 +90,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Workspace = string.IsNullOrWhiteSpace(workspace) ? null : Path.GetFullPath(workspace),
                 TimeoutSeconds = timeoutSeconds,
             };
+        }
+
+        /// <remarks>
+        /// Checked before the folder is touched: looking up a UNC path connects to that host
+        /// and sends it the user's Windows credentials.
+        /// </remarks>
+        private static bool IsNetworkOrDevicePath(string path) {
+            return path.Length >= 2 && IsSeparator(path[0]) && IsSeparator(path[1]);
+        }
+
+        private static bool IsSeparator(char character) {
+            return character == Path.DirectorySeparatorChar || character == Path.AltDirectorySeparatorChar;
         }
 
         public JObject ToJson() {
@@ -120,12 +142,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// agent log and the run record.
     /// </summary>
     /// <remarks>
-    /// The MCP server refuses a missing or overlong title. The host only trims and cuts,
+    /// The MCP server refuses a missing or overlong title. The host only cleans and cuts,
     /// because the CLI and in-Revit callers send what they have.
+    /// Invariant: the text holds no line breaks or other control and format characters, which
+    /// become spaces, so it can't add lines that pass for the change counts in the approval
+    /// prompt, and a cut never splits a character.
     /// </remarks>
     internal static class AgentRequestText {
-        public const int MaxTitleLength = 120;
+        public const int MaxTitleLength = 200;
         public const int MaxReasonLength = 300;
+
+        private static readonly Regex Breaks = new Regex(@"[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+");
 
         public static string Title(JObject parameters) {
             return Read(parameters, "title", MaxTitleLength);
@@ -136,10 +163,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static string Read(JObject parameters, string name, int maxLength) {
-            var text = ((parameters[name] as JValue)?.Value as string)?.Trim();
-            if (string.IsNullOrEmpty(text))
+            var raw = (parameters[name] as JValue)?.Value as string;
+            if (raw == null)
                 return null;
-            return text.Length <= maxLength ? text : text.Substring(0, maxLength);
+            var text = Breaks.Replace(raw, " ").Trim();
+            return text.Length == 0 ? null : Cut(text, maxLength);
+        }
+
+        private static string Cut(string text, int maxLength) {
+            if (text.Length <= maxLength)
+                return text;
+            var length = maxLength - 1;
+            if (char.IsHighSurrogate(text[length - 1]))
+                length--;
+            return text.Substring(0, length) + "…";
         }
     }
 }

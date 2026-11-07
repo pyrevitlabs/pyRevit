@@ -577,6 +577,9 @@ class SettingsWindow(forms.WPFWindow):
             if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
                 return
 
+            if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.PerLaunch:
+                return
+
             # notify use to restart if engine has changed
             if self.availableEngines.SelectedItem:
                 new_engine = self.availableEngines.SelectedItem.engine.Version

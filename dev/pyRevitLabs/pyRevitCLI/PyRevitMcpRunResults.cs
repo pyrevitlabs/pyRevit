@@ -330,9 +330,15 @@ namespace pyRevitCLI {
                 compact["by_category"] = byCategory;
             if (changes["added"] is JArray added && added.Count > 0)
                 compact["added_ids"] = new JArray(added.Take(MaxChangeIds).Select(element => element["id"]));
+            if (changes["added_families"] is JArray families && families.Count > 0)
+                compact["added_families"] = new JArray(families.Take(MaxChangeIds));
+            if (changes["modified"] is JArray modified && modified.Count > 0)
+                compact["modified"] = new JArray(modified.Take(MaxChangeIds));
+            if (changes["deleted"] is JArray deleted && deleted.Count > 0)
+                compact["deleted_ids"] = new JArray(deleted.Take(MaxChangeIds));
             CopyIfNotEmpty(changes, compact, "other_documents");
-            if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > 0 || changes.Value<int>("deleted_count") > 0)
-                compact["details"] = "Element names, classes and modified or deleted ids are in get_run(run_id).";
+            if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > MaxChangeIds || changes.Value<int>("deleted_count") > MaxChangeIds)
+                compact["details"] = $"Each list here stops at {MaxChangeIds} elements; get_run(run_id) lists up to 50 of each kind, with the names and classes of added elements.";
             return compact;
         }
 

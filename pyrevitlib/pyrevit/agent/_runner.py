@@ -37,7 +37,7 @@ except ImportError:
 import System
 
 from pyrevit.api import DB, UI
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import IRONPY, get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 
@@ -67,9 +67,10 @@ class RunTimedOut(BaseException):
 
     Derives from ``BaseException`` so a script's ``except Exception`` can't
     swallow it. The runner narrows every bare ``except`` and ``except
-    BaseException`` in the script to ``except Exception`` before compiling,
-    and records that the deadline passed so :func:`run` fails the run even
-    if the script then ends normally. A handler that still catches it, such
+    BaseException`` (or ``except builtins.BaseException``) in the script to
+    ``except Exception`` before compiling, and records that the deadline
+    passed so :func:`run` fails the run even if the script then ends
+    normally. A handler that still catches it, such
     as one reached through an alias, is stopped at the next rewritten loop
     header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
@@ -105,6 +106,8 @@ def _catches_base_exception(handler_type):
         return True
     if isinstance(handler_type, ast.Name):
         return handler_type.id == "BaseException"
+    if isinstance(handler_type, ast.Attribute):
+        return handler_type.attr == "BaseException"
     if isinstance(handler_type, ast.Tuple):
         return any(_catches_base_exception(item) for item in handler_type.elts)
     return False
@@ -129,6 +132,11 @@ def _narrow_source_handlers(source, handlers):
     are populated. Keep the original source and its newline count instead,
     including multiline exception tuples and Python 2 exception bindings.
     Preserve the star in exception group handlers while narrowing their types.
+
+    Raises:
+        ValueError: not every handler header was found in the source; the
+            caller then compiles the narrowed AST instead of source that would
+            still catch the timeout.
     """
     positions = set((node.lineno, node.col_offset) for node in handlers)
     lines = _source_lines(source)
@@ -164,6 +172,10 @@ def _narrow_source_handlers(source, handlers):
                 depth += 1
             elif text in (")", "]", "}"):
                 depth -= 1
+    if len(replacements) != len(positions):
+        raise ValueError(
+            "rewrote {} of {} handler headers".format(len(replacements), len(positions))
+        )
     for first, last, replacement in reversed(replacements):
         source = source[:first] + replacement + source[last:]
     return source
@@ -689,45 +701,58 @@ def _start_watchdog(timeout_s, state):
     :class:`_JumpEscalation`, which raises at every backward jump: the end
     of a loop body, outside any ``try`` inside that body.
 
+    Invariant:
+        The script thread sets ``state["finished"]`` with a plain store once
+        the script and the serialization of its ``result``, which can still
+        run script code, are done, and at the latest when it stops the
+        watchdog. From then on nothing new is
+        raised in that thread, even if ``RunTimedOut`` interrupts the runner
+        before it calls the returned function, so an injection can never
+        outlive the run and reach other Python code on Revit's main thread.
+
     Returns:
         function: stops the watchdog and clears any injection still pending.
+        It is also stored as ``state["stop_watchdog"]`` before the watchdog
+        starts, so the runner can stop it even when ``RunTimedOut`` lands
+        before this function has returned.
     """
     stopped = threading.Event()
-    set_async_exc = _async_exception_setter()
     thread_id = threading.current_thread().ident
-    escalation = _JumpEscalation(thread_id, timeout_s)
+    inject = _timeout_injector(thread_id, state)
+    escalation = _JumpEscalation(thread_id, timeout_s, state)
 
     def watch():
         if stopped.wait(timeout_s):
             return
         state["timed_out"] = True
-        if set_async_exc is None:
+        if inject is None:
             return
         escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
-        while not stopped.is_set():
-            set_async_exc(thread_id, RunTimedOut)
+        while not stopped.is_set() and not state["finished"]:
+            inject(RunTimedOut)
             if _clock() >= escalate_at:
                 escalation.arm()
             stopped.wait(_WATCHDOG_RETRY_SECONDS)
 
     thread = threading.Thread(target=watch)
     thread.daemon = True
-    thread.start()
 
     def stop():
-        escalation.halted = True
+        state["finished"] = True
         stopped.set()
-        if set_async_exc is None:
+        if inject is None:
             return
         while True:
             try:
                 thread.join()
-                set_async_exc(thread_id, None)
+                inject(None)
                 escalation.release()
                 return
             except RunTimedOut:
                 pass
 
+    state["stop_watchdog"] = stop
+    thread.start()
     return stop
 
 
@@ -744,13 +769,13 @@ class _JumpEscalation(object):
     ``sys.monitoring``.
 
     Invariant:
-        Set ``halted`` before the runner's own code runs again after the
-        script: from then on the callback never raises, and :meth:`arm` does
-        nothing. :meth:`release` must follow once the watchdog has stopped.
+        Once ``state["finished"]`` is set the callback never raises and
+        :meth:`arm` does nothing. :meth:`release` must follow once the
+        watchdog has stopped.
     """
 
-    def __init__(self, thread_id, timeout_s):
-        self.halted = False
+    def __init__(self, thread_id, timeout_s, state):
+        self._state = state
         self._thread_id = thread_id
         self._timeout_s = timeout_s
         self._tool_id = None
@@ -759,7 +784,11 @@ class _JumpEscalation(object):
     def arm(self):
         monitoring = getattr(sys, "monitoring", None)
         with self._lock:
-            if monitoring is None or self.halted or self._tool_id is not None:
+            if (
+                monitoring is None
+                or self._state["finished"]
+                or self._tool_id is not None
+            ):
                 return
             for tool_id in _ESCALATION_TOOL_IDS:
                 if monitoring.get_tool(tool_id) is None:
@@ -772,7 +801,6 @@ class _JumpEscalation(object):
             monitoring.set_events(tool_id, monitoring.events.JUMP)
 
     def release(self):
-        self.halted = True
         with self._lock:
             tool_id, self._tool_id = self._tool_id, None
             if tool_id is None:
@@ -784,15 +812,45 @@ class _JumpEscalation(object):
 
     def _on_jump(self, code, offset, destination):
         if (
-            not self.halted
+            not self._state["finished"]
             and destination < offset
             and threading.get_ident() == self._thread_id
         ):
             raise RunTimedOut(self._timeout_s)
 
 
-def _async_exception_setter():
-    """Return ``fn(thread_id, exc_type)`` that raises in another thread, or None.
+def _timeout_injector(thread_id, state):
+    """Return ``inject(exc_type)`` that raises in the script thread, or None.
+
+    None on engines without :func:`_set_async_exc_function`.
+    ``inject(None)`` clears an injection still pending.
+
+    Invariant:
+        ``inject(RunTimedOut)`` reads ``state["finished"]`` and calls
+        ``PyThreadState_SetAsyncExc`` with prebuilt arguments and no Python
+        call in between, so the GIL can't pass to the script thread between
+        the check and the injection. Building the ctypes arguments inside
+        ``inject`` would reopen that window.
+    """
+    raw = _set_async_exc_function()
+    if raw is None:
+        return None
+    import ctypes
+
+    target = ctypes.c_ulong(thread_id)
+    timed_out = ctypes.py_object(RunTimedOut)
+
+    def inject(exc_type):
+        if exc_type is None:
+            raw(target, None)
+        elif not state["finished"]:
+            raw(target, timed_out)
+
+    return inject
+
+
+def _set_async_exc_function():
+    """Return CPython's ``PyThreadState_SetAsyncExc``, or None on other engines.
 
     Only CPython can raise an exception in a running thread from outside it;
     IronPython has no equivalent on .NET Core.
@@ -802,17 +860,9 @@ def _async_exception_setter():
     try:
         import ctypes
 
-        raw = ctypes.pythonapi.PyThreadState_SetAsyncExc
+        return ctypes.pythonapi.PyThreadState_SetAsyncExc
     except (ImportError, AttributeError):
         return None
-
-    def set_async_exc(thread_id, exc_type):
-        raw(
-            ctypes.c_ulong(thread_id),
-            ctypes.py_object(exc_type) if exc_type is not None else None,
-        )
-
-    return set_async_exc
 
 
 class _PhaseClock(object):
@@ -833,6 +883,25 @@ class _PhaseClock(object):
             except Exception:
                 self._report = None
         self._last = now
+
+
+def _finish_and_stop_watchdog(state):
+    """Mark the script finished and stop its watchdog, whatever is still pending.
+
+    Invariant:
+        Retries until both are done: an injection already in flight can land on
+        any statement here, and leaving the watchdog running would keep raising
+        ``RunTimedOut`` into Revit's main thread after the run.
+    """
+    while True:
+        try:
+            state["finished"] = True
+            stop_watchdog = state.get("stop_watchdog")
+            if stop_watchdog:
+                stop_watchdog()
+            return
+        except RunTimedOut:
+            pass
 
 
 def run(context):
@@ -907,7 +976,7 @@ def run(context):
     left_open = 0
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
-    state = {"timed_out": False}
+    state = {"timed_out": False, "finished": False}
     timed_out_after_script = False
     tracked_transactions = {}
     try:
@@ -944,19 +1013,18 @@ def run(context):
                 )
             )
         check_lines = (
-            guard_loops and unguarded_code and _async_exception_setter() is None
+            guard_loops and unguarded_code and _set_async_exc_function() is None
         )
         started = time.time()
-        stop_watchdog = None
-        if timeout_s:
-            stop_watchdog = _start_watchdog(timeout_s, state)
-        if check_lines or track:
-            sys.settrace(
-                _execution_tracer(
-                    timeout_s, state, tracked_transactions, check_lines, track
-                )
-            )
         try:
+            if timeout_s:
+                _start_watchdog(timeout_s, state)
+            if check_lines or track:
+                sys.settrace(
+                    _execution_tracer(
+                        timeout_s, state, tracked_transactions, check_lines, track
+                    )
+                )
             script_exit = None
             try:
                 exec(code, namespace)
@@ -989,12 +1057,12 @@ def run(context):
                     )
                 phases.lap("result")
 
+            state["finished"] = True
             if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
                 timed_out_after_script = True
                 raise RunTimedOut(timeout_s)
         finally:
-            if stop_watchdog:
-                stop_watchdog()
+            _finish_and_stop_watchdog(state)
             sys.settrace(None)
     except RunTimedOut:
         failed = True
@@ -1018,6 +1086,8 @@ def run(context):
         _TRANSACTION_RANKS.clear()
         _UNTRACKED_TYPES.clear()
         _TRACKED_TYPES.clear()
+        _ATTRIBUTE_HOLDERS.clear()
+        linecache.cache.pop(SOURCE_NAME, None)
         phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
@@ -1069,9 +1139,10 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
     runner records every transaction the script starts through
     ``__agent_start__`` (see :func:`_record_transaction_starts`), or, when
     that rewrite can't see every start, the transactions script frames hold
-    while it executes; it then also inspects script globals and their
-    immediate containers. A reckless run records nothing while it executes,
-    so only the globals are inspected.
+    while it executes; it then also inspects script globals, their immediate
+    containers and the attributes of objects found there, such as
+    ``pyrevit.revit.Transaction``. A reckless run records nothing while it
+    executes, so only the globals are inspected.
 
     Returns:
         int: how many transactions were rolled back.
@@ -1105,18 +1176,38 @@ def _track_frame_transactions(frame, transactions):
 
 
 def _track_values(variables, transactions):
+    """Record the transactions among a frame's locals and their attributes.
+
+    Note:
+        This runs on every traced line. The attributes of all the locals are
+        gathered and checked by type in one pass (see :func:`_track_typed`):
+        visiting them one call at a time made a traced loop in a method whose
+        ``self`` has 40 attributes about 30 times slower.
+    """
     try:
         values = list(variables.values())
     except Exception:
         return
+    attributes = []
     for value in values:
         if type(value) is _CELL_TYPE:
             try:
                 value = value.cell_contents
             except ValueError:
                 continue
-        if type(value) not in _UNTRACKED_TYPES:
+        value_type = type(value)
+        if value_type not in _UNTRACKED_TYPES:
             _track_transaction(value, transactions)
+            continue
+        holds = _ATTRIBUTE_HOLDERS.get(value_type)
+        if holds is None:
+            holds = _holds_attributes(value)
+        if holds:
+            held = getattr(value, "__dict__", None)
+            if type(held) is dict:
+                attributes.extend(held.values())
+    if attributes:
+        _track_typed(attributes, transactions)
 
 
 def _track_globals(variables, transactions):
@@ -1129,15 +1220,24 @@ def _track_globals(variables, transactions):
     """
     try:
         values = list(variables.values())
-        kinds = set(map(type, values))
     except Exception:
         return
+    _track_typed(values, transactions)
+
+
+def _track_typed(values, transactions):
+    """Record the transactions among ``values``, comparing their types in bulk.
+
+    Types not seen yet are classified first, so the rest of the work is set
+    operations done in builtins rather than one Python call per value.
+    """
+    kinds = set(map(type, values))
     for kind in kinds.difference(_UNTRACKED_TYPES, _TRACKED_TYPES):
         _transaction_rank(kind)
     if kinds.isdisjoint(_TRACKED_TYPES):
         return
     for value in compress(values, map(_TRACKED_TYPES.__contains__, map(type, values))):
-        _track_transaction(value, transactions)
+        _record_transaction(value, transactions)
 
 
 def _track_stack_transactions(frame, transactions):
@@ -1147,14 +1247,54 @@ def _track_stack_transactions(frame, transactions):
 
 
 def _track_transaction(value, transactions):
+    """Record ``value`` if it is a transaction, else the transactions it holds.
+
+    A Python object's own attributes are checked one level deep, which finds
+    the transaction inside ``pyrevit.revit.Transaction``, the rpw wrappers
+    and the script's own classes. Modules and classes are skipped: walking
+    their namespaces on every traced line would cost too much.
+    """
     if type(value) is _CELL_TYPE:
         try:
             value = value.cell_contents
         except ValueError:
             return
+    if _record_transaction(value, transactions) or not _holds_attributes(value):
+        return
+    attributes = getattr(value, "__dict__", None)
+    if type(attributes) is dict:
+        _track_typed(list(attributes.values()), transactions)
+
+
+def _holds_attributes(value):
+    """Whether ``value`` is an object whose attributes may hold a transaction.
+
+    Cached per type like :func:`_transaction_rank`, and cleared with it, so a
+    .NET object costs one dictionary lookup per traced line.
+    """
+    value_type = type(value)
+    try:
+        return _ATTRIBUTE_HOLDERS[value_type]
+    except KeyError:
+        pass
+    except TypeError:
+        return False
+    try:
+        holds = not issubclass(value_type, (type, _MODULE_TYPE)) and hasattr(
+            value, "__dict__"
+        )
+    except Exception:
+        holds = False
+    _ATTRIBUTE_HOLDERS[value_type] = holds
+    return holds
+
+
+def _record_transaction(value, transactions):
     rank = _transaction_rank(type(value))
-    if rank is not None:
-        transactions[id(value)] = (rank, value)
+    if rank is None:
+        return False
+    transactions[id(value)] = (rank, value)
+    return True
 
 
 _TRANSACTION_RANKS = {}
@@ -1166,8 +1306,12 @@ _TRACKED_TYPES = set()
 Cleared with ``_TRANSACTION_RANKS`` for the same reason.
 """
 
+_ATTRIBUTE_HOLDERS = {}
+
 _CELL_TYPE = type((lambda value: lambda: value)(None).__closure__[0])
 """IronPython with full frames reports function locals as closure cells."""
+
+_MODULE_TYPE = type(sys)
 
 
 def _transaction_rank(value_type):
@@ -1225,10 +1369,7 @@ def _reachable_values(namespace):
 
 
 def _implementation():
-    implementation = getattr(sys, "implementation", None)
-    if implementation is not None:
-        return implementation.name
-    return "ironpython" if "IronPython" in sys.version else "cpython"
+    return "ironpython" if IRONPY else "cpython"
 
 
 def _build_namespace(context):
@@ -1265,11 +1406,12 @@ def _enter_workspace(workspace):
 def _is_under(module_file, root):
     """True when a module's file is inside ``root``.
 
-    Loaded modules can have a ``__file__`` that isn't a file path (built-in
-    and dynamically created modules, assemblies); ``op.abspath`` raises on
-    those in IronPython, so they are treated as outside the workspace.
+    Loaded modules can have a ``__file__`` that isn't an absolute file path
+    (built-in and dynamically created modules, assembly names, IronPython's
+    relative stdlib paths); those are treated as outside the workspace, since
+    ``op.abspath`` would resolve them against the current directory.
     """
-    if not isinstance(module_file, str) or not module_file:
+    if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
@@ -1277,10 +1419,40 @@ def _is_under(module_file, root):
         return False
 
 
+def _folder_prefix(folder):
+    return op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+
+
+_LIBRARY_PATHS = [entry for entry in sys.path if isinstance(entry, str) and entry]
+_PYREVITLIB_PATH = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
+
+
 def _unload_modules_under(folder):
-    root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+    """Unload the modules imported from ``folder``.
+
+    Invariant:
+        Only Python source modules are unloaded, and one under a library
+        folder (a ``sys.path`` entry from when this runner loaded) inside the
+        workspace stays loaded. A workspace such as a drive root or the pyRevit
+        clone never unloads the standard library, .NET namespace modules,
+        pyrevitlib or this runner from the shared engine, while a folder the
+        agent's own scripts put on ``sys.path`` is still reloaded. pyrevitlib
+        stays loaded even when it is the workspace itself.
+    """
+    root = _folder_prefix(folder)
+    nested = [
+        prefix
+        for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
+        if prefix != root and prefix.startswith(root)
+    ]
+    nested.append(_folder_prefix(_PYREVITLIB_PATH))
     for name, module in list(sys.modules.items()):
-        if _is_under(getattr(module, "__file__", None), root):
+        module_file = getattr(module, "__file__", None)
+        if (
+            _is_under(module_file, root)
+            and module_file.lower().endswith((".py", ".pyw", ".pyc"))
+            and not any(_is_under(module_file, prefix) for prefix in nested)
+        ):
             del sys.modules[name]
 
 

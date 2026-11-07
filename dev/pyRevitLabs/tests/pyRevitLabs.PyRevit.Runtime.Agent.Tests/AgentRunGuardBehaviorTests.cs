@@ -3,6 +3,7 @@ using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using PyRevitLabs.PyRevit.Runtime.Agent;
+using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     public class AgentRunGuardFailureTests {
@@ -261,6 +262,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             guard.Dispose();
 
             Assert.True(app.Application.Save(document));
+            Assert.True(guard.RollbackFailed);
+            Assert.False(guard.Committed);
+            Assert.Contains(guard.CleanupFailures, failure => failure.Contains("Rollback failed."));
+        }
+
+        [Fact]
+        public void ArmFailsWhenTheActiveGroupDoesNotStart() {
+            var document = new Document { StartStatus = TransactionStatus.Uninitialized };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                Assert.Throws<InvalidOperationException>(() => guard.Arm("Test"));
+                Assert.False(guard.HasOpenGroup);
+            }
+        }
+
+        [Fact]
+        public void OnlyAnAssimilatedRunCountsAsCommitted() {
+            var document = new Document();
+            var guard = new AgentRunGuard(new UIApplication(), document);
+            guard.Arm("Test");
+            guard.Assimilate();
+            guard.Dispose();
+
+            Assert.True(guard.Committed);
+            Assert.False(guard.RollbackFailed);
+            Assert.Equal(0, document.RollbackCalls);
         }
 
         [Fact]
@@ -313,6 +339,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 var summary = guard.Changes.Summarize();
                 Assert.Equal(0, summary.Value<int>("modified_count"));
                 Assert.Equal(1, summary.Value<int>("deleted_count"));
+            }
+        }
+
+        [Fact]
+        public void FamiliesAndTypesAreListedFromEveryAddedElement() {
+            var app = new UIApplication();
+            var document = new Document();
+            var others = Enumerable.Range(0, 60).Select(_ => new ElementId()).ToList();
+            var family = new ElementId();
+            var type = new ElementId();
+            document.Elements[family] = new Family { Name = "People" };
+            document.Elements[type] = new FamilySymbol { Name = "Adult" };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: others.Concat(new[] { family, type }).ToArray());
+
+                var description = guard.Changes.Describe(document, 50);
+                Assert.Equal(50, ((JArray)description["added"]).Count);
+                Assert.Equal(
+                    new[] { "Family:People", "FamilySymbol:Adult" },
+                    description["added_families"].Select(element => element.Value<string>("class") + ":" + element.Value<string>("name")).OrderBy(text => text));
             }
         }
 

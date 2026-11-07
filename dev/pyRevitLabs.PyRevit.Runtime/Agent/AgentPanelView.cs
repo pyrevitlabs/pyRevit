@@ -120,10 +120,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public bool HostRunning => AgentHost.IsRunning;
 
+        /// <remarks>
+        /// The policy runs start under, which stays stricter than the configured one until the user
+        /// confirms a looser one in Revit.
+        /// </remarks>
         public string Policy {
             get {
                 try {
-                    return PyRevitConfigs.GetAgentPolicy();
+                    return AgentRunService.PolicyNameInForce();
                 }
                 catch (Exception) {
                     return PyRevitConsts.ConfigsAgentPolicyDefault;

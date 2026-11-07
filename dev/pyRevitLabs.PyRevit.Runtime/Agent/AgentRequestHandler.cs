@@ -64,6 +64,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static JToken Dispatch(string method, JObject parameters, JToken id) {
             AgentHost.RefreshConfigIfChanged();
             AgentHost.Activity.NoteClient((parameters["client"] as JValue)?.Value as string);
+            if (method != "ping")
+                RequireEnabled();
             switch (method) {
                 case "ping":
                     return new JObject {
@@ -145,12 +147,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// Refuses work once <c>[agent] enabled</c> is off, so disabling the agent from outside
+        /// Revit stops it at the next request instead of the next pyRevit reload.
+        /// </summary>
+        /// <remarks>
+        /// Checked again on the main thread just before the work starts, so a request queued
+        /// before the agent was disabled never runs.
+        /// </remarks>
+        private static void RequireEnabled() {
+            if (AgentHost.IsEnabled())
+                return;
+            var disabled = new AgentException("agent_disabled",
+                "The pyRevit agent is disabled in the pyRevit settings, so the request was not run.");
+            disabled.Details["outcome"] = "not_run";
+            throw disabled;
+        }
+
+        /// <summary>
         /// Runs a fixed, non-script request on the main thread with Revit dialogs closed and
         /// reported, so a dialog Revit opens mid-request can't hang the call.
         /// </summary>
         /// <remarks>
         /// Dismissed dialogs are added to an object result as <c>dialogs</c>. <c>run</c> doesn't
-        /// use this: its guard captures dialogs itself and must disarm for the approval prompt.
+        /// use this: its guard captures dialogs itself.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
             Func<Autodesk.Revit.UI.UIApplication, Document, AgentDialogCapture, JToken> work, JObject parameters, string kind,
@@ -260,7 +279,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var startTimeout = startTimeoutSeconds.HasValue
                         ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
                         : DefaultStartTimeout;
-                    result = dispatcher.Invoke(GatedWork, startTimeout);
+                    result = dispatcher.Invoke(app => {
+                        AgentHost.RefreshConfigIfChanged();
+                        RequireEnabled();
+                        return GatedWork(app);
+                    }, startTimeout);
                 }
                 AgentHost.Activity.Finish(record, OutcomeOf(result), DateTime.UtcNow, Describe(describe, result));
                 return result;

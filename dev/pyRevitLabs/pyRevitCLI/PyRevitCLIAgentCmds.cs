@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
@@ -48,7 +49,7 @@ namespace pyRevitCLI {
             foreach (var instance in instances) {
                 string state;
                 try {
-                    PyRevitAgentClient.Call(instance, "ping");
+                    PyRevitAgentClient.Ping(instance);
                     state = "responding";
                 }
                 catch (AgentClientException ex) {
@@ -67,8 +68,10 @@ namespace pyRevitCLI {
         public static void RunScript(string scriptFile, string mode, string engine, string title, string inputsJson, string revitSelector, string timeoutSeconds = null, string workspace = null, string document = null) {
             if (!File.Exists(scriptFile))
                 throw new PyRevitException("Script file not found: " + scriptFile);
-            if (timeoutSeconds != null && !double.TryParse(timeoutSeconds, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _))
-                throw new PyRevitException("--timeout must be a number of seconds: " + timeoutSeconds);
+            if (timeoutSeconds != null
+                && (!double.TryParse(timeoutSeconds, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsedTimeout)
+                    || double.IsNaN(parsedTimeout) || double.IsInfinity(parsedTimeout) || parsedTimeout <= 0))
+                throw new PyRevitException("--timeout must be a positive number of seconds: " + timeoutSeconds);
 
             var parameters = new JObject {
                 ["script"] = File.ReadAllText(scriptFile),
@@ -171,8 +174,9 @@ namespace pyRevitCLI {
         public static void ConfigureEnabled(bool? enable) {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentEnabled(enable.Value);
-                Console.WriteLine("Agent host {0}. Reload pyRevit or restart Revit to apply.",
-                    enable.Value ? "enabled" : "disabled");
+                Console.WriteLine(enable.Value
+                    ? "Agent host enabled. A running host resumes on its next request; otherwise reload pyRevit or restart Revit to start it."
+                    : "Agent host disabled. Running Revit sessions refuse agent requests from now on.");
             }
             else
                 Console.WriteLine("Agent host is {0}", PyRevitConfigs.GetAgentEnabled() ? "Enabled" : "Disabled");
@@ -224,7 +228,7 @@ namespace pyRevitCLI {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentReckless(enable.Value);
                 Console.WriteLine(enable.Value
-                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run."
+                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run once confirmed in Revit."
                     : "Reckless agent runs disabled. Applies to the next run.");
             }
             else
@@ -309,8 +313,12 @@ namespace pyRevitCLI {
         /// environment keeps the PATH from when Revit started, which misses tools installed since.
         /// So the tool is located on the PATH freshly read from the registry plus the usual install
         /// folders, and the child process gets that fresh PATH too.
+        /// An <c>.exe</c> starts directly. A <c>.cmd</c> or <c>.bat</c> shim (npm installs) needs
+        /// <c>cmd.exe</c>, which would expand <c>%NAME%</c> in a quoted path, so such a call is
+        /// refused when it contains <c>%</c>. The tool gets <see cref="ClientCliTimeout"/> to finish
+        /// and is killed after that.
         /// </remarks>
-        private static void RunClientCliProcess(string tool, string arguments, bool ignoreFailure) {
+        internal static void RunClientCliProcess(string tool, string arguments, bool ignoreFailure) {
             var executable = ResolveClientTool(tool);
             if (executable == null) {
                 if (ignoreFailure)
@@ -320,7 +328,16 @@ namespace pyRevitCLI {
                     + $"Install it or add its folder to PATH, then retry. To register by hand, run: {tool} {arguments}");
             }
 
-            var startInfo = new ProcessStartInfo("cmd.exe", $"/d /s /c \"\"{executable}\" {arguments}\"") {
+            var viaCmd = !executable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+            if (viaCmd && (executable + arguments).Contains('%')) {
+                if (ignoreFailure)
+                    return;
+                throw new PyRevitException(
+                    $"'{tool}' is a command script, and cmd.exe would expand the '%' in its arguments. Register by hand: {tool} {arguments}");
+            }
+            var startInfo = new ProcessStartInfo(
+                viaCmd ? "cmd.exe" : executable,
+                viaCmd ? $"/d /s /c \"\"{executable}\" {arguments}\"" : arguments) {
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -337,9 +354,25 @@ namespace pyRevitCLI {
             }
 
             using (process) {
-                var output = process.StandardOutput.ReadToEnd();
-                var error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
+                var deadline = DateTime.UtcNow + ClientCliTimeout;
+                var outputRead = process.StandardOutput.ReadToEndAsync();
+                var errorRead = process.StandardError.ReadToEndAsync();
+                if (!process.WaitForExit((int)ClientCliTimeout.TotalMilliseconds)) {
+                    try {
+                        process.Kill(entireProcessTree: true);
+                    }
+                    catch (Exception) {
+                    }
+                    if (ignoreFailure)
+                        return;
+                    throw new PyRevitException(
+                        $"'{tool} {arguments}' did not finish within {ClientCliTimeout.TotalSeconds:0} seconds and was stopped.");
+                }
+                var remaining = deadline - DateTime.UtcNow;
+                Task.WhenAny(Task.WhenAll(outputRead, errorRead), Task.Delay(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero))
+                    .GetAwaiter().GetResult();
+                var output = outputRead.IsCompletedSuccessfully ? outputRead.Result : string.Empty;
+                var error = errorRead.IsCompletedSuccessfully ? errorRead.Result : string.Empty;
                 if (ignoreFailure)
                     return;
                 if (!string.IsNullOrWhiteSpace(output))
@@ -350,6 +383,8 @@ namespace pyRevitCLI {
                         + (string.IsNullOrWhiteSpace(error) ? $"Is {tool} installed and on PATH?" : error.Trim()));
             }
         }
+
+        internal static TimeSpan ClientCliTimeout = TimeSpan.FromMinutes(2);
 
         private static string ResolveClientTool(string tool) {
             foreach (var directory in ToolSearchDirectories())

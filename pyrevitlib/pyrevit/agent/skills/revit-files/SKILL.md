@@ -1,6 +1,6 @@
 ---
 name: revit-files
-description: Revit file types and working with files. Covers what .rvt, .rte, .rfa and .rft files are, where templates and libraries live, and opening documents. Guarded runs cannot save or export documents. Use it for "open this model", "find the mechanical template", and similar tasks.
+description: Revit file types and working with files. Covers what .rvt, .rte, .rfa and .rft files are, where templates and libraries live, and opening documents. Guarded runs cancel the save, export and print operations Revit lets them cancel. Use it for "open this model", "find the mechanical template", and similar tasks.
 ---
 
 # Revit files
@@ -39,7 +39,7 @@ generic_model = os.path.join(family_templates, "English", "Metric Generic Model.
 
 - **Guarded runs cannot save documents.** The host blocks `Save` and `SaveAs` for documents that were open, created, or opened from disk during a run. Documents a modify run creates or opens stay open in the agent session when the run is committed or changes nothing, and close without saving when the session ends; after a query, a dry run, or a failed or discarded run, the host closes them without saving. Use a run to inspect or prepare a document, then have the user save it in Revit after the run.
 - **The document that was open when the run started can't be saved from a run.** Revit refuses with "Operation is not permitted when there is any open transaction phase started by API client", because the run holds a transaction group on it. Ask the user to save it in Revit.
-- **Files written during a dry run stay on disk.** A dry run rolls back model changes, not files.
+- **Files written during a dry run stay on disk.** A dry run rolls back model changes, not files. That includes files from APIs the host doesn't block, such as `ViewSchedule.Export`, shared parameter file edits and `TransmissionData.WriteTransmissionData`.
 - **Check cleanup outcomes.** `changes.other_documents` reports `rolled_back` only after a successful transaction-group rollback, and `discarded_on_close` only after a document opened from disk has actually closed. `rollback_incomplete` means changes remain in memory: tell the user to close that document without saving. Check `unclosed_documents` and `warnings` before reporting success.
 
 ## Creating files from templates

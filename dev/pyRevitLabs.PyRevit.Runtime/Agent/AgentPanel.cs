@@ -28,7 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// while it is open; see <see cref="AgentPanelTheme.RevitIsDark"/>.
     /// </remarks>
     public static class AgentPanel {
-        public const string Title = "pyRevit Agent";
+        public const string Title = AgentWindows.AgentPanelTitle;
 
         /// <summary>
         /// The pane's id. Callers that need the pane use <see cref="Show"/> instead of this id.

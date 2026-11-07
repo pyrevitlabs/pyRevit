@@ -63,6 +63,7 @@ namespace pyRevitCLI {
         Doctor,
         Agent,
         Mcp,
+        Launch,
     }
 
     internal static class PyRevitCLI {
@@ -642,6 +643,20 @@ namespace pyRevitCLI {
 
                 else
                     PyRevitMcpServer.Serve(TryGetValue("--revit"));
+            }
+
+            else if (all("launch")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Launch);
+                else
+                    PyRevitCLIRevitCmds.LaunchClone(
+                        cloneNameOrPath: TryGetValue("<clone_name_or_path>"),
+                        useDefaultEngine: arguments["default"].IsTrue,
+                        engineVersion: TryGetValue("<engine_version>"),
+                        revitYear: TryGetValue("<revit_year>"),
+                        isolated: arguments["--isolated"].IsTrue,
+                        language: TryGetValue("--language")
+                        );
             }
 
             else if (all("run")) {

@@ -32,6 +32,7 @@
     <ItemGroup>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunGuard.cs" Link="Sources\AgentRunGuard.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocuments.cs" Link="Sources\AgentDocuments.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentCommitSentinel.cs" Link="Sources\AgentCommitSentinel.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunDecision.cs" Link="Sources\AgentRunDecision.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentException.cs" Link="Sources\AgentException.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSession.cs" Link="Sources\AgentSession.cs"/>
@@ -40,9 +41,13 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogDetails.cs" Link="Sources\AgentLogDetails.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentLogViewModel.cs" Link="Sources\AgentLogViewModel.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentAwareness.cs" Link="Sources\AgentAwareness.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunRequest.cs" Link="Sources\AgentRunRequest.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDispatcher.cs" Link="Sources\AgentDispatcher.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunTimings.cs" Link="Sources\AgentRunTimings.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentWindows.cs" Link="Sources\AgentWindows.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlight.cs" Link="Sources\AgentTabHighlight.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlightValue.cs" Link="Sources\AgentTabHighlightValue.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSelectors.cs" Link="Sources\AgentSelectors.cs"/>
     </ItemGroup>
 
 </Project>
