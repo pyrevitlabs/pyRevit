@@ -19,6 +19,7 @@ public sealed class ClientCliProcessTests : IDisposable {
         PyRevitCLIAgentCmds.RunClientCliProcess(
             "cmd", "/d /c start \"\" /b ping -n 20 127.0.0.1 & exit 0", ignoreFailure: false);
 
+        Assert.True(watch.Elapsed >= TimeSpan.FromSeconds(2), $"The helper let go early: {watch.Elapsed}.");
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(10), $"The call took {watch.Elapsed}.");
     }
 }
