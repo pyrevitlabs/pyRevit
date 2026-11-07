@@ -28,6 +28,10 @@ namespace pyRevitCLI {
     /// newline-delimited JSON-RPC 2.0; no SDK dependency.
     /// Malformed request fields receive JSON-RPC errors; notifications receive no response.
     /// Unexpected dispatch failures receive an internal error without ending the session.
+    /// Tool arguments are checked against the tool's inputSchema before any request reaches
+    /// Revit. Once a tool call has sent a request, a failure that the host did not report itself
+    /// is returned with <c>outcome</c> <c>unknown</c> and that <c>request_id</c>, never as bad
+    /// arguments, because the request may have run.
     /// Calls to one Revit are serialized, because its host serves one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
@@ -46,6 +50,7 @@ namespace pyRevitCLI {
         private readonly ConcurrentDictionary<string, CancellationTokenSource> pendingCalls = new ConcurrentDictionary<string, CancellationTokenSource>();
         private readonly AsyncLocal<CancellationToken> callCancellation = new AsyncLocal<CancellationToken>();
         private readonly List<McpTool> tools;
+        private readonly AsyncLocal<string> sentRequestId = new AsyncLocal<string>();
         private TextWriter output;
 
         private PyRevitMcpServer(string defaultRevit) {
@@ -174,16 +179,17 @@ namespace pyRevitCLI {
         private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
             callCancellation.Value = cancellation;
             Timer progress = null;
+            sentRequestId.Value = null;
             try {
                 JObject result;
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
                     if (string.IsNullOrWhiteSpace(name)) {
-                        Write(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        WriteUnlessClosed(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
-                        Write(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        WriteUnlessClosed(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
                         return;
                     }
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -198,6 +204,13 @@ namespace pyRevitCLI {
                 catch (AgentClientException ex) {
                     result = ToolResult(ex.ToJson().ToString(Formatting.None), true);
                 }
+                catch (Exception) when (sentRequestId.Value != null) {
+                    result = ToolResult(new AgentClientException(
+                        "server_error",
+                        "Revit answered, but pyRevit could not process the answer." + PyRevitAgentClient.LostAnswerNotice(sent: true),
+                        AgentOutcome.Unknown,
+                        sentRequestId.Value).ToJson().ToString(Formatting.None), true);
+                }
                 catch (InvalidCastException) {
                     result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Invalid tool argument type." }.ToString(Formatting.None), true);
                 }
@@ -208,11 +221,14 @@ namespace pyRevitCLI {
                     result = ToolResult(new JObject { ["error"] = "invalid_params", ["message"] = "Tool argument out of range." }.ToString(Formatting.None), true);
                 }
                 catch (Exception ex) {
-                    result = ToolResult(new JObject { ["error"] = "server_error", ["message"] = ex.Message }.ToString(Formatting.None), true);
+                    result = ToolResult(new JObject {
+                        ["error"] = "server_error",
+                        ["message"] = "The pyRevit MCP server failed (" + ex.GetType().Name + "). No request was sent to Revit.",
+                    }.ToString(Formatting.None), true);
                 }
                 StopProgress(progress);
                 progress = null;
-                Write(Result(id, result));
+                WriteUnlessClosed(Result(id, result));
             }
             finally {
                 StopProgress(progress);
@@ -304,6 +320,7 @@ namespace pyRevitCLI {
         private JToken CallRevit(JObject arguments, string method, JObject parameters) {
             var requested = arguments["revit"]?.ToString();
             var instance = PyRevitAgentClient.Resolve(string.IsNullOrWhiteSpace(requested) ? defaultRevit : requested);
+            var requestId = PyRevitAgentClient.NewRequestId();
             var gate = GateFor(instance);
             var cancellation = callCancellation.Value;
             try {
@@ -317,7 +334,10 @@ namespace pyRevitCLI {
                     AgentOutcome.NotSent);
             }
             try {
-                return PyRevitAgentClient.Call(instance, method, parameters, cancellation);
+                var answer = PyRevitAgentClient.Call(instance, method, parameters, cancellation, requestId: requestId);
+                if (method == "run" || sentRequestId.Value == null)
+                    sentRequestId.Value = requestId;
+                return answer;
             }
             finally {
                 gate.Release();
@@ -439,7 +459,7 @@ namespace pyRevitCLI {
             var ticks = 0;
             return new Timer(_ => {
                 ticks++;
-                Write(new JObject {
+                WriteUnlessClosed(new JObject {
                     ["jsonrpc"] = "2.0",
                     ["method"] = "notifications/progress",
                     ["params"] = new JObject {
@@ -455,6 +475,18 @@ namespace pyRevitCLI {
             var text = message.ToString(Formatting.None);
             lock (writeLock)
                 output.WriteLine(text);
+        }
+
+        /// <summary>
+        /// Writes from a tool call or progress timer, dropping the message when the client has
+        /// closed the output, so a late answer can't fault the call or crash the timer thread.
+        /// </summary>
+        private void WriteUnlessClosed(JObject message) {
+            try {
+                Write(message);
+            }
+            catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException) {
+            }
         }
 
         private static JObject Result(JToken id, JToken result) {
@@ -493,7 +525,7 @@ namespace pyRevitCLI {
 
         private static JObject RevitProperty() {
             return new JObject {
-                ["type"] = "string",
+                ["type"] = new JArray("string", "integer"),
                 ["description"] = "Target Revit: a year (e.g. \"2024\") or a process id. Leave it out unless list_revit_instances shows more than one session.",
             };
         }
@@ -707,6 +739,8 @@ namespace pyRevitCLI {
                             },
                             ["width"] = new JObject {
                                 ["type"] = "integer",
+                                ["minimum"] = 320,
+                                ["maximum"] = 2400,
                                 ["description"] = "Image width in pixels, 320-2400 (default 1280). Larger images cost more tokens.",
                             },
                             ["direction"] = new JObject {
@@ -816,8 +850,74 @@ namespace pyRevitCLI {
 
             public string Name { get; }
 
+            /// <summary>
+            /// Checks the arguments against the tool's inputSchema, then runs the tool.
+            /// </summary>
+            /// <remarks>
+            /// Checks the type, numeric range and array length of every argument that is given and
+            /// not null, nested object properties included. Required arguments and enums are left to
+            /// the handlers and the host, which default or normalize some of them.
+            /// </remarks>
+            /// <exception cref="AgentClientException"><c>invalid_params</c>, before anything is sent to Revit.</exception>
             public JToken Handle(JObject arguments) {
+                ValidateProperties(schema().Properties, arguments, string.Empty);
                 return handler(arguments);
+            }
+
+            private static void ValidateProperties(JObject properties, JObject values, string prefix) {
+                foreach (var property in properties.Properties()) {
+                    var value = values[property.Name];
+                    if (value != null && value.Type != JTokenType.Null)
+                        Validate((JObject)property.Value, value, prefix + property.Name);
+                }
+            }
+
+            private static void Validate(JObject schema, JToken value, string name) {
+                var types = schema["type"] is JArray list
+                    ? list.Values<string>().ToArray()
+                    : new[] { schema.Value<string>("type") };
+                if (!types.Any(type => HasType(value, type)))
+                    throw InvalidArgument($"'{name}' must be of type {string.Join(" or ", types)}.");
+                if (value.Type == JTokenType.Integer || value.Type == JTokenType.Float) {
+                    var number = value.Value<double>();
+                    if (schema["minimum"] != null && number < schema.Value<double>("minimum"))
+                        throw InvalidArgument($"'{name}' must be at least {schema["minimum"]}.");
+                    if (schema["maximum"] != null && number > schema.Value<double>("maximum"))
+                        throw InvalidArgument($"'{name}' must be at most {schema["maximum"]}.");
+                }
+                if (value is JArray array) {
+                    if (schema["minItems"] != null && array.Count < schema.Value<int>("minItems"))
+                        throw InvalidArgument($"'{name}' must have at least {schema["minItems"]} items.");
+                    if (schema["maxItems"] != null && array.Count > schema.Value<int>("maxItems"))
+                        throw InvalidArgument($"'{name}' must have at most {schema["maxItems"]} items.");
+                    if (schema["items"] is JObject items)
+                        for (var index = 0; index < array.Count; index++)
+                            Validate(items, array[index], $"{name}[{index}]");
+                }
+                if (value is JObject nested && schema["properties"] is JObject nestedProperties)
+                    ValidateProperties(nestedProperties, nested, name + ".");
+            }
+
+            private static bool HasType(JToken value, string type) {
+                switch (type) {
+                    case null: return true;
+                    case "string": return value.Type == JTokenType.String;
+                    case "boolean": return value.Type == JTokenType.Boolean;
+                    case "object": return value.Type == JTokenType.Object;
+                    case "array": return value.Type == JTokenType.Array;
+                    case "integer":
+                        return value.Type == JTokenType.Integer
+                            || value.Type == JTokenType.Float && !double.IsInfinity(value.Value<double>())
+                                && Math.Floor(value.Value<double>()) == value.Value<double>();
+                    case "number":
+                        return value.Type == JTokenType.Integer
+                            || value.Type == JTokenType.Float && !double.IsNaN(value.Value<double>()) && !double.IsInfinity(value.Value<double>());
+                    default: return true;
+                }
+            }
+
+            private static AgentClientException InvalidArgument(string message) {
+                return new AgentClientException("invalid_params", message);
             }
 
             public JObject Describe() {

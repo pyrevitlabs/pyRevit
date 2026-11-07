@@ -227,6 +227,8 @@ to return data. It is serialized to JSON:
 - `Element` becomes `{id, category, name, class}`.
 - `XYZ` becomes `[x, y, z]`.
 - .NET numbers become numbers, and collections become lists.
+- `bytes` and `bytearray` values become text, decoded as UTF-8. Dictionary keys must already be
+  text or numbers.
 
 Printed output is captured and returned too.
 
@@ -285,15 +287,15 @@ Rules the host enforces:
   modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
   only stopped once the call returns. A single blocking call, such as a long Revit API call,
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
-  interrupted on any engine; the run fails with `timeout` once it returns. When that call
-  was the script's last, the error says the limit passed inside a call that could not be
-  interrupted and carries no traceback. If such a call is still blocking 30 seconds after
-  the deadline, the request fails with `run_hung` (outcome `unknown`, plus the run's
-  `run_id` and `request_id`) so the caller stops waiting. The run itself keeps Revit busy
-  until the call returns, then ends and is recorded as usual with that `timeout`, so look
-  it up with `get_run` before sending it again; meanwhile later requests fail with
-  `revit_busy`, and the message says an earlier run is stuck past its time limit. Time spent
-  waiting for approval doesn't count.
+  interrupted on any engine; the run fails with `timeout` once it returns, and returns no
+  `result`. When that call was the script's last, or the limit passed while the runner was
+  converting `result`, the error says so and carries no traceback. If such a call is still
+  blocking 30 seconds after the deadline, the request fails with `run_hung` (outcome
+  `unknown`, plus the run's `run_id` and `request_id`) so the caller stops waiting. The run
+  itself keeps Revit busy until the call returns, then ends and is recorded as usual with
+  that `timeout`, so look it up with `get_run` before sending it again; meanwhile later
+  requests fail with `revit_busy`, and the message says an earlier run is stuck past its
+  time limit. Time spent waiting for approval doesn't count.
 - The runner compiles the script with every bare `except` and `except BaseException`
   (also spelled as an attribute, such as `except builtins.BaseException`) narrowed to
   `except Exception`, so a script can't swallow its own timeout, and can't catch
@@ -612,7 +614,10 @@ Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one con
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
-`invalid_params`.
+`invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
+wrong JSON type, or a `capture` width outside 320-2400, is `invalid_params`. Any other
+unexpected failure is `internal_error` with `data.outcome` `unknown`, because the work may
+already have run.
 
 ### What became of a request that got no answer
 
@@ -638,9 +643,14 @@ pyrevit agent show req-0123456789ab
 
 The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
 `outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
-queued has no record yet, and one that never arrived has none at all. Only a pipe error after
-sending, an answer that cannot be read, or a client that stops waiting after sending (a cancelled
-call, or a ping with no answer in time: `no_answer`) leaves the outcome `unknown`.
+queued has no record yet, and one that never arrived has none at all. A pipe error after
+sending, an answer that cannot be read, a client that stops waiting after sending (a cancelled
+call, or a ping with no answer in time: `no_answer`), a host `internal_error`, or an MCP
+`server_error` raised while processing the host's answer leaves the outcome `unknown`. Before
+sending, the MCP server checks the type, numeric range and array length of each argument given
+against the tool's `inputSchema`; required arguments and enum values are left to the tool and
+the host. An `invalid_params` from that check has no `request_id`: nothing was sent. An
+`invalid_params` the host returns comes with the `request_id` of the request it refused.
 
 A missing record does not prove that resending is safe. A request waits to start for
 `start_timeout_s` (30 seconds by default, up to an hour for a client that sets it on the pipe) and

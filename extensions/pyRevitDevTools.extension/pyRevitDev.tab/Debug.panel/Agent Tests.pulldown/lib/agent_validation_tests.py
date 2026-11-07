@@ -123,6 +123,13 @@ class ShowValidationTests(TestCase):
         )
         self.assertEqual("invalid_params", _code("show", action="select", ids=["abc"]))
 
+    def test_a_category_that_is_not_text_is_rejected(self):
+        """A category given as an object is a wrong JSON type, not a crash."""
+        self.assertEqual(
+            "invalid_params",
+            _code("show", action="select", ids=[1], categories=[{}]),
+        )
+
     def test_category_names_ignore_case_and_the_ost_prefix(self):
         """Walls, walls, OST_Walls and ost_walls all name the same category."""
         for name in ("Walls", "walls", "OST_Walls", "ost_walls"):
