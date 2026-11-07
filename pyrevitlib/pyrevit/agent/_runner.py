@@ -1407,11 +1407,12 @@ def _enter_workspace(workspace):
 def _is_under(module_file, root):
     """True when a module's file is inside ``root``.
 
-    Loaded modules can have a ``__file__`` that isn't a file path (built-in
-    and dynamically created modules, assemblies); ``op.abspath`` raises on
-    those in IronPython, so they are treated as outside the workspace.
+    Loaded modules can have a ``__file__`` that isn't an absolute file path
+    (built-in and dynamically created modules, assembly names, IronPython's
+    relative stdlib paths); those are treated as outside the workspace, since
+    ``op.abspath`` would resolve them against the current directory.
     """
-    if not isinstance(module_file, str) or not module_file:
+    if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
@@ -1419,10 +1420,40 @@ def _is_under(module_file, root):
         return False
 
 
+def _folder_prefix(folder):
+    return op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+
+
+_LIBRARY_PATHS = [entry for entry in sys.path if isinstance(entry, str) and entry]
+_PYREVITLIB_PATH = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
+
+
 def _unload_modules_under(folder):
-    root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+    """Unload the modules imported from ``folder``.
+
+    Invariant:
+        Only Python source modules are unloaded, and one under a library
+        folder (a ``sys.path`` entry from when this runner loaded) inside the
+        workspace stays loaded. A workspace such as a drive root or the pyRevit
+        clone never unloads the standard library, .NET namespace modules,
+        pyrevitlib or this runner from the shared engine, while a folder the
+        agent's own scripts put on ``sys.path`` is still reloaded. pyrevitlib
+        stays loaded even when it is the workspace itself.
+    """
+    root = _folder_prefix(folder)
+    nested = [
+        prefix
+        for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
+        if prefix != root and prefix.startswith(root)
+    ]
+    nested.append(_folder_prefix(_PYREVITLIB_PATH))
     for name, module in list(sys.modules.items()):
-        if _is_under(getattr(module, "__file__", None), root):
+        module_file = getattr(module, "__file__", None)
+        if (
+            _is_under(module_file, root)
+            and module_file.lower().endswith((".py", ".pyw", ".pyc"))
+            and not any(_is_under(module_file, prefix) for prefix in nested)
+        ):
             del sys.modules[name]
 
 
