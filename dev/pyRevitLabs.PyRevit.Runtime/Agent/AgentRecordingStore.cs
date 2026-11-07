@@ -147,6 +147,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        public static JToken BoundError(JToken error) {
+            if (!(error is JObject fields))
+                return error;
+            var bounded = new JObject();
+            foreach (var field in fields.Properties())
+                bounded[field.Name] = field.Value.Type == JTokenType.String
+                    ? Truncate(field.Value.Value<string>())
+                    : field.Value;
+            return bounded;
+        }
+
         public static JToken ParseMarkData(string json) {
             if (string.IsNullOrEmpty(json))
                 return JValue.CreateNull();

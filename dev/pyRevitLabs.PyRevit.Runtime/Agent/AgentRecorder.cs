@@ -72,7 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["run_id"] = response["run_id"],
                     ["status"] = response["status"],
                     ["decision"] = response["decision"],
-                    ["error"] = response["error"],
+                    ["error"] = AgentRecordingStore.BoundError(response["error"]),
                     ["output"] = AgentRecordingStore.Truncate(response["output"]?.ToString()),
                 });
             }

@@ -39,8 +39,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly AgentRecordingStore store;
         private readonly AgentScreenshotThrottle throttle;
         private string pendingScreenshot;
-        private string lastSelection = string.Empty;
-        private (int Count, long Sum) lastFingerprint = (-1, 0);
+        private HashSet<long> lastSelection = new HashSet<long>();
 
         public AgentRecorderSession(UIApplication uiApp, AgentRecordingStore store) {
             this.uiApp = uiApp;
@@ -145,16 +144,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var uidoc = uiApp.ActiveUIDocument;
             if (uidoc == null)
                 return;
-            var selected = uidoc.Selection.GetElementIds();
-            var fingerprint = (selected.Count, selected.Sum(id => AgentIds.ToValue(id)));
-            if (fingerprint == lastFingerprint)
+            var selected = new HashSet<long>(uidoc.Selection.GetElementIds().Select(AgentIds.ToValue));
+            if (selected.SetEquals(lastSelection))
                 return;
-            lastFingerprint = fingerprint;
-            var ids = selected.Select(AgentIds.ToValue).OrderBy(id => id).ToList();
-            var key = string.Join(",", ids);
-            if (key == lastSelection)
-                return;
-            lastSelection = key;
+            lastSelection = selected;
+            var ids = selected.OrderBy(id => id).ToList();
             AgentRecorder.Append("selection_changed", new JObject {
                 ["document"] = uidoc.Document.Title,
                 ["count"] = ids.Count,

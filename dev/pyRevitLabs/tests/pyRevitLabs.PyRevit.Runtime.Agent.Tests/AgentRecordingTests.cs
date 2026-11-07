@@ -120,6 +120,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ErrorStringsAreBoundedAndOtherFieldsKept() {
+            var error = new JObject {
+                ["type"] = "ValueError",
+                ["traceback"] = new string('t', AgentRecordingStore.MaxTextLength * 3),
+                ["line"] = 7,
+            };
+
+            var bounded = (JObject)AgentRecordingStore.BoundError(error);
+
+            Assert.Equal("ValueError", bounded.Value<string>("type"));
+            Assert.True(bounded.Value<string>("traceback").Length < AgentRecordingStore.MaxTextLength + 64);
+            Assert.Equal(7, bounded.Value<int>("line"));
+            Assert.Equal(JTokenType.Null, AgentRecordingStore.BoundError(JValue.CreateNull()).Type);
+        }
+
+        [Fact]
         public void OutputBufferMergesWritesAndDrainsOnce() {
             var buffer = new AgentOutputBuffer();
             buffer.Add("one\n");
