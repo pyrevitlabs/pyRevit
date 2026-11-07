@@ -84,7 +84,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// while the selection or isolation already applied stays in place.
         /// For isolate and hide, ids the active view doesn't show are left out of <c>count</c> and
         /// listed in <c>not_in_view_ids</c>. A temporary view change Revit rolls back fails with
-        /// <c>show_failed</c> instead of reporting success.
+        /// <c>show_failed</c> instead of reporting success. <c>view</c> is the view the action
+        /// applied to; when zooming makes Revit open another view, <c>active_view</c> names it.
         /// </remarks>
         public static JToken Show(UIApplication app, Request request, AgentDialogCapture dialogs) {
             var uidoc = app.ActiveUIDocument;
@@ -101,11 +102,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var response = new JObject {
                 ["action"] = request.Action,
-                ["view"] = view == null ? null : new JObject {
-                    ["id"] = AgentIds.ToValue(view.Id),
-                    ["name"] = view.Name,
-                    ["type"] = view.ViewType.ToString(),
-                },
+                ["view"] = DescribeView(view),
             };
 
             if (request.Action == "reset") {
@@ -163,10 +160,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     break;
             }
 
-            if (request.Zoom)
+            if (request.Zoom) {
                 Zoom(uidoc, targets, dialogs, response);
+                var activeAfterZoom = app.ActiveUIDocument?.ActiveView;
+                if (activeAfterZoom != null && (view == null || !activeAfterZoom.Id.Equals(view.Id)))
+                    response["active_view"] = DescribeView(activeAfterZoom);
+            }
             uidoc.RefreshActiveView();
             return response;
+        }
+
+        private static JObject DescribeView(View view) {
+            return view == null ? null : new JObject {
+                ["id"] = AgentIds.ToValue(view.Id),
+                ["name"] = view.Name,
+                ["type"] = view.ViewType.ToString(),
+            };
         }
 
         private static bool MatchesDocument(Document document, Request request) {
