@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal enum AgentRunMode {
@@ -43,26 +44,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// The agent policy in force for the Revit session, which only loosens with the user's
+    /// An agent setting in force for the Revit session, which only loosens with the user's
     /// confirmation.
     /// </summary>
     /// <remarks>
-    /// Invariant: every stricter policy the host acts on is recorded through
+    /// Invariant: every stricter value the host acts on is recorded through
     /// <see cref="Start"/> or <see cref="Tighten"/>, so loosening from it later is always
-    /// confirmed. The first policy recorded is trusted. A declined policy isn't asked about
+    /// confirmed. The first value recorded is trusted. A declined value isn't asked about
     /// again until the config names a different one. Not thread-safe; the host uses it on the
     /// Revit main thread only.
     /// </remarks>
-    internal sealed class AgentPolicyInForce {
-        private AgentPolicy? inForce;
-        private AgentPolicy? declined;
+    internal class AgentSettingInForce<T> where T : struct {
+        private readonly Func<T, T, T> stricter;
+        private T? inForce;
+        private T? declined;
+
+        protected AgentSettingInForce(Func<T, T, T> stricter) {
+            this.stricter = stricter;
+        }
 
         /// <summary>
-        /// Records <paramref name="configured"/> when it is at least as strict as the policy in
-        /// force, and returns the policy in force.
+        /// Records <paramref name="configured"/> when it is at least as strict as the value in
+        /// force, and returns the value in force.
         /// </summary>
-        public AgentPolicy Tighten(AgentPolicy configured) {
-            if (inForce == null || AgentRunDecision.Stricter(configured, inForce.Value) == configured) {
+        public T Tighten(T configured) {
+            if (inForce == null || Same(stricter(configured, inForce.Value), configured)) {
                 inForce = configured;
                 declined = null;
             }
@@ -70,13 +76,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// The policy a run starts under. A looser <paramref name="configured"/> policy is
-        /// adopted only when <paramref name="confirmLoosening"/>, called with the policy in force
+        /// The value a run starts under. A looser <paramref name="configured"/> value is
+        /// adopted only when <paramref name="confirmLoosening"/>, called with the value in force
         /// and the configured one, returns true.
         /// </summary>
-        public AgentPolicy Start(AgentPolicy configured, Func<AgentPolicy, AgentPolicy, bool> confirmLoosening) {
+        public T Start(T configured, Func<T, T, bool> confirmLoosening) {
             var current = Tighten(configured);
-            if (current == configured || configured == declined)
+            if (Same(current, configured) || (declined.HasValue && Same(declined.Value, configured)))
                 return current;
             if (!confirmLoosening(current, configured)) {
                 declined = configured;
@@ -86,6 +92,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             declined = null;
             return configured;
         }
+
+        private static bool Same(T first, T second) => EqualityComparer<T>.Default.Equals(first, second);
+    }
+
+    /// <summary>
+    /// The <c>[agent] policy</c> in force; <c>readonly</c> is the strictest.
+    /// </summary>
+    internal sealed class AgentPolicyInForce : AgentSettingInForce<AgentPolicy> {
+        public AgentPolicyInForce() : base(AgentRunDecision.Stricter) { }
+    }
+
+    /// <summary>
+    /// Whether <c>[agent] reckless</c> is in force; off is the stricter value, so turning it
+    /// on needs the user's confirmation like a looser policy.
+    /// </summary>
+    internal sealed class AgentRecklessInForce : AgentSettingInForce<bool> {
+        public AgentRecklessInForce() : base((first, second) => first && second) { }
     }
 
     /// <summary>

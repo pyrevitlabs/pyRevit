@@ -36,7 +36,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item><c>[agent] reckless</c> is read once before the script starts and only turns off
     /// the Python runner's in-script checks (timeout, per-line transaction tracking). Every
     /// guarantee in this list still holds for a reckless run, which the response marks with
-    /// <c>"reckless": true</c>.</item>
+    /// <c>"reckless": true</c>. Turning it on applies only after the user confirms it in Revit,
+    /// like a looser policy, so a script that rewrites the config can't make later runs
+    /// reckless. Unlike the policy prompt, any run mode asks, since reckless also affects
+    /// queries and dry runs.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
     /// <item>A modify run requires an active document. Query and dry-run requests with no active
@@ -76,6 +79,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         internal static string PolicyNameInForce() {
             return AgentApproval.Name(policyInForce.Tighten(ReadPolicy()));
+        }
+
+        private static readonly AgentRecklessInForce recklessInForce = new AgentRecklessInForce();
+
+        /// <summary>
+        /// Whether the next run is reckless unless the user confirms turning it on; never
+        /// prompts. Main thread only.
+        /// </summary>
+        internal static bool RecklessInForce() {
+            return recklessInForce.Tighten(PyRevitConfigs.GetAgentReckless());
         }
 
         private static AgentRunVerdict CarryOut(
@@ -177,6 +190,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException(
                     "policy_readonly",
                     "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+            var reckless = recklessInForce.Start(PyRevitConfigs.GetAgentReckless(),
+                (inForce, configured) => AgentApproval.ConfirmReckless(app.MainWindowHandle));
 
             var highlight = AgentHost.BeginTabHighlight(app, doc, request.Title);
             try {
@@ -188,8 +203,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
                 if (lostBefore != null)
                     warnings.Add(lostBefore);
-
-                var reckless = PyRevitConfigs.GetAgentReckless();
 
                 var stopwatch = Stopwatch.StartNew();
                 var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
@@ -445,6 +458,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 + "Allow agents to work under '{1}'? No keeps '{0}' until Revit restarts.",
                 Name(inForce), Name(configured), Environment.NewLine);
             return MessageBox(owner, text, "pyRevit Agent policy", YesNoQuestionDefaultNo) == Yes;
+        }
+
+        public static bool ConfirmReckless(IntPtr owner) {
+            var text = "pyRevit agent reckless mode was turned on." + Environment.NewLine + Environment.NewLine
+                + "Reckless runs have no timeout and no in-script transaction checks. "
+                + "Allow agents to run reckless? No keeps it off until Revit restarts or the setting changes again.";
+            return MessageBox(owner, text, "pyRevit Agent reckless mode", YesNoQuestionDefaultNo) == Yes;
         }
 
         internal static string Name(AgentPolicy policy) => policy.ToString().ToLowerInvariant();

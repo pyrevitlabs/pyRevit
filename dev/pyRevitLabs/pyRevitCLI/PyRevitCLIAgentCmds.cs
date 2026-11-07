@@ -177,7 +177,7 @@ namespace pyRevitCLI {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentReckless(enable.Value);
                 Console.WriteLine(enable.Value
-                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run."
+                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run once confirmed in Revit."
                     : "Reckless agent runs disabled. Applies to the next run.");
             }
             else

@@ -80,7 +80,7 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 | `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. Disabling also refuses every later request with `agent_disabled` at once. The host never starts in a Revit running as administrator. |
 | `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. A stricter policy applies at the next request. A looser one applies only after you confirm it in a Revit prompt before the next modify run; No keeps the stricter one until Revit restarts. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
-| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. See [Reckless mode](#reckless-mode) for the risks. |
+| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. Turning it on needs your confirmation in Revit, like a looser policy. See [Reckless mode](#reckless-mode) for the risks. |
 
 Run any of these commands without a value to print the current setting.
 
@@ -365,9 +365,12 @@ pyrevit configs agent reckless          # prints the current setting
 ```
 
 The host reads the setting at the start of each run, so a change applies to the next run
-without reloading pyRevit. A script can't turn it on for its own run. A reckless run's
+without reloading pyRevit. Turning it off applies at once. Turning it on applies only after
+you confirm it in a Revit prompt before the next run of any mode, so a script that rewrites
+the config can't make later runs reckless; No keeps it off until the setting is turned off
+and on again or Revit restarts. A script can't turn it on for its own run. A reckless run's
 response, its `response.json` record and the compact MCP result carry `"reckless": true`,
-and `get_context` reports `agent.reckless: true` while it is on.
+and `get_context` reports `agent.reckless: true` while it is in force.
 
 What a reckless run skips:
 

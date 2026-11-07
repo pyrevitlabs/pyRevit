@@ -46,7 +46,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var agent = new JObject {
                 ["policy"] = AgentRunService.PolicyNameInForce(),
             };
-            if (PyRevitConfigs.GetAgentReckless())
+            if (AgentRunService.RecklessInForce())
                 agent["reckless"] = true;
             return agent;
         }
