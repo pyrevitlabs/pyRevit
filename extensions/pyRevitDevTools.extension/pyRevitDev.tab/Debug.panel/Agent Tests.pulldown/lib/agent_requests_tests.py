@@ -9,15 +9,6 @@ from agent_harness import AgentRequestError, TestCase, request
 PNG_SIGNATURE = b"\x89PNG"
 
 
-def _key_of(path):
-    """Return the key get_context gives the open document saved at ``path``."""
-    wanted = op.normcase(op.normpath(path))
-    for document in request("get_context")["open_documents"]:
-        if document["path"] and op.normcase(op.normpath(document["path"])) == wanted:
-            return document["key"]
-    raise AssertionError("{} is not open".format(path))
-
-
 class ContextTests(TestCase):
     """The get_context request and request-level errors."""
 
@@ -44,14 +35,14 @@ class ContextTests(TestCase):
         path = scratch.create_extra("agent-test-keys.rvt")
         opened = scratch.uiapp.Application.OpenDocumentFile(path)
         try:
-            first = _key_of(path)
+            first = harness.key_of(path)
         finally:
             opened.Close(False)
         open_keys = [doc["key"] for doc in request("get_context")["open_documents"]]
         self.assertNotIn(first, open_keys)
         reopened = scratch.uiapp.Application.OpenDocumentFile(path)
         try:
-            self.assertNotEqual(first, _key_of(path))
+            self.assertNotEqual(first, harness.key_of(path))
         finally:
             reopened.Close(False)
 
@@ -94,6 +85,20 @@ class InspectTests(TestCase):
         ]
         self.assertNotIn("parameters", element)
 
+    def test_inspect_reads_the_named_document_while_another_is_active(self):
+        """inspect_elements reads the document it names, whether or not it is active."""
+        scratch = harness.session()
+        key = harness.key_of(scratch.project_path)
+        try:
+            scratch.activate(scratch.other_path)
+            response = request(
+                "inspect_elements", ids=scratch.wall_ids[:1], document=key
+            )
+        finally:
+            scratch.activate(scratch.project_path)
+        self.assertTrue(response["elements"][0]["found"])
+        self.assertEqual(key, response["document"]["key"])
+
 
 class ShowTests(TestCase):
     """The show request."""
@@ -112,6 +117,18 @@ class ShowTests(TestCase):
         result = request("show", action="isolate", categories=["OST_Walls"])
         self.assertGreater(result["count"], 0)
         request("show", action="reset")
+
+    def test_show_needs_its_document_to_be_active(self):
+        """The show request works in the active view, so it refuses an inactive document."""
+        scratch = harness.session()
+        key = harness.key_of(scratch.project_path)
+        try:
+            scratch.activate(scratch.other_path)
+            with self.assertRaises(AgentRequestError) as raised:
+                request("show", action="select", ids=scratch.wall_ids[:1], document=key)
+        finally:
+            scratch.activate(scratch.project_path)
+        self.assertEqual("wrong_document", raised.exception.code)
 
 
 class CaptureTests(TestCase):
@@ -137,6 +154,20 @@ class CaptureTests(TestCase):
         )
         self.assertTrue(op.exists(result["path"]))
         self.assertEqual(before, harness.run(count)["result"])
+
+    def test_a_3d_export_works_in_a_document_that_isnt_active(self):
+        """Exporting needs no window, so the named document may be inactive; a viewport can't."""
+        scratch = harness.session()
+        key = harness.key_of(scratch.project_path)
+        try:
+            scratch.activate(scratch.other_path)
+            result = request("capture", view="3d", width=300, document=key)
+            with self.assertRaises(AgentRequestError) as raised:
+                request("capture", mode="viewport", width=300, document=key)
+        finally:
+            scratch.activate(scratch.project_path)
+        self.assertTrue(op.exists(result["path"]))
+        self.assertEqual("wrong_document", raised.exception.code)
 
     def test_unknown_view_is_reported(self):
         """The capture request for a missing view comes back as view_not_found."""

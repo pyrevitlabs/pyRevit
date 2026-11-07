@@ -474,6 +474,7 @@ func main() {
 					"run": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--document":  complete.PredictNothing,
 							"--engine":    complete.PredictNothing,
 							"--inputs":    complete.PredictNothing,
 							"--mode":      complete.PredictNothing,

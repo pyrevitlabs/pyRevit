@@ -118,16 +118,22 @@ Three consecutive visual failures disable highlighting for the Revit process and
 | `list_revit_instances` | no | Running Revit sessions with the agent host, and each one's agent session state |
 | `request_session` | no | Ask the user to start an agent session. The agent panel opens with the `reason` (at most 300 characters), at most once a minute. Only the user can start the session |
 | `get_context` | no | Revit and pyRevit versions, agent policy (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels. The document and each open document carry a `key` that names it while it stays open; a reopened file gets a new one |
-| `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
+| `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements of the `document` it names, active or not |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
-| `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
-| `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there). Saved under `%APPDATA%\pyRevit\agent\captures`. |
+| `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. The `document` it names must be the active one. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
+| `capture_view` | no | PNG of a view of the `document` it names, for visual checks. `export` renders any view through Revit, also in a document that isn't active; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate); `viewport`, `screen` and view `active` need the document to be the active one, and fails with `view_obscured` when another application's window covers any part of it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there). Saved under `%APPDATA%\pyRevit\agent\captures`. |
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
-| `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back |
+| `run_modify` | after approval | Run a changing script against the `document` it names. `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 | `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
 | `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
-| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source |
+| `run_automation` | never | Run an invocable operation by id with a JSON input object, in the `document` it names when the operation needs one. Runs as a query, so changes are rolled back; it accepts no Python source |
+
+`run_query`, `run_modify`, `inspect_elements`, `show_elements` and `capture_view` require
+`document`: a key from `get_context`. Element ids are always read in that document, so ids
+from one document can't reach another. A key for a closed document is refused with
+`unknown_document`. The CLI's `pyrevit agent run` takes `--document` and works in the active
+document without it.
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
@@ -176,9 +182,9 @@ def get_name(element, title_on_sheet=False):
 
 Each input is `"<name>: <type>"`, with `?` for an optional one, and is passed as the keyword
 argument of the same name. Types are `string` (non-blank, at most 256 characters), `number`,
-`integer`, `boolean`, `element` (an element id, resolved in the active document) and `scalar`
+`integer`, `boolean`, `element` (an element id, resolved in the named document) and `scalar`
 (a string, number or boolean). `inputs=()` declares an operation that takes no inputs. A
-function with a `doc` parameter gets the active document. List results keep their first 200
+function with a `doc` parameter gets the named document. List results keep their first 200
 items and add `total` and `truncated`.
 
 The CLI validates the inputs, then sends a fixed script that calls
@@ -207,15 +213,14 @@ disabled.
   Revit is refused when Revit picks it up.
 - **End** ends the session. Closing the session's document ends it too.
 - **Move session to &lt;document&gt;** appears while another document is active. The session keeps
-  its id and state. Until the agent calls `get_context`, every other model request is refused
-  with `session_moved`, because element ids from the old document don't apply in the new one.
-  Starting a session on another document than the one the agent last read the context in does
-  the same, also when the agent read it while no session was open.
+  its id and state. From then on, requests that name the document it left are refused with
+  `document_not_in_session`.
 - Closing the panel pauses the session. Reopening the panel shows why, and only the user
   resumes it.
 
-While another document, or none, is active, the panel shows the session as on hold. It isn't
-paused: the agent gets `wrong_document` until the user switches back or moves the session.
+While another document, or none, is active, the panel says so. Agents still work in the
+session's document by its key; only `show_elements`, and captures of the window, need it to be
+active, and get `wrong_document` until the user switches back.
 
 The panel also shows the policy, the MCP client that called last, the last request, and what a
 waiting request is held up by (the approval prompt or a Revit dialog). Its activity log lists
@@ -233,8 +238,9 @@ session requests always pass.
 | `paused_by_user` | The user paused the session | Wait until the user resumes it |
 | `paused_by_host` | pyRevit paused it: a run changed another open document, or the panel was closed. The message says which | Tell the user; only they can resume it |
 | `paused_by_agent` | An agent paused it, with `pyrevit agent session pause` or from code in a run | Tell the user; only they can resume it |
-| `wrong_document` | Another document, or none, is active | Ask the user to switch back or move the session |
-| `session_moved` | The user moved the session to another document, or started one on another document than the agent last read the context in | Call `get_context` before anything else, and drop ids from the old document |
+| `document_not_in_session` | The request names another document than the session's, or names none while another document is active | Work in the session's document, or ask the user to move the session |
+| `unknown_document` | No open document has the key: it was closed, or the key is wrong | Call `get_context` for the open documents' keys, and drop ids from a closed document |
+| `wrong_document` | `show_elements`, or a capture of the window, names a document that isn't active | Ask the user to switch to it, or export a named view or `3d` instead |
 | `session_locked` | Code running inside an agent run tried to start, resume or move the session or make sessions optional, or an agent tried to end it while sessions aren't required | Nothing; an agent can't loosen its own session. Pause it to stop |
 
 When the user changed the session's document, view or selection since the agent's previous
@@ -244,8 +250,7 @@ model request, the next response carries `since_last_call`:
   and how many were undone or redone.
 - `active_view`: the view now active, when it changed.
 - `selection`: the count and up to 200 ids, when it changed.
-- `session_moved`: `from` and `to`, when the user moved the session or started one on another
-  document.
+- `session_moved`: `from` and `to`, when the user moved the session.
 
 Nothing the host does for the agent is reported back to it. The active view and the
 selection are compared when the next request arrives, so switching away and back reports
@@ -274,10 +279,10 @@ Names, descriptions, files and paths are bounded and validated; reparse-point pa
 
 ### Navigation links
 
-`inspect_elements` returns an element `link` with a destination, document reference and element
-ids. Pass that object to `navigate_revit_link` to select, zoom to, isolate or temporarily hide
-the same elements. The Revit host compares its active document with the link immediately before
-presenting elements. If the document has closed or changed, it returns `stale_link`; activate the
+`inspect_elements` returns an element `link` with a destination, document reference (its
+`key`, title and path) and element ids. Pass that object to `navigate_revit_link` to select,
+zoom to, isolate or temporarily hide the same elements. The Revit host checks that the link's
+document is still open and is the active document immediately before presenting elements. If the document has closed or changed, it returns `stale_link`; activate the
 intended document and inspect the elements again. Navigation only uses the fixed presentation
 operation and never executes a command or changes model elements.
 
@@ -285,7 +290,9 @@ operation and never executes a command or changes model elements.
 
 Scripts are Python, executed inside Revit by the regular pyRevit engines. The runner
 injects `doc`, `uidoc`, `app`, `uiapp`, `DB` (`Autodesk.Revit.DB`), `UI`
-(`Autodesk.Revit.UI`) and `inputs` (the `inputs` argument as a dict). Assign `result`
+(`Autodesk.Revit.UI`) and `inputs` (the `inputs` argument as a dict). `doc` is the document
+the request names, active or not; `uidoc` is set only when that document is the active one,
+and is `None` otherwise. Assign `result`
 to return data. It is serialized to JSON:
 
 - `ElementId` becomes an integer.
@@ -315,9 +322,8 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
-- `run_modify` requires an active document and is refused before the script runs when none is
-  active. The other tools (`capture_view`, `inspect_elements`, `show_elements`) also require an
-  active document.
+- `run_modify` requires a document, and may change only the one it names. The run's approval
+  prompt names the document, and isolates the changes in a view only when it is the active one.
 - Background documents a run created or opened (no view in Revit, not linked, not open when
   the run started) are closed without saving when the run ends, whatever its outcome, and
   listed in `closed_documents`. The host blocks their save and save-as operations while a run is
@@ -486,6 +492,8 @@ pyrevit agent context [--revit=<year>]     get_context of a session
 pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year>]
                   [--timeout=<seconds>] [--workspace=<folder>]
+                  [--document=<key>]       in the document with that key
+                                           (default: the active document)
 pyrevit agent runs [--limit=<n>]           recent runs
 pyrevit agent show <run_id|req-id>           request, script and response of a run, by run id or request id
 pyrevit agent session (status | pause | end) [--revit=<year>]
@@ -671,13 +679,9 @@ Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one con
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, and the session
 requests `session_status`, `request_session`, `pause_session` and `end_session`.
-`get_context` with `keep_changes` reports `since_last_call` without clearing it and doesn't end
-the handshake after a move; `run_automation` uses it to check for a document before its run.
-A model request can pass the `generation` from the session in its client's last `get_context`.
-Once the session's document has changed since, the request is refused with `session_moved`,
-even after another client read the context. That includes another client's context read in a
-different document while no session was open, followed by a session started there.
-`pyrevit mcp` does this for its agent. Errors
+`get_context` with `keep_changes` reports `since_last_call` without clearing it;
+`run_automation` uses it before its run. `run`, `inspect_elements`, `show` and `capture` take a
+`document` key and work in the active document without one. Errors
 carry a stable `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly`,
 `invalid_params` or one of the session refusals in
 [Sessions and the agent panel](#sessions-and-the-agent-panel).

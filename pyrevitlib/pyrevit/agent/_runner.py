@@ -1233,13 +1233,12 @@ def _implementation():
 
 def _build_namespace(context):
     uiapp = context.UIApp
-    uidoc = uiapp.ActiveUIDocument
     return {
         "__name__": "__main__",
         "uiapp": uiapp,
         "app": uiapp.Application,
-        "uidoc": uidoc,
-        "doc": uidoc.Document if uidoc else None,
+        "uidoc": context.UIDocument,
+        "doc": context.Document,
         "DB": DB,
         "UI": UI,
         "inputs": json.loads(context.InputsJson or "{}"),

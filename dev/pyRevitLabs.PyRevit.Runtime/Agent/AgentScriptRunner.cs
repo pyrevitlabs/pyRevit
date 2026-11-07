@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
@@ -27,6 +28,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public UIApplication UIApp { get; }
+
+        /// <summary>The document the run works in: the script's <c>doc</c>, or null when it has none.</summary>
+        public Document Document { get; internal set; }
+
+        /// <summary>
+        /// The active UI document when it is <see cref="Document"/>, otherwise null: the script's
+        /// <c>uidoc</c>.
+        /// </summary>
+        public UIDocument UIDocument { get; internal set; }
+
         public string RunId { get; }
         public string Mode { get; }
         public string Source { get; }

@@ -76,7 +76,7 @@ Usage:
 	pyrevit agent (-h | --help)
 	pyrevit agent status [--json]
 	pyrevit agent context [--revit=<revit_year>]
-	pyrevit agent run <script_file> [--mode=<run_mode>] [--engine=<engine_name>] [--title=<run_title>] [--inputs=<inputs_json>] [--revit=<revit_year>] [--timeout=<seconds>] [--workspace=<folder>]
+	pyrevit agent run <script_file> [--mode=<run_mode>] [--engine=<engine_name>] [--title=<run_title>] [--inputs=<inputs_json>] [--revit=<revit_year>] [--timeout=<seconds>] [--workspace=<folder>] [--document=<document_key>]
 	pyrevit agent runs [--limit=<count>]
 	pyrevit agent show <run_id>
 	pyrevit agent session (status | pause | end) [--revit=<revit_year>]

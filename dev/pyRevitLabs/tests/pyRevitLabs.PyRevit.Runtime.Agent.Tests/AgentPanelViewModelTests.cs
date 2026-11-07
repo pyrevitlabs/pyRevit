@@ -23,7 +23,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Document.OnHold"] = "on hold: {0} not {1}",
             ["AgentPanel.Document.OnHoldNoDocument"] = "on hold: {0} not open",
             ["AgentPanel.Document.MovedFrom"] = "from {0}",
-            ["AgentPanel.Document.MovedAwaitingContext"] = "from {0}, re-reading",
             ["AgentPanel.Resume"] = "Resume",
             ["AgentPanel.Paused.ByHost"] = "paused: {0}",
             ["AgentPanel.Paused.PanelHidden"] = "panel hidden",
@@ -260,19 +259,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AMovedSessionSaysWhereItCameFromAndWhileTheAgentCatchesUp() {
+        public void AMovedSessionSaysWhereItCameFrom() {
             backend.Session = Session("paused");
             backend.Session["document"] = "Annex.rvt";
             backend.Session["documents"] = new JArray("Tower.rvt", "Annex.rvt");
-            backend.Session["awaiting_context"] = true;
 
             var panel = Panel();
 
             Assert.True(panel.HasMoved);
-            Assert.Equal("from Tower.rvt, re-reading", panel.MovedText);
-
-            backend.Session["awaiting_context"] = false;
-            panel.Refresh();
             Assert.Equal("from Tower.rvt", panel.MovedText);
         }
 

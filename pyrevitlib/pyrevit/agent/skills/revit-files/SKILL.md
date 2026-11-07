@@ -62,7 +62,7 @@ except Exception as error:
 result = {"active": uiapp.ActiveUIDocument.Document.Title if uiapp.ActiveUIDocument else None}
 ```
 
-- **The session stays on its document.** Once the new file is active, every request answers `wrong_document` until the user switches back or moves the session to the new file in the agent panel. Ask them to move it, then call `get_context`.
+- **The session stays on its document.** Requests that name the new file answer `document_not_in_session` until the user moves the session to it in the agent panel; requests that name the session's document keep working. Ask them to move it, then call `get_context` for the new file's key.
 - **Called from a run while another project is open, `OpenAndActivateDocument` raises "An internal error has occurred" but still opens and activates the file.** The run's transaction group on the open project causes it. Don't treat the exception as failure: check `uiapp.ActiveUIDocument` in the result.
 - **With no document open, nothing runs while sessions are required**, because a session needs a document to start on: ask the user to open one. Only with `[agent] require_session` set to `no` do runs execute with `doc` and `uidoc` set to `None` and the decision `no_document`, and `OpenAndActivateDocument` returns normally there.
 - `app.OpenDocumentFile(path)` opens a file in the background, with no window. Use it to read another model, and close it when done. Changing a document that was already open when the run started, or a project or family you opened from a file, fails the run with `other_document_modified`, and it can't be saved.

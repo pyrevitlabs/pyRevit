@@ -236,12 +236,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return new SectionPlane { Origin = origin, Normal = snapped, Depth = depth };
         }
 
-        public static JToken Capture(UIApplication app, Request request) {
-            var uidoc = app.ActiveUIDocument
-                ?? throw new AgentException("no_active_document", "Revit has no active document.");
-            var doc = uidoc.Document;
+        /// <remarks>
+        /// Exporting a named view or view <c>3d</c> works in any open document. Modes
+        /// <c>screen</c> and <c>viewport</c>, and view <c>active</c>, need the user's window on
+        /// the document, so <paramref name="target"/> must be the active document for them.
+        /// </remarks>
+        public static JToken Capture(UIApplication app, Document target, Request request) {
+            var doc = target ?? throw new AgentException("no_active_document", "Revit has no active document.");
+            var uidoc = AgentDocuments.ActiveUIDocumentFor(app, doc);
+            if (uidoc == null && NeedsWindow(request))
+                throw AgentDocuments.NotActive(doc,
+                    "mode 'screen' or 'viewport' and view 'active' capture its window; export a named view or '3d' instead");
             if (doc.IsModifiable)
-                throw AgentException.NotRun("Another transaction is open in the active document.");
+                throw AgentException.NotRun($"Another transaction is open in '{doc.Title}'.");
 
             var directory = AgentPaths.CapturesDir;
             Directory.CreateDirectory(directory);
@@ -286,6 +293,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (request.DisplayStyle != null)
                 result["display_style"] = request.DisplayStyle;
             return result;
+        }
+
+        private static bool NeedsWindow(Request request) {
+            return request.Mode == "screen" || request.Mode == "viewport"
+                || string.Equals(request.View, "active", StringComparison.OrdinalIgnoreCase);
         }
 
         private static JObject DescribeTemporary(Request request) {

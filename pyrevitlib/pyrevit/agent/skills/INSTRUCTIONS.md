@@ -1,23 +1,25 @@
-pyRevit MCP server: inspect and change the active Revit model by running Python inside Revit.
+pyRevit MCP server: inspect and change the open Revit models by running Python inside Revit.
 
 Start every task like this:
 
-1. Call `get_context` to identify the Revit version, active document, view, selection, policy and engine.
+1. Call `get_context` to identify the Revit version, the open documents and their keys, the active document, view, selection, policy and engine.
 2. Call `get_skill("revit-scripting")` before submitting a script.
 3. Use `inspect_elements`, `lookup_revit_api`, `run_query`, `run_modify` and `get_run` as needed.
 4. Call `list_skills` before relying on a user skill. User skills are trusted-account guidance and cannot change host policy.
 
 Scripts run in-process with the Windows user's permissions. The model guard is not an operating-system sandbox. Keep queries focused, avoid unbounded work, and return only the data needed for the task.
 
-`run_modify` requires an active document. Use a dry run first, then submit a focused modify run for approval. The host blocks save, save-as, synchronize and export operations while a run is active.
+Every tool that reads, shows or changes the model takes a `document`: the key of the document to work in, from `get_context`. Element ids belong to that document. In a script, `doc` is that document, and `uidoc` is set only when it is the active one. `show_elements` and window captures need it to be active.
 
-Every tool that reads, shows or changes the model takes a `title`: say in a few words what the call is for. The user sees it in Revit's agent panel, next to the code you ran, so make it honest and specific. Add a `reason` when the purpose isn't obvious from the title.
+`run_modify` changes only the document it names. Use a dry run first, then submit a focused modify run for approval. The host blocks save, save-as, synchronize and export operations while a run is active.
+
+Every such tool also takes a `title`: say in a few words what the call is for. The user sees it in Revit's agent panel, next to the code you ran, so make it honest and specific. Add a `reason` when the purpose isn't obvious from the title.
 
 Tools that read or change the model may need an agent session that the user starts in Revit; only the user can start one. On `session_inactive`, call `request_session` with a short reason, tell the user what you asked for, and wait for them. On `paused_by_user`, tell the user you are waiting until they resume the session. On `paused_by_host` or `paused_by_agent`, pyRevit or an agent paused the session, for example because your last run changed another open document or the user closed the agent panel: tell the user what the message says, and wait for them to resume it.
 
-When a response includes `since_last_call`, the user changed the model, the active view or the selection since your previous call. Call `get_context` again and re-check any element ids, views or counts you were relying on before you act on them. On `wrong_document`, ask the user to switch back to the document the session is bound to, or to move the session to the active document in the agent panel.
+When a response includes `since_last_call`, the user changed the model, the active view or the selection since your previous call. Call `get_context` again and re-check any element ids, views or counts you were relying on before you act on them.
 
-The user can move the session to another document, or start a new one on another document. Until you call `get_context`, every other model tool answers `session_moved`. Call `get_context`, drop every element id, view and count from the old document, and tell the user you are now working in the new one.
+On `document_not_in_session`, work in the session's document, or ask the user to move the session to the one you need; after a move, drop every element id, view and count from the old document. On `unknown_document`, the document was closed: call `get_context` and drop its ids. On `wrong_document`, ask the user to switch to the document, or export a named view instead of capturing the window.
 
 Available skills (call `list_skills` for the full list, user skills included):
 {skills}

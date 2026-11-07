@@ -13,15 +13,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         private void Arrive() {
-            tracker.CheckOnArrival(readsContext: false);
+            tracker.CheckOnArrival();
         }
 
-        private void Dequeue(Func<object, bool> isBoundDocumentActive, string activeTitle, bool readsContext = false) {
-            tracker.CheckOnDequeue(isBoundDocumentActive, activeTitle, readsContext);
-        }
-
-        private void ReadContextInBoundDocument() {
-            tracker.ContextRead(tracker.BoundDocument, tracker.CurrentSession.Document);
+        private void Dequeue(Func<object, bool> isTarget, string targetTitle) {
+            tracker.CheckOnDequeue(isTarget, targetTitle);
         }
 
         private static string CodeOf(Action action) {
@@ -177,19 +173,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AnActiveSessionPassesOnlyWhileItsDocumentIsActive() {
+        public void AnActiveSessionPassesOnlyRequestsForItsOwnDocument() {
             StartOnDocument();
             object compared = null;
 
             Dequeue(bound => { compared = bound; return true; }, "Tower.rvt");
-            var otherActive = Assert.Throws<AgentException>(() => Dequeue(_ => false, "Annex.rvt"));
-            var noneActive = Assert.Throws<AgentException>(() => Dequeue(_ => false, null));
+            var other = Assert.Throws<AgentException>(() => Dequeue(_ => false, "Annex.rvt"));
 
             Assert.Same(document, compared);
-            Assert.Equal("wrong_document", otherActive.Code);
-            Assert.Contains("'Tower.rvt'", otherActive.Message);
-            Assert.Contains("'Annex.rvt' is the active document", otherActive.Message);
-            Assert.Contains("no document is active", noneActive.Message);
+            Assert.Equal("document_not_in_session", other.Code);
+            Assert.Contains("on 'Tower.rvt'", other.Message);
+            Assert.Contains("'Annex.rvt' isn't part of it", other.Message);
+        }
+
+        [Fact]
+        public void ARequestThatNamesNoDocumentPassesAnActiveSession() {
+            StartOnDocument();
+
+            Dequeue(_ => throw new InvalidOperationException("A request that names no document compares nothing."), null);
+        }
+
+        [Fact]
+        public void WithoutASessionARequestForAnyDocumentPassesWhileSessionsAreOptional() {
+            Dequeue(_ => false, "Annex.rvt");
         }
 
         [Fact]
@@ -299,33 +305,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(AgentSessionState.Active, tracker.State);
             Assert.Equal("Annex.rvt", status.Value<string>("document"));
             Assert.Equal(new[] { "Tower.rvt", "Annex.rvt" }, status["documents"].Values<string>());
-            Assert.True(status.Value<bool>("awaiting_context"));
             Assert.Equal(Now.ToString("o"), status.Value<string>("started"));
         }
 
         [Fact]
-        public void AfterAMoveOnlyAContextReadPassesUntilOneSucceeds() {
+        public void AfterAMoveRequestsForTheDocumentTheSessionLeftAreRefused() {
             StartOnDocument();
-            tracker.Move(new object(), "Annex.rvt", Now);
+            var annex = new object();
 
-            var refused = Assert.Throws<AgentException>(Arrive);
-            Assert.Equal("session_moved", refused.Code);
-            Assert.Contains("'Tower.rvt'", refused.Message);
-            Assert.Contains("'Annex.rvt'", refused.Message);
-            Assert.Contains("get_context", refused.Message);
-            Assert.Equal("session_moved", CodeOf(() => Dequeue(_ => true, "Annex.rvt")));
-            tracker.CheckOnArrival(readsContext: true);
-            Dequeue(_ => true, "Annex.rvt", readsContext: true);
-
-            ReadContextInBoundDocument();
+            tracker.Move(annex, "Annex.rvt", Now);
 
             Arrive();
-            Dequeue(_ => true, "Annex.rvt");
-            Assert.False(tracker.Describe().Value<bool>("awaiting_context"));
+            Dequeue(candidate => ReferenceEquals(candidate, annex), "Annex.rvt");
+            var refused = Assert.Throws<AgentException>(() => Dequeue(candidate => ReferenceEquals(candidate, document), "Tower.rvt"));
+            Assert.Equal("document_not_in_session", refused.Code);
+            Assert.Contains("on 'Annex.rvt'", refused.Message);
         }
 
         [Fact]
-        public void AMovedPausedSessionStaysPausedAndRefusesWithItsPauseFirst() {
+        public void AMovedPausedSessionStaysPausedUntilTheUserResumes() {
             StartOnDocument();
             tracker.Pause();
 
@@ -334,18 +332,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(AgentSessionState.Paused, tracker.State);
             Assert.Equal("paused_by_user", CodeOf(Arrive));
             tracker.Resume();
-            Assert.Equal("session_moved", CodeOf(Arrive));
+            Arrive();
         }
 
         [Fact]
-        public void MovesTheAgentHasNotCaughtUpWithNameTheDocumentItLastRead() {
+        public void EachMoveReturnsTheDocumentItLeft() {
             StartOnDocument();
             tracker.Move(new object(), "Annex.rvt", Now);
 
             var from = tracker.Move(new object(), "Site.rvt", Now);
 
-            Assert.Equal("Tower.rvt", from);
-            Assert.Contains("from 'Tower.rvt' to 'Site.rvt'", Assert.Throws<AgentException>(Arrive).Message);
+            Assert.Equal("Annex.rvt", from);
             Assert.Equal(new[] { "Tower.rvt", "Annex.rvt", "Site.rvt" }, tracker.Describe()["documents"].Values<string>());
         }
 
@@ -370,144 +367,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Arrive();
             Assert.Equal(new[] { "Tower.rvt" }, tracker.Describe()["documents"].Values<string>());
-        }
-
-        [Fact]
-        public void ASessionStartedOnAnotherDocumentWaitsForTheContextLikeAMove() {
-            StartOnDocument();
-            var generation = tracker.Generation;
-            tracker.EndInRevit(Now);
-
-            tracker.Start(new object(), "Annex.rvt", Now);
-
-            var refused = Assert.Throws<AgentException>(Arrive);
-            Assert.Equal("session_moved", refused.Code);
-            Assert.Contains("new agent session on 'Annex.rvt'", refused.Message);
-            Assert.Contains("'Tower.rvt'", refused.Message);
-            Assert.Equal("Tower.rvt", tracker.AwaitingContextFrom);
-            Assert.True(tracker.Describe().Value<bool>("awaiting_context"));
-            Assert.Equal(generation + 1, tracker.Generation);
-            tracker.CheckOnArrival(readsContext: true);
-
-            ReadContextInBoundDocument();
-
-            Arrive();
-            Assert.Null(tracker.AwaitingContextFrom);
-        }
-
-        [Fact]
-        public void ASessionStartedAgainOnTheDocumentTheAgentLastReadDoesNotWait() {
-            StartOnDocument();
-            var generation = tracker.Generation;
-            tracker.EndInRevit(Now);
-
-            tracker.Start(new object(), "Tower.rvt", Now, last => ReferenceEquals(last, document));
-
-            Arrive();
-            Assert.Null(tracker.AwaitingContextFrom);
-            Assert.Equal(generation, tracker.Generation);
-        }
-
-        [Fact]
-        public void AContextReadWithoutASessionMakesTheFirstSessionOnAnotherDocumentWait() {
-            var generation = tracker.Generation;
-            tracker.ContextRead(document, "Tower.rvt");
-
-            tracker.Start(new object(), "Annex.rvt", Now);
-
-            var refused = Assert.Throws<AgentException>(Arrive);
-            Assert.Equal("session_moved", refused.Code);
-            Assert.Contains("You last read the context in 'Tower.rvt'", refused.Message);
-            Assert.Equal(generation + 1, tracker.Generation);
-        }
-
-        [Fact]
-        public void AContextReadWithoutASessionReplacesTheDocumentTheLastSessionLeft() {
-            StartOnDocument();
-            tracker.EndInRevit(Now);
-            var annex = new object();
-            tracker.ContextRead(annex, "Annex.rvt");
-
-            tracker.Start(annex, "Annex.rvt", Now);
-
-            Arrive();
-            Assert.Null(tracker.AwaitingContextFrom);
-        }
-
-        [Fact]
-        public void AContextReadWithoutASessionInAnotherDocumentStopsAClientThatReadTheFirstOne() {
-            StartOnDocument();
-            var tower = tracker.Generation;
-            tracker.EndInRevit(Now);
-            var annex = new object();
-            tracker.ContextRead(annex, "Annex.rvt");
-
-            tracker.Start(annex, "Annex.rvt", Now);
-
-            var refused = Assert.Throws<AgentException>(() => tracker.CheckOnArrival(readsContext: false, contextGeneration: tower));
-            Assert.Equal("session_moved", refused.Code);
-            Assert.Contains("'Annex.rvt'", refused.Message);
-            tracker.CheckOnArrival(readsContext: false, contextGeneration: tracker.Generation);
-        }
-
-        [Fact]
-        public void AContextReadWithoutASessionInTheSameDocumentKeepsTheGeneration() {
-            tracker.ContextRead(document, "Tower.rvt");
-            var generation = tracker.Generation;
-
-            tracker.ContextRead(new object(), "Tower.rvt", last => ReferenceEquals(last, document));
-
-            Assert.Equal(generation, tracker.Generation);
-        }
-
-        [Fact]
-        public void AContextReadWithNoActiveDocumentKeepsTheDocumentTheAgentReadBefore() {
-            tracker.ContextRead(document, "Tower.rvt");
-            tracker.ContextRead(null, null);
-
-            tracker.Start(new object(), "Annex.rvt", Now);
-
-            Assert.Equal("Tower.rvt", tracker.AwaitingContextFrom);
-        }
-
-        [Fact]
-        public void ANewSessionComparesWithTheDocumentTheAgentLastReadNotTheOneTheSessionLeft() {
-            StartOnDocument();
-            var annex = new object();
-            tracker.Move(annex, "Annex.rvt", Now);
-            tracker.EndInRevit(Now);
-
-            tracker.Start(annex, "Annex.rvt", Now);
-
-            Assert.Contains("You last read the context in 'Tower.rvt'", Assert.Throws<AgentException>(Arrive).Message);
-        }
-
-        [Fact]
-        public void TheGenerationAdvancesWithEveryMoveAndIsDescribed() {
-            Assert.Equal(0, tracker.Describe().Value<int>("generation"));
-            StartOnDocument();
-
-            tracker.Move(new object(), "Annex.rvt", Now);
-            tracker.Move(new object(), "Site.rvt", Now);
-
-            Assert.Equal(2, tracker.Generation);
-            Assert.Equal(2, tracker.Describe().Value<int>("generation"));
-        }
-
-        [Fact]
-        public void ARequestFromAnOlderGenerationWaitsForItsOwnClientToReadTheContext() {
-            StartOnDocument();
-            var before = tracker.Generation;
-            tracker.Move(new object(), "Annex.rvt", Now);
-            ReadContextInBoundDocument();
-
-            var refused = Assert.Throws<AgentException>(() => tracker.CheckOnArrival(readsContext: false, contextGeneration: before));
-            Assert.Equal("session_moved", refused.Code);
-            Assert.Contains("'Annex.rvt'", refused.Message);
-            Assert.Equal("session_moved", CodeOf(() => tracker.CheckOnDequeue(_ => true, "Annex.rvt", false, before)));
-            tracker.CheckOnArrival(readsContext: true, contextGeneration: before);
-            tracker.CheckOnArrival(readsContext: false, contextGeneration: tracker.Generation);
-            Arrive();
         }
 
         [Fact]
@@ -608,7 +467,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var status = tracker.Describe();
             Assert.Equal("Annex v2.rvt", status.Value<string>("document"));
             Assert.Equal(new[] { "Tower.rvt", "Annex v2.rvt" }, status["documents"].Values<string>());
-            Assert.Contains("'Annex v2.rvt'", MessageOf(Arrive));
+            Assert.Contains("on 'Annex v2.rvt'", MessageOf(() => Dequeue(_ => false, "Site.rvt")));
             Assert.False(tracker.Retitle("Annex v2.rvt"));
             Assert.False(tracker.Retitle(null));
         }
@@ -619,16 +478,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AMoveAndTheContextReadThatEndsItsHandshakeRaiseChanged() {
+        public void AMoveRaisesChanged() {
             StartOnDocument();
             var raised = 0;
             tracker.Changed += () => raised++;
 
             tracker.Move(new object(), "Annex.rvt", Now);
-            ReadContextInBoundDocument();
-            ReadContextInBoundDocument();
 
-            Assert.Equal(2, raised);
+            Assert.Equal(1, raised);
         }
 
         [Fact]

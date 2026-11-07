@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 
+using Autodesk.Revit.DB;
+
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
@@ -23,17 +25,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
     /// The pipe can request and pause a session, and end one while sessions are required, but
     /// never start or resume one.
+    /// A model request names the document it works in with <c>document</c>, a key from
+    /// <c>get_context</c>; without one it works in the active document. The key is resolved on
+    /// the main thread, and the gate refuses a document the session isn't on.
     /// A model request's result carries <c>since_last_call</c> when the user changed the
     /// session's document, view or selection since the previous one; changes the request makes
-    /// itself are never reported back to it.
-    /// After the user moves the session, or starts one on another document, only
-    /// <c>get_context</c> passes the gate until one succeeds; see
-    /// <see cref="AgentSessionTracker.Move"/>. A <c>get_context</c> with <c>keep_changes</c>
-    /// reports <c>since_last_call</c> without clearing it and doesn't end that handshake, for a
-    /// client that checks the context before a request it makes on the agent's behalf. A model
-    /// request with a <c>generation</c> older than the session's is refused the same way, so a
-    /// client that read the context before the change still has to read it again after another
-    /// client did.
+    /// itself are never reported back to it. A <c>get_context</c> with <c>keep_changes</c>
+    /// reports <c>since_last_call</c> without clearing it, for a client that checks the context
+    /// before a request it makes on the agent's behalf.
     /// </remarks>
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -92,7 +91,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "get_context":
                     var keepChanges = parameters.Value<bool?>("keep_changes") == true;
                     return InvokeCapturingDialogs(
-                        (app, _) => ReadContext(app, endHandshake: !keepChanges), parameters, "context", null, keepChanges);
+                        (app, _, __) => AgentContext.Describe(app), parameters, "context", null, keepChanges);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
                     runRequest.RequestId = id?.ToString(Formatting.None).Trim('"');
@@ -101,17 +100,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
                     return InvokeCapturingDialogs(
-                        (app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters,
+                        (app, target, _) => AgentInspector.Inspect(target, ids, includeParameters), parameters,
                         "inspect", AgentRequestText.Title(parameters));
                 case "show":
                     var showRequest = AgentPresenter.Parse(parameters);
                     return InvokeCapturingDialogs(
-                        (app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters,
+                        (app, target, dialogs) => AgentPresenter.Show(app, target, showRequest, dialogs), parameters,
                         "show", AgentRequestText.Title(parameters) ?? showRequest.Action);
                 case "capture":
                     var captureRequest = AgentCapture.Parse(parameters);
                     return InvokeCapturingDialogs(
-                        (app, _) => AgentCapture.Capture(app, captureRequest), parameters,
+                        (app, target, _) => AgentCapture.Capture(app, target, captureRequest), parameters,
                         "capture", AgentRequestText.Title(parameters));
                 case "lookup_api":
                     var query = parameters.Value<string>("name");
@@ -123,24 +122,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
             }
-        }
-
-        /// <summary>
-        /// Describes the context and, unless the caller only checks it, records it as the agent's
-        /// read: that ends a move's handshake, since the agent now has the new document's context.
-        /// </summary>
-        /// <remarks>
-        /// The session in the response is described again after the handshake ends, so the
-        /// response doesn't report the handshake it ends.
-        /// </remarks>
-        private static JToken ReadContext(Autodesk.Revit.UI.UIApplication app, bool endHandshake) {
-            var context = AgentContext.Describe(app);
-            if (!endHandshake)
-                return context;
-            AgentSessions.ContextRead(app);
-            if (context["agent"] is JObject agent)
-                agent["session"] = AgentSessions.Describe();
-            return context;
         }
 
         /// <summary>
@@ -171,11 +152,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// use this: its guard captures dialogs itself and must disarm for the approval prompt.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
-            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters, string kind, string title,
-            bool keepChanges = false) {
-            return InvokeOnMainThread(app => {
+            Func<Autodesk.Revit.UI.UIApplication, Document, AgentDialogCapture, JToken> work, JObject parameters, string kind,
+            string title, bool keepChanges = false) {
+            return InvokeOnMainThread((app, target) => {
                 using (var dialogs = new AgentDialogCapture(app)) {
-                    var result = work(app, dialogs);
+                    var result = work(app, target, dialogs);
                     if (dialogs.Dialogs.Count > 0 && result is JObject response)
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
@@ -191,7 +172,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static JToken InvokeRunOnMainThread(AgentRunRequest request, JObject parameters) {
             try {
                 return InvokeOnMainThread(
-                    app => AgentRunService.Execute(app, request), parameters,
+                    (app, target) => AgentRunService.Execute(app, target, request), parameters,
                     request.ModeName, request.Title, request.Reason, request.Mode,
                     result => AgentLogDetails.FromRun(result as JObject ?? new JObject(), request.Script),
                     () => {
@@ -210,6 +191,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Runs model work on the main thread behind the session gate, and records it in
         /// <see cref="AgentHost.Activity"/> for the agent panel, refusals included.
         /// </summary>
+        /// <param name="work">
+        /// The request's work, given the document it names; null only for a context read, which
+        /// names none, or when the request names none and no document is active.
+        /// </param>
         /// <param name="kind">What the panel calls the request; see <see cref="AgentRequestRecord.Kind"/>.</param>
         /// <param name="runMode">
         /// The mode of a <c>run</c> request, whose permission is checked again when Revit picks it
@@ -226,7 +211,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Reports <c>since_last_call</c> without clearing it, so the next request reports it too.
         /// </param>
         private static JToken InvokeOnMainThread(
-            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters, string kind, string title, string reason,
+            Func<Autodesk.Revit.UI.UIApplication, Document, JToken> work, JObject parameters, string kind, string title, string reason,
             AgentRunMode? runMode = null, Func<JToken, JObject> describe = null, Action refuseEarly = null,
             bool keepChanges = false) {
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
@@ -234,15 +219,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
                 throw new AgentException("invalid_params",
                     $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
-            var contextGeneration = parameters.Value<int?>("generation");
+            var documentKey = DocumentKey(parameters);
             var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
-            var readsContext = kind == "context";
+            var namesDocument = kind != "context";
             try {
-                AgentSessions.CheckOnArrival(readsContext, contextGeneration);
+                AgentSessions.CheckOnArrival();
                 refuseEarly?.Invoke();
                 JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
                     AgentHost.Activity.Start(record, DateTime.UtcNow);
-                    AgentSessions.CheckOnDequeue(app, readsContext, contextGeneration);
+                    var target = namesDocument ? ResolveDocument(app, documentKey) : null;
+                    AgentSessions.CheckOnDequeue(target);
                     if (runMode.HasValue) {
                         AgentHost.RefreshConfigIfChanged();
                         AgentPermissions.CheckRun(runMode.Value, AgentRunService.ReadPolicy());
@@ -251,7 +237,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     JToken done;
                     try {
                         using (AgentAwarenessWatch.Awareness.Suppress())
-                            done = work(app);
+                            done = work(app, target);
                     }
                     catch {
                         AgentAwarenessWatch.Rebaseline(app);
@@ -286,6 +272,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentHost.Activity.Finish(record, "internal_error", DateTime.UtcNow);
                 throw;
             }
+        }
+
+        /// <exception cref="AgentException"><c>invalid_params</c> when <c>document</c> isn't a key.</exception>
+        private static string DocumentKey(JObject parameters) {
+            var token = parameters["document"];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.String || string.IsNullOrWhiteSpace(token.Value<string>()))
+                throw new AgentException("invalid_params", "'document' must be a document key from get_context, such as 'doc-1'.");
+            return token.Value<string>();
+        }
+
+        /// <summary>
+        /// The document a request names by key, or the active document when it names none, as a
+        /// request from the CLI may.
+        /// </summary>
+        /// <exception cref="AgentException"><c>unknown_document</c> when no open document has the key.</exception>
+        private static Document ResolveDocument(Autodesk.Revit.UI.UIApplication app, string key) {
+            if (key == null)
+                return app.ActiveUIDocument?.Document;
+            return AgentDocuments.Keys.Find(key)
+                ?? throw new AgentException("unknown_document",
+                    $"No open document has the key '{key}': it was closed, or the key is wrong. "
+                    + "Call get_context for the keys of the open documents.");
         }
 
         /// <remarks>

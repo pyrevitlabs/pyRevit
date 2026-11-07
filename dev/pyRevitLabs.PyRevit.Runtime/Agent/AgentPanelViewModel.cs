@@ -132,8 +132,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string MoveLabel { get; private set; }
 
         /// <summary>
-        /// Whether the session waits because another document, or none, is active. Agents get
-        /// <c>wrong_document</c> meanwhile; this isn't a pause, since nothing needs resuming.
+        /// Whether another document, or none, is active than the session's. Agents still work in
+        /// the session's document, but get <c>wrong_document</c> when they try to show its
+        /// elements; this isn't a pause, since nothing needs resuming.
         /// </summary>
         public bool IsOnHold { get; private set; }
 
@@ -274,10 +275,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 MovedText = string.Empty;
                 return;
             }
-            var previous = documents[documents.Count - 2].Value<string>();
-            MovedText = session.Value<bool?>("awaiting_context") == true
-                ? strings.Format("AgentPanel.Document.MovedAwaitingContext", previous)
-                : strings.Format("AgentPanel.Document.MovedFrom", previous);
+            MovedText = strings.Format("AgentPanel.Document.MovedFrom", documents[documents.Count - 2].Value<string>());
         }
 
         private void DescribeLast(AgentRequestRecord last) {

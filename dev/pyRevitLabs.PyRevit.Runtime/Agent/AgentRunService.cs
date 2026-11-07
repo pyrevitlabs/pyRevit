@@ -33,11 +33,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// the Python runner's in-script checks (timeout, per-line transaction tracking). Every
     /// guarantee in this list still holds for a reckless run, which the response marks with
     /// <c>"reckless": true</c>.</item>
-    /// <item>A run that changes any document other than the active one is rolled back and
-    /// pauses the session, if one is open, whatever its mode, the policy or any other error; when
-    /// nothing else failed, it fails with <c>other_document_modified</c>.</item>
-    /// <item>A modify run requires an active document. Query and dry-run requests with no active
-    /// document remain subject to their individual operation restrictions.</item>
+    /// <item>A run works in the document its request names: the script's <c>doc</c>. Its
+    /// <c>uidoc</c> is set only when that document is the active one.</item>
+    /// <item>A run that changes any document other than its own is rolled back and pauses the
+    /// session, if one is open, whatever its mode, the policy or any other error; when nothing
+    /// else failed, it fails with <c>other_document_modified</c>.</item>
+    /// <item>A modify run requires a document. Query and dry-run requests with no document
+    /// remain subject to their individual operation restrictions.</item>
     /// <item>Background documents the run created or opened are closed without saving when it
     /// ends, whatever its outcome, and listed in <c>closed_documents</c>. The guard blocks their
     /// save and save-as operations while the run is active.</item>
@@ -63,7 +65,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static AgentRunVerdict CarryOut(
-            AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, UIDocument uidoc,
+            AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, Document doc, UIDocument uidoc,
             AgentRunRequest request, string runId, int exitCode, JObject changes, AgentTabHighlight.Lease highlight,
             AgentRunTimings timings) {
             switch (verdict) {
@@ -78,8 +80,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.OtherDocumentChanged:
                     context.SetError("other_document_modified",
-                        "The script changed another open document. Agent runs may change only the active "
-                        + "document. See 'changes.other_documents' for rollback and discard outcomes.",
+                        "The script changed another open document. Agent runs may change only the document "
+                        + "they name. See 'changes.other_documents' for rollback and discard outcomes.",
                         null);
                     guard.RollBack();
                     return verdict;
@@ -98,7 +100,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     guard.RollBack();
                     return verdict;
                 case AgentRunVerdict.AutoCommit:
-                    Commit(guard, uidoc.Document, request, runId);
+                    Commit(guard, doc, request, runId);
                     return verdict;
                 case AgentRunVerdict.AskUser:
                     guard.DisarmDialogCapture();
@@ -106,10 +108,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     AgentHost.AwaitTabApproval(highlight);
                     bool approved;
                     using (AgentHost.Activity.BeginApproval())
-                        approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
+                        approved = AgentApproval.Ask(uidoc, doc, request.Title, guard.Changes, changes, guard.Failures);
                     timings.Lap("approval");
                     if (approved) {
-                        Commit(guard, uidoc.Document, request, runId);
+                        Commit(guard, doc, request, runId);
                         return AgentRunVerdict.UserApproved;
                     }
                     guard.RollBack();
@@ -129,21 +131,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The session is locked for the whole run, approval prompt included: the script can pause
         /// or end it, but can't start, resume or stop requiring one.
         /// </remarks>
-        public static JToken Execute(UIApplication app, AgentRunRequest request) {
+        /// <param name="doc">The document the request names, or null when it names none and none is active.</param>
+        public static JToken Execute(UIApplication app, Document doc, AgentRunRequest request) {
             using (AgentSessions.Tracker.BeginRun())
-                return ExecuteRun(app, request);
+                return ExecuteRun(app, doc, request);
         }
 
-        private static JToken ExecuteRun(UIApplication app, AgentRunRequest request) {
+        private static JToken ExecuteRun(UIApplication app, Document doc, AgentRunRequest request) {
             var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
-            var uidoc = app.ActiveUIDocument;
-            var doc = uidoc?.Document;
+            var uidoc = AgentDocuments.ActiveUIDocumentFor(app, doc);
             if (doc == null && request.Mode == AgentRunMode.Modify)
-                throw new AgentException("no_active_document", "A modify run requires an active document.");
+                throw new AgentException("no_active_document", "A modify run needs a document: name one, or open one in Revit.");
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
-                throw new AgentException("document_read_only", "The active document is read-only.");
+                throw new AgentException("document_read_only", $"'{doc.Title}' is read-only.");
             if (doc != null && doc.IsModifiable)
-                throw AgentException.NotRun("Another transaction is open in the active document.");
+                throw AgentException.NotRun($"Another transaction is open in '{doc.Title}'.");
 
             var highlight = AgentHost.BeginTabHighlight(app, doc, request.Title);
             try {
@@ -164,6 +166,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var stopwatch = Stopwatch.StartNew();
                 var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
                     Timings = timings,
+                    Document = doc,
+                    UIDocument = uidoc,
                 };
                 var response = new JObject {
                     ["run_id"] = runId,
@@ -174,6 +178,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["reason"] = request.Reason,
                     ["session_id"] = sessionId,
                     ["document"] = doc?.Title,
+                    ["document_key"] = doc == null ? null : AgentDocuments.Keys.KeyOf(doc),
                     ["document_path"] = string.IsNullOrEmpty(doc?.PathName) ? null : doc.PathName,
                 };
 
@@ -211,7 +216,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
                         });
                         timings.Lap("decide");
-                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
+                        verdict = CarryOut(verdict, guard, context, doc, uidoc, request, runId, exitCode, changes, highlight, timings);
                         timings.Lap("guard_release");
 
                         var approval = AgentRunDecision.Approval(verdict);
@@ -412,13 +417,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentApproval {
         private const int MaxListedCategories = 15;
 
-        public static bool Ask(UIDocument uidoc, string title, AgentChangeSet changeSet, JObject changes, JArray failures) {
-            var previousSelection = uidoc.Selection.GetElementIds();
-            var preview = AgentViewPreview.Show(uidoc, changeSet.Touched);
+        /// <param name="uidoc">
+        /// The active UI document when it is the run's document, or null when the run's document
+        /// isn't active, so the changes can't be shown in a view.
+        /// </param>
+        public static bool Ask(
+            UIDocument uidoc, Document doc, string title, AgentChangeSet changeSet, JObject changes, JArray failures) {
+            var previousSelection = uidoc?.Selection.GetElementIds();
+            var preview = uidoc == null
+                ? AgentViewPreview.NotShown(doc, $"'{doc.Title}' isn't the active document, so the changed elements can't be shown.")
+                : AgentViewPreview.Show(uidoc, changeSet.Touched);
 
             var dialog = new TaskDialog("pyRevit Agent") {
                 MainInstruction = "An agent wants to modify the model",
-                MainContent = BuildSummary(title, changes, failures, preview.Description),
+                MainContent = BuildSummary(title, doc.Title, changes, failures, preview.Description),
                 ExpandedContent = changes.ToString(Formatting.Indented),
                 CommonButtons = TaskDialogCommonButtons.None,
                 AllowCancellation = true,
@@ -431,7 +443,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var approved = dialog.Show() == TaskDialogResult.CommandLink1;
             preview.End();
-            if (!approved) {
+            if (!approved && uidoc != null) {
                 try {
                     uidoc.Selection.SetElementIds(previousSelection);
                 }
@@ -441,9 +453,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return approved;
         }
 
-        private static string BuildSummary(string title, JObject changes, JArray failures, string previewDescription) {
+        private static string BuildSummary(
+            string title, string document, JObject changes, JArray failures, string previewDescription) {
             var summary = new StringBuilder();
             summary.AppendLine("Operation: " + title);
+            summary.AppendLine("Document: " + document);
             summary.AppendLine(string.Format(
                 "Added: {0}   Modified: {1}   Deleted: {2}",
                 changes.Value<int>("added_count"),
@@ -491,6 +505,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public string Description { get; }
+
+        /// <summary>A preview that shows nothing, for changes that can't be shown in a view.</summary>
+        public static AgentViewPreview NotShown(Document doc, string description) {
+            return new AgentViewPreview(doc, null, description);
+        }
 
         public static AgentViewPreview Show(UIDocument uidoc, ICollection<ElementId> touched) {
             var doc = uidoc.Document;

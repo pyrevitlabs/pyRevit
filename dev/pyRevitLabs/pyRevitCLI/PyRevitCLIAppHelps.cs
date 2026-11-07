@@ -354,6 +354,7 @@ namespace pyRevitCLI {
                             { "--revit=<revit_year>",   "Target Revit year or process id when several are running" },
                             { "--timeout=<seconds>",    "Stop the script after this many seconds (default 300, max 3600)" },
                             { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
+                            { "--document=<document_key>", "Document to run in: a key from 'agent context' (default: the active document)" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
                             { "--reason=<reason>",      "Why the session is needed; shown to the user in Revit" },

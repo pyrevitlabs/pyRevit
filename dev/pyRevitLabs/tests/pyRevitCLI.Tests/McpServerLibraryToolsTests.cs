@@ -10,10 +10,6 @@ public partial class McpServerTests {
         return FakeAgentHost.Result(request, new JObject { ["document"] = document });
     }
 
-    private static JObject NoDocumentContext(JObject request) {
-        return FakeAgentHost.Result(request, new JObject { ["document"] = JValue.CreateNull() });
-    }
-
     [Fact]
     public void AnAutomationRunsItsReviewedScriptAsAQueryAndNeverTheCallersText() {
         host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
@@ -21,6 +17,7 @@ public partial class McpServerTests {
         var response = Single(ToolCall(1, "run_automation", new JObject {
             ["id"] = "pyrevit.levels.resolve",
             ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "doc-3",
             ["engine"] = "cpython",
             ["timeout_s"] = 9,
             ["workspace"] = "C:\\evil",
@@ -37,6 +34,7 @@ public partial class McpServerTests {
         Assert.Equal("cpython", sent.Value<string>("engine"));
         Assert.Equal(9, sent.Value<int>("timeout_s"));
         Assert.Null(sent["workspace"]);
+        Assert.Equal("doc-3", sent.Value<string>("document"));
         Assert.False(IsError(response));
         Assert.Equal("abc123def456", Payload(response).Value<string>("run_id"));
     }
@@ -52,6 +50,7 @@ public partial class McpServerTests {
         var response = Single(ToolCall(1, "run_automation", new JObject {
             ["id"] = "pyrevit.levels.resolve",
             ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "doc-1",
         }));
 
         Assert.True(IsError(response));
@@ -65,35 +64,35 @@ public partial class McpServerTests {
     }
 
     [Fact]
-    public void AnAutomationChecksTheContextWithoutTakingTheAgentsChangesOrHandshake() {
+    public void AnAutomationChecksTheContextWithoutTakingTheAgentsChanges() {
         var moved = new JObject { ["session_moved"] = new JObject { ["from"] = "Tower", ["to"] = "Annex" } };
         host.Handler = request => request.Value<string>("method") == "get_context"
             ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Annex" }, ["since_last_call"] = moved })
-            : FakeAgentHost.Failure(request, "session_moved", "The user moved the agent session. Call get_context first.");
+            : FakeAgentHost.Failure(request, "document_not_in_session", "The agent session is on 'Annex', and 'Tower' isn't part of it.");
 
         var response = Single(ToolCall(1, "run_automation", new JObject {
             ["id"] = "pyrevit.levels.resolve",
             ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "doc-1",
         }));
 
         Assert.True(Assert.Single(host.RequestsFor("get_context"))["params"].Value<bool>("keep_changes"));
         Assert.True(IsError(response));
-        Assert.Equal("session_moved", Payload(response).Value<string>("error"));
+        Assert.Equal("document_not_in_session", Payload(response).Value<string>("error"));
         Assert.Equal("Annex", Payload(response)["since_last_call"]["session_moved"].Value<string>("to"));
     }
 
     [Fact]
-    public void AnAutomationThatNeedsADocumentStopsBeforeRunningWhenNoneIsOpen() {
-        host.Handler = request => NoDocumentContext(request);
-
+    public void AnAutomationThatNeedsADocumentMustNameOneBeforeReachingRevit() {
         var response = Single(ToolCall(1, "run_automation", new JObject {
             ["id"] = "pyrevit.levels.resolve",
             ["inputs"] = new JObject { ["name"] = "Level 1" },
         }));
 
         Assert.True(IsError(response));
-        Assert.Equal("no_active_document", Payload(response).Value<string>("error"));
-        Assert.Empty(host.RequestsFor("run"));
+        Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
+        Assert.Contains("document", Payload(response).Value<string>("message"));
+        Assert.Empty(host.Requests);
     }
 
     [Fact]
@@ -106,7 +105,7 @@ public partial class McpServerTests {
         }));
 
         Assert.Empty(host.RequestsFor("get_context"));
-        Assert.Single(host.RequestsFor("run"));
+        Assert.Null(Assert.Single(host.RequestsFor("run"))["params"]["document"]);
     }
 
     [Fact]
@@ -130,7 +129,7 @@ public partial class McpServerTests {
             ["title"] = "Show the linked elements",
             ["link"] = new JObject {
                 ["destination"] = "element",
-                ["document"] = new JObject { ["title"] = "Tower", ["path"] = "c:\\models\\TOWER.rvt" },
+                ["document"] = new JObject { ["key"] = "doc-4", ["title"] = "Tower", ["path"] = "c:\\models\\TOWER.rvt" },
                 ["ids"] = new JArray(10, 11),
             },
         }));
@@ -139,8 +138,9 @@ public partial class McpServerTests {
         Assert.Equal("select", show.Value<string>("action"));
         Assert.True(show.Value<bool>("zoom"));
         Assert.Equal(new[] { 10, 11 }, show["ids"].Select(id => id.Value<int>()));
-        Assert.Equal("Tower", show["document"].Value<string>("title"));
-        Assert.Equal("c:\\models\\TOWER.rvt", show["document"].Value<string>("path"));
+        Assert.Equal("doc-4", show.Value<string>("document"));
+        Assert.Equal("Tower", show["link_document"].Value<string>("title"));
+        Assert.Equal("c:\\models\\TOWER.rvt", show["link_document"].Value<string>("path"));
         Assert.Empty(host.RequestsFor("get_context"));
         Assert.Equal(2, Payload(response).Value<int>("count"));
     }
@@ -163,6 +163,7 @@ public partial class McpServerTests {
         var show = Assert.Single(host.RequestsFor("show"))["params"];
         Assert.Equal("isolate", show.Value<string>("action"));
         Assert.False(show.Value<bool>("zoom"));
+        Assert.Null(show["document"]);
     }
 
     [Fact]
@@ -322,6 +323,7 @@ public partial class McpServerTests {
         host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
 
         var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["document"] = "doc-1",
             ["id"] = "pyrevit.elements.name",
             ["inputs"] = new JObject { ["element"] = 316542 },
             ["script"] = "import os",
@@ -339,6 +341,7 @@ public partial class McpServerTests {
     [Fact]
     public void AMarkedAutomationWithBadInputsNeverReachesRevit() {
         var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["document"] = "doc-1",
             ["id"] = "pyrevit.elements.name",
             ["inputs"] = new JObject { ["element"] = "Wall 1" },
         }));

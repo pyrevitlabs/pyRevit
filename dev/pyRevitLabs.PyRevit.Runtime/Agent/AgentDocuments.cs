@@ -44,6 +44,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// The active UI document when <paramref name="document"/> is the active document, or null:
+        /// only the active document has the view and selection the user sees.
+        /// </summary>
+        public static UIDocument ActiveUIDocumentFor(UIApplication app, Document document) {
+            var active = app.ActiveUIDocument;
+            return active != null && IsSame(active.Document, document) ? active : null;
+        }
+
+        /// <summary>
+        /// The refusal for a request whose document must be the active one: <c>wrong_document</c>,
+        /// saying what needs it and that the user can switch.
+        /// </summary>
+        public static AgentException NotActive(Document document, string needsIt) {
+            return new AgentException("wrong_document",
+                $"'{document.Title}' isn't the active document in Revit, and {needsIt}. "
+                + $"Ask the user to switch to '{document.Title}'.");
+        }
+
         public static bool IsBackground(Document doc) {
             if (doc.IsLinked)
                 return false;

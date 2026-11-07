@@ -64,18 +64,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (action != "reset" && request.Ids.Count == 0 && request.Categories.Count == 0)
                 throw new AgentException("invalid_params", "Pass 'ids' and/or 'categories'.");
 
-            if (parameters["document"] is JObject document) {
-                request.DocumentTitle = document.Value<string>("title");
-                request.DocumentPath = document.Value<string>("path");
+            if (parameters["link_document"] is JObject linked) {
+                request.DocumentTitle = linked.Value<string>("title");
+                request.DocumentPath = linked.Value<string>("path");
                 if (string.IsNullOrEmpty(request.DocumentTitle) && string.IsNullOrEmpty(request.DocumentPath))
-                    throw new AgentException("invalid_params", "'document' must name the source document.");
+                    throw new AgentException("invalid_params", "'link_document' must name the source document.");
             }
 
             return request;
         }
 
         /// <summary>
-        /// Applies the request to the active view.
+        /// Applies the request to the active view of <paramref name="target"/>, which must be the
+        /// active document.
         /// </summary>
         /// <remarks>
         /// Zooming can make Revit open a dialog, such as "Unable to find a suitable view" when
@@ -83,18 +84,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// then carries <c>zoomed: false</c> and a <c>zoom_failed</c> error with Revit's message,
         /// while the selection or isolation already applied stays in place.
         /// </remarks>
-        public static JToken Show(UIApplication app, Request request, AgentDialogCapture dialogs) {
-            var uidoc = app.ActiveUIDocument;
+        public static JToken Show(UIApplication app, Document target, Request request, AgentDialogCapture dialogs) {
+            var active = app.ActiveUIDocument;
             var linksDocument = request.Action != "reset"
                 && (!string.IsNullOrEmpty(request.DocumentTitle) || !string.IsNullOrEmpty(request.DocumentPath));
-            if (linksDocument && (uidoc == null || !MatchesDocument(uidoc.Document, request)))
+            if (linksDocument && (active == null || !MatchesDocument(active.Document, request)))
                 throw new AgentException("stale_link", "The link belongs to a different or closed document. Activate its document, then inspect the elements again.");
-            if (uidoc == null)
+            if (target == null)
                 throw new AgentException("no_active_document", "Revit has no active document.");
-            var doc = uidoc.Document;
+            var uidoc = AgentDocuments.ActiveUIDocumentFor(app, target)
+                ?? throw AgentDocuments.NotActive(target, "show_elements works in the active view");
+            var doc = target;
             var view = uidoc.ActiveView;
             if (doc.IsModifiable)
-                throw AgentException.NotRun("Another transaction is open in the active document.");
+                throw AgentException.NotRun($"Another transaction is open in '{doc.Title}'.");
 
             var response = new JObject {
                 ["action"] = request.Action,

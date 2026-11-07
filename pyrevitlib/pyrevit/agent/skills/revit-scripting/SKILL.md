@@ -9,7 +9,7 @@ Read the `pyrevit-library` skill first and use `lookup_pyrevit_api` to find a ma
 
 ## Workflow
 
-1. Call `get_context` before writing a script. It reports the active document, view, selection, Revit version, policy, and Python engine.
+1. Call `get_context` before writing a script. It reports the open documents and their keys, the active document, view, selection, Revit version, policy, and Python engine.
 2. Use `inspect_elements` and `lookup_revit_api` to verify types, members, and element ids.
 3. Use `run_query` to inspect data. Use `run_modify` with `dry_run=true` before an actual change.
 4. Use `get_run` when the immediate response is truncated or reports a persistence warning.
@@ -18,7 +18,7 @@ Read the `pyrevit-library` skill first and use `lookup_pyrevit_api` to find a ma
 
 - Import APIs with `from pyrevit.api import DB, UI`.
 - Only the raw Revit API is available. pyRevit's convenience methods on API types are not applied: use `list(collector)` not `.ToList()`, `get_Parameter(...)` and `Parameter.Set(...)` not `SetParameterValue`, and a collector rather than `doc.Walls`. `__revit__` is a plain `UIApplication`.
-- Scripts receive `uiapp`, `app`, `uidoc`, and `doc`. A modifying run requires an active `doc`.
+- Scripts receive `uiapp`, `app`, `uidoc`, and `doc`. `doc` is the document the call names with `document`; `uidoc` is set only when that document is the active one, so check it before using the selection or the active view. A modifying run requires a `doc`.
 - `run_query` and dry runs roll model changes back. A modify run commits only after its configured policy permits it.
 - Open a Revit transaction for every model edit, then commit or roll it back before the script ends.
 - The active run blocks save, save-as, synchronize-with-central, file export, and view export. Do not rely on those operations.

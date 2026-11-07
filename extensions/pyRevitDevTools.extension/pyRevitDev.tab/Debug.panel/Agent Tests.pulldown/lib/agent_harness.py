@@ -185,17 +185,15 @@ def restore_session():
         resume_session()
     elif state == "inactive":
         start_session()
-    catch_up()
 
 
-def catch_up():
-    """Read the context when the session waits for it, as an agent does.
-
-    A session started on another document than the one the agent last read the
-    context in refuses other model requests until it does.
-    """
-    if session_status()["awaiting_context"]:
-        request("get_context")
+def key_of(path):
+    """Return the key get_context gives the open document saved at ``path``."""
+    wanted = op.normcase(op.normpath(path))
+    for document in request("get_context")["open_documents"]:
+        if document["path"] and op.normcase(op.normpath(document["path"])) == wanted:
+            return document["key"]
+    raise AssertionError("{} is not open".format(path))
 
 
 def pipe_name():
@@ -312,7 +310,6 @@ def run_suites(modules):
         _session.open()
         require_sessions(True)
         start_session()
-        catch_up()
         with policy("auto"):
             for module in modules:
                 result = run_module_tests(module)

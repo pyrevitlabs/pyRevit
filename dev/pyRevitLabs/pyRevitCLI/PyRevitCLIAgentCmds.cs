@@ -64,7 +64,7 @@ namespace pyRevitCLI {
             Console.WriteLine(PyRevitAgentClient.Call(instance, "get_context").ToString(Formatting.Indented));
         }
 
-        public static void RunScript(string scriptFile, string mode, string engine, string title, string inputsJson, string revitSelector, string timeoutSeconds = null, string workspace = null) {
+        public static void RunScript(string scriptFile, string mode, string engine, string title, string inputsJson, string revitSelector, string timeoutSeconds = null, string workspace = null, string document = null) {
             if (!File.Exists(scriptFile))
                 throw new PyRevitException("Script file not found: " + scriptFile);
             if (timeoutSeconds != null && !double.TryParse(timeoutSeconds, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _))
@@ -82,6 +82,8 @@ namespace pyRevitCLI {
                 parameters["timeout_s"] = double.Parse(timeoutSeconds, System.Globalization.CultureInfo.InvariantCulture);
             if (workspace != null)
                 parameters["workspace"] = Path.GetFullPath(workspace);
+            if (document != null)
+                parameters["document"] = document;
 
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             var response = PyRevitAgentClient.Call(instance, "run", parameters);

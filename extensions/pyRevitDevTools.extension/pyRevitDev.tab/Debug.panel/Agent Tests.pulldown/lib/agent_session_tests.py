@@ -92,18 +92,37 @@ class SessionTests(TestCase):
         harness.require_sessions(False)
         self.assertEqual(1, harness.run("result = 1")["result"])
 
-    def test_a_request_while_another_document_is_active_is_refused(self):
-        """The session follows its own document, not whichever one is active."""
+    def test_a_request_for_another_document_is_refused(self):
+        """A run named for, or defaulting to, a document outside the session is refused."""
         scratch = harness.session()
+        other_key = harness.key_of(scratch.other_path)
         try:
             scratch.activate(scratch.other_path)
-            with self.assertRaises(AgentRequestError) as raised:
-                harness.request("get_context")
+            with self.assertRaises(AgentRequestError) as by_default:
+                harness.run("result = 1")
         finally:
             scratch.activate(scratch.project_path)
-        self.assertEqual("wrong_document", raised.exception.code)
-        self.assertIn(scratch.project.Title, raised.exception.message)
-        self.assertIsNotNone(harness.request("get_context")["document"])
+        with self.assertRaises(AgentRequestError) as by_key:
+            harness.run("result = 1", document=other_key)
+        for raised in (by_default, by_key):
+            self.assertEqual("document_not_in_session", raised.exception.code)
+            self.assertIn(scratch.project.Title, raised.exception.message)
+
+    def test_the_sessions_document_works_while_another_is_active(self):
+        """Named by key, the session's document runs without being active, with no uidoc."""
+        scratch = harness.session()
+        project_key = harness.key_of(scratch.project_path)
+        try:
+            scratch.activate(scratch.other_path)
+            context = harness.request("get_context")
+            response = harness.run(
+                "result = [doc.Title, uidoc is None]", document=project_key
+            )
+        finally:
+            scratch.activate(scratch.project_path)
+        self.assertEqual(scratch.other.Title, context["document"]["title"])
+        self.assertEqual([scratch.project.Title, True], response["result"])
+        self.assertEqual(project_key, response["document_key"])
 
     def test_a_request_for_a_session_is_kept_until_one_starts(self):
         """request_session records the agent's reason; starting a session clears it."""
@@ -129,10 +148,11 @@ class SessionTests(TestCase):
         self.assertEqual("paused", status["state"])
         self.assertTrue(status["required"])
 
-    def test_a_moved_session_waits_for_the_agent_to_read_the_context(self):
-        """After a move, only get_context passes, and it reports the move."""
+    def test_a_moved_session_refuses_the_document_it_left(self):
+        """After a move, the old document's key is refused and the move is reported."""
         scratch = harness.session()
         session_id = harness.session_status()["id"]
+        left_key = harness.key_of(scratch.project_path)
         scratch.activate(scratch.other_path)
         harness.move_session()
         status = harness.session_status()
@@ -140,29 +160,9 @@ class SessionTests(TestCase):
         self.assertEqual(
             [scratch.project.Title, scratch.other.Title], status["documents"]
         )
-        self.assertTrue(status["awaiting_context"])
         with self.assertRaises(AgentRequestError) as raised:
-            harness.run("result = 1")
-        self.assertEqual("session_moved", raised.exception.code)
-        context = harness.request("get_context")
-        moved = context["since_last_call"]["session_moved"]
-        self.assertEqual(scratch.project.Title, moved["from"])
-        self.assertEqual(scratch.other.Title, moved["to"])
-        self.assertFalse(context["agent"]["session"]["awaiting_context"])
-        self.assertEqual(
-            scratch.other.Title, harness.run("result = doc.Title")["result"]
-        )
-
-    def test_a_session_started_on_another_document_waits_for_the_context(self):
-        """Ending the session and starting one elsewhere works like a move."""
-        scratch = harness.session()
-        harness.end_session()
-        scratch.activate(scratch.other_path)
-        harness.start_session()
-        self.assertTrue(harness.session_status()["awaiting_context"])
-        with self.assertRaises(AgentRequestError) as raised:
-            harness.run("result = 1")
-        self.assertEqual("session_moved", raised.exception.code)
+            harness.run("result = 1", document=left_key)
+        self.assertEqual("document_not_in_session", raised.exception.code)
         moved = harness.request("get_context")["since_last_call"]["session_moved"]
         self.assertEqual(scratch.project.Title, moved["from"])
         self.assertEqual(scratch.other.Title, moved["to"])
@@ -170,51 +170,12 @@ class SessionTests(TestCase):
             scratch.other.Title, harness.run("result = doc.Title")["result"]
         )
 
-    def test_a_context_read_without_a_session_counts_for_the_next_one(self):
-        """A session started away from where the agent last read the context waits for it."""
-        scratch = harness.session()
-        harness.end_session()
-        harness.require_sessions(False)
-        scratch.activate(scratch.other_path)
-        harness.request("get_context")
-        scratch.activate(scratch.project_path)
-        harness.start_session()
+    def test_an_unknown_key_is_refused(self):
+        """A key no open document has is refused before anything runs."""
         with self.assertRaises(AgentRequestError) as raised:
-            harness.run("result = 1")
-        self.assertEqual("session_moved", raised.exception.code)
-        self.assertIn(scratch.other.Title, raised.exception.message)
-
-    def test_a_read_elsewhere_without_a_session_stops_a_client_that_read_before(self):
-        """Another client's read in a new document, then a session there, refuses the old client."""
-        scratch = harness.session()
-        before = harness.request("get_context")["agent"]["session"]["generation"]
-        harness.end_session()
-        harness.require_sessions(False)
-        scratch.activate(scratch.other_path)
-        current = harness.request("get_context")["agent"]["session"]["generation"]
-        harness.start_session()
-        with self.assertRaises(AgentRequestError) as raised:
-            harness.run("result = 1", generation=before)
-        self.assertEqual("session_moved", raised.exception.code)
-        self.assertEqual(
-            scratch.other.Title,
-            harness.run("result = doc.Title", generation=current)["result"],
-        )
-
-    def test_a_client_that_read_before_a_move_waits_for_its_own_read(self):
-        """Another client's context read doesn't let an older generation through."""
-        scratch = harness.session()
-        before = harness.request("get_context")["agent"]["session"]["generation"]
-        scratch.activate(scratch.other_path)
-        harness.move_session()
-        current = harness.request("get_context")["agent"]["session"]["generation"]
-        with self.assertRaises(AgentRequestError) as raised:
-            harness.run("result = 1", generation=before)
-        self.assertEqual("session_moved", raised.exception.code)
-        self.assertEqual(
-            scratch.other.Title,
-            harness.run("result = doc.Title", generation=current)["result"],
-        )
+            harness.run("result = 1", document="doc-0")
+        self.assertEqual("unknown_document", raised.exception.code)
+        self.assertIn("get_context", raised.exception.message)
 
     def test_while_sessions_are_optional_agents_can_not_end_the_session(self):
         """Ending it would open every document to agents, so the pipe and run code can't."""

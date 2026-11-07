@@ -171,7 +171,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             request.Ids.AddRange(ids);
             PostToRevit("show the elements", onError, app => {
                 using (var dialogs = new AgentDialogCapture(app)) {
-                    var missing = (AgentPresenter.Show(app, request, dialogs) as JObject)?["missing_ids"] as JArray;
+                    var missing = (AgentPresenter.Show(app, app.ActiveUIDocument?.Document, request, dialogs) as JObject)?["missing_ids"] as JArray;
                     return missing == null || missing.Count == 0
                         ? null
                         : $"Element {string.Join(", ", missing.Values<long>())} no longer exists in '{document}'.";
