@@ -136,21 +136,30 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        MakeEnvReport(bool json) {
+        MakeEnvReport(bool json, bool redact = false) {
             RevitProductData.RefreshIfStale();
             PyRevitProductData.RefreshIfStale();
-            if (json)
-                Console.WriteLine(CreateEnvJson());
-            else {
-                PyRevitCLICloneCmds.PrintClones();
-                PyRevitCLICloneCmds.PrintAttachments();
-                PyRevitCLIExtensionCmds.PrintExtensions();
-                PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
-                PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
-                PyRevitCLIRevitCmds.PrintLocalRevits();
-                PyRevitCLIRevitCmds.PrintLocalRevits(running: true);
-                PrinUserEnv();
+            var userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (json) {
+                var envJson = CreateEnvJson();
+                Console.WriteLine(redact ? PyRevitEnvRedactor.RedactJson(envJson, userProfilePath, Environment.UserName) : envJson);
             }
+            else if (redact)
+                PyRevitEnvRedactor.RunRedacted(() => PrintEnvReport(redact: true), userProfilePath, Environment.UserName);
+            else
+                PrintEnvReport(redact: false);
+        }
+
+        private static void
+        PrintEnvReport(bool redact) {
+            PyRevitCLICloneCmds.PrintClones();
+            PyRevitCLICloneCmds.PrintAttachments();
+            PyRevitCLIExtensionCmds.PrintExtensions();
+            PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
+            PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
+            PyRevitCLIRevitCmds.PrintLocalRevits();
+            PyRevitCLIRevitCmds.PrintLocalRevits(running: true);
+            PrinUserEnv(redact);
         }
 
         internal static void
@@ -200,12 +209,15 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        PrinUserEnv() {
+        PrinUserEnv(bool redact = false) {
             PrintHeader("User Environment");
             Console.WriteLine(UserEnv.GetWindowsVersion());
-            Console.WriteLine(string.Format("Executing User: {0}\\{1}",
-                                            Environment.UserDomainName, Environment.UserName));
-            Console.WriteLine(string.Format("Active User: {0}", UserEnv.GetLoggedInUserName()));
+            Console.WriteLine(string.Format("Executing User: {0}",
+                                            redact
+                                                ? PyRevitEnvRedactor.Placeholder
+                                                : string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName)));
+            Console.WriteLine(string.Format("Active User: {0}",
+                                            redact ? PyRevitEnvRedactor.Placeholder : UserEnv.GetLoggedInUserName()));
             Console.WriteLine(string.Format("Admin Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
             Console.WriteLine(string.Format("Install Scope: {0}",
                                             PyRevitInstallScope.IsAllUsersInstall() ? "AllUsers" : "PerUser"));
