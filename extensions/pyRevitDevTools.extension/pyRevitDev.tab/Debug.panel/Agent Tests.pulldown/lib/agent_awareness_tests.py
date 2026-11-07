@@ -1,8 +1,8 @@
 """Change awareness: what the user changed between an agent's calls.
 
-A model request's response carries ``since_last_call`` when the user edited the
-session's document, switched views or changed the selection since the previous
-request. The host's own changes are never reported back. Each test first makes
+A model request's response carries ``since_last_call`` when the user edited one of
+the session's documents, switched views or changed the selection since the previous
+request, each named by the document it happened in. The host's own changes are never reported back. Each test first makes
 one request so it starts from a clean slate, and leaves the model, view and
 selection as it found them.
 """
@@ -45,6 +45,16 @@ def _clear_selection():
     _uidoc().Selection.SetElementIds(List[DB.ElementId]())
 
 
+def _add_other_document():
+    """Add the scratch session's other project to the agent session, then go back."""
+    scratch = harness.session()
+    try:
+        scratch.activate(scratch.other_path)
+        harness.add_document()
+    finally:
+        scratch.activate(scratch.project_path)
+
+
 def _another_view(document, active):
     active_id = harness.id_value(active.Id)
     for view in DB.FilteredElementCollector(document).OfClass(DB.ViewPlan):
@@ -66,11 +76,14 @@ class AwarenessTests(TestCase):
 
     def test_a_user_edit_is_reported_once(self):
         """An edit between calls rides on the next response, and only that one."""
-        project = harness.session().project
+        scratch = harness.session()
+        project = scratch.project
         _catch_up()
         level_id = _create_level(project)
         try:
-            edits = self._summary(harness.run("result = 1"))["edits"]
+            [edits] = self._summary(harness.run("result = 1"))["edits"]
+            self.assertEqual(harness.key_of(scratch.project_path), edits["document"])
+            self.assertEqual(project.Title, edits["document_title"])
             self.assertGreaterEqual(edits["added"], 1)
             self.assertIn(harness.id_value(level_id), edits["added_ids"])
             self.assertIn(USER_EDIT, edits["operations"])
@@ -98,15 +111,57 @@ class AwarenessTests(TestCase):
         level_id = _create_level(project)
         group.RollBack()
         summary = request("get_context").get("since_last_call") or {}
-        added_ids = (summary.get("edits") or {}).get("added_ids", [])
+        added_ids = [
+            element_id
+            for edits in summary.get("edits") or []
+            for element_id in edits["added_ids"]
+        ]
         self.assertNotIn(harness.id_value(level_id), added_ids)
 
     def test_edits_to_another_document_are_not_reported(self):
-        """Only the session's document is watched."""
+        """Only the session's documents are watched."""
         other = harness.session().other
         _catch_up()
         _delete(other, _create_level(other))
         self.assertNotIn("since_last_call", request("get_context"))
+
+    def test_edits_to_two_session_documents_are_reported_apart(self):
+        """Each document's edits come under its own key, so their ids never mix."""
+        scratch = harness.session()
+        _add_other_document()
+        _catch_up()
+        project_level = _create_level(scratch.project)
+        other_level = _create_level(scratch.other)
+        try:
+            edits = self._summary(request("get_context"))["edits"]
+            by_document = dict((entry["document"], entry) for entry in edits)
+            project_key = harness.key_of(scratch.project_path)
+            other_key = harness.key_of(scratch.other_path)
+            self.assertEqual(sorted([project_key, other_key]), sorted(by_document))
+            self.assertIn(
+                harness.id_value(project_level), by_document[project_key]["added_ids"]
+            )
+            self.assertIn(
+                harness.id_value(other_level), by_document[other_key]["added_ids"]
+            )
+        finally:
+            _delete(scratch.project, project_level)
+            _delete(scratch.other, other_level)
+            _catch_up()
+
+    def test_switching_to_another_session_document_is_a_view_change(self):
+        """The view now active is reported with its document, even if its id matches the last one."""
+        scratch = harness.session()
+        _add_other_document()
+        try:
+            scratch.activate(scratch.other_path)
+            _catch_up()
+        finally:
+            scratch.activate(scratch.project_path)
+        view = self._summary(request("get_context"))["active_view"]
+        self.assertEqual(harness.key_of(scratch.project_path), view["document"])
+        self.assertEqual(scratch.project.Title, view["document_title"])
+        _catch_up()
 
     def test_the_hosts_own_changes_are_not_reported_back(self):
         """Show requests and committed runs don't count as the user's changes."""
@@ -134,6 +189,9 @@ class AwarenessTests(TestCase):
         try:
             uidoc.ActiveView = target
             view = self._summary(request("get_context"))["active_view"]
+            self.assertEqual(
+                harness.key_of(harness.session().project_path), view["document"]
+            )
             self.assertEqual(harness.id_value(target.Id), view["id"])
             self.assertEqual(target.Name, view["name"])
         finally:
@@ -141,7 +199,7 @@ class AwarenessTests(TestCase):
             _catch_up()
 
     def test_a_round_trip_to_another_document_is_not_a_view_change(self):
-        """Coming back to the session's document and view reports nothing."""
+        """Coming back from a document outside the session to the same view reports nothing."""
         scratch = harness.session()
         _catch_up()
         scratch.activate(scratch.other_path)

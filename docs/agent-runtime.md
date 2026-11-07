@@ -254,12 +254,16 @@ When the user changed a document in the session, the view or the selection since
 previous model request, or documents joined or left the session, the next response carries
 `since_last_call`:
 
-- `edits`: added, modified and deleted counts, up to 20 ids of each, the transaction names,
-  and how many were undone or redone.
-- `active_view`: the view now active, when it changed.
-- `selection`: the count and up to 200 ids, when it changed.
+- `edits`: one entry per document the user edited, with its key in `document` and its title
+  in `document_title`: added, modified and deleted counts, up to 20 ids of each, the
+  transaction names, and how many were undone or redone. The ids belong to that document.
+- `active_view`: the view now active, with its `document` and `document_title`, when it
+  changed. Switching to another of the session's documents counts, even when the two views
+  have the same id.
+- `selection`: the `document`, the count and up to 200 ids, when it changed.
 - `documents`: `joined` and `left`, each a list of `key` and `title`, when the user added a
-  document, a document opened while the session started automatically, or one closed.
+  document, a document opened while the session started automatically, or one closed. A
+  document that left takes its pending `edits` with it.
 
 Nothing the host does for the agent is reported back to it. The active view and the
 selection are compared when the next request arrives, so switching away and back reports

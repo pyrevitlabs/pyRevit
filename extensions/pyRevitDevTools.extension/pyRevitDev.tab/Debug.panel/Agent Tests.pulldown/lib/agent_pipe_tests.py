@@ -106,7 +106,10 @@ class PipeTests(TestCase):
         """Session status needs no main thread, so a client can read it while a command runs."""
         result = _call("session_status")["result"]
         self.assertEqual("active", result["state"])
-        self.assertEqual(harness.session().project.Title, result["document"])
+        self.assertEqual(
+            [harness.session().project.Title],
+            [document["title"] for document in result["documents"]],
+        )
 
     def test_the_pipe_can_not_start_or_resume_a_session(self):
         """Only Revit grants a session: no pipe request starts or resumes one."""

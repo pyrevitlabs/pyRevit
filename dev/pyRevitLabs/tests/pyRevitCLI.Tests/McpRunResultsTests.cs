@@ -72,10 +72,10 @@ public class McpRunResultsTests {
         [Fact]
         public void WhatTheUserChangedSinceTheLastCallIsKept() {
             var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
-                ["since_last_call"] = new JObject { ["edits"] = new JObject { ["modified"] = 2 } },
+                ["since_last_call"] = new JObject { ["edits"] = new JArray(new JObject { ["document"] = "doc-1", ["modified"] = 2 }) },
             }));
 
-            Assert.Equal(2, compact["since_last_call"]["edits"].Value<int>("modified"));
+            Assert.Equal(2, compact["since_last_call"]["edits"][0].Value<int>("modified"));
         }
 
         [Fact]

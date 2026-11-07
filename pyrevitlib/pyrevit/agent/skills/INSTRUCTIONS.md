@@ -17,7 +17,7 @@ Every such tool also takes a `title`: say in a few words what the call is for. T
 
 Tools that read or change the model need an agent session. The user starts it in Revit, or Revit starts one on every open document when the first request arrives. On `session_inactive`, call `request_session` with a short reason, tell the user what you asked for, and wait for them. On `paused_by_user`, tell the user you are waiting until they resume the session. On `paused_by_host` or `paused_by_agent`, pyRevit or an agent paused the session, for example because your last run changed another open document or the user closed the agent panel: tell the user what the message says, and wait for them to resume it.
 
-When a response includes `since_last_call`, the user changed the model, the active view or the selection, or documents joined or left the session, since your previous call. Call `get_context` again and re-check any element ids, views or counts you were relying on before you act on them.
+When a response includes `since_last_call`, the user changed the model, the active view or the selection, or documents joined or left the session, since your previous call; each edit, view and selection names its `document`. Call `get_context` again and re-check any element ids, views or counts you were relying on before you act on them.
 
 On `document_not_in_session`, work in the session's documents, or ask the user to add the one you need to the session in the agent panel. On `unknown_document`, the document was closed: call `get_context` and drop its ids. On `wrong_document`, ask the user to switch to the document, or export a named view instead of capturing the window.
 

@@ -13,9 +13,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// calls, and builds the <c>since_last_call</c> summary from <see cref="Awareness"/>.
     /// </summary>
     /// <remarks>
-    /// Edits come from <c>DocumentChanged</c>. The active view and the selection are compared,
-    /// when the next request arrives, with the ones the last request left behind in a session
-    /// document, on every Revit version. Events would report a round trip to another document as
+    /// Edits come from <c>DocumentChanged</c>, under the changed document's key. The active view
+    /// and the selection are compared, when the next request arrives, with the ones the last
+    /// request left behind in a session document, on every Revit version; a view or selection of
+    /// another session document counts as changed, even when its ids are the same. Events would report a round trip to another document as
     /// a view change, <c>SelectionChanged</c> exists only from Revit 2023, and when Revit raises
     /// either for the host's own changes is not something to rely on. They are recorded again
     /// when Revit next goes idle after a request, because a view change the request asked for
@@ -30,8 +31,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly object sync = new object();
         private static bool attached;
         private static bool idleRecordQueued;
-        private static HashSet<long> selectionBaseline = new HashSet<long>();
+        private static string documentBaseline;
         private static long? viewBaseline;
+        private static HashSet<long> selectionBaseline = new HashSet<long>();
 
         /// <summary>
         /// Subscribes to Revit's events once per process. Must run in a Revit API context.
@@ -50,6 +52,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public static void Restart(UIApplication app) {
             Awareness.Clear();
+            documentBaseline = null;
+            viewBaseline = null;
+            selectionBaseline = new HashSet<long>();
             RememberViewAndSelection(app.ActiveUIDocument);
         }
 
@@ -114,6 +119,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static void RememberViewAndSelection(UIDocument uidoc) {
             if (uidoc == null || !InSession(uidoc.Document))
                 return;
+            documentBaseline = AgentDocuments.Keys.KeyOf(uidoc.Document);
             viewBaseline = ActiveViewId(uidoc);
             selectionBaseline = SelectionIds(uidoc);
         }
@@ -123,9 +129,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
-            if (Awareness.IsSuppressed || IsRollback(e.Operation) || !InSession(e.GetDocument()))
+            var document = e.GetDocument();
+            if (Awareness.IsSuppressed || IsRollback(e.Operation) || !InSession(document))
                 return;
             Awareness.RecordEdit(
+                AgentDocuments.Keys.KeyOf(document), document.Title,
                 e.GetAddedElementIds().Select(AgentIds.ToValue),
                 e.GetModifiedElementIds().Select(AgentIds.ToValue),
                 e.GetDeletedElementIds().Select(AgentIds.ToValue),
@@ -136,9 +144,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static void CompareViewAndSelection(UIDocument uidoc) {
             if (uidoc == null || !InSession(uidoc.Document))
                 return;
-            if (ActiveViewId(uidoc) != viewBaseline)
+            var document = AgentDocuments.Keys.KeyOf(uidoc.Document);
+            if (AgentAwareness.ViewDiffers(documentBaseline, viewBaseline, document, ActiveViewId(uidoc)))
                 Awareness.RecordViewChange();
-            if (!SelectionIds(uidoc).SetEquals(selectionBaseline))
+            if (AgentAwareness.SelectionDiffers(documentBaseline, selectionBaseline, document, SelectionIds(uidoc)))
                 Awareness.RecordSelectionChange();
         }
 
@@ -174,10 +183,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (view == null)
                 return JValue.CreateNull();
             return new JObject {
+                ["document"] = AgentDocuments.Keys.KeyOf(uidoc.Document),
+                ["document_title"] = uidoc.Document.Title,
                 ["id"] = AgentIds.ToValue(view.Id),
                 ["name"] = view.Name,
                 ["type"] = view.ViewType.ToString(),
-                ["document"] = uidoc.Document.Title,
             };
         }
 
@@ -186,6 +196,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return JValue.CreateNull();
             var ids = uidoc.Selection.GetElementIds();
             return new JObject {
+                ["document"] = AgentDocuments.Keys.KeyOf(uidoc.Document),
+                ["document_title"] = uidoc.Document.Title,
                 ["count"] = ids.Count,
                 ["ids"] = new JArray(ids.Take(MaxSelectionIds).Select(AgentIds.ToValue)),
             };

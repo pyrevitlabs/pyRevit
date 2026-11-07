@@ -41,7 +41,7 @@ public partial class McpServerTests {
 
     [Fact]
     public void AnAutomationPassesOnWhatTheUserChangedEvenWhenItsRunIsRefused() {
-        var changed = new JObject { ["edits"] = new JObject { ["modified"] = 1 } };
+        var changed = new JObject { ["edits"] = new JArray(new JObject { ["document"] = "doc-1", ["modified"] = 1 }) };
         host.Handler = request => request.Value<string>("method") == "get_context"
             ? FakeAgentHost.Result(request, new JObject { ["document"] = new JObject { ["title"] = "Model" }, ["since_last_call"] = changed })
             : FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle.",
@@ -56,7 +56,7 @@ public partial class McpServerTests {
         Assert.True(IsError(response));
         var payload = Payload(response);
         Assert.Equal("revit_busy", payload.Value<string>("error"));
-        Assert.Equal(1, payload["since_last_call"]["edits"].Value<int>("modified"));
+        Assert.Equal(1, payload["since_last_call"]["edits"][0].Value<int>("modified"));
         Assert.Equal("Revit did not become idle.", payload.Value<string>("message"));
         Assert.Equal("not_run", payload.Value<string>("outcome"));
         Assert.Equal("abc123def456", payload.Value<string>("run_id"));
