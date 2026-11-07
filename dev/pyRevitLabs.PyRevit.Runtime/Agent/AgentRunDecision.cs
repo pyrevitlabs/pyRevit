@@ -46,7 +46,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     /// <remarks>
     /// Invariant: the checks are ordered by precedence. A left-open transaction, a script
-    /// failure or a change to another open document always rolls back before mode or policy
+    /// failure or a change to an open document outside the session always rolls back before mode or policy
     /// is considered, and only a modify run with changes can reach a commit.
     /// </remarks>
     internal static class AgentRunDecision {

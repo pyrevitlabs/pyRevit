@@ -79,7 +79,8 @@
     <system:String x:Key="AgentPanel.Log.Added">You added {0} to the session.</system:String>
     <system:String x:Key="AgentPanel.Log.Removed">You took {0} out of the session.</system:String>
     <system:String x:Key="AgentPanel.Log.Changes">{0} added · {1} modified · {2} deleted</system:String>
-    <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed another open document; pyRevit undid those changes.</system:String>
+    <system:String x:Key="AgentPanel.Log.AlsoChanged">also changed {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed an open document outside the session; pyRevit undid those changes.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.NoChanges">It changed nothing.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.Warning">The host warned: {0}</system:String>

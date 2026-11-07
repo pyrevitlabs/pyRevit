@@ -377,7 +377,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var added = details.Value<int?>("added") ?? 0;
             var modified = details.Value<int?>("modified") ?? 0;
             var deleted = details.Value<int?>("deleted") ?? 0;
-            return added + modified + deleted == 0 ? null : Format("AgentPanel.Log.Changes", added, modified, deleted);
+            var line = added + modified + deleted == 0 ? null : Format("AgentPanel.Log.Changes", added, modified, deleted);
+            var kept = (details["kept_documents"] as JArray)?.Values<string>().ToList() ?? new List<string>();
+            if (kept.Count == 0)
+                return line;
+            var also = Format("AgentPanel.Log.AlsoChanged", string.Join(", ", kept));
+            return line == null ? also : line + " · " + also;
         }
 
         private string Duration(AgentRequestRecord record) {

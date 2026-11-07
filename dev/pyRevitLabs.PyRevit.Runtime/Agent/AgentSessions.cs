@@ -239,7 +239,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Pauses the session after a run changed another open document, so the agent can't carry
+        /// Pauses the session after a run changed an open document outside it, so the agent can't carry
         /// on until the user has seen what happened and resumed it.
         /// </summary>
         /// <param name="documents">Titles of the documents that were open before the run and that it changed.</param>
@@ -248,8 +248,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var names = string.Join(", ", documents.Where(name => !string.IsNullOrEmpty(name)).Distinct().Select(name => "'" + name + "'"));
             Tracker.PauseByHost(
                 AgentSessionPauseCauses.OtherDocument,
-                $"the last run changed another open document ({names}), and a run may change only the document it names.");
+                $"the last run changed an open document outside the session ({names}), and a run may change only the session's documents.");
             return Tracker.State == AgentSessionState.Paused;
+        }
+
+        /// <summary>
+        /// Whether the open session holds <paramref name="doc"/>, so a run may change it. A session
+        /// that started automatically holds every open document.
+        /// </summary>
+        /// <remarks>Must run on the Revit main thread, because it compares documents.</remarks>
+        internal static bool IsInSession(Document doc) {
+            return Tracker.Contains(candidate => AgentDocuments.IsSame(candidate as Document, doc));
         }
 
         /// <summary>

@@ -23,6 +23,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Log.Added"] = "added {0}",
             ["AgentPanel.Log.Removed"] = "removed {0}",
             ["AgentPanel.Log.Changes"] = "+{0} ~{1} -{2}",
+            ["AgentPanel.Log.AlsoChanged"] = "also {0}",
             ["AgentPanel.Log.Flag.OtherDocument"] = "other document",
             ["AgentPanel.Log.Flag.CloseWithoutSaving"] = "close {0} unsaved",
             ["AgentPanel.Log.Flag.NoChanges"] = "no changes",
@@ -187,6 +188,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("engine ironpython 2.7.12", entry.Engine);
             Assert.Equal("folder C:\\runs\\abc", entry.RunFolder);
             Assert.False(entry.HasFlags || entry.HasError);
+        }
+
+        [Fact]
+        public void TheSessionDocumentsARunAlsoChangedAreNamedWithItsChanges() {
+            Finish("modify", "Add walls", "s1", "committed", Run(new JObject { ["kept_documents"] = new JArray("Annex", "Site") }));
+            log.Update(activity.History);
+
+            Assert.Equal("+1 ~2 -0 · also Annex, Site", log.Groups[0].Entries[0].Changes);
         }
 
         [Fact]

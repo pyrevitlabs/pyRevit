@@ -35,7 +35,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <c>"reckless": true</c>.</item>
     /// <item>A run works in the document its request names: the script's <c>doc</c>. Its
     /// <c>uidoc</c> is set only when that document is the active one.</item>
-    /// <item>A run that changes any document other than its own is rolled back and pauses the
+    /// <item>A modify run may also change the session's other documents. When it is kept, each
+    /// changed document keeps its changes as one undo entry; Revit can't keep several documents
+    /// at once, so one that fails to keep after others were kept is rolled back and the run
+    /// reports <c>partially_committed</c>. A query or dry run rolls back every document.</item>
+    /// <item>A run that changes a document outside the session is rolled back and pauses the
     /// session, if one is open, whatever its mode, the policy or any other error; when nothing
     /// else failed, it fails with <c>other_document_modified</c>.</item>
     /// <item>A modify run requires a document. Query and dry-run requests with no document
@@ -83,8 +87,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.OtherDocumentChanged:
                     context.SetError("other_document_modified",
-                        "The script changed another open document. Agent runs may change only the document "
-                        + "they name. See 'changes.other_documents' for rollback and discard outcomes.",
+                        "The script changed an open document outside the agent session. Agent runs may change "
+                        + "only the session's documents. See 'changes.other_documents' for rollback and discard outcomes.",
                         null);
                     guard.RollBack();
                     return verdict;
@@ -111,7 +115,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     AgentHost.AwaitTabApproval(highlight);
                     bool approved;
                     using (AgentHost.Activity.BeginApproval())
-                        approved = AgentApproval.Ask(uidoc, doc, request.Title, guard.Changes, changes, guard.Failures);
+                        approved = AgentApproval.Ask(
+                            uidoc, doc, request.Title, guard.Changes, changes,
+                            guard.ChangedSessionDocuments.Select(other => other.Describe()).ToList(), guard.Failures);
                     timings.Lap("approval");
                     if (approved) {
                         Commit(guard, doc, request, runId);
@@ -123,6 +129,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     guard.RollBack();
                     return verdict;
             }
+        }
+
+        private static string PartialCommitMessage(Document doc, AgentRunGuard guard, IList<AgentOtherDocument> notKept) {
+            var kept = new List<string>();
+            if (doc != null && !guard.Changes.IsEmpty)
+                kept.Add("'" + doc.Title + "'");
+            kept.AddRange(guard.ChangedSessionDocuments.Where(other => other.Kept).Select(other => "'" + other.Title + "'"));
+            var lost = string.Join("; ", notKept.Select(other => $"'{other.Title}' ({other.KeepError})"));
+            return $"Revit kept the run's changes in {(kept.Count == 0 ? "no document" : string.Join(", ", kept))} but not in {lost}. "
+                + "Those were rolled back: check them before running again, and redo only their part.";
         }
 
         private static void Commit(AgentRunGuard guard, Document doc, AgentRunRequest request, string runId) {
@@ -188,7 +204,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 timings.Lap("prepare");
                 var openAtStart = AgentDocuments.Snapshot(app.Application);
                 AgentRunVerdict? finalVerdict = null;
-                var guard = new AgentRunGuard(app, doc);
+                var guard = new AgentRunGuard(app, doc, AgentSessions.IsInSession);
                 using (guard) {
                     try {
                         guard.Arm("Agent: " + request.Title);
@@ -216,7 +232,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             TransactionLeftOpen = transactionLeftOpen,
                             ScriptFailed = context.HasError || exitCode != ScriptExecutorResultCodes.Succeeded,
                             ChangedOtherOpenDocument = guard.ChangedOtherOpenDocument,
-                            HasChanges = !guard.Changes.IsEmpty,
+                            HasChanges = guard.HasChanges,
                             Policy = AgentRunDecision.Stricter(policyAtStart, ReadPolicy()),
                         });
                         timings.Lap("decide");
@@ -229,6 +245,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             response["approval"] = approval;
                         response["status"] = AgentRunDecision.Status(verdict);
                         response["decision"] = AgentRunDecision.Decision(verdict);
+                        var notKept = guard.NotKept;
+                        if (notKept.Count > 0) {
+                            response["status"] = "error";
+                            response["decision"] = "partially_committed";
+                            context.SetError("partial_commit", PartialCommitMessage(doc, guard, notKept), null);
+                        }
                         response["exit_code"] = exitCode;
                         response["changes"] = changes;
                         response["failures"] = guard.Failures;
@@ -279,7 +301,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (guard.ChangedOtherOpenDocument) {
                     var changedTitles = guard.ChangedOtherOpenDocumentTitles;
                     if (AgentSessions.PauseForOtherDocument(changedTitles))
-                        warnings.Add("The script changed another open document (" + string.Join(", ", changedTitles)
+                        warnings.Add("The script changed an open document outside the session (" + string.Join(", ", changedTitles)
                             + "), so the agent session is paused until the user resumes it in Revit.");
                 }
                 var finalOtherDocuments = guard.DescribeOtherDocuments();
@@ -436,22 +458,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The active UI document when it is the run's document, or null when the run's document
         /// isn't active, so the changes can't be shown in a view.
         /// </param>
+        /// <param name="otherDocuments">
+        /// The other session documents the run changed, as <see cref="AgentOtherDocument.Describe"/>
+        /// gives them; one answer keeps or discards every document's changes.
+        /// </param>
         public static bool Ask(
-            UIDocument uidoc, Document doc, string title, AgentChangeSet changeSet, JObject changes, JArray failures) {
+            UIDocument uidoc, Document doc, string title, AgentChangeSet changeSet, JObject changes,
+            IList<JObject> otherDocuments, JArray failures) {
             var previousSelection = uidoc?.Selection.GetElementIds();
             var preview = uidoc == null
                 ? AgentViewPreview.NotShown(doc, $"'{doc.Title}' isn't the active document, so the changed elements can't be shown.")
                 : AgentViewPreview.Show(uidoc, changeSet.Touched);
 
+            var several = otherDocuments.Count > 0;
             var dialog = new TaskDialog("pyRevit Agent") {
-                MainInstruction = "An agent wants to modify the model",
-                MainContent = BuildSummary(title, doc.Title, changes, failures, preview.Description),
+                MainInstruction = several
+                    ? $"An agent wants to modify {otherDocuments.Count + 1} documents"
+                    : "An agent wants to modify the model",
+                MainContent = BuildSummary(title, doc.Title, changes, otherDocuments, failures, preview.Description),
                 ExpandedContent = changes.ToString(Formatting.Indented),
                 CommonButtons = TaskDialogCommonButtons.None,
                 AllowCancellation = true,
             };
             dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Keep these changes",
-                "Commit them as a single undoable operation.");
+                several ? "Commit them as one undoable operation in each document." : "Commit them as a single undoable operation.");
             dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Discard these changes",
                 "Roll the model back to its state before the run.");
             dialog.DefaultButton = TaskDialogResult.CommandLink2;
@@ -469,7 +499,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static string BuildSummary(
-            string title, string document, JObject changes, JArray failures, string previewDescription) {
+            string title, string document, JObject changes, IList<JObject> otherDocuments, JArray failures,
+            string previewDescription) {
             var summary = new StringBuilder();
             summary.AppendLine("Operation: " + title);
             summary.AppendLine("Document: " + document);
@@ -484,6 +515,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 summary.AppendLine();
                 foreach (var pair in byCategory.Properties().Take(MaxListedCategories))
                     summary.AppendLine("  " + pair.Name + ": " + pair.Value);
+            }
+
+            foreach (var other in otherDocuments) {
+                summary.AppendLine();
+                summary.AppendLine("Also in " + other.Value<string>("document") + ":");
+                summary.AppendLine(string.Format(
+                    "Added: {0}   Modified: {1}   Deleted: {2}",
+                    other.Value<int>("added_count"),
+                    other.Value<int>("modified_count"),
+                    other.Value<int>("deleted_count")));
             }
 
             if (failures.Count > 0) {

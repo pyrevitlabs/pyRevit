@@ -867,7 +867,7 @@ namespace pyRevitCLI {
                     () => ("Run a Python script that changes the model. With dry_run=true the change set is returned and everything is rolled back. Otherwise, under agent policy 'ask', Revit shows the user an approval prompt with the changed elements isolated; under policy 'auto' the change is committed directly. Kept changes become one undo entry named 'Agent: <title>'. Status 'rejected' means the user discarded the changes.",
                         new JObject {
                             ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Open transactions with DB.Transaction; assign `result` to return data." },
-                            ["document"] = DocumentProperty("Key of the document to change, from get_context; the script's `doc`. The run may change only this document."),
+                            ["document"] = DocumentProperty("Key of the document to change, from get_context; the script's `doc`. The run may also change the session's other documents; changing a document outside the session fails it."),
                             ["title"] = TitleProperty("What the change does, in a few words. The user sees it in Revit's agent panel and approval prompt, and it becomes the undo name."),
                             ["reason"] = ReasonProperty(),
                             ["dry_run"] = new JObject { ["type"] = "boolean", ["description"] = "Preview only: run, report the change set, roll back." },

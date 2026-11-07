@@ -38,6 +38,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["elements"] = Elements(changes, response.Value<string>("decision") == "committed"),
                 ["other_documents"] = OtherDocumentsOpenBeforeRun(changes).Count(),
                 ["unreverted_documents"] = UnrevertedDocuments(changes),
+                ["kept_documents"] = KeptDocuments(changes),
                 ["warnings"] = response["warnings"] as JArray ?? new JArray(),
                 ["output"] = Text(Cut(response.Value<string>("output"), MaxOutputChars)),
                 ["error"] = error == null ? null : new JObject {
@@ -80,13 +81,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// The other documents the run changed, except those it created: a run may change a
-        /// document it created and still commit.
+        /// The session's other documents whose changes the run kept with its own.
+        /// </summary>
+        private static JArray KeptDocuments(JObject changes) {
+            return new JArray((changes["other_documents"] as JArray ?? new JArray())
+                .OfType<JObject>()
+                .Where(other => other.Value<bool?>("kept") == true)
+                .Select(other => other.Value<string>("document"))
+                .Where(name => !string.IsNullOrEmpty(name)));
+        }
+
+        /// <summary>
+        /// The other documents the run changed and didn't keep, except those it created: a run
+        /// may change a document it created, or one in the session, and still commit.
         /// </summary>
         private static IEnumerable<JObject> OtherDocumentsOpenBeforeRun(JObject changes) {
             return (changes["other_documents"] as JArray ?? new JArray())
                 .OfType<JObject>()
-                .Where(other => other.Value<bool?>("opened_during_run") != true);
+                .Where(other => other.Value<bool?>("opened_during_run") != true && other.Value<bool?>("kept") != true);
         }
 
         private static JToken Text(string text) {

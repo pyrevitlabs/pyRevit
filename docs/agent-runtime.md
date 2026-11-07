@@ -247,7 +247,7 @@ session requests always pass.
 |---|---|---|
 | `session_inactive` | No session is active, and sessions start in the panel | Call `request_session`, tell the user, and wait |
 | `paused_by_user` | The user paused the session | Wait until the user resumes it |
-| `paused_by_host` | pyRevit paused it: a run changed another open document, or the panel was closed. The message says which | Tell the user; only they can resume it |
+| `paused_by_host` | pyRevit paused it: a run changed a document outside the session, or the panel was closed. The message says which | Tell the user; only they can resume it |
 | `paused_by_agent` | An agent paused it, with `pyrevit agent session pause` or from code in a run | Tell the user; only they can resume it |
 | `document_not_in_session` | The request names a document outside the session, or names none while one outside it is active | Work in the session's documents, or ask the user to add the document in the agent panel |
 | `unknown_document` | No open document has the key: it was closed, or the key is wrong | Call `get_context` for the open documents' keys, and drop ids from a closed document |
@@ -342,8 +342,13 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
-- `run_modify` requires a document, and may change only the one it names. The run's approval
-  prompt names the document, and isolates the changes in a view only when it is the active one.
+- `run_modify` requires a document: the script's `doc`. It may also change the session's other
+  documents. The approval prompt lists each changed document, isolates the changes in a view
+  only when the run's document is the active one, and one answer keeps or discards them all.
+  Kept, each document gets its changes as one undo entry. Revit can't keep several documents at
+  once: if one fails to keep after others were kept, it is rolled back, the run fails with
+  `partial_commit` and decision `partially_committed`, and `changes.other_documents` marks each
+  document `kept` or not, with `keep_error`. A query or dry run rolls back every document.
 - Documents a modify run created or opened (not linked, not open when the run started) stay
   open when the run is committed or changes nothing. They join the agent session as the agent's,
   are listed with their keys in `opened_documents`, and are closed without saving when the session
@@ -354,8 +359,8 @@ Rules the host enforces:
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
   save-as, synchronize-with-central, file-export and view-export events. The response lists a
   cancelled operation in `blocked`.
-- A run in any mode that changes another open document is rolled back. When nothing else
-  failed, it fails with `other_document_modified`. If a session is open, the run also pauses it
+- A run in any mode that changes an open document outside the session is rolled back. When
+  nothing else failed, it fails with `other_document_modified`. If a session is open, the run also pauses it
   (`paused_by_host`) until the user resumes it, whatever else failed. `changes.other_documents`
   lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
@@ -759,9 +764,9 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
    Changes to documents opened from disk are discarded when they are closed without saving, not by rolling back a group.
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
-    - **any mode**, another document open at the start or opened from disk during the run changed: roll back every group.
+    - **any mode**, a document outside the session that was open at the start, or one opened from disk during the run, changed: roll back every group.
       The run fails with `other_document_modified` if the script completed successfully and left no transaction open.
-      Only the active document's group is ever assimilated.
+      Only the groups of the run's document and of the session's other documents are ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
     - **modify** with policy `readonly`: the policy is read before the script and again here,
@@ -772,7 +777,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
       `approval: auto`.
     - **modify** with policy `ask`: while the group is still open, select and temporarily
       isolate the changed elements, and show the approval prompt. The isolation is switched off
-      again inside the group before deciding. Keep → `Assimilate()`, one undo entry.
+      again inside the group before deciding. Keep → `Assimilate()`, one undo entry in each changed document.
       Discard → `RollBack()`.
 5. **Disarm guards** and write the run record.
 
