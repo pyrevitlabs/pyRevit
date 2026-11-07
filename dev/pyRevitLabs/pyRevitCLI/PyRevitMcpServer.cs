@@ -274,6 +274,15 @@ namespace pyRevitCLI {
                 (JObject)CallRevit(arguments, "run", RunParameters(arguments, mode))));
         }
 
+        private JToken LookupRevitApi(JObject arguments) {
+            var name = arguments.Value<string>("name");
+            if (string.IsNullOrWhiteSpace(name))
+                name = arguments.Value<string>("query");
+            if (string.IsNullOrWhiteSpace(name))
+                throw new AgentClientException("invalid_params", "'name' (or its alias 'query') is required.");
+            return CallRevit(arguments, "lookup_api", new JObject { ["name"] = name });
+        }
+
         private JToken NavigateRevitLink(JObject arguments) {
             var link = arguments["link"] as JObject
                 ?? throw new AgentClientException("invalid_params", "'link' must be an element reference returned by inspect_elements.");
@@ -567,13 +576,15 @@ namespace pyRevitCLI {
                         }),
                     RunAutomation),
 
-                new McpTool("lookup_revit_api", readOnly: true, new[] { "name" },
-                    () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers.",
+                new McpTool("lookup_revit_api", readOnly: true, new string[0],
+                    () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers. "
+                        + "Pass it as name, or as query like lookup_pyrevit_api.",
                         new JObject {
                             ["name"] = new JObject { ["type"] = "string", ["description"] = "Type name or Type.Member." },
+                            ["query"] = new JObject { ["type"] = "string", ["description"] = "Alias for name." },
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => CallRevit(arguments, "lookup_api", new JObject { ["name"] = arguments["name"] })),
+                    LookupRevitApi),
 
                 new McpTool("show_elements", readOnly: true, new string[0],
                     () => ("Show elements to the user in the active view, without an approval prompt and without changing model elements: "
