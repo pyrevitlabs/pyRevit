@@ -65,12 +65,14 @@ namespace pyRevitCLI {
     /// text alone.
     /// </remarks>
     internal sealed class AgentClientException : Exception {
-        public AgentClientException(string code, string message, string outcome = null, string requestId = null, string runId = null)
+        public AgentClientException(
+            string code, string message, string outcome = null, string requestId = null, string runId = null, JObject details = null)
             : base(message) {
             Code = code;
             Outcome = outcome;
             RequestId = requestId;
             RunId = runId;
+            Details = details;
         }
 
         public string Code { get; }
@@ -83,6 +85,12 @@ namespace pyRevitCLI {
 
         /// <summary>The run record the host left for a refused <c>run</c> request.</summary>
         public string RunId { get; }
+
+        /// <summary>
+        /// The host's other <c>error.data</c> fields, such as the candidate <c>views</c> of a
+        /// <c>view_ambiguous</c> error, passed on to the caller unchanged.
+        /// </summary>
+        public JObject Details { get; }
 
         public string HostMessage => base.Message;
 
@@ -106,6 +114,12 @@ namespace pyRevitCLI {
                 json["request_id"] = RequestId;
             if (RunId != null)
                 json["run_id"] = RunId;
+            if (Details != null) {
+                foreach (var detail in Details.Properties()) {
+                    if (json[detail.Name] == null)
+                        json[detail.Name] = detail.Value;
+                }
+            }
             return json;
         }
     }
@@ -376,12 +390,15 @@ namespace pyRevitCLI {
             }
             if (response["error"] is JObject error) {
                 var data = error["data"] as JObject;
+                var details = data == null ? null : new JObject(data.Properties()
+                    .Where(field => field.Name != "type" && field.Name != "outcome" && field.Name != "run_id"));
                 throw new AgentClientException(
                     data?.Value<string>("type") ?? "error",
                     error.Value<string>("message"),
                     data?.Value<string>("outcome"),
                     requestId,
-                    data?.Value<string>("run_id"));
+                    data?.Value<string>("run_id"),
+                    details != null && details.HasValues ? details : null);
             }
             return response["result"];
         }
