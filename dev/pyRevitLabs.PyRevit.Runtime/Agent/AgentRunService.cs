@@ -128,11 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
             if (request.Document != null && (doc == null || !AgentDocumentBinding.Matches(request.Document, doc.Title, doc.PathName)))
-                throw new AgentException(
-                    "document_changed",
-                    doc == null
-                        ? $"The run was meant for '{request.Document}' but Revit has no active document. Nothing ran."
-                        : $"The run was meant for '{request.Document}' but the active document is '{doc.Title}'. Nothing ran; activate the intended document or call get_context again.");
+                throw AgentDocumentBinding.Refusal(request.Document, doc?.Title);
             if (doc == null && request.Mode == AgentRunMode.Modify)
                 throw new AgentException("no_active_document", "A modify run requires an active document.");
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
@@ -306,7 +302,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Leaves a run folder for a request the host refused as <c>revit_busy</c>, with
+        /// Leaves a run folder for a request the host refused before running any of it
+        /// (<c>revit_busy</c> or <c>document_changed</c>), with
         /// <c>status</c> and <c>decision</c> <c>not_run</c>, and adds its <c>run_id</c> and
         /// <c>run_dir</c> to <paramref name="refusal"/>.
         /// </summary>

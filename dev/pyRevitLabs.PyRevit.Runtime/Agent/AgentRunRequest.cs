@@ -68,10 +68,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var inputs = parameters["inputs"];
             var workspace = parameters.Value<string>("workspace");
-            var documentToken = parameters["document"];
-            if (documentToken != null && documentToken.Type != JTokenType.Null && documentToken.Type != JTokenType.String)
-                throw new AgentException("invalid_params", "'document' must be the title or path string returned by get_context.");
-            var document = documentToken?.Type == JTokenType.String ? documentToken.Value<string>() : null;
+            var document = AgentDocumentBinding.Parse(parameters["document"]);
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");
             var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
@@ -86,7 +83,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ? "{}"
                     : inputs.ToString(Formatting.None),
                 Workspace = string.IsNullOrWhiteSpace(workspace) ? null : Path.GetFullPath(workspace),
-                Document = string.IsNullOrWhiteSpace(document) ? null : document,
+                Document = document,
                 TimeoutSeconds = timeoutSeconds,
             };
         }

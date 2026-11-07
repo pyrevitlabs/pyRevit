@@ -108,17 +108,21 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums. Takes `name`, or `query` as an alias to match `lookup_pyrevit_api` |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. `isolate` and `hide` leave out ids the active view doesn't show and list them in `not_in_view_ids`; while a temporary isolate is on, the elements it hides count as not shown, so `reset` before isolating others. `view` is the view acted on; when zooming makes Revit open another view, `active_view` names it. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), fails with `view_not_active` for any other view, and fails with `view_obscured` when another application's window covers any part of it (click-through overlays such as the GeForce overlay don't count); view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there; in a workshared model a view you don't own is duplicated and the copy is changed, so nothing is borrowed; `viewport` refuses such a view while its temporary hide/isolate is on). A view name shared by several views fails with `view_ambiguous` and lists their ids, except in `screen` mode when one of them is the active view; a digits-only selector is tried as an id first, then as a name. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
-| `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back |
+| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
+| `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 | `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
 | `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
-| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source |
+| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 
 `run_query`, `run_modify` and `run_automation` accept an optional `document`: the title or path of the document
 as returned by `get_context`. When it is given and the active document differs, Revit refuses the run with
-`document_changed` before anything runs, so a plan made for one model never lands in another after the user
-switches tabs. The approval prompt always names the document the changes apply to.
+`document_changed` before anything runs (a `not_run` request, see
+[What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer)), so a plan made for
+one model never lands in another after the user switches tabs. A value with a path separator is compared, normalised
+and ignoring case, with the active document's path only; any other value is compared with its title only, so pass
+the path when two open documents share a title. A blank or non-string value is `invalid_params`. Omitting
+`document` leaves the run unbound. The approval prompt always names the document the changes apply to.
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
@@ -667,7 +671,7 @@ Deliberately **not** reused:
 Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one connection
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
-`data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
+`data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly` or
 `invalid_params`.
 
 ### What became of a request that got no answer
@@ -682,7 +686,7 @@ use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what 
 | `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
 | `unknown` | The request was sent and the answer was lost (the connection broke or closed, or the client stopped waiting), or the host stopped waiting for a run stuck past its time limit (`run_hung`). It may have run, may still be running or waiting to run, or may never run. | Look it up by request id before sending it again. |
 
-Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
+Every `revit_busy` and `document_changed` the host raises is a `not_run`. For a `run` request the host also leaves a
 run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
 error's `data`. Without it a refused request would leave no trace. A run that did start records
 the request id in `request.json` and `response.json` (`request_id`), so a request can be found

@@ -551,7 +551,7 @@ namespace pyRevitCLI {
         private static JObject DocumentProperty() {
             return new JObject {
                 ["type"] = "string",
-                ["description"] = "Title or path of the document the run is meant for, as returned by get_context. If the active document differs, the run is refused with document_changed before anything runs.",
+                ["description"] = "Title or path of the document the run is meant for, as returned by get_context. If the active document differs, the run is refused with document_changed before anything runs. Pass the path when two open documents may share a title; a value containing a path separator is compared with the active document's path only, anything else with its title only.",
             };
         }
 
