@@ -41,6 +41,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static AgentTabHighlight tabHighlight;
         private static AgentTabHighlightVisuals tabHighlightVisuals;
         private static bool tabHighlightDisabled;
+        private static readonly AgentEngineWarmUp engineWarmUp = new AgentEngineWarmUp();
 
         internal static AgentTabHighlight.Lease BeginTabHighlight(UIApplication application, Autodesk.Revit.DB.Document document, string title) {
             RefreshConfigIfChanged();
@@ -206,6 +207,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            engineWarmUp.Reset();
+
             lock (sync) {
                 if (dispatcher == null) {
                     dispatcher = new AgentDispatcher();
@@ -271,6 +274,47 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Debug("Could not remove agent instance file: {0}", ex.Message);
             }
+        }
+
+        /// <summary>
+        /// The session load a request starts in; pass it to <see cref="NoteRequest"/>.
+        /// </summary>
+        internal static int SessionLoad => engineWarmUp.Load;
+
+        /// <summary>
+        /// Queues the engine warm-up after the first agent request of a session load, so the
+        /// first run finds the engine ready. Called on the pipe thread once a request is handled.
+        /// </summary>
+        /// <remarks>
+        /// The warm-up runs through the dispatcher on the Revit main thread, never on the pipe
+        /// thread, and a <c>run</c> queued after it waits for it. Requests made in-process through
+        /// <see cref="HandleRequest"/> don't count: they come from a command, not an agent.
+        /// Failures are logged at debug level only and never affect the host.
+        /// </remarks>
+        internal static void NoteRequest(string method, int loadAtStart) {
+            if (inlineApplication != null || !engineWarmUp.OnRequest(method, loadAtStart))
+                return;
+            try {
+                Dispatcher?.Post(WarmUpEngine);
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not queue the agent engine warm-up: {0}", ex.Message);
+            }
+        }
+
+        private static JToken WarmUpEngine(UIApplication uiApp) {
+            try {
+                var defaultIsIronPython = PyRevitConfigs.GetAgentEngine() == PyRevitConsts.ConfigsAgentEngineIronPython;
+                if (!AgentEngineWarmUp.ShouldWarm(IsRunning && IsEnabled(), defaultIsIronPython, AgentScriptRunner.IsIronPythonEngineCached()))
+                    return null;
+                var clock = Stopwatch.StartNew();
+                var exitCode = AgentScriptRunner.WarmUp(uiApp, SearchPaths);
+                logger.Debug("[PERF] agent engine warm-up: exit code {0} in {1} ms", exitCode, clock.ElapsedMilliseconds);
+            }
+            catch (Exception ex) {
+                logger.Debug("Agent engine warm-up failed: {0}", ex.Message);
+            }
+            return null;
         }
     }
 
