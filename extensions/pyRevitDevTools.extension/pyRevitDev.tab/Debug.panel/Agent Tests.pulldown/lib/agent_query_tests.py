@@ -7,6 +7,9 @@ import os.path as op
 import agent_harness as harness
 from agent_harness import ENGINES, TestCase, run
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "E2E"
+
 
 def _script_lines(response):
     traceback = (response.get("error") or {}).get("traceback") or ""
@@ -84,6 +87,75 @@ class ErrorTests(TestCase):
         for engine in ENGINES:
             response = run("a = 1\nb = (\n", engine=engine)
             self.assertEqual("SyntaxError", response["error"]["type"], engine)
+
+
+DEEP_RAISE = (
+    "class Ctx(object):\n"
+    "    def __enter__(self):\n"
+    "        return self\n"
+    "    def __exit__(self, *args):\n"
+    "        return False\n"
+    "def r(n):\n"
+    "    if n == inputs['depth']:\n"
+    "        raise ValueError(n)\n"
+    "    with Ctx():\n"
+    "        try:\n"
+    "            return r(n + 1)\n"
+    "        finally:\n"
+    "            pass\n"
+    "try:\n"
+    "    r(1)\n"
+    "except ValueError as error:\n"
+    "    result = error.args[0]\n"
+)
+
+
+UNBOUNDED_RECURSION = "def r(n):\n    return r(n + 1)\nr(0)\n"
+TRACED_UNBOUNDED_RECURSION = (
+    "start = getattr(object(), 'Start', None)\n" + UNBOUNDED_RECURSION
+)
+REPEATED_RECURSION = (
+    "def r(n):\n"
+    "    return r(n + 1)\n"
+    "caught = 0\n"
+    "for _ in range(inputs['runs']):\n"
+    "    try:\n"
+    "        r(0)\n"
+    "    except RuntimeError:\n"
+    "        caught += 1\n"
+    "result = caught\n"
+)
+
+
+class RecursionTests(TestCase):
+    """Deep Python calls fail as script errors instead of crashing Revit (#3918)."""
+
+    def test_unbounded_recursion_is_a_script_error(self):
+        """Endless recursion ends the run with a recursion error, run after run."""
+        for engine in ENGINES:
+            for source in (UNBOUNDED_RECURSION, TRACED_UNBOUNDED_RECURSION):
+                for _ in range(2):
+                    response = run(source, engine=engine)
+                    self.assertEqual("error", response["status"], engine)
+                    self.assertIn(
+                        response["error"]["type"],
+                        ("RecursionError", "RuntimeError"),
+                        engine,
+                    )
+
+    def test_recursion_stays_limited_after_many_errors_in_one_function(self):
+        """A function that raised more than 20 times still stops at the limit."""
+        for engine in ENGINES:
+            response = run(REPEATED_RECURSION, engine=engine, inputs={"runs": 50})
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual(50, response["result"], engine)
+
+    def test_an_error_raised_deep_in_handler_dense_frames_is_caught(self):
+        """An exception raised 300 calls deep, through with and finally blocks, is caught."""
+        for engine in ENGINES:
+            response = run(DEEP_RAISE, engine=engine, inputs={"depth": 300})
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual(300, response["result"], engine)
 
 
 class TimeoutTests(TestCase):
