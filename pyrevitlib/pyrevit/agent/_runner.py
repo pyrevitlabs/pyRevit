@@ -274,9 +274,11 @@ class _WorkspaceLoopGuard(object):
         stopped only if the script itself is traced.
     """
 
-    def __init__(self, workspace, guards):
+    def __init__(self, workspace, guards, on_unguarded=lambda: None):
         self._root = _folder_prefix(workspace)
+        self._libraries = _library_prefixes(self._root)
         self._guards = guards
+        self._on_unguarded = on_unguarded
         self._paths = {}
 
     def _locate(self, fullname, path):
@@ -286,15 +288,20 @@ class _WorkspaceLoopGuard(object):
             return None
         name = fullname.rpartition(".")[2]
         folders = path if path is not None else sys.path
-        folders = [f for f in folders if f and isinstance(f, str)]
+        folders = [op.abspath(f) for f in folders if f and isinstance(f, str)]
         for folder in folders:
             package = op.join(folder, name, "__init__.py")
             module = op.join(folder, name + ".py")
             found = (package, True) if op.isfile(package) else None
             found = found or ((module, False) if op.isfile(module) else None)
             if found:
-                return found if _is_under(found[0], self._root) else None
+                return found if self._is_workspace_file(found[0]) else None
         return None
+
+    def _is_workspace_file(self, filename):
+        return _is_under(filename, self._root) and not any(
+            _is_under(filename, prefix) for prefix in self._libraries
+        )
 
     def _owns_parent(self, fullname):
         parent = sys.modules.get(fullname.rpartition(".")[0])
@@ -348,9 +355,11 @@ class _WorkspaceLoopGuard(object):
     def exec_module(self, module):
         with open(module.__file__, "rb") as handle:
             raw = handle.read()
-        code, rewrite_problem, _ = _compile_source(
+        code, rewrite_problem, guarded = _compile_source(
             _decode_source(raw), True, module.__file__
         )
+        if not guarded:
+            self._on_unguarded()
         if rewrite_problem:
             print(
                 "[pyRevit agent] Could not fully rewrite {} ({}).".format(
@@ -760,7 +769,7 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     def trace_call(frame, event, arg):
         code = frame.f_code
         if not track or code.co_filename != SOURCE_NAME:
-            return check_deadline if check_lines else None
+            return check_deadline if check_lines or state.get("check_lines") else None
         if code.co_name == "<module>":
             return track_module
         if dict_locals_on_lines or code.co_flags & _CO_OPTIMIZED:
@@ -1098,7 +1107,7 @@ def run(context):
     left_open = 0
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
-    state = {"timed_out": False, "finished": False}
+    state = {"timed_out": False, "finished": False, "check_lines": False}
     timed_out_after_script = False
     tracked_transactions = {}
     try:
@@ -1117,6 +1126,7 @@ def run(context):
                         name: namespace[name]
                         for name in ("__agent_tick__", "__agent_loop__")
                     },
+                    lambda: state.update(check_lines=True),
                 )
                 sys.meta_path.insert(0, workspace_guard)
         phases.lap("setup")
@@ -1563,6 +1573,16 @@ _LIBRARY_PATHS = [entry for entry in sys.path if isinstance(entry, str) and entr
 _PYREVITLIB_PATH = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
 
 
+def _library_prefixes(root):
+    nested = [
+        prefix
+        for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
+        if prefix != root and prefix.startswith(root)
+    ]
+    nested.append(_folder_prefix(_PYREVITLIB_PATH))
+    return nested
+
+
 def _unload_modules_under(folder):
     """Unload the modules imported from ``folder``.
 
@@ -1576,12 +1596,7 @@ def _unload_modules_under(folder):
         stays loaded even when it is the workspace itself.
     """
     root = _folder_prefix(folder)
-    nested = [
-        prefix
-        for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
-        if prefix != root and prefix.startswith(root)
-    ]
-    nested.append(_folder_prefix(_PYREVITLIB_PATH))
+    nested = _library_prefixes(root)
     for name, module in list(sys.modules.items()):
         module_file = getattr(module, "__file__", None)
         if (

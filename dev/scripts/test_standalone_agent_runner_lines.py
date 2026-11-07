@@ -1270,6 +1270,43 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         )
         self.assertEqual([], errors)
 
+    def test_relative_sys_path_entries_to_the_workspace_are_guarded(self):
+        """A relative path to the workspace still gets the loop guards."""
+        parent = self._workspace({"inside/relmod.py": "VALUE = 1\n"})
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(parent)
+        errors, _, _ = self._run(
+            "import sys\nsys.path.insert(0, 'inside')\nimport relmod\n"
+            "assert '__agent_tick__' in vars(relmod)\n",
+            workspace=os.path.join(parent, "inside"),
+        )
+        self.assertEqual([], errors)
+
+    def test_library_folders_inside_the_workspace_stay_unguarded(self):
+        """A library under the workspace is never rewritten by the hook."""
+        folder = self._workspace({"lib/libmod.py": "VALUE = 1\n"})
+        library = os.path.join(folder, "lib")
+        with mock.patch.object(self.runner, "_PYREVITLIB_PATH", library):
+            errors, _, _ = self._run(
+                "import sys\nsys.path.append({!r})\nimport libmod\n"
+                "assert '__agent_tick__' not in vars(libmod)\n".format(library),
+                workspace=folder,
+            )
+        self.assertEqual([], errors)
+
+    def test_a_workspace_module_that_cannot_be_rewritten_is_line_checked(self):
+        """The deadline is still enforced inside an unrewritable module."""
+        folder = self._workspace(
+            {"stubborn.py": "def spin():\n    while lambda: True:\n        pass\n"}
+        )
+        started = time.time()
+        with mock.patch.object(self.runner, "_set_async_exc_function", lambda: None):
+            errors, _, _ = self._run(
+                "import stubborn\nstubborn.spin()\n", timeout_s=0.3, workspace=folder
+            )
+        self.assertEqual(["timeout"], errors)
+        self.assertLess(time.time() - started, 3)
+
     def test_workspace_packages_can_read_their_data_files(self):
         """pkgutil.get_data still returns a workspace package's resource."""
         folder = self._workspace(
