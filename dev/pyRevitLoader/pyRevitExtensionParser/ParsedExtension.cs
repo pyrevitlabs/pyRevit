@@ -98,9 +98,7 @@ namespace pyRevitExtensionParser
         };
 
         /// <summary>
-        /// Calculates a hash based on the modification times of all relevant files in the extension directory.
-        /// This matches the Python implementation in coreutils.calculate_dir_hash()
-        /// OPTIMIZED: Uses EnumerateFiles/EnumerateDirectories for lazy evaluation, HashSet for O(1) extension lookup
+        /// Calculates a hash from relevant bundle paths and modification times in the extension directory.
         /// </summary>
         /// <param name="seed">Optional seed to include in hash calculation. Use empty string for Python, 'Roslyn' for Roslyn build strategy</param>
         public string GetHash(string seed = "")
@@ -114,7 +112,8 @@ namespace pyRevitExtensionParser
 
             try
             {
-                long mtimeSum = 0;
+                var hashEntries = new List<string>();
+                var extensionRootPath = Path.GetFullPath(Directory);
 
                 var pending = new Stack<(string path, bool isExtensionRoot)>();
                 var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -170,7 +169,10 @@ namespace pyRevitExtensionParser
 
                     if (includeDir)
                     {
-                        mtimeSum += dirInfo.LastWriteTimeUtc.Ticks;
+                        var directoryPath = pendingDirectory.isExtensionRoot
+                            ? dirInfo.Name
+                            : Path.GetRelativePath(extensionRootPath, fullPath);
+                        hashEntries.Add($"D:{directoryPath}:{dirInfo.LastWriteTimeUtc.Ticks}");
 
                         try
                         {
@@ -178,7 +180,8 @@ namespace pyRevitExtensionParser
                             {
                                 if (_scriptExtensions.Contains(fileInfo.Extension))
                                 {
-                                    mtimeSum += fileInfo.LastWriteTimeUtc.Ticks;
+                                    var filePath = Path.GetRelativePath(extensionRootPath, fileInfo.FullName);
+                                    hashEntries.Add($"F:{filePath}:{fileInfo.LastWriteTimeUtc.Ticks}");
                                 }
                             }
                         }
@@ -205,7 +208,7 @@ namespace pyRevitExtensionParser
                 // Include the seed in the hash to differentiate between build strategies
                 using (var md5 = MD5.Create())
                 {
-                    var inputString = mtimeSum.ToString() + seed;
+                    var inputString = string.Join("\n", hashEntries.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)) + seed;
                     var bytes = Encoding.UTF8.GetBytes(inputString);
                     var hashBytes = md5.ComputeHash(bytes);
                     var result = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
