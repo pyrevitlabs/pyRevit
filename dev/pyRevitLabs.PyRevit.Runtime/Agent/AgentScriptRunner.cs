@@ -105,7 +105,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentScriptRunner {
         private const string EntryFileName = "agent_entry.py";
         private const string AgentExtensionName = "pyRevitAgent";
-        private const string WarmUpSource = "from pyrevit.agent import _runner\n_runner.warm_up()\n";
+        /// <remarks>
+        /// The engine is reused between runs and pyrevitlib is loaded live, so a runner module
+        /// imported before its file changed on disk is dropped and imported again. Otherwise the
+        /// run executes the old code while tracebacks quote the lines of the new file. The file's
+        /// size is compared with its modification time, which IronPython 2.7 reports in whole
+        /// seconds, so an edit saved in the second of the import is still seen.
+        /// Invariant: the warm-up imports the runner through this same block, so the first run
+        /// finds the stamp it checks and keeps the warmed module instead of importing it again.
+        /// </remarks>
+        private const string RunnerImport =
+            "import importlib\n" +
+            "import os\n" +
+            "import sys\n" +
+            "def _file_stamp(module):\n" +
+            "    info = os.stat(module.__file__)\n" +
+            "    return (info.st_mtime, info.st_size)\n" +
+            "_loaded = sys.modules.get('pyrevit.agent._runner')\n" +
+            "if _loaded is not None and getattr(_loaded, '__agent_stamp__', None) != _file_stamp(_loaded):\n" +
+            "    del sys.modules['pyrevit.agent._runner']\n" +
+            "_runner = importlib.import_module('pyrevit.agent._runner')\n" +
+            "_runner.__agent_stamp__ = _file_stamp(_runner)\n";
+
+        private const string WarmUpSource = RunnerImport + "_runner.warm_up()\n";
 
         /// <summary>
         /// Starts the IronPython engine agent runs use, imports the runner into it and runs
@@ -181,30 +203,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return ScriptExecutor.ExecuteScript(scriptData, configs);
         }
 
-        /// <remarks>
-        /// The engine is reused between runs and pyrevitlib is loaded live, so a runner module
-        /// imported before its file changed on disk is dropped and imported again. Otherwise the
-        /// run executes the old code while tracebacks quote the lines of the new file. The file's
-        /// size is compared with its modification time, which IronPython 2.7 reports in whole
-        /// seconds, so an edit saved in the second of the import is still seen.
-        /// </remarks>
         private static string BuildEntryScript(AgentEngine engine) {
             var builder = new StringBuilder();
             if (engine == AgentEngine.CPython)
                 builder.Append("#! python3\n");
+            builder.Append("try:\n");
+            foreach (var line in RunnerImport.TrimEnd('\n').Split('\n'))
+                builder.Append("    ").Append(line).Append('\n');
             builder.Append(
-                "try:\n" +
-                "    import importlib\n" +
-                "    import os\n" +
-                "    import sys\n" +
-                "    def _file_stamp(module):\n" +
-                "        info = os.stat(module.__file__)\n" +
-                "        return (info.st_mtime, info.st_size)\n" +
-                "    _loaded = sys.modules.get('pyrevit.agent._runner')\n" +
-                "    if _loaded is not None and getattr(_loaded, '__agent_stamp__', None) != _file_stamp(_loaded):\n" +
-                "        del sys.modules['pyrevit.agent._runner']\n" +
-                "    _runner = importlib.import_module('pyrevit.agent._runner')\n" +
-                "    _runner.__agent_stamp__ = _file_stamp(_runner)\n" +
                 "except Exception:\n" +
                 "    import traceback\n" +
                 "    __agent__.SetError('RunnerImportError', 'Could not import pyrevit.agent', traceback.format_exc())\n" +
