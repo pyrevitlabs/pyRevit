@@ -8,7 +8,7 @@ import types
 import unittest
 from unittest import mock
 
-from test_standalone_agent_runner_lines import _load_runner
+from test_agent_runner_lines import _load_runner
 
 HANG_LIMIT_SECONDS = 300
 
