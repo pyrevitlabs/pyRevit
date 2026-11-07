@@ -1,6 +1,6 @@
 # pyRevitLabs.PyRevit.Tests
 
-The Labs configuration facade, script-file classification, deployed version lookup, and attachment filtering. Values written through PyRevitConfigs must persist through the shared backend; script classification needs no installed interpreter. Fake product executables make attachment-filter contracts deterministic; installed-product attachment fixtures remain tagged `Revit` and run locally. Clone deployment and install-scope/config integration belong to `pyRevitLabs.PyRevit.Integration.Tests`.
+The Labs configuration facade, script-file classification, deployed version lookup, and attachment filtering. Values written through PyRevitConfigs must persist through the shared backend; script classification needs no installed interpreter. Per-session launches must isolate their config and prune only abandoned launch folders. Fake product executables make attachment-filter contracts deterministic; installed-product attachment fixtures remain tagged `Revit` and run locally. Clone deployment and install-scope/config integration belong to `pyRevitLabs.PyRevit.Integration.Tests`.
 
 Owner: the owning module maintainers; unassigned failures and quarantines belong to the change author. Quarantines require an issue and review within 14 days.
 
