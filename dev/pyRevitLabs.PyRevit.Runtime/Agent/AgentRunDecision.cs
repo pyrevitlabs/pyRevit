@@ -43,15 +43,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// Decides what happens to a finished agent run: roll back, commit, or ask the user.
-    /// Pure logic with no Revit dependency; <see cref="AgentRunService"/> carries out the verdict.
-    /// </summary>
-    /// <remarks>
-    /// Invariant: the checks are ordered by precedence. A left-open transaction, a script
-    /// failure or a change to another open document always rolls back before mode or policy
-    /// is considered, and only a modify run with changes can reach a commit.
-    /// </remarks>
-    /// <summary>
     /// The agent policy in force for the Revit session, which only loosens with the user's
     /// confirmation.
     /// </summary>
@@ -97,6 +88,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
     }
 
+    /// <summary>
+    /// Decides what happens to a finished agent run: roll back, commit, or ask the user.
+    /// Pure logic with no Revit dependency; <see cref="AgentRunService"/> carries out the verdict.
+    /// </summary>
+    /// <remarks>
+    /// Invariant: the checks are ordered by precedence. A left-open transaction, a script
+    /// failure or a change to another open document always rolls back before mode or policy
+    /// is considered, and only a modify run with changes can reach a commit.
+    /// </remarks>
     internal static class AgentRunDecision {
         public static AgentPolicy Stricter(AgentPolicy first, AgentPolicy second) {
             return first <= second ? first : second;
