@@ -98,7 +98,7 @@ namespace pyRevitExtensionParser
         };
 
         /// <summary>
-        /// Calculates a hash based on the modification times of all relevant files in the extension directory.
+        /// Calculates a hash from relevant modification times and the family paths embedded in generated commands.
         /// This matches the Python implementation in coreutils.calculate_dir_hash()
         /// OPTIMIZED: Uses EnumerateFiles/EnumerateDirectories for lazy evaluation, HashSet for O(1) extension lookup
         /// </summary>
@@ -202,8 +202,15 @@ namespace pyRevitExtensionParser
                 // Include the seed in the hash to differentiate between build strategies
                 using (var md5 = MD5.Create())
                 {
-                    var inputString = mtimeSum.ToString() + seed;
-                    var bytes = Encoding.UTF8.GetBytes(inputString);
+                    var input = new StringBuilder(mtimeSum.ToString()).Append(seed);
+                    foreach (var content in CollectCommandComponents().Where(c => c.Type == CommandComponentType.ContentButton)
+                                 .OrderBy(c => c.Directory, StringComparer.Ordinal))
+                    {
+                        input.Append("\ncontent:").Append(content.Directory)
+                            .Append('\n').Append(content.ScriptPath)
+                            .Append('\n').Append(content.ConfigScriptPath);
+                    }
+                    var bytes = Encoding.UTF8.GetBytes(input.ToString());
                     var hashBytes = md5.ComputeHash(bytes);
                     var result = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                     _cachedHashes[seed] = result;
