@@ -14,9 +14,12 @@ import struct
 import unittest
 
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RELEASE_DIR = os.path.join(REPO_ROOT, "release")
 BITMAP_INFO_HEADER_SIZE = 40
+BI_RGB = 0
 WIZARD_DIRECTIVE = re.compile(
     r"^Wizard(?:Small)?ImageFile\s*=\s*(?P<path>.+?)\s*$", re.MULTILINE
 )
@@ -56,8 +59,12 @@ class WizardBitmapTests(unittest.TestCase):
                 with open(path, "rb") as handle:
                     data = handle.read()
                 (pixel_offset,) = struct.unpack_from("<I", data, 10)
-                (image_size,) = struct.unpack_from("<I", data, 34)
-                self.assertEqual(len(data), pixel_offset + image_size)
+                width, height, _, bits_per_pixel, compression = struct.unpack_from(
+                    "<iiHHI", data, 18
+                )
+                self.assertEqual(compression, BI_RGB)
+                row_stride = (width * bits_per_pixel + 31) // 32 * 4
+                self.assertEqual(len(data), pixel_offset + row_stride * abs(height))
 
 
 if __name__ == "__main__":
