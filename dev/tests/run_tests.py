@@ -254,7 +254,7 @@ def run_dotnet(project, results, engine=None):
         "</RunConfiguration><DataCollectionRunSettings><DataCollectors>"
         '<DataCollector friendlyName="XPlat Code Coverage"><Configuration>'
         "<Format>cobertura,json</Format><Include>[pyRevit*]*,[Build*]*</Include>"
-        "<ExcludeByFile>**/dev/modules/**,**/obj/**,**/tests/**,**/pyRevitLabs.UnitTests/**</ExcludeByFile>"
+        "<ExcludeByFile>**/dev/modules/**,**/obj/**,**/tests/**</ExcludeByFile>"
         "<IncludeTestAssembly>true</IncludeTestAssembly>"
         "</Configuration></DataCollector></DataCollectors>"
         "</DataCollectionRunSettings></RunSettings>",
@@ -328,11 +328,7 @@ def collect_coverage(results):
                 if not source.is_relative_to(ROOT):
                     continue
                 relative = source.relative_to(ROOT).as_posix()
-                if (
-                    relative.startswith("dev/modules/")
-                    or "/tests/" in relative
-                    or "/pyRevitLabs.UnitTests/" in relative
-                ):
+                if relative.startswith("dev/modules/") or "/tests/" in relative:
                     continue
                 lines = modules.setdefault(module, {})
                 document = os.path.normcase(str(source))
