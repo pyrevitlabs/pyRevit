@@ -88,7 +88,7 @@ namespace pyRevitExtensionParserTest
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardError = true,
-            });
+            }) ?? throw new InvalidOperationException("Could not start cmd.exe to create a directory junction.");
             process.WaitForExit();
 
             Assert.That(
