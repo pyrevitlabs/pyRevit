@@ -257,7 +257,8 @@ class _WorkspaceLoopGuard(object):
     """Import hook that compiles the workspace's modules with guarded loops.
 
     Active only while a run is, on ``sys.meta_path``. A module found under the
-    run's workspace folder is compiled through :func:`_guard_loop_headers` and
+    run's workspace folder, and only when ``sys.path`` order selects it, is
+    compiled through :func:`_guard_loop_headers` and
     gets the run's ``__agent_tick__`` and ``__agent_loop__``, so a timeout
     stops loops inside workspace code. Everything outside the workspace,
     pyrevitlib and rpw included, imports as usual and stays unguarded.
@@ -280,15 +281,14 @@ class _WorkspaceLoopGuard(object):
         if path is not None and not self._owns_parent(fullname):
             return None
         name = fullname.rpartition(".")[2]
-        for folder in path if path is not None else [self._root]:
-            if not _is_under(op.join(folder, "x"), self._root):
-                continue
+        folders = path if path is not None else [f for f in sys.path if f]
+        for folder in folders:
             package = op.join(folder, name, "__init__.py")
-            if op.isfile(package):
-                return package, True
             module = op.join(folder, name + ".py")
-            if op.isfile(module):
-                return module, False
+            found = (package, True) if op.isfile(package) else None
+            found = found or ((module, False) if op.isfile(module) else None)
+            if found:
+                return found if _is_under(found[0], self._root) else None
         return None
 
     def _owns_parent(self, fullname):
@@ -302,7 +302,7 @@ class _WorkspaceLoopGuard(object):
         return self
 
     def load_module(self, fullname):
-        filename, is_package = self._locate(fullname, self._paths.pop(fullname))
+        filename, is_package = self._locate(fullname, self._paths.pop(fullname, None))
         module = types.ModuleType(fullname)
         module.__file__ = filename
         module.__loader__ = self
@@ -332,6 +332,10 @@ class _WorkspaceLoopGuard(object):
             loader=self,
             submodule_search_locations=[op.dirname(filename)] if is_package else None,
         )
+
+    def get_data(self, path):
+        with open(path, "rb") as handle:
+            return handle.read()
 
     def create_module(self, spec):
         return None
@@ -1197,6 +1201,10 @@ def run(context):
         error_type, message = _describe_error(ex)
         context.SetError(error_type, message, _format_script_traceback())
     finally:
+        if workspace_guard is not None:
+            sys.meta_path[:] = [
+                finder for finder in sys.meta_path if finder is not workspace_guard
+            ]
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
         _TRANSACTION_RANKS.clear()
@@ -1207,10 +1215,6 @@ def run(context):
         phases.lap("rollback")
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
-        if workspace_guard is not None:
-            sys.meta_path[:] = [
-                finder for finder in sys.meta_path if finder is not workspace_guard
-            ]
         _leave_workspace(context.Workspace, workspace)
         context.SetOutput(captured.getvalue())
         phases.lap("cleanup")

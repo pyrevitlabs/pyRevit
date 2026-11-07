@@ -1256,6 +1256,30 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 self.assertEqual(["timeout"], errors)
                 self.assertLess(time.time() - started, 3)
 
+    def test_sys_path_order_still_picks_the_module(self):
+        """A folder placed before the workspace keeps winning its imports."""
+        workspace = self._workspace({"shared.py": "SOURCE = 'workspace'\n"})
+        earlier = self._workspace({"shared.py": "SOURCE = 'earlier'\n"})
+        errors, _, _ = self._run(
+            "import sys\nsys.path.insert(0, {!r})\nimport shared\n"
+            "assert shared.SOURCE == 'earlier'\n"
+            "assert '__agent_tick__' not in vars(shared)\n".format(earlier),
+            workspace=workspace,
+        )
+        self.assertEqual([], errors)
+
+    def test_workspace_packages_can_read_their_data_files(self):
+        """pkgutil.get_data still returns a workspace package's resource."""
+        folder = self._workspace(
+            {"datapkg/__init__.py": "", "datapkg/settings.json": "{}"}
+        )
+        errors, _, _ = self._run(
+            "import pkgutil, datapkg\n"
+            "assert pkgutil.get_data('datapkg', 'settings.json') == b'{}'\n",
+            workspace=folder,
+        )
+        self.assertEqual([], errors)
+
     def test_the_workspace_hook_is_removed_after_the_run(self):
         """The import hook never outlives the run that installed it."""
         folder = self._workspace({"quiet.py": "VALUE = 1\n"})
