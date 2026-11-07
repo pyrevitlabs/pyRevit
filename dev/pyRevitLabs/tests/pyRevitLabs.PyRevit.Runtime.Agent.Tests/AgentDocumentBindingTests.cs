@@ -64,8 +64,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void ParseTrimsAString() {
-            Assert.Equal("second", AgentDocumentBinding.Parse(new JValue("  second ")));
+        public void ParseKeepsAStringUnchanged() {
+            Assert.Equal("  second ", AgentDocumentBinding.Parse(new JValue("  second ")));
+        }
+
+        [Fact]
+        public void ATitleWithSurroundingSpacesMatchesItself() {
+            Assert.True(AgentDocumentBinding.Matches(" Tower", " Tower", Path));
         }
 
         [Theory]

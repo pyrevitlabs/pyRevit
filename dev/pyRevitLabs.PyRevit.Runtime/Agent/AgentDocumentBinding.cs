@@ -26,7 +26,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return null;
             if (token.Type != JTokenType.String || string.IsNullOrWhiteSpace(token.Value<string>()))
                 throw new AgentException("invalid_params", "'document' must be the non-empty title or path string returned by get_context.");
-            return token.Value<string>().Trim();
+            return token.Value<string>();
         }
 
         public static bool Matches(string requested, string activeTitle, string activePath) {
