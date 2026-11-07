@@ -1176,18 +1176,38 @@ def _track_frame_transactions(frame, transactions):
 
 
 def _track_values(variables, transactions):
+    """Record the transactions among a frame's locals and their attributes.
+
+    Note:
+        This runs on every traced line. The attributes of all the locals are
+        gathered and checked by type in one pass (see :func:`_track_typed`):
+        visiting them one call at a time made a traced loop in a method whose
+        ``self`` has 40 attributes about 30 times slower.
+    """
     try:
         values = list(variables.values())
     except Exception:
         return
+    attributes = []
     for value in values:
         if type(value) is _CELL_TYPE:
             try:
                 value = value.cell_contents
             except ValueError:
                 continue
-        if type(value) not in _UNTRACKED_TYPES or _holds_attributes(value):
+        value_type = type(value)
+        if value_type not in _UNTRACKED_TYPES:
             _track_transaction(value, transactions)
+            continue
+        holds = _ATTRIBUTE_HOLDERS.get(value_type)
+        if holds is None:
+            holds = _holds_attributes(value)
+        if holds:
+            held = getattr(value, "__dict__", None)
+            if type(held) is dict:
+                attributes.extend(held.values())
+    if attributes:
+        _track_typed(attributes, transactions)
 
 
 def _track_globals(variables, transactions):
@@ -1200,15 +1220,24 @@ def _track_globals(variables, transactions):
     """
     try:
         values = list(variables.values())
-        kinds = set(map(type, values))
     except Exception:
         return
+    _track_typed(values, transactions)
+
+
+def _track_typed(values, transactions):
+    """Record the transactions among ``values``, comparing their types in bulk.
+
+    Types not seen yet are classified first, so the rest of the work is set
+    operations done in builtins rather than one Python call per value.
+    """
+    kinds = set(map(type, values))
     for kind in kinds.difference(_UNTRACKED_TYPES, _TRACKED_TYPES):
         _transaction_rank(kind)
     if kinds.isdisjoint(_TRACKED_TYPES):
         return
     for value in compress(values, map(_TRACKED_TYPES.__contains__, map(type, values))):
-        _track_transaction(value, transactions)
+        _record_transaction(value, transactions)
 
 
 def _track_stack_transactions(frame, transactions):
@@ -1234,8 +1263,7 @@ def _track_transaction(value, transactions):
         return
     attributes = getattr(value, "__dict__", None)
     if type(attributes) is dict:
-        for attribute in list(attributes.values()):
-            _record_transaction(attribute, transactions)
+        _track_typed(list(attributes.values()), transactions)
 
 
 def _holds_attributes(value):

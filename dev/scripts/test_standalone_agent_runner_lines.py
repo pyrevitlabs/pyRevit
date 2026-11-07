@@ -845,6 +845,20 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         )
         self.assertEqual(["later"], self._tracked(source))
 
+    def test_an_attribute_rebound_to_a_transaction_is_tracked(self):
+        """Notice a transaction that replaces an attribute's value in place."""
+        source = (
+            "class Holder(object):\n"
+            "    def __init__(self):\n"
+            "        self.txn = None\n"
+            "def helper():\n"
+            "    held = Holder()\n"
+            "    held.txn = Labelled('swapped')\n"
+            "    held.txn = None\n"
+            "helper()\n"
+        )
+        self.assertEqual(["swapped"], self._tracked(source))
+
 
 LOOP_PAST_TIMEOUT = (
     "import time\n"
