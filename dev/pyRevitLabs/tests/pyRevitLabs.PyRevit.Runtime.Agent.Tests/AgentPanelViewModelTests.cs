@@ -336,7 +336,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             backend.Activity.Start(record, Started);
             Assert.Equal("Query running", Panel().WaitingText);
 
-            backend.Activity.SetAwaitingApproval(true);
+            backend.Activity.BeginApproval();
             Assert.Equal("Query approval", Panel().WaitingText);
         }
 

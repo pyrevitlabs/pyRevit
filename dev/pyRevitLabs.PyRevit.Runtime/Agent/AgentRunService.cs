@@ -105,13 +105,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     timings.Lap("decide");
                     AgentHost.AwaitTabApproval(highlight);
                     bool approved;
-                    AgentHost.Activity.SetAwaitingApproval(true);
-                    try {
+                    using (AgentHost.Activity.BeginApproval())
                         approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
-                    }
-                    finally {
-                        AgentHost.Activity.SetAwaitingApproval(false);
-                    }
                     timings.Lap("approval");
                     if (approved) {
                         Commit(guard, uidoc.Document, request, runId);

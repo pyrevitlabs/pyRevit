@@ -62,7 +62,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void FinishingClosesTheApprovalPrompt() {
             var record = Arrive("modify", "Add walls");
             activity.Start(record, Now);
-            activity.SetAwaitingApproval(true);
+            activity.BeginApproval();
 
             activity.Finish(record, "rejected", Now);
 
@@ -70,22 +70,45 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void TheApprovalPromptLastsUntilItsScopeEnds() {
+            var record = Arrive("modify", "Add walls");
+            activity.Start(record, Now);
+
+            var approval = activity.BeginApproval();
+            Assert.True(activity.AwaitingApproval);
+            approval.Dispose();
+
+            Assert.False(activity.AwaitingApproval);
+            Assert.Equal(record.Id, activity.Current.Id);
+        }
+
+        [Fact]
+        public void NoRequestRunningMeansNoPrompt() {
+            using (activity.BeginApproval())
+                Assert.False(activity.AwaitingApproval);
+        }
+
+        [Fact]
         public void ARequestInsideAnotherLeavesTheOuterRecordAndPromptAlone() {
             var outer = Arrive("modify", "Outer");
             activity.Start(outer, Now.AddSeconds(1));
-            activity.SetAwaitingApproval(true);
+            activity.BeginApproval();
 
             var refused = Arrive("query", "Refused");
             activity.Finish(refused, "revit_busy", Now.AddSeconds(2));
             Assert.True(activity.AwaitingApproval);
 
-            var inner = Arrive("query", "Inner");
+            var inner = Arrive("modify", "Inner");
             activity.Start(inner, Now.AddSeconds(3));
             Assert.Equal(inner.Id, activity.Current.Id);
+            Assert.False(activity.AwaitingApproval);
+            using (activity.BeginApproval())
+                Assert.True(activity.AwaitingApproval);
             activity.Finish(inner, "ok", Now.AddSeconds(4));
 
             Assert.Equal(outer.Id, activity.Current.Id);
             Assert.True(activity.Current.Started);
+            Assert.True(activity.AwaitingApproval);
             activity.Finish(outer, "committed", Now.AddSeconds(9));
             Assert.Null(activity.Current);
             Assert.Equal(Now.AddSeconds(1), activity.Last.StartedUtc);
@@ -167,7 +190,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             activity.NoteClient("Codex");
             activity.NoteClient("Codex");
-            activity.SetAwaitingApproval(false);
+            activity.BeginApproval().Dispose();
             var record = Arrive("query");
             activity.Start(record, Now);
             activity.Finish(record, "ok", Now);

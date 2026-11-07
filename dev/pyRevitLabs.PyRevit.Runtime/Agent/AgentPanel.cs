@@ -94,7 +94,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 #endif
             }
             catch (Exception ex) {
-                logger.Warn("Could not register the agent panel: {0}", ex.Message);
+                logger.Warn("Could not register the agent panel; it becomes available after Revit restarts: {0}", ex.Message);
             }
         }
 

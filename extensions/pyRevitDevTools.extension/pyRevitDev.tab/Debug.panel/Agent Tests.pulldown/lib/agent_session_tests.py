@@ -78,6 +78,14 @@ class SessionTests(TestCase):
         last_ended = harness.session_status()["last_ended"]
         self.assertEqual("ended_by_client", last_ended["reason"])
 
+    def test_without_a_session_a_read_only_policy_still_asks_for_one(self):
+        """A modify run with no session is refused for the session before the policy."""
+        harness.request("end_session")
+        with harness.policy("readonly"):
+            with self.assertRaises(AgentRequestError) as raised:
+                harness.run("result = 1", mode="modify")
+        self.assertEqual("session_inactive", raised.exception.code)
+
     def test_when_sessions_are_optional_requests_pass_without_one(self):
         """With sessions optional and none started, runs work as they did before sessions."""
         harness.end_session()

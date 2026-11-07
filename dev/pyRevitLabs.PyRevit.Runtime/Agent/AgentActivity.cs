@@ -104,7 +104,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private long nextId;
         private AgentRequestRecord last;
         private string client;
-        private bool awaitingApproval;
+        private readonly HashSet<long> awaitingApproval = new HashSet<long>();
 
         public event Action Changed;
 
@@ -115,7 +115,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public AgentRequestRecord Current {
             get {
                 lock (sync)
-                    return inFlight.LastOrDefault(record => record.Started) ?? inFlight.FirstOrDefault();
+                    return CurrentLocked();
             }
         }
 
@@ -146,10 +146,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Whether <see cref="Current"/> is waiting for the user to approve its changes.
+        /// </summary>
         public bool AwaitingApproval {
             get {
-                lock (sync)
-                    return awaitingApproval;
+                lock (sync) {
+                    var current = CurrentLocked();
+                    return current != null && awaitingApproval.Contains(current.Id);
+                }
             }
         }
 
@@ -193,8 +198,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <remarks>
-        /// Only a request that started can have opened the approval prompt, so only finishing
-        /// one closes it here; a refusal on arrival leaves it as it is.
+        /// Closes the request's own approval prompt, and no other request's.
         /// </remarks>
         public void Finish(AgentRequestRecord record, string outcome, DateTime nowUtc, JObject details = null) {
             lock (sync) {
@@ -204,8 +208,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     inFlight.RemoveAt(index);
                 last = tracked.AsFinished(outcome, nowUtc, details);
                 AddToHistory(last);
-                if (tracked.Started)
-                    awaitingApproval = false;
+                awaitingApproval.Remove(tracked.Id);
             }
             OnChanged();
         }
@@ -236,13 +239,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             OnChanged();
         }
 
-        public void SetAwaitingApproval(bool value) {
+        /// <summary>
+        /// Marks the request Revit is running as waiting for the user's approval until the
+        /// returned scope is disposed. Nothing is marked when no request is running.
+        /// </summary>
+        public IDisposable BeginApproval() {
+            long? id;
             lock (sync) {
-                if (awaitingApproval == value)
-                    return;
-                awaitingApproval = value;
+                id = inFlight.LastOrDefault(record => record.Started)?.Id;
+                if (id.HasValue)
+                    awaitingApproval.Add(id.Value);
             }
-            OnChanged();
+            if (id.HasValue)
+                OnChanged();
+            return new ApprovalScope(this, id);
+        }
+
+        private void EndApproval(long id) {
+            bool removed;
+            lock (sync)
+                removed = awaitingApproval.Remove(id);
+            if (removed)
+                OnChanged();
+        }
+
+        private AgentRequestRecord CurrentLocked() {
+            return inFlight.LastOrDefault(record => record.Started) ?? inFlight.FirstOrDefault();
         }
 
         private void AddToHistory(AgentRequestRecord record) {
@@ -253,6 +275,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private void OnChanged() {
             Changed?.Invoke();
+        }
+
+        private sealed class ApprovalScope : IDisposable {
+            private AgentActivity activity;
+            private readonly long? id;
+
+            public ApprovalScope(AgentActivity activity, long? id) {
+                this.activity = activity;
+                this.id = id;
+            }
+
+            public void Dispose() {
+                if (id.HasValue)
+                    activity?.EndApproval(id.Value);
+                activity = null;
+            }
         }
     }
 }

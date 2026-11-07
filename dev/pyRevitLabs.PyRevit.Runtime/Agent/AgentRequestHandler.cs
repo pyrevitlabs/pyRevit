@@ -218,7 +218,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <param name="describe">Builds the log's summary of a successful result, for runs.</param>
         /// <param name="refuseEarly">
         /// Checks that refuse the request before it waits for Revit, such as the policy; their
-        /// refusals are logged like the session gate's.
+        /// refusals are logged like the session gate's. They run after the session gate, so an
+        /// agent without a session is told to ask for one, not refused for a reason that
+        /// would only send it back with the same request.
         /// </param>
         /// <param name="keepChanges">
         /// Reports <c>since_last_call</c> without clearing it, so the next request reports it too.
@@ -236,8 +238,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
             var readsContext = kind == "context";
             try {
-                refuseEarly?.Invoke();
                 AgentSessions.CheckOnArrival(readsContext, contextGeneration);
+                refuseEarly?.Invoke();
                 JToken GatedWork(Autodesk.Revit.UI.UIApplication app) {
                     AgentHost.Activity.Start(record, DateTime.UtcNow);
                     AgentSessions.CheckOnDequeue(app, readsContext, contextGeneration);
