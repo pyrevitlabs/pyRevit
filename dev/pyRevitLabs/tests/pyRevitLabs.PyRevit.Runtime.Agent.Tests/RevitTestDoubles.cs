@@ -102,6 +102,7 @@ namespace Autodesk.Revit.DB.Events {
     internal sealed class DocumentSynchronizingWithCentralEventArgs : DocumentEventArgs { }
     internal sealed class DocumentCreatedEventArgs : DocumentEventArgs { }
     internal sealed class DocumentOpenedEventArgs : DocumentEventArgs { }
+    internal sealed class DocumentPrintingEventArgs : DocumentEventArgs { }
     internal sealed class FileExportingEventArgs : RevitAPIPreEventArgs { }
     internal sealed class ViewExportingEventArgs : RevitAPIPreEventArgs { }
     internal sealed class DocumentChangedEventArgs : EventArgs {
@@ -136,6 +137,7 @@ namespace Autodesk.Revit.ApplicationServices {
         public event EventHandler<DocumentSavingAsEventArgs> DocumentSavingAs;
         public event EventHandler<FileExportingEventArgs> FileExporting;
         public event EventHandler<ViewExportingEventArgs> ViewExporting;
+        public event EventHandler<DocumentPrintingEventArgs> DocumentPrinting;
         public event EventHandler<DocumentCreatedEventArgs> DocumentCreated;
         public event EventHandler<DocumentOpenedEventArgs> DocumentOpened;
         public event EventHandler<DocumentClosingEventArgs> DocumentClosing;
@@ -190,6 +192,11 @@ namespace Autodesk.Revit.ApplicationServices {
             ViewExporting?.Invoke(this, args);
             return !args.Cancelled;
         }
+        public bool Print(Document document) {
+            var args = new DocumentPrintingEventArgs { Document = document };
+            DocumentPrinting?.Invoke(this, args);
+            return !args.Cancelled;
+        }
         public bool Synchronize(Document document) {
             var args = new DocumentSynchronizingWithCentralEventArgs { Document = document };
             DocumentSynchronizingWithCentral?.Invoke(this, args);
@@ -225,5 +232,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
     internal static class AgentIds {
         public static long ToValue(ElementId id) => 1;
+    }
+}
+namespace pyRevitLabs.PyRevit {
+    internal static class PyRevitConfigs {
+        public static string GetAgentEngine() => "ironpython";
     }
 }

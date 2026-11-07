@@ -138,8 +138,9 @@ namespace pyRevitCLI {
         public static void ConfigureEnabled(bool? enable) {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentEnabled(enable.Value);
-                Console.WriteLine("Agent host {0}. Reload pyRevit or restart Revit to apply.",
-                    enable.Value ? "enabled" : "disabled");
+                Console.WriteLine(enable.Value
+                    ? "Agent host enabled. A running host resumes on its next request; otherwise reload pyRevit or restart Revit to start it."
+                    : "Agent host disabled. Running Revit sessions refuse agent requests from now on.");
             }
             else
                 Console.WriteLine("Agent host is {0}", PyRevitConfigs.GetAgentEnabled() ? "Enabled" : "Disabled");
@@ -176,7 +177,7 @@ namespace pyRevitCLI {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentReckless(enable.Value);
                 Console.WriteLine(enable.Value
-                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run."
+                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run once confirmed in Revit."
                     : "Reckless agent runs disabled. Applies to the next run.");
             }
             else

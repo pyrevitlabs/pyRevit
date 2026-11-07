@@ -32,6 +32,8 @@ namespace pyRevitCLI {
     /// can add its own standards without touching the clone; a user skill with the same name as a
     /// shipped skill is ignored, and an unreadable one is skipped. The entry text is <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the
     /// generated skill list, so adding a skill folder needs no code change.
+    /// Important: the search for the clone stops below the drive root. Any local user can create
+    /// folders in <c>C:\</c>, so a skills folder there would hand them the agent's instructions.
     /// </remarks>
     internal static class PyRevitAgentSkills {
         public const string CoreSkill = "revit-scripting";
@@ -49,7 +51,7 @@ namespace pyRevitCLI {
         public static string ShippedSkillsDir {
             get {
                 var directory = new DirectoryInfo(AppContext.BaseDirectory);
-                for (var level = 0; directory != null && level < MaxParentLevels; level++, directory = directory.Parent) {
+                for (var level = 0; directory?.Parent != null && level < MaxParentLevels; level++, directory = directory.Parent) {
                     var candidate = SkillsDirIn(directory.FullName);
                     if (System.IO.Directory.Exists(candidate))
                         return candidate;

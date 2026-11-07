@@ -13,6 +13,8 @@ import types
 import unittest
 from unittest import mock
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RUNNER_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "agent", "_runner.py")
@@ -1296,6 +1298,98 @@ class AgentRunnerSourceTests(unittest.TestCase):
             if any(byte > 127 for byte in line)
         ]
         self.assertEqual([], offending)
+
+
+class AgentRunnerWorkspaceTests(unittest.TestCase):
+    """Which modules a workspace unloads from the shared engine."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _unloaded(self, workspace, libraries, files):
+        modules = {
+            name: types.SimpleNamespace(__file__=file) for name, file in files.items()
+        }
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", libraries),
+            mock.patch.dict(sys.modules, modules),
+        ):
+            self.runner._unload_modules_under(workspace)
+            return sorted(name for name in modules if name not in sys.modules)
+
+    def test_workspace_modules_are_unloaded(self):
+        """A module imported from the workspace is dropped so the next run re-imports it."""
+        workspace = os.path.abspath("work")
+        unloaded = self._unloaded(
+            workspace,
+            [workspace],
+            {
+                "house_ws": os.path.join(workspace, "house.py"),
+                "tool_ws": os.path.join(workspace, "tool.pyw"),
+            },
+        )
+        self.assertEqual(["house_ws", "tool_ws"], unloaded)
+
+    def test_library_folders_inside_the_workspace_stay_loaded(self):
+        """A drive-root workspace doesn't unload the stdlib or pyrevitlib."""
+        root = os.path.abspath(os.sep)
+        stdlib = os.path.join(root, "python", "Lib")
+        library = os.path.join(root, "pyRevit", "pyrevitlib")
+        unloaded = self._unloaded(
+            root,
+            [root, stdlib, library],
+            {
+                "json_ws": os.path.join(stdlib, "json", "__init__.py"),
+                "pyrevit_ws": os.path.join(library, "pyrevit", "__init__.py"),
+                "scratch_ws": os.path.join(root, "scratch.py"),
+            },
+        )
+        self.assertEqual(["scratch_ws"], unloaded)
+
+    def test_pyrevitlib_as_the_workspace_stays_loaded(self):
+        """A workspace that is pyrevitlib itself doesn't unload pyrevit or the runner."""
+        library = os.path.dirname(os.path.dirname(os.path.dirname(RUNNER_PATH)))
+        unloaded = self._unloaded(
+            library,
+            [library],
+            {
+                "pyrevit_ws": os.path.join(library, "pyrevit", "__init__.py"),
+                "runner_ws": RUNNER_PATH,
+            },
+        )
+        self.assertEqual([], unloaded)
+
+    def test_helper_folders_the_agent_adds_to_sys_path_are_reloaded(self):
+        """A workspace subfolder on sys.path that isn't a library folder is still unloaded."""
+        workspace = os.path.abspath("work")
+        helpers = os.path.join(workspace, "helpers")
+        with mock.patch.object(sys, "path", [workspace, helpers]):
+            unloaded = self._unloaded(
+                workspace,
+                [],
+                {"helper_ws": os.path.join(helpers, "helper.py")},
+            )
+        self.assertEqual(["helper_ws"], unloaded)
+
+    def test_modules_without_an_absolute_python_source_stay_loaded(self):
+        """Relative stdlib paths, assembly names and .NET modules are never unloaded."""
+        root = os.path.abspath(os.sep)
+        unloaded = self._unloaded(
+            root,
+            [root],
+            {
+                "abc_ws": "abc.py",
+                "revitapi_ws": "RevitAPI, Version=26.0.0.0, Culture=neutral",
+                "clr_ws": "unknown",
+                "autodesk_ws": os.path.join(
+                    root, "Program Files", "Autodesk", "RevitAPI.dll"
+                ),
+                "scratch_ws": os.path.join(root, "scratch.py"),
+            },
+        )
+        self.assertEqual(["scratch_ws"], unloaded)
 
 
 if __name__ == "__main__":
