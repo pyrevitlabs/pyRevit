@@ -369,10 +369,19 @@ namespace pyRevitCLI {
                 parameters["workspace"] = arguments["workspace"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
-            var document = arguments.Value<string>("document");
+            var document = OptionalString(arguments, "document");
             if (document != null)
                 parameters["document"] = document;
             return parameters;
+        }
+
+        private static string OptionalString(JObject arguments, string name) {
+            var token = arguments[name];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.String)
+                throw new InvalidCastException();
+            return (string)token;
         }
 
         private JToken RunAutomation(JObject arguments) {
@@ -393,7 +402,7 @@ namespace pyRevitCLI {
                 parameters["engine"] = arguments["engine"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
-            var document = arguments.Value<string>("document");
+            var document = OptionalString(arguments, "document");
             if (document != null)
                 parameters["document"] = document;
             return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));

@@ -282,6 +282,8 @@ public partial class McpServerTests : IDisposable {
     [InlineData("run_query", "{\"script\":[]}")]
     [InlineData("run_query", "{\"script\":\"result = 1\",\"title\":{}}")]
     [InlineData("run_modify", "{\"script\":\"x = 1\",\"title\":\"T\",\"document\":{}}")]
+    [InlineData("run_query", "{\"script\":\"x = 1\",\"document\":123}")]
+    [InlineData("run_modify", "{\"script\":\"x = 1\",\"document\":true}")]
     [InlineData("navigate_revit_link", "{\"link\":{\"destination\":{},\"ids\":[1]}}")]
     [InlineData("navigate_revit_link", "{\"link\":{\"destination\":\"element\",\"ids\":[1],\"document\":{}},\"action\":{}}")]
     [InlineData("run_automation", "{\"id\":{}}")]
