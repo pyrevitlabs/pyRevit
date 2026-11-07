@@ -68,6 +68,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Failures => failures;
         public JArray Dialogs => dialogCapture?.Dialogs ?? new JArray();
         public JArray Blocked => blocked;
+
+        /// <summary>
+        /// Explains each cancelled operation, or returns null when none was cancelled. Revit
+        /// reports a cancelled save only as a generic failure, so this ties it to the guard.
+        /// </summary>
+        public string DescribeBlockedOperations() {
+            if (blocked.Count == 0)
+                return null;
+            var operations = blocked
+                .Select(entry => $"{entry.Value<string>("operation")} of '{entry.Value<string>("document")}'")
+                .Distinct();
+            return "operation_blocked: " + string.Join(", ", operations)
+                + " is not allowed in agent runs; ask the user to do it in Revit.";
+        }
         public List<string> CleanupFailures { get; } = new List<string>();
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
@@ -441,7 +455,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var description = Changes.Summarize();
             description["document"] = Title;
             description["opened_during_run"] = OpenedDuringRun;
-            description["rolled_back"] = rolledBack;
+            if (OpenedDuringRun)
+                description["scope"] = "document created during the run, outside the rollback and discarded on close";
+            else
+                description["rolled_back"] = rolledBack;
             if (openedFromDisk)
                 description["discarded_on_close"] = !Document.IsValidObject;
             return description;

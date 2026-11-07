@@ -763,7 +763,7 @@ namespace pyRevitCLI {
                     })),
 
                 new McpTool("run_query", readOnly: false, new[] { "script" },
-                    () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
+                    () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. A document the script creates or opens, such as a family from `NewFamilyDocument` or `EditFamily`, is outside that rollback: it is reported in `changes.other_documents` with a `scope`, does not fail the run, and is discarded on close. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
                         new JObject {
                             ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Assign `result` to return data." },
                             ["title"] = new JObject { ["type"] = "string", ["description"] = "Short label for the run record." },

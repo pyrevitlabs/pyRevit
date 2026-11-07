@@ -20,8 +20,9 @@ Read the `pyrevit-library` skill first and use `lookup_pyrevit_api` to find a ma
 - Only the raw Revit API is available. pyRevit's convenience methods on API types are not applied: use `list(collector)` not `.ToList()`, `get_Parameter(...)` and `Parameter.Set(...)` not `SetParameterValue`, and a collector rather than `doc.Walls`. `__revit__` is a plain `UIApplication`.
 - Scripts receive `uiapp`, `app`, `uidoc`, and `doc`. A modifying run requires an active `doc`.
 - `run_query` and dry runs roll model changes back. A modify run commits only after its configured policy permits it.
+- The rollback covers the active project and documents that were already open. A document the script creates, such as `app.NewFamilyDocument(...)`, or a family from `EditFamily` is outside it: changes there are not rolled back, do not fail a `run_query`, and are discarded when the document is closed. `changes.other_documents` reports them with a `scope` instead of `rolled_back`. The host closes them when the run ends.
 - Open a Revit transaction for every model edit, then commit or roll it back before the script ends.
-- The active run blocks save, save-as, synchronize-with-central, file export, and view export. Do not rely on those operations.
+- The active run blocks save, save-as, synchronize-with-central, file export, and view export. Do not rely on those operations. A script that hits one gets Revit's generic exception, for example "Saving failed", and the response adds an `operation_blocked` warning naming the cancelled operation.
 - The runtime uses the Windows user's permissions. Revit rollback does not undo Python or .NET file, network, or process side effects.
 - Timeouts are cooperative. Avoid unbounded loops and blocking calls. When `get_context` shows `agent.reckless: true` there is no timeout at all, and a script that never ends hangs Revit.
 

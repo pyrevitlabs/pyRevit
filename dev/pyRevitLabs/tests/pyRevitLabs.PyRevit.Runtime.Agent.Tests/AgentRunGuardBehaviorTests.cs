@@ -158,6 +158,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void BlockedOperationsAreExplainedAndNothingIsReportedWhenNoneWereBlocked() {
+            var app = new UIApplication();
+            var document = new Document { Title = "Family23" };
+            app.Application.Documents.Add(document);
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                Assert.Null(guard.DescribeBlockedOperations());
+
+                app.Application.SaveAs(document);
+
+                Assert.Equal(
+                    "operation_blocked: save_as of 'Family23' is not allowed in agent runs; ask the user to do it in Revit.",
+                    guard.DescribeBlockedOperations());
+            }
+        }
+
+        [Fact]
+        public void DocumentsCreatedDuringTheRunStateTheirScopeInsteadOfARollbackFlag() {
+            var app = new UIApplication();
+            using (var guard = new AgentRunGuard(app, null)) {
+                guard.Arm("Test");
+                var created = new Document { Title = "Family23" };
+                app.Application.Create(created);
+                app.Application.Change(created);
+
+                var description = guard.DescribeOtherDocuments()[0];
+
+                Assert.True(description.Value<bool>("opened_during_run"));
+                Assert.Null(description["rolled_back"]);
+                Assert.Contains("discarded on close", description.Value<string>("scope"));
+            }
+        }
+
+        [Fact]
         public void ABlockedSaveNamesTheDocument() {
             var app = new UIApplication();
             var document = new Document { Title = "Tower" };
