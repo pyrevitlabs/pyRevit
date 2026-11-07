@@ -120,6 +120,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+            try {
+                return ExecuteScriptRecorded(scriptData, scriptRuntimeCfg, scriptExecConfigs);
+            }
+            catch (System.Exception ex) {
+                Agent.AgentRecorder.RecordCommand(
+                    "end", scriptData?.CommandName, scriptData?.CommandUniqueId,
+                    ScriptExecutorResultCodes.UnknownException, ex.ToString());
+                throw;
+            }
+        }
+
+        private static int ExecuteScriptRecorded(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
             // create runtime
             var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
             Agent.AgentRecorder.RecordCommand("start", scriptData?.CommandName, scriptData?.CommandUniqueId, null, null);
