@@ -1280,6 +1280,18 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         )
         self.assertEqual([], errors)
 
+    def test_non_string_sys_path_entries_do_not_break_imports(self):
+        """A None or bytes sys.path entry is skipped by the hook."""
+        folder = self._workspace({"quiet.py": "VALUE = 1\n"})
+        saved_path = list(sys.path)
+        self.addCleanup(lambda: sys.path.__setitem__(slice(None), saved_path))
+        errors, _, _ = self._run(
+            "import sys\nsys.path.insert(0, None)\nsys.path.insert(0, b'x')\n"
+            "import quiet, colorsys\n",
+            workspace=folder,
+        )
+        self.assertEqual([], errors)
+
     def test_the_workspace_hook_is_removed_after_the_run(self):
         """The import hook never outlives the run that installed it."""
         folder = self._workspace({"quiet.py": "VALUE = 1\n"})

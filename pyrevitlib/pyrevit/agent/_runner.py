@@ -281,7 +281,8 @@ class _WorkspaceLoopGuard(object):
         if path is not None and not self._owns_parent(fullname):
             return None
         name = fullname.rpartition(".")[2]
-        folders = path if path is not None else [f for f in sys.path if f]
+        folders = path if path is not None else sys.path
+        folders = [f for f in folders if f and isinstance(f, str)]
         for folder in folders:
             package = op.join(folder, name, "__init__.py")
             module = op.join(folder, name + ".py")
