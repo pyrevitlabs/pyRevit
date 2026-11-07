@@ -12,7 +12,8 @@ using pyRevitLabs.TargetApps.Revit;
 namespace pyRevitLabs.PyRevit {
     public enum PyRevitAttachmentType {
         AllUsers,
-        CurrentUser
+        CurrentUser,
+        PerLaunch
     }
 
     public class PyRevitAttachment {

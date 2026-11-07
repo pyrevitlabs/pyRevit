@@ -1,5 +1,7 @@
+using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace pyRevitLabs.Common {
@@ -44,13 +46,26 @@ namespace pyRevitLabs.Common {
 
         /// <returns>The next line, or null at end of stream.</returns>
         /// <exception cref="InvalidDataException">The line is longer than the limit.</exception>
-        public async Task<string> ReadLineAsync() {
-            while (await reader.ReadAsync(single, 0, 1).ConfigureAwait(false) > 0) {
+        /// <exception cref="OperationCanceledException">
+        /// <paramref name="cancellation"/> fired. On .NET Framework it is only checked between characters.
+        /// </exception>
+        public async Task<string> ReadLineAsync(CancellationToken cancellation = default) {
+            while (await ReadOneAsync(cancellation).ConfigureAwait(false) > 0) {
                 if (Take(single[0]))
                     return Finish();
             }
             return EndOfStream();
         }
+
+#if NETFRAMEWORK
+        private Task<int> ReadOneAsync(CancellationToken cancellation) {
+            cancellation.ThrowIfCancellationRequested();
+            return reader.ReadAsync(single, 0, 1);
+        }
+#else
+        private ValueTask<int> ReadOneAsync(CancellationToken cancellation) =>
+            reader.ReadAsync(single.AsMemory(0, 1), cancellation);
+#endif
 
         private bool Take(char next) {
             readAny = true;
