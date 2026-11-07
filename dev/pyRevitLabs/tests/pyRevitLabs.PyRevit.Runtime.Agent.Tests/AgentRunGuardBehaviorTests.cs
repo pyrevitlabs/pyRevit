@@ -169,8 +169,42 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.SaveAs(document);
 
                 Assert.Equal(
-                    "operation_blocked: save_as of 'Family23' is not allowed in agent runs; ask the user to do it in Revit.",
+                    "operation_blocked: save_as of 'Family23' not allowed in agent runs.",
                     guard.DescribeBlockedOperations());
+            }
+        }
+
+        [Fact]
+        public void BlockedOperationsWithoutADocumentOmitItAndRepeatsCollapse() {
+            var app = new UIApplication();
+            var document = new Document { Title = "Model" };
+            app.Application.Documents.Add(document);
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.ExportFile();
+                app.Application.ExportFile();
+                app.Application.Save(document);
+
+                Assert.Equal(
+                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs.",
+                    guard.DescribeBlockedOperations());
+            }
+        }
+
+        [Fact]
+        public void DocumentsOpenedFromDiskStillReportRolledBackWithoutAScope() {
+            var app = new UIApplication();
+            using (var guard = new AgentRunGuard(app, null)) {
+                guard.Arm("Test");
+                var opened = new Document { Title = "Disk", PathName = "existing.rvt" };
+                app.Application.Open(opened);
+                app.Application.Change(opened);
+
+                var description = guard.DescribeOtherDocuments()[0];
+
+                Assert.NotNull(description["rolled_back"]);
+                Assert.Null(description["scope"]);
             }
         }
 
@@ -187,7 +221,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
                 Assert.True(description.Value<bool>("opened_during_run"));
                 Assert.Null(description["rolled_back"]);
-                Assert.Contains("discarded on close", description.Value<string>("scope"));
+                Assert.Contains("not rolled back", description.Value<string>("scope"));
             }
         }
 
