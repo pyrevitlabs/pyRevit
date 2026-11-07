@@ -35,7 +35,7 @@ namespace pyRevitCLI {
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
         private static readonly string[] SupportedProtocolVersions = {
-            "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05",
+            "2025-06-18", "2025-03-26", "2024-11-05",
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
@@ -83,7 +83,6 @@ namespace pyRevitCLI {
                 try {
                     using var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None };
                     message = JObject.Load(reader);
-                    // Match JObject.Parse's check for trailing content.
                     while (reader.Read()) { }
                 }
                 catch (JsonException) {
@@ -494,7 +493,7 @@ namespace pyRevitCLI {
         private static JObject RevitProperty() {
             return new JObject {
                 ["type"] = "string",
-                ["description"] = "Target Revit: a year (e.g. \"2024\") or a process id. Leave it out unless list_revit_instances shows more than one session.",
+                ["description"] = "Target Revit: a year (e.g. \"2024\"), a process id, or the name of the pyRevit clone the session runs. Leave it out unless list_revit_instances shows more than one session.",
             };
         }
 
@@ -526,6 +525,8 @@ namespace pyRevitCLI {
         private static JObject TimeoutProperty() {
             return new JObject {
                 ["type"] = "number",
+                ["minimum"] = 0.001,
+                ["maximum"] = 3600,
                 ["description"] = "Seconds the script may run before it is stopped and rolled back with error 'timeout' (default 300, max 3600). "
                     + "Stops Python code, not a single long Revit API call. Not enforced when get_context shows "
                     + "agent.reckless: true; then a script that never ends hangs Revit.",
@@ -626,8 +627,8 @@ namespace pyRevitCLI {
                         new JObject {
                             ["id"] = new JObject { ["type"] = "string", ["description"] = "Invocable automation identifier, such as pyrevit.units.parse-length." },
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
-                            ["engine"] = new JObject { ["type"] = "string", ["enum"] = new JArray("ironpython", "cpython") },
-                            ["timeout_s"] = new JObject { ["type"] = "number", ["minimum"] = 0.001, ["maximum"] = 3600 },
+                            ["engine"] = EngineProperty(),
+                            ["timeout_s"] = TimeoutProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     RunAutomation),
@@ -642,7 +643,7 @@ namespace pyRevitCLI {
                         }),
                     LookupRevitApi),
 
-                new McpTool("show_elements", readOnly: true, new string[0],
+                new McpTool("show_elements", readOnly: false, destructive: false, new string[0],
                     () => ("Show elements to the user in the active view, without an approval prompt and without changing model elements: "
                         + "select them, temporarily isolate or hide them (Revit's temporary hide/isolate), or reset that mode. "
                         + "Target element ids and/or whole categories (resolved to the elements visible in the active view). "
@@ -673,7 +674,7 @@ namespace pyRevitCLI {
                         ["zoom"] = arguments["zoom"] ?? false,
                     })),
 
-                new McpTool("navigate_revit_link", readOnly: true, new[] { "link" },
+                new McpTool("navigate_revit_link", readOnly: false, destructive: false, new[] { "link" },
                     () => ("Navigate an element link returned by inspect_elements. The active Revit document must still match the link; stale links return an actionable error. This selects or temporarily presents elements only.",
                         new JObject {
                             ["link"] = new JObject { ["type"] = "object", ["description"] = "An element link from inspect_elements." },
@@ -683,13 +684,14 @@ namespace pyRevitCLI {
                         }),
                     NavigateRevitLink),
 
-                new McpTool("capture_view", readOnly: true, new string[0],
+                new McpTool("capture_view", readOnly: false, destructive: false, new string[0],
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
-                        + "through Revit and works for any view by name or id. mode 'viewport' renders an open view through Revit "
+                        + "through Revit and works for any view by name or id; a name shared by several views fails with "
+                        + "view_ambiguous listing their ids. mode 'viewport' renders an open view through Revit "
                         + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
                         + "selection highlight, and unaffected by other windows. mode 'screen' captures the active view's window "
-                        + "exactly as the user sees it, including selection and temporary isolate; it fails with view_obscured "
-                        + "when another application covers the view. view '3d' renders a temporary "
+                        + "exactly as the user sees it, including selection and temporary isolate; it fails with view_not_active "
+                        + "for any other view and with view_obscured when another application covers the view. view '3d' renders a temporary "
                         + "3D view of model categories only, framed by a section box around the whole model or around 'elements', "
                         + "seen from 'direction' (never saved); give 'eye' and 'target' for a perspective camera instead, "
                         + "or 'section' for a temporary section, elevation or plan cut at a height. 'detail_level' and "
@@ -800,15 +802,23 @@ namespace pyRevitCLI {
 
         private sealed class McpTool {
             private readonly bool readOnly;
+            private readonly bool destructive;
             private readonly string[] required;
             private readonly Func<(string Description, JObject Properties)> schema;
             private readonly Func<JObject, JToken> handler;
 
             public McpTool(
                 string name, bool readOnly, string[] required,
+                Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler)
+                : this(name, readOnly, !readOnly, required, schema, handler) {
+            }
+
+            public McpTool(
+                string name, bool readOnly, bool destructive, string[] required,
                 Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler) {
                 Name = name;
                 this.readOnly = readOnly;
+                this.destructive = destructive;
                 this.required = required;
                 this.schema = schema;
                 this.handler = handler;
@@ -832,7 +842,7 @@ namespace pyRevitCLI {
                     },
                     ["annotations"] = new JObject {
                         ["readOnlyHint"] = readOnly,
-                        ["destructiveHint"] = !readOnly,
+                        ["destructiveHint"] = destructive,
                         ["openWorldHint"] = false,
                     },
                 };

@@ -14,7 +14,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     /// <remarks>
     /// Read-only: never opens a transaction. Numeric parameter values are reported both as
-    /// Revit displays them and raw in internal units (feet, radians).
+    /// Revit displays them and raw in internal units (feet, radians). An element Revit can't
+    /// describe gets an <c>error</c> entry instead of failing the whole batch.
     /// </remarks>
     internal static class AgentInspector {
         private const int MaxElements = 50;
@@ -42,8 +43,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var doc = uidoc.Document;
             return new JObject {
                 ["document"] = DocumentReference(doc),
-                ["elements"] = new JArray(ids.Select(id => Describe(doc, id, includeParameters))),
+                ["elements"] = new JArray(ids.Select(id => DescribeOrReportError(doc, id, includeParameters))),
             };
+        }
+
+        private static JObject DescribeOrReportError(Document doc, ElementId id, bool includeParameters) {
+            try {
+                return Describe(doc, id, includeParameters);
+            }
+            catch (Exception ex) {
+                var entry = new JObject { ["id"] = AgentIds.ToValue(id), ["found"] = true };
+                try {
+                    var element = doc.GetElement(id);
+                    entry["class"] = element.GetType().Name;
+                    entry["name"] = SafeName(element);
+                    entry["category"] = element.Category?.Name;
+                }
+                catch (Exception) {
+                }
+                entry["error"] = ex.Message;
+                if (ex is AccessViolationException)
+                    entry["note"] = "Revit hit a memory access error reading this element and may be unstable; save your work before continuing.";
+                return entry;
+            }
         }
 
         private static JObject Describe(Document doc, ElementId id, bool includeParameters) {

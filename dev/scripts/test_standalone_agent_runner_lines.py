@@ -3,6 +3,7 @@
 import ast
 import builtins
 import importlib.util
+import linecache
 import os
 import re
 import sys
@@ -50,6 +51,7 @@ def _load_runner():
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: int
+    compat.IRONPY = False
     modules = {
         "System": system,
         "pyrevit": pyrevit,
@@ -801,6 +803,63 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         )
         self.runner.run(context)
         self.assertEqual({}, self.runner._TRANSACTION_RANKS)
+        self.assertEqual({}, self.runner._ATTRIBUTE_HOLDERS)
+
+    def test_the_script_source_leaves_linecache_after_a_run(self):
+        """Never keep the last script's source alive in the shared engine."""
+        context = types.SimpleNamespace(
+            Source="result = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertNotIn(self.runner.SOURCE_NAME, linecache.cache)
+
+    def test_transactions_held_in_object_attributes_are_tracked(self):
+        """Find the transaction inside a wrapper such as pyrevit.revit.Transaction."""
+        source = (
+            "class Wrapper(object):\n"
+            "    def __init__(self, label):\n"
+            "        self._rvtxn = Labelled(label)\n"
+            "def helper():\n"
+            "    held = Wrapper('local')\n"
+            "helper()\n"
+            "kept = Wrapper('global')\n"
+        )
+        self.assertEqual(["global", "local"], self._tracked(source))
+
+    def test_a_local_that_gains_a_transaction_attribute_later_is_tracked(self):
+        """Revisit an object whose type held no transaction the first time it was seen."""
+        source = (
+            "class Holder(object):\n"
+            "    pass\n"
+            "def helper():\n"
+            "    held = Holder()\n"
+            "    held.txn = Labelled('later')\n"
+            "    held = None\n"
+            "helper()\n"
+        )
+        self.assertEqual(["later"], self._tracked(source))
+
+    def test_an_attribute_rebound_to_a_transaction_is_tracked(self):
+        """Notice a transaction that replaces an attribute's value in place."""
+        source = (
+            "class Holder(object):\n"
+            "    def __init__(self):\n"
+            "        self.txn = None\n"
+            "def helper():\n"
+            "    held = Holder()\n"
+            "    held.txn = Labelled('swapped')\n"
+            "    held.txn = None\n"
+            "helper()\n"
+        )
+        self.assertEqual(["swapped"], self._tracked(source))
 
 
 LOOP_PAST_TIMEOUT = (
