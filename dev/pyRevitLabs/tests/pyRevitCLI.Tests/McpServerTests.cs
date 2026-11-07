@@ -392,6 +392,37 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void LookupRevitApiAcceptsQueryAsAnAliasForName() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
+
+        Serve(
+            ToolCall(1, "lookup_revit_api", new JObject { ["name"] = "Wall" }),
+            ToolCall(2, "lookup_revit_api", new JObject { ["query"] = "Floor" }),
+            ToolCall(3, "lookup_revit_api", new JObject { ["name"] = "", ["query"] = "Roof" }));
+
+        Assert.Equal(new[] { "Floor", "Roof", "Wall" }, host.RequestsFor("lookup_api").Select(request => request["params"].Value<string>("name")).OrderBy(name => name));
+    }
+
+    [Fact]
+    public void LookupRevitApiDeclaresTheQueryAlias() {
+        var tools = ((JArray)Single(Request(1, "tools/list"))["result"]["tools"]).Cast<JObject>().ToDictionary(tool => tool.Value<string>("name"));
+        var schema = tools["lookup_revit_api"]["inputSchema"];
+
+        Assert.Equal("string", schema["properties"]["query"].Value<string>("type"));
+        Assert.Equal("string", schema["properties"]["name"].Value<string>("type"));
+        Assert.Empty((JArray)schema["required"]);
+    }
+
+    [Fact]
+    public void LookupRevitApiWithoutANameIsAnInvalidParamsError() {
+        var response = Single(ToolCall(1, "lookup_revit_api", new JObject()));
+
+        Assert.True(IsError(response));
+        Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
+        Assert.Empty(host.RequestsFor("lookup_api"));
+    }
+
+    [Fact]
     public void AnUnknownToolIsAnErrorResultNotAProtocolError() {
         var response = Single(ToolCall(1, "no_such_tool"));
 
