@@ -6,6 +6,8 @@ namespace pyRevitCLI.Tests;
 ///     Verifies which launch directories <see cref="PyRevitLauncher.PruneAbandoned"/> removes.
 /// </summary>
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class LaunchPruneTests : IDisposable {
     private const int NoSuchProcessId = 2147483000;
 

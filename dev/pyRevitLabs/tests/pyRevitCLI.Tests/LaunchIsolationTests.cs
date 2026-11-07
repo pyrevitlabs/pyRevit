@@ -7,6 +7,8 @@ namespace pyRevitCLI.Tests;
 ///     Verifies that a session started with <c>pyrevit launch --isolated</c> does not pick up a config stored in its clone.
 /// </summary>
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class LaunchIsolationTests : IDisposable {
     private readonly string cloneDirectory = Path.Combine(Path.GetTempPath(), "pyRevit-launch-tests-" + Guid.NewGuid());
     private readonly string previousSetting = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar);
