@@ -116,13 +116,14 @@ namespace pyRevitExtensionParser
             {
                 long mtimeSum = 0;
 
-                var pending = new Stack<string>();
+                var pending = new Stack<(string path, bool isExtensionRoot)>();
                 var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                pending.Push(Directory);
+                pending.Push((Directory, true));
 
                 while (pending.Count > 0)
                 {
-                    var currentDir = pending.Pop();
+                    var pendingDirectory = pending.Pop();
+                    var currentDir = pendingDirectory.path;
                     if (string.IsNullOrEmpty(currentDir))
                         continue;
 
@@ -154,7 +155,12 @@ namespace pyRevitExtensionParser
 
                     try
                     {
-                        if ((dirInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+                        // An extension itself can be a directory link. Its contents are the
+                        // extension state and must therefore affect the assembly cache key.
+                        // Continue to skip linked descendants so an extension can not make the
+                        // traversal follow arbitrary paths or a directory cycle.
+                        if (!pendingDirectory.isExtensionRoot
+                            && (dirInfo.Attributes & FileAttributes.ReparsePoint) != 0)
                             continue;
                     }
                     catch
@@ -189,7 +195,7 @@ namespace pyRevitExtensionParser
                     {
                         foreach (var subDir in dirInfo.EnumerateDirectories())
                         {
-                            pending.Push(subDir.FullName);
+                            pending.Push((subDir.FullName, false));
                         }
                     }
                     catch
