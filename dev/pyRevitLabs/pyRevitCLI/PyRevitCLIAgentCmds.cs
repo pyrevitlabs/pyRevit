@@ -139,7 +139,7 @@ namespace pyRevitCLI {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentEnabled(enable.Value);
                 Console.WriteLine(enable.Value
-                    ? "Agent host enabled. Reload pyRevit or restart Revit to start it."
+                    ? "Agent host enabled. A running host resumes on its next request; otherwise reload pyRevit or restart Revit to start it."
                     : "Agent host disabled. Running Revit sessions refuse agent requests from now on.");
             }
             else
