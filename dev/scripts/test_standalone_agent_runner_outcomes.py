@@ -43,7 +43,7 @@ class AgentRunnerOutcomeTests(unittest.TestCase):
         IronPython can't interrupt the script thread, so the script reaches its
         ``result`` assignment after the deadline; emulate that on CPython.
         """
-        with mock.patch.object(self.runner, "_async_exception_setter", lambda: None):
+        with mock.patch.object(self.runner, "_set_async_exc_function", lambda: None):
             errors, results = self._run(
                 "import time\ntime.sleep(0.3)\nresult = 1\n", 0.05
             )
@@ -60,7 +60,7 @@ class AgentRunnerOutcomeTests(unittest.TestCase):
             return "late"
 
         with (
-            mock.patch.object(self.runner, "_async_exception_setter", lambda: None),
+            mock.patch.object(self.runner, "_set_async_exc_function", lambda: None),
             mock.patch.object(self.runner, "_to_jsonable", slow_conversion),
         ):
             errors, results = self._run("result = object()\n", 0.1)
