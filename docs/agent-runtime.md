@@ -242,7 +242,7 @@ Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
 - A run started from inside another run (through `AgentHost.HandleRequest`) is refused with
-  `nested_run`.
+  `nested_run`, or with `nested_cpython` when a CPython run is started from a CPython script.
 - `run_modify` requires an active document and is refused before the script runs when none is
   active. The other tools (`capture_view`, `inspect_elements`, `show_elements`) also require an
   active document.
