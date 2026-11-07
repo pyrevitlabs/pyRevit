@@ -62,6 +62,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 catch (Exception) {
                 }
                 entry["error"] = ex.Message;
+                if (ex is AccessViolationException)
+                    entry["note"] = "Revit hit a memory access error reading this element and may be unstable; save your work before continuing.";
                 return entry;
             }
         }
