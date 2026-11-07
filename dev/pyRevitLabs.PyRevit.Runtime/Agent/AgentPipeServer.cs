@@ -24,12 +24,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// The timeout covers waiting for a request only, never the time a request takes to run.
     /// After <see cref="MaxCreateFailures"/> failed attempts in a row to create the pipe, the
     /// server stops and <see cref="IsListening"/> turns false, instead of retrying forever.
+    /// The wait between attempts doubles from half a second up to
+    /// <see cref="MaxCreateRetryDelay"/>, so a fault has to last about two minutes to stop it.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
         private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
         private const int MaxCreateFailures = 10;
+        private static readonly TimeSpan FirstCreateRetryDelay = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan MaxCreateRetryDelay = TimeSpan.FromSeconds(30);
 
         private readonly string pipeName;
         private readonly Func<string, string> handleLine;
@@ -79,7 +83,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         return;
                     }
                     logger.Warn("Could not create agent pipe: {0}", ex.Message);
-                    Thread.Sleep(500);
+                    if (stopping.Token.WaitHandle.WaitOne(CreateRetryDelay(createFailures)))
+                        return;
                     continue;
                 }
                 try {
@@ -107,6 +112,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         currentPipe = null;
                 }
             }
+        }
+
+        internal static TimeSpan CreateRetryDelay(int failures) {
+            var doubled = FirstCreateRetryDelay.TotalMilliseconds * Math.Pow(2, failures - 1);
+            return TimeSpan.FromMilliseconds(Math.Min(doubled, MaxCreateRetryDelay.TotalMilliseconds));
         }
 
         private void Serve(NamedPipeServerStream pipe) {
