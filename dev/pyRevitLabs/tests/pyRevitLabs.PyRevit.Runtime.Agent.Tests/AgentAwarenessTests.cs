@@ -22,6 +22,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             awareness.RecordEdit(document, title, added ?? new long[0], modified ?? new long[0], deleted ?? new long[0], new[] { name }, operation);
         }
 
+        private void RollBack(long[] deleted, params string[] names) {
+            awareness.RecordEdit("doc-1", "Tower.rvt", new long[0], new long[0], deleted, names, "rollback");
+        }
+
         private JToken Edits() {
             return Assert.Single(Peek()["edits"]);
         }
@@ -75,20 +79,97 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void ARolledBackGroupCancelsTheEditsItsTransactionsMadeAndAddsNoNames() {
+        public void ARolledBackGroupTakesBackTheTransactionsItNames() {
             Edit(added: new long[] { 7 }, name: "Step 1");
-            Edit(deleted: new long[] { 7 }, name: "Tool group", operation: "rollback");
+            Edit(modified: new long[] { 3 }, name: "Step 2");
+
+            RollBack(new long[0], "Step 1", "Step 2");
 
             Assert.Null(Peek());
+        }
 
-            Edit(added: new long[] { 8 }, name: "Step 2");
-            Edit(deleted: new long[] { 9 }, name: "Tool group", operation: "rollback");
+        [Fact]
+        public void ARolledBackGroupLeavesTheTransactionsBeforeItAlone() {
+            Edit(added: new long[] { 8 }, name: "Before");
+            Edit(added: new long[] { 7 }, name: "Step 1");
+
+            RollBack(new long[0], "Step 1");
 
             var edits = Edits();
             Assert.Equal(new long[] { 8 }, edits["added_ids"].Values<long>());
-            Assert.Equal(new long[] { 9 }, edits["deleted_ids"].Values<long>());
-            Assert.DoesNotContain("Tool group", edits["operations"].Values<string>());
-            Assert.Null(edits["undone"]);
+            Assert.Equal(new[] { "Before" }, edits["operations"].Values<string>());
+            Assert.Null(edits["rolled_back"]);
+        }
+
+        [Fact]
+        public void OnlyTheLatestTransactionWithTheNameIsTakenBack() {
+            Edit(added: new long[] { 1 }, name: "Move");
+            Edit(added: new long[] { 2 }, name: "Move");
+
+            RollBack(new long[0], "Move");
+
+            Assert.Equal(new long[] { 1 }, Edits()["added_ids"].Values<long>());
+        }
+
+        [Fact]
+        public void ARollbackThatAlsoListsItsIdsTakesTheTransactionBackOnce() {
+            Edit(added: new long[] { 7 }, name: "Step 1");
+
+            RollBack(new long[] { 7 }, "Step 1");
+
+            Assert.Null(Peek());
+        }
+
+        [Fact]
+        public void RollingBackTransactionsTheAgentAlreadySawIsReportedAsRolledBack() {
+            Edit(added: new long[] { 7 }, name: "Step 1");
+            awareness.Clear();
+
+            RollBack(new long[0], "Step 1");
+
+            var edits = Edits();
+            Assert.Equal(1, edits.Value<int>("rolled_back"));
+            Assert.Equal(new[] { "Step 1" }, edits["operations"].Values<string>());
+            Assert.Equal(0, edits.Value<int>("added") + edits.Value<int>("deleted"));
+        }
+
+        [Fact]
+        public void TheIdsOfARollbackOfOnlyUnrecordedTransactionsAreReported() {
+            Edit(added: new long[] { 7 }, name: "Step 1");
+            awareness.Clear();
+
+            RollBack(new long[] { 7 }, "Step 1");
+
+            var edits = Edits();
+            Assert.Equal(new long[] { 7 }, edits["deleted_ids"].Values<long>());
+            Assert.Equal(1, edits.Value<int>("rolled_back"));
+        }
+
+        [Fact]
+        public void APartlyRecordedRollbackCountsTheRestWithoutApplyingItsIds() {
+            Edit(added: new long[] { 6 }, name: "Step 1");
+            awareness.Clear();
+            Edit(added: new long[] { 7 }, name: "Step 2");
+
+            RollBack(new long[] { 6, 7 }, "Step 1", "Step 2");
+
+            var edits = Edits();
+            Assert.Equal(1, edits.Value<int>("rolled_back"));
+            Assert.Equal(new[] { "Step 1" }, edits["operations"].Values<string>());
+            Assert.Equal(0, edits.Value<int>("added") + edits.Value<int>("deleted"));
+        }
+
+        [Fact]
+        public void TransactionsPastTheLimitCanNoLongerBeTakenBack() {
+            Edit(added: new long[] { 1 }, name: "First");
+            for (var index = 0; index < AgentAwareness.MaxRecordedTransactions; index++)
+                Edit(modified: new long[] { 100 + index }, name: "Step " + index);
+
+            RollBack(new long[0], "First");
+
+            var edits = Edits();
+            Assert.Contains(1L, edits["added_ids"].Values<long>());
+            Assert.Equal(1, edits.Value<int>("rolled_back"));
         }
 
         [Fact]

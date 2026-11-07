@@ -162,8 +162,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <remarks>
         /// A transaction rolled back on its own never committed, so nothing of it was recorded. A
-        /// transaction group rolled back undoes transactions that did commit, so its changes are
-        /// recorded to cancel theirs.
+        /// transaction group rolled back undoes transactions that did commit, so it is recorded to
+        /// take back the transactions it names.
         /// </remarks>
         private static bool IsRollback(UndoOperation operation) {
             return operation == UndoOperation.TransactionRolledBack;

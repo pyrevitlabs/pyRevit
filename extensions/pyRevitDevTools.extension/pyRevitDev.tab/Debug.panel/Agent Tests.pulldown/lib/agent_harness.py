@@ -302,6 +302,10 @@ def run_suites(modules):
     """
     global _session
     print("Host engine: {}".format(sys.version.split()[0]))
+    print(
+        "Keep the mouse off the Revit window until the tests finish: a tooltip open while "
+        "they switch documents can crash Revit."
+    )
     start = session_start()
     open_session = session_status()
     if open_session["automatic"]:

@@ -155,19 +155,22 @@ class CaptureTests(TestCase):
         self.assertTrue(op.exists(result["path"]))
         self.assertEqual(before, harness.run(count)["result"])
 
-    def test_a_3d_export_works_in_a_document_that_isnt_active(self):
-        """Exporting needs no window, so the named document may be inactive; a viewport can't."""
+    def test_a_capture_refuses_a_document_that_isnt_active(self):
+        """Revit switches to any document it renders, so even an export needs the document active."""
         scratch = harness.session()
         key = harness.key_of(scratch.project_path)
+        codes = []
         try:
             scratch.activate(scratch.other_path)
-            result = request("capture", view="3d", width=300, document=key)
-            with self.assertRaises(AgentRequestError) as raised:
-                request("capture", mode="viewport", width=300, document=key)
+            for params in (dict(view="3d"), dict(mode="viewport")):
+                with self.assertRaises(AgentRequestError) as raised:
+                    request("capture", width=300, document=key, **params)
+                codes.append(raised.exception.code)
+            still_active = scratch.uiapp.ActiveUIDocument.Document.Title
         finally:
             scratch.activate(scratch.project_path)
-        self.assertTrue(op.exists(result["path"]))
-        self.assertEqual("wrong_document", raised.exception.code)
+        self.assertEqual(["wrong_document", "wrong_document"], codes)
+        self.assertEqual(scratch.other.Title, still_active)
 
     def test_unknown_view_is_reported(self):
         """The capture request for a missing view comes back as view_not_found."""

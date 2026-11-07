@@ -830,7 +830,7 @@ namespace pyRevitCLI {
                                 ["required"] = new JArray("origin", "normal"),
                             },
                             ["document"] = DocumentProperty(
-                                "Key of the document to capture, from get_context. Modes 'screen' and 'viewport', and view 'active', need it to be the active document."),
+                                "Key of the document to capture, from get_context. It must be the active document: Revit switches to any document it renders."),
                             ["title"] = TitleProperty(),
                             ["reason"] = ReasonProperty(),
                             ["revit"] = RevitProperty(),

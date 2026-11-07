@@ -20,7 +20,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Three modes:
     /// <list type="bullet">
     /// <item><c>export</c> renders a view through <see cref="Document.ExportImage"/>. It works for any
-    /// view, open or not, and doesn't depend on the Revit window.</item>
+    /// view of the active document, open or not, and doesn't depend on the Revit window.</item>
     /// <item><c>viewport</c> renders an open view through the same export, cropped to the region
     /// its window shows right now, so the image matches the user's zoom and pan without reading
     /// the screen. The crop happens in a transaction group that is always rolled back. It shows
@@ -237,16 +237,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <remarks>
-        /// Exporting a named view or view <c>3d</c> works in any open document. Modes
-        /// <c>screen</c> and <c>viewport</c>, and view <c>active</c>, need the user's window on
-        /// the document, so <paramref name="target"/> must be the active document for them.
+        /// Invariant: <paramref name="target"/> must be the active document in every mode. Modes
+        /// <c>screen</c> and <c>viewport</c>, and view <c>active</c>, use its window, and
+        /// <see cref="Document.ExportImage"/> makes the document it exports from the active one,
+        /// so an export from another document would switch the user's window to it.
         /// </remarks>
         public static JToken Capture(UIApplication app, Document target, Request request) {
             var doc = target ?? throw new AgentException("no_active_document", "Revit has no active document.");
-            var uidoc = AgentDocuments.ActiveUIDocumentFor(app, doc);
-            if (uidoc == null && NeedsWindow(request))
-                throw AgentDocuments.NotActive(doc,
-                    "mode 'screen' or 'viewport' and view 'active' capture its window; export a named view or '3d' instead");
+            var uidoc = AgentDocuments.ActiveUIDocumentFor(app, doc)
+                ?? throw AgentDocuments.NotActive(doc,
+                    "capture_view renders only the active document, because Revit switches to any document it renders");
             if (doc.IsModifiable)
                 throw AgentException.NotRun($"Another transaction is open in '{doc.Title}'.");
 
@@ -293,11 +293,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (request.DisplayStyle != null)
                 result["display_style"] = request.DisplayStyle;
             return result;
-        }
-
-        private static bool NeedsWindow(Request request) {
-            return request.Mode == "screen" || request.Mode == "viewport"
-                || string.Equals(request.View, "active", StringComparison.OrdinalIgnoreCase);
         }
 
         private static JObject DescribeTemporary(Request request) {

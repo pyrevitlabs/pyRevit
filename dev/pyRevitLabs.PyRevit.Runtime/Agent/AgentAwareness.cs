@@ -24,6 +24,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentAwareness {
         public const int MaxSampleIds = 20;
         public const int MaxOperations = 20;
+        public const int MaxRecordedTransactions = 500;
 
         private readonly object sync = new object();
         private readonly List<DocumentEdits> edits = new List<DocumentEdits>();
@@ -86,10 +87,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <param name="documentKey">The changed document's key; its edits are reported apart from other documents'.</param>
         /// <param name="documentTitle">The document's title now; the summary names the document by its latest one.</param>
         /// <param name="operation">
-        /// <c>undo</c> or <c>redo</c> for a transaction the user undid or redid, and <c>rollback</c>
-        /// for a transaction group the user rolled back, whose changes cancel the edits its
-        /// transactions made and add no operation names; anything else counts as a new edit.
+        /// <c>undo</c> or <c>redo</c> for a transaction the user undid or redid; <c>rollback</c> for
+        /// a transaction group the user rolled back, which takes back the latest recorded
+        /// transactions it names. Anything else counts as a new edit.
         /// </param>
+        /// <remarks>
+        /// Revit names the transactions of a rolled-back group but may list none of its element ids
+        /// (Revit 2025 lists none), so a rollback cancels by name. A named transaction that is no
+        /// longer recorded, because it was committed before the last call or more than
+        /// <see cref="MaxRecordedTransactions"/> transactions ago, counts as <c>rolled_back</c>
+        /// with its name. The rollback's element ids, if any, are applied only when none of its
+        /// transactions is still recorded, since they would otherwise undo the recorded ones a
+        /// second time.
+        /// </remarks>
         public void RecordEdit(
             string documentKey, string documentTitle,
             IEnumerable<long> addedIds, IEnumerable<long> modifiedIds, IEnumerable<long> deletedIds,
@@ -195,7 +205,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private JArray DescribeEditsLocked() {
-            var described = edits.Where(entry => !entry.IsEmpty).Select(entry => entry.Describe()).ToList();
+            var described = edits.Select(entry => entry.Describe()).Where(entry => entry != null).ToList();
             return described.Count == 0 ? null : new JArray(described);
         }
 
@@ -204,13 +214,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 suppressed--;
         }
 
+        /// <remarks>
+        /// Keeps each transaction committed since the last call apart, up to
+        /// <see cref="MaxRecordedTransactions"/>, so a rolled-back group takes back exactly its
+        /// own. Older ones are folded into one total that a rollback can no longer split.
+        /// </remarks>
         private sealed class DocumentEdits {
-            private readonly HashSet<long> added = new HashSet<long>();
-            private readonly HashSet<long> modified = new HashSet<long>();
-            private readonly HashSet<long> deleted = new HashSet<long>();
-            private readonly List<string> operations = new List<string>();
-            private int undone;
-            private int redone;
+            private readonly EditTotals folded = new EditTotals();
+            private readonly List<Change> recent = new List<Change>();
 
             public DocumentEdits(string key) {
                 Key = key;
@@ -220,39 +231,125 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             public string Title { get; set; }
 
-            public bool IsEmpty => added.Count == 0 && modified.Count == 0 && deleted.Count == 0 && undone == 0 && redone == 0;
-
             public void Record(
                 IEnumerable<long> addedIds, IEnumerable<long> modifiedIds, IEnumerable<long> deletedIds,
                 IEnumerable<string> transactionNames, string operation) {
-                foreach (var id in addedIds) {
+                var change = new Change(addedIds, modifiedIds, deletedIds, transactionNames, operation);
+                if (operation == "rollback")
+                    TakeBack(change);
+                else
+                    Keep(change);
+            }
+
+            /// <returns>Null when what was recorded cancelled out.</returns>
+            public JObject Describe() {
+                var total = folded.Copy();
+                foreach (var change in recent)
+                    total.Apply(change);
+                return total.IsEmpty ? null : total.Describe(Key, Title);
+            }
+
+            private void TakeBack(Change rollback) {
+                var notRecorded = new List<string>();
+                foreach (var name in Enumerable.Reverse(rollback.Names)) {
+                    var index = recent.FindLastIndex(change => change.Operation == "commit" && change.Names.Contains(name));
+                    if (index >= 0)
+                        recent.RemoveAt(index);
+                    else
+                        notRecorded.Insert(0, name);
+                }
+                if (notRecorded.Count == 0 && rollback.Names.Count > 0)
+                    return;
+                var anyTakenBack = notRecorded.Count < rollback.Names.Count;
+                Keep(anyTakenBack ? rollback.WithoutIds(notRecorded) : rollback);
+            }
+
+            private void Keep(Change change) {
+                recent.Add(change);
+                if (recent.Count <= MaxRecordedTransactions)
+                    return;
+                folded.Apply(recent[0]);
+                recent.RemoveAt(0);
+            }
+        }
+
+        private sealed class Change {
+            public Change(
+                IEnumerable<long> addedIds, IEnumerable<long> modifiedIds, IEnumerable<long> deletedIds,
+                IEnumerable<string> transactionNames, string operation) {
+                Added = addedIds.ToArray();
+                Modified = modifiedIds.ToArray();
+                Deleted = deletedIds.ToArray();
+                Names = transactionNames.Where(name => !string.IsNullOrEmpty(name)).ToList();
+                Operation = operation;
+            }
+
+            public long[] Added { get; }
+
+            public long[] Modified { get; }
+
+            public long[] Deleted { get; }
+
+            public List<string> Names { get; }
+
+            public string Operation { get; }
+
+            public Change WithoutIds(IEnumerable<string> names) {
+                return new Change(new long[0], new long[0], new long[0], names, Operation);
+            }
+        }
+
+        private sealed class EditTotals {
+            private readonly HashSet<long> added = new HashSet<long>();
+            private readonly HashSet<long> modified = new HashSet<long>();
+            private readonly HashSet<long> deleted = new HashSet<long>();
+            private readonly List<string> operations = new List<string>();
+            private int undone;
+            private int redone;
+            private int rolledBack;
+
+            public bool IsEmpty =>
+                added.Count == 0 && modified.Count == 0 && deleted.Count == 0 && undone == 0 && redone == 0 && rolledBack == 0;
+
+            public EditTotals Copy() {
+                var copy = new EditTotals { undone = undone, redone = redone, rolledBack = rolledBack };
+                copy.added.UnionWith(added);
+                copy.modified.UnionWith(modified);
+                copy.deleted.UnionWith(deleted);
+                copy.operations.AddRange(operations);
+                return copy;
+            }
+
+            public void Apply(Change change) {
+                foreach (var id in change.Added) {
                     if (deleted.Remove(id))
                         modified.Add(id);
                     else
                         added.Add(id);
                 }
-                foreach (var id in deletedIds) {
+                foreach (var id in change.Deleted) {
                     if (!added.Remove(id))
                         deleted.Add(id);
                     modified.Remove(id);
                 }
-                foreach (var id in modifiedIds)
+                foreach (var id in change.Modified)
                     if (!added.Contains(id))
                         modified.Add(id);
-                if (operation != "rollback")
-                    foreach (var name in transactionNames)
-                        if (!string.IsNullOrEmpty(name) && !operations.Contains(name) && operations.Count < MaxOperations)
-                            operations.Add(name);
-                if (operation == "undo")
+                foreach (var name in change.Names)
+                    if (!operations.Contains(name) && operations.Count < MaxOperations)
+                        operations.Add(name);
+                if (change.Operation == "undo")
                     undone++;
-                else if (operation == "redo")
+                else if (change.Operation == "redo")
                     redone++;
+                else if (change.Operation == "rollback")
+                    rolledBack += Math.Max(1, change.Names.Count);
             }
 
-            public JObject Describe() {
+            public JObject Describe(string key, string title) {
                 var described = new JObject {
-                    ["document"] = Key,
-                    ["document_title"] = Title,
+                    ["document"] = key,
+                    ["document_title"] = title,
                     ["added"] = added.Count,
                     ["modified"] = modified.Count,
                     ["deleted"] = deleted.Count,
@@ -265,6 +362,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     described["undone"] = undone;
                 if (redone > 0)
                     described["redone"] = redone;
+                if (rolledBack > 0)
+                    described["rolled_back"] = rolledBack;
                 return described;
             }
         }
