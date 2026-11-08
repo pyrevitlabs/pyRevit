@@ -5,6 +5,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class NotifyIssuesModuleTests
 {
     [TestMethod]
@@ -24,6 +26,44 @@ public sealed class NotifyIssuesModuleTests
         CollectionAssert.AreEquivalent(
             new[] { "123", "456" },
             tickets.Select(ticket => ticket.Ticket).ToList());
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("0000000000000000000000000000000000000000")]
+    [DataRow("not-a-sha")]
+    public void ResolveWipBaseRevision_falls_back_to_last_commit_never_to_a_tag(string? before)
+    {
+        Assert.AreEqual(NotifyIssuesModule.WipFallbackRange, NotifyIssuesModule.ResolveWipBaseRevision(before));
+    }
+
+    [TestMethod]
+    public void ResolveWipBaseRevision_uses_push_before_sha()
+    {
+        const string before = "03ab51a66f1c2d3e4b5a69788796a5b4c3d2e1f0";
+
+        Assert.AreEqual(before, NotifyIssuesModule.ResolveWipBaseRevision(" " + before + " "));
+    }
+
+    [TestMethod]
+    public void IsBotWipComment_matches_only_bot_wip_announcements()
+    {
+        var body = NotifyIssuesModule.WipCommentPrefix + " for [7.0.1.26300+1200](https://example.test)";
+
+        Assert.IsTrue(NotifyIssuesModule.IsBotWipComment(body, "github-actions[bot]"));
+        Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(body, "some-user"));
+        Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(body, "other-app[bot]"));
+        Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(":package: New public release is available for [7.0.1]", "github-actions[bot]"));
+        Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(null, "github-actions[bot]"));
+    }
+
+    [TestMethod]
+    public void EnsureAllNotified_throws_when_any_notification_is_missing()
+    {
+        NotifyIssuesModule.EnsureAllNotified(stoppedEarly: false, failed: 0, total: 3);
+        Assert.ThrowsExactly<InvalidOperationException>(() => NotifyIssuesModule.EnsureAllNotified(false, 1, 3));
+        Assert.ThrowsExactly<InvalidOperationException>(() => NotifyIssuesModule.EnsureAllNotified(true, 0, 3));
     }
 
     [TestMethod]
