@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using NUnit.Framework;
@@ -14,6 +15,19 @@ namespace pyRevitExtensionParserTest
     [Category("Regression")]
     public class ParsedExtensionHashTests : TempFileTestBase
     {
+        private readonly List<string> _junctionDirectories = new();
+
+        /// <summary>Removes junctions before the temporary fixture directory is deleted.</summary>
+        [TearDown]
+        public void RemoveDirectoryJunctions()
+        {
+            foreach (var junctionDirectory in _junctionDirectories)
+            {
+                if (Directory.Exists(junctionDirectory))
+                    Directory.Delete(junctionDirectory, false);
+            }
+        }
+
         /// <summary>Changing a command inside a linked extension changes its generated cache key.</summary>
         [Test]
         public void GetHash_DirectoryLinkedExtension_ChangesWhenACommandIsAdded()
@@ -132,6 +146,7 @@ namespace pyRevitExtensionParserTest
                 process.ExitCode,
                 Is.EqualTo(0),
                 $"Could not create directory junction: {process.StandardError.ReadToEnd()}");
+            _junctionDirectories.Add(linkDirectory);
             return linkDirectory;
         }
     }
