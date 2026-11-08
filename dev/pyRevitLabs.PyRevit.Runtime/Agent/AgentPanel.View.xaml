@@ -481,6 +481,20 @@
                                                     </Grid>
                                                 </Button>
 
+                                                <Button Style="{StaticResource RowHeader}"
+                                                        Command="{Binding Capture.OpenCommand}"
+                                                        AutomationProperties.Name="{Binding Capture.Caption}"
+                                                        HorizontalAlignment="Left"
+                                                        Margin="16,6,0,0"
+                                                        Visibility="{Binding HasCapture, Converter={StaticResource Shown}}">
+                                                    <StackPanel>
+                                                        <Border BorderBrush="{DynamicResource AgentPanel.Border}" BorderThickness="1" HorizontalAlignment="Left">
+                                                            <Image Source="{Binding Capture.Thumbnail}" MaxWidth="240" MaxHeight="180" Stretch="Uniform" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Capture.Caption}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                </Button>
+
                                                 <StackPanel Margin="16,8,0,0" Visibility="{Binding IsExpanded, Converter={StaticResource Shown}}">
                                                     <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" Margin="0,0,0,6"
                                                                Visibility="{Binding HasReason, Converter={StaticResource Shown}}" />

@@ -114,7 +114,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var captureRequest = AgentCapture.Parse(parameters);
                     return InvokeCapturingDialogs(
                         (app, target, _) => AgentCapture.Capture(app, target, captureRequest), parameters,
-                        "capture", AgentRequestText.Title(parameters));
+                        "capture", AgentRequestText.Title(parameters),
+                        describe: result => AgentLogDetails.FromCapture(result as JObject ?? new JObject(), AgentPaths.CapturesDir));
                 case "lookup_api":
                     var query = parameters.Value<string>("name");
                     var lookup = AgentApiLookup.Lookup(query);
@@ -173,7 +174,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
             Func<Autodesk.Revit.UI.UIApplication, Document, AgentDialogCapture, JToken> work, JObject parameters, string kind,
-            string title, bool keepChanges = false) {
+            string title, bool keepChanges = false, Func<JToken, JObject> describe = null) {
             return InvokeOnMainThread((app, target) => {
                 using (var dialogs = new AgentDialogCapture(app)) {
                     var result = work(app, target, dialogs);
@@ -181,7 +182,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
                 }
-            }, parameters, kind, title, AgentRequestText.Reason(parameters), keepChanges: keepChanges);
+            }, parameters, kind, title, AgentRequestText.Reason(parameters), describe: describe, keepChanges: keepChanges);
         }
 
         /// <summary>
@@ -220,7 +221,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The mode of a <c>run</c> request, whose permission is checked again when Revit picks it
         /// up, because the policy may have changed while it was queued.
         /// </param>
-        /// <param name="describe">Builds the log's summary of a successful result, for runs.</param>
+        /// <param name="describe">Builds the log's summary of a successful result, for runs and captures.</param>
         /// <param name="refuseEarly">
         /// Checks that refuse the request before it waits for Revit, such as the policy; their
         /// refusals are logged like the session gate's. They run after the session gate, so an

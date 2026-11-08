@@ -37,6 +37,44 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
+    /// The image a capture saved, which the log shows as a thumbnail the user can click to open.
+    /// </summary>
+    /// <remarks>
+    /// The thumbnail is loaded the first time the view asks for it, and is null when the image
+    /// can't be read, for example once the host has pruned it.
+    /// </remarks>
+    internal sealed class AgentLogCapture {
+        private readonly Func<string, object> loadThumbnail;
+        private object thumbnail;
+        private bool loaded;
+
+        public AgentLogCapture(string path, string caption, Func<string, object> loadThumbnail, Action<string> open) {
+            Path = path;
+            Caption = caption;
+            this.loadThumbnail = loadThumbnail;
+            OpenCommand = new AgentPanelCommand(() => open(Path));
+        }
+
+        /// <summary>The PNG in the host's captures folder.</summary>
+        public string Path { get; }
+
+        public string Caption { get; }
+
+        /// <summary>The image the view shows: a WPF image source in Revit, or null.</summary>
+        public object Thumbnail {
+            get {
+                if (!loaded) {
+                    thumbnail = loadThumbnail(Path);
+                    loaded = true;
+                }
+                return thumbnail;
+            }
+        }
+
+        public ICommand OpenCommand { get; }
+    }
+
+    /// <summary>
     /// One request in the agent log: a one-line summary, and details shown when expanded. A
     /// document the user added to the session shows as a one-line marker.
     /// </summary>
@@ -44,7 +82,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private bool isExpanded;
         private bool isVisible = true;
 
-        public AgentLogEntryViewModel(AgentRequestRecord record, Func<string, string> text, Action<AgentLogElement> select) {
+        public AgentLogEntryViewModel(AgentRequestRecord record, Func<string, string> text, Action<AgentLogElement> select, AgentLogImages images) {
             var log = new AgentLogText(text);
             var details = record.Details;
             var kind = log.Text("AgentPanel.Kind." + record.Kind);
@@ -66,6 +104,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Changes = log.Changes(details);
             Categories = CategoriesOf(details);
             Elements = ElementsOf(details, select);
+            Capture = CaptureOf(details, log, images);
             Script = details?.Value<string>("script");
             Output = details?.Value<string>("output");
             Error = ErrorOf(details);
@@ -89,6 +128,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Changes { get; }
         public string Categories { get; }
         public IList<AgentLogElement> Elements { get; }
+
+        /// <summary>The image of a capture, or null for any other request.</summary>
+        public AgentLogCapture Capture { get; }
+
         public string Script { get; }
         public string Output { get; }
         public string Error { get; }
@@ -100,6 +143,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool HasChanges => Changes != null;
         public bool HasCategories => Categories != null;
         public bool HasElements => Elements.Count > 0;
+        public bool HasCapture => Capture != null;
         public bool HasScript => !string.IsNullOrEmpty(Script);
         public bool HasOutput => !string.IsNullOrEmpty(Output);
         public bool HasError => Error != null;
@@ -158,6 +202,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return new AgentLogElement(id, label, document, documentPath, select);
                 })
                 .ToList();
+        }
+
+        private static AgentLogCapture CaptureOf(JObject details, AgentLogText log, AgentLogImages images) {
+            var image = details?.Value<string>("image");
+            if (string.IsNullOrEmpty(image))
+                return null;
+            var view = details.Value<string>("view");
+            var width = details.Value<int?>("width");
+            var height = details.Value<int?>("height");
+            var caption = width.HasValue && height.HasValue
+                ? log.Format("AgentPanel.Log.Capture", view ?? string.Empty, width.Value, height.Value)
+                : view;
+            return new AgentLogCapture(image, caption, images.LoadThumbnail, images.Open);
         }
 
         private static string ErrorOf(JObject details) {
@@ -238,12 +295,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentLogViewModel : INotifyPropertyChanged {
         private readonly Func<string, string> text;
         private readonly Action<AgentLogElement> select;
+        private readonly AgentLogImages images;
         private readonly Dictionary<long, AgentLogEntryViewModel> entries = new Dictionary<long, AgentLogEntryViewModel>();
         private bool showLookups;
 
-        public AgentLogViewModel(Func<string, string> text, Action<AgentLogElement> select) {
+        public AgentLogViewModel(Func<string, string> text, Action<AgentLogElement> select, AgentLogImages images) {
             this.text = text;
             this.select = select;
+            this.images = images;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -278,7 +337,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             foreach (var record in history) {
                 if (entries.ContainsKey(record.Id))
                     continue;
-                var entry = new AgentLogEntryViewModel(record, text, select);
+                var entry = new AgentLogEntryViewModel(record, text, select, images);
                 entries[record.Id] = entry;
                 GroupFor(record).Entries.Insert(0, entry);
             }
@@ -321,6 +380,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             IsEmpty = !anyVisible;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEmpty)));
         }
+    }
+
+    /// <summary>
+    /// How the log shows and opens the images captures saved.
+    /// </summary>
+    internal sealed class AgentLogImages {
+        /// <param name="loadThumbnail">A small image of the file at the path, or null when it can't be read.</param>
+        /// <param name="open">Shows the file at the path in the user's image viewer.</param>
+        public AgentLogImages(Func<string, object> loadThumbnail, Action<string> open) {
+            LoadThumbnail = loadThumbnail;
+            Open = open;
+        }
+
+        public Func<string, object> LoadThumbnail { get; }
+        public Action<string> Open { get; }
     }
 
     /// <summary>

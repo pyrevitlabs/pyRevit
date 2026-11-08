@@ -250,8 +250,9 @@ document to be active, and get `wrong_document` until the user switches to it.
 The panel also shows the policy, the MCP client that called last, the last request, and what a
 waiting request is held up by (the approval prompt or a Revit dialog). Its activity log lists
 the latest 200 requests of this Revit session, grouped by session: title and reason, outcome,
-changes by category, elements to click and select, and for runs the script, output, errors
-and engine. Lookups (`get_context`, `lookup_revit_api`) are hidden unless **Show lookups** is
+changes by category, elements to click and select, for runs the script, output, errors and
+engine, and for captures a thumbnail of the image, which opens in the default image viewer
+when clicked. Lookups (`get_context`, `lookup_revit_api`) are hidden unless **Show lookups** is
 on. The log lives in memory; run records stay on disk.
 
 Model requests are refused with these error types. `ping`, `lookup_revit_api` and the

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -7,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 using Autodesk.Revit.UI;
@@ -112,6 +115,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentPanelBackend : IAgentPanelBackend {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// One and a half times the width the log shows thumbnails at, so they stay sharp on a
+        /// display scaled up to 150% while the log's 200 entries hold little memory.
+        /// </summary>
+        private const int ThumbnailPixelWidth = 360;
+
         private readonly Dispatcher uiDispatcher;
 
         public AgentPanelBackend(Dispatcher uiDispatcher) {
@@ -193,6 +202,42 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         : $"Element {string.Join(", ", missing.Values<long>())} no longer exists in '{document}'.";
                 }
             });
+        }
+
+        /// <remarks>
+        /// Decodes the image at thumbnail size, reads it whole and closes the file, so a log full
+        /// of captures holds little memory and no file handles.
+        /// </remarks>
+        public object LoadThumbnail(string path) {
+            try {
+                using (var stream = File.OpenRead(path)) {
+                    var image = new BitmapImage();
+                    image.BeginInit();
+                    image.CacheOption = BitmapCacheOption.OnLoad;
+                    image.DecodePixelWidth = ThumbnailPixelWidth;
+                    image.StreamSource = stream;
+                    image.EndInit();
+                    image.Freeze();
+                    return image;
+                }
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not load the capture thumbnail {0}: {1}", path, ex.Message);
+                return null;
+            }
+        }
+
+        public void OpenImage(string path, Action<string> onError) {
+            if (!File.Exists(path)) {
+                onError($"The image is no longer on disk: {path}");
+                return;
+            }
+            try {
+                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+            }
+            catch (Win32Exception ex) {
+                onError("Could not open the image: " + ex.Message);
+            }
         }
 
         public void Pause() {

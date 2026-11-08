@@ -1,15 +1,19 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// The summary of a run that the agent log keeps in memory: what it changed, what it
-    /// printed, what went wrong, and the script, cut to sizes the panel can show.
+    /// The summary of a request that the agent log keeps in memory. For a run: what it changed,
+    /// what it printed, what went wrong, and the script, cut to sizes the panel can show. For a
+    /// capture: the view and the image it saved.
     /// </summary>
     /// <remarks>
-    /// The full response and script stay in the run folder on disk; <c>run_dir</c> points there.
+    /// A run's full response and script stay in the run folder on disk; <c>run_dir</c> points
+    /// there.
     /// </remarks>
     internal static class AgentLogDetails {
         public const int MaxScriptChars = 20000;
@@ -49,6 +53,39 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["engine"] = engine == null ? JValue.CreateNull() : Text((engine.Value<string>("implementation") + " " + engine.Value<string>("python")).Trim()),
                 ["script"] = Text(Cut(script, MaxScriptChars)),
             };
+        }
+
+        /// <summary>
+        /// The capture's view, size and image, which the panel shows as a thumbnail.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: <c>image</c> is a PNG in <paramref name="capturesDir"/> or null, because the
+        /// panel loads that file and opens it in the user's image viewer.
+        /// </remarks>
+        public static JObject FromCapture(JObject response, string capturesDir) {
+            var path = response.Value<string>("path");
+            return new JObject {
+                ["mode"] = response["mode"],
+                ["view"] = Text((response["view"] as JObject)?.Value<string>("name")),
+                ["width"] = response["width"],
+                ["height"] = response["height"],
+                ["image"] = Text(IsCaptureImage(path, capturesDir) ? path : null),
+            };
+        }
+
+        private static bool IsCaptureImage(string path, string capturesDir) {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(capturesDir))
+                return false;
+            try {
+                var folder = Path.GetFullPath(capturesDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    + Path.DirectorySeparatorChar;
+                var full = Path.GetFullPath(path);
+                return full.StartsWith(folder, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(Path.GetExtension(full), ".png", StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException) {
+                return false;
+            }
         }
 
         /// <remarks>

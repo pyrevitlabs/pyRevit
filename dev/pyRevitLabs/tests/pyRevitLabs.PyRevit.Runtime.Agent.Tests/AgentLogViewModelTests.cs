@@ -30,14 +30,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Log.Flag.Warning"] = "warned: {0}",
             ["AgentPanel.Log.Engine"] = "engine {0}",
             ["AgentPanel.Log.RunFolder"] = "folder {0}",
+            ["AgentPanel.Log.Capture"] = "{0} at {1}x{2}",
         };
 
         private readonly AgentActivity activity = new AgentActivity();
         private readonly List<AgentLogElement> selected = new List<AgentLogElement>();
+        private readonly List<string> thumbnailsLoaded = new List<string>();
+        private readonly List<string> opened = new List<string>();
         private readonly AgentLogViewModel log;
 
         public AgentLogViewModelTests() {
-            log = new AgentLogViewModel(key => Strings.TryGetValue(key, out var value) ? value : null, selected.Add);
+            var images = new AgentLogImages(
+                path => {
+                    thumbnailsLoaded.Add(path);
+                    return "thumbnail of " + path;
+                },
+                opened.Add);
+            log = new AgentLogViewModel(key => Strings.TryGetValue(key, out var value) ? value : null, selected.Add, images);
         }
 
         private static string Local(DateTime utc, string format) {
@@ -256,6 +265,37 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("error", entry.StatusKind);
             Assert.EndsWith(2.0.ToString("0.0", CultureInfo.CurrentCulture) + "s", entry.Summary);
             Assert.False(entry.HasScript || entry.HasElements || entry.HasRunFolder);
+        }
+
+        [Fact]
+        public void ACaptureShowsItsImageOnceAndOpensItWhenClicked() {
+            Finish("capture", "Check the plan", "s1", details: new JObject {
+                ["mode"] = "export",
+                ["view"] = "Level 1",
+                ["width"] = 1200,
+                ["height"] = 800,
+                ["image"] = "C:\\captures\\a.png",
+            });
+            log.Update(activity.History);
+            var entry = log.Groups[0].Entries[0];
+
+            Assert.True(entry.HasCapture);
+            Assert.Equal("Level 1 at 1200x800", entry.Capture.Caption);
+            Assert.Equal("thumbnail of C:\\captures\\a.png", entry.Capture.Thumbnail);
+            Assert.Equal("thumbnail of C:\\captures\\a.png", entry.Capture.Thumbnail);
+            Assert.Single(thumbnailsLoaded);
+            entry.Capture.OpenCommand.Execute(null);
+            Assert.Equal(new[] { "C:\\captures\\a.png" }, opened);
+        }
+
+        [Fact]
+        public void ACaptureWithoutAnImageAndOtherRequestsShowNone() {
+            Finish("capture", "Check the plan", "s1", details: new JObject { ["view"] = "Level 1", ["image"] = null });
+            Finish("modify", "Add walls", "s1", "committed", Run());
+            log.Update(activity.History);
+
+            Assert.All(log.Groups[0].Entries, entry => Assert.False(entry.HasCapture));
+            Assert.Empty(thumbnailsLoaded);
         }
 
         [Fact]

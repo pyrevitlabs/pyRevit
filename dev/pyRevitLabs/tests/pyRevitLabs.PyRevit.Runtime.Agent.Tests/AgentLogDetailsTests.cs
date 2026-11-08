@@ -150,6 +150,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ACaptureIsSummarizedWithItsViewAndImage() {
+            var response = new JObject {
+                ["mode"] = "export",
+                ["view"] = new JObject { ["id"] = 31, ["name"] = "Level 1", ["type"] = "FloorPlan" },
+                ["path"] = "C:\\agent\\captures\\20261107-a.png",
+                ["width"] = 1200,
+                ["height"] = 800,
+                ["image_base64"] = "iVBORw0KGgo=",
+            };
+
+            var details = AgentLogDetails.FromCapture(response, "C:\\agent\\captures\\");
+
+            Assert.Equal("export", details.Value<string>("mode"));
+            Assert.Equal("Level 1", details.Value<string>("view"));
+            Assert.Equal(1200, details.Value<int>("width"));
+            Assert.Equal(800, details.Value<int>("height"));
+            Assert.Equal("C:\\agent\\captures\\20261107-a.png", details.Value<string>("image"));
+            Assert.Null(details["image_base64"]);
+        }
+
+        [Theory]
+        [InlineData("C:\\agent\\captures-old\\a.png")]
+        [InlineData("C:\\agent\\captures\\..\\runs\\a.png")]
+        [InlineData("C:\\agent\\captures\\a.exe")]
+        [InlineData("captures\\a.png")]
+        [InlineData("")]
+        [InlineData(null)]
+        public void OnlyAPngInTheCapturesFolderIsKeptAsTheImage(string path) {
+            var details = AgentLogDetails.FromCapture(new JObject { ["path"] = path }, "C:\\agent\\captures");
+
+            Assert.Equal(JTokenType.Null, details["image"].Type);
+        }
+
+        [Fact]
         public void ARunWithoutChangesOrEngineIsSummarizedWithEmptyValues() {
             var details = AgentLogDetails.FromRun(new JObject { ["status"] = "error" }, null);
 

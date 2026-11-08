@@ -59,6 +59,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <param name="documentPath">The document's path, or null when it was never saved.</param>
         void ShowElements(IList<long> ids, string document, string documentPath, Action<string> onError);
 
+        /// <summary>
+        /// A small image of the PNG at <paramref name="path"/> for the log, or null when it can't
+        /// be read.
+        /// </summary>
+        /// <remarks>Must not keep the file open, so the host can prune old captures.</remarks>
+        object LoadThumbnail(string path);
+
+        /// <summary>
+        /// Shows the image at <paramref name="path"/> in the user's image viewer. A failure is
+        /// reported through <paramref name="onError"/>.
+        /// </summary>
+        void OpenImage(string path, Action<string> onError);
+
         void Pause();
         void Resume();
 
@@ -219,7 +232,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     StartChosen();
             });
             DeclineCommand = new AgentPanelCommand(() => Act(backend.Decline));
-            Log = new AgentLogViewModel(text, ShowElement);
+            Log = new AgentLogViewModel(text, ShowElement, new AgentLogImages(backend.LoadThumbnail, OpenImage));
             Refresh();
         }
 
@@ -416,8 +429,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Post(onError => backend.ShowElements(new[] { element.Id }, element.Document, element.DocumentPath, onError));
         }
 
+        private void OpenImage(string path) {
+            Post(onError => backend.OpenImage(path, onError));
+        }
+
         /// <summary>
-        /// Runs an action Revit carries out later, showing its failure when it is reported.
+        /// Runs an action that reports its failure through a callback, now or once Revit has
+        /// carried it out, and shows that failure.
         /// </summary>
         private void Post(Action<Action<string>> action) {
             errorText = null;

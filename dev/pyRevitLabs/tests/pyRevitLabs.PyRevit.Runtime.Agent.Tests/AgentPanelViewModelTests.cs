@@ -531,6 +531,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("The link belongs to a different or closed document.", panel.ErrorText);
         }
 
+        [Fact]
+        public void ALoggedCaptureShowsItsThumbnailAndOpensTheImageOrTheFailure() {
+            var record = backend.Activity.Arrive("capture", "Check the plan", null, ("s1", "Tower.rvt"), Started);
+            backend.Activity.Finish(record, "ok", Started, new JObject {
+                ["view"] = "Level 1",
+                ["width"] = 1200,
+                ["height"] = 800,
+                ["image"] = "C:\\captures\\a.png",
+            });
+            var panel = Panel();
+            var capture = panel.Log.Groups[0].Entries[0].Capture;
+
+            Assert.Equal("thumbnail of C:\\captures\\a.png", capture.Thumbnail);
+            capture.OpenCommand.Execute(null);
+            backend.OpenFailure("The image is no longer on disk.");
+
+            Assert.Equal(new[] { "C:\\captures\\a.png" }, backend.Opened);
+            Assert.Equal("The image is no longer on disk.", panel.ErrorText);
+        }
+
         private sealed class FakeBackend : IAgentPanelBackend {
             private Action<string> startFailure;
 
@@ -582,6 +602,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             public void ShowElements(IList<long> ids, string document, string documentPath, Action<string> onError) {
                 Shown.Add((ids, document, documentPath));
                 ShowFailure = onError;
+            }
+
+            public List<string> Opened { get; } = new List<string>();
+
+            public Action<string> OpenFailure { get; private set; }
+
+            public object LoadThumbnail(string path) {
+                return "thumbnail of " + path;
+            }
+
+            public void OpenImage(string path, Action<string> onError) {
+                Opened.Add(path);
+                OpenFailure = onError;
             }
 
             public void Pause() {

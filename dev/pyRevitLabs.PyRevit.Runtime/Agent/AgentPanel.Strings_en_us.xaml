@@ -84,6 +84,7 @@
     <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.NoChanges">It changed nothing.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.Warning">The host warned: {0}</system:String>
+    <system:String x:Key="AgentPanel.Log.Capture">{0} · {1} × {2} px (click to open)</system:String>
     <system:String x:Key="AgentPanel.Log.Elements">Elements (click to select)</system:String>
     <system:String x:Key="AgentPanel.Log.Script">Script</system:String>
     <system:String x:Key="AgentPanel.Log.Output">Output</system:String>

@@ -51,8 +51,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Outcome { get; private set; }
 
         /// <summary>
-        /// For a run, the summary <see cref="AgentLogDetails.FromRun"/> made of its response;
-        /// otherwise null.
+        /// For a run or a capture, the summary <see cref="AgentLogDetails"/> made of its
+        /// response; otherwise null.
         /// </summary>
         public JObject Details { get; private set; }
 
