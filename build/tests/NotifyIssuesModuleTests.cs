@@ -59,6 +59,14 @@ public sealed class NotifyIssuesModuleTests
     }
 
     [TestMethod]
+    public void EnsureAllNotified_throws_when_any_notification_is_missing()
+    {
+        NotifyIssuesModule.EnsureAllNotified(stoppedEarly: false, failed: 0, total: 3);
+        Assert.ThrowsExactly<InvalidOperationException>(() => NotifyIssuesModule.EnsureAllNotified(false, 1, 3));
+        Assert.ThrowsExactly<InvalidOperationException>(() => NotifyIssuesModule.EnsureAllNotified(true, 0, 3));
+    }
+
+    [TestMethod]
     public void ExtractIssueNumbers_returns_empty_for_text_without_references()
     {
         CollectionAssert.AreEqual(

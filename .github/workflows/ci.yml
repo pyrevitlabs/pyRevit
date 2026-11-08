@@ -306,7 +306,6 @@ jobs:
           fi
 
       - name: Notify linked issues
-        continue-on-error: true
         working-directory: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

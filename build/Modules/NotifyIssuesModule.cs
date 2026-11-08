@@ -75,6 +75,7 @@ public sealed class NotifyIssuesModule(
 
         var posted = 0;
         var updated = 0;
+        var failed = 0;
         var stoppedEarly = false;
         var issues = context.GitHub().Client.Issue.Comment;
 
@@ -131,6 +132,7 @@ public sealed class NotifyIssuesModule(
             }
             catch (ApiException ex)
             {
+                failed++;
                 context.Summary.Warning(string.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
                     "Failed to notify issue #{0}: {1}",
@@ -150,6 +152,25 @@ public sealed class NotifyIssuesModule(
                     posted,
                     updated,
                     tickets.Count));
+        }
+
+        EnsureAllNotified(stoppedEarly, failed, tickets.Count);
+    }
+
+    /// <summary>
+    /// Fails the module when any ticket was not notified, so the CI run is not successful and the
+    /// next WIP run, which starts from the last successful run, covers these commits again.
+    /// </summary>
+    internal static void EnsureAllNotified(bool stoppedEarly, int failed, int total)
+    {
+        if (stoppedEarly || failed > 0)
+        {
+            throw new InvalidOperationException(string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "Issue notifications incomplete ({0} failed of {1}{2}).",
+                failed,
+                total,
+                stoppedEarly ? ", stopped early" : string.Empty));
         }
     }
 
