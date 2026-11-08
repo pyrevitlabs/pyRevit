@@ -296,4 +296,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           Build__Channel: wip
           Build__NotifyUrl: https://github.com/${{ github.repository }}/actions/runs/${{ needs.wip.outputs.workflow_run_id }}
+          Build__NotifyFromSha: ${{ github.event.before }}
         run: dotnet run -c Release -- notify

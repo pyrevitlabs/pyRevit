@@ -23,6 +23,9 @@ public sealed class NotifyIssuesModule(
 {
     private static readonly TimeSpan CommentDelay = TimeSpan.FromSeconds(2);
 
+    internal const string WipCommentPrefix = ":package: New work-in-progress (wip) builds are available";
+    internal const string WipFallbackRange = "HEAD~1";
+
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
     {
         var versionInfo = VersionHelper.CreateVersionInfo(VersionHelper.ReadBuildVersion());
@@ -39,15 +42,20 @@ public sealed class NotifyIssuesModule(
         }
 
         var channel = buildOptions.Value.Channel;
-        var previousTag = channel.Equals("release", StringComparison.OrdinalIgnoreCase)
+        var isRelease = channel.Equals("release", StringComparison.OrdinalIgnoreCase);
+
+        // Release: everything since the previous release tag.
+        // WIP: only the commits of the push that triggered the build. Using the latest tag here
+        // re-notified every issue linked since the last release on each push to develop.
+        var previousTag = isRelease
             ? await FindPreviousTagAsync(context, cancellationToken)
-            : await FindLatestTagAsync(context, cancellationToken);
+            : ResolveWipBaseRevision(buildOptions.Value.NotifyFromSha);
 
-        var comment = channel.Equals("release", StringComparison.OrdinalIgnoreCase)
+        var comment = isRelease
             ? $":package: New public release is available for [{versionInfo.BuildVersion}]({notifyUrl})"
-            : $":package: New work-in-progress (wip) builds are available for [{versionInfo.BuildVersion}]({notifyUrl})";
+            : $"{WipCommentPrefix} for [{versionInfo.BuildVersion}]({notifyUrl})";
 
-        var changes = await CollectChangesAsync(context, previousTag, cancellationToken);
+        var changes = await CollectChangesAsync(context, previousTag, allowFallback: !isRelease, cancellationToken);
         var repositoryInfo = context.GitHub().RepositoryInfo;
         var (owner, repositoryName) = GitHubRepositoryHelper.Resolve(
             buildOptions,
@@ -69,17 +77,36 @@ public sealed class NotifyIssuesModule(
         context.Summary.KeyValue("Notify", "Issues", tickets.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         var posted = 0;
+        var updated = 0;
         var stoppedEarly = false;
+        var issues = context.GitHub().Client.Issue.Comment;
 
         foreach (var ticket in tickets)
         {
             try
             {
-                await context.GitHub().Client.Issue.Comment.Create(
-                    owner,
-                    repositoryName,
-                    int.Parse(ticket!, System.Globalization.CultureInfo.InvariantCulture),
-                    comment);
+                var number = int.Parse(ticket!, System.Globalization.CultureInfo.InvariantCulture);
+
+                // A WIP build already announced on this issue: refresh that comment instead of posting
+                // a new one. Edits do not notify subscribers, and the link keeps pointing at the latest build.
+                if (!isRelease)
+                {
+                    var existing = (await issues.GetAllForIssue(owner, repositoryName, number))
+                        .LastOrDefault(c => IsBotWipComment(c.Body, c.User?.Login));
+                    if (existing is not null)
+                    {
+                        if (!string.Equals(existing.Body, comment, StringComparison.Ordinal))
+                        {
+                            await issues.Update(owner, repositoryName, existing.Id, comment);
+                        }
+
+                        updated++;
+                        await Task.Delay(CommentDelay, cancellationToken);
+                        continue;
+                    }
+                }
+
+                await issues.Create(owner, repositoryName, number, comment);
                 posted++;
                 if (posted < tickets.Count)
                 {
@@ -125,11 +152,34 @@ public sealed class NotifyIssuesModule(
                 "Posted",
                 string.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
-                    "{0} of {1}",
+                    "{0} new, {1} updated, of {2}",
                     posted,
+                    updated,
                     tickets.Count));
         }
     }
+
+    /// <summary>
+    /// Base revision for WIP notifications: the commit before the push (github.event.before).
+    /// Falls back to the last commit only when it is missing (workflow_dispatch) or is the
+    /// all-zero SHA GitHub sends for a newly created branch. Never falls back to the last tag.
+    /// </summary>
+    internal static string ResolveWipBaseRevision(string? pushBeforeSha)
+    {
+        var sha = pushBeforeSha?.Trim();
+        if (string.IsNullOrEmpty(sha) || sha.Length < 7 || !sha.All(Uri.IsHexDigit) || sha.All(c => c == '0'))
+        {
+            return WipFallbackRange;
+        }
+
+        return sha;
+    }
+
+    internal static bool IsBotWipComment(string? body, string? authorLogin) =>
+        body is not null
+        && body.StartsWith(WipCommentPrefix, StringComparison.Ordinal)
+        && authorLogin is not null
+        && authorLogin.EndsWith("[bot]", StringComparison.OrdinalIgnoreCase);
 
     internal static string? ReadPublishedReleaseUrl()
     {
@@ -140,25 +190,6 @@ public sealed class NotifyIssuesModule(
 
         var url = File.ReadAllText(PyRevitPaths.GitHubReleaseUrlFile).Trim();
         return string.IsNullOrWhiteSpace(url) ? null : url;
-    }
-
-    private static async Task<string> FindLatestTagAsync(IModuleContext context, CancellationToken cancellationToken)
-    {
-        var result = await context.Git().Commands.ForEachRef(
-            new GitForEachRefOptions
-            {
-                Sort = "-creatordate",
-                Format = "%(refname)",
-                Count = "1",
-                Arguments = ["refs/tags/v*"],
-            },
-            new CommandExecutionOptions { LogSettings = CommandLoggingOptions.Silent },
-            cancellationToken);
-
-        return result.StandardOutput
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(tag => tag.Replace("refs/tags/", string.Empty, StringComparison.Ordinal))
-            .FirstOrDefault() ?? "HEAD~1";
     }
 
     private static async Task<string> FindPreviousTagAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -185,13 +216,29 @@ public sealed class NotifyIssuesModule(
     private static async Task<IReadOnlyList<ChangeTicket>> CollectChangesAsync(
         IModuleContext context,
         string previousTag,
+        bool allowFallback,
         CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await RunLogAsync(context, previousTag);
+        }
+        catch (Exception ex) when (allowFallback && ex is not OperationCanceledException && previousTag != WipFallbackRange)
+        {
+            // The pre-push SHA can be unknown locally (force-push). Notify only for the last commit
+            // rather than widening the range.
+            context.Summary.Warning($"Could not read commits since {previousTag} ({ex.Message}); using {WipFallbackRange}.");
+            return await RunLogAsync(context, WipFallbackRange);
+        }
+    }
+
+    private static async Task<IReadOnlyList<ChangeTicket>> RunLogAsync(IModuleContext context, string from)
     {
         var result = await context.Git().Commands.Log(
             new GitLogOptions
             {
                 Pretty = "format:%h %s%n%b%n/",
-                Arguments = [$"{previousTag}..HEAD"],
+                Arguments = [$"{from}..HEAD"],
             });
 
         return ParseTickets(result.StandardOutput);
