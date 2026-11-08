@@ -6,7 +6,7 @@ C# ModularPipelines project for local product builds and GitHub Actions CI/CD.
 
 - .NET 10 SDK (preinstalled on `windows-2025` runners)
 - `dotnet`, `msbuild`, `go` on PATH
-- Inno Setup 6 (`ISCC.exe`) for installer builds — preinstalled on `windows-2025`. The scripts set `RedirectionGuard=no` (#3758) only when compiled with 6.7 or newer, the first version that has the directive.
+- Inno Setup 6 (`ISCC.exe`) for installer builds — preinstalled on `windows-2025`
 - WiX Toolset v3.x build tools for the legacy CLI MSI project — preinstalled on `windows-2025`
 - `choco` for Chocolatey packaging/publish
 - `wingetcreate` for WinGet manifest updates (release publish workflow)
