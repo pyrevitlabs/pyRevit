@@ -52,7 +52,7 @@ public sealed class NotifyIssuesModule(
             ? $":package: New public release is available for [{versionInfo.BuildVersion}]({notifyUrl})"
             : $"{WipCommentPrefix} for [{versionInfo.BuildVersion}]({notifyUrl})";
 
-        var changes = await CollectChangesAsync(context, previousTag, allowFallback: !isRelease, cancellationToken);
+        var changes = await CollectChangesAsync(context, previousTag);
         var repositoryInfo = context.GitHub().RepositoryInfo;
         var (owner, repositoryName) = GitHubRepositoryHelper.Resolve(
             buildOptions,
@@ -247,29 +247,7 @@ public sealed class NotifyIssuesModule(
         return tags.Length >= 2 ? tags[1] : tags.FirstOrDefault() ?? "HEAD~1";
     }
 
-    /// <summary>
-    /// Reads linked tickets from <paramref name="previousTag"/>..HEAD. When
-    /// <paramref name="allowFallback"/> is set and that revision is unknown locally (force-push),
-    /// narrows to the last commit instead of widening the range.
-    /// </summary>
-    private static async Task<IReadOnlyList<ChangeTicket>> CollectChangesAsync(
-        IModuleContext context,
-        string previousTag,
-        bool allowFallback,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await RunLogAsync(context, previousTag);
-        }
-        catch (Exception ex) when (allowFallback && ex is not OperationCanceledException && previousTag != WipFallbackRange)
-        {
-            context.Summary.Warning($"Could not read commits since {previousTag} ({ex.Message}); using {WipFallbackRange}.");
-            return await RunLogAsync(context, WipFallbackRange);
-        }
-    }
-
-    private static async Task<IReadOnlyList<ChangeTicket>> RunLogAsync(IModuleContext context, string from)
+    private static async Task<IReadOnlyList<ChangeTicket>> CollectChangesAsync(IModuleContext context, string from)
     {
         var result = await context.Git().Commands.Log(
             new GitLogOptions

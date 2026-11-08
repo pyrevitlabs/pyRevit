@@ -292,18 +292,19 @@ jobs:
 
       - name: Resolve last notified commit
         id: lastnotified
-        continue-on-error: true
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          sha=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=develop&event=push&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // empty' || true)
-          if [ -n "$sha" ] && git merge-base --is-ancestor "$sha" HEAD; then
-            echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=$PUSH_BEFORE" >> "$GITHUB_OUTPUT"
+          sha=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=develop&event=push&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // empty')
+          if [ -z "$sha" ] || ! git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
+            sha="$PUSH_BEFORE"
           fi
+          if [ -n "$sha" ] && ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+            sha=""
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
       - name: Notify linked issues
         working-directory: build
@@ -311,5 +312,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           Build__Channel: wip
           Build__NotifyUrl: https://github.com/${{ github.repository }}/actions/runs/${{ needs.wip.outputs.workflow_run_id }}
-          Build__NotifyFromSha: ${{ steps.lastnotified.outputs.sha || github.event.before }}
+          Build__NotifyFromSha: ${{ steps.lastnotified.outputs.sha }}
         run: dotnet run -c Release -- notify
