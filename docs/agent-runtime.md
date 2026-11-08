@@ -324,8 +324,9 @@ Rules the host enforces:
   can't see every start: the run uses a `workspace`, compiles code at run time, or reaches
   `Start` another way (`getattr(t, "Start")`, `start = t.Start`). Other runs have no trace
   function, which on IronPython makes them many times faster, but also means nothing checks
-  the deadline outside loop headers: unbounded recursion, or a callback passed to `map`,
-  `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
+  the deadline outside loop headers: a callback passed to `map`, `filter` or `sorted` over
+  an endless iterable is not stopped on IronPython. Unbounded recursion ends in a
+  `RecursionError`; see [Deep recursion on IronPython](#deep-recursion-on-ironpython). A
   transaction a library function starts and returns to the script is only found if the
   script still holds it in a global when the run ends.
 - Tracebacks of errors and timeouts show the script's frames and the library code it
@@ -400,6 +401,35 @@ Risks:
 What still applies: the `[agent] policy`, the approval prompt under `ask`, rollback of
 queries and dry runs, rollback on any script error, the `transaction_left_open` check on the
 active document, the document, save and dialog guards, and the run record.
+
+### Deep recursion on IronPython
+
+Scripts run on Revit's main thread, whose stack is 1 MB. Unbounded recursion stops at the
+engine's limit of 1000 calls with `RecursionError` (`RuntimeError` on IronPython 2.7) like
+any other script error, and an exception raised deep in a call chain is caught as usual.
+
+Upstream IronPython rethrows an exception once per Python frame from inside a `catch` block,
+which on .NET holds about 12 KB of stack per frame until the exception is caught, so an
+exception raised about 100 calls deep crashed Revit. It also stopped checking the recursion
+limit in a function that had raised more than 20 times. pyRevit ships both engines with
+fixes for this:
+
+- IronPython 2.7.12 is built from the `dev/modules` forks.
+- IronPython 3.4.2 uses patched `IronPython.dll` and `Microsoft.Dynamic.dll` drop-ins with
+  the upstream version and identity; see `dev/libs/IronPython/IPY342/README.md` for their
+  sources.
+
+The fixes have not been released upstream, so other hosts running IronPython still crash.
+
+A trace function makes every IronPython frame larger. While the runner traces a script (it
+uses a `workspace`, compiles code at run time, or reaches `Start` other than by a direct
+call; see [Script contract](#script-contract)), an IronPython run's recursion limit is 500
+instead of 1000, because frames with several `with` or `try` blocks overflow Revit's stack
+between 750 and 900 calls when traced. A script that raises its limit is put back to 500 on
+its next call, and the previous limit is restored when the script ends. CPython runs keep
+their limit. The cap lives in the runner's trace function, so a script that removes it with
+`sys.settrace(None)` and then raises its own limit is no longer held at 500; handler-dense
+recursion past about 750 calls can then still crash Revit.
 
 ### Which Python runs the script
 

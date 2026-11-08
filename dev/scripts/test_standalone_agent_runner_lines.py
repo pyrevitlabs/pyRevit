@@ -1344,6 +1344,128 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual([4, 8, 7], self._script_lines(text))
 
 
+TRACED_LIMIT_SOURCE = """import sys
+start = getattr(sys, 'Start', None)
+result = sys.getrecursionlimit()
+"""
+UNTRACED_LIMIT_SOURCE = """import sys
+result = sys.getrecursionlimit()
+"""
+RAISED_LIMIT_SOURCE = """import sys
+start = getattr(sys, 'Start', None)
+sys.setrecursionlimit(1000)
+def limit():
+    return sys.getrecursionlimit()
+result = limit()
+"""
+
+
+class AgentRunnerTracedRecursionTests(unittest.TestCase):
+    """Traced IronPython runs get a lower recursion limit (issue #3918)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _context(self, source, results, errors):
+        return types.SimpleNamespace(
+            Source=source,
+            Workspace=None,
+            TimeoutSeconds=5,
+            Reckless=False,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=results.append,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: errors.append(args),
+        )
+
+    def _limit_seen(self, source, implementation):
+        errors = []
+        results = []
+        before = sys.getrecursionlimit()
+        with mock.patch.object(
+            self.runner, "_implementation", return_value=implementation
+        ):
+            self.runner.run(self._context(source, results, errors))
+        self.assertEqual([], errors)
+        self.assertEqual(before, sys.getrecursionlimit())
+        return int(results[0])
+
+    def test_traced_ironpython_run_uses_the_lower_limit(self):
+        """A run with a trace function sees the traced limit, then gets the old one back."""
+        self.assertEqual(
+            self.runner.IRONPYTHON_TRACED_RECURSION_LIMIT,
+            self._limit_seen(TRACED_LIMIT_SOURCE, "ironpython"),
+        )
+
+    def test_traced_ironpython_run_cannot_raise_its_limit(self):
+        """A script that raises its limit while traced is held at the traced limit."""
+        self.assertEqual(
+            self.runner.IRONPYTHON_TRACED_RECURSION_LIMIT,
+            self._limit_seen(RAISED_LIMIT_SOURCE, "ironpython"),
+        )
+
+    def test_limit_is_restored_when_tracing_fails_to_start(self):
+        """A failing settrace still gives the engine its old limit back."""
+        errors = []
+        before = sys.getrecursionlimit()
+        real_settrace = sys.settrace
+        self.addCleanup(real_settrace, sys.gettrace())
+
+        def refuse_tracers(tracer):
+            if tracer is not None:
+                raise RuntimeError("no tracing")
+            real_settrace(tracer)
+
+        with (
+            mock.patch.object(
+                self.runner, "_implementation", return_value="ironpython"
+            ),
+            mock.patch.object(sys, "settrace", side_effect=refuse_tracers),
+        ):
+            self.runner.run(self._context(TRACED_LIMIT_SOURCE, [], errors))
+        self.assertEqual(["RuntimeError"], [error[0] for error in errors])
+        self.assertEqual(before, sys.getrecursionlimit())
+
+    def test_a_nested_run_gives_the_caller_its_trace_function_back(self):
+        """An inner run restores the outer run's tracer instead of clearing it."""
+        previous = sys.gettrace()
+        self.addCleanup(sys.settrace, previous)
+
+        def outer_tracer(frame, event, arg):
+            return None
+
+        results = []
+        errors = []
+        sys.settrace(outer_tracer)
+        with mock.patch.object(
+            self.runner, "_implementation", return_value="ironpython"
+        ):
+            self.runner.run(self._context(TRACED_LIMIT_SOURCE, results, errors))
+        restored = sys.gettrace()
+        sys.settrace(previous)
+        self.assertEqual([], errors)
+        self.assertEqual(1, len(results))
+        self.assertIs(outer_tracer, restored)
+
+    def test_untraced_ironpython_run_keeps_the_engine_limit(self):
+        """Without a trace function the engine's own limit applies."""
+        self.assertEqual(
+            sys.getrecursionlimit(),
+            self._limit_seen(UNTRACED_LIMIT_SOURCE, "ironpython"),
+        )
+
+    def test_traced_cpython_run_keeps_the_engine_limit(self):
+        """CPython frames don't grow under tracing, so its limit is left alone."""
+        self.assertEqual(
+            sys.getrecursionlimit(),
+            self._limit_seen(TRACED_LIMIT_SOURCE, "cpython"),
+        )
+
+
 class AgentRunnerSourceTests(unittest.TestCase):
     """Constraints on the runner file itself."""
 
