@@ -17,7 +17,7 @@ public sealed class BuildOptions
 
     public string? NotifyUrl { get; set; }
 
-    /// <summary>WIP channel: commit before the push (github.event.before). Only commits after it are notified.</summary>
+    /// <summary>WIP channel: last commit already notified. Only commits after it are notified.</summary>
     public string? NotifyFromSha { get; set; }
 
     public string? CiRunId { get; set; }

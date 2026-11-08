@@ -279,6 +279,7 @@ jobs:
     runs-on: windows-2025
     permissions:
       contents: read
+      actions: read
       issues: write
       pull-requests: write
 
@@ -289,6 +290,21 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.sha }}
 
+      - name: Resolve last notified commit
+        id: lastnotified
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          sha=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=develop&event=push&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // empty' || true)
+          if [ -n "$sha" ] && git merge-base --is-ancestor "$sha" HEAD; then
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$PUSH_BEFORE" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Notify linked issues
         continue-on-error: true
         working-directory: build
@@ -296,5 +312,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           Build__Channel: wip
           Build__NotifyUrl: https://github.com/${{ github.repository }}/actions/runs/${{ needs.wip.outputs.workflow_run_id }}
-          Build__NotifyFromSha: ${{ github.event.before }}
+          Build__NotifyFromSha: ${{ steps.lastnotified.outputs.sha || github.event.before }}
         run: dotnet run -c Release -- notify

@@ -43,10 +43,6 @@ public sealed class NotifyIssuesModule(
 
         var channel = buildOptions.Value.Channel;
         var isRelease = channel.Equals("release", StringComparison.OrdinalIgnoreCase);
-
-        // Release: everything since the previous release tag.
-        // WIP: only the commits of the push that triggered the build. Using the latest tag here
-        // re-notified every issue linked since the last release on each push to develop.
         var previousTag = isRelease
             ? await FindPreviousTagAsync(context, cancellationToken)
             : ResolveWipBaseRevision(buildOptions.Value.NotifyFromSha);
@@ -87,12 +83,9 @@ public sealed class NotifyIssuesModule(
             {
                 var number = int.Parse(ticket!, System.Globalization.CultureInfo.InvariantCulture);
 
-                // A WIP build already announced on this issue: refresh that comment instead of posting
-                // a new one. Edits do not notify subscribers, and the link keeps pointing at the latest build.
                 if (!isRelease)
                 {
-                    var existing = (await issues.GetAllForIssue(owner, repositoryName, number))
-                        .LastOrDefault(c => IsBotWipComment(c.Body, c.User?.Login));
+                    var existing = await FindPreviousWipCommentAsync(issues, owner, repositoryName, number);
                     if (existing is not null)
                     {
                         if (!string.Equals(existing.Body, comment, StringComparison.Ordinal))
@@ -160,9 +153,11 @@ public sealed class NotifyIssuesModule(
     }
 
     /// <summary>
-    /// Base revision for WIP notifications: the commit before the push (github.event.before).
+    /// Base revision for WIP notifications: the last commit already notified, as resolved by CI
+    /// (head of the last successful develop push run, or github.event.before).
     /// Falls back to the last commit only when it is missing (workflow_dispatch) or is the
-    /// all-zero SHA GitHub sends for a newly created branch. Never falls back to the last tag.
+    /// all-zero SHA GitHub sends for a newly created branch. Never falls back to the last tag,
+    /// which re-notified every issue linked since the release on each push.
     /// </summary>
     internal static string ResolveWipBaseRevision(string? pushBeforeSha)
     {
@@ -173,6 +168,20 @@ public sealed class NotifyIssuesModule(
         }
 
         return sha;
+    }
+
+    /// <summary>
+    /// Returns the bot's previous WIP announcement on the issue, if any. Callers update it in place
+    /// rather than posting a new comment: edits do not notify subscribers.
+    /// </summary>
+    private static async Task<IssueComment?> FindPreviousWipCommentAsync(
+        IIssueCommentsClient issues,
+        string owner,
+        string repositoryName,
+        int number)
+    {
+        var comments = await issues.GetAllForIssue(owner, repositoryName, number);
+        return comments.LastOrDefault(comment => IsBotWipComment(comment.Body, comment.User?.Login));
     }
 
     internal static bool IsBotWipComment(string? body, string? authorLogin) =>
@@ -213,6 +222,11 @@ public sealed class NotifyIssuesModule(
         return tags.Length >= 2 ? tags[1] : tags.FirstOrDefault() ?? "HEAD~1";
     }
 
+    /// <summary>
+    /// Reads linked tickets from <paramref name="previousTag"/>..HEAD. When
+    /// <paramref name="allowFallback"/> is set and that revision is unknown locally (force-push),
+    /// narrows to the last commit instead of widening the range.
+    /// </summary>
     private static async Task<IReadOnlyList<ChangeTicket>> CollectChangesAsync(
         IModuleContext context,
         string previousTag,
@@ -225,8 +239,6 @@ public sealed class NotifyIssuesModule(
         }
         catch (Exception ex) when (allowFallback && ex is not OperationCanceledException && previousTag != WipFallbackRange)
         {
-            // The pre-push SHA can be unknown locally (force-push). Notify only for the last commit
-            // rather than widening the range.
             context.Summary.Warning($"Could not read commits since {previousTag} ({ex.Message}); using {WipFallbackRange}.");
             return await RunLogAsync(context, WipFallbackRange);
         }
