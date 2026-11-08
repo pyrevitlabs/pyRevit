@@ -281,7 +281,11 @@ Rules the host enforces:
   or a family from a file during the run counts as one that was already open: changing it fails
   the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
-  it is reported there but doesn't fail the run, and isn't rolled back.
+  it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
+  the run, and isn't rolled back; it is discarded when closed.
+- When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
+  naming each cancelled operation, because the script itself only sees Revit's generic
+  exception.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   Decorated functions, context-manager yields and rewritten exception handlers retain
   their original script line numbers, including on IronPython.

@@ -311,6 +311,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var finalOtherDocuments = guard.DescribeOtherDocuments();
                 foreach (var failure in guard.CleanupFailures)
                     warnings.Add("Guard cleanup failed: " + failure);
+                var blockedExplanation = guard.DescribeBlockedOperations();
+                if (blockedExplanation != null)
+                    warnings.Add(blockedExplanation);
                 if (finalOtherDocuments.Count > 0) {
                     var changes = response["changes"] as JObject;
                     if (changes == null) {
