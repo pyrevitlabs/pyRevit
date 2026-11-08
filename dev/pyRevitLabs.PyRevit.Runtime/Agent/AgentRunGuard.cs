@@ -85,8 +85,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool Committed { get; private set; }
 
         /// <summary>
-        /// True when rolling back the active document's group threw or did not report it rolled
-        /// back, so the run's changes may still be in the model.
+        /// True when rolling back the group of the document the run works in threw or did not
+        /// report it rolled back, so the run's changes may still be in that model.
         /// </summary>
         public bool RollbackFailed { get; private set; }
 

@@ -62,7 +62,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </list>
     /// The host attempts to write <c>script.py</c>, <c>request.json</c> and <c>response.json</c>
     /// under <c>%APPDATA%\pyRevit\agent\runs\</c>; both JSON records carry the session id and the
-    /// active document's title. A failure to persist an outcome never changes an already-final
+    /// title of the document the request names. A failure to persist an outcome never changes an already-final
     /// model decision.
     /// </remarks>
     internal static class AgentRunService {
@@ -327,7 +327,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     response["status"] = "error";
                     response["decision"] = "rollback_incomplete";
                     SetErrorIfMissing(context, "rollback_incomplete",
-                        "The host could not roll back the run, so its changes may remain in the active document. "
+                        $"The host could not roll back the run, so its changes may remain in '{doc?.Title}'. "
                         + "Ask the user to undo them in Revit or close the document without saving.");
                 }
 

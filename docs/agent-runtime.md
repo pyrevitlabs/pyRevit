@@ -117,7 +117,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `get_skill` | no | Task guidance in markdown (see [Skills](#skills)); the server's instructions tell agents which skill to read first |
 | `list_revit_instances` | no | Running Revit sessions with the agent host, each one's agent session state, and `busy` when it is serving another call |
 | `request_session` | no | Ask the user to start an agent session. The agent panel opens with the `reason` (at most 300 characters), at most once a minute. Only the user can start the session |
-| `get_context` | no | Revit and pyRevit versions, agent policy (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels. The document and each open document carry a `key` that names it while it stays open; a reopened file gets a new one |
+| `get_context` | no | Revit and pyRevit versions, agent policy (and `reckless: true` when [reckless mode](#reckless-mode) is on), `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels. The document and each open document carry a `key` that names it while it stays open; a reopened file gets a new one. The active view, selection and levels are left out (null) when the active document isn't in the session, which `document.in_session` says |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements of the `document` it names, active or not |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums. Takes `name`, or `query` as an alias to match `lookup_pyrevit_api` |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. The `document` it names must be the active one. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. `isolate` and `hide` leave out ids the active view doesn't show and list them in `not_in_view_ids`; while a temporary isolate is on, the elements it hides count as not shown, so `reset` before isolating others. `view` is the view acted on; when zooming makes Revit open another view, `active_view` names it. |
@@ -243,8 +243,9 @@ activity as usual, without **Start**, **Add** or **End**: **Pause** is how to st
 closing the panel doesn't pause. Agents and the CLI can't end the session either. It ends when
 its last document closes, and the next request starts another.
 
-While a document outside the session, or none, is active, the panel says so. Agents still work in
-the session's documents by their keys; only `show_elements` and `capture_view` need the
+While a document outside the session, or none, is active, the panel says so, and `get_context`
+names an active document outside the session without its view, selection or levels. Agents still work in the session's
+documents by their keys; only `show_elements` and `capture_view` need the
 document to be active, and get `wrong_document` until the user switches to it.
 
 The panel also shows the policy, the MCP client that called last, the last request, and what a
@@ -587,8 +588,8 @@ the build that provides the agent runtime.
 Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`:
 
 - `script.py`: the submitted source
-- `request.json`: title, reason, mode, engine and inputs, the session id and the active
-  document's title
+- `request.json`: title, reason, mode, engine and inputs, the session id and the title of the
+  document the request names
 - `response.json`: status, decision, changes, failures, dialogs, output and result, with the
   same session id and document, and the document's path
 - `result.json`: present when the result was too large to return inline

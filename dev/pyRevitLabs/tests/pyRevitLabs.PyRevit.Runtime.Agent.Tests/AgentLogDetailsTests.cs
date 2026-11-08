@@ -96,6 +96,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ASessionDocumentTheRunDidNotKeepIsNotAnotherDocumentButIsUnrevertedWhenStillChanged() {
+            var response = new JObject {
+                ["decision"] = "rolled_back",
+                ["changes"] = new JObject {
+                    ["other_documents"] = new JArray(
+                        new JObject { ["document"] = "Annex", ["opened_during_run"] = false, ["in_session"] = true, ["kept"] = false, ["rolled_back"] = true },
+                        new JObject { ["document"] = "Tower", ["opened_during_run"] = false, ["in_session"] = true, ["kept"] = false, ["rolled_back"] = false }),
+                },
+            };
+
+            var details = AgentLogDetails.FromRun(response, null);
+
+            Assert.Equal(0, details.Value<int>("other_documents"));
+            Assert.Equal(new[] { "Tower" }, details["unreverted_documents"].Values<string>());
+        }
+
+        [Fact]
         public void ADocumentTheRunCreatedIsNotAnotherDocument() {
             var response = new JObject {
                 ["decision"] = "committed",

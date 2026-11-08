@@ -40,7 +40,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["deleted"] = changes.Value<int?>("deleted_count") ?? 0,
                 ["by_category"] = changes["by_category"] as JObject ?? new JObject(),
                 ["elements"] = Elements(changes, response.Value<string>("decision") == "committed"),
-                ["other_documents"] = OtherDocumentsOpenBeforeRun(changes).Count(),
+                ["other_documents"] = OtherDocumentsOpenBeforeRun(changes).Count(other => other.Value<bool?>("in_session") != true),
                 ["unreverted_documents"] = UnrevertedDocuments(changes),
                 ["kept_documents"] = KeptDocuments(changes),
                 ["warnings"] = response["warnings"] as JArray ?? new JArray(),
