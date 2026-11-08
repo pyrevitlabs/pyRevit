@@ -303,9 +303,11 @@ Rules the host enforces:
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
   check that flag on each iteration; only the header expressions change, so line numbers and
   tracebacks still match the submitted source. On CPython the watchdog also raises the
-  timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
-  modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
-  only stopped once the call returns. A single blocking call, such as a long Revit API call,
+  timeout in the script thread. Modules imported from the run's `workspace` folder get the same rewrite
+  through an import hook that exists only for the run (regular modules and
+  packages that `sys.path` order resolves to the workspace; namespace packages are not rewritten). Library code the script calls
+  (pyrevitlib, rpw) runs unguarded at full speed, so on IronPython a long loop inside such a
+  call is only stopped once the call returns. A single blocking call, such as a long Revit API call,
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
   interrupted on any engine; the run fails with `timeout` once it returns. When that call
   was the script's last, the error says the limit passed inside a call that could not be
