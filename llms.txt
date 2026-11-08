@@ -1,0 +1,102 @@
+# https://docs.pyrevitlabs.io/llms.txt
+
+- [pyRevit Development Tools](https://docs.pyrevitlabs.io/): pyRevit is a development environment for Autodesk Revit automation.
+- [pyRevit Output Window](https://docs.pyrevitlabs.io/reference/pyrevit/output/): Access and utilize the output window in pyRevit commands.
+- [User Configuration Management](https://docs.pyrevitlabs.io/reference/pyrevit/userconfig/): Manage user configurations for pyRevit with examples.
+- [pyRevit Architecture Guide](https://docs.pyrevitlabs.io/architecture/): Overview of pyRevit architecture for contributors and users.
+- [Security Policy](https://docs.pyrevitlabs.io/SECURITY/): Report security vulnerabilities via email, not GitHub issues.
+- [Contributing to pyRevit](https://docs.pyrevitlabs.io/CONTRIBUTING/): Guide for contributing to the pyRevit project effectively.
+- [Code of Conduct](https://docs.pyrevitlabs.io/CODE_OF_CONDUCT/): A guide for maintaining a respectful and inclusive community.
+- [pyRevit Repository Structure](https://docs.pyrevitlabs.io/repo-organization/): Overview of pyRevit repository structure and organization.
+- [pyRevit Developer Guide](https://docs.pyrevitlabs.io/dev-guide/): Guide for setting up pyRevit development environment and contributions.
+- [pyRevit Configuration Guide](https://docs.pyrevitlabs.io/reference/pyrevit/): Comprehensive guide to pyRevit's configuration and classes.
+- [PyRevit Extensions Module](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/): Module for managing and parsing pyRevit extensions.
+- [Revit API Reference](https://docs.pyrevitlabs.io/reference/pyrevit/api/): Access Revit API functions and utilities for developers.
+- [DotNet Framework Access](https://docs.pyrevitlabs.io/reference/pyrevit/framework/): Access DotNet Framework and its functionalities in pyRevit.
+- [pyRevit Version Management](https://docs.pyrevitlabs.io/reference/pyrevit/versionmgr/): Utility functions for managing pyRevit versions and information.
+- [Python Compatibility Module](https://docs.pyrevitlabs.io/reference/pyrevit/compat/): Module for Python engine compatibility in pyRevit.
+- [pyRevit Telemetry](https://docs.pyrevitlabs.io/reference/pyrevit/telemetry/): Manage telemetry system setup and logging in pyRevit.
+- [PyRevit Revit Wrapper](https://docs.pyrevitlabs.io/reference/pyrevit/revit/): Comprehensive guide to PyRevit's Revit application wrapper.
+- [PyRevit Runtime Module](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/): Module for compiling base DLL and managing runtime attributes.
+- [pyRevit Script Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/script/): Utilities for pyRevit scripts including data management functions.
+- [PyRevit Engine Reference](https://docs.pyrevitlabs.io/reference/pyrevit/engine/): Access and manage PyRevit loading engine properties effectively.
+- [Interop Features Overview](https://docs.pyrevitlabs.io/reference/pyrevit/interop/): Explore interoperability features with various applications.
+- [Preflight Checks Framework](https://docs.pyrevitlabs.io/reference/pyrevit/preflight/): Automate verification and quality control checks before publishing.
+- [pyRevit HTTP API](https://docs.pyrevitlabs.io/reference/pyrevit/routes/): Comprehensive guide to pyRevit's HTTP API framework.
+- [pyRevit Core Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/): Explore various helper functions and classes for pyRevit.
+- [pyRevit Labs Module](https://docs.pyrevitlabs.io/reference/pyrevit/labs/): Wrapper module for pyRevitLabs functionality and logging.
+- [pyRevit Forms Reference](https://docs.pyrevitlabs.io/reference/pyrevit/forms/): Explore reusable WPF forms and their attributes in pyRevit.
+- [pyRevit Unit Tests](https://docs.pyrevitlabs.io/reference/pyrevit/unittests/): Comprehensive guide for testing pyRevit components effectively.
+- [Locale Conversion Services](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/applocales/): Conversion services for Python locale and host languages.
+- [Event Telemetry Management](https://docs.pyrevitlabs.io/reference/pyrevit/telemetry/events/): Manage event telemetry with registration and unregistration functions.
+- [Revit Journal Files](https://docs.pyrevitlabs.io/reference/pyrevit/revit/journals/): Access and manage Revit journal files effectively.
+- [ASCII Caching Module](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/cacher_asc/): Module for managing ASCII caching in pyRevit extensions.
+- [pyRevit Environment Variables](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/envvars/): Framework for managing environment variables in pyRevit tools.
+- [Extension Package Management](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/extpackages/): Module for managing extension packages in pyRevit.
+- [Charts Engine Overview](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/charts/): Comprehensive charts engine for output window customization.
+- [PyRevit Unit Tests](https://docs.pyrevitlabs.io/reference/pyrevit/unittests/runner/): Unit tests runner for PyRevit with detailed results.
+- [PyRevit Upgrade Functions](https://docs.pyrevitlabs.io/reference/pyrevit/versionmgr/upgrade/): Upgrade user configurations and clean temporary files.
+- [Extension Manager](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/extensionmgr/): Manage and cache UI and Library extensions effectively.
+- [pyRevit Git Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/git/): LibGit2Sharp wrapper for pyRevit's Git utilities and functions.
+- [Revit DB Object Wrappers](https://docs.pyrevitlabs.io/reference/pyrevit/revit/db/): Explore Revit DB object wrappers and their functionalities.
+- [pyRevit Bundle Type Maker](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/bundletypemaker/): Create compiled types for pyRevit bundles and commands.
+- [pyRevit Project Information](https://docs.pyrevitlabs.io/reference/pyrevit/versionmgr/about/): Utility module providing information about the pyRevit project.
+- [Preflight Test Case](https://docs.pyrevitlabs.io/reference/pyrevit/preflight/case/): Base class for preflight tests with setup and teardown methods.
+- [Assembly Maker Module](https://docs.pyrevitlabs.io/reference/pyrevit/loader/asmmaker/): Module for creating and managing extension assemblies in pyRevit.
+- [YamlDotNet Wrapper](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/yaml/): Wrapper for YamlDotNet to load and save YAML files.
+- [pyRevit AppData Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/appdata/): Utility functions for managing data files in pyRevit.
+- [Bounding Box File Operations](https://docs.pyrevitlabs.io/reference/pyrevit/interop/bbx/): Read and write bounding box files with pyRevit.
+- [Toast Notification Module](https://docs.pyrevitlabs.io/reference/pyrevit/forms/toaster/): Module for sending toast notifications on Windows 10.
+- [PyRevit System Diagnostics](https://docs.pyrevitlabs.io/reference/pyrevit/loader/systemdiag/): Session diagnostics for verifying pyRevit system requirements.
+- [Invoke Type Maker](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/invoketypemaker/): Prepare and compile invoke script types for pyRevit.
+- [RGB Color Constants](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/colors/): Provides RGB color constants and a color dictionary.
+- [pyRevit Updater](https://docs.pyrevitlabs.io/reference/pyrevit/versionmgr/updater/): Manage updates for pyRevit and its extensions effectively.
+- [Extension Binary Caching](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/cacher_bin/): Module for managing extension binary caching in PyRevit.
+- [Python Type Maker](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/pythontypemaker/): Prepare and compile Python script types for pyRevit.
+- [Markdown to HTML](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/markdown/): Python Markdown library for converting Markdown to HTML.
+- [pyRevit Hooks Management](https://docs.pyrevitlabs.io/reference/pyrevit/loader/hooks/): Manage hooks for pyRevit extensions and scripts.
+- [HTML Card Generation](https://docs.pyrevitlabs.io/reference/pyrevit/output/cards/): Functions to create HTML cards for pyRevit output.
+- [Autodesk Desktop Connector](https://docs.pyrevitlabs.io/reference/pyrevit/interop/adc/): Autodesk Desktop Connector API wrapper with various functions.
+- [Generic Extension Components](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/genericcomps/): Explore generic extension components and their attributes.
+- [Revit Geometric Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/revit/geom/): Geometric utilities for Revit including point conversion functions.
+- [pyRevit Extension Components](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/components/): Explore base classes for pyRevit extension components.
+- [Revit Features Detection](https://docs.pyrevitlabs.io/reference/pyrevit/revit/features/): Detects host application features in Revit.
+- [Smart Module Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/moduleutils/): Utility functions for creating and managing smart modules.
+- [Revit UI Functions](https://docs.pyrevitlabs.io/reference/pyrevit/revit/ui/): Explore UI functions for Revit in pyRevit library.
+- [Revit Reporting Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/revit/report/): Utility methods for uniform reporting of Revit data.
+- [Revit Tab Colorizer API](https://docs.pyrevitlabs.io/reference/pyrevit/revit/tabs/): API for managing Revit tab colors and themes.
+- [pyRevit Resource Links](https://docs.pyrevitlabs.io/reference/pyrevit/versionmgr/urls/): Explore pyRevit related links and resources for users.
+- [Revit Output Linkmaker](https://docs.pyrevitlabs.io/reference/pyrevit/output/linkmaker/): Create output window helper links for Revit elements.
+- [Revit Unit Conversion](https://docs.pyrevitlabs.io/reference/pyrevit/revit/units/): Utilities for unit conversion in Revit projects.
+- [Revit File Management](https://docs.pyrevitlabs.io/reference/pyrevit/revit/files/): Functions for managing Revit files and their encoding.
+- [Script Type Preparation](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/typemaker/): Prepare and compile script types for pyRevit commands.
+- [URL Type Maker](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/urltypemaker/): Create and compile URL script types for pyRevit.
+- [MathNet Module](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/mathnet/): MathNet module for numerical computations in pyRevit.
+- [pyRevit Core Logger](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/logger/): Comprehensive logging utilities for pyRevit's core functionality.
+- [Excel File Interop](https://docs.pyrevitlabs.io/reference/pyrevit/interop/xl/): Read and write Excel files using pyRevit interop functions.
+- [Revit Element Selection Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/revit/selection/): Utilities for selecting elements in Revit using pyRevit.
+- [pyRevit Config Parser](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/configparser/): Comprehensive guide for pyRevit config parsing utilities.
+- [DirectContext3DServer Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/revit/dc3dserver/): Wrapper and utilities for DirectContext3DServer in Revit.
+- [pyRevit Session Info](https://docs.pyrevitlabs.io/reference/pyrevit/loader/sessioninfo/): Manage pyRevit session information and runtime variables.
+- [Revit Server Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/revit/serverutils/): Functions and attributes for managing Revit server models.
+- [Python Helper Functions](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/pyutils/): Helper functions for Python with examples and usage.
+- [Revit Ribbon Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/ribbon/): Interact with Revit ribbon using pyRevit core utilities.
+- [BIM360 Collaboration Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/revit/bim360/): Utilities for managing BIM360 collaboration caches in Revit.
+- [PTS PointCloud File Operations](https://docs.pyrevitlabs.io/reference/pyrevit/interop/pts/): Read and write PTS point cloud files efficiently.
+- [API Routing Server](https://docs.pyrevitlabs.io/reference/pyrevit/routes/server/): API routing and server management similar to Flask.
+- [IxMIlia.Dxf Assembly](https://docs.pyrevitlabs.io/reference/pyrevit/interop/dxf/): Explore the IxMIlia.Dxf assembly for pyRevit interop.
+- [PyRevit Runtime Types](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/types/): Access classes and functionality in the base loader module.
+- [WPF Component Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/forms/utils/): Utility functions for loading and creating WPF components.
+- [Telemetry Records Overview](https://docs.pyrevitlabs.io/reference/pyrevit/telemetry/record/): Base class for telemetry records in pyRevit documentation.
+- [pyRevit Session Manager](https://docs.pyrevitlabs.io/reference/pyrevit/loader/sessionmgr/): Manage pyRevit session loading and extension orchestration.
+- [Server Management API](https://docs.pyrevitlabs.io/reference/pyrevit/routes/api/): API for managing server status and related functions.
+- [Python Script Type Maker](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/dynamotypemaker/): Create and compile Python script types for pyRevit.
+- [Revit Event Handlers](https://docs.pyrevitlabs.io/reference/pyrevit/revit/events/): Manage Revit event handlers with various functions and classes.
+- [pyRevit Extensions Parser](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/parser/): Module for parsing extensions in pyRevit framework.
+- [STL File Handling](https://docs.pyrevitlabs.io/reference/pyrevit/interop/stl/): Learn to read and write STL files in Python.
+- [IFC.Net Assembly Import](https://docs.pyrevitlabs.io/reference/pyrevit/interop/ifc/): Explore IFC.Net assembly import for pyRevit interop.
+- [Rhinoceros Interop](https://docs.pyrevitlabs.io/reference/pyrevit/interop/rhino/): Explore Rhinoceros interop features and attributes in pyRevit.
+- [Markdown Post-Processors](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/markdown/postprocessors/): Overview of post-processors for Markdown in pyRevit.
+- [Server Error Exceptions](https://docs.pyrevitlabs.io/reference/pyrevit/routes/server/exceptions/): Custom exceptions for handling server errors in pyRevit.
+- [Revit Failure Handling](https://docs.pyrevitlabs.io/reference/pyrevit/revit/db/failure/): Comprehensive guide on handling Revit failures effectively.
+- [Revit Query Functions](https://docs.pyrevitlabs.io/reference/pyrevit/revit/db/query/): Helper functions for querying Revit elements and information.
