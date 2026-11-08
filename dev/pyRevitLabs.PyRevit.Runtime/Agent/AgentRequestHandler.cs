@@ -146,13 +146,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Runs a <c>run</c> request on the main thread. A request refused as <c>revit_busy</c>
-        /// never ran, and leaves a <c>not_run</c> record so the caller can confirm that later.
+        /// or <c>document_changed</c> never ran, and leaves a <c>not_run</c> record so the caller
+        /// can confirm that later.
         /// </summary>
         private static JToken InvokeRunOnMainThread(AgentRunRequest request, JObject parameters) {
             try {
                 return InvokeOnMainThread(app => AgentRunService.Execute(app, request), parameters);
             }
-            catch (AgentException ex) when (ex.Code == AgentException.NotRunCode) {
+            catch (AgentException ex) when (ex.Details.Value<string>("outcome") == "not_run") {
                 AgentRunService.RecordNotRun(request, ex);
                 throw;
             }

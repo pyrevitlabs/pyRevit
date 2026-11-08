@@ -176,6 +176,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var timings = new AgentRunTimings((Stopwatch.GetTimestamp() - request.ReceivedTimestamp) * 1000.0 / Stopwatch.Frequency);
             var uidoc = app.ActiveUIDocument;
             var doc = uidoc?.Document;
+            if (request.Document != null && (doc == null || !AgentDocumentBinding.Matches(request.Document, doc.Title, doc.PathName)))
+                throw AgentDocumentBinding.Refusal(request.Document, doc?.Title);
             if (doc == null && request.Mode == AgentRunMode.Modify)
                 throw new AgentException("no_active_document", "A modify run requires an active document.");
             if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
@@ -357,7 +359,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Leaves a run folder for a request the host refused as <c>revit_busy</c>, with
+        /// Leaves a run folder for a request the host refused before running any of it
+        /// (<c>revit_busy</c> or <c>document_changed</c>), with
         /// <c>status</c> and <c>decision</c> <c>not_run</c>, and adds its <c>run_id</c> and
         /// <c>run_dir</c> to <paramref name="refusal"/>.
         /// </summary>
@@ -483,7 +486,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var preview = AgentViewPreview.Show(uidoc, changeSet.Touched);
 
             var text = "An agent wants to modify the model." + Environment.NewLine + Environment.NewLine
-                + BuildSummary(title, changes, failures, preview.Description) + Environment.NewLine + Environment.NewLine
+                + BuildSummary(uidoc.Document.Title, title, changes, failures, preview.Description) + Environment.NewLine + Environment.NewLine
                 + "Keep these changes? Yes commits them as a single undoable operation. "
                 + "No rolls the model back to its state before the run.";
             var approved = MessageBox(uidoc.Application.MainWindowHandle, text, "pyRevit Agent", YesNoQuestionDefaultNo) == Yes;
@@ -502,8 +505,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return approved;
         }
 
-        private static string BuildSummary(string title, JObject changes, JArray failures, string previewDescription) {
+        private static string BuildSummary(string documentTitle, string title, JObject changes, JArray failures, string previewDescription) {
             var summary = new StringBuilder();
+            summary.AppendLine("Document: " + documentTitle);
             summary.AppendLine(string.Format(
                 "Added: {0}   Modified: {1}   Deleted: {2}",
                 changes.Value<int>("added_count"),
