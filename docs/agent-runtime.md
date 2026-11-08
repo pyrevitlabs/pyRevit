@@ -470,6 +470,43 @@ Syntax measured in Revit on IronPython 3.4.2:
 IronPython 2.7.12 is Python 2.7 syntax. CPython 3.12 supports everything, but reaches the
 Revit API through pythonnet, and pyrevitlib features built for IronPython may be limited.
 
+### Engine warm-up
+
+Agent runs reuse one cached engine per session load, so only the first run starts the engine,
+imports `pyrevit.agent._runner` and runs the runner's code for the first time, which costs
+two to three seconds on IronPython. The host does that work ahead of time, once per session
+load, when an agent first makes contact: after the pipe handles the first request of the
+load (`ping`, `get_context` or any other method), it queues the warm-up on the Revit main
+thread, where it runs when Revit is next idle. A session whose agent never connects pays
+nothing.
+
+The warm-up uses the same engine cache key and flags as a real run, and calls
+`_runner.warm_up()`, which passes a small fixed script through the real `run()` against a
+stand-in context with no Revit application: setup, source rewriting, compilation, loop
+guards, the watchdog, execution, transaction recording, result serialization and the
+rollback scan all run once. It reads no document, starts no transaction, writes no run
+record and shows no output. Its two-line entry script goes to a file of the Revit process's
+own, `%APPDATA%\pyRevit\agent\engine_warmup.<pid>.py`, which is deleted after it ran, so
+Revit sessions warming at the same time never share it. A `run` request never queues it: a
+run that executes starts the engine anyway, and one refused before it executes leaves the
+next request to warm. The
+warm-up is skipped when the engine is already cached, when the agent is off, and when
+`default_engine` is not IronPython. A request during which pyRevit reloads, such as a
+`run` that reloads it, counts for the old load, so the new load warms on its own first
+request. Requests made in-process through `AgentHost.HandleRequest` don't trigger it. The
+warm-up reports to the debug log only, as a `[PERF] agent engine warm-up` line with the
+script's exit code, or as `Agent engine warm-up failed`, and never affects the host.
+
+A request that arrives while the warm-up runs waits for it, as it would for a run. A run
+sent right after the first `ping` therefore takes about 0.1 to 0.4 s longer than a cold first
+run would have, because it waits for the whole warm-up, which does a little more than a run
+needs. This is accepted: a run sent after the warm-up finishes starts in tens of
+milliseconds instead of two to three seconds.
+
+CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded assembly and
+keeps the interpreter up for the rest of the process, so the first CPython run still pays for
+it. A run that asks for an engine other than the default also starts cold.
+
 ### CLI
 
 ```text

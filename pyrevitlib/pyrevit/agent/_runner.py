@@ -1639,3 +1639,74 @@ def _safe_text(value):
         return str(value)
     except Exception:
         return repr(value)
+
+
+_WARM_UP_SOURCE = (
+    "class Probe(object):\n"
+    "    def Start(self):\n"
+    "        return 0\n"
+    "values = []\n"
+    "for index in range(3):\n"
+    "    try:\n"
+    "        values.append(index)\n"
+    "    except:\n"
+    "        pass\n"
+    "Probe().Start()\n"
+    "result = {\n"
+    "    'values': values,\n"
+    "    'unique': set(values),\n"
+    "    'id': DB.ElementId.InvalidElementId,\n"
+    "    'point': DB.XYZ(1.0, 2.0, 3.0),\n"
+    "}\n"
+)
+
+
+class _NoApplication(object):
+    ActiveUIDocument = None
+    Application = None
+
+
+class _WarmUpContext(object):
+    """Run context for :func:`warm_up`: no Revit application, outcome kept here."""
+
+    Source = _WARM_UP_SOURCE
+    Workspace = None
+    TimeoutSeconds = 60
+    Reckless = False
+    InputsJson = "{}"
+
+    def __init__(self):
+        self.UIApp = _NoApplication()
+        self.error = None
+
+    def SetEngine(self, implementation, python_version, version_text):
+        pass
+
+    def SetResult(self, json_text):
+        pass
+
+    def SetOutput(self, text):
+        pass
+
+    def SetError(self, error_type, message, traceback_text):
+        self.error = (error_type, message)
+
+
+def warm_up():
+    """Run a small script through :func:`run` so the first agent run finds the runner ready.
+
+    The agent host calls this once per session load, after the first request
+    an agent sends (see ``docs/agent-runtime.md``). The script goes through
+    source rewriting, compilation, loop guards, transaction recording, the
+    watchdog, result serialization and the rollback scan, against a context
+    with no Revit application: it reads no document, starts no transaction
+    and leaves no run record.
+
+    Raises:
+        RuntimeError: the warm-up script reported an error. The host only
+            logs it.
+    """
+    context = _WarmUpContext()
+    run(context)
+    if context.error is not None:
+        raise RuntimeError("Agent warm-up failed: {}: {}".format(*context.error))
