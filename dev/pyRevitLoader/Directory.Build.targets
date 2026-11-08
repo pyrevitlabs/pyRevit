@@ -45,6 +45,19 @@
     <ItemGroup Condition="'$(UseIronPython)' != 'false' AND !$(IronPythonVersion.Contains('PR'))">
         <PackageReference Include="IronPython" Version="$(Version)"/>
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(UseIronPython)' != 'false' AND !$(IronPythonVersion.Contains('PR'))">
+        <IronPythonDropInDir Condition="'$(NetFolder)' == 'netfx'">$(IronPythonStdLibDir)\$(IronPythonVersion)\net462</IronPythonDropInDir>
+        <IronPythonDropInDir Condition="'$(NetFolder)' == 'netcore'">$(IronPythonStdLibDir)\$(IronPythonVersion)\net8.0</IronPythonDropInDir>
+    </PropertyGroup>
+
+    <Target Name="UseIronPythonDropIn" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(IronPythonDropInDir)' != ''">
+        <ItemGroup>
+            <_IronPythonDropIn Include="$(IronPythonDropInDir)\IronPython.dll;$(IronPythonDropInDir)\Microsoft.Dynamic.dll" />
+        </ItemGroup>
+        <Error Text="Missing IronPython drop-in assembly %(_IronPythonDropIn.Identity)." Condition="!Exists('%(_IronPythonDropIn.Identity)')" />
+        <Copy SourceFiles="@(_IronPythonDropIn)" DestinationFolder="$(TargetDir)" />
+    </Target>
     
     <ItemGroup>
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp"/>
