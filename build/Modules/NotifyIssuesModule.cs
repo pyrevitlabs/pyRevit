@@ -25,6 +25,7 @@ public sealed class NotifyIssuesModule(
 
     internal const string WipCommentPrefix = ":package: New work-in-progress (wip) builds are available";
     internal const string WipFallbackRange = "HEAD~1";
+    internal const string NotifierLogin = "github-actions[bot]";
 
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
     {
@@ -180,15 +181,18 @@ public sealed class NotifyIssuesModule(
         string repositoryName,
         int number)
     {
-        var comments = await issues.GetAllForIssue(owner, repositoryName, number);
+        var comments = await issues.GetAllForIssue(
+            owner,
+            repositoryName,
+            number,
+            new ApiOptions { PageSize = 100 });
         return comments.LastOrDefault(comment => IsBotWipComment(comment.Body, comment.User?.Login));
     }
 
     internal static bool IsBotWipComment(string? body, string? authorLogin) =>
         body is not null
         && body.StartsWith(WipCommentPrefix, StringComparison.Ordinal)
-        && authorLogin is not null
-        && authorLogin.EndsWith("[bot]", StringComparison.OrdinalIgnoreCase);
+        && string.Equals(authorLogin, NotifierLogin, StringComparison.OrdinalIgnoreCase);
 
     internal static string? ReadPublishedReleaseUrl()
     {

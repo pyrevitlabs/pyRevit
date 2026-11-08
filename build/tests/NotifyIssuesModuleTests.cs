@@ -53,6 +53,7 @@ public sealed class NotifyIssuesModuleTests
 
         Assert.IsTrue(NotifyIssuesModule.IsBotWipComment(body, "github-actions[bot]"));
         Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(body, "some-user"));
+        Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(body, "other-app[bot]"));
         Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(":package: New public release is available for [7.0.1]", "github-actions[bot]"));
         Assert.IsFalse(NotifyIssuesModule.IsBotWipComment(null, "github-actions[bot]"));
     }
