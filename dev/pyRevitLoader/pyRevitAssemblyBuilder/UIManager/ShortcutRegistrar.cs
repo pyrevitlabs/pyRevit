@@ -7,7 +7,7 @@ using pyRevitAssemblyBuilder.SessionManager;
 using UIFramework;
 using UIFrameworkServices;
 
-namespace pyRevitAssemblyBuilder.UIManager.Buttons
+namespace pyRevitAssemblyBuilder.UIManager
 {
     /// <summary>
     /// Registers keyboard shortcuts for ribbon buttons through Revit's internal shortcut services.
@@ -15,6 +15,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
     /// <remarks>
     /// <para>Requests are queued and applied in a single batch on the ribbon dispatcher at
     /// <see cref="DispatcherPriority.ApplicationIdle"/>, after the ribbon items exist.</para>
+    /// <para>Shortcuts rejected by <see cref="ShortcutKeyManager.IsLegalShortcutKey"/> are skipped and logged
+    /// at Warning, since an illegal entry saved into Revit's shortcut table triggers an "Import Errors" dialog on the next start.</para>
     /// <para>Important: a shortcut already assigned to another command is never overridden; it is
     /// skipped and logged. The first button to claim a shortcut within a batch wins.</para>
     /// </remarks>
@@ -89,6 +91,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 foreach (var shortcut in request.Shortcuts)
                 {
+                    if (!ShortcutKeyManager.IsLegalShortcutKey(shortcut))
+                    {
+                        _logger.Warning($"Shortcut '{shortcut}' for button '{request.ButtonName}' is not a valid Revit shortcut and was skipped.");
+                        continue;
+                    }
+
                     if (OwnsShortcut(command, shortcut))
                         continue;
 

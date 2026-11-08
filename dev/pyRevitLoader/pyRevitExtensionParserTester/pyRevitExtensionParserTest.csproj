@@ -91,6 +91,7 @@
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
+    <Compile Include="ShortcutTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

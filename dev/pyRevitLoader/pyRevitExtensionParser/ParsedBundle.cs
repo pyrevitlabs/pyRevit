@@ -430,7 +430,9 @@ namespace pyRevitExtensionParser
         /// </summary>
         /// <remarks>
         /// <para>Declared as a list of strings, or a single string, under the "shortcuts" key.</para>
-        /// <para>Shortcuts already assigned to another Revit command are skipped at registration time.</para>
+        /// <para>Invalid strings are ignored with a warning. Shortcuts already assigned to another Revit command are skipped at registration time.
+        /// </para>
+        /// <para>Shortcuts are re-applied on every load: removing one here removes it on the next start, a shortcut the user clears in Revit returns on the next load, and saving shortcuts in Revit makes them permanent.</para>
         /// </remarks>
         /// <example>
         /// <code>

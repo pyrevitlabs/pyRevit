@@ -54,7 +54,7 @@ Common keys:
 - `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives` or human friendly [here](https://pyrevitlabs.notion.site/Bundle-Context-630fa1f3611f4ee0aa15d290275e7ef3).
 - `min_revit_version` / `max_revit_version`.
 - `is_beta`, `highlight` (`new` or `updated`), `collapsed`.
-- `shortcuts` — push, smart, invoke, URL and link buttons only; a list of Revit keyboard shortcuts (e.g. `[ZQ, Ctrl+Shift+K]`) or a single string. A shortcut already assigned to another command is skipped and logged, never overridden.
+- `shortcuts` — push, smart, invoke, URL and link buttons only; a list of Revit keyboard shortcuts (e.g. `[ZQ, Ctrl+Shift+K]`) or a single string. Invalid shortcut strings are ignored with a warning. A shortcut already assigned to another command is skipped and logged, never overridden. Shortcuts are applied at every load, so removing one from the bundle removes it on the next start, while one the user clears in Revit comes back on the next load. Once the user saves their shortcuts in Revit, the assignment becomes permanent.
 - `engine` — `clean`, `full_frame`, `persistent`, `mainthread` (plus Dynamo-specific `automate`, `dynamo_path`, `dynamo_path_check_existing`, `dynamo_force_manual_run`, `dynamo_model_nodes_info`).
 - `layout` — reorders/nests child buttons instead of relying on folder order; use `---` for a separator and `>>>` to start a slideout.
 - `background` / `background_dark` — panel bundles only; see [Panel background colors](#panel-background-colors).
