@@ -79,7 +79,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             var commands = ShortcutsHelper.Commands;
             var usedShortcuts = CollectUsedShortcuts(commands);
-            var changedCommands = new Dictionary<string, ShortcutItem>();
+            var applyDict = new Dictionary<string, ShortcutItem>();
 
             foreach (var request in batch)
             {
@@ -89,6 +89,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     continue;
                 }
 
+                var added = false;
                 foreach (var shortcut in request.Shortcuts)
                 {
                     if (!ShortcutKeyManager.IsLegalShortcutKey(shortcut))
@@ -97,7 +98,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         continue;
                     }
 
-                    if (OwnsShortcut(command, shortcut))
+                    if (ContainsShortcut(command.Shortcuts, shortcut))
                         continue;
 
                     if (!usedShortcuts.Add(shortcut))
@@ -107,12 +108,70 @@ namespace pyRevitAssemblyBuilder.UIManager
                     }
 
                     command.Shortcuts.Add(shortcut);
-                    changedCommands[request.ItemId] = command;
+                    added = true;
+                }
+
+                if (added)
+                    applyDict[request.ItemId] = CreateApplyItem(command);
+            }
+
+            if (applyDict.Count > 0)
+                KeyboardShortcutService.applyShortcutChanges(applyDict);
+        }
+
+        /// <summary>
+        /// Builds the throwaway <see cref="ShortcutItem"/> passed to
+        /// <see cref="KeyboardShortcutService.applyShortcutChanges"/> for a single command.
+        /// </summary>
+        /// <remarks>
+        /// <para>applyShortcutChanges reconciles the passed items against Revit's native shortcut
+        /// array and MUTATES the Shortcuts lists it receives: a native key found in the passed
+        /// list is consumed (matched, native binding kept); a native key missing from the passed
+        /// list is treated as stale and its native binding is repurposed or deleted. Passing the
+        /// live master item therefore strips already-native keys (e.g. a user's manual shortcut)
+        /// out of the master list, which the next dialog save then erases from
+        /// KeyboardShortcuts.xml.</para>
+        /// <para>The copy is seeded from the master item (which already contains the newly added
+        /// key) and then unioned with the keys currently bound natively, obtained via
+        /// <see cref="KeyboardShortcutService.getShortcutRep"/>. Keys that exist natively but are
+        /// missing from the master list — e.g. leftovers from earlier appends — are also restored
+        /// to the master list so the next dialog save persists them.</para>
+        /// </remarks>
+        private ShortcutItem CreateApplyItem(ShortcutItem command)
+        {
+            var item = new ShortcutItem(command);
+
+            var nativeRep = KeyboardShortcutService.getShortcutRep(command.CommandId);
+            if (!string.IsNullOrEmpty(nativeRep))
+            {
+                foreach (var nativeKey in nativeRep.Split('#'))
+                {
+                    if (string.IsNullOrEmpty(nativeKey))
+                        continue;
+
+                    if (!ContainsShortcut(item.Shortcuts, nativeKey))
+                        item.Shortcuts.Add(nativeKey);
+
+                    if (!ContainsShortcut(command.Shortcuts, nativeKey))
+                    {
+                        command.Shortcuts.Add(nativeKey);
+                        _logger.Debug($"Restored native shortcut '{nativeKey}' to the master list of command '{command.CommandId}'.");
+                    }
                 }
             }
 
-            if (changedCommands.Count > 0)
-                KeyboardShortcutService.applyShortcutChanges(changedCommands);
+            return item;
+        }
+
+        private static bool ContainsShortcut(IEnumerable<string> shortcuts, string shortcut)
+        {
+            foreach (var existing in shortcuts)
+            {
+                if (string.Equals(existing, shortcut, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool NeedsCommandReload(List<PendingShortcuts> batch)
@@ -143,17 +202,6 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
 
             return used;
-        }
-
-        private static bool OwnsShortcut(ShortcutItem command, string shortcut)
-        {
-            foreach (var existing in command.Shortcuts)
-            {
-                if (string.Equals(existing, shortcut, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
         }
 
         private sealed class PendingShortcuts
