@@ -1,6 +1,7 @@
 using Build.Helpers;
 using Build.Modules;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Net;
 
 namespace Build.Tests;
 
@@ -64,6 +65,24 @@ public sealed class NotifyIssuesModuleTests
         NotifyIssuesModule.EnsureAllNotified(stoppedEarly: false, failed: 0, total: 3);
         Assert.ThrowsExactly<InvalidOperationException>(() => NotifyIssuesModule.EnsureAllNotified(false, 1, 3));
         Assert.ThrowsExactly<InvalidOperationException>(() => NotifyIssuesModule.EnsureAllNotified(true, 0, 3));
+    }
+
+    [TestMethod]
+    [DataRow(HttpStatusCode.NotFound)]
+    [DataRow(HttpStatusCode.Gone)]
+    public void IsPermanentlyUnavailable_skips_missing_or_deleted_issues(HttpStatusCode statusCode)
+    {
+        Assert.IsTrue(NotifyIssuesModule.IsPermanentlyUnavailable(statusCode));
+    }
+
+    [TestMethod]
+    [DataRow(HttpStatusCode.Forbidden)]
+    [DataRow(HttpStatusCode.UnprocessableEntity)]
+    [DataRow(HttpStatusCode.InternalServerError)]
+    [DataRow(HttpStatusCode.BadGateway)]
+    public void IsPermanentlyUnavailable_keeps_other_errors_as_failures(HttpStatusCode statusCode)
+    {
+        Assert.IsFalse(NotifyIssuesModule.IsPermanentlyUnavailable(statusCode));
     }
 
     [TestMethod]

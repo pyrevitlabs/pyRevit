@@ -75,6 +75,7 @@ public sealed class NotifyIssuesModule(
 
         var posted = 0;
         var updated = 0;
+        var skipped = 0;
         var failed = 0;
         var stoppedEarly = false;
         var issues = context.GitHub().Client.Issue.Comment;
@@ -130,6 +131,15 @@ public sealed class NotifyIssuesModule(
                 stoppedEarly = true;
                 break;
             }
+            catch (ApiException ex) when (IsPermanentlyUnavailable(ex.StatusCode))
+            {
+                skipped++;
+                context.Summary.Warning(string.Format(
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    "Skipped issue #{0}: it no longer exists or cannot be found ({1}).",
+                    ticket,
+                    (int)ex.StatusCode));
+            }
             catch (ApiException ex)
             {
                 failed++;
@@ -148,9 +158,10 @@ public sealed class NotifyIssuesModule(
                 "Posted",
                 string.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
-                    "{0} new, {1} updated, of {2}",
+                    "{0} new, {1} updated, {2} skipped, of {3}",
                     posted,
                     updated,
+                    skipped,
                     tickets.Count));
         }
 
@@ -158,9 +169,20 @@ public sealed class NotifyIssuesModule(
     }
 
     /// <summary>
+    /// Whether a failed notification can never succeed on retry: the referenced issue was deleted,
+    /// transferred or never existed (for example a typo in a commit message).
+    /// </summary>
+    internal static bool IsPermanentlyUnavailable(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone;
+
+    /// <summary>
     /// Fails the module when any ticket was not notified, so the CI run is not successful and the
     /// next WIP run, which starts from the last successful run, covers these commits again.
     /// </summary>
+    /// <remarks>
+    /// Tickets skipped by <see cref="IsPermanentlyUnavailable"/> are not counted as failed:
+    /// retrying them can never succeed, and counting them would keep every later run red.
+    /// </remarks>
     internal static void EnsureAllNotified(bool stoppedEarly, int failed, int total)
     {
         if (stoppedEarly || failed > 0)
