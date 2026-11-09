@@ -99,7 +99,7 @@ namespace pyRevitCLI {
                 var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
                 if (id == null) {
-                    if (method == "notifications/cancelled")
+                    if (method == "notifications/cancelled" && (message["jsonrpc"] as JValue)?.Value as string == "2.0")
                         Cancel((message["params"] as JObject)?["requestId"]);
                     continue;
                 }

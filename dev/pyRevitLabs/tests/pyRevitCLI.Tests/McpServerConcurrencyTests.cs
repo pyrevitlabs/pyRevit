@@ -23,8 +23,8 @@ public partial class McpServerTests {
 
         public void Send(JObject message) => input.Add(message.ToString(Formatting.None));
 
-        public void Cancel(int requestId) => Send(new JObject {
-            ["jsonrpc"] = "2.0",
+        public void Cancel(int requestId, string jsonrpc = "2.0") => Send(new JObject {
+            ["jsonrpc"] = jsonrpc,
             ["method"] = "notifications/cancelled",
             ["params"] = new JObject { ["requestId"] = requestId, ["reason"] = "test" },
         });
@@ -130,6 +130,22 @@ public partial class McpServerTests {
         Assert.Equal(3, listed.Value<int>("id"));
         Assert.True(Payload(listed)["instances"][0].Value<bool>("busy"));
         Assert.Null(Payload(listed)["instances"][0]["responding"]);
+    }
+
+    [Fact]
+    public void ACancelNotificationWithoutJsonRpc2IsIgnored() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession();
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        session.Cancel(1, jsonrpc: "1.0");
+        release.Set();
+        var run = session.Next();
+
+        Assert.Equal(1, run.Value<int>("id"));
+        Assert.False(IsError(run));
     }
 
     [Fact]
