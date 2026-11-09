@@ -291,7 +291,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         + "Ask the user to undo them in Revit or close the document without saving.");
                 }
 
-                if (doc != null && !guard.RollbackFailed && response.Value<string>("decision") != "committed") {
+                if (doc != null && scriptStarted && !guard.RollbackFailed && response.Value<string>("decision") != "committed") {
                     var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
                     if (lostByRollback != null) {
                         logger.Error("Agent run {0}: {1}", runId, lostByRollback);
