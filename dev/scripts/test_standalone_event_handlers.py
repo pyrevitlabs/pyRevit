@@ -6,6 +6,8 @@ import sys
 import types
 import unittest
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 EVENTS_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "revit", "events.py")

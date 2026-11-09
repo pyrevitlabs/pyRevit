@@ -18,6 +18,8 @@ public sealed class CPythonEngineCollection {
 /// handle.
 /// </summary>
 [Collection(CPythonEngineCollection.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class CPythonEventsTests {
     /// <summary>Starts the CPython engine with <c>events.py</c> loaded.</summary>
     public CPythonEventsTests() {
