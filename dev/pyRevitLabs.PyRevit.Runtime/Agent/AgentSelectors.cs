@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using pyRevitLabs.Json.Linq;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Revit-free rules for turning agent-supplied names into Revit objects and sizes.
@@ -42,6 +44,46 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return false;
             return Enum.TryParse(name, true, out value)
                 && Enum.GetNames(typeof(TEnum)).Contains(name.Trim(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Reads an array of integer element ids.
+        /// </summary>
+        /// <exception cref="AgentException"><c>invalid_params</c> when an entry is not a JSON integer, so "329" and 1.5 are refused.</exception>
+        internal static List<long> ParseIntegerIds(JArray ids, string name) {
+            var result = new List<long>(ids.Count);
+            foreach (var id in ids) {
+                if (id.Type != JTokenType.Integer)
+                    throw new AgentException("invalid_params", $"'{name}' must contain integer element ids.");
+                try {
+                    result.Add(id.Value<long>());
+                }
+                catch (Exception) {
+                    throw new AgentException("invalid_params", $"'{name}' must contain integer element ids.");
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Parses category names into distinct members, bounding the number of distinct ones
+        /// rather than the number of entries, so a repeated name counts once.
+        /// </summary>
+        /// <exception cref="AgentException"><c>invalid_params</c> for an unknown name or too many distinct members.</exception>
+        internal static List<TEnum> ParseDistinctCategories<TEnum>(IEnumerable<string> names, int max) where TEnum : struct {
+            var result = new List<TEnum>();
+            foreach (var raw in names) {
+                var name = raw ?? string.Empty;
+                var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
+                if (!TryParseMember(enumName, out TEnum category))
+                    throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
+                if (result.Contains(category))
+                    continue;
+                if (result.Count >= max)
+                    throw new AgentException("invalid_params", $"At most {max} categories per call.");
+                result.Add(category);
+            }
+            return result;
         }
 
         /// <summary>

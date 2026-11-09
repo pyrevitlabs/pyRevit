@@ -191,12 +191,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return null;
             if (ids.Count > MaxElements)
                 throw new AgentException("invalid_params", $"At most {MaxElements} 'elements' per call.");
-            try {
-                return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
-            }
-            catch (Exception) {
-                throw new AgentException("invalid_params", "'elements' must contain integer element ids.");
-            }
+            return AgentSelectors.ParseIntegerIds(ids, "elements").Select(AgentIds.FromValue).ToList();
         }
 
         private static string ParseChoice(JObject parameters, string name, IEnumerable<string> choices) {

@@ -44,26 +44,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (parameters["ids"] is JArray ids) {
                 if (ids.Count > MaxIds)
                     throw new AgentException("invalid_params", $"At most {MaxIds} ids per call.");
-                try {
-                    request.Ids.AddRange(ids.Select(id => id.Value<long>()));
-                }
-                catch (Exception) {
-                    throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-                }
+                request.Ids.AddRange(AgentSelectors.ParseIntegerIds(ids, "ids"));
             }
 
-            if (parameters["categories"] is JArray categories) {
-                if (categories.Count > MaxCategories)
-                    throw new AgentException("invalid_params", $"At most {MaxCategories} categories per call.");
-                foreach (var token in categories) {
-                    var name = token.Value<string>() ?? string.Empty;
-                    var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
-                    if (!AgentSelectors.TryParseMember(enumName, out BuiltInCategory category))
-                        throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
-                    if (!request.Categories.Contains(category))
-                        request.Categories.Add(category);
-                }
-            }
+            if (parameters["categories"] is JArray categories)
+                request.Categories.AddRange(AgentSelectors.ParseDistinctCategories<BuiltInCategory>(
+                    categories.Select(token => token.Value<string>()), MaxCategories));
 
             if (action != "reset" && request.Ids.Count == 0 && request.Categories.Count == 0)
                 throw new AgentException("invalid_params", "Pass 'ids' and/or 'categories'.");
