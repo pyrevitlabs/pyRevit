@@ -1641,16 +1641,20 @@ def _unload_modules_under(folder):
             _is_under(path, prefix) for prefix in nested
         )
 
-    for name, module in list(sys.modules.items()):
+    def from_workspace(module):
         module_file = getattr(module, "__file__", None)
         if module_file is None:
             folders = _namespace_folders(module)
-            if folders and all(in_workspace(path) for path in folders):
-                del sys.modules[name]
-        elif in_workspace(module_file) and module_file.lower().endswith(
+            return bool(folders) and all(in_workspace(path) for path in folders)
+        return in_workspace(module_file) and module_file.lower().endswith(
             (".py", ".pyw", ".pyc")
-        ):
-            del sys.modules[name]
+        )
+
+    unloaded = [
+        name for name, module in list(sys.modules.items()) if from_workspace(module)
+    ]
+    for name in unloaded:
+        sys.modules.pop(name, None)
 
 
 def _namespace_folders(module):
