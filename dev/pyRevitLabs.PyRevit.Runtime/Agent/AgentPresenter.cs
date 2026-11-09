@@ -35,16 +35,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static Request Parse(JObject parameters) {
-            var action = (parameters.Value<string>("action") ?? "select").ToLowerInvariant();
+            var action = (AgentParams.Get<string>(parameters, "action") ?? "select").ToLowerInvariant();
             if (!Actions.Contains(action))
                 throw new AgentException("invalid_params", "'action' must be one of: " + string.Join(", ", Actions) + ".");
 
-            var request = new Request { Action = action, Zoom = parameters.Value<bool?>("zoom") ?? false };
+            var request = new Request { Action = action, Zoom = AgentParams.Get<bool?>(parameters, "zoom") ?? false };
 
             if (parameters["ids"] is JArray ids) {
                 if (ids.Count > MaxIds)
                     throw new AgentException("invalid_params", $"At most {MaxIds} ids per call.");
-                request.Ids.AddRange(AgentSelectors.ParseIntegerIds(ids, "ids"));
+                request.Ids.AddRange(AgentParams.ElementIds(ids, "ids"));
             }
 
             if (parameters["categories"] is JArray categories)

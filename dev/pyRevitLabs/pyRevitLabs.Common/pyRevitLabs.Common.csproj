@@ -15,7 +15,7 @@
 
     <ItemGroup>
         <PackageReference Include="DotNetVersionFinder" Version="2.1.1"/>
-        <PackageReference Include="LibGit2Sharp" Version="0.31.0"/>
+        <PackageReference Include="LibGit2Sharp" Version="0.32.0"/>
         <PackageReference Include="OpenMcdf" Version="3.1.4"/>
         <PackageReference Include="YamlDotNet" Version="16.3.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
@@ -46,6 +46,12 @@
         <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">
             <LibGit2SharpNative Include="$(OutDir)\runtimes\win-x64\native\*.dll"/>
         </ItemGroup>
+
+        <ItemGroup>
+            <ObsoleteLibGit2Native Include="$(PyRevitBinDir)\git2-*.dll;$(PyRevitRootDir)\bin\git2-*.dll"
+                                   Exclude="@(LibGit2SharpNative->'$(PyRevitBinDir)\%(Filename)%(Extension)');@(LibGit2SharpNative->'$(PyRevitRootDir)\bin\%(Filename)%(Extension)')"/>
+        </ItemGroup>
+        <Delete Files="@(ObsoleteLibGit2Native)" Condition="'@(LibGit2SharpNative)' != ''"/>
 
         <Copy SourceFiles="$(OutDir)\DotNetVersionFinder.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\LibGit2Sharp.dll" DestinationFolder="$(PyRevitBinDir)"/>

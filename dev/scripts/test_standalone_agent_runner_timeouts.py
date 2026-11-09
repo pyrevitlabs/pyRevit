@@ -271,9 +271,11 @@ class AgentRunnerWatchdogStopTests(unittest.TestCase):
 
         def started_then_hit(timeout_s, state):
             recorded(timeout_s, state)
+            state["timed_out"] = True
             raise runner.RunTimedOut(timeout_s)
 
         def tracer_hit(*args):
+            args[1]["timed_out"] = True
             raise runner.RunTimedOut(args[0])
 
         landings = {

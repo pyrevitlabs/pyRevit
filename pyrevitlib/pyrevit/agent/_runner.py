@@ -1077,6 +1077,13 @@ class _PhaseClock(object):
         self._last = now
 
 
+def _raise_if_past_deadline(timeout_s, started, state):
+    if timeout_s and time.time() - started > timeout_s:
+        state["timed_out"] = True
+    if state["timed_out"]:
+        raise RunTimedOut(timeout_s)
+
+
 def _finish_and_stop_watchdog(state):
     """Mark the script finished and stop its watchdog, whatever is still pending.
 
@@ -1104,8 +1111,9 @@ def run(context):
 
     Note:
         Never raises. Script errors, including a failure to serialize
-        ``result``, are reported through ``context.SetError`` so the host can
-        roll the run back.
+        ``result`` and a ``BaseException`` such as ``KeyboardInterrupt``, are
+        reported through ``context.SetError`` so the host can roll the run
+        back. A run that passed its time limit reports no ``result``.
 
     Note:
         ``context.TimeoutSeconds`` is enforced by a watchdog thread that sets
@@ -1180,7 +1188,7 @@ def run(context):
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {"timed_out": False, "finished": False, "check_lines": False}
-    timed_out_after_script = False
+    script_finished = False
     tracked_transactions = {}
     try:
         workspace = _enter_workspace(context.Workspace)
@@ -1253,20 +1261,21 @@ def run(context):
             finally:
                 phases.lap("exec")
 
+            script_finished = True
             if script_exit is not None:
                 if not _is_successful_exit(script_exit):
                     failed = True
                     context.SetError(
                         "SystemExit", _system_exit_message(script_exit), ""
                     )
+            _raise_if_past_deadline(timeout_s, started, state)
+            serialized = None
             if not failed and "result" in namespace:
                 try:
-                    context.SetResult(
-                        json.dumps(
-                            namespace["result"],
-                            default=_to_jsonable,
-                            ensure_ascii=False,
-                        )
+                    serialized = json.dumps(
+                        namespace["result"],
+                        default=_to_jsonable,
+                        ensure_ascii=False,
                     )
                 except Exception as ex:
                     failed = True
@@ -1278,29 +1287,29 @@ def run(context):
                 phases.lap("result")
 
             state["finished"] = True
-            if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
-                timed_out_after_script = True
-                raise RunTimedOut(timeout_s)
+            _raise_if_past_deadline(timeout_s, started, state)
+            if serialized is not None:
+                context.SetResult(serialized)
         finally:
             _finish_and_stop_watchdog(state)
             sys.settrace(saved_trace)
             sys.setrecursionlimit(saved_recursion_limit)
-    except RunTimedOut:
+    except BaseException as ex:
         failed = True
-        if timed_out_after_script:
-            context.SetError("timeout", _late_timeout_message(timeout_s), "")
+        if isinstance(ex, RunTimedOut) and state["timed_out"]:
+            if script_finished:
+                context.SetError("timeout", _late_timeout_message(timeout_s), "")
+            else:
+                context.SetError(
+                    "timeout",
+                    "The script ran longer than its {:g} second limit and was "
+                    "stopped; its changes were rolled back. Pass a larger timeout_s "
+                    "if the work needs more time.".format(timeout_s),
+                    _format_script_traceback(),
+                )
         else:
-            context.SetError(
-                "timeout",
-                "The script ran longer than its {:g} second limit and was stopped; "
-                "its changes were rolled back. Pass a larger timeout_s if the work "
-                "needs more time.".format(timeout_s),
-                _format_script_traceback(),
-            )
-    except Exception as ex:
-        failed = True
-        error_type, message = _describe_error(ex)
-        context.SetError(error_type, message, _format_script_traceback())
+            error_type, message = _describe_error(ex)
+            context.SetError(error_type, message, _format_script_traceback())
     finally:
         if workspace_guard is not None:
             sys.meta_path[:] = [
@@ -1346,7 +1355,9 @@ def _is_successful_exit(error):
 
 
 def _system_exit_message(error):
-    return "The script exited with code {}".format(error.code)
+    if isinstance(error.code, int):
+        return "The script exited with code {}".format(error.code)
+    return "The script exited: {}".format(_safe_text(error.code))
 
 
 _TRANSACTION_ORDER = (
@@ -1713,6 +1724,8 @@ def _elementid_value(element_id):
 
 
 def _to_jsonable(value):
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("utf-8", "replace")
     if isinstance(value, _NET_INTEGER_TYPES):
         return int(value)
     if isinstance(value, _NET_FLOAT_TYPES):
@@ -1775,7 +1788,7 @@ def _describe_error(ex):
         error_type = clr_exception.GetType().Name
     details = " <- ".join(chain)
     if details and details not in message:
-        message = "%s [.NET: %s]" % (message, details)
+        message = " ".join(part for part in (message, "[.NET: %s]" % details) if part)
     return error_type, message
 
 
@@ -1837,6 +1850,8 @@ _RUNNER_FILENAME = _format_script_traceback.__code__.co_filename
 
 
 def _safe_text(value):
+    if isinstance(value, type("")):
+        return value
     try:
         return str(value)
     except Exception:

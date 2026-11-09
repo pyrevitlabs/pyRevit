@@ -1,3 +1,4 @@
+using System.Globalization;
 using pyRevitCLI;
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
@@ -309,7 +310,7 @@ public partial class McpServerTests : IDisposable {
         var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
         Assert.True(IsError(error));
         Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
-        Assert.Equal("Invalid tool argument type.", Payload(error).Value<string>("message"));
+        AssertNoClrDetails(Payload(error).Value<string>("message"));
         Assert.Empty(host.Requests);
         var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
         Assert.Empty((JObject)ping["result"]);
@@ -332,10 +333,147 @@ public partial class McpServerTests : IDisposable {
         var error = Assert.Single(responses.Where(response => response.Value<int>("id") == 1));
         Assert.True(IsError(error));
         Assert.Equal("invalid_params", Payload(error).Value<string>("error"));
-        Assert.Equal("Tool argument out of range.", Payload(error).Value<string>("message"));
+        AssertNoClrDetails(Payload(error).Value<string>("message"));
         Assert.Empty(host.Requests);
         var ping = Assert.Single(responses.Where(response => response.Value<int>("id") == 2));
         Assert.Empty((JObject)ping["result"]);
+    }
+
+    private static void AssertNoClrDetails(string message) {
+        foreach (var clrText in new[] { "Cannot cast", "JObject", "JArray", "Int32", "Value was either", "System." })
+            Assert.DoesNotContain(clrText, message);
+    }
+
+    [Theory]
+    [InlineData("run_query", "{\"script\":\"result = 1\",\"timeout_s\":\"abc\"}", "timeout_s")]
+    [InlineData("run_modify", "{\"script\":\"result = 1\",\"title\":\"t\",\"dry_run\":\"yes\"}", "dry_run")]
+    [InlineData("run_query", "{\"script\":\"result = 1\",\"inputs\":[1]}", "inputs")]
+    [InlineData("capture_view", "{\"width\":\"big\"}", "width")]
+    [InlineData("capture_view", "{\"width\":-1}", "width")]
+    [InlineData("capture_view", "{\"width\":0}", "width")]
+    [InlineData("capture_view", "{\"width\":1e9}", "width")]
+    [InlineData("capture_view", "{\"width\":100000}", "width")]
+    [InlineData("capture_view", "{\"width\":1280.5}", "width")]
+    [InlineData("capture_view", "{\"eye\":[0,0],\"target\":[1,1,1],\"view\":\"3d\"}", "eye")]
+    [InlineData("capture_view", "{\"view\":\"3d\",\"section\":{\"origin\":[0,0,\"x\"],\"normal\":[1,0,0]}}", "section.origin[2]")]
+    [InlineData("inspect_elements", "{\"ids\":[1,\"two\"]}", "ids[1]")]
+    [InlineData("inspect_elements", "{\"ids\":[Infinity]}", "ids[0]")]
+    [InlineData("show_elements", "{\"zoom\":\"yes\"}", "zoom")]
+    [InlineData("get_context", "{\"revit\":true}", "revit")]
+    public void ArgumentsThatBreakTheSchemaAreRejectedBeforeReachingRevit(string tool, string arguments, string argument) {
+        var response = Single(ToolCall(1, tool, JObject.Parse(arguments)));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("invalid_params", payload.Value<string>("error"));
+        Assert.StartsWith("'" + argument + "'", payload.Value<string>("message"));
+        Assert.Null(payload["outcome"]);
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void SchemaLimitsInMessagesUseTheInvariantCulture() {
+        var original = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+        try {
+            var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["timeout_s"] = 0.0001 }));
+
+            Assert.Equal("'timeout_s' must be at least 0.001.", Payload(response).Value<string>("message"));
+        }
+        finally {
+            CultureInfo.CurrentCulture = original;
+        }
+    }
+
+    [Theory]
+    [InlineData("capture_view", "{\"width\":null}")]
+    [InlineData("run_query", "{\"script\":\"x = 1\",\"engine\":null}")]
+    [InlineData("run_query", "{\"script\":\"x = 1\",\"timeout_s\":null}")]
+    [InlineData("run_query", "{\"script\":null}")]
+    [InlineData("list_automation", "{\"limit\":null}")]
+    public void NullArgumentsThatTheSchemaDoesNotAllowReturnInvalidParams(string tool, string arguments) {
+        var response = Single(ToolCall(1, tool, JObject.Parse(arguments)));
+
+        Assert.True(IsError(response));
+        Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
+        AssertNoClrDetails(Payload(response).Value<string>("message"));
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("revit")]
+    [InlineData("document")]
+    public void TheSchemaListsNullWhereNullSelectsTheDefault(string property) {
+        var tools = (JArray)Single(Request(1, "tools/list"))["result"]["tools"];
+        var run = tools.Single(tool => tool.Value<string>("name") == "run_query");
+
+        var types = run["inputSchema"]["properties"][property]["type"].Values<string>();
+
+        Assert.Contains("null", types);
+    }
+
+    [Theory]
+    [InlineData("{\"width\":320}")]
+    [InlineData("{\"width\":2400}")]
+    [InlineData("{\"width\":1280.0}")]
+    [InlineData("{\"revit\":null}")]
+    [InlineData("{\"revit\":2090}")]
+    [InlineData("{\"revit\":\"2090\"}")]
+    public void ArgumentsThatMatchTheSchemaReachRevit(string arguments) {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
+
+        var response = Single(ToolCall(1, "capture_view", JObject.Parse(arguments)));
+
+        Assert.False(IsError(response));
+        Assert.Single(host.RequestsFor("capture"));
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[1, 2]")]
+    [InlineData("{\"status\":{}}")]
+    public void AnAnswerThatCantBeProcessedAfterARunIsAnUnknownOutcomeWithTheRunsRequestId(string result) {
+        host.Handler = request => FakeAgentHost.Result(request, JToken.Parse(result));
+
+        var response = Single(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1", ["title"] = "Change" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("server_error", payload.Value<string>("error"));
+        Assert.Equal("unknown", payload.Value<string>("outcome"));
+        Assert.Equal(host.RequestsFor("run").Single().Value<string>("id"), payload.Value<string>("request_id"));
+        AssertNoClrDetails(payload.Value<string>("message"));
+    }
+
+    [Fact]
+    public void AnUnexpectedFailureBeforeAnyRequestDoesNotEchoTheExceptionMessage() {
+        var runDir = host.AddRun("abc123def456", response: "{ not json C:\\Users\\secret");
+
+        var response = Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "abc123def456" }));
+
+        Assert.True(IsError(response));
+        var payload = Payload(response);
+        Assert.Equal("server_error", payload.Value<string>("error"));
+        Assert.Null(payload["outcome"]);
+        Assert.DoesNotContain("secret", payload.Value<string>("message"));
+        Assert.DoesNotContain(runDir, payload.Value<string>("message"));
+    }
+
+    [Fact]
+    public void AToolAnswerThatCantBeWrittenAfterTheClientLeftDoesNotCrashTheServer() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
+        var input = new StringReader(ToolCall(1, "get_context").ToString(Formatting.None));
+        var output = new ClosedWriter();
+
+        PyRevitMcpServer.Serve(null, input, output);
+
+        Assert.Single(host.RequestsFor("get_context"));
+    }
+
+    private sealed class ClosedWriter : StringWriter {
+        public override void WriteLine(string value) {
+            throw new IOException("The pipe is being closed.");
+        }
     }
 
     [Fact]

@@ -79,29 +79,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("invalid_params", error.Code);
         }
 
-        [Fact]
-        public void IntegerIdsAreRead() {
-            Assert.Equal(new long[] { 329, -1 }, AgentSelectors.ParseIntegerIds(new JArray(329, -1), "elements"));
-        }
-
-        [Theory]
-        [InlineData("329")]
-        [InlineData(1.5)]
-        [InlineData(null)]
-        [InlineData(true)]
-        public void ANonIntegerIdIsRefused(object id) {
-            var error = Assert.Throws<AgentException>(() => AgentSelectors.ParseIntegerIds(new JArray(id), "elements"));
-            Assert.Equal("invalid_params", error.Code);
-            Assert.Contains("'elements'", error.Message);
-        }
-
-        [Fact]
-        public void AnIdBeyondInt64IsRefused() {
-            var big = JToken.Parse("99999999999999999999");
-            var error = Assert.Throws<AgentException>(() => AgentSelectors.ParseIntegerIds(new JArray(big), "ids"));
-            Assert.Equal("invalid_params", error.Code);
-        }
-
         [Theory]
         [InlineData(2000, 1000, 1000, 500)]
         [InlineData(5000, 1, 320, 1)]

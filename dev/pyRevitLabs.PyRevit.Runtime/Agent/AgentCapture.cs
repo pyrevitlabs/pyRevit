@@ -147,18 +147,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static Request Parse(JObject parameters) {
-            var mode = (parameters.Value<string>("mode") ?? "export").ToLowerInvariant();
+            var mode = (AgentParams.Get<string>(parameters, "mode") ?? "export").ToLowerInvariant();
             if (mode != "export" && mode != "viewport" && mode != "screen")
                 throw new AgentException("invalid_params", "'mode' must be export, viewport or screen.");
 
-            var width = parameters.Value<int?>("width") ?? DefaultWidth;
-            var direction = parameters.Value<string>("direction") ?? "southeast";
+            var width = AgentParams.Get<int?>(parameters, "width") ?? DefaultWidth;
+            if (width < MinWidth || width > MaxWidth)
+                throw new AgentException("invalid_params", $"'width' must be from {MinWidth} to {MaxWidth} pixels.");
+            var direction = AgentParams.Get<string>(parameters, "direction") ?? "southeast";
             if (!Directions.ContainsKey(direction))
                 throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
             var request = new Request {
-                View = string.IsNullOrWhiteSpace(parameters.Value<string>("view")) ? "active" : parameters.Value<string>("view").Trim(),
+                View = string.IsNullOrWhiteSpace(AgentParams.Get<string>(parameters, "view")) ? "active" : AgentParams.Get<string>(parameters, "view").Trim(),
                 Mode = mode,
-                Width = Math.Max(MinWidth, Math.Min(MaxWidth, width)),
+                Width = width,
                 Direction = direction,
                 Elements = ParseElements(parameters["elements"]),
                 DetailLevel = ParseChoice(parameters, "detail_level", DetailLevels.Keys),
@@ -169,6 +171,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
             ValidateCombination(request);
             return request;
+        }
+
+        private static List<ElementId> ParseElements(JToken token) {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            var ids = token as JArray
+                ?? throw new AgentException("invalid_params", "'elements' must be an array of element ids.");
+            if (ids.Count > MaxElements)
+                throw new AgentException("invalid_params", $"At most {MaxElements} 'elements' per call.");
+            return AgentParams.ElementIds(ids, "elements").Select(AgentIds.FromValue).ToList();
         }
 
         private static void ValidateCombination(Request request) {
@@ -184,14 +196,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'eye', 'target' and 'section' need mode 'export'.");
             if (request.OverridesDisplay && request.Mode == "screen")
                 throw new AgentException("invalid_params", "'detail_level' and 'display_style' don't apply to mode 'screen', which copies the window as it is.");
-        }
-
-        private static List<ElementId> ParseElements(JToken token) {
-            if (!(token is JArray ids))
-                return null;
-            if (ids.Count > MaxElements)
-                throw new AgentException("invalid_params", $"At most {MaxElements} 'elements' per call.");
-            return AgentSelectors.ParseIntegerIds(ids, "elements").Select(AgentIds.FromValue).ToList();
         }
 
         private static string ParseChoice(JObject parameters, string name, IEnumerable<string> choices) {

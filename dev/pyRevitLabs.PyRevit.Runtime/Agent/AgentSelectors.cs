@@ -47,25 +47,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Reads an array of integer element ids.
-        /// </summary>
-        /// <exception cref="AgentException"><c>invalid_params</c> when an entry is not a JSON integer, so "329" and 1.5 are refused.</exception>
-        internal static List<long> ParseIntegerIds(JArray ids, string name) {
-            var result = new List<long>(ids.Count);
-            foreach (var id in ids) {
-                if (id.Type != JTokenType.Integer)
-                    throw new AgentException("invalid_params", $"'{name}' must contain integer element ids.");
-                try {
-                    result.Add(id.Value<long>());
-                }
-                catch (Exception) {
-                    throw new AgentException("invalid_params", $"'{name}' must contain integer element ids.");
-                }
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Parses category names into distinct members, bounding the number of distinct ones
         /// rather than the number of entries, so a repeated name counts once.
         /// </summary>
