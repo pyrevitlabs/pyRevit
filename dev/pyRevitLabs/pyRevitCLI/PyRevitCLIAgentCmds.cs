@@ -62,8 +62,11 @@ namespace pyRevitCLI {
             catch (AgentClientException ex) {
                 state = "not responding (" + ex.Code + ")";
             }
-            return string.Format("Revit {0} (build {1}) pid {2}: {3}",
-                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, state);
+            var session = instance.Clone == null
+                ? string.Empty
+                : " on " + instance.Clone + (instance.Engine == null ? string.Empty : " " + instance.Engine);
+            return string.Format("Revit {0} (build {1}) pid {2}{3}: {4}",
+                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, session, state);
         }
 
         public static void PrintContext(string revitSelector) {

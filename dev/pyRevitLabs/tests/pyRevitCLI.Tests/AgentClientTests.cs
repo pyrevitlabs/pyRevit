@@ -604,6 +604,15 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void StatusShowsTheCloneAndEngineOfARespondingHost() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "dev", clonePath: "C:/dev", engine: "CPython");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(PyRevitAgentClient.Resolve("2091"));
+
+        Assert.Equal("Revit 2091 (build build-2091) pid " + Environment.ProcessId + " on dev CPython: responding", line);
+    }
+
+    [Fact]
     public async Task CancellingASentCallClosesItWithAnUnknownOutcome() {
         using var release = new ManualResetEventSlim(false);
         using var received = new ManualResetEventSlim(false);
