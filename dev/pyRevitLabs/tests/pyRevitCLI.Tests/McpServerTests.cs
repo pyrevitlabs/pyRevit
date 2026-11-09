@@ -375,10 +375,37 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Theory]
+    [InlineData("capture_view", "{\"width\":null}")]
+    [InlineData("run_query", "{\"script\":\"x = 1\",\"engine\":null}")]
+    [InlineData("run_query", "{\"script\":\"x = 1\",\"timeout_s\":null}")]
+    [InlineData("run_query", "{\"script\":null}")]
+    [InlineData("list_automation", "{\"limit\":null}")]
+    public void NullArgumentsThatTheSchemaDoesNotAllowReturnInvalidParams(string tool, string arguments) {
+        var response = Single(ToolCall(1, tool, JObject.Parse(arguments)));
+
+        Assert.True(IsError(response));
+        Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
+        AssertNoClrDetails(Payload(response).Value<string>("message"));
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("revit")]
+    [InlineData("document")]
+    public void TheSchemaListsNullWhereNullSelectsTheDefault(string property) {
+        var tools = (JArray)Single(Request(1, "tools/list"))["result"]["tools"];
+        var run = tools.Single(tool => tool.Value<string>("name") == "run_query");
+
+        var types = run["inputSchema"]["properties"][property]["type"].Values<string>();
+
+        Assert.Contains("null", types);
+    }
+
+    [Theory]
     [InlineData("{\"width\":320}")]
     [InlineData("{\"width\":2400}")]
     [InlineData("{\"width\":1280.0}")]
-    [InlineData("{\"width\":null}")]
+    [InlineData("{\"revit\":null}")]
     [InlineData("{\"revit\":2090}")]
     [InlineData("{\"revit\":\"2090\"}")]
     public void ArgumentsThatMatchTheSchemaReachRevit(string arguments) {

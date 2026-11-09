@@ -540,7 +540,7 @@ namespace pyRevitCLI {
 
         private static JObject RevitProperty() {
             return new JObject {
-                ["type"] = new JArray("string", "integer"),
+                ["type"] = new JArray("string", "integer", "null"),
                 ["description"] = "Target Revit: a year (e.g. \"2024\"), a process id, or the name of the pyRevit clone the session runs. Leave it out unless list_revit_instances shows more than one session.",
             };
         }
@@ -583,7 +583,7 @@ namespace pyRevitCLI {
 
         private static JObject DocumentProperty() {
             return new JObject {
-                ["type"] = "string",
+                ["type"] = new JArray("string", "null"),
                 ["description"] = "Title or path of the document the run is meant for, as returned by get_context. If the active document differs, the run is refused with document_changed before anything runs. Pass the path when two open documents may share a title; a value containing a path separator is compared with the active document's path only, anything else with its title only.",
             };
         }
@@ -890,9 +890,10 @@ namespace pyRevitCLI {
             /// Checks the arguments against the tool's inputSchema, then runs the tool.
             /// </summary>
             /// <remarks>
-            /// Checks the type, numeric range and array length of every argument that is given and
-            /// not null, nested object properties included. Required arguments and enums are left to
-            /// the handlers and the host, which default or normalize some of them.
+            /// Checks the type, numeric range and array length of every argument that is given,
+            /// nested object properties included. Required arguments and enums are left to
+            /// the handlers and the host, which default or normalize some of them. An explicit JSON
+            /// <c>null</c> is a value like any other: it passes only where the schema lists "null".
             /// </remarks>
             /// <exception cref="AgentClientException"><c>invalid_params</c>, before anything is sent to Revit.</exception>
             public JToken Handle(JObject arguments) {
@@ -903,7 +904,7 @@ namespace pyRevitCLI {
             private static void ValidateProperties(JObject properties, JObject values, string prefix) {
                 foreach (var property in properties.Properties()) {
                     var value = values[property.Name];
-                    if (value != null && value.Type != JTokenType.Null)
+                    if (value != null)
                         Validate((JObject)property.Value, value, prefix + property.Name);
                 }
             }
@@ -937,6 +938,7 @@ namespace pyRevitCLI {
             private static bool HasType(JToken value, string type) {
                 switch (type) {
                     case null: return true;
+                    case "null": return value.Type == JTokenType.Null;
                     case "string": return value.Type == JTokenType.String;
                     case "boolean": return value.Type == JTokenType.Boolean;
                     case "object": return value.Type == JTokenType.Object;

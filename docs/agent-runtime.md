@@ -121,8 +121,8 @@ as returned by `get_context`. When it is given and the active document differs, 
 [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer)), so a plan made for
 one model never lands in another after the user switches tabs. A value with a path separator is compared, normalised
 and ignoring case, with the active document's path only; any other value is compared with its title only, so pass
-the path when two open documents share a title. A blank or non-string value is `invalid_params`. Omitting
-`document` leaves the run unbound. The approval prompt always names the document the changes apply to.
+the path when two open documents share a title. A blank value, or one that is neither a string nor `null`, is `invalid_params`. Omitting
+`document`, or passing `null`, leaves the run unbound. The approval prompt always names the document the changes apply to.
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
@@ -150,7 +150,7 @@ and adds a warning. The corresponding `get_run` record can be incomplete or unav
 
 Every tool that talks to Revit accepts an optional `revit` argument (a year such as
 `"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
-sets a default, which an empty or `null` `revit` also uses.
+sets a default, which an empty or `null` `revit` also uses. Its schema lists `null` as a type.
 
 The MCP server sends one call at a time to each Revit, since the host serves one connection at a
 time; calls to different Revit sessions don't wait for each other. `list_revit_instances` doesn't
@@ -794,7 +794,8 @@ call, or a ping with no answer in time: `no_answer`), a host `internal_error`, o
 `server_error` raised while processing the host's answer leaves the outcome `unknown`. Before
 sending, the MCP server checks the type, numeric range and array length of each argument given
 against the tool's `inputSchema`; required arguments and enum values are left to the tool and
-the host. An `invalid_params` from that check has no `request_id`: nothing was sent. An
+the host. An explicit JSON `null` is checked like any other value: it is `invalid_params` unless
+the property's schema lists `null`, which only `revit` and `document` do. An `invalid_params` from that check has no `request_id`: nothing was sent. An
 `invalid_params` the host returns comes with the `request_id` of the request it refused.
 
 A missing record does not prove that resending is safe. A request waits to start for
