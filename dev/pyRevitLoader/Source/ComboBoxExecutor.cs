@@ -29,6 +29,7 @@ namespace PyRevitLoader
         private HashSet<string> _baseSearchPaths;
         private object _engineOps;
         private bool _released;
+        private bool _sessionSlotClaimed;
         private readonly List<Action> _handlerDetachers = new List<Action>();
         private readonly List<ComboBox> _wiredComboBoxes = new List<ComboBox>();
 
@@ -65,7 +66,11 @@ namespace PyRevitLoader
             if (_engine != null)
                 return;
 
-            SessionResourceRegistry.Replace(SessionSlotName, ReleaseSessionResources, _logger);
+            if (!_sessionSlotClaimed)
+            {
+                SessionResourceRegistry.Replace(SessionSlotName, ReleaseSessionResources, _logger);
+                _sessionSlotClaimed = true;
+            }
 
             Log("Initializing shared IronPython engine for ComboBoxes");
             _scriptExecutor = new ScriptExecutor(_revit, false);

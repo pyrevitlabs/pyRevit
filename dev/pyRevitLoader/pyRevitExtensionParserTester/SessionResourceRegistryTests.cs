@@ -11,6 +11,8 @@ namespace pyRevitExtensionParserTester
     /// </summary>
     [TestFixture]
     [NonParallelizable]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class SessionResourceRegistryTests
     {
         private string _slot;

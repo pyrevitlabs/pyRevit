@@ -61,10 +61,12 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
         watch_visibility()
 
     set_icon(False)
-    events.release_handler(_DOC_OPENED_SLOT, __rvt__.Application, "DocumentOpened")
-    events.release_handler(_VISIBILITY_SLOT, __rvt__, "DockableFrameVisibilityChanged")
 
     try:
+        events.release_handler(_DOC_OPENED_SLOT, __rvt__.Application, "DocumentOpened")
+        events.release_handler(
+            _VISIBILITY_SLOT, __rvt__, "DockableFrameVisibilityChanged"
+        )
         if __rvt__.ActiveUIDocument is not None:
             update_icon_from_pane()
             watch_visibility()
