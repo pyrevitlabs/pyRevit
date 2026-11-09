@@ -2,6 +2,7 @@
 
 import ast
 import builtins
+import contextlib
 import importlib.util
 import linecache
 import os
@@ -1495,6 +1496,34 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual("timeout", error_type)
         self.assertIn("could not be interrupted", message)
         self.assertEqual("", text)
+
+    def test_swallowed_timeout_does_not_blame_an_uninterruptible_call(self):
+        """A loop whose timeout an aliased handler swallowed is not called uninterruptible."""
+        source = "B = BaseException\ntry:\n    while True:\n        pass\nexcept B:\n    pass\n"
+        without_injection = mock.patch.object(
+            self.runner, "_set_async_exc_function", return_value=None
+        )
+        for engine in (without_injection, contextlib.nullcontext()):
+            with self.subTest(engine=engine), engine:
+                error_type, message, text = self._run(source, timeout_s=0.2)
+                self.assertEqual("timeout", error_type)
+                self.assertNotIn("could not be interrupted", message)
+                self.assertEqual("", text)
+
+    def test_a_timeout_raised_in_runner_code_is_not_an_interruption(self):
+        """Only a script frame the tracer stops marks the run as interrupted."""
+        for filename, interrupted in (
+            (self.runner._RUNNER_FILENAME, False),
+            (self.runner.SOURCE_NAME, True),
+        ):
+            state = {"timed_out": True, "interrupted": False, "check_lines": False}
+            trace = self.runner._execution_tracer(5, state, {}, True, False)
+            code = types.SimpleNamespace(co_filename=filename, co_name="f", co_flags=0)
+            frame = types.SimpleNamespace(f_code=code)
+            with mock.patch.object(self.runner, "_track_stack_transactions"):
+                with self.assertRaises(self.runner.RunTimedOut):
+                    trace(frame, "call", None)(frame, "line", None)
+            self.assertEqual(interrupted, state["interrupted"], filename)
 
     def test_error_traceback_keeps_the_script_frames(self):
         """A script error still names each script frame and the error."""

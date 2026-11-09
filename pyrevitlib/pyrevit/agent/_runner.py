@@ -756,6 +756,8 @@ def _execution_tracer(
     def raise_if_timed_out(frame):
         if state["timed_out"]:
             _track_stack_transactions(frame, transactions)
+            if frame.f_code.co_filename != _RUNNER_FILENAME:
+                state["interrupted"] = True
             raise RunTimedOut(timeout_s)
 
     def track_module(frame, event, arg):
@@ -810,6 +812,7 @@ def _loop_guards(timeout_s, state, transactions):
             _track_stack_transactions(sys._getframe(2), transactions)
         except Exception:
             pass
+        state["interrupted"] = True
         raise RunTimedOut(timeout_s)
 
     def agent_tick():
@@ -873,6 +876,7 @@ def _start_watchdog(timeout_s, state):
             return
         escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
         while not stopped.is_set() and not state["finished"]:
+            state["interrupted"] = True
             inject(RunTimedOut)
             if _clock() >= escalate_at:
                 escalation.arm()
@@ -960,6 +964,8 @@ class _JumpEscalation(object):
             and destination < offset
             and threading.get_ident() == self._thread_id
         ):
+            if code.co_filename != _RUNNER_FILENAME:
+                self._state["interrupted"] = True
             raise RunTimedOut(self._timeout_s)
 
 
@@ -1139,7 +1145,12 @@ def run(context):
     left_open = 0
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
-    state = {"timed_out": False, "finished": False, "check_lines": False}
+    state = {
+        "timed_out": False,
+        "interrupted": False,
+        "finished": False,
+        "check_lines": False,
+    }
     script_finished = False
     tracked_transactions = {}
     try:
@@ -1249,7 +1260,7 @@ def run(context):
     except BaseException as ex:
         failed = True
         if isinstance(ex, RunTimedOut) and state["timed_out"]:
-            if script_finished:
+            if script_finished and not state["interrupted"]:
                 context.SetError("timeout", _late_timeout_message(timeout_s), "")
             else:
                 context.SetError(
@@ -1257,7 +1268,7 @@ def run(context):
                     "The script ran longer than its {:g} second limit and was "
                     "stopped; its changes were rolled back. Pass a larger timeout_s "
                     "if the work needs more time.".format(timeout_s),
-                    _format_script_traceback(),
+                    "" if script_finished else _format_script_traceback(),
                 )
         else:
             error_type, message = _describe_error(ex)
