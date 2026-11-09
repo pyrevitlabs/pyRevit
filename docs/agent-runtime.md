@@ -159,7 +159,7 @@ still has a call from this server open, or that doesn't accept the ping within 1
 another client (such as `pyrevit agent run`) is using it. A Revit whose pipe is not listening, or that gets no answer within
 5 seconds, reports `responding: false` (`pyrevit agent status` uses the same ping). A client's `notifications/cancelled` frees the call's
 turn. A call cancelled while it waited for its turn was not sent; one cancelled while waiting for
-Revit's answer keeps running in Revit, so its outcome is `unknown`.
+Revit's answer keeps running in Revit, so its outcome is `unknown`. The server sends no response to a cancelled `tools/call`, as the MCP specification asks; the outcome is then only visible with `pyrevit agent show`.
 
 ### Automation operations
 

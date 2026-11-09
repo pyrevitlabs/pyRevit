@@ -185,11 +185,11 @@ namespace pyRevitCLI {
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
                     if (string.IsNullOrWhiteSpace(name)) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: 'arguments' must be an object."));
                         return;
                     }
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -228,11 +228,16 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                WriteUnlessClosed(Result(id, result));
+                AnswerUnlessCancelled(cancellation, Result(id, result));
             }
             finally {
                 StopProgress(progress);
             }
+        }
+
+        private void AnswerUnlessCancelled(CancellationToken cancellation, JObject message) {
+            if (!cancellation.IsCancellationRequested)
+                WriteUnlessClosed(message);
         }
 
         private JToken Dispatch(string name, JObject arguments) {

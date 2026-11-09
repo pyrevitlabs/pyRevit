@@ -29,6 +29,8 @@ public partial class McpServerTests {
             ["params"] = new JObject { ["requestId"] = requestId, ["reason"] = "test" },
         });
 
+        public int Unread => output.Lines.Count;
+
         public JObject Next() {
             Assert.True(output.Lines.TryTake(out var line, Patience), "The server did not answer in time.");
             return JObject.Parse(line);
@@ -100,7 +102,7 @@ public partial class McpServerTests {
     }
 
     [Fact]
-    public void CancellingAQueuedCallReportsItNotSentAndCancellingASentCallReportsItUnknown() {
+    public void ACancelledCallIsNotAnswered() {
         using var release = new ManualResetEventSlim(false);
         var runStarted = BlockRunsUntil(release);
         PyRevitAgentClient.PingConnectTimeoutMs = 300;
@@ -110,26 +112,17 @@ public partial class McpServerTests {
         Assert.True(runStarted.Wait(Patience));
         session.Send(ToolCall(2, "get_context"));
         session.Cancel(2);
-        var queued = session.Next();
         session.Cancel(1);
-        var sent = session.Next();
         session.Send(ToolCall(3, "list_revit_instances"));
         var listed = session.Next();
         release.Set();
+        session.Dispose();
 
-        Assert.Equal(2, queued.Value<int>("id"));
-        Assert.True(IsError(queued));
-        Assert.Equal("cancelled", Payload(queued).Value<string>("error"));
-        Assert.Equal(AgentOutcome.NotSent, Payload(queued).Value<string>("outcome"));
-        Assert.Equal(1, sent.Value<int>("id"));
-        Assert.True(IsError(sent));
-        Assert.Equal("cancelled", Payload(sent).Value<string>("error"));
-        Assert.Equal(AgentOutcome.Unknown, Payload(sent).Value<string>("outcome"));
-        Assert.Equal(host.RequestsFor("run").Single().Value<string>("id"), Payload(sent).Value<string>("request_id"));
-        Assert.Empty(host.RequestsFor("get_context"));
         Assert.Equal(3, listed.Value<int>("id"));
         Assert.True(Payload(listed)["instances"][0].Value<bool>("busy"));
         Assert.Null(Payload(listed)["instances"][0]["responding"]);
+        Assert.Empty(host.RequestsFor("get_context"));
+        Assert.Equal(0, session.Unread);
     }
 
     [Fact]
