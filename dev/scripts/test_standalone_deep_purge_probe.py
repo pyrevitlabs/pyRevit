@@ -500,7 +500,11 @@ class CollectorTests(unittest.TestCase):
         """Exclude patterns set on categories or subcategories in Object Styles."""
         doc = _collector_doc(
             categories=[
-                _Category(101, subcategories=[_Category(-1, cut_pattern_id=102)])
+                _Category(
+                    101,
+                    category_id=1,
+                    subcategories=[_Category(-1, cut_pattern_id=102, category_id=2)],
+                )
             ],
             elements_by_class={
                 LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102, 103, -5)]
@@ -589,8 +593,26 @@ class CollectorTests(unittest.TestCase):
             categories=[settings_category],
             builtin_categories={-2000501: settings_category},
         )
-        category_ids = self.probe._get_overridable_category_ids(doc)
-        self.assertEqual(category_ids, [1])
+        style_categories = self.probe._get_style_categories(doc)
+        self.assertEqual([x.Id for x in style_categories], [1])
+
+    def test_object_style_patterns_of_categories_missing_from_settings_are_not_candidates(
+        self,
+    ):
+        """Exclude Object Styles patterns of categories such as Internal Origin."""
+        internal_origin = _Category(
+            101,
+            category_id=-2000500,
+            subcategories=[_Category(-1, cut_pattern_id=102, category_id=7)],
+        )
+        doc = _collector_doc(
+            builtin_categories={-2000500: internal_origin},
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102, 103)]
+            },
+        )
+        candidates = self._collect(self.probe._collect_line_patterns, doc)
+        self.assertEqual([x.element_id for x in candidates], [103])
 
     def test_views_without_overrides_and_unoverridable_categories_are_skipped(self):
         """Skip views and categories Revit refuses to override."""

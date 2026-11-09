@@ -12,17 +12,21 @@ line patterns set in Object Styles, line and fill patterns set in the
 category or filter overrides of any view or view template, and shared
 parameters bound as project parameters are never offered. Deleting a pattern
 used by a category override in the active view is not reliably reported.
-The override scan covers every category the document resolves from
-`BuiltInCategory`, not only `doc.Settings.Categories`, because categories
-such as Internal Origin are missing there and their override usage raises
-no `DocumentChanged` entry either.
+The Object Styles and override scans cover every category and subcategory
+the document resolves from `BuiltInCategory`, not only
+`doc.Settings.Categories`, because categories such as Internal Origin are
+missing there and their usage raises no `DocumentChanged` entry either.
 
-Note:
-    Patterns used only by per-element graphic overrides are not scanned up
-    front, so their detection relies on `DocumentChanged` alone.
+Warning:
+    Any usage that is neither scanned up front nor reported by
+    `DocumentChanged` makes a used pattern look unused. Known unscanned
+    usages are per-element graphic overrides (`View.GetElementOverrides`)
+    and graphics the API does not expose, such as phase graphic overrides.
+    Their detection relies on `DocumentChanged` alone, which has not been
+    confirmed for them.
 """
 
-from collections import namedtuple
+from collections import OrderedDict, namedtuple
 
 from pyrevit import EXEC_PARAMS
 from pyrevit import revit, DB
@@ -97,17 +101,38 @@ def _collect_line_styles(doc, _pattern_usage):
     return candidates
 
 
-def _get_object_style_line_pattern_ids(doc):
-    pattern_ids = set()
-    for category in doc.Settings.Categories:
+def _iter_builtin_categories(doc):
+    for builtin_category in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
+        category = DB.Category.GetCategory(doc, builtin_category)
+        if category is not None:
+            yield category
+
+
+def _get_style_categories(doc):
+    """Return every category and subcategory once, in a stable order.
+
+    `doc.Settings.Categories` misses some categories, such as Internal
+    Origin, so categories resolved from `BuiltInCategory` are added too.
+    """
+    style_categories = OrderedDict()
+    for category in list(doc.Settings.Categories) + list(_iter_builtin_categories(doc)):
         for style_category in [category] + list(category.SubCategories):
-            for style_type in (
-                DB.GraphicsStyleType.Projection,
-                DB.GraphicsStyleType.Cut,
-            ):
-                pattern_ids.add(
-                    get_elementid_value(style_category.GetLinePatternId(style_type))
-                )
+            style_categories.setdefault(
+                get_elementid_value(style_category.Id), style_category
+            )
+    return list(style_categories.values())
+
+
+def _get_object_style_line_pattern_ids(style_categories):
+    pattern_ids = set()
+    for style_category in style_categories:
+        for style_type in (
+            DB.GraphicsStyleType.Projection,
+            DB.GraphicsStyleType.Cut,
+        ):
+            pattern_ids.add(
+                get_elementid_value(style_category.GetLinePatternId(style_type))
+            )
     return pattern_ids
 
 
@@ -136,25 +161,8 @@ def _iter_view_overrides(view, category_ids):
             yield view.GetCategoryOverrides(category_id)
 
 
-def _iter_builtin_categories(doc):
-    for builtin_category in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-        category = DB.Category.GetCategory(doc, builtin_category)
-        if category is not None:
-            yield category
-
-
-def _get_overridable_category_ids(doc):
-    category_ids = {}
-    for category in list(doc.Settings.Categories) + list(_iter_builtin_categories(doc)):
-        for style_category in [category] + list(category.SubCategories):
-            category_ids.setdefault(
-                get_elementid_value(style_category.Id), style_category.Id
-            )
-    return list(category_ids.values())
-
-
-def _get_view_override_pattern_ids(doc):
-    category_ids = _get_overridable_category_ids(doc)
+def _get_view_override_pattern_ids(doc, style_categories):
+    category_ids = [x.Id for x in style_categories]
     pattern_ids = set()
     for view in query.get_elements_by_class(DB.View, doc=doc):
         if not view.AreGraphicsOverridesAllowed():
@@ -173,17 +181,29 @@ class _PatternUsage(object):
 
     def __init__(self, doc):
         self._doc = doc
+        self._style_categories = None
         self._view_override_ids = None
+
+    @property
+    def style_categories(self):
+        if self._style_categories is None:
+            self._style_categories = _get_style_categories(self._doc)
+        return self._style_categories
 
     @property
     def view_override_ids(self):
         if self._view_override_ids is None:
-            self._view_override_ids = _get_view_override_pattern_ids(self._doc)
+            self._view_override_ids = _get_view_override_pattern_ids(
+                self._doc, self.style_categories
+            )
         return self._view_override_ids
 
     @property
     def line_pattern_ids(self):
-        return _get_object_style_line_pattern_ids(self._doc) | self.view_override_ids
+        return (
+            _get_object_style_line_pattern_ids(self.style_categories)
+            | self.view_override_ids
+        )
 
     @property
     def fill_pattern_ids(self):
