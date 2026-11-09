@@ -67,16 +67,28 @@ public static class ApiContextQueueDouble {
         return "Accepted";
     }
 
-    /// <summary>Runs and clears the queued callbacks, as the shared ExternalEvent would.</summary>
-    public static void RunPending() {
+    /// <summary>
+    /// Runs and clears the queued callbacks, as the shared ExternalEvent would: a callback that
+    /// throws does not stop the ones after it.
+    /// </summary>
+    /// <returns>Number of callbacks that threw.</returns>
+    public static int RunPending() {
         Action[] callbacks;
         lock (_pending) {
             callbacks = _pending.ToArray();
             _pending.Clear();
         }
+        int failures = 0;
         using Py.GILState gil = Py.GIL();
-        foreach (Action callback in callbacks)
-            callback();
+        foreach (Action callback in callbacks) {
+            try {
+                callback();
+            }
+            catch (Exception) {
+                failures++;
+            }
+        }
+        return failures;
     }
 }
 

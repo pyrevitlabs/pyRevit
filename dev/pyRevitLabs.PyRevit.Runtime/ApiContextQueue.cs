@@ -42,6 +42,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <exception cref="InvalidOperationException">No pyRevit session has initialized the queue.</exception>
         /// <remarks>
         /// An exception the callback raises is logged and does not stop the callbacks queued after it.
+        /// CPython callers must pass <c>System.Action(func)</c>: pythonnet does not convert a Python
+        /// function to this parameter, while IronPython does.
         /// </remarks>
         public static ExternalEventRequest Schedule(Action callback) {
             if (callback == null)
