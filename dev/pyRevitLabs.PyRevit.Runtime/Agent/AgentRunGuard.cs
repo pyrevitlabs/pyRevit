@@ -520,15 +520,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// added and modified elements no longer exist in their changed form after a rollback.
         /// </summary>
         /// <remarks>
-        /// <c>added_families</c> lists loaded families and types found among all added
-        /// elements, not only the first <paramref name="maxSamples"/>, so a family load stays
-        /// reviewable when regeneration adds many other elements.
+        /// <c>added_families</c> lists loaded families and every added type, system types such
+        /// as <c>WallType</c> included, found among all added elements, not only the first
+        /// <paramref name="maxSamples"/>, so a family load stays reviewable when regeneration
+        /// adds many other elements. Families come first, then their types, then system types,
+        /// so new system types can't push a loaded family past the cap.
         /// </remarks>
         public JObject Describe(Document doc, int maxSamples) {
             var description = Summarize();
             description["by_category"] = CountByCategory(doc);
             description["added"] = DescribeElements(doc, added, maxSamples);
-            description["added_families"] = DescribeElements(doc, added.Where(id => IsFamilyOrType(doc.GetElement(id))), maxSamples);
+            description["added_families"] = DescribeElements(doc, FamiliesAndTypes(doc), maxSamples);
             description["modified"] = DescribeElements(doc, modified, maxSamples);
             description["deleted"] = new JArray(deleted.Take(maxSamples).Select(AgentIds.ToValue));
             return description;
@@ -569,8 +571,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return described;
         }
 
-        private static bool IsFamilyOrType(Element element) {
-            return element is Family || element is FamilySymbol;
+        private IEnumerable<ElementId> FamiliesAndTypes(Document doc) {
+            return added
+                .Select(id => new { Id = id, Rank = FamilyRank(doc.GetElement(id)) })
+                .Where(entry => entry.Rank >= 0)
+                .OrderBy(entry => entry.Rank)
+                .Select(entry => entry.Id);
+        }
+
+        private static int FamilyRank(Element element) {
+            if (element is Family)
+                return 0;
+            if (element is FamilySymbol)
+                return 1;
+            return element is ElementType ? 2 : -1;
         }
 
         private static string SafeName(Element element) {
