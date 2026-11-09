@@ -1661,6 +1661,24 @@ class AgentRunnerOutputTests(unittest.TestCase):
         captured.writelines(["de", "fghijkl"])
         self.assertEqual("abc\ndefghi", captured.getvalue())
 
+    def test_writelines_is_defined_on_the_class_itself(self):
+        """IronPython 3.4.2 cannot resolve the inherited StringIO.writelines overload."""
+        self.assertIn("writelines", vars(self.runner._CappedOutput))
+
+    def test_writelines_keeps_the_cap_and_partial_lines(self):
+        """Lines go through write, so a line straddling the cap is cut."""
+        captured = self.runner._CappedOutput(5)
+        captured.writelines(iter(["ab", "cd", "efgh", "ij"]))
+        self.assertEqual("abcde", captured.getvalue())
+
+    def test_the_cap_is_not_given_back_by_truncate(self):
+        """Truncating after the cap was reached still drops later writes."""
+        captured = self.runner._CappedOutput(3)
+        captured.write("abcdef")
+        captured.truncate(0)
+        captured.write("x")
+        self.assertEqual("", captured.getvalue())
+
     def test_a_seek_cannot_grow_the_output_past_the_cap(self):
         """Writes after a seek append, so no padded gap bypasses the cap."""
         captured = self.runner._CappedOutput(10)
