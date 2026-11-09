@@ -190,7 +190,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (excludedEngine != null)
                 newEngineDict[excludeEngine] = excludedEngine;
             AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnginesDictKey, newEngineDict);
-            IronPythonRuleCaches.Release();
+            try {
+                IronPythonRuleCaches.Release();
+            }
+            catch (Exception ex) {
+                logger.Warn(ex, "Could not release the IronPython rule caches");
+            }
             return newEngineDict;
         }
 

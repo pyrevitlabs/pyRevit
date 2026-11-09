@@ -52,8 +52,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </remarks>
         /// <returns>Number of binders whose rule cache was dropped.</returns>
         internal static int Release() {
-            if (BinderRuleCacheField == null) {
-                logger.Warn("CallSiteBinder has no rule cache field; script engines of earlier sessions stay alive.");
+            if (BinderRuleCacheField == null
+                || !BinderRuleCacheField.FieldType.IsAssignableFrom(typeof(Dictionary<Type, object>))) {
+                logger.Warn("CallSiteBinder has no usable rule cache field; script engines of earlier sessions stay alive.");
                 return 0;
             }
 

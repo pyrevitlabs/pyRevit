@@ -185,6 +185,9 @@ def replace_handler(slot, source, event_name, handler_func, handler_args_type):
 def release_handler(slot, source, event_name):
     """Detach the delegate ``replace_handler`` subscribed under ``slot``.
 
+    A failing detach is logged and the slot is cleared anyway, so one stale
+    delegate cannot make every later reload fail on the same slot.
+
     Args:
         slot (str): the key passed to ``replace_handler``.
         source (object): object raising the event.
@@ -194,8 +197,12 @@ def release_handler(slot, source, event_name):
     previous = domain.GetData(slot)
     if previous is None:
         return
-    source.GetType().GetEvent(event_name).RemoveEventHandler(source, previous)
-    domain.SetData(slot, None)
+    try:
+        source.GetType().GetEvent(event_name).RemoveEventHandler(source, previous)
+    except Exception as ex:
+        mlogger.error("Could not release handler for %s: %s", slot, ex)
+    finally:
+        domain.SetData(slot, None)
 
 
 def register_handler(event_name, handler_func, handler_group_id):

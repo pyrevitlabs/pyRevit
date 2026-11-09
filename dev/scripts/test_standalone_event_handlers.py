@@ -373,8 +373,9 @@ class ReplaceHandlerTests(unittest.TestCase):
         """Load the events module with a fresh process-wide slot store."""
         self.app_domain = _AppDomain()
         self.host = _HostApplication()
+        self.logger = _Logger()
         self.events = load_events_module(
-            self.app_domain, self.host, "selfinit", _Logger(), _ApiContextQueue()
+            self.app_domain, self.host, "selfinit", self.logger, _ApiContextQueue()
         )
 
     def test_replace_detaches_the_previous_load_subscription(self):
@@ -402,6 +403,24 @@ class ReplaceHandlerTests(unittest.TestCase):
         self.events.release_handler("slot", source, "ViewActivated")
 
         self.assertEqual([], source.ViewActivated.handlers)
+        self.assertIsNone(self.app_domain.GetData("slot"))
+
+    def test_failing_detach_is_logged_and_does_not_block_the_next_load(self):
+        """A delegate Revit refuses to detach is dropped from the slot."""
+        source = self.host._uiapp
+        stale = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.add(stale)
+
+        fresh = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+
+        self.assertTrue(self.logger.errors)
+        self.assertIs(fresh, self.app_domain.GetData("slot"))
+        self.events.release_handler("slot", source, "ViewActivated")
+        self.assertEqual([stale], source.ViewActivated.handlers)
         self.assertIsNone(self.app_domain.GetData("slot"))
 
 
