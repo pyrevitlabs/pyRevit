@@ -75,23 +75,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static AgentRunRequest FromJson(JObject parameters) {
-            var script = parameters.Value<string>("script");
+            var script = AgentParams.Get<string>(parameters, "script");
             if (string.IsNullOrWhiteSpace(script))
                 throw new AgentException("invalid_params", "'script' is required.");
 
             var inputs = parameters["inputs"];
-            var workspace = parameters.Value<string>("workspace");
+            if (inputs != null && inputs.Type != JTokenType.Null && inputs.Type != JTokenType.Object)
+                throw new AgentException("invalid_params", "'inputs' must be an object.");
+            var workspace = AgentParams.Get<string>(parameters, "workspace");
             var document = AgentDocumentBinding.Parse(parameters["document"]);
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
-            var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
+            var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
-                Title = Shorten(TitleBreaks.Replace(parameters.Value<string>("title") ?? "Agent run", " ").Trim()),
-                Mode = ParseMode(parameters.Value<string>("mode")),
-                Engine = ParseEngine(parameters.Value<string>("engine")),
+                Title = Shorten(TitleBreaks.Replace(AgentParams.Get<string>(parameters, "title") ?? "Agent run", " ").Trim()),
+                Mode = ParseMode(AgentParams.Get<string>(parameters, "mode")),
+                Engine = ParseEngine(AgentParams.Get<string>(parameters, "engine")),
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
                     ? "{}"
                     : inputs.ToString(Formatting.None),
