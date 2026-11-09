@@ -46,18 +46,24 @@ namespace pyRevitCLI {
                 return;
             }
 
-            foreach (var instance in instances) {
-                string state;
-                try {
-                    PyRevitAgentClient.Ping(instance);
-                    state = "responding";
-                }
-                catch (AgentClientException ex) {
-                    state = "not responding (" + ex.Code + ")";
-                }
-                Console.WriteLine(string.Format("Revit {0} (build {1}) pid {2}: {3}",
-                    instance.RevitVersion, instance.RevitBuild, instance.ProcessId, state));
+            foreach (var instance in instances)
+                Console.WriteLine(StatusLine(instance));
+        }
+
+        internal static string StatusLine(AgentInstance instance) {
+            string state;
+            try {
+                PyRevitAgentClient.Ping(instance);
+                state = "responding";
             }
+            catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
+                state = "busy";
+            }
+            catch (AgentClientException ex) {
+                state = "not responding (" + ex.Code + ")";
+            }
+            return string.Format("Revit {0} (build {1}) pid {2}: {3}",
+                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, state);
         }
 
         public static void PrintContext(string revitSelector) {
