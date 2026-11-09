@@ -66,5 +66,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Null(AgentParams.Get<int?>(parameters, "none"));
             Assert.Null(AgentParams.Get<string>(parameters, "missing"));
         }
+
+        [Theory]
+        [InlineData("[1.5]", "ids[0]")]
+        [InlineData("[1,true]", "ids[1]")]
+        [InlineData("[\"1\"]", "ids[0]")]
+        [InlineData("[null]", "ids[0]")]
+        [InlineData("[{}]", "ids[0]")]
+        public void ElementIdsMustBeIntegers(string json, string item) {
+            var error = Assert.Throws<AgentException>(() => AgentParams.ElementIds(JArray.Parse(json), "ids"));
+
+            Assert.Equal("invalid_params", error.Code);
+            Assert.Equal("'" + item + "' must be an integer element id.", error.Message);
+        }
+
+        [Fact]
+        public void ElementIdsKeepWholeNumbers() {
+            Assert.Equal(new long[] { 1, 2, 3000000000 }, AgentParams.ElementIds(JArray.Parse("[1,2.0,3000000000]"), "ids"));
+        }
     }
 }

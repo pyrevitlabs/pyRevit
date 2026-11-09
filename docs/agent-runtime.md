@@ -238,8 +238,9 @@ to return data. It is serialized to JSON:
 - `Element` becomes `{id, category, name, class}`.
 - `XYZ` becomes `[x, y, z]`.
 - .NET numbers become numbers, and collections become lists.
-- `bytes` and `bytearray` values become text, decoded as UTF-8. Dictionary keys must already be
-  text or numbers.
+- `bytearray` values, and `bytes` on CPython and IronPython 3, become text, decoded as UTF-8. On
+  IronPython 2.7 `bytes` is `str` and stays as it is. Dictionary keys must already be text or
+  numbers.
 
 Printed output is captured and returned too.
 
@@ -313,7 +314,8 @@ Rules the host enforces:
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
   interrupted on any engine; the run fails with `timeout` once it returns, and returns no
   `result`. When that call was the script's last, or the limit passed while the runner was
-  converting `result`, the error says so and carries no traceback. If such a call is still
+  converting `result`, the error carries no traceback and gives the same message for both cases:
+  the run was inside a call that could not be interrupted. If such a call is still
   blocking 30 seconds after the deadline, the request fails with `run_hung` (outcome
   `unknown`, plus the run's `run_id` and `request_id`) so the caller stops waiting. The run
   itself keeps Revit busy until the call returns, then ends and is recorded as usual with
@@ -776,13 +778,15 @@ Every `revit_busy` and `document_changed` the host raises is a `not_run`. For a 
 run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
 error's `data`. Without it a refused request would leave no trace. A run that did start records
 the request id in `request.json` and `response.json` (`request_id`), so a request can be found
-either way:
+either way. Lookups work for the ids the CLI and MCP server generate (`req-` and twelve hex
+digits). A request another client sent under a different `id` is stored under that id, but
+`pyrevit agent show` and `get_run` only search for the generated form:
 
 ```
 pyrevit agent show req-0123456789ab
 ```
 
-The MCP tool `get_run` accepts the same request id. Errors from the MCP server carry
+The MCP tool `get_run` accepts the same request ids. Errors from the MCP server carry
 `outcome`, `request_id` and, when the host recorded one, `run_id`. A request that is still
 queued has no record yet, and one that never arrived has none at all. A pipe error after
 sending, an answer that cannot be read, a client that stops waiting after sending (a cancelled

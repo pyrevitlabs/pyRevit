@@ -177,7 +177,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return null;
             var ids = token as JArray
                 ?? throw new AgentException("invalid_params", "'elements' must be an array of element ids.");
-            return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
+            return AgentParams.ElementIds(ids, "elements").Select(AgentIds.FromValue).ToList();
         }
 
         private static void ValidateCombination(Request request) {

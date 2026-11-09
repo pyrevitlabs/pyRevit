@@ -29,12 +29,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "invalid_params",
                     string.Format("At most {0} elements can be inspected per call.", MaxElements));
 
-            try {
-                return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
-            }
-            catch (Exception) {
-                throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-            }
+            return AgentParams.ElementIds(ids, "ids").Select(AgentIds.FromValue).ToList();
         }
 
         public static JToken Inspect(UIApplication app, List<ElementId> ids, bool includeParameters) {

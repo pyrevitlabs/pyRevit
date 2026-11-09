@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -916,9 +917,9 @@ namespace pyRevitCLI {
                 if (value.Type == JTokenType.Integer || value.Type == JTokenType.Float) {
                     var number = value.Value<double>();
                     if (schema["minimum"] != null && number < schema.Value<double>("minimum"))
-                        throw InvalidArgument($"'{name}' must be at least {schema["minimum"]}.");
+                        throw InvalidArgument($"'{name}' must be at least {schema.Value<double>("minimum").ToString(CultureInfo.InvariantCulture)}.");
                     if (schema["maximum"] != null && number > schema.Value<double>("maximum"))
-                        throw InvalidArgument($"'{name}' must be at most {schema["maximum"]}.");
+                        throw InvalidArgument($"'{name}' must be at most {schema.Value<double>("maximum").ToString(CultureInfo.InvariantCulture)}.");
                 }
                 if (value is JArray array) {
                     if (schema["minItems"] != null && array.Count < schema.Value<int>("minItems"))

@@ -1,3 +1,4 @@
+using System.Globalization;
 using pyRevitCLI;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
@@ -357,6 +358,20 @@ public partial class McpServerTests : IDisposable {
         Assert.StartsWith("'" + argument + "'", payload.Value<string>("message"));
         Assert.Null(payload["outcome"]);
         Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void SchemaLimitsInMessagesUseTheInvariantCulture() {
+        var original = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+        try {
+            var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["timeout_s"] = 0.0001 }));
+
+            Assert.Equal("'timeout_s' must be at least 0.001.", Payload(response).Value<string>("message"));
+        }
+        finally {
+            CultureInfo.CurrentCulture = original;
+        }
     }
 
     [Theory]

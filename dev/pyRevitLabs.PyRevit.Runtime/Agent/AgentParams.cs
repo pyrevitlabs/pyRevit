@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using pyRevitLabs.Json.Linq;
 
@@ -26,6 +27,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (OverflowException) {
                 throw new AgentException("invalid_params", $"'{name}' is out of range.");
             }
+        }
+
+        public static List<long> ElementIds(JArray items, string name) {
+            var ids = new List<long>(items.Count);
+            for (var index = 0; index < items.Count; index++) {
+                var item = items[index];
+                if (!HasJsonType(item, typeof(long)))
+                    throw new AgentException("invalid_params", $"'{name}[{index}]' must be an integer element id.");
+                try {
+                    ids.Add(item.Value<long>());
+                }
+                catch (OverflowException) {
+                    throw new AgentException("invalid_params", $"'{name}[{index}]' is out of range.");
+                }
+            }
+            return ids;
         }
 
         private static bool HasJsonType(JToken token, Type type) {

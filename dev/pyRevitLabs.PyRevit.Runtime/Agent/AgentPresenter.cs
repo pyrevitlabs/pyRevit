@@ -43,12 +43,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (parameters["ids"] is JArray ids) {
                 if (ids.Count > MaxIds)
                     throw new AgentException("invalid_params", $"At most {MaxIds} ids per call.");
-                try {
-                    request.Ids.AddRange(ids.Select(id => id.Value<long>()));
-                }
-                catch (Exception) {
-                    throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-                }
+                request.Ids.AddRange(AgentParams.ElementIds(ids, "ids"));
             }
 
             if (parameters["categories"] is JArray categories) {
