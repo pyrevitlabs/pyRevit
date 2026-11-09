@@ -223,10 +223,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 timings.Lap("prepare");
                 var openAtStart = AgentDocuments.Snapshot(app.Application);
                 var guard = new AgentRunGuard(app, doc);
+                var scriptStarted = false;
                 using (guard) {
                     try {
                         guard.Arm("Agent: " + request.Title);
                         timings.Lap("guard_arm");
+                        scriptStarted = true;
                         int exitCode;
                         using (reckless ? null : AgentHost.Dispatcher?.BeginScript(TimeSpan.FromSeconds(request.TimeoutSeconds), runId, request.RequestId))
                             exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
@@ -274,7 +276,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         logger.Error(ex, "Agent run {0} failed in the host", runId);
                         context.SetError("host_error", ex.Message, ex.ToString());
                         response["status"] = "error";
-                        response["decision"] = guard.Committed ? "committed" : "rolled_back";
+                        response["decision"] = AgentRunDecision.AfterHostError(guard.Committed, scriptStarted);
                         response["failures"] = guard.Failures;
                         response["dialogs"] = guard.Dialogs;
                         response["blocked"] = guard.Blocked;

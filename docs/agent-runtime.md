@@ -296,6 +296,8 @@ Rules the host enforces:
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
 - A failure in the host itself reports `host_error` with decision `rolled_back`, or
+  `not_run` when it failed before the script started (for example when Revit refused to start
+  the run's transaction group), or
   `committed` when the change set had already been kept, or `rollback_incomplete` when the
   run's rollback failed and its changes may remain in the active document.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
