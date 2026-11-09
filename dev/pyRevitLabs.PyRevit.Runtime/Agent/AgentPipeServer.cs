@@ -90,7 +90,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (++createFailures >= MaxCreateFailures) {
                         logger.Error("Agent pipe server stopped: could not create pipe '{0}': {1}", pipeName, ex.Message);
                         listening = false;
-                        stoppedListening?.Invoke(this);
+                        ReportStopped();
                         return;
                     }
                     logger.Warn("Could not create agent pipe: {0}", ex.Message);
@@ -122,6 +122,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     lock (pipeLock)
                         currentPipe = null;
                 }
+            }
+        }
+
+        private void ReportStopped() {
+            try {
+                stoppedListening?.Invoke(this);
+            }
+            catch (Exception ex) {
+                logger.Error("Agent pipe server could not report that it stopped: {0}", ex.Message);
             }
         }
 

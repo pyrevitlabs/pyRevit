@@ -4,13 +4,13 @@ using System.Threading;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
-    [Trait("Level", "Unit")]
     public sealed class AgentPipeServerTests {
         private static readonly TimeSpan Long = TimeSpan.FromSeconds(10);
 
         private static string UniquePipeName() => "pyrevit-agent-test-" + Guid.NewGuid().ToString("N");
 
         [Fact]
+        [Trait("Level", "Unit")]
         public void TheRetryDelayDoublesUpToThirtySeconds() {
             var first = TimeSpan.FromMilliseconds(500);
 
@@ -23,6 +23,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
         /// <summary>A server that can never create its pipe stops and says so, so the host stops advertising it (#3949).</summary>
         [Fact]
+        [Trait("Level", "Integration")]
         public void AServerThatGivesUpReportsThatItStoppedListening() {
             var pipeName = UniquePipeName();
             using (var occupied = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1))
