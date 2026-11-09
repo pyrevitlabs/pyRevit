@@ -52,14 +52,44 @@ create.place_on_sheet(sheet, schedule, anchor="top_right")
 - **Title block parameters** such as drawn by and date are parameters on the title block instance on the sheet.
 - **Re-runnable:** delete the previous sheet, view and schedule by number and name before creating them again.
 
-## Exporting to PDF
+## Exporting to PDF and images
 
-Guarded agent runs block Revit file and view exports. Use a run to prepare sheets and verify
-them, then have the user export from Revit after the run ends.
+A run may export only into `export_dir`, a folder the host creates for that run; any other
+target is cancelled. Exporting works in `run_query` too, since it doesn't change the model.
+The response lists the files in `exports`. Give the user those paths, or copy the files where
+they asked with your own file tools after the run.
+
+```python
+import os
+from System.Collections.Generic import List
+from pyrevit.api import DB
+
+ids = List[DB.ElementId]()
+for sheet in DB.FilteredElementCollector(doc).OfClass(DB.ViewSheet):
+    if sheet.SheetNumber in ("A101", "A102"):
+        ids.Add(sheet.Id)
+
+pdf = DB.PDFExportOptions()
+pdf.Combine = False
+doc.Export(export_dir, ids, pdf)
+
+image = DB.ImageExportOptions()
+image.ExportRange = DB.ExportRange.SetOfViews
+image.SetViewsAndSheets(ids)
+image.FilePath = os.path.join(export_dir, "sheet")
+image.HLRandWFViewsFileType = DB.ImageFileType.PNG
+image.ZoomType = DB.ZoomFitType.FitToPage
+image.PixelSize = 2000
+doc.ExportImage(image)
+```
+
+`PDFExportOptions` needs Revit 2022 or later. `ExportImage` appends the view type and name to
+`FilePath`. An export the host cancelled raises Revit's generic `InternalException`, and the
+`operation_blocked` warning names its target.
 
 ## Before you report done
 
 - [ ] `capture_view(view="A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
 - [ ] Tag and dimension counts match the element counts you intended.
 - [ ] Each view is on one sheet only; duplicates were made where a view is needed twice.
-- [ ] You told the user which sheets are ready to export from Revit.
+- [ ] You told the user which sheets are ready, and the paths of any files you exported.

@@ -137,7 +137,7 @@ read-only nor destructive.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result`, `output`, and only the non-empty change
-set, failures, dialogs and blocked operations. The change set keeps counts, `by_category`,
+set, failures, dialogs, blocked operations and `exports` (the files the run exported). The change set keeps counts, `by_category`,
 `added_ids`, `added_families` (id, category, name and class of the families and types
 found among all added elements), `modified` (the same fields) and `deleted_ids`, each
 capped at 20 entries. The full record, with up to 50 of each, stays available through
@@ -231,7 +231,8 @@ operation and never executes a command or changes model elements.
 
 Scripts are Python, executed inside Revit by the regular pyRevit engines. The runner
 injects `doc`, `uidoc`, `app`, `uiapp`, `DB` (`Autodesk.Revit.DB`), `UI`
-(`Autodesk.Revit.UI`) and `inputs` (the `inputs` argument as a dict). Assign `result`
+(`Autodesk.Revit.UI`), `inputs` (the `inputs` argument as a dict) and `export_dir` (the
+folder Revit exports from the run may write into; see the rules below). Assign `result`
 to return data. It is serialized to JSON:
 
 - `ElementId` becomes an integer.
@@ -279,6 +280,17 @@ Rules the host enforces:
   lists a cancelled operation in `blocked`. APIs that write files without raising one of these
   events, such as `ViewSchedule.Export`, shared parameter file edits and
   `TransmissionData.WriteTransmissionData`, are not blocked.
+- A file export (`Document.Export`, `Document.ExportImage`) whose target is the run's
+  `export_dir` or lies inside it is allowed in every mode, including queries and dry runs. The
+  host creates that folder as `exports` in the run record before the script runs, lists the
+  files left in it in the response's `exports`, and removes it when the run leaves it empty. The
+  target is the path Revit reports for the export: a file, a file name prefix (`ExportImage`
+  adds view names) or a folder. It must be a fully qualified drive path; the host compares its
+  final location, with links and short names resolved, against the folder as it was resolved
+  before the script ran. Any other target, or one the host can't resolve, is cancelled, and its
+  `blocked` entry carries the `path`. Exported files are not rolled back and are deleted with
+  the run record after 14 days. This keeps a run's mistakes away from the user's files; it is
+  not a sandbox, since the script can still write files by other means.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
@@ -287,8 +299,8 @@ Rules the host enforces:
   it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
   the run, and isn't rolled back; it is discarded when closed.
 - When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
-  naming each cancelled operation, because the script itself only sees Revit's generic
-  exception.
+  naming each cancelled operation, and the target of a cancelled export, because the script
+  itself only sees Revit's generic exception.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   Decorated functions, context-manager yields and rewritten exception handlers retain
   their original script line numbers, including on IronPython.
@@ -557,6 +569,7 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `request.json`: title, mode, engine and inputs
 - `response.json`: status, decision, changes, failures, dialogs, output and result
 - `result.json`: present when the result was too large to return inline
+- `exports\`: present when the run exported files into its `export_dir`
 
 For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's
 wall-clock breakdown in milliseconds. Host phases, in order: `queue_wait` (request parsed to

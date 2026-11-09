@@ -1576,6 +1576,7 @@ def _build_namespace(context):
         "DB": DB,
         "UI": UI,
         "inputs": json.loads(context.InputsJson or "{}"),
+        "export_dir": getattr(context, "ExportDir", None),
     }
 
 

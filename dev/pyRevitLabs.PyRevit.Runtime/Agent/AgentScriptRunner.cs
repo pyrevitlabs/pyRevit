@@ -50,6 +50,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public bool Reckless { get; }
 
+        /// <summary>
+        /// Host-owned folder inside the run record that Revit exports from this run may write
+        /// into; the runner passes it to the script as <c>export_dir</c>.
+        /// </summary>
+        public string ExportDir { get; internal set; }
+
         public string ResultJson { get; private set; }
         public string Output { get; private set; } = string.Empty;
         public string ErrorType { get; private set; }

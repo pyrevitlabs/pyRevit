@@ -26,8 +26,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
     /// <item>cancels synchronize, save, save-as, file-export, view-export and print operations while
-    /// armed when Revit marks their event cancellable. It cancels closing only for documents
-    /// that were open when the run started.</item>
+    /// armed when Revit marks their event cancellable. A file export whose target lies inside the
+    /// run's export folder is let through; see <see cref="AgentExportFolder"/>. It cancels
+    /// closing only for documents that were open when the run started.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -57,11 +58,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private TransactionGroup group;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
+        private readonly string exportDir;
+        private AgentExportFolder exportFolder;
 
-        public AgentRunGuard(UIApplication uiApp, Document doc) {
+        /// <param name="exportDir">Existing folder the run may export Revit files into, or null
+        /// to block every export.</param>
+        public AgentRunGuard(UIApplication uiApp, Document doc, string exportDir = null) {
             this.uiApp = uiApp;
             app = uiApp.Application;
             this.doc = doc;
+            this.exportDir = exportDir;
         }
 
         public AgentChangeSet Changes => changes;
@@ -99,6 +105,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string FirstErrorDescription { get; private set; }
 
         public void Arm(string groupName) {
+            exportFolder = exportDir == null ? null : new AgentExportFolder(exportDir);
             app.DocumentChanged += OnDocumentChanged;
             app.FailuresProcessing += OnFailuresProcessing;
             app.DocumentSaving += OnDocumentSaving;
@@ -315,7 +322,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnFileExporting(object sender, FileExportingEventArgs e) {
-            Block(e, null, "file_export");
+            if (exportFolder != null && exportFolder.Contains(e.Path))
+                return;
+            Block(e, null, "file_export", e.Path);
         }
 
         private void OnViewExporting(object sender, ViewExportingEventArgs e) {
@@ -365,23 +374,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (blocked.Count == 0)
                 return null;
             var operations = blocked.Select(DescribeBlockedOperation).Distinct();
-            return "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
+            var explanation = "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
+            if (blocked.Any(entry => entry.Value<string>("operation") == "file_export"))
+                explanation += " Revit exports may only write into the run's export_dir.";
+            return explanation;
         }
 
         private static string DescribeBlockedOperation(JToken entry) {
             var operation = entry.Value<string>("operation");
             var document = entry.Value<string>("document");
-            return document == null ? operation : $"{operation} of '{document}'";
+            var path = entry.Value<string>("path");
+            if (document != null)
+                return $"{operation} of '{document}'";
+            return path == null ? operation : $"{operation} to '{path}'";
         }
 
-        private void Block(RevitAPIPreEventArgs e, Document target, string operation) {
+        private void Block(RevitAPIPreEventArgs e, Document target, string operation, string path = null) {
             if (!e.Cancellable)
                 return;
             e.Cancel();
-            blocked.Add(new JObject {
+            var entry = new JObject {
                 ["operation"] = operation,
                 ["document"] = target?.Title,
-            });
+            };
+            if (path != null)
+                entry["path"] = path;
+            blocked.Add(entry);
         }
 
         private bool IsWatchedDocument(Document other) {
