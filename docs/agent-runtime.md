@@ -587,12 +587,15 @@ wrong:
 
     ```shell
     pwsh dev/scripts/Stop-McpServers.ps1
-    cd build && dotnet run -c Debug -- local
+    cd build
+    dotnet run -c Debug -- --trust-cert
+    dotnet run -c Debug -- local
     ```
 
-    `local` runs `ci` and then signs `bin\` with a per-machine developer certificate, so Revit loads
-    the build without the unsigned add-in dialog. Trust the certificate once with
-    `dotnet run -c Debug -- --trust-cert`, see `build/README.md`. A plain `ci` build is unsigned.
+    `--trust-cert` is needed once per machine: `local` refuses to start until the developer
+    certificate is trusted, and Windows asks you to confirm the new root, see `build/README.md`.
+    `local` runs `ci` and then signs `bin\` with that certificate, so Revit loads the build without
+    the unsigned add-in dialog. A plain `ci` build is unsigned.
 
     `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
     tool call, so don't call an MCP tool between the script and the build; afterwards the
