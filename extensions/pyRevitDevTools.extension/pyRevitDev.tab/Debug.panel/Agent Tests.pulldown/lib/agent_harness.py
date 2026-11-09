@@ -8,6 +8,7 @@ Tests run against scratch documents this module creates in the temp folder and
 closes again, never against the user's model.
 """
 
+import ctypes
 import json
 import os
 import os.path as op
@@ -15,6 +16,8 @@ import platform
 import shutil
 import sys
 import tempfile
+import threading
+import time
 from contextlib import contextmanager
 from unittest import TestCase as _TestCase
 
@@ -41,6 +44,14 @@ from pyrevit.runtime import RUNTIME_ASSM
 from pyrevit.unittests.runner import run_module_tests
 
 COMMENTS = "DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS"
+INPUT_ELEMENT_ID = (
+    "__import__('pyrevit.compat', fromlist=['compat'])"
+    ".get_elementid_from_value_func()(inputs['id'])"
+)
+"""Agent-script expression for the ElementId of ``inputs['id']``.
+
+``DB.ElementId(int)`` is ambiguous on IronPython 2.7 with Revit 2024+.
+"""
 CPYTHON_HOST = platform.python_implementation() == "CPython"
 ENGINES = ("ironpython",) if CPYTHON_HOST else ("ironpython", "cpython")
 
@@ -110,8 +121,13 @@ def pipe_name():
 
 
 def agent_dir():
-    """The folder holding host registrations, run records and captures."""
-    return op.join(str(Common.PyRevitLabsConsts.PyRevitPath), "agent")
+    """The folder holding host registrations, run records and captures.
+
+    Note:
+        Resolved like the host does, so a per-launch session that pins the agent
+        folder (``pyrevit launch --isolated``) is followed.
+    """
+    return str(Common.PyRevitLabsConsts.AgentPath)
 
 
 def run_cli(*arguments):
@@ -155,8 +171,9 @@ class TestCase(_TestCase):
 def comment(element_id):
     """The Comments value of an element in the active document, read through a query run."""
     return run(
-        "result = doc.GetElement(DB.ElementId(inputs['id']))"
-        ".get_Parameter({}).AsString()".format(COMMENTS),
+        "result = doc.GetElement({element}).get_Parameter({}).AsString()".format(
+            COMMENTS, element=INPUT_ELEMENT_ID
+        ),
         inputs={"id": element_id},
     ).get("result")
 
@@ -166,9 +183,9 @@ def set_comment_script():
     return (
         "t = DB.Transaction(doc, 'agent test comment')\n"
         "t.Start()\n"
-        "doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({})"
+        "doc.GetElement({element}).get_Parameter({})"
         ".Set(inputs['text'])\n"
-        "t.Commit()\n".format(COMMENTS)
+        "t.Commit()\n".format(COMMENTS, element=INPUT_ELEMENT_ID)
     )
 
 
@@ -177,6 +194,60 @@ def session():
     if _session is None:
         raise RuntimeError("Run the tests through agent_harness.run_suites.")
     return _session
+
+
+YES = 6
+NO = 7
+POLICY_PROMPT = "pyRevit Agent policy"
+
+
+@contextmanager
+def answer_prompts(title, button):
+    """Press ``button`` on every native message box titled ``title`` during the block.
+
+    The host's approval and policy prompts are native Windows message boxes,
+    which Revit's dialog event can't answer, so a helper thread presses them.
+    Only boxes owned by this Revit process are pressed, never another Revit's.
+    Yields the list of presses.
+    """
+    user32 = ctypes.windll.user32
+    user32.FindWindowExW.restype = ctypes.c_void_p
+    revit_pid = os.getpid()
+    pressed = []
+    stop = threading.Event()
+
+    def own_prompt():
+        window = None
+        while True:
+            window = user32.FindWindowExW(
+                None, ctypes.c_void_p(window) if window else None, "#32770", title
+            )
+            if not window:
+                return None
+            owner = ctypes.c_ulong()
+            user32.GetWindowThreadProcessId(
+                ctypes.c_void_p(window), ctypes.byref(owner)
+            )
+            if owner.value == revit_pid:
+                return window
+
+    def press():
+        while not stop.is_set():
+            window = own_prompt()
+            if window:
+                user32.PostMessageW(ctypes.c_void_p(window), 0x0111, button, 0)
+                pressed.append(button)
+                time.sleep(0.5)
+            time.sleep(0.1)
+
+    worker = threading.Thread(target=press)
+    worker.daemon = True
+    worker.start()
+    try:
+        yield pressed
+    finally:
+        stop.set()
+        worker.join(5)
 
 
 @contextmanager
@@ -205,7 +276,7 @@ def run_suites(modules):
     problems = []
     try:
         _session.open()
-        with policy("auto"):
+        with answer_prompts(POLICY_PROMPT, YES), policy("auto"):
             for module in modules:
                 result = run_module_tests(module)
                 if result.failures or result.errors:

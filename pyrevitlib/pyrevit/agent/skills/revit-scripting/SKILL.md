@@ -20,10 +20,11 @@ Read the `pyrevit-library` skill first and use `lookup_pyrevit_api` to find a ma
 - Only the raw Revit API is available. pyRevit's convenience methods on API types are not applied: use `list(collector)` not `.ToList()`, `get_Parameter(...)` and `Parameter.Set(...)` not `SetParameterValue`, and a collector rather than `doc.Walls`. `__revit__` is a plain `UIApplication`.
 - Scripts receive `uiapp`, `app`, `uidoc`, and `doc`. A modifying run requires an active `doc`.
 - `run_query` and dry runs roll model changes back. A modify run commits only after its configured policy permits it.
+- The rollback covers the active project and documents that were already open. A document the script creates, such as `app.NewFamilyDocument(...)`, or a family from `EditFamily` is outside it: changes there are not rolled back, do not fail a `run_query`, and are discarded when the document is closed. `changes.other_documents` reports them with a `scope` instead of `rolled_back`. The host closes them when the run ends.
 - Open a Revit transaction for every model edit, then commit or roll it back before the script ends.
-- The active run blocks save, save-as, synchronize-with-central, file export, and view export. Do not rely on those operations.
+- The active run blocks save, save-as, synchronize-with-central, file export, and view export. Do not rely on those operations. A script that hits one gets Revit's generic exception, for example "Saving failed", and the response adds an `operation_blocked` warning naming the cancelled operation. An operation Revit does not let the guard cancel is neither blocked nor reported.
 - The runtime uses the Windows user's permissions. Revit rollback does not undo Python or .NET file, network, or process side effects.
-- Timeouts are cooperative. Avoid unbounded loops and blocking calls.
+- Timeouts are cooperative. Avoid unbounded loops and blocking calls. When `get_context` shows `agent.reckless: true` there is no timeout at all, and a script that never ends hangs Revit.
 
 ## Query example
 
@@ -56,3 +57,4 @@ transaction.Commit()
 - Print concise diagnostics. Large results are truncated in the immediate response.
 - Fix `revit_busy`, `document_read_only`, `no_active_document`, `query_modified_model`, `transaction_left_open`, and `other_document_modified` before retrying.
 - `revit_busy` means the request was not run and will not run later: it is safe to send again once Revit is idle (a modal dialog such as the save reminder blocks every request until the user answers it). The error's `outcome` says what is known. When it is `unknown` (the connection broke after the request was sent), read the run with `get_run` using the error's `request_id` before sending it again.
+- `run_hung` means the script is stuck past its `timeout_s` in a call the timeout can't interrupt (a long Revit API call, `Thread.Sleep`, a printer or window waiting for input). Revit stays busy until that call returns. Ask the user to check Revit, then read the run with `get_run` before sending anything that changes the model again.

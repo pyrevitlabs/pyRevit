@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_referencing">Feuilles montrant la vue {} {}</sys:String>
+    <sys:String x:Key="no_sheets">La vue n'est placée sur aucune feuille.</sys:String>
+    <sys:String x:Key="table_title">La vue est référencée sur {} feuille(s)</sys:String>
+    <sys:String x:Key="column_number">Numéro de feuille</sys:String>
+    <sys:String x:Key="column_name">Nom de la feuille</sys:String>
+    <sys:String x:Key="column_show">Sélectionner/Afficher l'élément</sys:String>
+</ResourceDictionary>

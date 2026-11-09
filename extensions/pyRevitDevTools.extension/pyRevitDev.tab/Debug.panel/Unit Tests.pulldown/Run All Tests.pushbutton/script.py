@@ -9,6 +9,7 @@ from pyrevit.unittests.runner import run_module_tests
 
 TEST_MODULE_PREFIX = "test_"
 OPT_IN_MODULES = frozenset(["test_revit_api_catalog"])
+RUN_ALL_TEST_LEVEL = "Unit"
 
 
 def _discover_test_modules():
@@ -66,6 +67,10 @@ for module_name in test_modules:
     print("\nRunning {}".format(qualified_name))
     try:
         module = __import__(qualified_name, fromlist=["*"])
+        test_level = getattr(module, "TEST_LEVEL", RUN_ALL_TEST_LEVEL)
+        if test_level != RUN_ALL_TEST_LEVEL:
+            print("{}: SKIPPED (Level={})".format(qualified_name, test_level))
+            continue
         result = run_module_tests(module)
         if not result.wasSuccessful():
             _print_result_details(qualified_name, result)

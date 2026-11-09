@@ -31,7 +31,7 @@ for sheet in sorted(revised_sheets, key=lambda sheet: sheet.SheetNumber):
 
 - Titles, tooltips, icons and authorship belong in `bundle.yaml` next to `script.py` (see [Extensions](extensions.md)).
 - Module-level handles come first and are named the same everywhere: `logger`, `output`, and `selection` when needed. Don't invent alternatives.
-- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about ten lines (loops, several branches), put that flow in a `main()` called at the bottom of `script.py`.
+- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about thirty lines, or has several distinct stages (collect input, validate, modify, report), put that flow in a `main()` called at the bottom of `script.py`. Don't add `main()` just because a script has a helper function or two.
 - Logic that gets reused or tested on its own lives in small named functions.
 - Helpers a script outgrows go in separate modules next to `script.py` in the bundle folder (it is on `sys.path` automatically), rather than into one 1500-line file. A `lib/` subfolder is optional.
 
@@ -163,7 +163,7 @@ Scripts run on IronPython 2.7 by default, and can also run on CPython 3 and Iron
 Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md). Only `ruff format` is automated; the rest is checked in review:
 
 - **No inline comments.** Make the code self-explanatory with names and small functions. Exceptions: tooling pragmas (`# noqa`, `# type: ignore`), `TODO` / `FIXME` with an owner and ticket, and the group labels on `pyrevit` imports (see [Imports](#imports)).
-- **Docstrings on public symbols only**, Google style, and only where they add what the code can't say: purpose, contract, side effects, exceptions, invariants. Don't restate the signature.
+- **Docstrings on public symbols of importable library code only**, Google style, and only where they add what the code can't say: purpose, contract, side effects, exceptions, invariants. Don't restate the signature. Scripts and bundle-local helpers are exempt; the exact scope is in [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md#language-rules).
 - `ruff format` formats Python on commit. Run `pipenv run ruff check --fix <path>` before finishing.
 - Names: `snake_case` functions and variables, `PascalCase` classes, `UPPER_CASE` constants. Revit API members keep their original `PascalCase`.
 - Prefer early returns over deep nesting. Prefer `for`/comprehensions over `map`/`filter` chains.

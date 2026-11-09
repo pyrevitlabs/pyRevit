@@ -63,6 +63,7 @@ namespace pyRevitCLI {
         Doctor,
         Agent,
         Mcp,
+        Launch,
     }
 
     internal static class PyRevitCLI {
@@ -225,7 +226,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
                 else
-                    PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue);
+                    PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue, redact: arguments["--redact"].IsTrue);
             }
 
             else if (all("update") && !any("clones", "extensions")) {
@@ -633,6 +634,20 @@ namespace pyRevitCLI {
                     PyRevitMcpServer.Serve(TryGetValue("--revit"));
             }
 
+            else if (all("launch")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Launch);
+                else
+                    PyRevitCLIRevitCmds.LaunchClone(
+                        cloneNameOrPath: TryGetValue("<clone_name_or_path>"),
+                        useDefaultEngine: arguments["default"].IsTrue,
+                        engineVersion: TryGetValue("<engine_version>"),
+                        revitYear: TryGetValue("<revit_year>"),
+                        isolated: arguments["--isolated"].IsTrue,
+                        language: TryGetValue("--language")
+                        );
+            }
+
             else if (all("run")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Run);
@@ -859,6 +874,10 @@ namespace pyRevitCLI {
                 else if (all("agent")) {
                     if (all("skills"))
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
+                            any("enable", "disable") ? arguments["enable"].IsTrue : null);
+
+                    else if (all("reckless"))
+                        PyRevitCLIAgentCmds.ConfigureReckless(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
 
                     else if (all("policy"))

@@ -21,6 +21,7 @@ import os
 import uuid
 
 from pyrevit import DB, HOST_APP, forms, script
+from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import List
 from pyrevit.revit import events
 
@@ -30,6 +31,8 @@ from invisibility_ghost import GhostPreview
 from invisibility_checks import collect_visible_ids, diagnose, id_value, t
 
 logger = script.get_logger()
+
+get_elementid_from_value = get_elementid_from_value_func()
 
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _ASSETS = ("viewer3d.js", "report.js")
@@ -151,7 +154,7 @@ def format_element_label(element):
 
 
 def _fix_key(element_id, fix):
-    key = json.dumps(fix, sort_keys=True)
+    key = json.dumps(fix, sort_keys=True, ensure_ascii=False)
     if fix.get("action") in _ELEMENT_SCOPED_ACTIONS:
         key += "@{}".format(element_id)
     return key
@@ -193,7 +196,7 @@ class DiagnosisSession(object):
         return resolved
 
     def _view(self, view_id_value):
-        view_id = DB.ElementId(int(view_id_value))
+        view_id = get_elementid_from_value(int(view_id_value))
         if view_id not in self.view_ids:
             raise fixes.FixError("Unknown view {}".format(view_id_value))
         view = self.doc.GetElement(view_id)
@@ -202,7 +205,7 @@ class DiagnosisSession(object):
         return view
 
     def _element(self, element_id_value):
-        element = self.doc.GetElement(DB.ElementId(int(element_id_value)))
+        element = self.doc.GetElement(get_elementid_from_value(int(element_id_value)))
         if element is None:
             raise fixes.FixError(t("fix_error_missing", "The target no longer exists"))
         return element
@@ -314,7 +317,8 @@ class DiagnosisSession(object):
         self.output.inject_to_body("div", "", {"id": self.root_id})
         self.output.inject_script(
             "window.pyRevitInvisibility.mount({}, {});".format(
-                json.dumps(self.root_id), json.dumps(self.payload())
+                json.dumps(self.root_id),
+                json.dumps(self.payload(), ensure_ascii=False),
             ),
             body=True,
         )

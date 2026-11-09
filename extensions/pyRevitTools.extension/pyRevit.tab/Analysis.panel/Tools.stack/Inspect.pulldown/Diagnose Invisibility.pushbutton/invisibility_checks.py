@@ -11,11 +11,15 @@ trip through the report page and are re-validated before anything changes.
 import os
 
 from pyrevit import DB
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import get_elementid_from_value_func, get_elementid_value_func
 from pyrevit.coreutils import applocales
-from pyrevit.revit import query
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.revit import query, units
+
+mlogger = get_logger(__name__)
 
 get_elementid_value = get_elementid_value_func()
+get_elementid_from_value = get_elementid_from_value_func()
 
 RESX_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources.xaml")
 
@@ -57,6 +61,15 @@ def t(key, default=None):
     if result == key and default is not None:
         return default
     return result
+
+
+def format_length_with_symbol(doc, feet):
+    """Format an internal length in the project's display units with its symbol."""
+    try:
+        return units.format_length(feet, doc, append_symbol=True)
+    except Exception as ex:
+        mlogger.debug("Cannot format length %s: %s", feet, ex)
+        return "{:.2f} ft".format(feet)
 
 
 class Finding(object):
@@ -430,7 +443,7 @@ def _drawn_style_category_ids(element, view):
 
 def _hidden_in_view(view, category_id_value):
     try:
-        return view.GetCategoryHidden(DB.ElementId(category_id_value))
+        return view.GetCategoryHidden(get_elementid_from_value(category_id_value))
     except Exception:
         return False
 
@@ -451,7 +464,9 @@ def _drawn_subcategory_findings(ctx):
         return []
     findings = []
     for category_id_value in sorted(drawn):
-        sub_category = DB.Category.GetCategory(ctx.doc, DB.ElementId(category_id_value))
+        sub_category = DB.Category.GetCategory(
+            ctx.doc, get_elementid_from_value(category_id_value)
+        )
         findings.append(
             Finding(
                 "subcategory_hidden",
@@ -856,8 +871,11 @@ def _check_view_range(ctx):
                     t(
                         "reason_viewrange_above",
                         "Element is above the view range top clip plane"
-                        " (element min Z {:.3f} ft > top {:.3f} ft)",
-                    ).format(bbox.Min.Z, upper),
+                        " (element min Z {} > top {})",
+                    ).format(
+                        format_length_with_symbol(ctx.doc, bbox.Min.Z),
+                        format_length_with_symbol(ctx.doc, upper),
+                    ),
                     fix=None
                     if hidden_above_cut
                     else {"action": "extend_view_range", "direction": "up"},
@@ -871,11 +889,15 @@ def _check_view_range(ctx):
                     t(
                         "reason_above_cut_plane",
                         "Element is entirely above the cut plane (element min Z"
-                        " {:.3f} ft > cut {:.3f} ft). Between the cut plane and"
+                        " {} > cut {}). Between the cut plane and"
                         " the top, plan views only draw windows, casework,"
                         " generic models and non-cuttable categories; '{}' is"
                         " cuttable",
-                    ).format(bbox.Min.Z, cut, category.Name if category else "?"),
+                    ).format(
+                        format_length_with_symbol(ctx.doc, bbox.Min.Z),
+                        format_length_with_symbol(ctx.doc, cut),
+                        category.Name if category else "?",
+                    ),
                     fix={"action": "raise_cut_plane"},
                 )
             )
@@ -886,9 +908,12 @@ def _check_view_range(ctx):
                     t(
                         "reason_viewrange_below",
                         "Element is below the view range's lower bound (bottom"
-                        " clip / view depth) (element max Z {:.3f} ft < lower"
-                        " bound {:.3f} ft)",
-                    ).format(bbox.Max.Z, lower),
+                        " clip / view depth) (element max Z {} < lower"
+                        " bound {})",
+                    ).format(
+                        format_length_with_symbol(ctx.doc, bbox.Max.Z),
+                        format_length_with_symbol(ctx.doc, lower),
+                    ),
                     fix=None
                     if is_rcp
                     else {"action": "extend_view_range", "direction": "down"},

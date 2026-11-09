@@ -1,4 +1,4 @@
-title: WebView2 Check
+title: "WebView2\nCheck"
 tooltip: >-
   Validate the output window renders with WebView2 (Chromium): engine identity
   and runtime version, Chromium user agent, html/script/style injection and

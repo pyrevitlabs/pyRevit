@@ -1,19 +1,29 @@
-from collections import namedtuple
+# -*- coding: utf-8 -*-
+"""Sum a numeric parameter over the selected elements.
 
-from pyrevit import revit, DB, HOST_APP
+Totals are shown in the display units of the project, so metric and imperial
+projects both report in the units their users work in.
+"""
+
+from collections import OrderedDict, namedtuple
+
+from pyrevit import forms, script
+from pyrevit import HOST_APP
+from pyrevit import revit, DB
 from pyrevit.compat import safe_strtype
-from pyrevit import forms
-from pyrevit import script
-from pyrevit import coreutils
-from pyrevit.coreutils import pyutils
-
-
-selection = revit.get_selection()
+from pyrevit.coreutils import applocales, escape_for_output, pyutils
+from pyrevit.revit import query, units
 
 logger = script.get_logger()
 output = script.get_output()
 
+RESOURCES = script.get_bundle_file("resources.xaml")
+
 ParamDef = namedtuple("ParamDef", ["name", "type", "spec"])
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
 def is_calculable_param(param):
@@ -34,155 +44,151 @@ def is_calculable_param(param):
 def get_definition_type(definition):
     if HOST_APP.is_newer_than(2021):
         return definition.GetDataType()
-    else:
-        return definition.ParameterType
+    return definition.UnitType
 
 
 def get_definition_spec(definition):
     if HOST_APP.is_newer_than(2021):
         return DB.LabelUtils.GetLabelForSpec(definition.GetDataType())
-    else:
-        return definition.ParameterType
+    return DB.LabelUtils.GetLabelFor(definition.ParameterType)
 
 
-def calc_param_total(element_list, param_name):
-    sum_total = 0.0
+def read_numeric_value(element, param_name):
+    """Return the internal value of a numeric parameter, from the element or else its type.
 
-    def _add_total(total, param):
-        if param.StorageType == DB.StorageType.Double:
-            total += param.AsDouble()
-        elif param.StorageType == DB.StorageType.Integer:
-            total += param.AsInteger()
-
-        return total
-
-    for el in element_list:
-        param = el.LookupParameter(param_name)
-        if not param:
-            el_type = revit.doc.GetElement(el.GetTypeId())
-            type_param = el_type.LookupParameter(param_name)
-            if not type_param:
-                logger.error(
-                    "Elemend with ID: {} does not have parameter: {}.".format(
-                        el.Id, param_name
-                    )
-                )
-            else:
-                sum_total = _add_total(sum_total, type_param)
-        else:
-            sum_total = _add_total(sum_total, param)
-
-    return sum_total
+    Returns:
+        float: The value, or 0.0 when the parameter is missing or not numeric.
+    """
+    param = query.get_param(element, param_name)
+    if not param:
+        element_type = revit.doc.GetElement(element.GetTypeId())
+        param = query.get_param(element_type, param_name) if element_type else None
+    if not param:
+        logger.error(
+            "Element with ID: {} does not have parameter: {}.".format(
+                element.Id, param_name
+            )
+        )
+        return 0.0
+    value = query.get_param_value(param)
+    return float(value) if isinstance(value, (int, float)) else 0.0
 
 
-def format_value(total, unit_type):
-    format_options = revit.doc.GetUnits().GetFormatOptions(unit_type)
-    if HOST_APP.is_newer_than(2021):
-        units = format_options.GetUnitTypeId()
-        label = DB.LabelUtils.GetLabelForUnit(units)
-    else:
-        units = format_options.DisplayUnits
-        label = DB.LabelUtils.GetLabelFor(units)
-    return "{} {}".format(DB.UnitUtils.ConvertFromInternalUnits(total, units), label)
-
-
-def output_param_total(element_list, param_def):
-    total_value = calc_param_total(element_list, param_def.name)
-
-    print("Total value for parameter {} is:\n\n".format(param_def.name))
-    try:
-        outputstr = format_value(total_value, param_def.type)
-    except:
-        outputstr = "{}\n".format(total_value)
-    print(outputstr)
-
-
-def output_breakdown(element_list, param_def):
-    for element in element_list:
-        total_value = calc_param_total([element], param_def.name)
-        try:
-            outputstr = format_value(total_value, param_def.type)
-        except:
-            outputstr = "{}\n".format(total_value)
-        print("{}\n{}".format(output.linkify(element.Id), outputstr))
-
-
-def process_options(element_list):
-    # find all relevant parameters
+def find_shared_params(element_list):
+    """Return the numeric parameters present on every selected element or its type."""
     param_sets = []
-
-    for el in element_list:
+    for element in element_list:
         shared_params = set()
-        # find element parameters
-        for param in el.ParametersMap:
-            if is_calculable_param(param):
-                pdef = param.Definition
-                shared_params.add(
-                    ParamDef(
-                        pdef.Name, get_definition_type(pdef), get_definition_spec(pdef)
-                    )
-                )
-
-        # find element type parameters
-        el_type = revit.doc.GetElement(el.GetTypeId())
-        if el_type and el_type.Id != DB.ElementId.InvalidElementId:
-            for type_param in el_type.ParametersMap:
-                if is_calculable_param(type_param):
-                    pdef = type_param.Definition
+        element_type = revit.doc.GetElement(element.GetTypeId())
+        owners = [element]
+        if element_type and element_type.Id != DB.ElementId.InvalidElementId:
+            owners.append(element_type)
+        for owner in owners:
+            for param in owner.ParametersMap:
+                if is_calculable_param(param):
+                    definition = param.Definition
                     shared_params.add(
                         ParamDef(
-                            pdef.Name,
-                            get_definition_type(pdef),
-                            get_definition_spec(pdef),
+                            definition.Name,
+                            get_definition_type(definition),
+                            get_definition_spec(definition),
                         )
                     )
-
         param_sets.append(shared_params)
 
-    # make a list of options from discovered parameters
-    if param_sets:
-        all_shared_params = param_sets[0]
-        for param_set in param_sets[1:]:
-            all_shared_params = all_shared_params.intersection(param_set)
-
-        return {"{} <{}>".format(x.name, x.spec): x for x in all_shared_params}
+    if not param_sets:
+        return set()
+    return set.intersection(*param_sets)
 
 
-def process_sets(element_list):
-    el_sets = pyutils.DefaultOrderedDict(list)
-
-    # add all elements as first set, for totals of all elements
-    el_sets["All Selected Elements"].extend(element_list)
-
-    # separate elements into sets based on their type
-    for el in element_list:
-        if hasattr(el, "LineStyle"):
-            el_sets[el.LineStyle.Name].append(el)
+def group_elements(element_list):
+    """Group the elements by type name, with the full selection as the first group."""
+    groups = pyutils.DefaultOrderedDict(list)
+    groups[_t("all_selected")].extend(element_list)
+    for element in element_list:
+        if hasattr(element, "LineStyle"):
+            groups[element.LineStyle.Name].append(element)
         else:
-            eltype = revit.doc.GetElement(el.GetTypeId())
-            if eltype:
-                el_sets[revit.query.get_name(eltype)].append(el)
+            element_type = revit.doc.GetElement(element.GetTypeId())
+            if element_type:
+                groups[query.get_name(element_type)].append(element)
+    return groups
 
-    return el_sets
 
-
-# main -----------------------------------------------------------------------
-# ask user to select an option
-options = process_options(selection.elements)
-
-if options:
-    selected_switch = forms.CommandSwitchWindow.show(
-        sorted(options), message="Sum values of parameter:"
+def report(groups, param_def):
+    values_by_group = OrderedDict(
+        (
+            group_name,
+            [
+                (element, read_numeric_value(element, param_def.name))
+                for element in element_list
+            ],
+        )
+        for group_name, element_list in groups.items()
     )
+    unit_label = units.display_unit_label(param_def.type)
+    unit_suffix = " [{}]".format(escape_for_output(unit_label)) if unit_label else ""
+    output.print_md(
+        "### {}".format(
+            _t("sum_of_parameter").format(escape_for_output(param_def.name))
+        )
+    )
+    output.print_html_table(
+        table_data=[
+            [
+                escape_for_output(group_name),
+                len(values),
+                units.format_value(sum(value for _, value in values), param_def.type),
+            ]
+            for group_name, values in values_by_group.items()
+        ],
+        title=_t("summary_title"),
+        columns=[
+            _t("column_group"),
+            _t("column_elements"),
+            _t("column_total") + unit_suffix,
+        ],
+        column_head_align_styles=["left", "right", "right"],
+        column_data_align_styles=["left", "right", "right"],
+    )
+    for group_name, values in values_by_group.items():
+        rows = [
+            [output.linkify(element.Id), units.format_value(value, param_def.type)]
+            for element, value in values
+        ]
+        rows.append(
+            [
+                _t("total"),
+                units.format_value(sum(value for _, value in values), param_def.type),
+            ]
+        )
+        output.print_html_table(
+            table_data=rows,
+            title=_t("breakdown_title").format(escape_for_output(group_name)),
+            columns=[_t("column_element"), _t("column_value") + unit_suffix],
+            last_line_style="font-weight:bold;",
+            column_head_align_styles=["left", "right"],
+            column_data_align_styles=["left", "right"],
+        )
 
-    # Calculating totals for each set and printing results
-    if selected_switch:
-        selected_option = options[selected_switch]
-        if selected_option:
-            for type_name, element_set in process_sets(selection.elements).items():
-                type_name = coreutils.escape_for_html(type_name)
-                output.print_md("### Totals for: {}".format(type_name))
-                output_param_total(element_set, selected_option)
-                output.print_md("#### Breakdown:")
-                output_breakdown(element_set, selected_option)
-                output.insert_divider(level="##")
+
+def main():
+    selected_elements = revit.get_selection().elements
+    options = {
+        "{} <{}>".format(param_def.name, param_def.spec): param_def
+        for param_def in find_shared_params(selected_elements)
+    }
+    if not options:
+        forms.alert(_t("no_shared_params"), exitscript=True)
+
+    selected_option = forms.CommandSwitchWindow.show(
+        sorted(options), message=_t("sum_prompt")
+    )
+    if not selected_option:
+        script.exit()
+
+    report(group_elements(selected_elements), options[selected_option])
+
+
+if __name__ == "__main__":
+    main()

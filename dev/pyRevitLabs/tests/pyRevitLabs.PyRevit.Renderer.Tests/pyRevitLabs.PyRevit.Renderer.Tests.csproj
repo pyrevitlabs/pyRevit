@@ -74,6 +74,9 @@
         <None Include="..\..\..\pyRevitLoader\Source\PyRevitLoaderApplication.cs"
               Link="Sources\PyRevitLoaderApplication.cs"
               CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\..\..\pyRevitLoader\Source\PyRevitRunnerApplication.cs"
+              Link="Sources\PyRevitRunnerApplication.cs"
+              CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

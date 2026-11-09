@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_elevation_tag">Selecione uma marca de elevação.</sys:String>
+    <sys:String x:Key="table_title">Vistas referenciadas pela marca de elevação</sys:String>
+    <sys:String x:Key="column_detail_number">Número do detalhe</sys:String>
+    <sys:String x:Key="column_name">Nome</sys:String>
+    <sys:String x:Key="column_view_type">Tipo de vista</sys:String>
+    <sys:String x:Key="column_template">Modelo</sys:String>
+    <sys:String x:Key="column_show">Selecionar/Mostrar elemento</sys:String>
+    <sys:String x:Key="no_views">A marca de elevação não referencia nenhuma vista.</sys:String>
+    <sys:String x:Key="yes">Sim</sys:String>
+    <sys:String x:Key="no">Não</sys:String>
+</ResourceDictionary>

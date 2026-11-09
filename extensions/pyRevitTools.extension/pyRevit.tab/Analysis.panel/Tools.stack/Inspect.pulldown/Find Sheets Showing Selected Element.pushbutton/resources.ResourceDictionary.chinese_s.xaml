@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_containing">包含所选图元的图纸</sys:String>
+    <sys:String x:Key="no_sheets">所选图元均未显示在任何图纸上。</sys:String>
+    <sys:String x:Key="table_title">图纸和视口</sys:String>
+    <sys:String x:Key="column_number">图纸编号</sys:String>
+    <sys:String x:Key="column_sheet">图纸名称</sys:String>
+    <sys:String x:Key="column_sheet_show">显示图纸</sys:String>
+    <sys:String x:Key="column_view">视图</sys:String>
+    <sys:String x:Key="column_viewport_show">显示视口</sys:String>
+</ResourceDictionary>

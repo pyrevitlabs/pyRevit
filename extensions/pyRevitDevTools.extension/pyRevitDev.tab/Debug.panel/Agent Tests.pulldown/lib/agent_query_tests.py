@@ -7,6 +7,9 @@ import os.path as op
 import agent_harness as harness
 from agent_harness import ENGINES, TestCase, run
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "E2E"
+
 
 def _script_lines(response):
     traceback = (response.get("error") or {}).get("traceback") or ""
@@ -35,6 +38,22 @@ class ResultTests(TestCase):
             self.assertEqual([1.0, 2.0, 3.0], result["point"], engine)
             self.assertEqual(result["wall"]["id"], result["id"], engine)
             self.assertEqual([1, "a", None], result["items"], engine)
+
+    def test_transaction_tracking_keeps_module_comprehensions_intact(self):
+        """Tracking transactions must not clobber a module-level comprehension (CPython 3.12)."""
+        for engine in ENGINES:
+            response = run(
+                "label = 'transaction'\n"
+                "values = [10, 20, 30]\n"
+                "result = [\n"
+                "    value\n"
+                "    for value in values\n"
+                "    if value is not None\n"
+                "]\n",
+                engine=engine,
+            )
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual([10, 20, 30], response["result"], engine)
 
     def test_timeout_applies_while_serializing_an_iterable_result(self):
         """Result materialization cannot continue after the run deadline."""
@@ -70,6 +89,75 @@ class ErrorTests(TestCase):
             self.assertEqual("SyntaxError", response["error"]["type"], engine)
 
 
+DEEP_RAISE = (
+    "class Ctx(object):\n"
+    "    def __enter__(self):\n"
+    "        return self\n"
+    "    def __exit__(self, *args):\n"
+    "        return False\n"
+    "def r(n):\n"
+    "    if n == inputs['depth']:\n"
+    "        raise ValueError(n)\n"
+    "    with Ctx():\n"
+    "        try:\n"
+    "            return r(n + 1)\n"
+    "        finally:\n"
+    "            pass\n"
+    "try:\n"
+    "    r(1)\n"
+    "except ValueError as error:\n"
+    "    result = error.args[0]\n"
+)
+
+
+UNBOUNDED_RECURSION = "def r(n):\n    return r(n + 1)\nr(0)\n"
+TRACED_UNBOUNDED_RECURSION = (
+    "start = getattr(object(), 'Start', None)\n" + UNBOUNDED_RECURSION
+)
+REPEATED_RECURSION = (
+    "def r(n):\n"
+    "    return r(n + 1)\n"
+    "caught = 0\n"
+    "for _ in range(inputs['runs']):\n"
+    "    try:\n"
+    "        r(0)\n"
+    "    except RuntimeError:\n"
+    "        caught += 1\n"
+    "result = caught\n"
+)
+
+
+class RecursionTests(TestCase):
+    """Deep Python calls fail as script errors instead of crashing Revit (#3918)."""
+
+    def test_unbounded_recursion_is_a_script_error(self):
+        """Endless recursion ends the run with a recursion error, run after run."""
+        for engine in ENGINES:
+            for source in (UNBOUNDED_RECURSION, TRACED_UNBOUNDED_RECURSION):
+                for _ in range(2):
+                    response = run(source, engine=engine)
+                    self.assertEqual("error", response["status"], engine)
+                    self.assertIn(
+                        response["error"]["type"],
+                        ("RecursionError", "RuntimeError"),
+                        engine,
+                    )
+
+    def test_recursion_stays_limited_after_many_errors_in_one_function(self):
+        """A function that raised more than 20 times still stops at the limit."""
+        for engine in ENGINES:
+            response = run(REPEATED_RECURSION, engine=engine, inputs={"runs": 50})
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual(50, response["result"], engine)
+
+    def test_an_error_raised_deep_in_handler_dense_frames_is_caught(self):
+        """An exception raised 300 calls deep, through with and finally blocks, is caught."""
+        for engine in ENGINES:
+            response = run(DEEP_RAISE, engine=engine, inputs={"depth": 300})
+            self.assertEqual("ok", response["status"], engine)
+            self.assertEqual(300, response["result"], engine)
+
+
 class TimeoutTests(TestCase):
     """The run timeout."""
 
@@ -82,6 +170,33 @@ class TimeoutTests(TestCase):
                 timeout=3,
             )
             self.assertEqual("timeout", response["error"]["type"], engine)
+
+    def test_timeout_stops_a_loop_that_swallows_it_through_an_alias(self):
+        """A handler the runner can't narrow still can't keep a loop running past the timeout."""
+        for engine in ENGINES:
+            response = run(
+                "import itertools\n"
+                "Base = BaseException\n"
+                "while True:\n"
+                "    try:\n"
+                "        for i in itertools.count():\n"
+                "            pass\n"
+                "    except Base:\n"
+                "        pass\n",
+                engine=engine,
+                timeout=2,
+            )
+            self.assertEqual("timeout", response["error"]["type"], engine)
+
+    def test_timeout_guard_does_not_slow_a_tight_loop(self):
+        """A 200k-step loop stays fast under the timeout guard (issue #3815)."""
+        for engine in ENGINES:
+            response = run(
+                "s = 0\nfor i in range(200000):\n    s += i\nresult = s\n",
+                engine=engine,
+            )
+            self.assertEqual("ok", response["status"], engine)
+            self.assertLess(response["timings_ms"]["script.exec"], 2000, engine)
 
 
 class ModelGuardTests(TestCase):

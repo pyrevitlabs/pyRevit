@@ -6,7 +6,11 @@
     <Platforms>x64</Platforms>
     <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
   </PropertyGroup>
-  
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="pyRevitCLI.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp"/>
     <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
@@ -16,7 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="Nett" Version="0.15.0" />
-    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
   </ItemGroup>
 
   <ItemGroup>

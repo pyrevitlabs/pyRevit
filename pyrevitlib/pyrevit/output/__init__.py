@@ -503,7 +503,10 @@ class PyRevitOutputWindow(object):
         ``chrome.webview.addEventListener("message", e => e.data)``.
 
         Args:
-            data (object): value to serialize with ``json.dumps``
+            data (object): value to serialize with ``json.dumps``. Non-ASCII
+                text is sent as is, not escaped as unicode sequences, because
+                IronPython 2's ASCII-escaping encoder raises on some mixed
+                Cyrillic and Latin-1 strings.
 
         Returns:
             (bool): False when the window is closed or cannot deliver messages,
@@ -512,7 +515,9 @@ class PyRevitOutputWindow(object):
         """
         if not self._runtime_output().IsWindowReady:
             return False
-        return self._runtime_output().window.PostWebMessage(json.dumps(data))
+        return self._runtime_output().window.PostWebMessage(
+            json.dumps(data, ensure_ascii=False)
+        )
 
     def _dispatch_message(self, sender, args):
         """Decode one page message and schedule every handler in API context."""

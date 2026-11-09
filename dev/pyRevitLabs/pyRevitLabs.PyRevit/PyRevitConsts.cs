@@ -58,6 +58,10 @@ namespace pyRevitLabs.PyRevit {
         public const string VendorId = "eirannejad";
         public const string LegacyEngineDllName = "pyRevitLoader.dll";
 
+        public const string LaunchManifestEnvVar = "PYREVIT_LAUNCH_MANIFEST";
+        public const string LaunchRevitYearEnvVar = "PYREVIT_LAUNCH_REVIT_YEAR";
+        public const string LaunchDirName = "launch";
+
         // install scope marker (all-users installer creates this under %ProgramData%\pyRevit\)
         public const string InstallAllUsersMarkerFileName = PyRevitLabsConsts.InstallAllUsersMarkerFileName;
 
@@ -135,6 +139,12 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentEngineDefault = ConfigsAgentEngineIronPython;
         public const string ConfigsAgentUserSkillsEnabledKey = "user_skills";
         public const bool ConfigsAgentUserSkillsEnabledDefault = false;
+        /// <summary>
+        /// Runs agent scripts without the in-script timeout and transaction checks. Off unless
+        /// the user opts in.
+        /// </summary>
+        public const string ConfigsAgentRecklessKey = "reckless";
+        public const bool ConfigsAgentRecklessDefault = false;
         /// <summary>Controls the temporary accent overlay on the document used by an agent run.</summary>
         public const string ConfigsAgentTabHighlightKey = "tab_highlight";
         /// <summary>Agent document identification is enabled unless explicitly disabled.</summary>

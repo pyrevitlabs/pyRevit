@@ -42,6 +42,20 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void AnAutomationForwardsTheDocumentItWasMeantFor() {
+        host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
+
+        Serve(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "second",
+        }));
+
+        var sent = Assert.Single(host.RequestsFor("run"))["params"];
+        Assert.Equal("second", sent.Value<string>("document"));
+    }
+
+    [Fact]
     public void AnAutomationThatNeedsADocumentStopsBeforeRunningWhenNoneIsOpen() {
         host.Handler = request => NoDocumentContext(request);
 
@@ -233,12 +247,86 @@ public partial class McpServerTests {
     public void AMarkedButUnexposedAutomationIsNotReportedAsUnknown() {
         var listing = Payload(Single(ToolCall(1, "list_automation", new JObject { ["limit"] = 50 })));
         var notInvocable = listing["operations"].Select(operation => operation["automation"]).First(automation => !automation.Value<bool>("invocable"));
-        var invocable = listing["operations"].Select(operation => operation["automation"]).Count(automation => automation.Value<bool>("invocable"));
+        var invocable = listing["operations"].Select(operation => operation["automation"])
+            .Where(automation => automation.Value<bool>("invocable"))
+            .Select(automation => automation.Value<string>("id"))
+            .ToList();
 
         var response = Single(ToolCall(2, "run_automation", new JObject { ["id"] = notInvocable.Value<string>("id"), ["inputs"] = new JObject() }));
 
-        Assert.Equal(4, invocable);
+        foreach (var id in new[] { "pyrevit.units.parse-length", "pyrevit.levels.resolve", "pyrevit.elements.name", "pyrevit.revisions.list", "pyrevit.units.format-length" })
+            Assert.Contains(id, invocable);
+        foreach (var id in new[] { "pyrevit.walls.create", "pyrevit.elements.delete", "pyrevit.geometry.point", "rpw.elements.name" })
+            Assert.DoesNotContain(id, invocable);
         Assert.Equal("automation_not_exposed", Payload(response).Value<string>("error"));
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void TheListingShowsTheInputsOfAMarkedOperation() {
+        var listing = Payload(Single(ToolCall(1, "list_automation", new JObject { ["limit"] = 50 })));
+        var name = listing["operations"].Select(operation => operation["automation"])
+            .Single(automation => automation.Value<string>("id") == "pyrevit.elements.name");
+
+        Assert.True(name.Value<bool>("invocable"));
+        Assert.Equal(new[] { "element", "title_on_sheet" }, name["inputs"].Select(input => input.Value<string>("name")));
+        Assert.Equal(new[] { "element", "boolean" }, name["inputs"].Select(input => input.Value<string>("type")));
+        Assert.Equal(new[] { true, false }, name["inputs"].Select(input => input.Value<bool>("required")));
+        foreach (var operation in listing["operations"]) {
+            var automation = operation["automation"];
+            var markedInvocableShape = automation["inputs"] != null
+                && operation.Value<string>("kind") == "function"
+                && (automation.Value<string>("mode") == "query" || automation.Value<string>("mode") == "pure")
+                && automation.Value<string>("transaction") == "none";
+            if (markedInvocableShape)
+                Assert.True(automation.Value<bool>("invocable"), automation.Value<string>("id"));
+        }
+        Assert.Empty(host.Requests);
+    }
+
+    [Theory]
+    [InlineData("pyrevit.units.parse-length", "value")]
+    [InlineData("pyrevit.units.parse-slope", "value")]
+    [InlineData("pyrevit.levels.resolve", "name")]
+    [InlineData("pyrevit.elements.by-category", "categories,limit")]
+    public void TheListingShowsTheInputsOfAHandWiredOperation(string id, string names) {
+        var automation = Enumerable.Range(0, 10)
+            .SelectMany(page => Payload(Single(ToolCall(1, "list_automation", new JObject { ["offset"] = page * 50, ["limit"] = 50 })))["operations"])
+            .Select(operation => operation["automation"])
+            .Single(entry => entry.Value<string>("id") == id);
+
+        Assert.True(automation.Value<bool>("invocable"));
+        Assert.Equal(names.Split(','), automation["inputs"].Select(input => input.Value<string>("name")));
+        Assert.True(automation["inputs"][0].Value<bool>("required"));
+    }
+
+    [Fact]
+    public void AMarkedAutomationRunsTheFixedScriptAsAQuery() {
+        host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
+
+        var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.elements.name",
+            ["inputs"] = new JObject { ["element"] = 316542 },
+            ["script"] = "import os",
+        }));
+
+        var sent = Assert.Single(host.RequestsFor("run"))["params"];
+        Assert.Equal("query", sent.Value<string>("mode"));
+        Assert.Equal(PyRevitAutomationOperations.MarkedOperationSource, sent.Value<string>("script"));
+        Assert.Equal("get_name", sent["inputs"]["operation"].Value<string>("function"));
+        Assert.Equal("pyrevit.revit.db.query", sent["inputs"]["operation"].Value<string>("module"));
+        Assert.Equal(316542, sent["inputs"]["inputs"].Value<int>("element"));
+        Assert.False(IsError(response));
+    }
+
+    [Fact]
+    public void AMarkedAutomationWithBadInputsNeverReachesRevit() {
+        var response = Single(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.elements.name",
+            ["inputs"] = new JObject { ["element"] = "Wall 1" },
+        }));
+
+        Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
         Assert.Empty(host.Requests);
     }
 

@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="tied_to_element">与图元 {} 关联的图元</sys:String>
+    <sys:String x:Key="table_title">{} 个图元</sys:String>
+    <sys:String x:Key="selected_object">所选对象</sys:String>
+    <sys:String x:Key="column_element">图元</sys:String>
+    <sys:String x:Key="column_class">类</sys:String>
+    <sys:String x:Key="column_category">类别</sys:String>
+    <sys:String x:Key="column_family_type">族：类型</sys:String>
+    <sys:String x:Key="column_note">备注</sys:String>
+</ResourceDictionary>

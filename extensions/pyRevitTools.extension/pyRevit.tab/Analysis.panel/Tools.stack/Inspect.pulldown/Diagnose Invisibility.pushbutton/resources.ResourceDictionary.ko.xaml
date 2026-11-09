@@ -23,8 +23,8 @@
     <sys:String x:Key="reason_view_filter">뷰 필터 '{}'에 의해 숨겨짐</sys:String>
     <sys:String x:Key="reason_section_box">요소의 경계 상자가 뷰의 활성 3D 단면 상자를 완전히 벗어났습니다</sys:String>
     <sys:String x:Key="reason_crop_box">요소의 경계 상자가 뷰의 자르기 영역을 완전히 벗어났습니다</sys:String>
-    <sys:String x:Key="reason_viewrange_above">요소가 뷰 범위의 상단 절단면보다 위에 있습니다 (요소 최소 Z {:.3f} ft &gt; 상단 {:.3f} ft)</sys:String>
-    <sys:String x:Key="reason_viewrange_below">요소가 뷰 범위의 하단 경계(하단 절단면/뷰 깊이)보다 아래에 있습니다 (요소 최대 Z {:.3f} ft &lt; 하단 경계 {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_above">요소가 뷰 범위의 상단 절단면보다 위에 있습니다 (요소 최소 Z {} &gt; 상단 {})</sys:String>
+    <sys:String x:Key="reason_viewrange_below">요소가 뷰 범위의 하단 경계(하단 절단면/뷰 깊이)보다 아래에 있습니다 (요소 최대 Z {} &lt; 하단 경계 {})</sys:String>
     <sys:String x:Key="reason_view_template">뷰 템플릿 '{}'이(가) 적용되어 있습니다 - 일부 표시 설정이 잠겨 있을 수 있으며 템플릿에서 변경해야 합니다</sys:String>
     <sys:String x:Key="reason_view_specific">요소가 뷰 전용이며 다른 뷰('{}')에 속해 있어 여기에 나타날 수 없습니다</sys:String>
     <sys:String x:Key="reason_view_discipline">뷰 분야가 '{}'(으)로 설정되어 있습니다 - 일부 카테고리는 표시/그래픽 설정과 무관하게 분야에 따라 자동으로 표시되거나 숨겨집니다</sys:String>
@@ -113,7 +113,7 @@
     <sys:String x:Key="code_view_template">템플릿</sys:String>
     <sys:String x:Key="code_view_discipline">분야</sys:String>
     <sys:String x:Key="code_unknown">알 수 없음</sys:String>
-    <sys:String x:Key="reason_above_cut_plane">요소가 절단 평면보다 완전히 위에 있습니다(요소 최소 Z {:.3f} ft &gt; 절단 {:.3f} ft). 절단 평면과 상단 사이에서는 평면도에 창, 케이스워크, 일반 모델 및 절단할 수 없는 카테고리만 표시됩니다. '{}'은(는) 절단 가능합니다</sys:String>
+    <sys:String x:Key="reason_above_cut_plane">요소가 절단 평면보다 완전히 위에 있습니다(요소 최소 Z {} &gt; 절단 {}). 절단 평면과 상단 사이에서는 평면도에 창, 케이스워크, 일반 모델 및 절단할 수 없는 카테고리만 표시됩니다. '{}'은(는) 절단 가능합니다</sys:String>
     <sys:String x:Key="fix_raise_cut_plane">절단 평면을 요소 위로 올리기</sys:String>
     <sys:String x:Key="code_above_cut_plane">절단 위</sys:String>
     <sys:String x:Key="reason_subcategory_drawn_hidden">이 뷰에서 하위 카테고리 '{}'이(가) 숨겨져 있으며, 요소가 여기서 그리는 모든 것이 숨겨진 하위 카테고리를 사용합니다</sys:String>
