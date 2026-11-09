@@ -264,6 +264,14 @@ def _line_pattern(element_id):
     return types.SimpleNamespace(Id=element_id, Name="pattern {}".format(element_id))
 
 
+def _line_style(element_id, name, graphics_style_ids):
+    styles = {
+        style_type: types.SimpleNamespace(Id=style_id)
+        for style_type, style_id in zip((PROJECTION, CUT), graphics_style_ids)
+    }
+    return types.SimpleNamespace(Id=element_id, Name=name, GetGraphicsStyle=styles.get)
+
+
 def _fill_pattern(element_id):
     return types.SimpleNamespace(
         Id=element_id,
@@ -614,6 +622,85 @@ class CollectorTests(unittest.TestCase):
         candidates = self._collect(self.probe._collect_line_patterns, doc)
         self.assertEqual([x.element_id for x in candidates], [103])
 
+    def test_patterns_in_overrides_of_any_view_or_template_are_not_candidates(self):
+        """Exclude patterns overridden in any view, not only the first one."""
+        doc = _collector_doc(
+            categories=[_Category(-1, category_id=1)],
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102, 103)],
+                VIEW: [
+                    _View(),
+                    _View(category_overrides={1: _overrides(CutLinePatternId=101)}),
+                    _View(
+                        category_overrides={1: _overrides(ProjectionLinePatternId=102)}
+                    ),
+                ],
+            },
+        )
+        candidates = self._collect(self.probe._collect_line_patterns, doc)
+        self.assertEqual([x.element_id for x in candidates], [103])
+
+    def test_view_scan_runs_once_per_collection(self):
+        """Share one view scan between line and fill pattern collection."""
+        calls = []
+        doc = _collector_doc(elements_by_class={VIEW: [_View()]})
+        original = self.probe._get_view_override_pattern_ids
+
+        def counting_scan(*args):
+            calls.append(args)
+            return original(*args)
+
+        self.probe._get_view_override_pattern_ids = counting_scan
+        try:
+            self.probe.collect_candidates(doc)
+        finally:
+            self.probe._get_view_override_pattern_ids = original
+        self.assertEqual(len(calls), 1)
+
+    def test_only_user_defined_line_styles_are_candidates(self):
+        """Offer user line styles with their graphics styles as witnesses."""
+        doc = _collector_doc()
+        doc.line_categories = [
+            _line_style(-3000, "<Hidden>", (31, 32)),
+            _line_style(40, "Custom", (41, 42)),
+            _line_style(50, "No styles", ()),
+        ]
+        candidates = self._collect(self.probe._collect_line_styles, doc)
+        self.assertEqual(
+            [(x.element_id, x.witness_id, sorted(x.own_ids)) for x in candidates],
+            [(40, 41, [40, 41, 42]), (50, 50, [50])],
+        )
+
+    def test_candidates_come_in_collector_order_sorted_by_name(self):
+        """Return kinds in a fixed order and items sorted by name."""
+        doc = _collector_doc(
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [
+                    types.SimpleNamespace(Id=102, Name="beta"),
+                    types.SimpleNamespace(Id=101, Name="Alpha"),
+                ],
+                SHARED_PARAMETER_ELEMENT: [_shared_parameter(201)],
+            },
+        )
+        result = self.probe.collect_candidates(doc)
+        self.assertEqual(
+            [kind for kind, _ in result],
+            [
+                self.probe.LINE_STYLES,
+                self.probe.LINE_PATTERNS,
+                self.probe.FILL_PATTERNS,
+                self.probe.SHARED_PARAMETERS,
+            ],
+        )
+        self.assertEqual([x.name for x in result[1][1]], ["Alpha", "beta"])
+        picked = self.probe.collect_candidates(
+            doc, kinds=[self.probe.SHARED_PARAMETERS, self.probe.LINE_PATTERNS]
+        )
+        self.assertEqual(
+            [kind for kind, _ in picked],
+            [self.probe.LINE_PATTERNS, self.probe.SHARED_PARAMETERS],
+        )
+
     def test_views_without_overrides_and_unoverridable_categories_are_skipped(self):
         """Skip views and categories Revit refuses to override."""
         doc = _collector_doc(
@@ -674,6 +761,26 @@ class PurgeTests(unittest.TestCase):
             [(c.element_id, err) for c, err in failed],
             [(10, self.probe.ROLLED_BACK), (11, self.probe.ROLLED_BACK)],
         )
+
+    def test_group_failure_means_in_use_and_is_logged(self):
+        """Keep an item when the trial transaction itself raises."""
+        doc = _FakeDoc({10: {"deleted": [10]}, 11: {"deleted": [11]}})
+        original = self.probe._delete_and_roll_back
+
+        def failing_check(doc_arg, candidate, failures):
+            if candidate.element_id == 10:
+                raise RuntimeError("transaction group refused")
+            return original(doc_arg, candidate, failures)
+
+        self.probe._delete_and_roll_back = failing_check
+        self.probe.logger.debug_calls[:] = []
+        try:
+            result = self.probe.find_unused(doc, self._candidates(10, 11))
+        finally:
+            self.probe._delete_and_roll_back = original
+        self.assertEqual([x.element_id for x in result], [11])
+        self.assertIn("transaction group refused", self.probe.logger.debug_calls[0])
+        self.assertEqual(doc.Application.DocumentChanged.handlers, [])
 
     def test_line_style_counts_as_purged_once_its_graphics_style_is_gone(self):
         """Confirm a line style is purged through its graphics style."""
