@@ -569,9 +569,13 @@ Run records and `capture_view` images older than 14 days are deleted when the ho
 ### Testing agent skills and library changes through MCP
 
 A change to a skill under `pyrevitlib/pyrevit/agent/skills` or to a pyrevitlib helper it describes
-is best checked by running its snippets through the MCP server in a Revit that has your clone
-attached (`pyrevit attach dev default --installed`, see the developer guide). The steps in between
-are easy to get wrong:
+is best checked by running its snippets through the MCP server in a Revit started from your clone
+or git worktree with `pyrevit launch <clone> <engine> <year>`. A launch uses a manifest of its own
+and leaves the attachment alone; run it as a background process, since it stays up while that Revit
+runs. Details are in [Running several clones side by side](#running-several-clones-side-by-side).
+`pyrevit attach dev default --installed` still works for a single session, but it rewrites the shared
+per-year `pyRevit.addin` that the next plain Revit start loads. The steps in between are easy to get
+wrong:
 
 1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
    need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
@@ -589,20 +593,26 @@ are easy to get wrong:
     `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
     tool call, so don't call an MCP tool between the script and the build; afterwards the
     new server starts by itself, or the client needs a reconnect.
-3. **Restart Revit after a build.** Accept the "Security - Unsigned Add-In" dialog with **Load Once**
-   every time; the MCP host doesn't answer before that. Python-only changes need no rebuild, but
-   they need a restart or reload to take effect: IronPython can `reload()` a changed module, while
+3. **Restart Revit after a build.** Close the launched Revit and run `pyrevit launch` again. Accept
+   the "Security - Unsigned Add-In" dialog with **Load Once** whenever it appears; the MCP host
+   doesn't answer before that. Python-only changes need no rebuild, but they need a restart or
+   reload to take effect: IronPython can `reload()` a changed module, while
    CPython can't redefine classes that implement .NET interfaces (reloading `pyrevit.revit.db.create`
    raises `Duplicate type name within an assembly`). Restarting Revit loads the edits on both engines.
-4. **Repeat full test runs on the other IronPython.** The attached IronPython is one setting per
-   clone: `ironpython` runs on 2.7.12 after `pyrevit attach <clone> default --installed` and on 3.4.2
-   after `pyrevit attach <clone> 342 --installed`, while `cpython` is unaffected. The switch
-   rewrites the `.addin` manifest, so the running Revit keeps its engine until it is restarted
-   (and the **Load Once** dialog appears again). `get_context` and every run's `engine` field show
-   the version in use. Run the full tests once per IronPython. Attach `default` again, restart Revit
-   and accept **Load Once** before continuing. When other sessions share the machine, don't switch
-   the attachment: start the second IronPython with `pyrevit launch <clone> 342 <year>` instead, see
-   [Running several clones side by side](#running-several-clones-side-by-side).
+4. **Repeat full test runs on the other IronPython.** `ironpython` runs on 2.7.12 or 3.4.2
+   depending on the engine the session was started with, while `cpython` is unaffected. Start one
+   session per engine with `pyrevit launch <clone> default <year>` and
+   `pyrevit launch <clone> 342 <year>`, one after the other or side by side, and select the session
+   with the `revit` argument of the MCP tools. `get_context` and every run's `engine` field show the
+   version in use. Run the full tests once per IronPython. Nothing is attached, so there is no
+   re-attach, and the next plain Revit start is unchanged.
+
+    If you test a single session through an attachment instead, the engine is one setting per clone:
+    `pyrevit attach <clone> default --installed` selects 2.7.12 and `pyrevit attach <clone> 342
+    --installed` selects 3.4.2. The switch rewrites the `.addin` manifest, so the running Revit keeps
+    its engine until it is restarted (and the **Load Once** dialog appears again). Attach `default`
+    again, restart Revit and accept **Load Once** before continuing, and don't switch the attachment
+    while other sessions share the machine.
 5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
    document, so code that edits a family or project opens its own with `app.NewFamilyDocument(template)`
    or `app.NewProjectDocument(DB.UnitSystem.Metric)` and closes it with `Close(False)` in `finally`.
