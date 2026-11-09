@@ -102,9 +102,9 @@ class _CappedOutput(StringIO):
         back: ``truncate`` shrinks the buffer but frees no room, and
         ``seek`` is neutralised because writes always append, so a print
         after the limit was reached is dropped even after ``truncate(0)``.
-        ``writelines`` is defined here because IronPython 3.4.2 cannot pick
-        an overload for the inherited one on a Python subclass of
-        ``io.StringIO``.
+        ``writelines`` must stay defined here: IronPython 3.4's StringIO
+        implements it in .NET without calling an overridden ``write``, and
+        ``sys.stdout.writelines`` then raises ``TypeError``.
     """
 
     def __init__(self, limit):
