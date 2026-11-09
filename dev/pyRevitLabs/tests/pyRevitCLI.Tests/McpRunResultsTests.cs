@@ -86,6 +86,17 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void ExportsAreCappedAtTwentyAndPointToGetRun() {
+            var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
+                ["exports"] = new JArray(Enumerable.Range(0, 25).Select(index => $"sheet-{index}.png")),
+            }));
+
+            Assert.Equal(20, ((JArray)compact["exports"]).Count);
+            Assert.Contains("25", compact.Value<string>("exports_note"));
+            Assert.Contains("get_run", compact.Value<string>("exports_note"));
+        }
+
+        [Fact]
         public void AddedIdsAreCappedAtTwentyAndPointToGetRun() {
             var compact = PyRevitMcpRunResults.Compact(Run("modify", Changes(added: 25)));
 

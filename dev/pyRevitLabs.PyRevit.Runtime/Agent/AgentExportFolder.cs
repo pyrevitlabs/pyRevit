@@ -14,7 +14,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// A guard against an agent's mistakes, not a sandbox: the script runs with the user's
     /// rights and can still write files by other means.
     /// Invariant: <see cref="Contains"/> fails closed. A target that is not a fully qualified
-    /// drive path, or whose deepest existing part doesn't resolve, is outside.
+    /// drive or UNC path (device paths included), or whose deepest existing part doesn't
+    /// resolve, is outside. A UNC target only matches a folder resolved through the same share.
     /// Invariant: the folder is resolved once, when this object is created before the script
     /// runs, and targets are compared by their resolved final path, so links, short names
     /// and a folder the script swaps for a link afterwards can't move where exports land.
@@ -31,7 +32,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// reports it in <c>FileExportingEventArgs.Path</c>, is the folder or lies inside it.
         /// </summary>
         public bool Contains(string target) {
-            if (resolvedFolder == null || !IsFullyQualifiedDrivePath(target))
+            if (resolvedFolder == null || !IsFullyQualified(target))
                 return false;
             string fullPath;
             try {
@@ -46,12 +47,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     || resolved.StartsWith(resolvedFolder + "\\", StringComparison.OrdinalIgnoreCase));
         }
 
-        private static bool IsFullyQualifiedDrivePath(string path) {
-            return path != null
-                && path.Length >= 3
-                && char.IsLetter(path[0])
-                && path[1] == ':'
-                && (path[2] == '\\' || path[2] == '/');
+        private static bool IsFullyQualified(string path) {
+            if (path == null || path.Length < 3)
+                return false;
+            if (IsSeparator(path[0]) && IsSeparator(path[1]))
+                return path[2] != '?' && path[2] != '.' && !IsSeparator(path[2]);
+            return char.IsLetter(path[0]) && path[1] == ':' && IsSeparator(path[2]);
+        }
+
+        private static bool IsSeparator(char character) {
+            return character == '\\' || character == '/';
         }
 
         private static string DeepestExisting(string fullPath) {

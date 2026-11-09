@@ -7,6 +7,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Integration")]
     public sealed class AgentExportFolderTests : IDisposable {
         private readonly string root;
         private readonly string exports;
@@ -86,6 +88,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AFolderOnAShareAcceptsTargetsThroughThatShareOnly() {
+            var share = AdminShare(exports);
+            if (!Directory.Exists(share))
+                return;
+            var folder = new AgentExportFolder(share);
+
+            Assert.True(folder.Contains(Path.Combine(share, "sheet.png")));
+            Assert.False(folder.Contains(Path.Combine(AdminShare(outside), "sheet.png")));
+            Assert.False(folder.Contains(Path.Combine(share, "..", "sheet.png")));
+        }
+
+        [Fact]
         public void AJunctionInsideTheFolderThatPointsOutsideIsRefused() {
             var folder = new AgentExportFolder(exports);
             var link = Path.Combine(exports, "link");
@@ -157,6 +171,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 Assert.False(app.Application.ExportFile(Path.Combine(exports, "sheet.png")));
                 Assert.Single(guard.Blocked);
             }
+        }
+
+        private static string AdminShare(string path) {
+            return "\\\\localhost\\" + path[0] + "$" + path.Substring(2);
         }
 
         private static string ShortName(string path) {

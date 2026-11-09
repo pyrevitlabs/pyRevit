@@ -58,16 +58,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private TransactionGroup group;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
-        private readonly string exportDir;
-        private AgentExportFolder exportFolder;
+        private readonly AgentExportFolder exportFolder;
 
         /// <param name="exportDir">Existing folder the run may export Revit files into, or null
-        /// to block every export.</param>
+        /// to block every export. It is resolved here, before the script runs.</param>
         public AgentRunGuard(UIApplication uiApp, Document doc, string exportDir = null) {
             this.uiApp = uiApp;
             app = uiApp.Application;
             this.doc = doc;
-            this.exportDir = exportDir;
+            exportFolder = exportDir == null ? null : new AgentExportFolder(exportDir);
         }
 
         public AgentChangeSet Changes => changes;
@@ -105,7 +104,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string FirstErrorDescription { get; private set; }
 
         public void Arm(string groupName) {
-            exportFolder = exportDir == null ? null : new AgentExportFolder(exportDir);
             app.DocumentChanged += OnDocumentChanged;
             app.FailuresProcessing += OnFailuresProcessing;
             app.DocumentSaving += OnDocumentSaving;

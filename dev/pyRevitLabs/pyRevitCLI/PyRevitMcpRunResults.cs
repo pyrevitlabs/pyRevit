@@ -81,7 +81,11 @@ namespace pyRevitCLI {
             CopyIfNotEmpty(run, compact, "failures");
             CopyIfNotEmpty(run, compact, "dialogs");
             CopyIfNotEmpty(run, compact, "blocked");
-            CopyIfNotEmpty(run, compact, "exports");
+            if (run["exports"] is JArray exports && exports.Count > 0) {
+                compact["exports"] = new JArray(exports.Take(MaxChangeIds));
+                if (exports.Count > MaxChangeIds)
+                    compact["exports_note"] = $"The run exported {exports.Count} files; this list stops at {MaxChangeIds}. get_run(run_id) lists them all.";
+            }
 
             if (run["engine"] is JObject engine)
                 compact["engine"] = engine["implementation"] + " " + engine["python"];

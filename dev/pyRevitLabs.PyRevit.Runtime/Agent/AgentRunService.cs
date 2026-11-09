@@ -369,15 +369,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Lists the files the run left in its export folder, and removes the folder when it is
-        /// empty so run records without exports stay as they were.
+        /// empty so run records without exports stay as they were. Subfolders are listed too,
+        /// except links, since exports through them are refused.
         /// </summary>
         private static JArray CollectExports(string exportDir) {
             if (!Directory.Exists(exportDir))
                 return new JArray();
-            var files = Directory.GetFiles(exportDir).OrderBy(file => file, StringComparer.OrdinalIgnoreCase).ToArray();
-            if (files.Length == 0 && Directory.GetDirectories(exportDir).Length == 0)
+            var files = ListFilesOutsideLinks(exportDir).OrderBy(file => file, StringComparer.OrdinalIgnoreCase).ToArray();
+            if (Directory.GetFileSystemEntries(exportDir).Length == 0)
                 Directory.Delete(exportDir);
             return new JArray(files);
+        }
+
+        private static IEnumerable<string> ListFilesOutsideLinks(string folder) {
+            var subfolders = Directory.GetDirectories(folder)
+                .Where(subfolder => !new DirectoryInfo(subfolder).Attributes.HasFlag(FileAttributes.ReparsePoint));
+            return Directory.GetFiles(folder).Concat(subfolders.SelectMany(ListFilesOutsideLinks));
         }
 
         private static void WriteRequestRecord(string runDir, AgentRunRequest request) {

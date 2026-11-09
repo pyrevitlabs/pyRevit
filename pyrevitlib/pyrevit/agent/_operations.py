@@ -7,7 +7,7 @@ checked against the live marker, so a stale index or a hand-built request
 cannot call anything that is not a marked, invocable operation.
 
 The run itself is a ``query`` run, so the host still rolls back any model
-change and blocks saves and exports.
+change and blocks saves and exports outside the run's ``export_dir``.
 """
 
 import importlib

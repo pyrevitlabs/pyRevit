@@ -283,9 +283,9 @@ Rules the host enforces:
 - A file export (`Document.Export`, `Document.ExportImage`) whose target is the run's
   `export_dir` or lies inside it is allowed in every mode, including queries and dry runs. The
   host creates that folder as `exports` in the run record before the script runs, lists the
-  files left in it in the response's `exports`, and removes it when the run leaves it empty. The
-  target is the path Revit reports for the export: a file, a file name prefix (`ExportImage`
-  adds view names) or a folder. It must be a fully qualified drive path; the host compares its
+  files left in it and its subfolders in the response's `exports`, and removes it when the run
+  leaves it empty. The target is the path Revit reports for the export: a file, a file name
+  prefix or a folder. It must be a fully qualified drive or UNC path; the host compares its
   final location, with links and short names resolved, against the folder as it was resolved
   before the script ran. Any other target, or one the host can't resolve, is cancelled, and its
   `blocked` entry carries the `path`. Exported files are not rolled back and are deleted with

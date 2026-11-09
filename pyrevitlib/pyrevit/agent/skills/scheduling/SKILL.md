@@ -76,8 +76,8 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 
 Write exports into the run's `export_dir`, for example
 `schedule.Export(export_dir, "Door Schedule.txt", DB.ViewScheduleExportOptions())`. The host
-cancels Revit file exports to any other folder. Give the user the file's path, or copy it
-where they asked with your own file tools after the run.
+doesn't check `ViewSchedule.Export`, so never point it at the user's folders. Give the user
+the file's path, or copy it where they asked with your own file tools after the run.
 
 ## Before you report done
 
