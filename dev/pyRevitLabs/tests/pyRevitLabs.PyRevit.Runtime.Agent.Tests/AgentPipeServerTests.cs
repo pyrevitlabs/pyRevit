@@ -3,12 +3,17 @@ using System.IO.Pipes;
 using System.Threading;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    /// <summary>
+    /// Checks how <see cref="AgentPipeServer"/> retries creating its pipe and that it reports
+    /// giving up through its stopped-listening callback.
+    /// </summary>
     [Trait("Environment", "HostFree")]
     public sealed class AgentPipeServerTests {
         private static readonly TimeSpan Long = TimeSpan.FromSeconds(10);
 
         private static string UniquePipeName() => "pyrevit-agent-test-" + Guid.NewGuid().ToString("N");
 
+        /// <summary>The wait between pipe creation attempts doubles from the first delay and stops at thirty seconds.</summary>
         [Fact]
         [Trait("Level", "Unit")]
         public void TheRetryDelayDoublesUpToThirtySeconds() {
