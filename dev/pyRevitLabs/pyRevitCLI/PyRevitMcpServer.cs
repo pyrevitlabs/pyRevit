@@ -136,7 +136,7 @@ namespace pyRevitCLI {
                             var tracked = pendingCalls.TryAdd(key, cancellation);
                             inFlight.Add(Task.Run(() => {
                                 try {
-                                    CallTool(id, parameters, cancellation.Token);
+                                    CallTool(id, parameters, cancellation);
                                 }
                                 finally {
                                     if (tracked)
@@ -173,11 +173,12 @@ namespace pyRevitCLI {
 
         private void Cancel(JToken requestId) {
             if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
-                cancellation.Cancel();
+                lock (cancellation)
+                    cancellation.Cancel();
         }
 
-        private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
-            callCancellation.Value = cancellation;
+        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {
+            callCancellation.Value = cancellation.Token;
             Timer progress = null;
             sentRequestId.Value = null;
             try {
@@ -235,9 +236,11 @@ namespace pyRevitCLI {
             }
         }
 
-        private void AnswerUnlessCancelled(CancellationToken cancellation, JObject message) {
-            if (!cancellation.IsCancellationRequested)
-                WriteUnlessClosed(message);
+        private void AnswerUnlessCancelled(CancellationTokenSource cancellation, JObject message) {
+            lock (cancellation) {
+                if (!cancellation.IsCancellationRequested)
+                    WriteUnlessClosed(message);
+            }
         }
 
         private JToken Dispatch(string name, JObject arguments) {

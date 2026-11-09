@@ -107,6 +107,20 @@ public class AgentSkillsTests {
         Assert.False(parsed.ContainsKey("body"));
     }
 
+    [Fact]
+    public void ASkillNameThatDecodesToATrailingNewlineIsRejected() {
+        var root = Directory.CreateTempSubdirectory("pyrevit-skill-").FullName;
+        try {
+            var skillDir = Directory.CreateDirectory(Path.Combine(root, "foo")).FullName;
+            File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), "---\nname: \"foo\\n\"\ndescription: x\n---\nbody\n");
+
+            Assert.Null(PyRevitAgentSkills.ReadSkill(skillDir, PyRevitAgentSkills.UserSource));
+        }
+        finally {
+            Directory.Delete(root, true);
+        }
+    }
+
     [Theory]
     [InlineData(@"""C:\\dev\\""", @"C:\dev\")]
     [InlineData(@"""a\\\""b""", @"a\""b")]

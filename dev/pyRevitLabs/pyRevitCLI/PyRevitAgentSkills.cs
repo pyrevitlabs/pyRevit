@@ -44,7 +44,7 @@ namespace pyRevitCLI {
         private const int MaxParentLevels = 8;
         private const int MaxSkillBytes = 128 * 1024;
         private const int MaxUserDescriptionChars = 240;
-        private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}$", RegexOptions.Compiled);
+        private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}\\z", RegexOptions.Compiled);
 
         public static string UserSkillsDir => Path.Combine(PyRevitAgentClient.AgentDir, "skills");
 
@@ -168,7 +168,7 @@ namespace pyRevitCLI {
             return text;
         }
 
-        private static AgentSkill ReadSkill(string skillDir, string source) {
+        internal static AgentSkill ReadSkill(string skillDir, string source) {
             var path = Path.Combine(skillDir, SkillFile);
             if (IsReparsePoint(skillDir) || !File.Exists(path) || new FileInfo(path).Length > MaxSkillBytes)
                 return null;
