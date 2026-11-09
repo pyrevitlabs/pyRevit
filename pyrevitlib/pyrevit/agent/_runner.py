@@ -96,6 +96,11 @@ class _CappedOutput(StringIO):
         Keeps one character past the host's 64 KB output cap
         (``AgentRunService.MaxOutputChars``), so the host still sees the
         output as truncated; anything later is dropped as it is written.
+
+    Note:
+        ``writelines`` must stay defined here: IronPython 3.4's StringIO
+        implements it in .NET without calling an overridden ``write``, and
+        ``sys.stdout.writelines`` then raises ``TypeError``.
     """
 
     def __init__(self, limit):
@@ -116,6 +121,10 @@ class _CappedOutput(StringIO):
                 StringIO.write(self, kept)
                 self._end += len(kept)
         return len(text)
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
 
     def truncate(self, size=None):
         with self._lock:

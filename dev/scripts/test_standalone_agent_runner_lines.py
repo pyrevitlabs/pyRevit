@@ -1661,6 +1661,17 @@ class AgentRunnerOutputTests(unittest.TestCase):
         captured.writelines(["de", "fghijkl"])
         self.assertEqual("abc\ndefghi", captured.getvalue())
 
+    def test_writelines_goes_through_the_capped_write(self):
+        """IronPython 3.4's StringIO.writelines skips an overridden write."""
+        self.assertIn("writelines", vars(self.runner._CappedOutput))
+        captured = self.runner._CappedOutput(10)
+        written = []
+        real_write = captured.write
+        captured.write = lambda text: written.append(text) or real_write(text)
+        captured.writelines(line for line in ["ab", "cd"])
+        self.assertEqual(["ab", "cd"], written)
+        self.assertEqual("abcd", captured.getvalue())
+
     def test_a_seek_cannot_grow_the_output_past_the_cap(self):
         """Writes after a seek append, so no padded gap bypasses the cap."""
         captured = self.runner._CappedOutput(10)
