@@ -27,7 +27,7 @@ tooltip:
   chinese_s: |-
     查找模型中未使用的线样式、线型图案、填充图案和共享参数，然后删除所选项目。
 
-    每个项目都会先试删除再回滚。只列出删除后不会改变其他内容的项目。 仅在单个图元的图形替换中使用的图案可能无法检测到，清除前请检查列表。
+    每个项目都会先试删除再回滚。只列出删除后不会改变其他内容的项目。仅在单个图元的图形替换中使用的图案可能无法检测到，清除前请检查列表。
   es_es: |-
     Busca estilos de línea, patrones de línea, patrones de relleno y parámetros compartidos que nada usa en el modelo, y elimina los que elija.
 

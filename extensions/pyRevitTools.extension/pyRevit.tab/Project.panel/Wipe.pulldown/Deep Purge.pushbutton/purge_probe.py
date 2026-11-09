@@ -102,8 +102,23 @@ def _collect_line_styles(doc, _pattern_usage):
 
 
 def _iter_builtin_categories(doc):
+    """Yield the categories that `BuiltInCategory` values resolve to.
+
+    `Category.GetCategory` raises `InvalidOperationException` for some values
+    (on Revit 2026: OST_HostTemplate, OST_MassFaceSplitter, OST_MassCutter and
+    OST_ZoningEnvelope). Those values are skipped so one of them cannot stop
+    the whole collection.
+    """
     for builtin_category in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-        category = DB.Category.GetCategory(doc, builtin_category)
+        try:
+            category = DB.Category.GetCategory(doc, builtin_category)
+        except Exception as category_error:  # pylint: disable=broad-except
+            logger.debug(
+                "Skipping %s, which has no category: %s",
+                builtin_category,
+                category_error,
+            )
+            continue
         if category is not None:
             yield category
 
@@ -111,8 +126,9 @@ def _iter_builtin_categories(doc):
 def _get_style_categories(doc):
     """Return every category and subcategory once, in a stable order.
 
-    `doc.Settings.Categories` misses some categories, such as Internal
-    Origin, so categories resolved from `BuiltInCategory` are added too.
+    `doc.Settings.Categories` does not list every category (which ones it
+    misses varies between Revit versions), so categories resolved from
+    `BuiltInCategory` are added too.
     """
     style_categories = OrderedDict()
     for category in list(doc.Settings.Categories) + list(_iter_builtin_categories(doc)):

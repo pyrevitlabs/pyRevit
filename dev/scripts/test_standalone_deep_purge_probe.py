@@ -248,16 +248,25 @@ def _collector_doc(
     elements_by_class=None,
     bound_definitions=(),
     builtin_categories=None,
+    unresolvable_categories=(),
 ):
     return types.SimpleNamespace(
         Settings=types.SimpleNamespace(Categories=list(categories)),
         builtin_categories=builtin_categories or {},
+        unresolvable_categories=frozenset(unresolvable_categories),
         ParameterBindings=types.SimpleNamespace(
             Contains=lambda definition: definition in bound_definitions
         ),
         elements_by_class=elements_by_class or {},
         line_categories=[],
     )
+
+
+def _get_category(doc, value):
+    """Mimic `Category.GetCategory`, which raises for some enum values."""
+    if value in doc.unresolvable_categories:
+        raise RuntimeError("no category for {}".format(value))
+    return doc.builtin_categories.get(value)
 
 
 def _line_pattern(element_id):
@@ -309,9 +318,7 @@ def _load_probe():
         BuiltInCategory=types.SimpleNamespace(
             GetValues=lambda _: list(BUILTIN_CATEGORY_VALUES)
         ),
-        Category=types.SimpleNamespace(
-            GetCategory=lambda doc, value: doc.builtin_categories.get(value)
-        ),
+        Category=types.SimpleNamespace(GetCategory=_get_category),
     )
     revit = types.ModuleType("pyrevit.revit")
     revit.Transaction = _Transaction
@@ -593,6 +600,23 @@ class CollectorTests(unittest.TestCase):
         fills = self._collect(self.probe._collect_fill_patterns, doc)
         self.assertEqual([x.element_id for x in lines], [102])
         self.assertEqual([x.element_id for x in fills], [302])
+
+    def test_builtin_categories_that_raise_are_skipped(self):
+        """Skip enum values `GetCategory` raises for and keep the rest."""
+        internal_origin = _Category(-1, category_id=-2000500)
+        view = _View(
+            category_overrides={-2000500: _overrides(ProjectionLinePatternId=101)}
+        )
+        doc = _collector_doc(
+            builtin_categories={-2000500: internal_origin},
+            unresolvable_categories=[-2000501],
+            elements_by_class={
+                LINE_PATTERN_ELEMENT: [_line_pattern(x) for x in (101, 102)],
+                VIEW: [view],
+            },
+        )
+        candidates = self._collect(self.probe._collect_line_patterns, doc)
+        self.assertEqual([x.element_id for x in candidates], [102])
 
     def test_categories_found_twice_are_checked_once(self):
         """Check a category found by both lookups only once per view."""
