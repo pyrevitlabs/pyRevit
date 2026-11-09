@@ -92,6 +92,8 @@
     <Compile Include="LoadTimelineTests.cs" />
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
+    <Compile Include="SessionResourceRegistryTests.cs" />
+    <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
   </ItemGroup>
 
