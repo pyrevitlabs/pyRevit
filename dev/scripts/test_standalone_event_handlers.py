@@ -118,14 +118,29 @@ class _HostApplication:
         return self.revit_year < version
 
 
+class _Action:
+    """Stands in for ``System.Action``."""
+
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self):
+        self.func()
+
+
 class _ApiContextQueue:
-    """Stands in for the runtime's ``ApiContextQueue``."""
+    """Stands in for the runtime's ``ApiContextQueue``.
+
+    Like pythonnet, it refuses anything but an ``Action`` delegate.
+    """
 
     def __init__(self, response="Accepted"):
         self.response = response
         self.pending = []
 
     def Schedule(self, callback):
+        if not isinstance(callback, _Action):
+            raise TypeError("No method matches given arguments for Schedule")
         if self.response not in ("Denied", "TimedOut"):
             self.pending.append(callback)
         return self.response
@@ -173,7 +188,7 @@ def load_events_module(
     system_collections = _module(
         "System.Collections", ArrayList=_ArrayList, Hashtable=_Hashtable
     )
-    system = _module("System")
+    system = _module("System", Action=_Action)
     system.Collections = system_collections
 
     pyrevit = _module(

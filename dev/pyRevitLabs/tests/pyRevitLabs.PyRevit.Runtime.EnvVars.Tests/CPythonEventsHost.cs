@@ -54,6 +54,33 @@ public interface IExternalEventHandler {
 }
 
 /// <summary>
+/// Stands in for the runtime's <c>ApiContextQueue</c> with the same <see cref="Action"/>
+/// parameter, so pythonnet's argument conversion is the one Revit sees.
+/// </summary>
+public static class ApiContextQueueDouble {
+    private static readonly List<Action> _pending = new();
+
+    /// <summary>Queues the callback and accepts the request.</summary>
+    public static string Schedule(Action callback) {
+        lock (_pending)
+            _pending.Add(callback);
+        return "Accepted";
+    }
+
+    /// <summary>Runs and clears the queued callbacks, as the shared ExternalEvent would.</summary>
+    public static void RunPending() {
+        Action[] callbacks;
+        lock (_pending) {
+            callbacks = _pending.ToArray();
+            _pending.Clear();
+        }
+        using Py.GILState gil = Py.GIL();
+        foreach (Action callback in callbacks)
+            callback();
+    }
+}
+
+/// <summary>
 /// Loads <c>pyrevit/revit/events.py</c> into the CPython engine started by
 /// <see cref="CPythonEnvVarsHost"/>, with a <c>HOST_APP</c> whose <c>app</c> is a fresh
 /// <see cref="FreshAppWrapper"/> on every access.
@@ -119,10 +146,7 @@ internal static class CPythonEventsHost {
                 def is_older_than(self, version):
                     return False
 
-            class _NoApiContextQueue(object):
-                @staticmethod
-                def Schedule(callback):
-                    raise RuntimeError("no Revit API context")
+            from {{typeof(ApiContextQueueDouble).Namespace}} import ApiContextQueueDouble
 
             _args = dict(
                 DocumentChangedEventArgs=EventArgs,
@@ -148,7 +172,7 @@ internal static class CPythonEventsHost {
             _envvars = _stub("pyrevit.coreutils.envvars", REGISTEREDEVENTHANDLERS_ENVVAR="PYREVIT_TEST_EVENTHANDLERS")
             _stub("pyrevit.coreutils", envvars=_envvars)
             _stub("pyrevit.coreutils.logger", get_logger=logging.getLogger)
-            _runtime_types = _stub("pyrevit.runtime.types", ApiContextQueue=_NoApiContextQueue)
+            _runtime_types = _stub("pyrevit.runtime.types", ApiContextQueue=ApiContextQueueDouble)
             _stub("pyrevit.runtime", types=_runtime_types)
 
             _spec = importlib.util.spec_from_file_location("events", r"{{eventsPath}}")

@@ -66,6 +66,28 @@ public class CPythonEventsTests {
     }
 
     /// <summary>
+    /// <c>execute_in_revit_context</c> hands the queue a delegate pythonnet accepts for an
+    /// <see cref="Action"/> parameter, and the callback runs once with its arguments when the
+    /// queue drains; a raising callback is logged and does not stop the next one.
+    /// </summary>
+    [Fact]
+    public void ExecuteInRevitContext_SchedulesThroughAnActionParameter() {
+        CPythonEventsHost.Exec(
+            "ran = []\n"
+            + "def failing():\n"
+            + "    raise ValueError('boom')\n"
+            + "queued = [events.execute_in_revit_context(failing),\n"
+            + "          events.execute_in_revit_context(lambda v, key=None: ran.append((v, key)), 1, key=2)]");
+
+        Assert.Equal(1, CPythonEventsHost.EvalInt("int(queued == [True, True])"));
+        Assert.Equal(0, CPythonEventsHost.EvalInt("len(ran)"));
+
+        ApiContextQueueDouble.RunPending();
+
+        Assert.Equal(1, CPythonEventsHost.EvalInt("int(ran == [(1, 2)])"));
+    }
+
+    /// <summary>
     /// A second execution of <c>events.py</c> in the same interpreter, as <c>importlib.reload</c>
     /// or a runner unloading its modules causes, defines its CLR handler types again without
     /// colliding with the types the first execution emitted.

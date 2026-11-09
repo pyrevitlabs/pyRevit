@@ -2,6 +2,7 @@
 
 # pylint: disable=unused-argument
 import uuid
+from System import Action
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
@@ -315,12 +316,14 @@ def _schedule_in_api_context(callback):
         Never create an ExternalEvent with a Python handler at import time:
         Revit keeps the handler until the event is disposed, and the handler
         keeps this engine and every module it imported alive after reloads.
+        The callback is wrapped in ``System.Action`` explicitly because
+        pythonnet does not convert a Python function to a delegate argument.
 
     Returns:
         (str | None): why the callback will never run, or None once queued.
     """
     try:
-        response = ApiContextQueue.Schedule(callback)
+        response = ApiContextQueue.Schedule(Action(callback))
     except Exception as ex:
         return str(ex)
     if response in (
