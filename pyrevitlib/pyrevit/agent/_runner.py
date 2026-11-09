@@ -17,6 +17,7 @@ Invariant:
 """
 
 import ast
+import io
 import json
 import keyword
 import linecache
@@ -27,6 +28,7 @@ import threading
 import time
 import tokenize
 import traceback
+import types
 from itertools import compress
 
 try:
@@ -40,6 +42,15 @@ from pyrevit.api import DB, UI
 from pyrevit.compat import IRONPY, get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
+IRONPYTHON_TRACED_RECURSION_LIMIT = 500
+"""Python call depth a traced IronPython run may reach.
+
+Warning:
+    A trace function makes every IronPython frame larger, so on Revit's 1 MB
+    main thread a traced run with several ``with`` or ``try`` blocks per frame
+    overflows the stack and crashes Revit between 750 and 900 calls, below
+    the engine's limit of 1000. Untraced runs keep the engine's limit.
+"""
 
 _WATCHDOG_RETRY_SECONDS = 0.2
 _WATCHDOG_ESCALATE_SECONDS = 1.0
@@ -252,6 +263,129 @@ def _guard_loop_headers(source):
     return source
 
 
+class _WorkspaceLoopGuard(object):
+    """Import hook that compiles the workspace's modules with guarded loops.
+
+    Active only while a run is, on ``sys.meta_path``. A module found under the
+    run's workspace folder, and only when ``sys.path`` order selects it, is
+    compiled through :func:`_guard_loop_headers` and
+    gets the run's ``__agent_tick__`` and ``__agent_loop__``, so a timeout
+    stops loops inside workspace code. Everything outside the workspace,
+    pyrevitlib and rpw included, imports as usual and stays unguarded.
+
+    Note:
+        Both the PEP 302 protocol (``find_module``/``load_module``, IronPython
+        2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
+        implemented. Modules get the same broad-handler narrowing as the
+        script, so a bare ``except`` cannot swallow the timeout. Namespace
+        packages are not rewritten, and on IronPython a workspace module that
+        compiles code at runtime is not line-traced; its loops there are
+        stopped only if the script itself is traced.
+    """
+
+    def __init__(self, workspace, guards, on_unguarded=lambda: None):
+        self._root = _folder_prefix(workspace)
+        self._libraries = _library_prefixes(self._root)
+        self._guards = guards
+        self._on_unguarded = on_unguarded
+        self._paths = {}
+
+    def _locate(self, fullname, path):
+        if path is None and fullname in sys.builtin_module_names:
+            return None
+        if path is not None and not self._owns_parent(fullname):
+            return None
+        name = fullname.rpartition(".")[2]
+        folders = path if path is not None else sys.path
+        folders = [op.abspath(f) for f in folders if f and isinstance(f, str)]
+        for folder in folders:
+            package = op.join(folder, name, "__init__.py")
+            module = op.join(folder, name + ".py")
+            found = (package, True) if op.isfile(package) else None
+            found = found or ((module, False) if op.isfile(module) else None)
+            if found:
+                return found if self._is_workspace_file(found[0]) else None
+        return None
+
+    def _is_workspace_file(self, filename):
+        return _is_under(filename, self._root) and not any(
+            _is_under(filename, prefix) for prefix in self._libraries
+        )
+
+    def _owns_parent(self, fullname):
+        parent = sys.modules.get(fullname.rpartition(".")[0])
+        return getattr(parent, "__loader__", None) is self
+
+    def find_module(self, fullname, path=None):
+        if not self._locate(fullname, path):
+            return None
+        self._paths[fullname] = path
+        return self
+
+    def load_module(self, fullname):
+        filename, is_package = self._locate(fullname, self._paths.pop(fullname, None))
+        module = types.ModuleType(fullname)
+        module.__file__ = filename
+        module.__loader__ = self
+        if is_package:
+            module.__path__ = [op.dirname(filename)]
+            module.__package__ = fullname
+        else:
+            module.__package__ = fullname.rpartition(".")[0]
+        sys.modules[fullname] = module
+        try:
+            self.exec_module(module)
+        except BaseException:
+            sys.modules.pop(fullname, None)
+            raise
+        return module
+
+    def find_spec(self, fullname, path=None, target=None):
+        located = self._locate(fullname, path)
+        if not located:
+            return None
+        import importlib.util
+
+        filename, is_package = located
+        return importlib.util.spec_from_file_location(
+            fullname,
+            filename,
+            loader=self,
+            submodule_search_locations=[op.dirname(filename)] if is_package else None,
+        )
+
+    def get_data(self, path):
+        with open(path, "rb") as handle:
+            return handle.read()
+
+    def create_module(self, spec):
+        return None
+
+    def exec_module(self, module):
+        with open(module.__file__, "rb") as handle:
+            raw = handle.read()
+        code, rewrite_problem, guarded = _compile_source(
+            _decode_source(raw), True, module.__file__
+        )
+        if not guarded:
+            self._on_unguarded()
+        if rewrite_problem:
+            print(
+                "[pyRevit agent] Could not fully rewrite {} ({}).".format(
+                    module.__file__, rewrite_problem
+                )
+            )
+        module.__dict__.update(self._guards)
+        exec(code, module.__dict__)
+
+
+def _decode_source(raw):
+    if isinstance(raw, str):
+        return raw
+    encoding = tokenize.detect_encoding(io.BytesIO(raw).readline)[0]
+    return raw.decode(encoding)
+
+
 def _significant_tokens(source):
     token_source = source.replace("\r\n", "\n").replace("\r", "\n")
     for token in tokenize.generate_tokens(StringIO(token_source).readline):
@@ -338,13 +472,14 @@ def _ends_loop_header(header, token, depth):
     return token_type == tokenize.OP and text in (")", "]", "}")
 
 
-def _compile_source(source, guard_loops=False):
+def _compile_source(source, guard_loops=False, filename=SOURCE_NAME):
     """Compile the agent source with broad exception handlers narrowed.
 
     Args:
         source (str): the agent source.
         guard_loops (bool): also rewrite loop headers with
             :func:`_guard_loop_headers`.
+        filename (str): the name the code object reports.
 
     Returns:
         tuple: the code object, None or a description of why source rewriting
@@ -357,17 +492,17 @@ def _compile_source(source, guard_loops=False):
         line 1 when compiling an AST. The fallback sacrifices source locations,
         not timeout safety.
     """
-    tree = ast.parse(source, SOURCE_NAME, "exec")
+    tree = ast.parse(source, filename, "exec")
     narrower = _NarrowBroadHandlers()
     narrower.visit(tree)
     narrowed_source = source
     if narrower.narrowed:
         try:
             narrowed_source = _narrow_source_handlers(source, narrower.narrowed)
-            compile(narrowed_source, SOURCE_NAME, "exec")
+            compile(narrowed_source, filename, "exec")
         except Exception as ex:
             return (
-                compile(ast.fix_missing_locations(tree), SOURCE_NAME, "exec"),
+                compile(ast.fix_missing_locations(tree), filename, "exec"),
                 "{}: {}; compiled the narrowed AST instead; source line numbers "
                 "may be unavailable".format(type(ex).__name__, _safe_text(ex)),
                 False,
@@ -375,16 +510,16 @@ def _compile_source(source, guard_loops=False):
     if guard_loops:
         try:
             guarded_source = _guard_loop_headers(narrowed_source)
-            return compile(guarded_source, SOURCE_NAME, "exec"), None, True
+            return compile(guarded_source, filename, "exec"), None, True
         except Exception as ex:
             return (
-                compile(narrowed_source, SOURCE_NAME, "exec"),
+                compile(narrowed_source, filename, "exec"),
                 "{}: {}; loops check the deadline through line tracing instead".format(
                     type(ex).__name__, _safe_text(ex)
                 ),
                 False,
             )
-    return compile(narrowed_source, SOURCE_NAME, "exec"), None, False
+    return compile(narrowed_source, filename, "exec"), None, False
 
 
 def _record_transaction_starts(source):
@@ -579,7 +714,9 @@ class _UnboundStart(object):
         return self._kind.Start(transaction, *args)
 
 
-def _execution_tracer(timeout_s, state, transactions, check_lines, track):
+def _execution_tracer(
+    timeout_s, state, transactions, check_lines, track, recursion_cap=None
+):
     """Build the ``sys.settrace`` function for one run.
 
     With ``track`` on, which :func:`run` only asks for when
@@ -590,7 +727,8 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
     through its globals. pyRevit, rpw and workspace code runs untraced. With
     ``check_lines`` on, every frame, the script's own and any code it
     compiles at run time or calls, also checks the watchdog's flag on each
-    line.
+    line. With ``recursion_cap`` set, every call puts a recursion limit the
+    script raised above it back down to it.
 
     Warning:
         On CPython 3.12, never read ``f_locals`` from a line event of a frame
@@ -641,9 +779,11 @@ def _execution_tracer(timeout_s, state, transactions, check_lines, track):
         return check_deadline
 
     def trace_call(frame, event, arg):
+        if recursion_cap and sys.getrecursionlimit() > recursion_cap:
+            sys.setrecursionlimit(recursion_cap)
         code = frame.f_code
         if not track or code.co_filename != SOURCE_NAME:
-            return check_deadline if check_lines else None
+            return check_deadline if check_lines or state.get("check_lines") else None
         if code.co_name == "<module>":
             return track_module
         if dict_locals_on_lines or code.co_flags & _CO_OPTIMIZED:
@@ -929,12 +1069,21 @@ def run(context):
         :func:`_guard_loop_headers`); on CPython it also raises
         ``RunTimedOut`` in the script thread. It stops Python code, including
         loops, but not a single blocking call such as a long Revit API call or
-        ``time.sleep``, nor, on IronPython, a long loop inside a library or
-        workspace function the script calls; the run fails with ``timeout``
-        once that call returns. On IronPython, a run with no trace function
+        ``time.sleep``, nor, on IronPython, a long loop inside a
+        pyrevitlib or rpw function the script calls; the run fails with
+        ``timeout`` once that call returns. Modules imported from the
+        ``workspace`` folder get the same loop rewrite through an import hook
+        (:class:`_WorkspaceLoopGuard`) that lives only as long as the run.
+        On IronPython, a run with no trace function
         (see ``docs/agent-runtime.md``) has no check outside loop headers, so
-        unbounded recursion or a callback passed to ``map``, ``filter`` or
-        ``sorted`` over an endless iterable is not stopped.
+        a callback passed to ``map``, ``filter`` or ``sorted`` over an endless
+        iterable is not stopped.
+
+    Note:
+        While a trace function is installed, an IronPython run's recursion
+        limit is held at :data:`IRONPYTHON_TRACED_RECURSION_LIMIT`, even if
+        the script raises it, and the previous limit is restored when the
+        script ends.
 
     Note:
         Transactions the script leaves open are found by rewriting each
@@ -980,11 +1129,13 @@ def run(context):
     sys.stderr = captured
     failed = False
     workspace = None
+    workspace_guard = None
+    workspace_folder = context.Workspace
     namespace = None
     left_open = 0
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
-    state = {"timed_out": False, "finished": False}
+    state = {"timed_out": False, "finished": False, "check_lines": False}
     script_finished = False
     tracked_transactions = {}
     try:
@@ -996,6 +1147,16 @@ def run(context):
                 namespace["__agent_tick__"],
                 namespace["__agent_loop__"],
             ) = _loop_guards(timeout_s, state, tracked_transactions)
+            if workspace_folder:
+                workspace_guard = _WorkspaceLoopGuard(
+                    workspace_folder,
+                    {
+                        name: namespace[name]
+                        for name in ("__agent_tick__", "__agent_loop__")
+                    },
+                    lambda: state.update(check_lines=True),
+                )
+                sys.meta_path.insert(0, workspace_guard)
         phases.lap("setup")
         if reckless:
             code = compile(source, SOURCE_NAME, "exec")
@@ -1024,13 +1185,20 @@ def run(context):
             guard_loops and unguarded_code and _set_async_exc_function() is None
         )
         started = time.time()
+        saved_recursion_limit = sys.getrecursionlimit()
+        saved_trace = getattr(sys, "gettrace", lambda: None)()
         try:
             if timeout_s:
                 _start_watchdog(timeout_s, state)
             if check_lines or track:
                 sys.settrace(
                     _execution_tracer(
-                        timeout_s, state, tracked_transactions, check_lines, track
+                        timeout_s,
+                        state,
+                        tracked_transactions,
+                        check_lines,
+                        track,
+                        _limit_traced_recursion(),
                     )
                 )
             script_exit = None
@@ -1072,7 +1240,8 @@ def run(context):
                 context.SetResult(serialized)
         finally:
             _finish_and_stop_watchdog(state)
-            sys.settrace(None)
+            sys.settrace(saved_trace)
+            sys.setrecursionlimit(saved_recursion_limit)
     except BaseException as ex:
         failed = True
         if isinstance(ex, RunTimedOut) and state["timed_out"]:
@@ -1090,6 +1259,10 @@ def run(context):
             error_type, message = _describe_error(ex)
             context.SetError(error_type, message, _format_script_traceback())
     finally:
+        if workspace_guard is not None:
+            sys.meta_path[:] = [
+                finder for finder in sys.meta_path if finder is not workspace_guard
+            ]
         if namespace is not None:
             left_open = _roll_back_open_transactions(namespace, tracked_transactions)
         _TRANSACTION_RANKS.clear()
@@ -1379,6 +1552,14 @@ def _reachable_values(namespace):
                 yield item
 
 
+def _limit_traced_recursion():
+    if _implementation() != "ironpython":
+        return None
+    limit = min(sys.getrecursionlimit(), IRONPYTHON_TRACED_RECURSION_LIMIT)
+    sys.setrecursionlimit(limit)
+    return limit
+
+
 def _implementation():
     return "ironpython" if IRONPY else "cpython"
 
@@ -1418,11 +1599,12 @@ def _enter_workspace(workspace):
 def _is_under(module_file, root):
     """True when a module's file is inside ``root``.
 
-    Loaded modules can have a ``__file__`` that isn't a file path (built-in
-    and dynamically created modules, assemblies); ``op.abspath`` raises on
-    those in IronPython, so they are treated as outside the workspace.
+    Loaded modules can have a ``__file__`` that isn't an absolute file path
+    (built-in and dynamically created modules, assembly names, IronPython's
+    relative stdlib paths); those are treated as outside the workspace, since
+    ``op.abspath`` would resolve them against the current directory.
     """
-    if not isinstance(module_file, str) or not module_file:
+    if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
@@ -1430,10 +1612,45 @@ def _is_under(module_file, root):
         return False
 
 
+def _folder_prefix(folder):
+    return op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+
+
+_LIBRARY_PATHS = [entry for entry in sys.path if isinstance(entry, str) and entry]
+_PYREVITLIB_PATH = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
+
+
+def _library_prefixes(root):
+    nested = [
+        prefix
+        for prefix in (_folder_prefix(entry) for entry in _LIBRARY_PATHS)
+        if prefix != root and prefix.startswith(root)
+    ]
+    nested.append(_folder_prefix(_PYREVITLIB_PATH))
+    return nested
+
+
 def _unload_modules_under(folder):
-    root = op.normcase(op.abspath(folder)).rstrip("/\\") + op.sep
+    """Unload the modules imported from ``folder``.
+
+    Invariant:
+        Only Python source modules are unloaded, and one under a library
+        folder (a ``sys.path`` entry from when this runner loaded) inside the
+        workspace stays loaded. A workspace such as a drive root or the pyRevit
+        clone never unloads the standard library, .NET namespace modules,
+        pyrevitlib or this runner from the shared engine, while a folder the
+        agent's own scripts put on ``sys.path`` is still reloaded. pyrevitlib
+        stays loaded even when it is the workspace itself.
+    """
+    root = _folder_prefix(folder)
+    nested = _library_prefixes(root)
     for name, module in list(sys.modules.items()):
-        if _is_under(getattr(module, "__file__", None), root):
+        module_file = getattr(module, "__file__", None)
+        if (
+            _is_under(module_file, root)
+            and module_file.lower().endswith((".py", ".pyw", ".pyc"))
+            and not any(_is_under(module_file, prefix) for prefix in nested)
+        ):
             del sys.modules[name]
 
 
@@ -1581,7 +1798,80 @@ _RUNNER_FILENAME = _format_script_traceback.__code__.co_filename
 
 
 def _safe_text(value):
+    if isinstance(value, type("")):
+        return value
     try:
         return str(value)
     except Exception:
         return repr(value)
+
+
+_WARM_UP_SOURCE = (
+    "class Probe(object):\n"
+    "    def Start(self):\n"
+    "        return 0\n"
+    "values = []\n"
+    "for index in range(3):\n"
+    "    try:\n"
+    "        values.append(index)\n"
+    "    except:\n"
+    "        pass\n"
+    "Probe().Start()\n"
+    "result = {\n"
+    "    'values': values,\n"
+    "    'unique': set(values),\n"
+    "    'id': DB.ElementId.InvalidElementId,\n"
+    "    'point': DB.XYZ(1.0, 2.0, 3.0),\n"
+    "}\n"
+)
+
+
+class _NoApplication(object):
+    ActiveUIDocument = None
+    Application = None
+
+
+class _WarmUpContext(object):
+    """Run context for :func:`warm_up`: no Revit application, outcome kept here."""
+
+    Source = _WARM_UP_SOURCE
+    Workspace = None
+    TimeoutSeconds = 60
+    Reckless = False
+    InputsJson = "{}"
+
+    def __init__(self):
+        self.UIApp = _NoApplication()
+        self.error = None
+
+    def SetEngine(self, implementation, python_version, version_text):
+        pass
+
+    def SetResult(self, json_text):
+        pass
+
+    def SetOutput(self, text):
+        pass
+
+    def SetError(self, error_type, message, traceback_text):
+        self.error = (error_type, message)
+
+
+def warm_up():
+    """Run a small script through :func:`run` so the first agent run finds the runner ready.
+
+    The agent host calls this once per session load, after the first request
+    an agent sends (see ``docs/agent-runtime.md``). The script goes through
+    source rewriting, compilation, loop guards, transaction recording, the
+    watchdog, result serialization and the rollback scan, against a context
+    with no Revit application: it reads no document, starts no transaction
+    and leaves no run record.
+
+    Raises:
+        RuntimeError: the warm-up script reported an error. The host only
+            logs it.
+    """
+    context = _WarmUpContext()
+    run(context)
+    if context.error is not None:
+        raise RuntimeError("Agent warm-up failed: {}: {}".format(*context.error))

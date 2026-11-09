@@ -5,7 +5,6 @@ using System.Linq;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -28,17 +27,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const double MaxStartTimeoutSeconds = 3600;
 
         public static string Handle(string line) {
+            JToken id = null;
+            string method = null;
+            var loadAtStart = AgentHost.SessionLoad;
             JObject request;
             try {
-                request = JObject.Parse(line);
+                request = AgentRequestLine.Parse(line);
             }
             catch (JsonException ex) {
                 return Failure(null, -32700, ex.Message, "parse_error");
             }
 
-            var id = request["id"];
             try {
-                var method = (request["method"] as JValue)?.Value as string ?? string.Empty;
+                id = request["id"];
+                method = (request["method"] as JValue)?.Value as string ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
                 return Success(id, Dispatch(method, parameters, id));
             }
@@ -50,10 +52,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return Failure(id, -32603, "The agent request failed inside Revit; the pyRevit log has the details.",
                     "internal_error", new JObject { ["outcome"] = "unknown" });
             }
+            finally {
+                if (method != null)
+                    AgentHost.NoteRequest(method, loadAtStart);
+            }
         }
 
         private static JToken Dispatch(string method, JObject parameters, JToken id) {
             AgentHost.RefreshConfigIfChanged();
+            if (method != "ping")
+                RequireEnabled();
             switch (method) {
                 case "ping":
                     return new JObject {
@@ -66,7 +74,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":
                     var runRequest = ParseParameters(() => AgentRunRequest.FromJson(parameters));
-                    EnforcePolicy(runRequest);
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
                     runRequest.RequestId = RequestIdOf(id);
@@ -134,12 +141,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "A CPython agent run can't start from inside a CPython script. Use engine 'ironpython', or call from an IronPython command.");
         }
 
-        private static void EnforcePolicy(AgentRunRequest request) {
-            if (request.Mode == AgentRunMode.Modify
-                && PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyReadOnly)
-                throw new AgentException(
-                    "policy_readonly",
-                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+        /// <summary>
+        /// Refuses work once <c>[agent] enabled</c> is off, so disabling the agent from outside
+        /// Revit stops it at the next request instead of the next pyRevit reload.
+        /// </summary>
+        /// <remarks>
+        /// Checked again on the main thread just before the work starts, so a request queued
+        /// before the agent was disabled never runs.
+        /// </remarks>
+        private static void RequireEnabled() {
+            if (AgentHost.IsEnabled())
+                return;
+            var disabled = new AgentException("agent_disabled",
+                "The pyRevit agent is disabled in the pyRevit settings, so the request was not run.");
+            disabled.Details["outcome"] = "not_run";
+            throw disabled;
         }
 
         /// <summary>
@@ -148,7 +164,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         /// <remarks>
         /// Dismissed dialogs are added to an object result as <c>dialogs</c>. <c>run</c> doesn't
-        /// use this: its guard captures dialogs itself and must disarm for the approval prompt.
+        /// use this: its guard captures dialogs itself.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
             Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters) {
@@ -164,13 +180,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Runs a <c>run</c> request on the main thread. A request refused as <c>revit_busy</c>
-        /// never ran, and leaves a <c>not_run</c> record so the caller can confirm that later.
+        /// or <c>document_changed</c> never ran, and leaves a <c>not_run</c> record so the caller
+        /// can confirm that later.
         /// </summary>
         private static JToken InvokeRunOnMainThread(AgentRunRequest request, JObject parameters) {
             try {
                 return InvokeOnMainThread(app => AgentRunService.Execute(app, request), parameters);
             }
-            catch (AgentException ex) when (ex.Code == AgentException.NotRunCode) {
+            catch (AgentException ex) when (ex.Details.Value<string>("outcome") == "not_run") {
                 AgentRunService.RecordNotRun(request, ex);
                 throw;
             }
@@ -191,7 +208,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var startTimeout = startTimeoutSeconds.HasValue
                 ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
                 : DefaultStartTimeout;
-            return dispatcher.Invoke(work, startTimeout);
+            return dispatcher.Invoke(app => {
+                AgentHost.RefreshConfigIfChanged();
+                RequireEnabled();
+                return work(app);
+            }, startTimeout);
         }
 
         private static string Success(JToken id, JToken result) {

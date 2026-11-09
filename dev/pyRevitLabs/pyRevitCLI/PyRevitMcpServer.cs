@@ -389,7 +389,19 @@ namespace pyRevitCLI {
                 parameters["workspace"] = arguments["workspace"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
+            var document = OptionalString(arguments, "document");
+            if (document != null)
+                parameters["document"] = document;
             return parameters;
+        }
+
+        private static string OptionalString(JObject arguments, string name) {
+            var token = arguments[name];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.String)
+                throw new InvalidCastException();
+            return (string)token;
         }
 
         private JToken RunAutomation(JObject arguments) {
@@ -410,6 +422,9 @@ namespace pyRevitCLI {
                 parameters["engine"] = arguments["engine"];
             if (arguments["timeout_s"] != null)
                 parameters["timeout_s"] = arguments["timeout_s"];
+            var document = OptionalString(arguments, "document");
+            if (document != null)
+                parameters["document"] = document;
             return PyRevitMcpRunResults.Compact((JObject)CallRevit(arguments, "run", parameters));
         }
 
@@ -565,6 +580,13 @@ namespace pyRevitCLI {
             };
         }
 
+        private static JObject DocumentProperty() {
+            return new JObject {
+                ["type"] = "string",
+                ["description"] = "Title or path of the document the run is meant for, as returned by get_context. If the active document differs, the run is refused with document_changed before anything runs. Pass the path when two open documents may share a title; a value containing a path separator is compared with the active document's path only, anything else with its title only.",
+            };
+        }
+
         private static JObject WorkspaceProperty() {
             return new JObject {
                 ["type"] = "string",
@@ -661,6 +683,7 @@ namespace pyRevitCLI {
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     RunAutomation),
@@ -797,7 +820,7 @@ namespace pyRevitCLI {
                     })),
 
                 new McpTool("run_query", readOnly: false, new[] { "script" },
-                    () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
+                    () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. A document the script creates, such as from `NewFamilyDocument` or `EditFamily`, is outside that rollback: it is reported in `changes.other_documents` with a `scope` instead of `rolled_back` and does not fail the run. A document opened from a file, such as with `OpenDocumentFile`, must not be modified: doing so fails the run with `other_document_modified`. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
                         new JObject {
                             ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Assign `result` to return data." },
                             ["title"] = new JObject { ["type"] = "string", ["description"] = "Short label for the run record." },
@@ -805,6 +828,7 @@ namespace pyRevitCLI {
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
                             ["workspace"] = WorkspaceProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     arguments => RunScript(arguments, "query")),
@@ -819,6 +843,7 @@ namespace pyRevitCLI {
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
                             ["workspace"] = WorkspaceProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify")),

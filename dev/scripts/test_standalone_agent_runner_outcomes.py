@@ -114,6 +114,11 @@ class AgentRunnerOutcomeTests(unittest.TestCase):
         errors, _ = self._run("import sys\nsys.exit('missing level')\n")
         self.assertEqual([("SystemExit", "The script exited: missing level")], errors)
 
+    def test_sys_exit_with_unicode_message_keeps_the_text(self):
+        """A non-ASCII exit message is reported as text."""
+        errors, _ = self._run("import sys\nsys.exit(u'\\u5c42')\n")
+        self.assertEqual([("SystemExit", "The script exited: \u5c42")], errors)
+
     def test_sys_exit_with_a_code_reports_the_code(self):
         """A numeric exit code keeps its message."""
         errors, _ = self._run("import sys\nsys.exit(3)\n")
