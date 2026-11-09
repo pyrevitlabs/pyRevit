@@ -592,7 +592,8 @@ wrong:
     dotnet run -c Debug -- local
     ```
 
-    `--trust-cert` is needed once per machine: `local` refuses to start until the developer
+    `--trust-cert` is needed once per Windows user and again after the certificate is renewed (about
+    a year after it was created, within 30 days of expiry): `local` refuses to start until the developer
     certificate is trusted, and Windows asks you to confirm the new root, see `build/README.md`.
     `local` runs `ci` and then signs `bin\` with that certificate, so Revit loads the build without
     the unsigned add-in dialog. A plain `ci` build is unsigned.
