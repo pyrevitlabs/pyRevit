@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -191,8 +192,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
+        /// <summary>
+        /// Writes the run's entry script and executes it on the agent engine.
+        /// </summary>
+        /// <param name="starting">
+        /// Called once the entry script is prepared, just before the engine runs it, so a caller can
+        /// tell a failed preparation, where nothing ran, from a failure of the script.
+        /// </param>
         public static int Execute(
-            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
+            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths, Action starting) {
             var entryPath = Path.Combine(runDir, EntryFileName);
             File.WriteAllText(entryPath, BuildEntryScript(request.Engine), new UTF8Encoding(false));
 
@@ -200,6 +208,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var configs = CreateRuntimeConfigs(
                 context.UIApp, request.Engine, searchPaths, new Dictionary<string, object> { ["__agent__"] = context });
 
+            starting();
             return ScriptExecutor.ExecuteScript(scriptData, configs);
         }
 
