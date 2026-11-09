@@ -195,7 +195,8 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// Only the flat one-line scalars skills use are understood. A value in single or double
-        /// quotes loses its quotes, with <c>''</c> and <c>\"</c> unescaped. A file whose front
+        /// quotes loses its quotes, with <c>''</c> (single quotes) and the escapes <c>\\</c>, <c>\"</c>, <c>\/</c>, <c>\n</c>,
+        /// <c>\t</c> and <c>\r</c> (double quotes) unescaped; other escapes are kept as written. A file whose front
         /// matter is never closed has none, so its body is never read as metadata.
         /// </remarks>
         internal static Dictionary<string, string> ParseFrontMatter(IReadOnlyList<string> lines) {
@@ -216,8 +217,29 @@ namespace pyRevitCLI {
             if (value.Length >= 2 && value[0] == '\'' && value[value.Length - 1] == '\'')
                 return value.Substring(1, value.Length - 2).Replace("''", "'");
             if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"')
-                return value.Substring(1, value.Length - 2).Replace("\\\"", "\"");
+                return UnescapeDoubleQuoted(value.Substring(1, value.Length - 2));
             return value;
+        }
+
+        private static string UnescapeDoubleQuoted(string text) {
+            var result = new StringBuilder(text.Length);
+            for (var index = 0; index < text.Length; index++) {
+                if (text[index] != '\\' || index == text.Length - 1) {
+                    result.Append(text[index]);
+                    continue;
+                }
+                var escaped = text[++index];
+                switch (escaped) {
+                    case 'n': result.Append('\n'); break;
+                    case 't': result.Append('\t'); break;
+                    case 'r': result.Append('\r'); break;
+                    case '\\':
+                    case '"':
+                    case '/': result.Append(escaped); break;
+                    default: result.Append('\\').Append(escaped); break;
+                }
+            }
+            return result.ToString();
         }
 
         private static IEnumerable<(string Root, string Source)> SkillRoots() {

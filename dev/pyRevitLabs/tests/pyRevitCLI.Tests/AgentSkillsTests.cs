@@ -107,6 +107,17 @@ public class AgentSkillsTests {
         Assert.False(parsed.ContainsKey("body"));
     }
 
+    [Theory]
+    [InlineData(@"""C:\\dev\\""", @"C:\dev\")]
+    [InlineData(@"""a\\\""b""", @"a\""b")]
+    [InlineData(@"""one\ntwo\tend""", "one\ntwo\tend")]
+    [InlineData(@"""keeps \q""", @"keeps \q")]
+    public void DoubleQuotedFrontMatterValuesUnescapeInOnePass(string raw, string expected) {
+        var parsed = PyRevitAgentSkills.ParseFrontMatter(new[] { "---", "value: " + raw, "---" });
+
+        Assert.Equal(expected, parsed["value"]);
+    }
+
     [Fact]
     public void UnclosedFrontMatterIsIgnored() {
         Assert.Empty(PyRevitAgentSkills.ParseFrontMatter(new[] { "---", "name: other", "# Body", "Note: text" }));
