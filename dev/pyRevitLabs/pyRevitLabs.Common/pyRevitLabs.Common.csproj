@@ -47,6 +47,12 @@
             <LibGit2SharpNative Include="$(OutDir)\runtimes\win-x64\native\*.dll"/>
         </ItemGroup>
 
+        <ItemGroup>
+            <ObsoleteLibGit2Native Include="$(PyRevitBinDir)\git2-*.dll;$(PyRevitRootDir)\bin\git2-*.dll"
+                                   Exclude="@(LibGit2SharpNative->'$(PyRevitBinDir)\%(Filename)%(Extension)');@(LibGit2SharpNative->'$(PyRevitRootDir)\bin\%(Filename)%(Extension)')"/>
+        </ItemGroup>
+        <Delete Files="@(ObsoleteLibGit2Native)"/>
+
         <Copy SourceFiles="$(OutDir)\DotNetVersionFinder.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\LibGit2Sharp.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="@(LibGit2SharpNative)" DestinationFolder="$(PyRevitBinDir)"/>
