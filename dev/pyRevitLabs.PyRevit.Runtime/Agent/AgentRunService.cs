@@ -223,14 +223,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 timings.Lap("prepare");
                 var openAtStart = AgentDocuments.Snapshot(app.Application);
                 var guard = new AgentRunGuard(app, doc);
-                var scriptStarted = false;
                 using (guard) {
                     try {
                         guard.Arm("Agent: " + request.Title);
                         timings.Lap("guard_arm");
                         int exitCode;
                         using (reckless ? null : AgentHost.Dispatcher?.BeginScript(TimeSpan.FromSeconds(request.TimeoutSeconds), runId, request.RequestId))
-                            exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths, () => scriptStarted = true);
+                            exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
                         timings.Lap("engine");
 
                         var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;
@@ -275,7 +274,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         logger.Error(ex, "Agent run {0} failed in the host", runId);
                         context.SetError("host_error", ex.Message, ex.ToString());
                         response["status"] = "error";
-                        response["decision"] = AgentRunDecision.AfterHostError(guard.Committed, scriptStarted);
+                        response["decision"] = AgentRunDecision.AfterHostError(guard.Committed, context.Started);
                         response["failures"] = guard.Failures;
                         response["dialogs"] = guard.Dialogs;
                         response["blocked"] = guard.Blocked;
@@ -290,7 +289,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         + "Ask the user to undo them in Revit or close the document without saving.");
                 }
 
-                if (doc != null && scriptStarted && !guard.RollbackFailed && response.Value<string>("decision") != "committed") {
+                if (doc != null && context.Started && !guard.RollbackFailed && response.Value<string>("decision") != "committed") {
                     var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
                     if (lostByRollback != null) {
                         logger.Error("Agent run {0}: {1}", runId, lostByRollback);

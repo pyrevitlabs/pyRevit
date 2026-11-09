@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -62,6 +61,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string EngineVersionText { get; private set; }
 
         public bool HasError => ErrorType != null;
+
+        /// <summary>
+        /// True once the engine began executing the run's entry script. False after a failure to
+        /// write the entry script or to start the engine, where nothing of the run executed.
+        /// </summary>
+        public bool Started { get; private set; }
+
+        public void MarkStarted() {
+            Started = true;
+        }
 
         public void SetEngine(string implementation, string pythonVersion, string versionText) {
             EngineImplementation = implementation;
@@ -195,12 +204,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <summary>
         /// Writes the run's entry script and executes it on the agent engine.
         /// </summary>
-        /// <param name="starting">
-        /// Called once the entry script is prepared, just before the engine runs it, so a caller can
-        /// tell a failed preparation, where nothing ran, from a failure of the script.
-        /// </param>
+        /// <remarks>
+        /// The entry script's first statement calls <see cref="AgentScriptContext.MarkStarted"/>, so a
+        /// failure to write it or to start the engine leaves <see cref="AgentScriptContext.Started"/> false.
+        /// </remarks>
         public static int Execute(
-            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths, Action starting) {
+            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
             var entryPath = Path.Combine(runDir, EntryFileName);
             File.WriteAllText(entryPath, BuildEntryScript(request.Engine), new UTF8Encoding(false));
 
@@ -208,7 +217,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var configs = CreateRuntimeConfigs(
                 context.UIApp, request.Engine, searchPaths, new Dictionary<string, object> { ["__agent__"] = context });
 
-            starting();
             return ScriptExecutor.ExecuteScript(scriptData, configs);
         }
 
@@ -216,6 +224,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var builder = new StringBuilder();
             if (engine == AgentEngine.CPython)
                 builder.Append("#! python3\n");
+            builder.Append("__agent__.MarkStarted()\n");
             builder.Append("try:\n");
             foreach (var line in RunnerImport.TrimEnd('\n').Split('\n'))
                 builder.Append("    ").Append(line).Append('\n');
