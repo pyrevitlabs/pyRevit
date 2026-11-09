@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 // iron languages
 using Microsoft.Scripting;
@@ -91,6 +94,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 Engine = IronPython.Hosting.Python.CreateEngine(flags);
+                TrackContext(Engine);
 
                 // also, allow access to the PyRevitLoader internals
                 Engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
@@ -197,6 +201,105 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Shutdown() {
             CleanupBuiltins();
             CleanupStreams();
+        }
+
+        private const int MaxBinderContainerDepth = 2;
+
+        private static readonly FieldInfo BinderRuleCacheField =
+            typeof(CallSiteBinder).GetField("Cache", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static readonly List<WeakReference> startedContexts = new List<WeakReference>();
+
+        private static void TrackContext(Microsoft.Scripting.Hosting.ScriptEngine engine) {
+            var context = Microsoft.Scripting.Hosting.Providers.HostingHelpers.GetLanguageContext(engine);
+            lock (startedContexts)
+                startedContexts.Add(new WeakReference(context));
+        }
+
+        private static List<object> LiveContexts() {
+            var contexts = new List<object>();
+            object defaultContext = IronPython.Runtime.DefaultContext.Default?.LanguageContext;
+            if (defaultContext != null)
+                contexts.Add(defaultContext);
+
+            lock (startedContexts) {
+                startedContexts.RemoveAll(reference => !reference.IsAlive);
+                foreach (WeakReference reference in startedContexts) {
+                    object context = reference.Target;
+                    if (context != null && !contexts.Contains(context))
+                        contexts.Add(context);
+                }
+            }
+            return contexts;
+        }
+
+        /// <summary>
+        /// Drops the call-site rules cached by the binders of every IronPython context still alive:
+        /// IronPython's default context (the first engine created in the process) and the contexts
+        /// of the engines this runtime started.
+        /// </summary>
+        /// <remarks>
+        /// A binder belongs to one context but caches rules for objects of whichever engine it was
+        /// used on, and each rule references that engine's types and functions. IronPython runs some
+        /// operations on objects of every engine through the default context (ctypes reads a
+        /// library's <c>_handle</c> there, for example), and an engine that Revit keeps alive, such as
+        /// one that registered a dockable pane, keeps binding objects of later engines. Those rules
+        /// keep every earlier engine alive with all the modules it imported. Dropping them only costs
+        /// rebuilding them on next use. Best effort: the binders are found by reflection, and a
+        /// failure is logged and leaves the remaining caches in place.
+        /// </remarks>
+        /// <returns>Number of binders whose rule cache was dropped.</returns>
+        internal static int ReleaseCachedRules() {
+            if (BinderRuleCacheField == null) {
+                logger.Debug("CallSiteBinder has no rule cache field; cached rules are kept.");
+                return 0;
+            }
+
+            int released = 0;
+            const BindingFlags fieldFlags =
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            List<object> contexts = LiveContexts();
+            foreach (object context in contexts) {
+                for (Type type = context.GetType(); type != null; type = type.BaseType) {
+                    foreach (FieldInfo field in type.GetFields(fieldFlags)) {
+                        try {
+                            released += ReleaseBinderRules(field.GetValue(context), 0);
+                        }
+                        catch (Exception ex) {
+                            logger.Debug(ex, "Could not release the rules held by {0}.{1}", type.Name, field.Name);
+                        }
+                    }
+                }
+            }
+
+            logger.Debug("Released the rule caches of {0} binders in {1} IronPython contexts", released, contexts.Count);
+            return released;
+        }
+
+        private static int ReleaseBinderRules(object value, int depth) {
+            if (value is CallSiteBinder binder) {
+                BinderRuleCacheField.SetValue(binder, null);
+                return 1;
+            }
+
+            if (depth > MaxBinderContainerDepth)
+                return 0;
+
+            var items = new List<object>();
+            if (value is IDictionary dictionary) {
+                lock (dictionary)
+                    foreach (object item in dictionary.Values)
+                        items.Add(item);
+            }
+            else if (value is Array array) {
+                foreach (object item in array)
+                    items.Add(item);
+            }
+
+            int released = 0;
+            foreach (object item in items)
+                released += ReleaseBinderRules(item, depth + 1);
+            return released;
         }
 
         private void SetupStdlib(Microsoft.Scripting.Hosting.ScriptEngine engine) {

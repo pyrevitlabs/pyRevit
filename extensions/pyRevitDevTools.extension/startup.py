@@ -17,12 +17,12 @@ import sys
 import time
 import os.path as op
 
-from pyrevit import HOST_APP, framework
+from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import routes
 from pyrevit.compat import get_elementid_value_func
-from System import AppDomain
+from pyrevit.revit import events
 
 
 # add your module paths to the sys.path here
@@ -45,17 +45,13 @@ def docopen_eventhandler(sender, args):
 
 DOCOPEN_HANDLER_SLOT = "pyRevitDevTools.DocumentOpeningHandler"
 
-previous_docopen_handler = AppDomain.CurrentDomain.GetData(DOCOPEN_HANDLER_SLOT)
-if previous_docopen_handler is not None:
-    HOST_APP.app.DocumentOpening -= previous_docopen_handler
-
-# add to DocumentOpening
-# type is EventHandler[DocumentOpeningEventArgs] so create that correctly
-docopen_handler = framework.EventHandler[DB.Events.DocumentOpeningEventArgs](
-    docopen_eventhandler
+events.replace_handler(
+    DOCOPEN_HANDLER_SLOT,
+    HOST_APP.app,
+    "DocumentOpening",
+    docopen_eventhandler,
+    DB.Events.DocumentOpeningEventArgs,
 )
-HOST_APP.app.DocumentOpening += docopen_handler
-AppDomain.CurrentDomain.SetData(DOCOPEN_HANDLER_SLOT, docopen_handler)
 
 
 # test code routes module =====================================================

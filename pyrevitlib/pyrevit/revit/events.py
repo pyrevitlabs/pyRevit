@@ -2,7 +2,6 @@
 
 # pylint: disable=unused-argument
 import uuid
-from collections import deque
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
@@ -10,6 +9,7 @@ from pyrevit import framework
 from pyrevit import compat
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.runtime.types import ApiContextQueue
 
 
 mlogger = get_logger(__name__)
@@ -156,6 +156,47 @@ def remove_handler(event_name, event_handler):
     clr_event.RemoveEventHandler(source, event_handler)
 
 
+def replace_handler(slot, source, event_name, handler_func, handler_args_type):
+    """Subscribe to a CLR event, first detaching what ``slot`` subscribed before.
+
+    For smart button ``__selfinit__`` functions, which run again in a new
+    engine on every reload. A handler a previous load left subscribed fires
+    once more per reload, and keeps that engine and every module it imported
+    alive for the rest of the Revit session.
+
+    Args:
+        slot (str): process-wide key, unique to this subscription.
+        source (object): object raising the event, such as ``__rvt__``.
+        event_name (str): CLR event name, such as ``ViewActivated``.
+        handler_func (Callable): called with ``(sender, args)``.
+        handler_args_type (type): the event's ``EventArgs`` type.
+
+    Returns:
+        (EventHandler): the subscribed delegate.
+    """
+    release_handler(slot, source, event_name)
+    event_handler = create_handler(handler_func, handler_args_type)
+    source.GetType().GetEvent(event_name).AddEventHandler(source, event_handler)
+    framework.AppDomain.CurrentDomain.SetData(slot, event_handler)
+    return event_handler
+
+
+def release_handler(slot, source, event_name):
+    """Detach the delegate ``replace_handler`` subscribed under ``slot``.
+
+    Args:
+        slot (str): the key passed to ``replace_handler``.
+        source (object): object raising the event.
+        event_name (str): CLR event name.
+    """
+    domain = framework.AppDomain.CurrentDomain
+    previous = domain.GetData(slot)
+    if previous is None:
+        return
+    source.GetType().GetEvent(event_name).RemoveEventHandler(source, previous)
+    domain.SetData(slot, None)
+
+
 def register_handler(event_name, handler_func, handler_group_id):
     registered_handlers = _get_registered_handlers()
     if not registered_handlers.ContainsKey(handler_group_id):
@@ -257,52 +298,37 @@ def delayed_unregister_exec_handlers(handler_group_id):
         if isinstance(handler_group_id, (list, tuple, ArrayList))
         else [handler_group_id]
     )
-    HANDLER_UNREGISTERER.handler_group_id = handler_group_ids
-    ext_event = _get_unregisterer_extevent()
-    if ext_event is None:
-        mlogger.error(
-            "Could not create ExternalEvent; event handlers remain registered"
-        )
-        if HOST_APP.has_api_context:
-            _unregister_handler_groups(handler_group_ids)
+    error = _schedule_in_api_context(
+        lambda: _unregister_handler_groups(handler_group_ids)
+    )
+    if error is None:
         return
+    mlogger.error("Could not unregister event handlers: {}".format(error))
+    if HOST_APP.has_api_context:
+        _unregister_handler_groups(handler_group_ids)
+
+
+def _schedule_in_api_context(callback):
+    """Queue a callback on the runtime's ExternalEvent shared by all engines.
+
+    Note:
+        Never create an ExternalEvent with a Python handler at import time:
+        Revit keeps the handler until the event is disposed, and the handler
+        keeps this engine and every module it imported alive after reloads.
+
+    Returns:
+        (str | None): why the callback will never run, or None once queued.
+    """
     try:
-        response = ext_event.Raise()
-        if response in (
-            UI.ExternalEventRequest.Denied,
-            UI.ExternalEventRequest.TimedOut,
-        ):
-            mlogger.error(
-                "Could not unregister event handlers; "
-                "ExternalEvent request was {}".format(response)
-            )
-            if HOST_APP.has_api_context:
-                _unregister_handler_groups(handler_group_ids)
+        response = ApiContextQueue.Schedule(callback)
     except Exception as ex:
-        mlogger.error("Could not unregister event handlers: {}".format(ex))
-        if HOST_APP.has_api_context:
-            _unregister_handler_groups(handler_group_ids)
-
-
-def _get_unregisterer_extevent():
-    # External events require API context, so retry creation on first use.
-    global HANDLER_UNREGISTERER_EXTEVENT
-    if HANDLER_UNREGISTERER_EXTEVENT is None:
-        try:
-            HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(
-                HANDLER_UNREGISTERER
-            )
-        except Exception:
-            HANDLER_UNREGISTERER_EXTEVENT = None
-    return HANDLER_UNREGISTERER_EXTEVENT
-
-
-HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
-# Import can occur outside API context, so event creation may be deferred.
-try:
-    HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
-except Exception:
-    HANDLER_UNREGISTERER_EXTEVENT = None
+        return str(ex)
+    if response in (
+        UI.ExternalEventRequest.Denied,
+        UI.ExternalEventRequest.TimedOut,
+    ):
+        return "ExternalEvent request was {}".format(response)
+    return None
 
 
 def handle(*args):  # pylint: disable=no-method-argument
@@ -331,52 +357,6 @@ def stop_events():
             delayed_unregister_exec_handlers(EXEC_PARAMS.exec_id)
 
 
-class _GenericExternalEventHandler(UI.IExternalEventHandler):
-    __namespace__ = _CLR_NAMESPACE
-
-    def __init__(self):
-        self._queue = deque()
-
-    def Execute(self, uiapp):
-        while self._queue:
-            fn = self._queue.popleft()
-            try:
-                fn()
-            except Exception as ex:
-                mlogger.error("ExternalEvent error: {}".format(ex))
-
-    def GetName(self):
-        return "GenericExternalEventHandler"
-
-    def schedule(self, func):
-        self._queue.append(func)
-
-    def discard(self, func):
-        try:
-            self._queue.remove(func)
-            return True
-        except ValueError:
-            return False
-
-
-_HANDLER = _GenericExternalEventHandler()
-# Import can occur outside API context, so event creation may be deferred.
-try:
-    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
-except Exception:
-    _EXTERNAL_EVENT = None
-
-
-def _get_execute_extevent():
-    global _EXTERNAL_EVENT
-    if _EXTERNAL_EVENT is None:
-        try:
-            _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
-        except Exception:
-            _EXTERNAL_EVENT = None
-    return _EXTERNAL_EVENT
-
-
 def execute_in_revit_context(func, *args, **kwargs):
     """Execute a function in Revit API context using ExternalEvent.
 
@@ -394,8 +374,8 @@ def execute_in_revit_context(func, *args, **kwargs):
 
     Returns:
         (bool): True when the callback was queued; False when the
-            ExternalEvent could not be created or raised, in which case the
-            callback never runs.
+            ExternalEvent could not be raised, in which case the callback
+            never runs.
 
     Example:
         ```python
@@ -440,6 +420,8 @@ def execute_in_revit_context(func, *args, **kwargs):
             g[k] = _saved_modules[k]
         try:
             func(*args, **kwargs)
+        except Exception as ex:
+            mlogger.error("ExternalEvent error: {}".format(ex))
         finally:
             for k, old in saved.items():
                 if old is _MISSING:
@@ -447,29 +429,8 @@ def execute_in_revit_context(func, *args, **kwargs):
                 else:
                     g[k] = old
 
-    _ext_event = _get_execute_extevent()
-    if _ext_event is None:
-        mlogger.error("Could not create ExternalEvent; scheduled callback will not run")
-        return False
-
-    _HANDLER.schedule(_wrapper)
-    try:
-        response = _ext_event.Raise()
-        if response in (
-            UI.ExternalEventRequest.Denied,
-            UI.ExternalEventRequest.TimedOut,
-        ):
-            _HANDLER.discard(_wrapper)
-            mlogger.error(
-                "Could not schedule callback; ExternalEvent request was {}".format(
-                    response
-                )
-            )
-            return False
-    except Exception as ex:
-        _HANDLER.discard(_wrapper)
-        mlogger.error(
-            "Could not schedule callback through ExternalEvent: {}".format(ex)
-        )
+    error = _schedule_in_api_context(_wrapper)
+    if error is not None:
+        mlogger.error("Could not schedule callback: {}".format(error))
         return False
     return True

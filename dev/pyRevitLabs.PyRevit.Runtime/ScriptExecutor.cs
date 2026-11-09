@@ -85,6 +85,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // The check-then-create below is intentionally unlocked: both call
             // sites run on the Revit main thread during init, so there is no
             // concurrent entry to guard against.
+            ApiContextQueue.Initialize();
             if (extExecEvent != null)
                 return;
 

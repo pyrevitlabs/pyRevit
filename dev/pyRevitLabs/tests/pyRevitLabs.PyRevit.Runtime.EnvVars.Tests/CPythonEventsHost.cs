@@ -119,8 +119,10 @@ internal static class CPythonEventsHost {
                 def is_older_than(self, version):
                     return False
 
-            def _no_external_event(handler):
-                raise RuntimeError("no Revit API context")
+            class _NoApiContextQueue(object):
+                @staticmethod
+                def Schedule(callback):
+                    raise RuntimeError("no Revit API context")
 
             _args = dict(
                 DocumentChangedEventArgs=EventArgs,
@@ -138,7 +140,6 @@ internal static class CPythonEventsHost {
                 UI=types.SimpleNamespace(
                     Events=types.SimpleNamespace(**_args),
                     IExternalEventHandler=IExternalEventHandler,
-                    ExternalEvent=types.SimpleNamespace(Create=_no_external_event),
                     ExternalEventRequest=types.SimpleNamespace(Denied="Denied", TimedOut="TimedOut"),
                 ),
                 framework=types.SimpleNamespace(AppDomain=AppDomain, EventHandler=EventHandler),
@@ -147,6 +148,8 @@ internal static class CPythonEventsHost {
             _envvars = _stub("pyrevit.coreutils.envvars", REGISTEREDEVENTHANDLERS_ENVVAR="PYREVIT_TEST_EVENTHANDLERS")
             _stub("pyrevit.coreutils", envvars=_envvars)
             _stub("pyrevit.coreutils.logger", get_logger=logging.getLogger)
+            _runtime_types = _stub("pyrevit.runtime.types", ApiContextQueue=_NoApiContextQueue)
+            _stub("pyrevit.runtime", types=_runtime_types)
 
             _spec = importlib.util.spec_from_file_location("events", r"{{eventsPath}}")
             events = importlib.util.module_from_spec(_spec)

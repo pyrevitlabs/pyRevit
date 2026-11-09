@@ -118,19 +118,22 @@ class _HostApplication:
         return self.revit_year < version
 
 
-class _ExternalEvent:
-    def __init__(self, handler):
-        self.handler = handler
-        self.response = "Accepted"
+class _ApiContextQueue:
+    """Stands in for the runtime's ``ApiContextQueue``."""
 
-    def Raise(self):
+    def __init__(self, response="Accepted"):
+        self.response = response
+        self.pending = []
+
+    def Schedule(self, callback):
+        if self.response not in ("Denied", "TimedOut"):
+            self.pending.append(callback)
         return self.response
 
-
-class _ExternalEventFactory:
-    @staticmethod
-    def Create(handler):
-        return _ExternalEvent(handler)
+    def execute(self):
+        pending, self.pending = self.pending, []
+        for callback in pending:
+            callback()
 
 
 class _Logger:
@@ -158,7 +161,7 @@ def load_events_module(
     host,
     exec_id,
     logger,
-    external_event_response,
+    api_context_queue,
     has_selection_changed_args=True,
 ):
     """Import the production events module with isolated host and CLR doubles."""
@@ -187,7 +190,6 @@ def load_events_module(
         UI=types.SimpleNamespace(
             IExternalEventHandler=type("IExternalEventHandler", (), {}),
             Events=ui_events,
-            ExternalEvent=_ExternalEventFactory,
             ExternalEventRequest=types.SimpleNamespace(
                 Denied="Denied", TimedOut="TimedOut"
             ),
@@ -205,7 +207,10 @@ def load_events_module(
         REGISTEREDEVENTHANDLERS_ENVVAR="PYREVIT_REGISTEREDEVENTHANDLERS",
     )
     logger_module = _module("pyrevit.coreutils.logger", get_logger=lambda name: logger)
+    runtime_types = _module("pyrevit.runtime.types", ApiContextQueue=api_context_queue)
+    runtime = _module("pyrevit.runtime", types=runtime_types)
     pyrevit.coreutils = coreutils
+    pyrevit.runtime = runtime
     coreutils.envvars = envvars
 
     replacements = {
@@ -215,6 +220,8 @@ def load_events_module(
         "pyrevit.coreutils": coreutils,
         "pyrevit.coreutils.envvars": envvars,
         "pyrevit.coreutils.logger": logger_module,
+        "pyrevit.runtime": runtime,
+        "pyrevit.runtime.types": runtime_types,
     }
     previous = {key: sys.modules.get(key) for key in replacements}
     sys.modules.update(replacements)
@@ -230,7 +237,6 @@ def load_events_module(
             else:
                 sys.modules[key] = old_module
 
-    events.HANDLER_UNREGISTERER_EXTEVENT.response = external_event_response
     return events
 
 
@@ -242,10 +248,12 @@ class EventHandlerCleanupTests(unittest.TestCase):
         self.app_domain = _AppDomain()
         self.host = _HostApplication()
         self.logger = _Logger()
+        self.queue = _ApiContextQueue()
 
     def _load(self, exec_id, response="Accepted"):
+        self.queue.response = response
         return load_events_module(
-            self.app_domain, self.host, exec_id, self.logger, response
+            self.app_domain, self.host, exec_id, self.logger, self.queue
         )
 
     def test_reload_removes_handlers_when_script_skipped_stop_events(self):
@@ -314,7 +322,7 @@ class EventHandlerCleanupTests(unittest.TestCase):
 
         self.assertIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
         self.host._api_context = True
-        events.HANDLER_UNREGISTERER.Execute(None)
+        self.queue.execute()
         self.assertNotIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
         self.assertIsNone(
             self.app_domain.GetData(events.envvars.REGISTEREDEVENTHANDLERS_ENVVAR)
@@ -341,6 +349,45 @@ class EventHandlerCleanupTests(unittest.TestCase):
         )
 
 
+class ReplaceHandlerTests(unittest.TestCase):
+    """A smart button reload swaps its subscription instead of adding one."""
+
+    def setUp(self):
+        """Load the events module with a fresh process-wide slot store."""
+        self.app_domain = _AppDomain()
+        self.host = _HostApplication()
+        self.events = load_events_module(
+            self.app_domain, self.host, "selfinit", _Logger(), _ApiContextQueue()
+        )
+
+    def test_replace_detaches_the_previous_load_subscription(self):
+        """Only the latest handler stays subscribed under the slot."""
+        source = self.host._uiapp
+        first = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        second = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+
+        self.assertEqual([second], source.ViewActivated.handlers)
+        self.assertNotEqual(first, second)
+        self.assertIs(second, self.app_domain.GetData("slot"))
+
+    def test_release_detaches_and_clears_the_slot(self):
+        """Releasing leaves no subscription and no stored delegate."""
+        source = self.host._uiapp
+        self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+
+        self.events.release_handler("slot", source, "ViewActivated")
+        self.events.release_handler("slot", source, "ViewActivated")
+
+        self.assertEqual([], source.ViewActivated.handlers)
+        self.assertIsNone(self.app_domain.GetData("slot"))
+
+
 class PreSelectionChangedHostTests(unittest.TestCase):
     """Revit 2021/2022 lack ``UI.Events.SelectionChangedEventArgs``."""
 
@@ -353,7 +400,7 @@ class PreSelectionChangedHostTests(unittest.TestCase):
             self.host,
             "revit-2022",
             self.logger,
-            "Accepted",
+            _ApiContextQueue(),
             has_selection_changed_args=False,
         )
 
@@ -371,13 +418,14 @@ class PreSelectionChangedHostTests(unittest.TestCase):
 
 
 class ExecuteInRevitContextTests(unittest.TestCase):
-    """CPython schedules callbacks through the same ExternalEvent as IronPython."""
+    """Callbacks go through the runtime queue shared by every engine."""
 
     def setUp(self):
         """Load the events module as the CPython engine sees it."""
         self.logger = _Logger()
+        self.queue = _ApiContextQueue()
         self.events = load_events_module(
-            _AppDomain(), _HostApplication(), "cpython-exec", self.logger, "Accepted"
+            _AppDomain(), _HostApplication(), "cpython-exec", self.logger, self.queue
         )
         self.calls = []
 
@@ -388,12 +436,13 @@ class ExecuteInRevitContextTests(unittest.TestCase):
         def callback(value, key=None):
             calls.append((value, key))
 
-        self.events.execute_in_revit_context(callback, "value", key="option")
+        self.assertTrue(
+            self.events.execute_in_revit_context(callback, "value", key="option")
+        )
 
         self.assertEqual([], calls)
-        handler = self.events._EXTERNAL_EVENT.handler
-        handler.Execute(None)
-        handler.Execute(None)
+        self.queue.execute()
+        self.queue.execute()
         self.assertEqual([("value", "option")], calls)
         self.assertEqual([], self.logger.errors)
 
@@ -404,12 +453,23 @@ class ExecuteInRevitContextTests(unittest.TestCase):
         def callback():
             calls.append("ran")
 
-        self.events._EXTERNAL_EVENT.response = "Denied"
-        self.events.execute_in_revit_context(callback)
-        self.events._EXTERNAL_EVENT.handler.Execute(None)
+        self.queue.response = "Denied"
+        self.assertFalse(self.events.execute_in_revit_context(callback))
+        self.queue.execute()
 
         self.assertEqual([], calls)
         self.assertTrue(self.logger.errors)
+
+    def test_failing_callback_is_logged(self):
+        """An exception in the callback is logged instead of reaching Revit."""
+
+        def callback():
+            raise ValueError("boom")
+
+        self.events.execute_in_revit_context(callback)
+        self.queue.execute()
+
+        self.assertEqual(["ExternalEvent error: boom"], self.logger.errors)
 
 
 if __name__ == "__main__":
