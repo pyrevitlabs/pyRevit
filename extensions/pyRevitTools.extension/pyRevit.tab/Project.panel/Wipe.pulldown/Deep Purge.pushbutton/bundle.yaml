@@ -11,34 +11,34 @@ tooltip:
   en_us: |-
     Find line styles, line patterns, fill patterns and shared parameters that nothing in the model uses, then delete the ones you pick.
 
-    Each item is test-deleted and rolled back first. Only items whose removal changes nothing else are offered.
+    Each item is test-deleted and rolled back first. Only items whose removal changes nothing else are offered. Patterns used only by graphic overrides of individual elements may not be detected, so review the list before purging.
   ko: |-
     모델에서 사용되지 않는 선 스타일, 선 패턴, 채우기 패턴, 공유 매개변수를 찾은 뒤 선택한 항목을 삭제합니다.
 
-    각 항목을 먼저 시험 삭제한 후 되돌립니다. 삭제해도 다른 요소가 바뀌지 않는 항목만 표시됩니다.
+    각 항목을 먼저 시험 삭제한 후 되돌립니다. 삭제해도 다른 요소가 바뀌지 않는 항목만 표시됩니다. 개별 요소의 그래픽 재지정에만 사용된 패턴은 감지되지 않을 수 있으므로 삭제 전에 목록을 검토하세요.
   fr_fr: |-
     Trouve les styles de ligne, motifs de ligne, motifs de remplissage et paramètres partagés que rien n'utilise dans le modèle, puis supprime ceux que vous choisissez.
 
-    Chaque élément est d'abord supprimé à titre d'essai puis restauré. Seuls les éléments dont la suppression ne modifie rien d'autre sont proposés.
+    Chaque élément est d'abord supprimé à titre d'essai puis restauré. Seuls les éléments dont la suppression ne modifie rien d'autre sont proposés. Les motifs utilisés uniquement par des remplacements graphiques d'éléments individuels peuvent ne pas être détectés : vérifiez la liste avant de purger.
   ru: |-
     Находит стили линий, образцы линий, образцы штриховки и общие параметры, которые нигде в модели не используются, и удаляет выбранные.
 
-    Каждый элемент сначала пробно удаляется с откатом. Предлагаются только элементы, удаление которых больше ничего не меняет.
+    Каждый элемент сначала пробно удаляется с откатом. Предлагаются только элементы, удаление которых больше ничего не меняет. Образцы, используемые только в переопределениях графики отдельных элементов, могут быть не обнаружены, поэтому проверьте список перед очисткой.
   chinese_s: |-
     查找模型中未使用的线样式、线型图案、填充图案和共享参数，然后删除所选项目。
 
-    每个项目都会先试删除再回滚。只列出删除后不会改变其他内容的项目。
+    每个项目都会先试删除再回滚。只列出删除后不会改变其他内容的项目。 仅在单个图元的图形替换中使用的图案可能无法检测到，清除前请检查列表。
   es_es: |-
     Busca estilos de línea, patrones de línea, patrones de relleno y parámetros compartidos que nada usa en el modelo, y elimina los que elija.
 
-    Cada elemento se elimina primero de prueba y se revierte. Solo se ofrecen los elementos cuya eliminación no cambia nada más.
+    Cada elemento se elimina primero de prueba y se revierte. Solo se ofrecen los elementos cuya eliminación no cambia nada más. Es posible que no se detecten los patrones usados solo en modificaciones gráficas de elementos individuales, así que revise la lista antes de purgar.
   de_de: |-
     Findet Linienstile, Linienmuster, Füllmuster und gemeinsam genutzte Parameter, die im Modell nirgends verwendet werden, und löscht die ausgewählten.
 
-    Jedes Element wird zuerst probeweise gelöscht und zurückgesetzt. Angeboten werden nur Elemente, deren Löschen sonst nichts verändert.
+    Jedes Element wird zuerst probeweise gelöscht und zurückgesetzt. Angeboten werden nur Elemente, deren Löschen sonst nichts verändert. Muster, die nur in Grafiküberschreibungen einzelner Elemente verwendet werden, werden möglicherweise nicht erkannt. Prüfen Sie die Liste daher vor dem Bereinigen.
   pt_br: |-
     Encontra estilos de linha, padrões de linha, padrões de preenchimento e parâmetros compartilhados que nada usa no modelo e exclui os que você escolher.
 
-    Cada item é primeiro excluído em teste e revertido. Só são oferecidos os itens cuja exclusão não altera mais nada.
+    Cada item é primeiro excluído em teste e revertido. Só são oferecidos os itens cuja exclusão não altera mais nada. Padrões usados apenas em substituições gráficas de elementos individuais podem não ser detectados, então revise a lista antes de limpar.
 context:
   - doc-project
