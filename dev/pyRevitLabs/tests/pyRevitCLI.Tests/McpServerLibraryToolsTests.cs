@@ -42,6 +42,20 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void AnAutomationForwardsTheDocumentItWasMeantFor() {
+        host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
+
+        Serve(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "second",
+        }));
+
+        var sent = Assert.Single(host.RequestsFor("run"))["params"];
+        Assert.Equal("second", sent.Value<string>("document"));
+    }
+
+    [Fact]
     public void AnAutomationThatNeedsADocumentStopsBeforeRunningWhenNoneIsOpen() {
         host.Handler = request => NoDocumentContext(request);
 

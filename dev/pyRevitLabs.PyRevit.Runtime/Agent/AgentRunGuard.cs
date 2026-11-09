@@ -25,7 +25,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// have errors, in every non-linked document, so a failure in a family or a new document
     /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
-    /// <item>cancels synchronize, save, save-as, file-export and view-export operations while
+    /// <item>cancels synchronize, save, save-as, file-export, view-export and print operations while
     /// armed when Revit marks their event cancellable. It cancels closing only for documents
     /// that were open when the run started.</item>
     /// </list>
@@ -68,6 +68,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Failures => failures;
         public JArray Dialogs => dialogCapture?.Dialogs ?? new JArray();
         public JArray Blocked => blocked;
+
         public List<string> CleanupFailures { get; } = new List<string>();
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
@@ -104,6 +105,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             app.DocumentSavingAs += OnDocumentSavingAs;
             app.FileExporting += OnFileExporting;
             app.ViewExporting += OnViewExporting;
+            app.DocumentPrinting += OnDocumentPrinting;
             app.DocumentCreated += OnDocumentCreated;
             app.DocumentOpened += OnDocumentOpened;
             app.DocumentClosing += OnDocumentClosing;
@@ -130,11 +132,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "Revit did not start the run's transaction group on the active document, so the run could not be rolled back; the script was not run.");
         }
 
-        /// <summary>
-        /// Stops auto-closing dialogs, so the approval prompt shown by the host itself stays
-        /// visible.
-        /// </summary>
-        public void DisarmDialogCapture() {
+        private void DisarmDialogCapture() {
             dialogCapture?.Disarm();
         }
 
@@ -211,6 +209,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     app.DocumentSavingAs -= OnDocumentSavingAs;
                     app.FileExporting -= OnFileExporting;
                     app.ViewExporting -= OnViewExporting;
+                    app.DocumentPrinting -= OnDocumentPrinting;
                     app.DocumentCreated -= OnDocumentCreated;
                     app.DocumentOpened -= OnDocumentOpened;
                     app.DocumentClosing -= OnDocumentClosing;
@@ -323,6 +322,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Block(e, null, "view_export");
         }
 
+        private void OnDocumentPrinting(object sender, DocumentPrintingEventArgs e) {
+            Block(e, e.Document, "print");
+        }
+
         private bool IsProtectedFromSave(Document target) {
             return WasOpenAtStart(target)
                 || documentsCreatedDuringRun.Any(created => IsSameDocument(created, target))
@@ -351,6 +354,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private void OnDocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
             Block(e, e.Document, "synchronize_with_central");
+        }
+
+        /// <summary>
+        /// Explains each cancelled operation, or returns null when none was cancelled. Revit
+        /// reports a cancelled save only as a generic failure, so this ties it to the guard.
+        /// Operations the guard could not cancel are not recorded and not described.
+        /// </summary>
+        public string DescribeBlockedOperations() {
+            if (blocked.Count == 0)
+                return null;
+            var operations = blocked.Select(DescribeBlockedOperation).Distinct();
+            return "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
+        }
+
+        private static string DescribeBlockedOperation(JToken entry) {
+            var operation = entry.Value<string>("operation");
+            var document = entry.Value<string>("document");
+            return document == null ? operation : $"{operation} of '{document}'";
         }
 
         private void Block(RevitAPIPreEventArgs e, Document target, string operation) {
@@ -441,7 +462,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var description = Changes.Summarize();
             description["document"] = Title;
             description["opened_during_run"] = OpenedDuringRun;
-            description["rolled_back"] = rolledBack;
+            if (OpenedDuringRun)
+                description["scope"] = "created during the run; not rolled back";
+            else
+                description["rolled_back"] = rolledBack;
             if (openedFromDisk)
                 description["discarded_on_close"] = !Document.IsValidObject;
             return description;

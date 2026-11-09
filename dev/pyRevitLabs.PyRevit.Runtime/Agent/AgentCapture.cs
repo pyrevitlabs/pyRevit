@@ -752,14 +752,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var top = screen.Y(rectangle.Top);
                 var right = screen.X(rectangle.Right);
                 var bottom = screen.Y(rectangle.Bottom);
-                if (IsCoveredByOtherProcess(uidoc.Application.MainWindowHandle, left, top, right, bottom))
-                    throw new AgentException("view_obscured",
-                        $"Another application's window covers view '{view.Name}', so a screen capture would show it "
-                        + "instead of the model; use mode 'export', or ask the user to bring Revit to the front.");
+                void RefuseIfCovered() {
+                    if (IsCoveredByOtherProcess(uidoc.Application.MainWindowHandle, left, top, right, bottom))
+                        throw new AgentException("view_obscured",
+                            $"Another application's window covers view '{view.Name}', so a screen capture would show it "
+                            + "instead of the model; use mode 'export', or ask the user to bring Revit to the front.");
+                }
 
+                RefuseIfCovered();
                 using (var bitmap = new Bitmap(right - left, bottom - top, PixelFormat.Format24bppRgb))
                 using (var graphics = Graphics.FromImage(bitmap)) {
                     graphics.CopyFromScreen(left, top, 0, 0, new Size(right - left, bottom - top));
+                    RefuseIfCovered();
                     bitmap.Save(path, ImageFormat.Png);
                 }
             }
