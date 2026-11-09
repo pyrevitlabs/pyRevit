@@ -42,10 +42,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public static string Handle(string line) {
             JToken id = null;
+            string method = null;
+            var loadAtStart = AgentHost.SessionLoad;
             try {
                 var request = JObject.Parse(line);
                 id = request["id"];
-                var method = request.Value<string>("method") ?? string.Empty;
+                method = request.Value<string>("method") ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
                 return Success(id, Dispatch(method, parameters, id));
             }
@@ -58,6 +60,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
                 return Failure(id, -32603, ex.Message, "internal_error");
+            }
+            finally {
+                if (method != null)
+                    AgentHost.NoteRequest(method, loadAtStart);
             }
         }
 
@@ -186,9 +192,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Runs a <c>run</c> request on the main thread behind the session gate. A request refused
-        /// as <c>revit_busy</c> never ran, and leaves a <c>not_run</c> record so the caller can
-        /// confirm that later.
+        /// Runs a <c>run</c> request on the main thread behind the session gate. A request the host
+        /// refused before running any of it, such as <c>revit_busy</c>, is marked <c>not_run</c>
+        /// and leaves a <c>not_run</c> record so the caller can confirm that later.
         /// </summary>
         private static JToken InvokeRunOnMainThread(AgentRunRequest request, JObject parameters) {
             try {
@@ -202,7 +208,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         RefuseNestedCPython(request);
                     });
             }
-            catch (AgentException ex) when (ex.Code == AgentException.NotRunCode) {
+            catch (AgentException ex) when (ex.Details.Value<string>("outcome") == "not_run") {
                 AgentRunService.RecordNotRun(request, ex);
                 throw;
             }
@@ -317,9 +323,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static Document ResolveDocument(Autodesk.Revit.UI.UIApplication app, string key) {
             if (key == null)
                 return app.ActiveUIDocument?.Document;
-            return AgentDocuments.Keys.Find(key)
-                ?? throw new AgentException("unknown_document",
-                    $"No open document has the key '{key}': it was closed, or the key is wrong. "
+            return AgentDocuments.Keys.Find(key) ?? throw UnknownDocument(app, key);
+        }
+
+        /// <summary>
+        /// The refusal for a <c>document</c> that is no open document's key. When it is the title
+        /// or path of exactly one open document, the message gives that document's key, so the
+        /// caller can send the key instead; a title or path never selects a document itself.
+        /// </summary>
+        private static AgentException UnknownDocument(Autodesk.Revit.UI.UIApplication app, string key) {
+            var open = AgentDocuments.Describe(app)
+                .OfType<JObject>()
+                .Where(document => document.Value<bool?>("linked") != true)
+                .Select(document => (Key: document.Value<string>("key"), Title: document.Value<string>("title"), Path: document.Value<string>("path")));
+            var named = AgentDocumentBinding.Named(key, open);
+            return new AgentException("unknown_document", named.HasValue
+                ? $"'{key}' isn't a document key; requests name documents by key. '{named.Value.Title}' has the key '{named.Value.Key}'."
+                : $"No open document has the key '{key}': it was closed, or the key is wrong. "
                     + "Call get_context for the keys of the open documents.");
         }
 

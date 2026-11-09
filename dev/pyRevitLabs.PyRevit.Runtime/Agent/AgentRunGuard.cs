@@ -75,6 +75,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Failures => failures;
         public JArray Dialogs => dialogCapture?.Dialogs ?? new JArray();
         public JArray Blocked => blocked;
+
         public List<string> CleanupFailures { get; } = new List<string>();
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
@@ -401,6 +402,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Block(e, e.Document, "synchronize_with_central");
         }
 
+        /// <summary>
+        /// Explains each cancelled operation, or returns null when none was cancelled. Revit
+        /// reports a cancelled save only as a generic failure, so this ties it to the guard.
+        /// Operations the guard could not cancel are not recorded and not described.
+        /// </summary>
+        public string DescribeBlockedOperations() {
+            if (blocked.Count == 0)
+                return null;
+            var operations = blocked.Select(DescribeBlockedOperation).Distinct();
+            return "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
+        }
+
+        private static string DescribeBlockedOperation(JToken entry) {
+            var operation = entry.Value<string>("operation");
+            var document = entry.Value<string>("document");
+            return document == null ? operation : $"{operation} of '{document}'";
+        }
+
         private void Block(RevitAPIPreEventArgs e, Document target, string operation) {
             if (!e.Cancellable)
                 return;
@@ -526,7 +545,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             description["kept"] = Kept;
             if (KeepError != null)
                 description["keep_error"] = KeepError;
-            description["rolled_back"] = rolledBack;
+            if (OpenedDuringRun)
+                description["scope"] = "created during the run; not rolled back";
+            else
+                description["rolled_back"] = rolledBack;
             if (openedFromDisk)
                 description["discarded_on_close"] = !Document.IsValidObject;
             return description;

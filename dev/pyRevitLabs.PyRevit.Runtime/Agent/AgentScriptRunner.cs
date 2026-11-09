@@ -116,29 +116,83 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentScriptRunner {
         private const string EntryFileName = "agent_entry.py";
         private const string AgentExtensionName = "pyRevitAgent";
+        /// <remarks>
+        /// The engine is reused between runs and pyrevitlib is loaded live, so a runner module
+        /// imported before its file changed on disk is dropped and imported again. Otherwise the
+        /// run executes the old code while tracebacks quote the lines of the new file. The file's
+        /// size is compared with its modification time, which IronPython 2.7 reports in whole
+        /// seconds, so an edit saved in the second of the import is still seen.
+        /// Invariant: the warm-up imports the runner through this same block, so the first run
+        /// finds the stamp it checks and keeps the warmed module instead of importing it again.
+        /// </remarks>
+        private const string RunnerImport =
+            "import importlib\n" +
+            "import os\n" +
+            "import sys\n" +
+            "def _file_stamp(module):\n" +
+            "    info = os.stat(module.__file__)\n" +
+            "    return (info.st_mtime, info.st_size)\n" +
+            "_loaded = sys.modules.get('pyrevit.agent._runner')\n" +
+            "if _loaded is not None and getattr(_loaded, '__agent_stamp__', None) != _file_stamp(_loaded):\n" +
+            "    del sys.modules['pyrevit.agent._runner']\n" +
+            "_runner = importlib.import_module('pyrevit.agent._runner')\n" +
+            "_runner.__agent_stamp__ = _file_stamp(_runner)\n";
 
-        public static int Execute(
-            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
-            var entryPath = Path.Combine(runDir, EntryFileName);
-            File.WriteAllText(entryPath, BuildEntryScript(request.Engine), new UTF8Encoding(false));
+        private const string WarmUpSource = RunnerImport + "_runner.warm_up()\n";
 
-            var scriptData = new ScriptData {
+        /// <summary>
+        /// Starts the IronPython engine agent runs use, imports the runner into it and runs
+        /// <c>_runner.warm_up</c>, so the first run finds the engine, the runner and its code
+        /// paths ready. No transaction, document access, run record or output.
+        /// </summary>
+        /// <remarks>
+        /// The entry script is a file of this process's own, deleted after it ran (see
+        /// <see cref="AgentEngineWarmUp.WithEntryScript"/>), so Revit processes warming at the
+        /// same time never share a half-written file.
+        /// Invariant: the engine is set up by the same <see cref="CreateScriptData"/> and
+        /// <see cref="CreateRuntimeConfigs"/> as <see cref="Execute"/>, so it is cached under the
+        /// key a real run asks for and with the same flags. Any difference makes the first run
+        /// start an engine of its own.
+        /// </remarks>
+        /// <returns>The <see cref="ScriptExecutorResultCodes"/> value of the warm-up script.</returns>
+        public static int WarmUp(UIApplication uiApp, IList<string> searchPaths) {
+            return AgentEngineWarmUp.WithEntryScript(
+                AgentPaths.RootDir, System.Diagnostics.Process.GetCurrentProcess().Id, WarmUpSource,
+                entryPath => ScriptExecutor.ExecuteScript(
+                    CreateScriptData(entryPath, "Agent: engine warm-up"),
+                    CreateRuntimeConfigs(uiApp, AgentEngine.IronPython, searchPaths, new Dictionary<string, object>())));
+        }
+
+        /// <summary>
+        /// Whether this session load already has the IronPython engine agent runs use.
+        /// </summary>
+        public static bool IsIronPythonEngineCached() {
+            var typeId = ScriptEngine.BuildTypeId(
+                new EnvDictionary().SessionUUID, ScriptEngineType.IronPython, AgentExtensionName);
+            return ScriptEngineManager.EngineDict.ContainsKey(typeId);
+        }
+
+        private static ScriptData CreateScriptData(string entryPath, string commandName) {
+            return new ScriptData {
                 ScriptPath = entryPath,
                 ConfigScriptPath = null,
                 CommandUniqueId = "pyrevit-agent",
-                CommandName = "Agent: " + request.Title,
+                CommandName = commandName,
                 CommandBundle = string.Empty,
                 CommandExtension = AgentExtensionName,
                 HelpSource = string.Empty,
             };
+        }
 
-            var configs = new ScriptRuntimeConfigs {
-                UIApp = context.UIApp,
+        private static ScriptRuntimeConfigs CreateRuntimeConfigs(
+            UIApplication uiApp, AgentEngine engine, IList<string> searchPaths, Dictionary<string, object> variables) {
+            return new ScriptRuntimeConfigs {
+                UIApp = uiApp,
                 SearchPaths = new List<string>(searchPaths),
                 Arguments = new List<string>(),
-                Variables = new Dictionary<string, object> { ["__agent__"] = context },
+                Variables = variables,
                 SuppressOutput = true,
-                EngineConfigs = request.Engine == AgentEngine.CPython
+                EngineConfigs = engine == AgentEngine.CPython
                     ? "{\"type\":\"CPython\",\"type_explicit\":true,\"clean\":false}"
                     : "{\"type\":\"IronPython\",\"type_explicit\":true,\"clean\":false,\"full_frame\":true,\"persistent\":false}",
                 RefreshEngine = false,
@@ -146,34 +200,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 DebugMode = false,
                 ExecutedFromUI = false,
             };
+        }
+
+        public static int Execute(
+            AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
+            var entryPath = Path.Combine(runDir, EntryFileName);
+            File.WriteAllText(entryPath, BuildEntryScript(request.Engine), new UTF8Encoding(false));
+
+            var scriptData = CreateScriptData(entryPath, "Agent: " + request.Title);
+            var configs = CreateRuntimeConfigs(
+                context.UIApp, request.Engine, searchPaths, new Dictionary<string, object> { ["__agent__"] = context });
 
             return ScriptExecutor.ExecuteScript(scriptData, configs);
         }
 
-        /// <remarks>
-        /// The engine is reused between runs and pyrevitlib is loaded live, so a runner module
-        /// imported before its file changed on disk is dropped and imported again. Otherwise the
-        /// run executes the old code while tracebacks quote the lines of the new file. The file's
-        /// size is compared with its modification time, which IronPython 2.7 reports in whole
-        /// seconds, so an edit saved in the second of the import is still seen.
-        /// </remarks>
         private static string BuildEntryScript(AgentEngine engine) {
             var builder = new StringBuilder();
             if (engine == AgentEngine.CPython)
                 builder.Append("#! python3\n");
+            builder.Append("try:\n");
+            foreach (var line in RunnerImport.TrimEnd('\n').Split('\n'))
+                builder.Append("    ").Append(line).Append('\n');
             builder.Append(
-                "try:\n" +
-                "    import importlib\n" +
-                "    import os\n" +
-                "    import sys\n" +
-                "    def _file_stamp(module):\n" +
-                "        info = os.stat(module.__file__)\n" +
-                "        return (info.st_mtime, info.st_size)\n" +
-                "    _loaded = sys.modules.get('pyrevit.agent._runner')\n" +
-                "    if _loaded is not None and getattr(_loaded, '__agent_stamp__', None) != _file_stamp(_loaded):\n" +
-                "        del sys.modules['pyrevit.agent._runner']\n" +
-                "    _runner = importlib.import_module('pyrevit.agent._runner')\n" +
-                "    _runner.__agent_stamp__ = _file_stamp(_runner)\n" +
                 "except Exception:\n" +
                 "    import traceback\n" +
                 "    __agent__.SetError('RunnerImportError', 'Could not import pyrevit.agent', traceback.format_exc())\n" +

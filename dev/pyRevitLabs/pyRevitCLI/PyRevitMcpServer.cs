@@ -477,13 +477,15 @@ namespace pyRevitCLI {
             return parameters;
         }
 
-        /// <exception cref="AgentClientException"><c>invalid_params</c> when <c>document</c> isn't a string.</exception>
+        /// <exception cref="InvalidCastException">
+        /// A <c>document</c> that isn't a string; the tool call reports it as <c>invalid_params</c>.
+        /// </exception>
         private static string DocumentKey(JObject arguments) {
             var token = arguments["document"];
             if (token == null || token.Type == JTokenType.Null)
                 return null;
             if (token.Type != JTokenType.String)
-                throw new AgentClientException("invalid_params", "'document' must be a document key string, such as 'doc-1'.");
+                throw new InvalidCastException();
             var key = token.Value<string>().Trim();
             return key.Length == 0 ? null : key;
         }
@@ -918,7 +920,7 @@ namespace pyRevitCLI {
                     })))),
 
                 new McpTool("run_query", readOnly: false, new[] { "script", "title", "document" },
-                    () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
+                    () => ("Run a read-only Python script in Revit and return `result`, printed output, and any error with traceback. Model changes made during the run are rolled back and must not be made. A document the script creates, such as from `NewFamilyDocument` or `EditFamily`, is outside that rollback: it is reported in `changes.other_documents` with a `scope` instead of `rolled_back` and does not fail the run. A document opened from a file, such as with `OpenDocumentFile`, must not be modified: doing so fails the run with `other_document_modified`. The script itself runs with full access to Revit and the machine; the guard only covers what happens while it runs.",
                         new JObject {
                             ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Assign `result` to return data." },
                             ["document"] = DocumentProperty("Key of the document to run in, from get_context; the script's `doc`. `uidoc` is set only when it is the active document."),
@@ -928,6 +930,7 @@ namespace pyRevitCLI {
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
                             ["workspace"] = WorkspaceProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     arguments => RunScript(arguments, "query")),
@@ -944,6 +947,7 @@ namespace pyRevitCLI {
                             ["engine"] = EngineProperty(),
                             ["timeout_s"] = TimeoutProperty(),
                             ["workspace"] = WorkspaceProperty(),
+                            ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
                     arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify")),

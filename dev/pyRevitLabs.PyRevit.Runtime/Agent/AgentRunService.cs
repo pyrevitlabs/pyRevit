@@ -369,6 +369,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var finalOtherDocuments = guard.DescribeOtherDocuments();
                 foreach (var failure in guard.CleanupFailures)
                     warnings.Add("Guard cleanup failed: " + failure);
+                var blockedExplanation = guard.DescribeBlockedOperations();
+                if (blockedExplanation != null)
+                    warnings.Add(blockedExplanation);
                 if (finalOtherDocuments.Count > 0) {
                     var changes = response["changes"] as JObject;
                     if (changes == null) {
@@ -420,7 +423,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Leaves a run folder for a request the host refused as <c>revit_busy</c>, with
+        /// Leaves a run folder for a request the host refused before running any of it, such as
+        /// <c>revit_busy</c>, with
         /// <c>status</c> and <c>decision</c> <c>not_run</c>, and adds its <c>run_id</c> and
         /// <c>run_dir</c> to <paramref name="refusal"/>.
         /// </summary>
@@ -587,12 +591,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             string title, string document, JObject changes, IList<JObject> otherDocuments, JArray failures,
             string previewDescription) {
             var summary = new StringBuilder();
+            summary.AppendLine("Document: " + document);
             summary.AppendLine(string.Format(
                 "Added: {0}   Modified: {1}   Deleted: {2}",
                 changes.Value<int>("added_count"),
                 changes.Value<int>("modified_count"),
                 changes.Value<int>("deleted_count")));
-            summary.AppendLine("Document: " + document);
             summary.AppendLine("Operation: " + title);
 
             var byCategory = changes["by_category"] as JObject;

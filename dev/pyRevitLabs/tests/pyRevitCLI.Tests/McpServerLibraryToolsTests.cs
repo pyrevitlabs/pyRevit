@@ -40,6 +40,20 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void AnAutomationForwardsTheDocumentKeyItNames() {
+        host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
+
+        Serve(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "doc-2",
+        }));
+
+        var sent = Assert.Single(host.RequestsFor("run"))["params"];
+        Assert.Equal("doc-2", sent.Value<string>("document"));
+    }
+
+    [Fact]
     public void AnAutomationPassesOnWhatTheUserChangedEvenWhenItsRunIsRefused() {
         var changed = new JObject { ["edits"] = new JArray(new JObject { ["document"] = "doc-1", ["modified"] = 1 }) };
         host.Handler = request => request.Value<string>("method") == "get_context"

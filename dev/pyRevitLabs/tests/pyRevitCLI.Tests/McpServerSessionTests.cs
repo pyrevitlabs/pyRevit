@@ -14,7 +14,7 @@ public partial class McpServerTests {
             ToolCall(2, "run_modify", new JObject { ["script"] = "x = 1", ["title"] = "Change", ["document"] = "  " }),
             ToolCall(3, "inspect_elements", new JObject { ["ids"] = new JArray(1), ["title"] = "Inspect" }),
             ToolCall(4, "show_elements", new JObject { ["ids"] = new JArray(1), ["title"] = "Show" }),
-            ToolCall(5, "capture_view", new JObject { ["title"] = "Look", ["document"] = 7 }),
+            ToolCall(5, "capture_view", new JObject { ["title"] = "Look", ["document"] = null }),
         };
 
         foreach (var call in calls) {

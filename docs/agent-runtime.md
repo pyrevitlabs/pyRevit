@@ -132,7 +132,8 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 `run_query`, `run_modify`, `inspect_elements`, `show_elements` and `capture_view` require
 `document`: a key from `get_context`. Element ids are always read in that document, so ids
 from one document can't reach another. A key for a closed document is refused with
-`unknown_document`. The CLI's `pyrevit agent run` takes `--document` and works in the active
+`unknown_document`. A title or path is not a key and is refused the same way; when it
+names exactly one open document, the message gives that document's key. The CLI's `pyrevit agent run` takes `--document` and works in the active
 document without it.
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
@@ -386,7 +387,11 @@ Rules the host enforces:
   or a family from a file during the run counts as one that was already open: changing it fails
   the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
-  it is reported there but doesn't fail the run, and isn't rolled back.
+  it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
+  the run, and isn't rolled back; it is discarded when closed.
+- When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
+  naming each cancelled operation, because the script itself only sees Revit's generic
+  exception.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   Decorated functions, context-manager yields and rewritten exception handlers retain
   their original script line numbers, including on IronPython.
@@ -404,9 +409,11 @@ Rules the host enforces:
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
   check that flag on each iteration; only the header expressions change, so line numbers and
   tracebacks still match the submitted source. On CPython the watchdog also raises the
-  timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
-  modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
-  only stopped once the call returns. A single blocking call, such as a long Revit API call,
+  timeout in the script thread. Modules imported from the run's `workspace` folder get the same rewrite
+  through an import hook that exists only for the run (regular modules and
+  packages that `sys.path` order resolves to the workspace; namespace packages are not rewritten). Library code the script calls
+  (pyrevitlib, rpw) runs unguarded at full speed, so on IronPython a long loop inside such a
+  call is only stopped once the call returns. A single blocking call, such as a long Revit API call,
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
   interrupted on any engine; the run fails with `timeout` once it returns. When that call
   was the script's last, the error says the limit passed inside a call that could not be
@@ -438,8 +445,9 @@ Rules the host enforces:
   can't see every start: the run uses a `workspace`, compiles code at run time, or reaches
   `Start` another way (`getattr(t, "Start")`, `start = t.Start`). Other runs have no trace
   function, which on IronPython makes them many times faster, but also means nothing checks
-  the deadline outside loop headers: unbounded recursion, or a callback passed to `map`,
-  `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
+  the deadline outside loop headers: a callback passed to `map`, `filter` or `sorted` over
+  an endless iterable is not stopped on IronPython. Unbounded recursion ends in a
+  `RecursionError`; see [Deep recursion on IronPython](#deep-recursion-on-ironpython). A
   transaction a library function starts and returns to the script is only found if the
   script still holds it in a global when the run ends.
 - Tracebacks of errors and timeouts show the script's frames and the library code it
@@ -515,6 +523,35 @@ What still applies: the `[agent] policy`, the approval prompt under `ask`, rollb
 queries and dry runs, rollback on any script error, the `transaction_left_open` check on the
 active document, the document, save and dialog guards, and the run record.
 
+### Deep recursion on IronPython
+
+Scripts run on Revit's main thread, whose stack is 1 MB. Unbounded recursion stops at the
+engine's limit of 1000 calls with `RecursionError` (`RuntimeError` on IronPython 2.7) like
+any other script error, and an exception raised deep in a call chain is caught as usual.
+
+Upstream IronPython rethrows an exception once per Python frame from inside a `catch` block,
+which on .NET holds about 12 KB of stack per frame until the exception is caught, so an
+exception raised about 100 calls deep crashed Revit. It also stopped checking the recursion
+limit in a function that had raised more than 20 times. pyRevit ships both engines with
+fixes for this:
+
+- IronPython 2.7.12 is built from the `dev/modules` forks.
+- IronPython 3.4.2 uses patched `IronPython.dll` and `Microsoft.Dynamic.dll` drop-ins with
+  the upstream version and identity; see `dev/libs/IronPython/IPY342/README.md` for their
+  sources.
+
+The fixes have not been released upstream, so other hosts running IronPython still crash.
+
+A trace function makes every IronPython frame larger. While the runner traces a script (it
+uses a `workspace`, compiles code at run time, or reaches `Start` other than by a direct
+call; see [Script contract](#script-contract)), an IronPython run's recursion limit is 500
+instead of 1000, because frames with several `with` or `try` blocks overflow Revit's stack
+between 750 and 900 calls when traced. A script that raises its limit is put back to 500 on
+its next call, and the previous limit is restored when the script ends. CPython runs keep
+their limit. The cap lives in the runner's trace function, so a script that removes it with
+`sys.settrace(None)` and then raises its own limit is no longer held at 500; handler-dense
+recursion past about 750 calls can then still crash Revit.
+
 ### Which Python runs the script
 
 Agents must not guess the language level. `get_context.scripting` reports it:
@@ -553,6 +590,43 @@ Syntax measured in Revit on IronPython 3.4.2:
 
 IronPython 2.7.12 is Python 2.7 syntax. CPython 3.12 supports everything, but reaches the
 Revit API through pythonnet, and pyrevitlib features built for IronPython may be limited.
+
+### Engine warm-up
+
+Agent runs reuse one cached engine per session load, so only the first run starts the engine,
+imports `pyrevit.agent._runner` and runs the runner's code for the first time, which costs
+two to three seconds on IronPython. The host does that work ahead of time, once per session
+load, when an agent first makes contact: after the pipe handles the first request of the
+load (`ping`, `get_context` or any other method), it queues the warm-up on the Revit main
+thread, where it runs when Revit is next idle. A session whose agent never connects pays
+nothing.
+
+The warm-up uses the same engine cache key and flags as a real run, and calls
+`_runner.warm_up()`, which passes a small fixed script through the real `run()` against a
+stand-in context with no Revit application: setup, source rewriting, compilation, loop
+guards, the watchdog, execution, transaction recording, result serialization and the
+rollback scan all run once. It reads no document, starts no transaction, writes no run
+record and shows no output. Its two-line entry script goes to a file of the Revit process's
+own, `%APPDATA%\pyRevit\agent\engine_warmup.<pid>.py`, which is deleted after it ran, so
+Revit sessions warming at the same time never share it. A `run` request never queues it: a
+run that executes starts the engine anyway, and one refused before it executes leaves the
+next request to warm. The
+warm-up is skipped when the engine is already cached, when the agent is off, and when
+`default_engine` is not IronPython. A request during which pyRevit reloads, such as a
+`run` that reloads it, counts for the old load, so the new load warms on its own first
+request. Requests made in-process through `AgentHost.HandleRequest` don't trigger it. The
+warm-up reports to the debug log only, as a `[PERF] agent engine warm-up` line with the
+script's exit code, or as `Agent engine warm-up failed`, and never affects the host.
+
+A request that arrives while the warm-up runs waits for it, as it would for a run. A run
+sent right after the first `ping` therefore takes about 0.1 to 0.4 s longer than a cold first
+run would have, because it waits for the whole warm-up, which does a little more than a run
+needs. This is accepted: a run sent after the warm-up finishes starts in tens of
+milliseconds instead of two to three seconds.
+
+CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded assembly and
+keeps the interpreter up for the rest of the process, so the first CPython run still pays for
+it. A run that asks for an engine other than the default also starts cold.
 
 ### CLI
 
