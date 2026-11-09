@@ -315,9 +315,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 foreach (var failure in guard.CleanupFailures)
                     warnings.Add("Guard cleanup failed: " + failure);
                 try {
-                    var exports = CollectExports(exportDir);
-                    if (exports.Count > 0)
-                        response["exports"] = exports;
+                    var exports = AgentExportCollector.Collect(exportDir);
+                    if (exports.Length > 0)
+                        response["exports"] = new JArray(exports);
                 }
                 catch (Exception ex) {
                     warnings.Add("Listing the run's exports failed: " + ex.Message);
@@ -365,26 +365,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             finally {
                 AgentHost.EndTabHighlight(highlight);
             }
-        }
-
-        /// <summary>
-        /// Lists the files the run left in its export folder, and removes the folder when it is
-        /// empty so run records without exports stay as they were. Subfolders are listed too,
-        /// except links, since exports through them are refused.
-        /// </summary>
-        private static JArray CollectExports(string exportDir) {
-            if (!Directory.Exists(exportDir))
-                return new JArray();
-            var files = ListFilesOutsideLinks(exportDir).OrderBy(file => file, StringComparer.OrdinalIgnoreCase).ToArray();
-            if (Directory.GetFileSystemEntries(exportDir).Length == 0)
-                Directory.Delete(exportDir);
-            return new JArray(files);
-        }
-
-        private static IEnumerable<string> ListFilesOutsideLinks(string folder) {
-            var subfolders = Directory.GetDirectories(folder)
-                .Where(subfolder => !new DirectoryInfo(subfolder).Attributes.HasFlag(FileAttributes.ReparsePoint));
-            return Directory.GetFiles(folder).Concat(subfolders.SelectMany(ListFilesOutsideLinks));
         }
 
         private static void WriteRequestRecord(string runDir, AgentRunRequest request) {
