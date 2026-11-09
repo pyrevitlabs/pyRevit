@@ -316,6 +316,7 @@ namespace pyRevitCLI {
         /// </summary>
         internal static void
         LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, bool isolated, string language) {
+            var languageCode = PyRevitLauncher.ParseLanguage(language);
             if (!int.TryParse(revitYear, out var revitYearNumber))
                 throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
 
@@ -331,7 +332,7 @@ namespace pyRevitCLI {
             var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated);
             Process process = null;
             try {
-                process = PyRevitLauncher.Start(launch, language);
+                process = PyRevitLauncher.Start(launch, languageCode);
                 PrintLaunch(launch, process);
                 process.WaitForExit();
             }

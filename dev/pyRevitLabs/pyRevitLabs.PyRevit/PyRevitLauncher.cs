@@ -64,6 +64,7 @@ Set Jrn = CrsJournalScript
 
         /// <summary>
         /// Writes the manifest and journal of a new session into a fresh launch directory.
+        /// The directory is removed again when writing it fails.
         /// </summary>
         /// <param name="isolated">Give the session its own pyRevit user data folder, seeded with a copy of the user's configuration file.</param>
         /// <exception cref="PyRevitException">The year is not installed or attachable, or the engine cannot be used as a runtime.</exception>
@@ -84,28 +85,51 @@ Set Jrn = CrsJournalScript
 
             var directory = Path.Combine(LaunchRoot, Guid.NewGuid().ToString("N"));
             CommonUtils.EnsurePath(directory);
+            try {
+                string configRoot = null;
+                if (isolated) {
+                    configRoot = Path.Combine(directory, PyRevitLabsConsts.AppdataDirName);
+                    CommonUtils.EnsurePath(configRoot);
+                    var sourceConfig = FindConfigToCopy(clone);
+                    if (sourceConfig != null)
+                        File.Copy(sourceConfig, Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName));
+                }
 
-            string configRoot = null;
-            if (isolated) {
-                configRoot = Path.Combine(directory, PyRevitLabsConsts.AppdataDirName);
-                CommonUtils.EnsurePath(configRoot);
-                var sourceConfig = FindConfigToCopy(clone);
-                if (sourceConfig != null)
-                    File.Copy(sourceConfig, Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName));
+                var launch = new PyRevitLaunch(directory, product, clone, engine, configRoot);
+                RevitAddons.CreateManifestFile(
+                    revitYear,
+                    Path.GetFileName(launch.ManifestFile),
+                    PyRevitConsts.AddinName,
+                    engine.AssemblyPath,
+                    PyRevitConsts.AddinId,
+                    PyRevitConsts.AddinClassName,
+                    PyRevitConsts.VendorId,
+                    addinPath: directory);
+                File.WriteAllText(launch.JournalFile, string.Format(JournalTemplate, CommonUtils.GetISOTimeStampNow()));
+                return launch;
             }
+            catch (Exception) {
+                try {
+                    DeleteDirectory(directory, attempts: 1);
+                }
+                catch (Exception exception) {
+                    logger.Warn("Can not remove the partial launch directory \"{0}\" | {1}", directory, exception.Message);
+                }
+                throw;
+            }
+        }
 
-            var launch = new PyRevitLaunch(directory, product, clone, engine, configRoot);
-            RevitAddons.CreateManifestFile(
-                revitYear,
-                Path.GetFileName(launch.ManifestFile),
-                PyRevitConsts.AddinName,
-                engine.AssemblyPath,
-                PyRevitConsts.AddinId,
-                PyRevitConsts.AddinClassName,
-                PyRevitConsts.VendorId,
-                addinPath: directory);
-            File.WriteAllText(launch.JournalFile, string.Format(JournalTemplate, CommonUtils.GetISOTimeStampNow()));
-            return launch;
+        /// <summary>
+        /// The trimmed Revit <c>/language</c> code, or null when <paramref name="language"/> is blank.
+        /// </summary>
+        /// <exception cref="PyRevitException">The language is not a three-letter code.</exception>
+        public static string ParseLanguage(string language) {
+            if (string.IsNullOrWhiteSpace(language))
+                return null;
+            var languageCode = language.Trim();
+            if (!LanguageCodePattern.IsMatch(languageCode))
+                throw new PyRevitException($"Revit language must be a three-letter code such as ENU, not \"{languageCode}\".");
+            return languageCode;
         }
 
         /// <summary>
@@ -115,10 +139,8 @@ Set Jrn = CrsJournalScript
         /// <exception cref="PyRevitException">The language is not a three-letter code.</exception>
         public static Process Start(PyRevitLaunch launch, string language = null) {
             var arguments = $"\"{launch.JournalFile}\"";
-            if (!string.IsNullOrWhiteSpace(language)) {
-                var languageCode = language.Trim();
-                if (!LanguageCodePattern.IsMatch(languageCode))
-                    throw new PyRevitException($"Revit language must be a three-letter code such as ENU, not \"{languageCode}\".");
+            var languageCode = ParseLanguage(language);
+            if (languageCode != null) {
                 arguments += " /language " + languageCode;
             }
 
