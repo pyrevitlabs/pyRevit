@@ -112,11 +112,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var missing = new List<long>();
             var targets = ResolveTargets(doc, view, request, missing);
-            if (request.Action != "select" && request.Ids.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
+            if (request.Action != "select" && request.Ids.Count > 0 && targets.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
                 var inView = new HashSet<ElementId>(new FilteredElementCollector(doc, view.Id)
-                    .WherePasses(new LogicalOrFilter(
-                        new ElementIsElementTypeFilter(false),
-                        new ElementIsElementTypeFilter(true)))
+                    .WherePasses(new ElementIdSetFilter(targets))
                     .ToElementIds());
                 var notInView = targets.Where(id => !inView.Contains(id)).ToList();
                 if (notInView.Count > 0) {
