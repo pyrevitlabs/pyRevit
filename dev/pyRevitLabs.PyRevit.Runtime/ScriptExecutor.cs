@@ -189,9 +189,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // Log results
             int result = runtime.ExecutionResult;
-            Agent.AgentRecorder.RecordCommand("end", scriptData?.CommandName, scriptData?.CommandUniqueId, result, runtime.TraceMessage);
             if (scriptExecConfigs.SendTelemetry)
                 ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
+            Agent.AgentRecorder.RecordCommand("end", scriptData?.CommandName, scriptData?.CommandUniqueId, result, runtime.TraceMessage);
 
             // Drain any output still buffered by the engine (trailing prints,
             // logger records, uncaught tracebacks) to the live window before the
