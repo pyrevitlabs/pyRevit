@@ -8,6 +8,7 @@ Tests run against scratch documents this module creates in the temp folder and
 closes again, never against the user's model.
 """
 
+import ctypes
 import json
 import os
 import os.path as op
@@ -15,6 +16,8 @@ import platform
 import shutil
 import sys
 import tempfile
+import threading
+import time
 from contextlib import contextmanager
 from unittest import TestCase as _TestCase
 
@@ -118,8 +121,13 @@ def pipe_name():
 
 
 def agent_dir():
-    """The folder holding host registrations, run records and captures."""
-    return op.join(str(Common.PyRevitLabsConsts.PyRevitPath), "agent")
+    """The folder holding host registrations, run records and captures.
+
+    Note:
+        Resolved like the host does, so a per-launch session that pins the agent
+        folder (``pyrevit launch --isolated``) is followed.
+    """
+    return str(Common.PyRevitLabsConsts.AgentPath)
 
 
 def run_cli(*arguments):
@@ -188,6 +196,60 @@ def session():
     return _session
 
 
+YES = 6
+NO = 7
+POLICY_PROMPT = "pyRevit Agent policy"
+
+
+@contextmanager
+def answer_prompts(title, button):
+    """Press ``button`` on every native message box titled ``title`` during the block.
+
+    The host's approval and policy prompts are native Windows message boxes,
+    which Revit's dialog event can't answer, so a helper thread presses them.
+    Only boxes owned by this Revit process are pressed, never another Revit's.
+    Yields the list of presses.
+    """
+    user32 = ctypes.windll.user32
+    user32.FindWindowExW.restype = ctypes.c_void_p
+    revit_pid = os.getpid()
+    pressed = []
+    stop = threading.Event()
+
+    def own_prompt():
+        window = None
+        while True:
+            window = user32.FindWindowExW(
+                None, ctypes.c_void_p(window) if window else None, "#32770", title
+            )
+            if not window:
+                return None
+            owner = ctypes.c_ulong()
+            user32.GetWindowThreadProcessId(
+                ctypes.c_void_p(window), ctypes.byref(owner)
+            )
+            if owner.value == revit_pid:
+                return window
+
+    def press():
+        while not stop.is_set():
+            window = own_prompt()
+            if window:
+                user32.PostMessageW(ctypes.c_void_p(window), 0x0111, button, 0)
+                pressed.append(button)
+                time.sleep(0.5)
+            time.sleep(0.1)
+
+    worker = threading.Thread(target=press)
+    worker.daemon = True
+    worker.start()
+    try:
+        yield pressed
+    finally:
+        stop.set()
+        worker.join(5)
+
+
 @contextmanager
 def policy(name):
     """Set the agent policy for the block, restoring the previous value after."""
@@ -214,7 +276,7 @@ def run_suites(modules):
     problems = []
     try:
         _session.open()
-        with policy("auto"):
+        with answer_prompts(POLICY_PROMPT, YES), policy("auto"):
             for module in modules:
                 result = run_module_tests(module)
                 if result.failures or result.errors:

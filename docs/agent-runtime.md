@@ -77,10 +77,10 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 
 | Setting | Command | Values |
 |---|---|---|
-| `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
-| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
+| `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. Disabling also refuses every later request with `agent_disabled` at once. The host never starts in a Revit running as administrator. |
+| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. A stricter policy applies at the next request. A looser one applies only after you confirm it in a Revit prompt before the next modify run; No keeps the stricter one until Revit restarts. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
-| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. See [Reckless mode](#reckless-mode) for the risks. |
+| `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. Turning it on needs your confirmation in Revit, like a looser policy. See [Reckless mode](#reckless-mode) for the risks. |
 
 Run any of these commands without a value to print the current setting.
 
@@ -108,13 +108,22 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums. Takes `name`, or `query` as an alias to match `lookup_pyrevit_api` |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. `isolate` and `hide` leave out ids the active view doesn't show and list them in `not_in_view_ids`; while a temporary isolate is on, the elements it hides count as not shown, so `reset` before isolating others. `view` is the view acted on; when zooming makes Revit open another view, `active_view` names it. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), fails with `view_not_active` for any other view, and fails with `view_obscured` when another application's window covers any part of it (click-through overlays such as the GeForce overlay don't count); view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there; in a workshared model a view you don't own is duplicated and the copy is changed, so nothing is borrowed; `viewport` refuses such a view while its temporary hide/isolate is on). A view name shared by several views fails with `view_ambiguous` and lists their ids, except in `screen` mode when one of them is the active view; a digits-only selector is tried as an id first, then as a name. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
-| `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back |
+| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
+| `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 | `get_recording` | no | A [session recording](#session-recorder) the user made: a JSON timeline of element changes, pyRevit commands and output, logs, extension breadcrumbs and screenshot files. Without `recording_id` it lists recent recordings. Works without Revit |
 | `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
 | `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
-| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source |
+| `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
+
+`run_query`, `run_modify` and `run_automation` accept an optional `document`: the title or path of the document
+as returned by `get_context`. When it is given and the active document differs, Revit refuses the run with
+`document_changed` before anything runs (a `not_run` request, see
+[What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer)), so a plan made for
+one model never lands in another after the user switches tabs. A value with a path separator is compared, normalised
+and ignoring case, with the active document's path only; any other value is compared with its title only, so pass
+the path when two open documents share a title. A blank or non-string value is `invalid_params`. Omitting
+`document` leaves the run unbound. The approval prompt always names the document the changes apply to.
 
 Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
 reports them in `dialogs`, so a dialog can't leave the call hanging.
@@ -253,6 +262,8 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
+- A run started from inside another run (through `AgentHost.HandleRequest`) is refused with
+  `nested_run`, or with `nested_cpython` when a CPython run is started from a CPython script.
 - `run_modify` requires an active document and is refused before the script runs when none is
   active. The other tools (`capture_view`, `inspect_elements`, `show_elements`) also require an
   active document.
@@ -262,14 +273,20 @@ Rules the host enforces:
   active.
   `get_context.open_documents` lists every open document and marks the background ones.
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
-  save-as, synchronize-with-central, file-export and view-export events. The response lists a
-  cancelled operation in `blocked`.
+  save-as, synchronize-with-central, file-export, view-export and printing events. The response
+  lists a cancelled operation in `blocked`. APIs that write files without raising one of these
+  events, such as `ViewSchedule.Export`, shared parameter file edits and
+  `TransmissionData.WriteTransmissionData`, are not blocked.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
   the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
   unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
-  it is reported there but doesn't fail the run, and isn't rolled back.
+  it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
+  the run, and isn't rolled back; it is discarded when closed.
+- When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
+  naming each cancelled operation, because the script itself only sees Revit's generic
+  exception.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   Decorated functions, context-manager yields and rewritten exception handlers retain
   their original script line numbers, including on IronPython.
@@ -287,9 +304,11 @@ Rules the host enforces:
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
   check that flag on each iteration; only the header expressions change, so line numbers and
   tracebacks still match the submitted source. On CPython the watchdog also raises the
-  timeout in the script thread. Library code the script calls (pyrevitlib, rpw, workspace
-  modules) runs unguarded at full speed, so on IronPython a long loop inside such a call is
-  only stopped once the call returns. A single blocking call, such as a long Revit API call,
+  timeout in the script thread. Modules imported from the run's `workspace` folder get the same rewrite
+  through an import hook that exists only for the run (regular modules and
+  packages that `sys.path` order resolves to the workspace; namespace packages are not rewritten). Library code the script calls
+  (pyrevitlib, rpw) runs unguarded at full speed, so on IronPython a long loop inside such a
+  call is only stopped once the call returns. A single blocking call, such as a long Revit API call,
   `time.sleep`, .NET `Thread.Sleep`, or a printer or window waiting for input, can't be
   interrupted on any engine; the run fails with `timeout` once it returns. When that call
   was the script's last, the error says the limit passed inside a call that could not be
@@ -321,8 +340,9 @@ Rules the host enforces:
   can't see every start: the run uses a `workspace`, compiles code at run time, or reaches
   `Start` another way (`getattr(t, "Start")`, `start = t.Start`). Other runs have no trace
   function, which on IronPython makes them many times faster, but also means nothing checks
-  the deadline outside loop headers: unbounded recursion, or a callback passed to `map`,
-  `filter` or `sorted` over an endless iterable, is not stopped on IronPython. A
+  the deadline outside loop headers: a callback passed to `map`, `filter` or `sorted` over
+  an endless iterable is not stopped on IronPython. Unbounded recursion ends in a
+  `RecursionError`; see [Deep recursion on IronPython](#deep-recursion-on-ironpython). A
   transaction a library function starts and returns to the script is only found if the
   script still holds it in a global when the run ends.
 - Tracebacks of errors and timeouts show the script's frames and the library code it
@@ -367,9 +387,12 @@ pyrevit configs agent reckless          # prints the current setting
 ```
 
 The host reads the setting at the start of each run, so a change applies to the next run
-without reloading pyRevit. A script can't turn it on for its own run. A reckless run's
+without reloading pyRevit. Turning it off applies at once. Turning it on applies only after
+you confirm it in a Revit prompt before the next run of any mode, so a script that rewrites
+the config can't make later runs reckless; No keeps it off until the setting is turned off
+and on again or Revit restarts. A script can't turn it on for its own run. A reckless run's
 response, its `response.json` record and the compact MCP result carry `"reckless": true`,
-and `get_context` reports `agent.reckless: true` while it is on.
+and `get_context` reports `agent.reckless: true` while it is in force.
 
 What a reckless run skips:
 
@@ -394,6 +417,35 @@ Risks:
 What still applies: the `[agent] policy`, the approval prompt under `ask`, rollback of
 queries and dry runs, rollback on any script error, the `transaction_left_open` check on the
 active document, the document, save and dialog guards, and the run record.
+
+### Deep recursion on IronPython
+
+Scripts run on Revit's main thread, whose stack is 1 MB. Unbounded recursion stops at the
+engine's limit of 1000 calls with `RecursionError` (`RuntimeError` on IronPython 2.7) like
+any other script error, and an exception raised deep in a call chain is caught as usual.
+
+Upstream IronPython rethrows an exception once per Python frame from inside a `catch` block,
+which on .NET holds about 12 KB of stack per frame until the exception is caught, so an
+exception raised about 100 calls deep crashed Revit. It also stopped checking the recursion
+limit in a function that had raised more than 20 times. pyRevit ships both engines with
+fixes for this:
+
+- IronPython 2.7.12 is built from the `dev/modules` forks.
+- IronPython 3.4.2 uses patched `IronPython.dll` and `Microsoft.Dynamic.dll` drop-ins with
+  the upstream version and identity; see `dev/libs/IronPython/IPY342/README.md` for their
+  sources.
+
+The fixes have not been released upstream, so other hosts running IronPython still crash.
+
+A trace function makes every IronPython frame larger. While the runner traces a script (it
+uses a `workspace`, compiles code at run time, or reaches `Start` other than by a direct
+call; see [Script contract](#script-contract)), an IronPython run's recursion limit is 500
+instead of 1000, because frames with several `with` or `try` blocks overflow Revit's stack
+between 750 and 900 calls when traced. A script that raises its limit is put back to 500 on
+its next call, and the previous limit is restored when the script ends. CPython runs keep
+their limit. The cap lives in the runner's trace function, so a script that removes it with
+`sys.settrace(None)` and then raises its own limit is no longer held at 500; handler-dense
+recursion past about 750 calls can then still crash Revit.
 
 ### Which Python runs the script
 
@@ -434,6 +486,43 @@ Syntax measured in Revit on IronPython 3.4.2:
 IronPython 2.7.12 is Python 2.7 syntax. CPython 3.12 supports everything, but reaches the
 Revit API through pythonnet, and pyrevitlib features built for IronPython may be limited.
 
+### Engine warm-up
+
+Agent runs reuse one cached engine per session load, so only the first run starts the engine,
+imports `pyrevit.agent._runner` and runs the runner's code for the first time, which costs
+two to three seconds on IronPython. The host does that work ahead of time, once per session
+load, when an agent first makes contact: after the pipe handles the first request of the
+load (`ping`, `get_context` or any other method), it queues the warm-up on the Revit main
+thread, where it runs when Revit is next idle. A session whose agent never connects pays
+nothing.
+
+The warm-up uses the same engine cache key and flags as a real run, and calls
+`_runner.warm_up()`, which passes a small fixed script through the real `run()` against a
+stand-in context with no Revit application: setup, source rewriting, compilation, loop
+guards, the watchdog, execution, transaction recording, result serialization and the
+rollback scan all run once. It reads no document, starts no transaction, writes no run
+record and shows no output. Its two-line entry script goes to a file of the Revit process's
+own, `%APPDATA%\pyRevit\agent\engine_warmup.<pid>.py`, which is deleted after it ran, so
+Revit sessions warming at the same time never share it. A `run` request never queues it: a
+run that executes starts the engine anyway, and one refused before it executes leaves the
+next request to warm. The
+warm-up is skipped when the engine is already cached, when the agent is off, and when
+`default_engine` is not IronPython. A request during which pyRevit reloads, such as a
+`run` that reloads it, counts for the old load, so the new load warms on its own first
+request. Requests made in-process through `AgentHost.HandleRequest` don't trigger it. The
+warm-up reports to the debug log only, as a `[PERF] agent engine warm-up` line with the
+script's exit code, or as `Agent engine warm-up failed`, and never affects the host.
+
+A request that arrives while the warm-up runs waits for it, as it would for a run. A run
+sent right after the first `ping` therefore takes about 0.1 to 0.4 s longer than a cold first
+run would have, because it waits for the whole warm-up, which does a little more than a run
+needs. This is accepted: a run sent after the warm-up finishes starts in tens of
+milliseconds instead of two to three seconds.
+
+CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded assembly and
+keeps the interpreter up for the rest of the process, so the first CPython run still pays for
+it. A run that asks for an engine other than the default also starts cold.
+
 ### CLI
 
 ```text
@@ -450,7 +539,8 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
                                            entries that point at another pyRevit install
 ```
 
-`--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it. `--workspace` must be an existing folder.
+`--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
+`--workspace` must be an existing local folder; network (UNC) paths are refused.
 
 The `agent` and `mcp` commands ship with the pyRevit CLI of the same build. An older `pyrevit`
 on `PATH` doesn't know them and prints the global usage; upgrade the CLI or call the one from
@@ -734,7 +824,7 @@ Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one con
 at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, `recording_start`,
 `recording_stop`, `recording_status`. Errors carry a stable
-`data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
+`data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly` or
 `invalid_params`.
 
 ### What became of a request that got no answer
@@ -749,7 +839,7 @@ use `req-` and twelve hex digits as the JSON-RPC `id`), and a failure says what 
 | `not_run` | The host refused the request before running any of it and discarded it. It is removed from the queue and never runs later. | Send it again once Revit is idle. |
 | `unknown` | The request was sent and the answer was lost (the connection broke or closed, or the client stopped waiting), or the host stopped waiting for a run stuck past its time limit (`run_hung`). It may have run, may still be running or waiting to run, or may never run. | Look it up by request id before sending it again. |
 
-Every `revit_busy` the host raises is a `not_run`. For a `run` request the host also leaves a
+Every `revit_busy` and `document_changed` the host raises is a `not_run`. For a `run` request the host also leaves a
 run folder with `status` and `decision` `not_run`, and returns its `run_id` and `run_dir` in the
 error's `data`. Without it a refused request would leave no trace. A run that did start records
 the request id in `request.json` and `response.json` (`request_id`), so a request can be found
@@ -797,7 +887,8 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
     - **modify** with policy `readonly`: the policy is read before the script and again here,
       and the stricter value (`readonly`, then `ask`, then `auto`) decides. A run queued before
       the switch to `readonly` rolls back with `policy_readonly` instead of committing, and a
-      script that rewrites the policy can't loosen it for its own run.
+      script that rewrites the policy can't loosen it for its own run, nor, without the user
+      confirming it in Revit, for later runs.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says
       `approval: auto`.
     - **modify** with policy `ask`: while the group is still open, select and temporarily
@@ -819,6 +910,10 @@ Honest limits:
   changes the model or answers the approval prompt after the guard has ended. Those changes
   are neither approved nor recorded. Approval and `readonly` stop an agent's mistakes, not a
   hostile script: connect only agents you trust, and don't feed them untrusted content.
+- Script engines are reused between runs. Whatever a run changes in the interpreter, such as
+  `sys.modules`, patched pyRevit functions, builtins or environment variables, stays for later
+  runs, and on CPython also for the user's CPython buttons, which share the one interpreter.
+  Rolling back the model doesn't undo it.
 - Revit serves one agent request at a time. While one session's run is executing, which can
   last until its `timeout_s` (plus 30 seconds before a stuck run fails with `run_hung`), a
   second agent session can't connect and gets `revit_busy`
@@ -892,7 +987,7 @@ Validated on Revit 2024 (build 24.1.11.26), IronPython 3.4.2, Snowdon Towers sam
 | `DocumentChanged` inside a `TransactionGroup` | Fires for every inner commit, so query detection and change sets work |
 | Query and dry-run rollback | Verified in the model afterwards |
 | Warning capture | Overlap warning recorded and removed, no popup |
-| Dialog capture | API `TaskDialog` dismissed and reported. `DialogBoxShowing` fires for API dialogs too, so the host disarms it before its own prompt. |
+| Dialog capture | API `TaskDialog` dismissed and reported. `DialogBoxShowing` fires for API dialogs too, so the approval prompt is a native Windows message box that the event can't answer. |
 | Save blocking | Revit itself refuses to save while an API transaction group is open; the `DocumentSaving` cancel covers runs without a group |
 | Script error | Rolled back, traceback points at the script line |
 | Transaction left open | Detected; Revit cleans up the open transaction |
@@ -911,7 +1006,7 @@ itself: the pipe executes requests through an ExternalEvent that never fires whi
 | Run Agent Tests | `get_context`, `inspect_elements`, `show`, `capture`, `lookup_api`; what each request refuses (invalid parameters, unsupported or closed views); query runs on both engines (results, error lines, timeouts, workspaces, records, dismissed dialogs); modify runs (decisions, change sets, rollback, open transactions, save and export blocks, other documents, warnings, `readonly`, a policy changed during the run or outside Revit); the agent settings; the real named pipe (`ping`, `lookup_api`, errors, `revit_busy` while a command runs) |
 | Run Agent Tests (CPython) | The same tests started from a CPython command, which also checks that the command survives nested agent runs |
 | Run Agent Library Tests | The shipped and user skills, `lookup_pyrevit_api` and `list_automation` through a short-lived `pyrevit mcp` process, and the pyrevitlib side of the automation operations on both engines |
-| Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*, answered through Revit's `DialogBoxShowing` event; if a prompt stays on screen, click the button its title names |
+| Run Agent Approval Tests | The `ask` prompt's *Keep* and *Discard*. The prompt is a native Windows message box that `DialogBoxShowing` can't answer, so a helper thread presses the button; if a prompt stays on screen, click the button its title names |
 
 The tests create two scratch projects in the temp folder, set the policy to `auto` (or `ask` for the
 approval tests) while they run, then close the projects without saving, reactivate the document

@@ -35,7 +35,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void ExportAndSynchronizeOperationsAreBlocked() {
+        public void ExportPrintAndSynchronizeOperationsAreBlocked() {
             var app = new UIApplication();
             var document = new Document();
             using (var guard = new AgentRunGuard(app, document)) {
@@ -43,9 +43,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 Assert.False(app.Application.ExportFile());
                 Assert.False(app.Application.ExportView());
                 Assert.False(app.Application.Synchronize(document));
+                Assert.False(app.Application.Print(document));
                 Assert.Equal("file_export", guard.Blocked[0].Value<string>("operation"));
                 Assert.Equal("view_export", guard.Blocked[1].Value<string>("operation"));
                 Assert.Equal("synchronize_with_central", guard.Blocked[2].Value<string>("operation"));
+                Assert.Equal("print", guard.Blocked[3].Value<string>("operation"));
             }
         }
 
