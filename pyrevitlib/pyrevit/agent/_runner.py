@@ -1629,18 +1629,35 @@ def _unload_modules_under(folder):
         clone never unloads the standard library, .NET namespace modules,
         pyrevitlib or this runner from the shared engine, while a folder the
         agent's own scripts put on ``sys.path`` is still reloaded. pyrevitlib
-        stays loaded even when it is the workspace itself.
+        stays loaded even when it is the workspace itself. A namespace package,
+        which has no ``__file__``, is unloaded only when every folder of its
+        ``__path__`` passes the same checks.
     """
     root = _folder_prefix(folder)
     nested = _library_prefixes(root)
+
+    def in_workspace(path):
+        return _is_under(path, root) and not any(
+            _is_under(path, prefix) for prefix in nested
+        )
+
     for name, module in list(sys.modules.items()):
         module_file = getattr(module, "__file__", None)
-        if (
-            _is_under(module_file, root)
-            and module_file.lower().endswith((".py", ".pyw", ".pyc"))
-            and not any(_is_under(module_file, prefix) for prefix in nested)
+        if module_file is None:
+            folders = _namespace_folders(module)
+            if folders and all(in_workspace(path) for path in folders):
+                del sys.modules[name]
+        elif in_workspace(module_file) and module_file.lower().endswith(
+            (".py", ".pyw", ".pyc")
         ):
             del sys.modules[name]
+
+
+def _namespace_folders(module):
+    try:
+        return list(getattr(module, "__path__", None) or [])
+    except Exception:
+        return []
 
 
 def _leave_workspace(workspace, added_to_path):

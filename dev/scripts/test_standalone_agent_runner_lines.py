@@ -1731,6 +1731,39 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
         )
         self.assertEqual(["scratch_ws"], unloaded)
 
+    def test_namespace_packages_in_the_workspace_are_unloaded(self):
+        """A package without __init__.py has no __file__ but is still unloaded (#3949)."""
+        workspace = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, workspace)
+        os.makedirs(os.path.join(workspace, "nspkg_ws"))
+        with open(os.path.join(workspace, "nspkg_ws", "part.py"), "w") as handle:
+            handle.write("VALUE = 1\n")
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.object(sys, "path", [workspace] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            importlib.import_module("nspkg_ws.part")
+            self.assertIsNone(getattr(sys.modules["nspkg_ws"], "__file__", None))
+            self.runner._unload_modules_under(workspace)
+            self.assertIsNone(sys.modules.get("nspkg_ws"))
+            self.assertIsNone(sys.modules.get("nspkg_ws.part"))
+
+    def test_namespace_packages_outside_the_workspace_stay_loaded(self):
+        """A namespace package with any portion outside the workspace stays loaded."""
+        workspace = os.path.abspath("work")
+        outside = os.path.abspath("elsewhere")
+        package = types.SimpleNamespace(
+            __file__=None,
+            __path__=[os.path.join(workspace, "ns"), os.path.join(outside, "ns")],
+        )
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.dict(sys.modules, {"split_ns_ws": package}),
+        ):
+            self.runner._unload_modules_under(workspace)
+            self.assertIn("split_ns_ws", sys.modules)
+
 
 if __name__ == "__main__":
     unittest.main()
