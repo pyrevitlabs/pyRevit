@@ -713,7 +713,7 @@ If process metadata or the registration timestamp cannot establish liveness, dis
 Any successful pipe check includes the registration in discovery.
 If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
 The host recreates its pipe between connections and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
-After ten failed attempts in a row to create the pipe, the host stops listening, logs an error and keeps no pipe until pyRevit is reloaded.
+After ten failed attempts in a row to create the pipe, the host stops listening, logs an error, removes its registration and keeps no pipe until pyRevit is reloaded.
 Excluded registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on

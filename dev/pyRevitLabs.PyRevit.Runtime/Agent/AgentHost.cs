@@ -245,7 +245,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return;
 
                 pipeServer?.Dispose();
-                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle);
+                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle, ForgetStoppedPipe);
                 pipeServer.Start();
                 WriteInstanceFile(uiApp);
                 AgentPaths.PruneOldRecordsInBackground();
@@ -275,6 +275,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             logger.Info("pyRevit agent host stopped");
+        }
+
+        private static void ForgetStoppedPipe(AgentPipeServer stopped) {
+            lock (sync) {
+                if (ReferenceEquals(pipeServer, stopped))
+                    DeleteInstanceFile();
+            }
         }
 
         private static bool IsElevated() {
