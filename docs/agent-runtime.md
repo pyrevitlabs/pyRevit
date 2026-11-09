@@ -356,7 +356,9 @@ Rules the host enforces:
   IronPython 3.4, which reads the whole f-string as one token. On IronPython such a run
   falls back to checking the deadline on every line of every frame, which is slower but
   still stops it, unless that code catches the timeout in its own loop, or the script
-  removes that check with `sys.settrace(None)` first.
+  removes that check with `sys.settrace(None)` first. Importing such a module from the
+  `workspace` turns that check on for the rest of the run. `async for` loops are not
+  rewritten either; only CPython can run them, and it stops them as described above.
 - Threads the script starts are not stopped. They keep running after the run returns, with
   no timeout, outside the guard (see the limits under [The guarded run](#the-guarded-run)).
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed

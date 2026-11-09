@@ -278,9 +278,11 @@ class _WorkspaceLoopGuard(object):
         2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
         implemented. Modules get the same broad-handler narrowing as the
         script, so a bare ``except`` cannot swallow the timeout. Namespace
-        packages are not rewritten, and on IronPython a workspace module that
-        compiles code at runtime is not line-traced; its loops there are
-        stopped only if the script itself is traced.
+        packages are not rewritten. On engines without
+        ``PyThreadState_SetAsyncExc``, importing a module whose loops the
+        rewrite can't see (code compiled at run time, a loop inside an
+        f-string) calls ``on_unguarded``, which turns on per-line deadline
+        checks for the rest of the run.
     """
 
     def __init__(self, workspace, guards, on_unguarded=lambda: None):
@@ -364,10 +366,12 @@ class _WorkspaceLoopGuard(object):
     def exec_module(self, module):
         with open(module.__file__, "rb") as handle:
             raw = handle.read()
-        code, rewrite_problem, guarded = _compile_source(
-            _decode_source(raw), True, module.__file__
-        )
-        if not guarded:
+        source = _decode_source(raw)
+        code, rewrite_problem, guarded = _compile_source(source, True, module.__file__)
+        if not guarded or (
+            _set_async_exc_function() is None
+            and (_runs_dynamic_code(source) or _hides_loops_in_fstrings(source))
+        ):
             self._on_unguarded()
         if rewrite_problem:
             print(

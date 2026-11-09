@@ -1366,6 +1366,33 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertIs(guards["__agent_tick__"], module.__agent_tick__)
         self.assertIsNone(hook.find_module("json"))
 
+    def test_runtime_compiled_workspace_code_turns_on_line_checks(self):
+        """On IronPython, a workspace module with exec asks for per-line deadline checks."""
+        folder = self._workspace(
+            {"dyn.py": "def go(code):\n    exec(code)\n", "plain.py": "VALUE = 1\n"}
+        )
+        guards = {"__agent_tick__": lambda: True, "__agent_loop__": iter}
+        sys.path.insert(0, folder)
+        self.addCleanup(sys.path.remove, folder)
+        for name in ("dyn", "plain"):
+            self.addCleanup(sys.modules.pop, name, None)
+        for implementation, module, expected in (
+            ("ironpython", "dyn", 1),
+            ("ironpython", "plain", 0),
+            ("cpython", "dyn", 0),
+        ):
+            calls = []
+            hook = self.runner._WorkspaceLoopGuard(
+                folder, guards, lambda: calls.append(1)
+            )
+            sys.modules.pop(module, None)
+            self.assertIs(hook, hook.find_module(module))
+            with mock.patch.object(
+                self.runner, "_implementation", return_value=implementation
+            ):
+                hook.load_module(module)
+            self.assertEqual(expected, len(calls), (implementation, module))
+
     def test_the_workspace_hook_is_removed_after_the_run(self):
         """The import hook never outlives the run that installed it."""
         folder = self._workspace({"quiet.py": "VALUE = 1\n"})
