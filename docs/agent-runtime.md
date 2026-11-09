@@ -587,15 +587,20 @@ wrong:
 
     ```shell
     pwsh dev/scripts/Stop-McpServers.ps1
-    cd build && dotnet run -c Debug -- ci
+    cd build && dotnet run -c Debug -- local
     ```
+
+    `local` runs `ci` and then signs `bin\` with a per-machine developer certificate, so Revit loads
+    the build without the unsigned add-in dialog. Trust the certificate once with
+    `dotnet run -c Debug -- --trust-cert`, see `build/README.md`. A plain `ci` build is unsigned.
 
     `-WhatIf` lists the servers without stopping them. Clients start a new server on the next
     tool call, so don't call an MCP tool between the script and the build; afterwards the
     new server starts by itself, or the client needs a reconnect.
-3. **Restart Revit after a build.** Close the launched Revit and run `pyrevit launch` again. Accept
-   the "Security - Unsigned Add-In" dialog with **Load Once** whenever it appears; the MCP host
-   doesn't answer before that. Python-only changes need no rebuild, but they need a restart or
+3. **Restart Revit after a build.** Close the launched Revit and run `pyrevit launch` again. The
+   "Security - Unsigned Add-In" dialog appears for unsigned builds only, such as a plain `ci`
+   build; accept it with **Load Once**, because the MCP host doesn't answer before that. A `local`
+   build is signed and doesn't raise it. Python-only changes need no rebuild, but they need a restart or
    reload to take effect: IronPython can `reload()` a changed module, while
    CPython can't redefine classes that implement .NET interfaces (reloading `pyrevit.revit.db.create`
    raises `Duplicate type name within an assembly`). Restarting Revit loads the edits on both engines.
@@ -610,7 +615,7 @@ wrong:
     If you test a single session through an attachment instead, the engine is one setting per clone:
     `pyrevit attach <clone> default --installed` selects 2.7.12 and `pyrevit attach <clone> 342
     --installed` selects 3.4.2. The switch rewrites the `.addin` manifest, so the running Revit keeps
-    its engine until it is restarted (and the **Load Once** dialog appears again). Attach `default`
+    its engine until it is restarted (and the **Load Once** dialog appears again on an unsigned build). Attach `default`
     again, restart Revit and accept **Load Once** before continuing, and don't switch the attachment
     while other sessions share the machine.
 5. **Run the snippets in scratch documents.** `run_query` rolls back changes to the active
@@ -653,8 +658,8 @@ engine is `default`, a version such as `342` or `2712`, or an engine id.
   clone is ignored by such a session (`PYREVIT_IGNORE_LOCAL_CONFIG`). Instance records, run records and captures stay under
   `%APPDATA%\pyRevit\agent` (`PYREVIT_AGENT_DIR`), because clients look for sessions there.
 - **No model argument.** Open the model through an agent run once the session is up.
-- **Unsigned Add-In dialog.** Revit may or may not ask about the per-launch manifest; handle it as
-  after any rebuild (**Load Once**).
+- **Unsigned Add-In dialog.** The signing of `bin\` by a `local` build removes the dialog; for an
+  unsigned (`ci`) build accept **Load Once**.
 
 Each instance record, and so `list_revit_instances`, carries `clone`, `clone_path`, `engine`,
 `engine_version`, `commit`, `config_root` and `per_launch`; `get_context` reports the same
