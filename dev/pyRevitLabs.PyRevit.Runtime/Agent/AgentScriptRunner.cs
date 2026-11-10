@@ -68,6 +68,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public bool Started { get; private set; }
 
+        /// <summary>
+        /// Sets <see cref="Started"/>. Only the entry script's first statement calls it, so that
+        /// a run is counted as started exactly when its Python began to execute.
+        /// </summary>
         public void MarkStarted() {
             Started = true;
         }
