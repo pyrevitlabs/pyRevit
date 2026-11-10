@@ -35,6 +35,9 @@ namespace pyRevitCLI {
         public string Engine { get; set; }
         public string EngineVersion { get; set; }
         public string Commit { get; set; }
+
+        /// <summary>Git branch of the clone, or the branch its image was deployed from; null when the host did not record it.</summary>
+        public string Branch { get; set; }
         public string ConfigRoot { get; set; }
 
         /// <summary>True for a session started by <c>pyrevit launch</c> rather than through the shared attachment.</summary>
@@ -53,6 +56,7 @@ namespace pyRevitCLI {
                 json["engine"] = Engine;
                 json["engine_version"] = EngineVersion;
                 json["commit"] = Commit;
+                json["branch"] = Branch;
                 json["config_root"] = ConfigRoot;
                 json["per_launch"] = PerLaunch;
             }
@@ -240,6 +244,7 @@ namespace pyRevitCLI {
                         Engine = data.Value<string>("engine"),
                         EngineVersion = data.Value<string>("engine_version"),
                         Commit = data.Value<string>("commit"),
+                        Branch = data.Value<string>("branch"),
                         ConfigRoot = data.Value<string>("config_root"),
                         PerLaunch = data.Value<bool?>("per_launch") ?? false,
                     };

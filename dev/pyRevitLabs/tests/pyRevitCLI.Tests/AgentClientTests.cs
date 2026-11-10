@@ -275,7 +275,7 @@ public class AgentClientTests : IDisposable {
 
     [Fact]
     public void ARegisteredCloneIsReadFromTheInstanceRecordAndReportedInJson() {
-        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342");
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342", branch: "fix/review-a");
 
         var session = PyRevitAgentClient.Resolve("review-a");
         var json = session.ToJson();
@@ -283,6 +283,7 @@ public class AgentClientTests : IDisposable {
         Assert.Equal("2091", session.RevitVersion);
         Assert.Equal("review-a", json.Value<string>("clone"));
         Assert.Equal("IPY342", json.Value<string>("engine"));
+        Assert.Equal("fix/review-a", json.Value<string>("branch"));
         Assert.True(json.Value<bool>("per_launch"));
     }
 

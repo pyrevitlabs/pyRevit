@@ -673,8 +673,9 @@ engine is `default`, a version such as `342` or `2712`, or an engine id.
   after any rebuild (**Load Once**).
 
 Each instance record, and so `list_revit_instances`, carries `clone`, `clone_path`, `engine`,
-`engine_version`, `commit`, `config_root` and `per_launch`; `get_context` reports the same
-under `pyrevit`. The `revit` selector of the MCP tools and of `pyrevit agent` accepts a clone name or
+`engine_version`, `commit`, `branch`, `config_root` and `per_launch`; `get_context` reports the same
+under `pyrevit`. `branch` is the checked-out branch of a git clone, a git worktree included, or
+the branch a clone deployed from an image was made from. The `revit` selector of the MCP tools and of `pyrevit agent` accepts a clone name or
 path besides a year or process id, so two Revit 2026 sessions on different clones are told apart by
 `revit: "<clone name>"`. A clone whose name is a number is selected as `clone:<name>`, because a bare
 number is a process id or a year. When several sessions match, `ambiguous_revit` lists each with its clone and
