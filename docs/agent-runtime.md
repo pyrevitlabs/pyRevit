@@ -935,9 +935,17 @@ Choices made on purpose, with the reason, so they aren't reopened as bugs:
   Revit raises through `DialogBoxShowing` while it runs, including a prompt another add-in shows
   in reaction to it (for example to a view `zoom` opens), and lists it in `dialogs`. Requests other
   than `run` install no `IFailuresPreprocessor`; their transactions only change temporary view
-  state or are rolled back. The run-tab highlight flushes its
-  rendering with a nested `Dispatcher.Invoke`, which can process other queued work early; no
-  problem has been reproduced from it.
+  state or are rolled back.
+- **Run-tab highlight flush.** The highlight paints the document tab and then flushes rendering
+  with a nested `Dispatcher.Invoke` at `Render` priority, so the tab shows while the run blocks
+  Revit's main thread. That nested frame also runs every dispatcher item queued at `Normal`,
+  `DataBind` or `Render` priority, for example another add-in's `BeginInvoke`, inside the run's
+  external event handler (checked with a plain WPF dispatcher: the queued items ran before the
+  flush returned, a `Background` item after it). Kept: WPF has no public way to render without
+  pumping the queue, and without the flush the highlight would only appear once the run is over.
+  The flush when the run asks for approval happens while its transaction group is open, but the
+  approval `MessageBox` that follows runs a modal loop that processes the same queue; the flush
+  when the run starts happens before its transaction group exists.
 - **Shared agent storage.** Per-launch sessions keep their instance and run records in the shared
   `%APPDATA%\pyRevit\agent` folder, so clients find every session; see
   [Running several clones side by side](#running-several-clones-side-by-side).
