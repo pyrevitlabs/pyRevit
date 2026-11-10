@@ -876,7 +876,8 @@ def _start_watchdog(timeout_s, state):
             return
         escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
         while not stopped.is_set() and not state["finished"]:
-            state["interrupted"] = True
+            if not state.get("script_ended"):
+                state["interrupted"] = True
             inject(RunTimedOut)
             if _clock() >= escalate_at:
                 escalation.arm()
@@ -1148,6 +1149,7 @@ def run(context):
     state = {
         "timed_out": False,
         "interrupted": False,
+        "script_ended": False,
         "finished": False,
         "check_lines": False,
     }
@@ -1222,6 +1224,7 @@ def run(context):
             except SystemExit as ex:
                 script_exit = ex
             finally:
+                state["script_ended"] = True
                 phases.lap("exec")
 
             script_finished = True

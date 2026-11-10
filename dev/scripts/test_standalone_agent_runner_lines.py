@@ -1497,6 +1497,23 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertIn("could not be interrupted", message)
         self.assertEqual("", text)
 
+    def test_timeout_injected_while_converting_the_result_is_not_an_interruption(self):
+        """A limit passed after the script ended gets the late message on CPython too."""
+        convert = self.runner._to_jsonable
+
+        def slow_convert(value):
+            ends = time.time() + 0.6
+            while time.time() < ends:
+                pass
+            return convert(value)
+
+        source = "class Slow(object):\n    pass\nresult = [Slow()]\n"
+        with mock.patch.object(self.runner, "_to_jsonable", slow_convert):
+            error_type, message, text = self._run(source, timeout_s=0.2)
+        self.assertEqual("timeout", error_type)
+        self.assertIn("could not be interrupted", message)
+        self.assertEqual("", text)
+
     def test_swallowed_timeout_does_not_blame_an_uninterruptible_call(self):
         """A loop whose timeout an aliased handler swallowed is not called uninterruptible."""
         source = "B = BaseException\ntry:\n    while True:\n        pass\nexcept B:\n    pass\n"
