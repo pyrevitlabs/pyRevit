@@ -39,7 +39,7 @@ except ImportError:
 import System
 
 from pyrevit.api import DB, UI
-from pyrevit.compat import IRONPY, get_elementid_value_func
+from pyrevit.compat import IRONPY, PY2, get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 IRONPYTHON_TRACED_RECURSION_LIMIT = 500
@@ -57,6 +57,8 @@ _WATCHDOG_ESCALATE_SECONDS = 1.0
 _ESCALATION_TOOL_IDS = (4, 3)
 _START_RECORDER = "__agent_start__"
 _CO_OPTIMIZED = 0x1
+_MAX_OUTPUT_CHARS = 64 * 1024
+_TEXT_TYPES = (type(""), type(b"".decode("ascii")))
 
 _clock = getattr(time, "perf_counter", None) or time.time
 
@@ -85,6 +87,56 @@ class RunTimedOut(BaseException):
     as one reached through an alias, is stopped at the next rewritten loop
     header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
+
+
+class _CappedOutput(StringIO):
+    """Captured stdout/stderr that keeps only the first ``limit`` characters.
+
+    Invariant:
+        Keeps one character past the host's 64 KB output cap
+        (``AgentRunService.MaxOutputChars``), so the host still sees the
+        output as truncated; anything later is dropped as it is written.
+
+    Note:
+        The limit counts every character ever written and none is given
+        back: ``truncate`` shrinks the buffer but frees no room, and
+        ``seek`` is neutralised because writes always append, so a print
+        after the limit was reached is dropped even after ``truncate(0)``.
+        ``writelines`` must stay defined here: IronPython 3.4's StringIO
+        implements it in .NET without calling an overridden ``write``, and
+        ``sys.stdout.writelines`` then raises ``TypeError``.
+    """
+
+    def __init__(self, limit):
+        StringIO.__init__(self)
+        self._room = limit
+        self._end = 0
+        self._lock = threading.Lock()
+
+    def write(self, text):
+        if PY2 and not isinstance(text, _TEXT_TYPES):
+            text = str(text)
+        with self._lock:
+            if self._room > 0:
+                kept = text[: self._room]
+                self._room -= len(kept)
+                if StringIO.tell(self) != self._end:
+                    StringIO.seek(self, self._end)
+                StringIO.write(self, kept)
+                self._end += len(kept)
+        return len(text)
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
+    def truncate(self, size=None):
+        with self._lock:
+            if size is None:
+                size = StringIO.tell(self)
+            result = StringIO.truncate(self, size)
+            self._end = min(self._end, size)
+            return result
 
 
 class _NarrowBroadHandlers(ast.NodeTransformer):
@@ -1025,6 +1077,13 @@ class _PhaseClock(object):
         self._last = now
 
 
+def _raise_if_past_deadline(timeout_s, started, state):
+    if timeout_s and time.time() - started > timeout_s:
+        state["timed_out"] = True
+    if state["timed_out"]:
+        raise RunTimedOut(timeout_s)
+
+
 def _finish_and_stop_watchdog(state):
     """Mark the script finished and stop its watchdog, whatever is still pending.
 
@@ -1052,8 +1111,9 @@ def run(context):
 
     Note:
         Never raises. Script errors, including a failure to serialize
-        ``result``, are reported through ``context.SetError`` so the host can
-        roll the run back.
+        ``result`` and a ``BaseException`` such as ``KeyboardInterrupt``, are
+        reported through ``context.SetError`` so the host can roll the run
+        back. A run that passed its time limit reports no ``result``.
 
     Note:
         ``context.TimeoutSeconds`` is enforced by a watchdog thread that sets
@@ -1114,7 +1174,7 @@ def run(context):
         _source_lines(source),
         SOURCE_NAME,
     )
-    captured = StringIO()
+    captured = _CappedOutput(_MAX_OUTPUT_CHARS + 1)
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
     sys.stdout = captured
@@ -1128,7 +1188,7 @@ def run(context):
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {"timed_out": False, "finished": False, "check_lines": False}
-    timed_out_after_script = False
+    script_finished = False
     tracked_transactions = {}
     try:
         workspace = _enter_workspace(context.Workspace)
@@ -1201,20 +1261,21 @@ def run(context):
             finally:
                 phases.lap("exec")
 
+            script_finished = True
             if script_exit is not None:
                 if not _is_successful_exit(script_exit):
                     failed = True
                     context.SetError(
                         "SystemExit", _system_exit_message(script_exit), ""
                     )
+            _raise_if_past_deadline(timeout_s, started, state)
+            serialized = None
             if not failed and "result" in namespace:
                 try:
-                    context.SetResult(
-                        json.dumps(
-                            namespace["result"],
-                            default=_to_jsonable,
-                            ensure_ascii=False,
-                        )
+                    serialized = json.dumps(
+                        namespace["result"],
+                        default=_to_jsonable,
+                        ensure_ascii=False,
                     )
                 except Exception as ex:
                     failed = True
@@ -1226,29 +1287,29 @@ def run(context):
                 phases.lap("result")
 
             state["finished"] = True
-            if state["timed_out"] or (timeout_s and time.time() - started > timeout_s):
-                timed_out_after_script = True
-                raise RunTimedOut(timeout_s)
+            _raise_if_past_deadline(timeout_s, started, state)
+            if serialized is not None:
+                context.SetResult(serialized)
         finally:
             _finish_and_stop_watchdog(state)
             sys.settrace(saved_trace)
             sys.setrecursionlimit(saved_recursion_limit)
-    except RunTimedOut:
+    except BaseException as ex:
         failed = True
-        if timed_out_after_script:
-            context.SetError("timeout", _late_timeout_message(timeout_s), "")
+        if isinstance(ex, RunTimedOut) and state["timed_out"]:
+            if script_finished:
+                context.SetError("timeout", _late_timeout_message(timeout_s), "")
+            else:
+                context.SetError(
+                    "timeout",
+                    "The script ran longer than its {:g} second limit and was "
+                    "stopped; its changes were rolled back. Pass a larger timeout_s "
+                    "if the work needs more time.".format(timeout_s),
+                    _format_script_traceback(),
+                )
         else:
-            context.SetError(
-                "timeout",
-                "The script ran longer than its {:g} second limit and was stopped; "
-                "its changes were rolled back. Pass a larger timeout_s if the work "
-                "needs more time.".format(timeout_s),
-                _format_script_traceback(),
-            )
-    except Exception as ex:
-        failed = True
-        error_type, message = _describe_error(ex)
-        context.SetError(error_type, message, _format_script_traceback())
+            error_type, message = _describe_error(ex)
+            context.SetError(error_type, message, _format_script_traceback())
     finally:
         if workspace_guard is not None:
             sys.meta_path[:] = [
@@ -1294,7 +1355,9 @@ def _is_successful_exit(error):
 
 
 def _system_exit_message(error):
-    return "The script exited with code {}".format(error.code)
+    if isinstance(error.code, int):
+        return "The script exited with code {}".format(error.code)
+    return "The script exited: {}".format(_safe_text(error.code))
 
 
 _TRANSACTION_ORDER = (
@@ -1661,6 +1724,8 @@ def _elementid_value(element_id):
 
 
 def _to_jsonable(value):
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("utf-8", "replace")
     if isinstance(value, _NET_INTEGER_TYPES):
         return int(value)
     if isinstance(value, _NET_FLOAT_TYPES):
@@ -1723,7 +1788,7 @@ def _describe_error(ex):
         error_type = clr_exception.GetType().Name
     details = " <- ".join(chain)
     if details and details not in message:
-        message = "%s [.NET: %s]" % (message, details)
+        message = " ".join(part for part in (message, "[.NET: %s]" % details) if part)
     return error_type, message
 
 
@@ -1785,6 +1850,8 @@ _RUNNER_FILENAME = _format_script_traceback.__code__.co_filename
 
 
 def _safe_text(value):
+    if isinstance(value, type("")):
+        return value
     try:
         return str(value)
     except Exception:

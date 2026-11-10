@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal static class AgentPresenter {
         private const int MaxIds = 20000;
+        private const int MaxCategories = 100;
         private static readonly string[] Actions = { "select", "isolate", "hide", "reset" };
 
         public sealed class Request {
@@ -34,32 +35,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static Request Parse(JObject parameters) {
-            var action = (parameters.Value<string>("action") ?? "select").ToLowerInvariant();
+            var action = (AgentParams.Get<string>(parameters, "action") ?? "select").ToLowerInvariant();
             if (!Actions.Contains(action))
                 throw new AgentException("invalid_params", "'action' must be one of: " + string.Join(", ", Actions) + ".");
 
-            var request = new Request { Action = action, Zoom = parameters.Value<bool?>("zoom") ?? false };
+            var request = new Request { Action = action, Zoom = AgentParams.Get<bool?>(parameters, "zoom") ?? false };
 
             if (parameters["ids"] is JArray ids) {
                 if (ids.Count > MaxIds)
                     throw new AgentException("invalid_params", $"At most {MaxIds} ids per call.");
-                try {
-                    request.Ids.AddRange(ids.Select(id => id.Value<long>()));
-                }
-                catch (Exception) {
-                    throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-                }
+                request.Ids.AddRange(AgentParams.ElementIds(ids, "ids"));
             }
 
-            if (parameters["categories"] is JArray categories) {
-                foreach (var token in categories) {
-                    var name = token.Value<string>() ?? string.Empty;
-                    var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
-                    if (!AgentSelectors.TryParseMember(enumName, out BuiltInCategory category))
-                        throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
-                    request.Categories.Add(category);
-                }
-            }
+            if (parameters["categories"] is JArray categories)
+                request.Categories.AddRange(AgentSelectors.ParseDistinctCategories<BuiltInCategory>(
+                    categories.Select(token => token.Value<string>()), MaxCategories));
 
             if (action != "reset" && request.Ids.Count == 0 && request.Categories.Count == 0)
                 throw new AgentException("invalid_params", "Pass 'ids' and/or 'categories'.");
@@ -227,9 +217,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var collector = view != null && !view.IsTemplate
                     ? new FilteredElementCollector(doc, view.Id)
                     : new FilteredElementCollector(doc);
-                foreach (var id in collector.OfCategory(category).WhereElementIsNotElementType().ToElementIds()) {
-                    if (seen.Add(AgentIds.ToValue(id)))
+                using (var ids = collector.OfCategory(category).WhereElementIsNotElementType().GetElementIdIterator()) {
+                    while (ids.MoveNext()) {
+                        var id = ids.Current;
+                        if (!seen.Add(AgentIds.ToValue(id)))
+                            continue;
+                        if (targets.Count >= MaxIds)
+                            throw new AgentException("too_many_elements",
+                                $"The categories match more than {MaxIds} elements in the active view; pass fewer categories or ids.");
                         targets.Add(id);
+                    }
                 }
             }
 
