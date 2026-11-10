@@ -2,6 +2,7 @@ using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using PyRevitLabs.PyRevit.Runtime.Agent;
+using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     public sealed class AgentRunGuardTests {
@@ -17,6 +18,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.Change(opened);
                 Assert.True(guard.ChangedOtherOpenDocument);
             }
+        }
+
+        [Fact]
+        public void OnlyBackgroundDocumentsOpenedAfterTheGuardWasCreatedAreLeftovers() {
+            var app = new UIApplication();
+            app.Application.Documents.Add(new Document { Title = "Open before" });
+            var guard = new AgentRunGuard(app, null);
+            guard.Arm("Test");
+            app.Application.Open(new Document { Title = "Opened by the run" });
+            guard.Dispose();
+
+            var leftovers = AgentDocuments.CloseLeftovers(app.Application, guard.OpenAtStart);
+
+            Assert.Equal(new[] { "Opened by the run" }, leftovers["closed"].Values<string>());
         }
 
         [Fact]

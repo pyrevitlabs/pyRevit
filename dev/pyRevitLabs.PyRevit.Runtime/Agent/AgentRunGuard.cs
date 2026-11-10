@@ -51,7 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly JArray failures = new JArray();
         private readonly JArray blocked = new JArray();
         private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
-        private readonly List<Document> openAtStart = new List<Document>();
+        private readonly List<Document> openAtStart;
         private readonly List<Document> documentsCreatedDuringRun = new List<Document>();
         private readonly List<Document> documentsOpenedFromDisk = new List<Document>();
         private TransactionGroup group;
@@ -62,7 +62,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             this.uiApp = uiApp;
             app = uiApp.Application;
             this.doc = doc;
+            openAtStart = AgentDocuments.Snapshot(app);
         }
+
+        /// <summary>
+        /// The documents open when the guard was created, before anything was armed, so the
+        /// host can tell which background documents the run left behind even when arming failed.
+        /// </summary>
+        public IReadOnlyCollection<Document> OpenAtStart => openAtStart;
 
         public AgentChangeSet Changes => changes;
         public JArray Failures => failures;
@@ -114,8 +121,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             dialogCapture = new AgentDialogCapture(uiApp);
 
-            foreach (Document other in app.Documents) {
-                openAtStart.Add(other);
+            foreach (var other in openAtStart) {
                 if (other.IsLinked || IsWatchedDocument(other))
                     continue;
                 var tracked = new AgentOtherDocument(other, openedDuringRun: false);

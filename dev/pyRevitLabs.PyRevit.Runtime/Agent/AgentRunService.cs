@@ -221,7 +221,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 };
 
                 timings.Lap("prepare");
-                var openAtStart = AgentDocuments.Snapshot(app.Application);
                 var guard = new AgentRunGuard(app, doc);
                 using (guard) {
                     try {
@@ -297,7 +296,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                 }
                 try {
-                    var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
+                    var leftovers = AgentDocuments.CloseLeftovers(app.Application, guard.OpenAtStart);
                     response["closed_documents"] = leftovers["closed"];
                     response["unclosed_documents"] = leftovers["failed"];
                     if (((JArray)leftovers["failed"]).Count > 0)
