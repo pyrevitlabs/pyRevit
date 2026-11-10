@@ -172,10 +172,21 @@ namespace pyRevitCLI {
             };
         }
 
+        /// <remarks>
+        /// A call whose answer is being written holds its lock; the cancel then has nothing left to
+        /// stop, so it is dropped instead of making the reader wait for a slow client's stdout.
+        /// </remarks>
         private void Cancel(JToken requestId) {
-            if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
-                lock (cancellation)
-                    cancellation.Cancel();
+            if (requestId == null || !pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
+                return;
+            if (!Monitor.TryEnter(cancellation))
+                return;
+            try {
+                cancellation.Cancel();
+            }
+            finally {
+                Monitor.Exit(cancellation);
+            }
         }
 
         private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {

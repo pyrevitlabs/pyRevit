@@ -17,7 +17,8 @@ public partial class McpServerTests {
         private readonly LineWriter output = new LineWriter();
         private readonly Task serving;
 
-        public LiveSession(string defaultRevit = null) {
+        public LiveSession(string defaultRevit = null, ManualResetEventSlim writeGate = null) {
+            output.Gate = writeGate;
             serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, new LineReader(input), output));
         }
 
@@ -30,6 +31,8 @@ public partial class McpServerTests {
         });
 
         public int Unread => output.Lines.Count;
+
+        public ManualResetEventSlim Writing => output.Writing;
 
         public JObject Next() {
             Assert.True(output.Lines.TryTake(out var line, Patience), "The server did not answer in time.");
@@ -55,9 +58,17 @@ public partial class McpServerTests {
     private sealed class LineWriter : TextWriter {
         public BlockingCollection<string> Lines { get; } = new BlockingCollection<string>();
 
+        public ManualResetEventSlim Gate { get; set; }
+
+        public ManualResetEventSlim Writing { get; } = new ManualResetEventSlim(false);
+
         public override Encoding Encoding => Encoding.UTF8;
 
-        public override void WriteLine(string value) => Lines.Add(value);
+        public override void WriteLine(string value) {
+            Writing.Set();
+            Gate?.Wait(Patience);
+            Lines.Add(value);
+        }
     }
 
     private ManualResetEventSlim BlockRunsUntil(ManualResetEventSlim release) {
@@ -123,6 +134,26 @@ public partial class McpServerTests {
         Assert.Null(Payload(listed)["instances"][0]["responding"]);
         Assert.Empty(host.RequestsFor("get_context"));
         Assert.Equal(0, session.Unread);
+    }
+
+    /// <summary>A cancel for a call whose answer is being written doesn't stop the server reading requests (#3949).</summary>
+    [Fact]
+    public void ACancelArrivingWhileItsAnswerIsWrittenDoesNotStallLaterRequests() {
+        host.Handler = request => request.Value<string>("method") == "run"
+            ? RunResponse(request)
+            : FakeAgentHost.Result(request, new JObject { ["pong"] = true });
+        using var gate = new ManualResetEventSlim(false);
+        using var session = new LiveSession(writeGate: gate);
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(session.Writing.Wait(Patience));
+        session.Cancel(1);
+        session.Send(ToolCall(2, "get_context"));
+        var reachedHost = SpinWait.SpinUntil(() => host.RequestsFor("get_context").Count > 0, Patience);
+        gate.Set();
+        session.Dispose();
+
+        Assert.True(reachedHost, "The server stopped reading requests while an answer was written.");
     }
 
     [Fact]
