@@ -58,11 +58,11 @@ A run may export only into `export_dir`, a folder the host creates for that run;
 target is cancelled. Exporting works in `run_query` too, since it doesn't change the model.
 The response lists the files in `exports`.
 
-Files in `export_dir` are temporary: they last at least 14 days, and after that any Revit
-start, including another Revit instance, may delete them. When you give the user those
-paths, say so, and offer to copy the deliverables to a folder they name. Copy them with your
-own file tools after the run, or ask the user to copy them; never write to that folder from
-the script.
+Files in `export_dir` are temporary: they last at least 14 days, and after that any host
+start or later recorded run, including one in another Revit instance, may delete them, even
+while this Revit session stays open. When you give the user those paths, say so, and offer
+to copy the deliverables to a folder they name. Copy them with your own file tools after the
+run, or ask the user to copy them; never write to that folder from the script.
 
 An export shows the model as the script had it, so files from a dry run or a declined modify
 run show changes that were rolled back: export deliverables only from the state the user

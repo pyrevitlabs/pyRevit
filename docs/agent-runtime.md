@@ -295,10 +295,11 @@ Rules the host enforces:
   `background_export` whatever its target, because Revit writes its files after the run ends,
   when the run can no longer report them; its entry adds `outside_export_dir: true` when the
   target is also outside `export_dir`, and the warning then names both fixes. Exported files
-  are not rolled back. They are deleted
-  with the run record by the cleanup that runs when an agent host starts (see
-  [Run records](#run-records)): they last at least 14 days, and after that any Revit start,
-  including another Revit instance, may delete them, so copy deliverables out. Only
+  are not rolled back. They are deleted with the run record by the cleanup that runs when an
+  agent host starts and, at most once a day, when a run is recorded (see
+  [Run records](#run-records)): they last at least 14 days, and after that any host start or
+  later recorded run, including one in another Revit instance, may delete them, so copy
+  deliverables out. Only
   `Document.Export` and `Document.ExportImage` go through this check; the other APIs that
   write files, listed above, are not checked. This keeps a run's mistakes
   away from the user's files; it is not a sandbox, since the script can still write files by
@@ -596,8 +597,9 @@ line.
 Run records, with their exported files, and `capture_view` images older than 14 days are
 deleted whenever an agent host starts, for example when Revit starts, and again at most once a
 day when a run is recorded. A run record's age is the last time its folder changed. Every Revit
-instance, including per-launch sessions, shares this folder, so starting another Revit can
-delete a record older than 14 days even while the session that made it is still open.
+instance, including per-launch sessions, shares this folder, so a host start or a later
+recorded run, in the same Revit session or another one, can delete a record older than 14 days
+even while the session that made it is still open.
 
 ### Testing agent skills and library changes through MCP
 
