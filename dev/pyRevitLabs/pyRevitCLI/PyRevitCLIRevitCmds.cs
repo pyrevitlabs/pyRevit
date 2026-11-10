@@ -315,8 +315,9 @@ namespace pyRevitCLI {
         /// Revit exits, then removes the launch directory. The shared per-year attachment is not read or written.
         /// </summary>
         internal static void
-        LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, bool isolated, string language) {
+        LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, string model, bool isolated, string language) {
             var languageCode = PyRevitLauncher.ParseLanguage(language);
+            var modelPath = PyRevitLauncher.ParseModel(model);
             if (!int.TryParse(revitYear, out var revitYearNumber))
                 throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
 
@@ -329,7 +330,7 @@ namespace pyRevitCLI {
             else
                 engineVer = clone.GetConfiguredEngine(engineVersion).Version;
 
-            var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated);
+            var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated, modelPath);
             Process process = null;
             try {
                 process = PyRevitLauncher.Start(launch, languageCode);

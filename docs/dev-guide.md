@@ -249,6 +249,7 @@ The command prints the process id, clone, engine and launch directory, stays in 
 
 - The clone is a registered name or the path of a built clone (a git worktree works); the engine is `default`, a version such as `342`, or an engine id.
 - `--language` takes a three-letter Revit language code such as `ENU`.
+- A model path after the year, such as `pyrevit launch dev default 2026 C:\Models\Tower.rvt`, is opened when Revit starts; a path that doesn't exist is refused before anything is prepared.
 - `--isolated` gives the session its own pyRevit config folder, seeded with a copy of the config the clone would load anyway (the clone's own config, else yours); a config stored in the clone is ignored by that session. Instance records, run records and captures stay in `%APPDATA%\pyRevit\agent`, where `pyrevit agent` and `pyrevit mcp` look for sessions.
 - Sessions of the same Revit year are told apart by clone: `pyrevit agent context --revit=<clone name>`, or `revit: "<clone name>"` in the MCP tools. See [Running several clones side by side](agent-runtime.md#running-several-clones-side-by-side).
 - A plain Revit start, and `pyrevit attach` or `detach`, keep working as before and ignore launched sessions.

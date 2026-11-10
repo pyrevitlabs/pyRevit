@@ -62,6 +62,10 @@ Dim Jrn
 Set Jrn = CrsJournalScript
 ";
 
+        private const string OpenModelTemplate = @"Jrn.Command ""Internal"" , ""Open an existing project , ID_REVIT_FILE_OPEN""
+Jrn.Data ""File Name"" , ""IDOK"" , ""{0}""
+";
+
         public static string LaunchRoot => Path.Combine(CommonUtils.GetUserTempDirectory(), "pyrevit", PyRevitConsts.LaunchDirName);
 
         /// <summary>
@@ -69,8 +73,9 @@ Set Jrn = CrsJournalScript
         /// The directory is removed again when writing it fails.
         /// </summary>
         /// <param name="isolated">Give the session its own pyRevit user data folder, seeded with a copy of the user's configuration file.</param>
+        /// <param name="modelPath">A full model path from <see cref="ParseModel"/> for Revit to open once it has started, or null.</param>
         /// <exception cref="PyRevitException">The year is not installed or attachable, or the engine cannot be used as a runtime.</exception>
-        public static PyRevitLaunch Prepare(PyRevitClone clone, PyRevitEngineVersion engineVersion, int revitYear, bool isolated) {
+        public static PyRevitLaunch Prepare(PyRevitClone clone, PyRevitEngineVersion engineVersion, int revitYear, bool isolated, string modelPath = null) {
             if (!PyRevitAttachments.IsAttachableProductYear(revitYear))
                 throw new PyRevitException($"Can not launch Revit {revitYear}: this pyRevit line supports Revit "
                                            + $"{RevitProductData.MinimumSupportedProductYear} or newer.");
@@ -107,7 +112,7 @@ Set Jrn = CrsJournalScript
                     PyRevitConsts.AddinClassName,
                     PyRevitConsts.VendorId,
                     addinPath: directory);
-                File.WriteAllText(launch.JournalFile, string.Format(JournalTemplate, CommonUtils.GetISOTimeStampNow()));
+                File.WriteAllText(launch.JournalFile, BuildJournal(modelPath));
                 return launch;
             }
             catch (Exception) {
@@ -132,6 +137,28 @@ Set Jrn = CrsJournalScript
             if (!LanguageCodePattern.IsMatch(languageCode))
                 throw new PyRevitException($"Revit language must be a three-letter code such as ENU, not \"{languageCode}\".");
             return languageCode;
+        }
+
+        /// <summary>
+        /// The full path of the model <c>pyrevit launch</c> opens, or null when <paramref name="model"/> is blank.
+        /// </summary>
+        /// <exception cref="PyRevitException">The model file does not exist.</exception>
+        public static string ParseModel(string model) {
+            if (string.IsNullOrWhiteSpace(model))
+                return null;
+            var modelPath = Path.GetFullPath(model.Trim());
+            if (!File.Exists(modelPath))
+                throw new PyRevitException($"Can not find model \"{modelPath}\".");
+            return modelPath;
+        }
+
+        /// <summary>
+        /// The journal Revit is started with. It opens <paramref name="modelPath"/> the way Revit records
+        /// a model passed on its command line, which Revit doesn't take together with a journal.
+        /// </summary>
+        internal static string BuildJournal(string modelPath) {
+            var journal = string.Format(JournalTemplate, CommonUtils.GetISOTimeStampNow());
+            return modelPath is null ? journal : journal + string.Format(OpenModelTemplate, modelPath);
         }
 
         /// <summary>

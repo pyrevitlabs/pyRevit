@@ -637,6 +637,7 @@ manifest of its own and leaves the shared one alone:
 ```shell
 pyrevit launch <clone name or path> default 2026 --language=ENU
 pyrevit launch <clone name or path> 342 2026 --isolated
+pyrevit launch <clone name or path> default 2026 <model path>
 ```
 
 Run it as a background process: it prints the process id, the clone, the engine and the launch
@@ -663,7 +664,11 @@ engine is `default`, a version such as `342` or `2712`, or an engine id.
   so config changes, caches and logs of the session don't reach the others. A config stored in the
   clone is ignored by such a session (`PYREVIT_IGNORE_LOCAL_CONFIG`). Instance records, run records and captures stay under
   `%APPDATA%\pyRevit\agent` (`PYREVIT_AGENT_DIR`), because clients look for sessions there.
-- **No model argument.** Open the model through an agent run once the session is up.
+- **Model.** An optional model path after the year, such as
+  `pyrevit launch dev default 2026 C:\Models\Tower.rvt`, is checked before anything is prepared
+  and opened when Revit starts: the launch journal opens it the way Revit records a model passed
+  on its command line, since Revit doesn't take a model and a journal together. Revit's own
+  dialogs while opening, such as worksets or an upgrade, are left to the user.
 - **Unsigned Add-In dialog.** Revit may or may not ask about the per-launch manifest; handle it as
   after any rebuild (**Load Once**).
 

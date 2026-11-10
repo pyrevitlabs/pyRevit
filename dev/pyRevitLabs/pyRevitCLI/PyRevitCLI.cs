@@ -643,6 +643,7 @@ namespace pyRevitCLI {
                         useDefaultEngine: arguments["default"].IsTrue,
                         engineVersion: TryGetValue("<engine_version>"),
                         revitYear: TryGetValue("<revit_year>"),
+                        model: TryGetValue("<model_file>"),
                         isolated: arguments["--isolated"].IsTrue,
                         language: TryGetValue("--language")
                         );
