@@ -308,7 +308,8 @@ Rules the host enforces:
   `not_run` when it failed before the script started (for example when Revit refused to start
   the run's transaction group, or the script engine failed to start), or
   `committed` when the change set had already been kept, or `rollback_incomplete` when the
-  run's rollback failed and its changes may remain in the active document.
+  run's rollback failed and its changes may remain in the active document. A script engine that
+  reports a failure (`engine_error`) before the script's first statement ran is `not_run` too.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
   most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to

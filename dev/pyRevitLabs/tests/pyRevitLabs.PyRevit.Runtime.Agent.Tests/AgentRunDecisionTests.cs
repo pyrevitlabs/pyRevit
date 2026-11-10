@@ -122,6 +122,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("committed", AgentRunDecision.AfterHostError(committed: true, scriptStarted: true));
         }
 
+        /// <summary>An engine that failed with an exit code before the script started ran nothing (#3949).</summary>
+        [Fact]
+        public void AnEngineFailureBeforeTheScriptStartedIsNotRun() {
+            Assert.Equal("not_run", AgentRunDecision.Decision(AgentRunVerdict.ScriptFailed, scriptStarted: false));
+            Assert.Equal("rolled_back", AgentRunDecision.Decision(AgentRunVerdict.ScriptFailed, scriptStarted: true));
+            Assert.Equal("committed", AgentRunDecision.Decision(AgentRunVerdict.AutoCommit, scriptStarted: true));
+        }
+
         private static void AssertResponse(AgentRunVerdict verdict, string status, string decision, string approval) {
             Assert.Equal(status, AgentRunDecision.Status(verdict));
             Assert.Equal(decision, AgentRunDecision.Decision(verdict));

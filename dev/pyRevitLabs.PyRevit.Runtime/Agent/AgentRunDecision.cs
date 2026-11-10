@@ -174,6 +174,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// The <c>decision</c> of a run the host completed: <c>not_run</c> when the script engine
+        /// failed before the script started, since nothing ran to roll back.
+        /// </summary>
+        public static string Decision(AgentRunVerdict verdict, bool scriptStarted) {
+            return verdict == AgentRunVerdict.ScriptFailed && !scriptStarted ? "not_run" : Decision(verdict);
+        }
+
+        /// <summary>
         /// The <c>decision</c> of a run the host itself failed: <c>not_run</c> when it failed
         /// before the script started, such as when Revit refused to start the run's transaction group.
         /// </summary>

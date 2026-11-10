@@ -262,7 +262,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         if (approval != null)
                             response["approval"] = approval;
                         response["status"] = AgentRunDecision.Status(verdict);
-                        response["decision"] = AgentRunDecision.Decision(verdict);
+                        response["decision"] = AgentRunDecision.Decision(verdict, context.Started);
                         response["exit_code"] = exitCode;
                         response["changes"] = changes;
                         response["failures"] = guard.Failures;
