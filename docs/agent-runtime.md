@@ -289,9 +289,9 @@ Rules the host enforces:
   final location, with links and short names resolved, against the folder as it was resolved
   before the script ran. Any other target, or one the host can't resolve, is cancelled, and its
   `blocked` entry carries the `path`. Exported files are not rolled back. They are deleted with
-  the run record by the cleanup that runs when the agent host starts (see
-  [Run records](#run-records)), so they last at least 14 days, and longer while a Revit
-  session stays open. Only `Document.Export` and `Document.ExportImage` go through this check;
+  the run record by the cleanup that runs when an agent host starts (see
+  [Run records](#run-records)): they last at least 14 days, and after that any Revit start,
+  including another Revit instance, may delete them, so copy deliverables out. Only `Document.Export` and `Document.ExportImage` go through this check;
   the other APIs that write files, listed above, are not checked. This keeps a run's mistakes
   away from the user's files; it is not a sandbox, since the script can still write files by
   other means.
@@ -586,9 +586,10 @@ engine startup and runner import. The same breakdown is logged as a `[PERF] agen
 line.
 
 Run records, with their exported files, and `capture_view` images older than 14 days are
-deleted when the agent host starts, for example when Revit starts. A run record's age is the
-last time its folder changed. Nothing is deleted while the host keeps running, so a long Revit
-session keeps older records until the next start.
+deleted whenever an agent host starts, for example when Revit starts. A run record's age is the
+last time its folder changed. Every Revit instance, including per-launch sessions, shares this
+folder, so starting another Revit can delete a record older than 14 days even while the
+session that made it is still open.
 
 ### Testing agent skills and library changes through MCP
 

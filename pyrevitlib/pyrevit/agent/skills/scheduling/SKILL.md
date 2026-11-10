@@ -77,9 +77,10 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 Write exports into the run's `export_dir`, for example
 `schedule.Export(export_dir, "Door Schedule.txt", DB.ViewScheduleExportOptions())`. The host
 doesn't check `ViewSchedule.Export`, so never point it at the user's folders. Files in
-`export_dir` are deleted with the run record at the first Revit start after it is 14 days
-old. Give the user the file's path, say it is temporary, and offer to copy it to a folder they
-name, with your own file tools after the run or by asking the user to copy it.
+`export_dir` last at least 14 days, and after that any Revit start, including another Revit
+instance, may delete them. Give the user the file's path, say it is temporary, and offer to
+copy it to a folder they name, with your own file tools after the run or by asking the user
+to copy it.
 
 ## Before you report done
 
