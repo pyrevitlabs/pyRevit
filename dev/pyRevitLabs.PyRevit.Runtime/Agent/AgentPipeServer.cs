@@ -38,7 +38,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariant: connections only receive and answer requests; the handler (through
     /// <see cref="AgentDispatcher"/>) is the only thing that orders work, so a connection whose
     /// request is still running, for example one its client cancelled, never keeps the next
-    /// client from connecting and being answered or refused with <c>revit_busy</c>.
+    /// client from connecting and being answered or refused with <c>revit_busy</c>, as long as
+    /// fewer than the connection cap are open; beyond it, a client waits for one to close.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
