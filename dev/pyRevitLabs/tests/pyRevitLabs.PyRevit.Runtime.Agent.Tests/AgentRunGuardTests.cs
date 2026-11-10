@@ -5,6 +5,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentRunGuardTests {
         [Fact]
         public void OpenedDocumentsAreProtectedEvenWithAnEmptyPath() {
