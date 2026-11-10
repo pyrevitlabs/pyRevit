@@ -12,4 +12,4 @@ Available skills:
 
 Scripts run in-process with the Windows user's permissions. The model guard is not an operating-system sandbox. Keep queries focused, avoid unbounded work, and return only the data needed for the task.
 
-`run_modify` requires an active document. Use a dry run first, then submit a focused modify run for approval. The host blocks save, save-as, synchronize and export operations while a run is active; Revit exports may only write into the run's `export_dir`.
+`run_modify` requires an active document. Use a dry run first, then submit a focused modify run for approval. While a run is active the host blocks save, save-as and synchronize, and cancels `Document.Export` and `Document.ExportImage` targets outside the run's `export_dir`. Other APIs that write files, such as `ViewSchedule.Export`, are not checked: point them at `export_dir` yourself, never at the user's folders.

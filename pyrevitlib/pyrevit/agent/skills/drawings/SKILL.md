@@ -56,8 +56,16 @@ create.place_on_sheet(sheet, schedule, anchor="top_right")
 
 A run may export only into `export_dir`, a folder the host creates for that run; any other
 target is cancelled. Exporting works in `run_query` too, since it doesn't change the model.
-The response lists the files in `exports`. Give the user those paths, or copy the files where
-they asked with your own file tools after the run.
+The response lists the files in `exports`.
+
+Files in `export_dir` are temporary: the host deletes run records, exports included, at
+the first Revit start after they are 14 days old. When you give the user those paths, say so,
+and offer to copy the deliverables to a folder they name. Copy them with your own file tools
+after the run, or ask the user to copy them; never write to that folder from the script.
+
+An export shows the model as the script had it, so files from a dry run or a declined modify
+run show changes that were rolled back: export deliverables only from the state the user
+should get.
 
 ```python
 import os
@@ -92,4 +100,4 @@ doc.ExportImage(image)
 - [ ] `capture_view(view="A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
 - [ ] Tag and dimension counts match the element counts you intended.
 - [ ] Each view is on one sheet only; duplicates were made where a view is needed twice.
-- [ ] You told the user which sheets are ready, and the paths of any files you exported.
+- [ ] You told the user which sheets are ready, the paths of any files you exported, that those files are temporary, and offered to copy them to a folder they name.

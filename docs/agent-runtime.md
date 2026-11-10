@@ -68,8 +68,8 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
     Whatever the agent reads (element names, parameter values, results) is sent to
     the agent's model provider. Check this against your project's confidentiality rules
     before enabling the agent runtime. The runtime also stores each run's script, request,
-    response, large result, and captured images in plaintext under `%APPDATA%\pyRevit\agent`
-    for up to 14 days.
+    response, large result, captured images and exported files in plaintext under
+    `%APPDATA%\pyRevit\agent` for at least 14 days; see [Run records](#run-records).
 
 ## Reference
 
@@ -288,9 +288,13 @@ Rules the host enforces:
   prefix or a folder. It must be a fully qualified drive or UNC path; the host compares its
   final location, with links and short names resolved, against the folder as it was resolved
   before the script ran. Any other target, or one the host can't resolve, is cancelled, and its
-  `blocked` entry carries the `path`. Exported files are not rolled back and are deleted with
-  the run record after 14 days. This keeps a run's mistakes away from the user's files; it is
-  not a sandbox, since the script can still write files by other means.
+  `blocked` entry carries the `path`. Exported files are not rolled back. They are deleted with
+  the run record by the cleanup that runs when the agent host starts (see
+  [Run records](#run-records)), so they last at least 14 days, and longer while a Revit
+  session stays open. Only `Document.Export` and `Document.ExportImage` go through this check;
+  the other APIs that write files, listed above, are not checked. This keeps a run's mistakes
+  away from the user's files; it is not a sandbox, since the script can still write files by
+  other means.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
@@ -581,7 +585,10 @@ Revit main thread),
 engine startup and runner import. The same breakdown is logged as a `[PERF] agent run` debug
 line.
 
-Run records and `capture_view` images older than 14 days are deleted when the host starts.
+Run records, with their exported files, and `capture_view` images older than 14 days are
+deleted when the agent host starts, for example when Revit starts. A run record's age is the
+last time its folder changed. Nothing is deleted while the host keeps running, so a long Revit
+session keeps older records until the next start.
 
 ### Testing agent skills and library changes through MCP
 

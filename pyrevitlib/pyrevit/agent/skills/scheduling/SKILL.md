@@ -76,12 +76,14 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 
 Write exports into the run's `export_dir`, for example
 `schedule.Export(export_dir, "Door Schedule.txt", DB.ViewScheduleExportOptions())`. The host
-doesn't check `ViewSchedule.Export`, so never point it at the user's folders. Give the user
-the file's path, or copy it where they asked with your own file tools after the run.
+doesn't check `ViewSchedule.Export`, so never point it at the user's folders. Files in
+`export_dir` are deleted with the run record at the first Revit start after it is 14 days
+old. Give the user the file's path, say it is temporary, and offer to copy it to a folder they
+name, with your own file tools after the run or by asking the user to copy it.
 
 ## Before you report done
 
 - [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
 - [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
 - [ ] `capture_view(view="Door Schedule")` shows how it looks.
-- [ ] You told the user the schedule's name and the path of any file you exported.
+- [ ] You told the user the schedule's name and the path of any file you exported, and that the file is temporary.
