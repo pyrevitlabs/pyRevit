@@ -77,8 +77,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// no open view can show the elements. <paramref name="dialogs"/> closes it; the response
         /// then carries <c>zoomed: false</c> and a <c>zoom_failed</c> error with Revit's message,
         /// while the selection or isolation already applied stays in place.
-        /// For isolate and hide, ids the active view doesn't show are left out of <c>count</c> and
-        /// listed in <c>not_in_view_ids</c>. A temporary view change Revit rolls back fails with
+        /// Ids the active view doesn't show are listed in <c>not_in_view_ids</c>. Isolate and hide
+        /// also leave them out of <c>count</c>; select keeps them, so <c>zoom</c> can still open
+        /// another view that shows them. A temporary view change Revit rolls back fails with
         /// <c>show_failed</c> instead of reporting success. <c>view</c> is the view the action
         /// applied to; when zooming makes Revit open another view, <c>active_view</c> names it.
         /// </remarks>
@@ -112,15 +113,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var missing = new List<long>();
             var targets = ResolveTargets(doc, view, request, missing);
-            if (request.Action != "select" && request.Ids.Count > 0 && targets.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
+            if (request.Ids.Count > 0 && targets.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
                 var inView = new HashSet<ElementId>(new FilteredElementCollector(doc, view.Id)
                     .WherePasses(new ElementIdSetFilter(targets))
                     .ToElementIds());
                 var notInView = targets.Where(id => !inView.Contains(id)).ToList();
                 if (notInView.Count > 0) {
-                    targets = targets.Where(inView.Contains).ToList();
                     response["not_in_view_ids"] = new JArray(notInView.Take(100).Select(AgentIds.ToValue));
-                    if (view.IsTemporaryHideIsolateActive())
+                    if (request.Action != "select")
+                        targets = targets.Where(inView.Contains).ToList();
+                    if (request.Action != "select" && view.IsTemporaryHideIsolateActive())
                         response["note"] = "Some elements are not shown in the active view, possibly hidden by its temporary hide/isolate; "
                             + "call action 'reset' first to include them.";
                 }
