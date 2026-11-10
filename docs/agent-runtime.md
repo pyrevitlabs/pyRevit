@@ -947,9 +947,14 @@ Choices made on purpose, with the reason, so they aren't reopened as bugs:
   property's schema lists `null`; see
   [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer).
 - **Built-in automation input types.** The hand-wired operations in
-  `PyRevitAutomationOperations` describe their inputs with JSON-schema types, such as `array` for
-  `pyrevit.elements.by-category`, and validate them in C#. The marker types (`string`, `number`,
-  `integer`, `boolean`, `element`, `scalar`) apply to `@automation.operation` declarations only.
+  `PyRevitAutomationOperations` declare their inputs the way markers do (`"value: scalar"`,
+  `"name: string"`), and one set of rules lists and checks both. Only
+  `pyrevit.elements.by-category` keeps a JSON-schema `array` input and its own C# check, because
+  no marker type describes a bounded list of category names. Since #3949 the unit parsers
+  (`pyrevit.units.parse-length`, `pyrevit.units.parse-slope`) follow the `scalar` rule: a boolean
+  is accepted, as `parse_length` and `parse_slope` take it as the number 1 or 0, and an integer
+  beyond Int64 is refused. Their errors read like those of marked operations, for example
+  `'inputs.value' is required.` and `'inputs' accepts only value (got extra).`
 - **Runner reload check in C#.** The few lines that drop a stale `pyrevit.agent._runner` before
   importing it are a string in `AgentScriptRunner`, because they decide whether the runner module
   itself is current; moved into a Python module, that module would need the same check.
