@@ -618,7 +618,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (added.Count > 0)
                 parts.Add("added " + DescribeAdded(doc));
             if (modified.Count > 0)
-                parts.Add("modified " + Count(modified.Count, "element") + CategoryNames(doc, modified));
+                parts.Add("modified " + Count(modified.Count, "element") + (doc == null ? string.Empty : CategoryNames(modified.Select(id => doc.GetElement(id)))));
             if (deleted.Count > 0)
                 parts.Add("deleted " + Count(deleted.Count, "element"));
             return parts.Count > 0 ? string.Join(", ", parts) : "no changes";
@@ -627,16 +627,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private string DescribeAdded(Document doc) {
             if (doc == null)
                 return Count(added.Count, "element");
-            var elements = added.Select(id => new { Id = id, Element = doc.GetElement(id) }).ToList();
-            var families = elements.Where(entry => entry.Element is Family).ToList();
-            var familyTypes = elements.Count(entry => entry.Element is FamilySymbol);
-            var systemTypes = elements.Count(entry => entry.Element is ElementType && !(entry.Element is FamilySymbol));
-            var others = elements.Where(entry => FamilyRank(entry.Element) < 0).Select(entry => entry.Id).ToList();
+            var elements = added.Select(id => doc.GetElement(id)).ToList();
+            var families = elements.Where(element => FamilyRank(element) == 0).ToList();
+            var familyTypes = elements.Count(element => FamilyRank(element) == 1);
+            var systemTypes = elements.Count(element => FamilyRank(element) == 2);
+            var others = elements.Where(element => FamilyRank(element) < 0).ToList();
 
             var phrases = new List<string>();
             if (families.Count > 0) {
                 var phrase = (families.Count == 1 ? "1 family" : families.Count + " families")
-                    + " (" + ListNames(families.Select(entry => SafeName(entry.Element) ?? "?")) + ")";
+                    + " (" + ListNames(families.Select(family => SafeName(family) ?? "?")) + ")";
                 if (familyTypes > 0)
                     phrase += " with " + Count(familyTypes, "type");
                 phrases.Add(phrase);
@@ -646,17 +646,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (systemTypes > 0)
                 phrases.Add(Count(systemTypes, "system type"));
             if (others.Count > 0)
-                phrases.Add(Count(others.Count, phrases.Count > 0 ? "other element" : "element") + CategoryNames(doc, others));
+                phrases.Add(Count(others.Count, phrases.Count > 0 ? "other element" : "element") + CategoryNames(others));
             return phrases.Count == 1
                 ? phrases[0]
                 : string.Join(", ", phrases.Take(phrases.Count - 1)) + " and " + phrases[phrases.Count - 1];
         }
 
-        private static string CategoryNames(Document doc, IEnumerable<ElementId> ids) {
-            if (doc == null)
-                return string.Empty;
-            var names = ids
-                .Select(id => doc.GetElement(id)?.Category?.Name)
+        private static string CategoryNames(IEnumerable<Element> elements) {
+            var names = elements
+                .Select(element => element?.Category?.Name)
                 .Where(name => !string.IsNullOrEmpty(name))
                 .GroupBy(name => name)
                 .OrderByDescending(group => group.Count())

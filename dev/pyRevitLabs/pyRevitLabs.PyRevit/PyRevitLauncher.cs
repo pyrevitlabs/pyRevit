@@ -256,7 +256,7 @@ Jrn.Data ""File Name"" , ""IDOK"" , ""{0}""
         /// Revit's standard journals folder of <paramref name="revitYear"/>, where Revit writes the
         /// journal of a session that was not started from a journal.
         /// </summary>
-        public static string GetJournalsDirectory(int revitYear) {
+        private static string GetJournalsDirectory(int revitYear) {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Autodesk",
