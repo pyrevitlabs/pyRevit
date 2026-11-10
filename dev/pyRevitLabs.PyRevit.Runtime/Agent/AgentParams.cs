@@ -38,7 +38,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 try {
                     ids.Add(item.Value<long>());
                 }
-                catch (OverflowException) {
+                catch (Exception ex) when (ex is OverflowException || ex is InvalidCastException) {
                     throw new AgentException("invalid_params", $"'{name}[{index}]' is out of range.");
                 }
             }

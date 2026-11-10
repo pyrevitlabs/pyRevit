@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using pyRevitLabs.Json.Linq;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
@@ -52,6 +54,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [InlineData("", false)]
         public void OnlyASingleDeclaredMemberParses(string name, bool parses) {
             Assert.Equal(parses, AgentSelectors.TryParseMember(name, out Category _));
+        }
+
+        [Fact]
+        public void RepeatedCategoriesCountOnce() {
+            var names = Enumerable.Repeat(new[] { "Walls", "OST_Doors", "walls" }, 40).SelectMany(group => group).ToList();
+            Assert.Equal(120, names.Count);
+            Assert.Equal(
+                new[] { Category.OST_Walls, Category.OST_Doors },
+                AgentSelectors.ParseDistinctCategories<Category>(names, 2));
+        }
+
+        [Fact]
+        public void MoreDistinctCategoriesThanTheCapAreRefused() {
+            var error = Assert.Throws<AgentException>(() =>
+                AgentSelectors.ParseDistinctCategories<Category>(new[] { "Walls", "Doors" }, 1));
+            Assert.Equal("invalid_params", error.Code);
+        }
+
+        [Fact]
+        public void AnUnknownCategoryIsRefused() {
+            var error = Assert.Throws<AgentException>(() =>
+                AgentSelectors.ParseDistinctCategories<Category>(new[] { "Roofs" }, 5));
+            Assert.Equal("invalid_params", error.Code);
         }
 
         [Theory]

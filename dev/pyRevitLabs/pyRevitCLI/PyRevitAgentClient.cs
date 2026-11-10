@@ -401,12 +401,12 @@ namespace pyRevitCLI {
                     pipe.ConnectAsync(connectTimeoutMs ?? ConnectTimeoutMs, cancellation).GetAwaiter().GetResult();
                     RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-                    var reader = new StreamReader(pipe, Utf8);
+                    var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
                     writer.WriteLine(request.ToString(Formatting.None));
                     sent = true;
                     if (answerTimeoutMs.HasValue)
                         answer.CancelAfter(answerTimeoutMs.Value);
-                    responseLine = reader.ReadLineAsync(answer.Token).AsTask().GetAwaiter().GetResult();
+                    responseLine = reader.ReadLineAsync(answer.Token).GetAwaiter().GetResult();
                 }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) {
@@ -437,6 +437,13 @@ namespace pyRevitCLI {
                     "pipe_error",
                     "Connection to Revit failed: " + ex.Message + LostAnswerNotice(sent),
                     sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+            }
+            catch (InvalidDataException ex) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Revit's answer was refused: " + ex.Message + LostAnswerNotice(sent),
+                    AgentOutcome.Unknown,
                     requestId);
             }
             catch (Exception ex) when (ex is not AgentClientException) {

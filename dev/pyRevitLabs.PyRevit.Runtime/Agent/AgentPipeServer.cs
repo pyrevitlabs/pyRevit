@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
@@ -22,6 +23,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariant: a connection that sends no line for <see cref="IdleTimeout"/> is closed, so a
     /// stalled client can't hold the only server instance and lock every other client out.
     /// The timeout covers waiting for a request only, never the time a request takes to run.
+    /// Invariant: a request line longer than <see cref="BoundedLineReader.DefaultMaxLineChars"/>
+    /// is answered with a <c>request_too_large</c> error without being buffered whole, so a client
+    /// can't exhaust Revit's memory.
     /// After <see cref="MaxCreateFailures"/> failed attempts in a row to create the pipe, the
     /// server stops and <see cref="IsListening"/> turns false, instead of retrying forever.
     /// The wait between attempts doubles from half a second up to
@@ -120,19 +124,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void Serve(NamedPipeServerStream pipe) {
-            var reader = new StreamReader(pipe, Utf8);
+            var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
             var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-            string line;
-            while (!stopping.IsCancellationRequested && (line = ReadLineUnlessIdle(reader)) != null) {
-                if (string.IsNullOrWhiteSpace(line))
+            while (!stopping.IsCancellationRequested) {
+                string line;
+                try {
+                    line = ReadLineUnlessIdle(reader);
+                }
+                catch (InvalidDataException ex) {
+                    logger.Warn("Refusing an agent pipe request: {0}", ex.Message);
+                    writer.WriteLine(AgentRequestHandler.RefuseOversizedLine(ex.Message));
                     continue;
-                writer.WriteLine(handleLine(line));
+                }
+                if (line == null)
+                    return;
+                if (!string.IsNullOrWhiteSpace(line))
+                    writer.WriteLine(handleLine(line));
             }
         }
 
-        private string ReadLineUnlessIdle(StreamReader reader) {
+        private string ReadLineUnlessIdle(BoundedLineReader reader) {
             var read = reader.ReadLineAsync();
-            var finished = Task.WhenAny(read, Task.Delay(IdleTimeout, stopping.Token)).GetAwaiter().GetResult();
+            Task finished;
+            using (var idle = CancellationTokenSource.CreateLinkedTokenSource(stopping.Token)) {
+                finished = Task.WhenAny(read, Task.Delay(IdleTimeout, idle.Token)).GetAwaiter().GetResult();
+                idle.Cancel();
+            }
             if (finished == read)
                 return read.GetAwaiter().GetResult();
 

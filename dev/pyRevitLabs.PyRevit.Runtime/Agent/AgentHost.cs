@@ -93,7 +93,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         [ThreadStatic]
         private static UIApplication inlineApplication;
 
-        public static string PipeName => "pyrevit-agent-" + Process.GetCurrentProcess().Id;
+        internal static readonly int ProcessId = ReadProcessId();
+
+        public static string PipeName => "pyrevit-agent-" + ProcessId;
 
         /// <summary>
         /// True while the pipe server is up and accepting connections.
@@ -286,7 +288,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             try {
                 Directory.CreateDirectory(AgentPaths.InstancesDir);
                 var instance = new JObject {
-                    ["pid"] = Process.GetCurrentProcess().Id,
+                    ["pid"] = ProcessId,
                     ["pipe"] = PipeName,
                     ["revit_version"] = uiApp.Application.VersionNumber,
                     ["revit_build"] = uiApp.Application.VersionBuild,
@@ -303,6 +305,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Warn("Could not register agent instance: {0}", ex.Message);
             }
+        }
+
+        private static int ReadProcessId() {
+            using (var process = Process.GetCurrentProcess())
+                return process.Id;
         }
 
         private static void DeleteInstanceFile() {
@@ -359,27 +366,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
     /// <remarks>
     /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
-    /// host starts, so a busy agent doesn't fill the user's profile; one night of evals wrote
-    /// about 140 runs.
+    /// host starts and again, at most once per <see cref="PruneInterval"/>, when a run record is
+    /// created, so a busy agent doesn't fill the user's profile even in a Revit session left open
+    /// for weeks; one night of evals wrote about 140 runs.
     /// </remarks>
     internal static class AgentPaths {
         private static readonly Logger pathsLogger = LogManager.GetCurrentClassLogger();
         public static readonly TimeSpan RecordRetention = TimeSpan.FromDays(14);
+        public static readonly TimeSpan PruneInterval = TimeSpan.FromDays(1);
+        private static readonly object pruneLock = new object();
+        private static DateTime nextPrune = DateTime.MinValue;
 
         public static string RootDir => PyRevitLabsConsts.AgentPath;
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
         public static string CapturesDir => Path.Combine(RootDir, "captures");
         public static string InstanceFile =>
-            Path.Combine(InstancesDir, Process.GetCurrentProcess().Id + ".json");
+            Path.Combine(InstancesDir, AgentHost.ProcessId + ".json");
 
         public static string CreateRunDir(string runId) {
             var runDir = Path.Combine(RunsDir, DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + runId);
             Directory.CreateDirectory(runDir);
+            PruneOldRecordsInBackground();
             return runDir;
         }
 
+        /// <remarks>Does nothing when a prune started less than <see cref="PruneInterval"/> ago.</remarks>
         public static void PruneOldRecordsInBackground() {
+            lock (pruneLock) {
+                if (DateTime.Now < nextPrune)
+                    return;
+                nextPrune = DateTime.Now + PruneInterval;
+            }
             System.Threading.Tasks.Task.Run(() => PruneOldRecords(DateTime.Now - RecordRetention));
         }
 
