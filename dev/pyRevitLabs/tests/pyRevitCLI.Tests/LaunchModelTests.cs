@@ -51,6 +51,20 @@ public class LaunchModelTests : IDisposable {
     }
 
     /// <summary>
+    ///     Verifies that a model path with characters outside ASCII is refused, because Revit 2026 failed to open
+    ///     such a path from the journal ("Failed to open document").
+    /// </summary>
+    [Fact]
+    public void AModelPathOutsideAsciiIsRefused() {
+        var accented = Path.Combine(temp, "Torre Año.rvt");
+        File.WriteAllText(accented, string.Empty);
+
+        var error = Assert.Throws<PyRevitException>(() => PyRevitLauncher.ParseModel(accented));
+
+        Assert.Contains("only ASCII characters", error.Message);
+    }
+
+    /// <summary>
     ///     Verifies that the launch journal opens the model the way Revit records a model passed on its command line.
     /// </summary>
     [Fact]

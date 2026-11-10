@@ -669,7 +669,9 @@ engine is `default`, a version such as `342` or `2712`, or an engine id.
   `pyrevit launch dev default 2026 C:\Models\Tower.rvt`, is checked before anything is prepared
   and opened when Revit starts: the launch journal opens it the way Revit records a model passed
   on its command line, since Revit doesn't take a model and a journal together. Revit's own
-  dialogs while opening, such as worksets or an upgrade, are left to the user.
+  dialogs while opening, such as worksets or an upgrade, are left to the user. A path with
+  characters outside ASCII is refused: Revit 2026 did not find such a model when the journal named
+  it and stopped on "Failed to open document". Open that model once the session is up.
 - **Unsigned Add-In dialog.** Revit may or may not ask about the per-launch manifest; handle it as
   after any rebuild (**Load Once**).
 

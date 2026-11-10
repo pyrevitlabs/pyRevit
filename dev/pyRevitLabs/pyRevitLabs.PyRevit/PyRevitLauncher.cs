@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -142,13 +143,20 @@ Jrn.Data ""File Name"" , ""IDOK"" , ""{0}""
         /// <summary>
         /// The full path of the model <c>pyrevit launch</c> opens, or null when <paramref name="model"/> is blank.
         /// </summary>
-        /// <exception cref="PyRevitException">The model file does not exist.</exception>
+        /// <remarks>
+        /// Revit 2026 did not find a model whose path has characters outside ASCII when the launch
+        /// journal named it ("Failed to open document"), and playback then stopped on a dialog.
+        /// </remarks>
+        /// <exception cref="PyRevitException">The model file does not exist, or its path is not ASCII.</exception>
         public static string ParseModel(string model) {
             if (string.IsNullOrWhiteSpace(model))
                 return null;
             var modelPath = Path.GetFullPath(model.Trim());
             if (!File.Exists(modelPath))
                 throw new PyRevitException($"Can not find model \"{modelPath}\".");
+            if (modelPath.Any(character => character > 127))
+                throw new PyRevitException($"Can not open \"{modelPath}\" at launch: the path may contain only ASCII characters. "
+                                           + "Open the model in Revit, or through an agent run, once the session is up.");
             return modelPath;
         }
 
