@@ -41,11 +41,14 @@ namespace pyRevitDoctor {
         /// relies on it, and an empty key would match unrelated installer entries by substring.
         /// </remarks>
         /// <exception cref="JsonException">
-        /// The document is not a JSON array of product records, or a record is <c>null</c> or has no key.
+        /// The document is not a non-empty JSON array of product records, or a record is <c>null</c> or
+        /// has no key.
         /// </exception>
         public static List<Product> Parse(string productsJson) {
             var products = JsonSerializer.Deserialize<List<Product>>(productsJson, ProductJsonOptions)
                 ?? throw new JsonException("The product catalog must be a JSON array.");
+            if (products.Count == 0)
+                throw new JsonException("The product catalog is empty.");
             if (products.Exists(product => product == null || string.IsNullOrWhiteSpace(product.Key)))
                 throw new JsonException("The product catalog contains a null record or a record without a key.");
             return products;

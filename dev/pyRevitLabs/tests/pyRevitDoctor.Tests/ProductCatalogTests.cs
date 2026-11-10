@@ -68,10 +68,12 @@ public class ProductCatalogTests {
 
     /// <summary>
     /// Guards registry matching: a missing, null or empty key would match unrelated installer
-    /// entries by substring, and a null record would crash the purge loop.
+    /// entries by substring, a null record would crash the purge loop, and an empty catalog would
+    /// make the purge silently match nothing.
     /// </summary>
     [Theory]
     [InlineData("null")]
+    [InlineData("[]")]
     [InlineData("[null]")]
     [InlineData("[{\"product\": \"pyRevit\", \"release\": \"1.0\", \"version\": \"1.0\"}]")]
     [InlineData("[{\"product\": \"pyRevit\", \"release\": \"1.0\", \"version\": \"1.0\", \"key\": null}]")]
