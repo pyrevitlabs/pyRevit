@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -50,6 +51,7 @@ namespace pyRevitLabs.PyRevit {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private const int DeleteAttempts = 15;
+        private const string JournalPrefix = "journal.";
         private const int DeleteRetryDelayMs = 1000;
         private static readonly TimeSpan UnrecordedLaunchRetention = TimeSpan.FromDays(1);
         private static readonly Regex LanguageCodePattern = new Regex(@"\A[A-Za-z]{3}\z", RegexOptions.Compiled);
@@ -203,17 +205,67 @@ Set Jrn = CrsJournalScript
         }
 
         /// <summary>
-        /// Removes the launch directory. Revit's worker processes can outlive Revit by a few seconds
-        /// and keep their journal files open, so removal is retried before giving up; a directory
-        /// that still can't be removed is left for <see cref="PruneAbandoned"/>.
+        /// Copies the session's journals into Revit's standard Journals folder, then removes the launch
+        /// directory. Revit's worker processes can outlive Revit by a few seconds and keep their journal
+        /// files open, so removal is retried before giving up; a directory that still can't be removed
+        /// is left for <see cref="PruneAbandoned"/>.
         /// </summary>
         public static void Cleanup(PyRevitLaunch launch) {
+            try {
+                SaveJournals(launch.Directory, GetJournalsDirectory(launch.Product.ProductYear));
+            }
+            catch (Exception exception) {
+                logger.Warn("Can not save the journals of \"{0}\" | {1}", launch.Directory, exception.Message);
+            }
             try {
                 DeleteDirectory(launch.Directory, DeleteAttempts);
             }
             catch (Exception exception) {
                 logger.Warn("Can not remove launch directory \"{0}\" | {1}", launch.Directory, exception.Message);
             }
+        }
+
+        /// <summary>
+        /// Revit's standard journals folder of <paramref name="revitYear"/>, where Revit writes the
+        /// journal of a session that was not started from a journal.
+        /// </summary>
+        public static string GetJournalsDirectory(int revitYear) {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Autodesk",
+                "Revit",
+                $"Autodesk Revit {revitYear}",
+                "Journals");
+        }
+
+        /// <summary>
+        /// Copies the journals Revit wrote into <paramref name="launchDirectory"/>, the session journal
+        /// and its worker logs, into <paramref name="journalsDirectory"/>. A copy is named after the launch,
+        /// <c>journal.launch-&lt;launch&gt;.0001.txt</c>, because Revit numbers the journals of every launch
+        /// from 0001 and a plain name would replace a journal of the user's own sessions.
+        /// </summary>
+        /// <remarks>A journal that can't be read, such as a worker log still held open, is skipped.</remarks>
+        /// <returns>The paths of the copies.</returns>
+        internal static IList<string> SaveJournals(string launchDirectory, string journalsDirectory) {
+            var saved = new List<string>();
+            var journals = Directory.GetFiles(launchDirectory, JournalPrefix + "*");
+            if (journals.Length == 0)
+                return saved;
+            CommonUtils.EnsurePath(journalsDirectory);
+            var launchName = Path.GetFileName(launchDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            foreach (var journal in journals) {
+                var target = Path.Combine(
+                    journalsDirectory,
+                    JournalPrefix + "launch-" + launchName + "." + Path.GetFileName(journal).Substring(JournalPrefix.Length));
+                try {
+                    File.Copy(journal, target, overwrite: true);
+                    saved.Add(target);
+                }
+                catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException) {
+                    logger.Debug("Can not save journal \"{0}\" | {1}", journal, exception.Message);
+                }
+            }
+            return saved;
         }
 
         private static void DeleteDirectory(string directory, int attempts) {
@@ -259,7 +311,7 @@ Set Jrn = CrsJournalScript
         }
 
         private static bool HasOpenFile(string directory) {
-            foreach (var file in Directory.GetFiles(directory, "journal.*")) {
+            foreach (var file in Directory.GetFiles(directory, JournalPrefix + "*")) {
                 try {
                     using (File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None)) { }
                 }

@@ -641,6 +641,13 @@ pyrevit launch <clone name or path> 342 2026 --isolated
 
 Run it as a background process: it prints the process id, the clone, the engine and the launch
 directory, stays running while that Revit runs, and deletes its temporary files when Revit exits.
+Revit writes the session's journal into the launch directory, the folder of the journal it was
+started with, so before deleting it the launcher copies the journal and its worker logs into
+Revit's standard `%LOCALAPPDATA%\Autodesk\Revit\Autodesk Revit <year>\Journals` folder as
+`journal.launch-<launch directory>.0001.txt`; Revit numbers every launch's journals from 0001, so
+the plain name would replace one of your own. An `--isolated` session's journals go there too:
+isolation covers pyRevit's user folder, which is removed with the launch directory, not Revit's.
+A launch directory left by a killed launcher is removed later without saving its journals.
 The clone may be a registered name or any path to a built clone, such as a git worktree. The
 engine is `default`, a version such as `342` or `2712`, or an engine id.
 
