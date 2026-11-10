@@ -583,6 +583,36 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void StatusReportsAHostThatIsOnlyBusyAsBusy() {
+        host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(ThisHost());
+
+        Assert.EndsWith(": busy", line);
+    }
+
+    [Fact]
+    public void StatusReportsAHostWithoutAPipeAsNotResponding() {
+        var instance = ThisHost();
+        instance.Pipe = "pyrevit-missing-" + Guid.NewGuid().ToString("N");
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.StartsWith("Revit 2090", line);
+        Assert.Contains("not responding (", line);
+    }
+
+    [Fact]
+    public void StatusShowsTheCloneAndEngineOfARespondingHost() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "dev", clonePath: "C:/dev", engine: "CPython");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(PyRevitAgentClient.Resolve("2091"));
+
+        Assert.Equal("Revit 2091 (build build-2091) pid " + Environment.ProcessId + " on dev CPython: responding", line);
+    }
+
+    [Fact]
     public async Task CancellingASentCallClosesItWithAnUnknownOutcome() {
         using var release = new ManualResetEventSlim(false);
         using var received = new ManualResetEventSlim(false);

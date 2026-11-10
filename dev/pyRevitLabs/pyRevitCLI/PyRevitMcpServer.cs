@@ -99,7 +99,7 @@ namespace pyRevitCLI {
                 var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
                 if (id == null) {
-                    if (method == "notifications/cancelled")
+                    if (method == "notifications/cancelled" && (message["jsonrpc"] as JValue)?.Value as string == "2.0")
                         Cancel((message["params"] as JObject)?["requestId"]);
                     continue;
                 }
@@ -136,7 +136,7 @@ namespace pyRevitCLI {
                             var tracked = pendingCalls.TryAdd(key, cancellation);
                             inFlight.Add(Task.Run(() => {
                                 try {
-                                    CallTool(id, parameters, cancellation.Token);
+                                    CallTool(id, parameters, cancellation);
                                 }
                                 finally {
                                     if (tracked)
@@ -173,11 +173,12 @@ namespace pyRevitCLI {
 
         private void Cancel(JToken requestId) {
             if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
-                cancellation.Cancel();
+                lock (cancellation)
+                    cancellation.Cancel();
         }
 
-        private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
-            callCancellation.Value = cancellation;
+        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {
+            callCancellation.Value = cancellation.Token;
             Timer progress = null;
             sentRequestId.Value = null;
             try {
@@ -185,11 +186,11 @@ namespace pyRevitCLI {
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
                     if (string.IsNullOrWhiteSpace(name)) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: 'arguments' must be an object."));
                         return;
                     }
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -228,10 +229,17 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                WriteUnlessClosed(Result(id, result));
+                AnswerUnlessCancelled(cancellation, Result(id, result));
             }
             finally {
                 StopProgress(progress);
+            }
+        }
+
+        private void AnswerUnlessCancelled(CancellationTokenSource cancellation, JObject message) {
+            lock (cancellation) {
+                if (!cancellation.IsCancellationRequested)
+                    WriteUnlessClosed(message);
             }
         }
 
