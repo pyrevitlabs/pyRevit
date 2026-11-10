@@ -26,6 +26,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// server stops and <see cref="IsListening"/> turns false, instead of retrying forever.
     /// The wait between attempts doubles from half a second up to
     /// <see cref="MaxCreateRetryDelay"/>, so a fault has to last about two minutes to stop it.
+    /// Stopping then calls the <c>stoppedListening</c> callback, so the host can stop advertising the pipe.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -37,15 +38,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private readonly string pipeName;
         private readonly Func<string, string> handleLine;
+        private readonly Action<AgentPipeServer> stoppedListening;
+        private readonly TimeSpan firstCreateRetryDelay;
         private readonly CancellationTokenSource stopping = new CancellationTokenSource();
         private readonly object pipeLock = new object();
         private NamedPipeServerStream currentPipe;
         private Thread thread;
         private volatile bool listening = true;
 
-        public AgentPipeServer(string pipeName, Func<string, string> handleLine) {
+        public AgentPipeServer(string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening)
+            : this(pipeName, handleLine, stoppedListening, FirstCreateRetryDelay) {
+        }
+
+        internal AgentPipeServer(
+            string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening, TimeSpan firstCreateRetryDelay) {
             this.pipeName = pipeName;
             this.handleLine = handleLine;
+            this.stoppedListening = stoppedListening;
+            this.firstCreateRetryDelay = firstCreateRetryDelay;
         }
 
         public bool IsListening => listening;
@@ -80,10 +90,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (++createFailures >= MaxCreateFailures) {
                         logger.Error("Agent pipe server stopped: could not create pipe '{0}': {1}", pipeName, ex.Message);
                         listening = false;
+                        ReportStopped();
                         return;
                     }
                     logger.Warn("Could not create agent pipe: {0}", ex.Message);
-                    if (stopping.Token.WaitHandle.WaitOne(CreateRetryDelay(createFailures)))
+                    if (stopping.Token.WaitHandle.WaitOne(CreateRetryDelay(createFailures, firstCreateRetryDelay)))
                         return;
                     continue;
                 }
@@ -114,8 +125,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        internal static TimeSpan CreateRetryDelay(int failures) {
-            var doubled = FirstCreateRetryDelay.TotalMilliseconds * Math.Pow(2, failures - 1);
+        private void ReportStopped() {
+            try {
+                stoppedListening?.Invoke(this);
+            }
+            catch (Exception ex) {
+                logger.Error("Agent pipe server could not report that it stopped: {0}", ex.Message);
+            }
+        }
+
+        internal static TimeSpan CreateRetryDelay(int failures, TimeSpan firstDelay) {
+            var doubled = firstDelay.TotalMilliseconds * Math.Pow(2, failures - 1);
             return TimeSpan.FromMilliseconds(Math.Min(doubled, MaxCreateRetryDelay.TotalMilliseconds));
         }
 

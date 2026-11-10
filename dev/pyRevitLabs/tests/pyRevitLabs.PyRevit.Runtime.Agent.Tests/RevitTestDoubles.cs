@@ -244,3 +244,13 @@ namespace pyRevitLabs.PyRevit {
         public static string GetAgentEngine() => "ironpython";
     }
 }
+namespace pyRevitLabs.NLog {
+    internal sealed class Logger {
+        public void Error(string message, params object[] args) { }
+        public void Warn(string message, params object[] args) { }
+        public void Debug(string message, params object[] args) { }
+    }
+    internal static class LogManager {
+        public static Logger GetCurrentClassLogger() => new Logger();
+    }
+}

@@ -299,6 +299,8 @@ Rules the host enforces:
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
 - A failure in the host itself reports `host_error` with decision `rolled_back`, or
+  `not_run` when it failed before the script started (for example when Revit refused to start
+  the run's transaction group, or the script engine failed to start), or
   `committed` when the change set had already been kept, or `rollback_incomplete` when the
   run's rollback failed and its changes may remain in the active document.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
@@ -715,7 +717,7 @@ If process metadata or the registration timestamp cannot establish liveness, dis
 Any successful pipe check includes the registration in discovery.
 If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
 The host recreates its pipe between connections and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
-After ten failed attempts in a row to create the pipe, the host stops listening, logs an error and keeps no pipe until pyRevit is reloaded.
+After ten failed attempts in a row to create the pipe, the host stops listening, logs an error, removes its registration and keeps no pipe until pyRevit is reloaded.
 Excluded registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on

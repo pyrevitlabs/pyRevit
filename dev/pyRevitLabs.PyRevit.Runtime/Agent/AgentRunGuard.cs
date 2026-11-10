@@ -365,7 +365,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (blocked.Count == 0)
                 return null;
             var operations = blocked.Select(DescribeBlockedOperation).Distinct();
-            return "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
+            return "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs; the user must do it in Revit.";
         }
 
         private static string DescribeBlockedOperation(JToken entry) {
