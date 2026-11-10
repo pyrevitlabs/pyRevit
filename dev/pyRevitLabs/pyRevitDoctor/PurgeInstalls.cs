@@ -35,6 +35,7 @@ namespace pyRevitDoctor {
 
         public static void PurgeOldInstalls(bool dryrun) {
             Console.WriteLine("Purging old installs...");
+            var products = Program.LoadProducts();
 
             // iterate thru the target and remove the key if matches
             foreach (RegistryTarget target in SearchTargets) {
@@ -48,10 +49,13 @@ namespace pyRevitDoctor {
                         continue;
                     }
 
+                    if (key == null)
+                        continue;
+
                     // for each subkey
                     foreach (string subkeyName in key.GetSubKeyNames())
                         // test if it references any of the pyrevit products
-                        foreach (var product in Program.LoadProducts())
+                        foreach (var product in products)
                             // test match using the target function
                             if (target.TestFunc(target, key, subkeyName, product, dryrun))
                                 try {

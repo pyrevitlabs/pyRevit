@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 
 using pyRevitDoctor.Properties;
 
@@ -78,35 +77,12 @@ Usage:
                 Console.WriteLine($"    {command.Name,-25} {command.HelpMsg}");
         }
 
-        static Regex productFinder = new Regex(
-                @"\{$\s*""product"":\s+""(.+)"",$\s*""release"":\s+""(.+)"",$\s*""version"":\s+""(.+)"",$\s*""key"":\s+""(.+)""$\s*\}",
-                RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.Compiled
-            );
-
-
-        public static List<Product> LoadProducts() {
-            var products = new List<Product>();
-            foreach (Match match in productFinder.Matches(Resources.ProductInfo))
-                products.Add(new Product {
-                    Name = match.Groups[1].Value,
-                    Release = match.Groups[2].Value,
-                    Version = new Version(match.Groups[3].Value),
-                    Key = match.Groups[4].Value,
-                });
-            return products;
-        }
+        public static List<Product> LoadProducts() => ProductCatalog.Parse(Resources.ProductInfo);
     }
 
     struct DoctorCommand {
         public string Name;
         public string HelpMsg;
         public Action<bool> Command;
-    }
-
-    public struct Product {
-        public string Name;
-        public string Release;
-        public Version Version;
-        public string Key;
     }
 }
