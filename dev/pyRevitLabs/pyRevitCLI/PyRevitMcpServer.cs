@@ -33,7 +33,8 @@ namespace pyRevitCLI {
     /// Revit. Once a tool call has sent a request, a failure that the host did not report itself
     /// is returned with <c>outcome</c> <c>unknown</c> and that <c>request_id</c>, never as bad
     /// arguments, because the request may have run.
-    /// Calls to one Revit are serialized, because its host serves one connection at a time; calls
+    /// Calls to one Revit are serialized, because its host runs one request at a time and an older
+    /// host also accepts one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
     /// </remarks>

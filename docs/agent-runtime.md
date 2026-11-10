@@ -152,11 +152,13 @@ Every tool that talks to Revit accepts an optional `revit` argument (a year such
 `"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
 sets a default, which an empty or `null` `revit` also uses. Its schema lists `null` as a type.
 
-The MCP server sends one call at a time to each Revit, since the host serves one connection at a
-time; calls to different Revit sessions don't wait for each other. `list_revit_instances` doesn't
+The MCP server sends one call at a time to each Revit, since Revit runs one request at a time
+(and a host older than the multi-connection pipe server accepts one connection at a time); calls to
+different Revit sessions don't wait for each other. `list_revit_instances` doesn't
 wait for calls in progress: it pings every Revit at once, and reports `busy: true` for one that
 still has a call from this server open, or that doesn't accept the ping within 1.5 seconds because
-another client (such as `pyrevit agent run`) is using it. A Revit whose pipe is not listening, or that gets no answer within
+other clients (such as `pyrevit agent run`) hold all its connections. The host answers a ping on its
+pipe thread, so a Revit that is only running another client's request still answers it. A Revit whose pipe is not listening, or that gets no answer within
 5 seconds, reports `responding: false` (`pyrevit agent status` uses the same ping, prints `busy` for a Revit that is only serving another client, and shows each session's clone and engine). A client's `notifications/cancelled` frees the call's
 turn. A call cancelled while it waited for its turn was not sent; one cancelled while waiting for
 Revit's answer keeps running in Revit, so its outcome is `unknown`. The server sends no response to a cancelled `tools/call`, as the MCP specification asks; the server does not reveal its own request id (it is not the MCP call id), so look for a run record with `pyrevit agent runs` (newest first) and open it with `pyrevit agent show <run_id>`. A call cancelled before it was sent, or while it still waited for an earlier call, left no run record.
@@ -718,7 +720,7 @@ A matching process name and start time establish liveness without requiring an a
 If process metadata or the registration timestamp cannot establish liveness, discovery checks for the recorded named pipe without connecting, up to three times at 300 ms intervals.
 Any successful pipe check includes the registration in discovery.
 If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
-The host recreates its pipe between connections and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
+The host keeps a free pipe instance waiting while fewer than four connections are open, and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
 After ten failed attempts in a row to create the pipe, the host stops listening, logs an error, removes its registration and keeps no pipe until pyRevit is reloaded.
 Excluded registrations do not appear in `ambiguous_revit` messages.
 
@@ -757,8 +759,9 @@ Deliberately **not** reused:
 
 ### Pipe protocol
 
-Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one connection
-at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
+Newline-delimited JSON-RPC 2.0, one request per connection. Revit accepts up to four
+connections at once, each served on its own thread, and closes one that sends nothing for 30
+seconds; the dispatcher still runs their requests one at a time on the main thread. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly` or
 `invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
@@ -861,10 +864,13 @@ Honest limits:
   `sys.modules`, patched pyRevit functions, builtins or environment variables, stays for later
   runs, and on CPython also for the user's CPython buttons, which share the one interpreter.
   Rolling back the model doesn't undo it.
-- Revit serves one agent request at a time. While one session's run is executing, which can
+- Revit runs one agent request at a time. While one session's run is executing, which can
   last until its `timeout_s` (plus 30 seconds before a stuck run fails with `run_hung`), a
-  second agent session can't connect and gets `revit_busy`
-  after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
+  second request connects at once, waits up to its `start_timeout_s` (30 seconds by default)
+  and then gets `revit_busy` (`not_run`), which says how long an earlier request has run. A call
+  whose client cancelled it or stopped waiting keeps running too, but no longer blocks the
+  next connection. Four connections can be open at once; a fifth client waits for one to
+  close, up to the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
   request is still running: a modal dialog Revit shows while idle, such as the save

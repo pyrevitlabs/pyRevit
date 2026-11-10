@@ -156,8 +156,9 @@ namespace pyRevitCLI {
     /// discovery of running hosts and of recorded runs.
     /// </summary>
     /// <remarks>
-    /// Each call opens its own pipe connection. The host serves one connection at a time,
-    /// so callers that may overlap (the MCP server) must serialize their calls to each host.
+    /// Each call opens its own pipe connection. The host runs one request at a time, and hosts
+    /// older than the multi-connection pipe server also accept one connection at a time, so
+    /// callers that may overlap (the MCP server) must serialize their calls to each host.
     /// </remarks>
     internal static class PyRevitAgentClient {
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
@@ -177,8 +178,9 @@ namespace pyRevitCLI {
         internal static int PingTimeoutMs = 5000;
 
         /// <summary>
-        /// How long <see cref="Ping"/> waits for the host's pipe. A host serving another client
-        /// never accepts, so a ping must not wait the full <see cref="ConnectTimeoutMs"/>.
+        /// How long <see cref="Ping"/> waits for the host's pipe. A host whose server instances
+        /// all serve other clients never accepts, so a ping must not wait the full
+        /// <see cref="ConnectTimeoutMs"/>.
         /// Shortened by tests.
         /// </summary>
         internal static int PingConnectTimeoutMs = 1500;
@@ -196,7 +198,8 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// Invariant: never open the pipe to check it. Opening it, as <c>File.Exists</c> does,
-        /// connects to the host's only server instance and can lock a real client out.
+        /// takes one of the host's few server instances (an older host has only one) and can
+        /// lock a real client out.
         /// </remarks>
         internal static Func<string, bool> PipeExists = pipeName => Directory.EnumerateFiles(PipeRoot)
             .Any(path => string.Equals(path, PipeRoot + pipeName, StringComparison.OrdinalIgnoreCase));

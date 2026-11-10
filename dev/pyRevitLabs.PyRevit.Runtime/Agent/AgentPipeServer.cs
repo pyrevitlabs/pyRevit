@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Security.AccessControl;
@@ -12,7 +13,8 @@ using pyRevitLabs.NLog;
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Newline-delimited JSON server on a named pipe that only the current Windows user can
-    /// open. Serves one client at a time; each request line gets exactly one response line.
+    /// open. Serves up to <see cref="DefaultMaxConnections"/> clients at once, each on its own
+    /// thread; each request line gets exactly one response line.
     /// </summary>
     /// <remarks>
     /// Invariant: the pipe DACL allows the current user and denies network logons. Since
@@ -20,13 +22,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Denying network logons deliberately refuses SSH sessions too, whose tokens carry the
     /// Network SID; Remote Desktop sessions are interactive logons and are allowed.
     /// Invariant: a connection that sends no line for <see cref="IdleTimeout"/> is closed, so a
-    /// stalled client can't hold the only server instance and lock every other client out.
+    /// stalled client can't hold a server instance and, with others, lock every other client out.
     /// The timeout covers waiting for a request only, never the time a request takes to run.
     /// After <see cref="MaxCreateFailures"/> failed attempts in a row to create the pipe, the
     /// server stops and <see cref="IsListening"/> turns false, instead of retrying forever.
     /// The wait between attempts doubles from half a second up to
     /// <see cref="MaxCreateRetryDelay"/>, so a fault has to last about two minutes to stop it.
     /// Stopping then calls the <c>stoppedListening</c> callback, so the host can stop advertising the pipe.
+    /// Invariant: connections only receive and answer requests; the handler (through
+    /// <see cref="AgentDispatcher"/>) is the only thing that orders work, so a connection whose
+    /// request is still running, for example one its client cancelled, never keeps the next
+    /// client from connecting and being answered or refused with <c>revit_busy</c>.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -35,14 +41,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxCreateFailures = 10;
         private static readonly TimeSpan FirstCreateRetryDelay = TimeSpan.FromMilliseconds(500);
         private static readonly TimeSpan MaxCreateRetryDelay = TimeSpan.FromSeconds(30);
+        private const int DefaultMaxConnections = 4;
 
         private readonly string pipeName;
         private readonly Func<string, string> handleLine;
         private readonly Action<AgentPipeServer> stoppedListening;
         private readonly TimeSpan firstCreateRetryDelay;
+        private readonly int maxConnections;
+        private readonly SemaphoreSlim connectionSlots;
         private readonly CancellationTokenSource stopping = new CancellationTokenSource();
         private readonly object pipeLock = new object();
-        private NamedPipeServerStream currentPipe;
+        private readonly HashSet<NamedPipeServerStream> openPipes = new HashSet<NamedPipeServerStream>();
         private Thread thread;
         private volatile bool listening = true;
 
@@ -51,11 +60,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         internal AgentPipeServer(
-            string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening, TimeSpan firstCreateRetryDelay) {
+            string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening, TimeSpan firstCreateRetryDelay,
+            int maxConnections = DefaultMaxConnections) {
             this.pipeName = pipeName;
             this.handleLine = handleLine;
             this.stoppedListening = stoppedListening;
             this.firstCreateRetryDelay = firstCreateRetryDelay;
+            this.maxConnections = maxConnections;
+            connectionSlots = new SemaphoreSlim(maxConnections, maxConnections);
         }
 
         public bool IsListening => listening;
@@ -71,20 +83,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void Dispose() {
             stopping.Cancel();
             lock (pipeLock) {
-                currentPipe?.Dispose();
-                currentPipe = null;
+                foreach (var pipe in openPipes)
+                    pipe.Dispose();
+                openPipes.Clear();
             }
         }
 
         private void Listen() {
             var createFailures = 0;
             while (!stopping.IsCancellationRequested) {
+                try {
+                    connectionSlots.Wait(stopping.Token);
+                }
+                catch (OperationCanceledException) {
+                    return;
+                }
                 NamedPipeServerStream created;
                 try {
                     created = CreatePipe();
                     createFailures = 0;
                 }
                 catch (Exception ex) {
+                    connectionSlots.Release();
                     if (stopping.IsCancellationRequested)
                         return;
                     if (++createFailures >= MaxCreateFailures) {
@@ -98,31 +118,59 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         return;
                     continue;
                 }
+                if (!Track(created)) {
+                    Close(created);
+                    return;
+                }
                 try {
-                    using (var pipe = created) {
-                        lock (pipeLock)
-                            currentPipe = pipe;
-                        pipe.WaitForConnectionAsync(stopping.Token).GetAwaiter().GetResult();
-                        Serve(pipe);
-                    }
-                }
-                catch (OperationCanceledException) {
-                    return;
-                }
-                catch (ObjectDisposedException) when (stopping.IsCancellationRequested) {
-                    return;
+                    created.WaitForConnectionAsync(stopping.Token).GetAwaiter().GetResult();
                 }
                 catch (Exception ex) {
+                    Close(created);
                     if (stopping.IsCancellationRequested)
                         return;
                     logger.Warn("Agent pipe error: {0}", ex.Message);
                     Thread.Sleep(500);
+                    continue;
                 }
-                finally {
-                    lock (pipeLock)
-                        currentPipe = null;
-                }
+                StartServing(created);
             }
+        }
+
+        private void StartServing(NamedPipeServerStream pipe) {
+            new Thread(() => ServeAndClose(pipe)) {
+                IsBackground = true,
+                Name = "pyRevit Agent Pipe Connection",
+            }.Start();
+        }
+
+        private void ServeAndClose(NamedPipeServerStream pipe) {
+            try {
+                Serve(pipe);
+            }
+            catch (Exception ex) {
+                if (!stopping.IsCancellationRequested)
+                    logger.Warn("Agent pipe error: {0}", ex.Message);
+            }
+            finally {
+                Close(pipe);
+            }
+        }
+
+        private bool Track(NamedPipeServerStream pipe) {
+            lock (pipeLock) {
+                if (stopping.IsCancellationRequested)
+                    return false;
+                openPipes.Add(pipe);
+                return true;
+            }
+        }
+
+        private void Close(NamedPipeServerStream pipe) {
+            lock (pipeLock)
+                openPipes.Remove(pipe);
+            pipe.Dispose();
+            connectionSlots.Release();
         }
 
         private void ReportStopped() {
@@ -166,11 +214,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var security = BuildPipeSecurity();
 #if NETFRAMEWORK
             return new NamedPipeServerStream(
-                pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+                pipeName, PipeDirection.InOut, maxConnections, PipeTransmissionMode.Byte,
                 PipeOptions.Asynchronous, 0, 0, security);
 #else
             return NamedPipeServerStreamAcl.Create(
-                pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+                pipeName, PipeDirection.InOut, maxConnections, PipeTransmissionMode.Byte,
                 PipeOptions.Asynchronous, 0, 0, security);
 #endif
         }
