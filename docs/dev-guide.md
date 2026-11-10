@@ -245,7 +245,7 @@ pyrevit launch C:\work\pyrevit-review-1234 default 2026 --language=ENU
 pyrevit launch dev 342 2026 --isolated
 ```
 
-The command prints the process id, clone, engine and launch directory, stays in the foreground while Revit runs, and removes its temporary manifest and journal (`%TEMP%\pyrevit\launch\<id>`) when Revit exits. Start it as a background process when you drive the session from a script or an agent. Leftovers of killed launchers are pruned by the next launch.
+The command prints the process id, clone, engine and launch directory, stays in the foreground while Revit runs, and removes its temporary manifest and journal (`%TEMP%\pyrevit\launch\<id>`) when Revit exits, after copying the session journal Revit wrote there into Revit's `Journals` folder as `journal.launch-<id>.0001.txt`. Start it as a background process when you drive the session from a script or an agent. Leftovers of killed launchers are pruned by the next launch.
 
 - The clone is a registered name or the path of a built clone (a git worktree works); the engine is `default`, a version such as `342`, or an engine id.
 - `--language` takes a three-letter Revit language code such as `ENU`.
