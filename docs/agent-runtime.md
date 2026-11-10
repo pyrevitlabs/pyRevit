@@ -137,7 +137,11 @@ read-only nor destructive.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result`, `output`, and only the non-empty change
-set, failures, dialogs and blocked operations. The change set keeps counts, `by_category`,
+set, failures, dialogs and blocked operations. The change set starts with `summary`, one
+line the host builds from every change, for example `added 1 family (Door) with 3 types and 2
+other elements (Legend Components), modified 1 element (Project Information), deleted 1
+element`: it names up to 3 families and the 3 most frequent categories, then `+N more`, and
+reads `no changes` for an empty set. It then keeps counts, `by_category`,
 `added_ids`, `added_families` (id, category, name and class of every added family and
 type, system types included), `modified` (the same fields) and `deleted_ids`, each
 capped at 20 entries. The full record, with up to 50 of each, stays available through

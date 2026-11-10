@@ -505,7 +505,82 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
                 Assert.True(guard.Changes.IsEmpty);
                 Assert.Equal(0, guard.Changes.Summarize().Value<int>("added_count"));
+                Assert.Equal("no changes", guard.Changes.Summarize().Value<string>("summary"));
             }
+        }
+
+        [Fact]
+        public void TheSummaryNamesLoadedFamiliesTheirTypesAndTheChangedCategories() {
+            var app = new UIApplication();
+            var document = new Document();
+            var family = Add(document, new Family { Name = "Door" });
+            var types = Enumerable.Range(0, 3).Select(_ => Add(document, new FamilySymbol { Name = "Type" })).ToList();
+            var legend = Add(document, new Element { Category = new Category { Name = "Legend Components" } });
+            var walls = Enumerable.Range(0, 2).Select(_ => Add(document, new Element { Category = new Category { Name = "Walls" } })).ToList();
+            var gone = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: types.Concat(new[] { family, legend }).ToArray(), deleted: new[] { gone }, modified: walls);
+
+                Assert.Equal(
+                    "added 1 family (Door) with 3 types and 1 other element (Legend Components), modified 2 elements (Walls), deleted 1 element",
+                    guard.Changes.Describe(document, 50).Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TheSummaryCountsEveryChangeAndCutsLongNameLists() {
+            var app = new UIApplication();
+            var document = new Document();
+            var families = Enumerable.Range(1, 5).Select(i => Add(document, new Family { Name = "F" + i })).ToList();
+            var systemTypes = Enumerable.Range(0, 2).Select(_ => Add(document, new WallType { Name = "Copy" })).ToList();
+            var categories = new[] { "Walls", "Walls", "Doors", "Floors", "Roofs", "Roofs", "Roofs" };
+            var modified = categories.Select(name => Add(document, new Element { Category = new Category { Name = name } }))
+                .Concat(Enumerable.Range(0, 60).Select(_ => Add(document, new Element { Category = new Category { Name = "Grids" } })))
+                .ToList();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: families.Concat(systemTypes).ToArray(), modified: modified);
+
+                Assert.Equal(
+                    "added 5 families (F1, F2, F3, +2 more) and 2 system types, modified 67 elements (Grids, Roofs, Walls, +2 more)",
+                    guard.Changes.Describe(document, 2).Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TheSummaryWithoutTheDocumentGivesCountsOnly() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new[] { new ElementId(), new ElementId() }, modified: new[] { new ElementId() });
+
+                Assert.Equal("added 2 elements, modified 1 element", guard.Changes.Summarize().Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TypesAddedToAFamilyThatWasAlreadyLoadedAreNamedFamilyTypes() {
+            var app = new UIApplication();
+            var document = new Document();
+            var symbol = Add(document, new FamilySymbol { Name = "900x2100" });
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new[] { symbol });
+
+                Assert.Equal("added 1 family type", guard.Changes.Describe(document, 50).Value<string>("summary"));
+            }
+        }
+
+        private static ElementId Add(Document document, Element element) {
+            var id = new ElementId();
+            document.Elements[id] = element;
+            return id;
         }
     }
 }
