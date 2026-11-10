@@ -47,12 +47,22 @@ public partial class McpServerTests {
 
     private sealed class LineReader : TextReader {
         private readonly BlockingCollection<string> lines;
+        private string current = string.Empty;
+        private int position;
 
         public LineReader(BlockingCollection<string> lines) {
             this.lines = lines;
         }
 
-        public override string ReadLine() => lines.TryTake(out var line, Timeout.Infinite) ? line : null;
+        public override int Read() {
+            if (position == current.Length) {
+                if (!lines.TryTake(out var line, Timeout.Infinite))
+                    return -1;
+                current = line + '\n';
+                position = 0;
+            }
+            return current[position++];
+        }
     }
 
     private sealed class LineWriter : TextWriter {

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using pyRevitLabs.Json.Linq;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Revit-free rules for turning agent-supplied names into Revit objects and sizes.
@@ -42,6 +44,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return false;
             return Enum.TryParse(name, true, out value)
                 && Enum.GetNames(typeof(TEnum)).Contains(name.Trim(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Parses category names into distinct members, bounding the number of distinct ones
+        /// rather than the number of entries, so a repeated name counts once.
+        /// </summary>
+        /// <exception cref="AgentException"><c>invalid_params</c> for an unknown name or too many distinct members.</exception>
+        internal static List<TEnum> ParseDistinctCategories<TEnum>(IEnumerable<string> names, int max) where TEnum : struct {
+            var result = new List<TEnum>();
+            foreach (var raw in names) {
+                var name = raw ?? string.Empty;
+                var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
+                if (!TryParseMember(enumName, out TEnum category))
+                    throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
+                if (result.Contains(category))
+                    continue;
+                if (result.Count >= max)
+                    throw new AgentException("invalid_params", $"At most {max} categories per call.");
+                result.Add(category);
+            }
+            return result;
         }
 
         /// <summary>

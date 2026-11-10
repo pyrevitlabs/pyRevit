@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 using pyRevitLabs.Json;
@@ -68,7 +67,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "ping":
                     return new JObject {
                         ["pong"] = true,
-                        ["pid"] = Process.GetCurrentProcess().Id,
+                        ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
                     };
