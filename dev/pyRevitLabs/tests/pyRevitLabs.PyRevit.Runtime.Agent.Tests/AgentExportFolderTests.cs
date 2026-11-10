@@ -174,8 +174,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 var blocked = Assert.Single(guard.Blocked);
                 Assert.Equal("background_export", blocked.Value<string>("operation"));
                 Assert.Equal(exports, blocked.Value<string>("path"));
+                Assert.Null(blocked["outside_export_dir"]);
                 Assert.Equal(
                     $"operation_blocked: background_export to '{exports}' not allowed in agent runs. "
+                    + "Background exports finish after the run, so export without SetExportInBackground.",
+                    guard.DescribeBlockedOperations());
+            }
+        }
+
+        [Fact]
+        public void ABackgroundExportOutsideTheFolderNamesBothFixesInOneEntry() {
+            var app = new UIApplication();
+            var elsewhere = Path.Combine(outside, "sheet.pdf");
+            using (var guard = new AgentRunGuard(app, new Document(), exports)) {
+                guard.Arm("Test");
+
+                Assert.False(app.Application.ExportFile(elsewhere, background: true));
+
+                var blocked = Assert.Single(guard.Blocked);
+                Assert.Equal("background_export", blocked.Value<string>("operation"));
+                Assert.Equal(elsewhere, blocked.Value<string>("path"));
+                Assert.True(blocked.Value<bool>("outside_export_dir"));
+                Assert.Equal(
+                    $"operation_blocked: background_export to '{elsewhere}' not allowed in agent runs. "
+                    + "Revit exports may only write into the run's export_dir. "
                     + "Background exports finish after the run, so export without SetExportInBackground.",
                     guard.DescribeBlockedOperations());
             }

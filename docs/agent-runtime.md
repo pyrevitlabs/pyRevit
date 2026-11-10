@@ -293,7 +293,9 @@ Rules the host enforces:
   `blocked` entry carries the `path`. A background export, such as a PDF export with
   `PDFExportOptions.SetExportInBackground(true)` (Revit 2025 and later), is cancelled as
   `background_export` whatever its target, because Revit writes its files after the run ends,
-  when the run can no longer report them. Exported files are not rolled back. They are deleted
+  when the run can no longer report them; its entry adds `outside_export_dir: true` when the
+  target is also outside `export_dir`, and the warning then names both fixes. Exported files
+  are not rolled back. They are deleted
   with the run record by the cleanup that runs when an agent host starts (see
   [Run records](#run-records)): they last at least 14 days, and after that any Revit start,
   including another Revit instance, may delete them, so copy deliverables out. Only

@@ -320,11 +320,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnFileExporting(object sender, FileExportingEventArgs e) {
+            var insideExportFolder = exportFolder != null && exportFolder.Contains(e.Path);
             if (IsBackgroundExport(e)) {
-                Block(e, null, "background_export", e.Path);
+                var entry = Block(e, null, "background_export", e.Path);
+                if (entry != null && !insideExportFolder)
+                    entry["outside_export_dir"] = true;
                 return;
             }
-            if (exportFolder != null && exportFolder.Contains(e.Path))
+            if (insideExportFolder)
                 return;
             Block(e, null, "file_export", e.Path);
         }
@@ -390,7 +393,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return null;
             var operations = blocked.Select(DescribeBlockedOperation).Distinct();
             var explanation = "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
-            if (blocked.Any(entry => entry.Value<string>("operation") == "file_export"))
+            if (blocked.Any(entry => entry.Value<string>("operation") == "file_export"
+                    || entry.Value<bool?>("outside_export_dir") == true))
                 explanation += " Revit exports may only write into the run's export_dir.";
             if (blocked.Any(entry => entry.Value<string>("operation") == "background_export"))
                 explanation += " Background exports finish after the run, so export without SetExportInBackground.";
@@ -406,9 +410,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return path == null ? operation : $"{operation} to '{path}'";
         }
 
-        private void Block(RevitAPIPreEventArgs e, Document target, string operation, string path = null) {
+        /// <summary>
+        /// Cancels the operation and records it in <see cref="Blocked"/>, returning the recorded
+        /// entry, or null when Revit doesn't let it be cancelled.
+        /// </summary>
+        private JObject Block(RevitAPIPreEventArgs e, Document target, string operation, string path = null) {
             if (!e.Cancellable)
-                return;
+                return null;
             e.Cancel();
             var entry = new JObject {
                 ["operation"] = operation,
@@ -417,6 +425,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (path != null)
                 entry["path"] = path;
             blocked.Add(entry);
+            return entry;
         }
 
         private bool IsWatchedDocument(Document other) {
