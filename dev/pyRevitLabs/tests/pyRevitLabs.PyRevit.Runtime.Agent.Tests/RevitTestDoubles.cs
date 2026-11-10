@@ -15,7 +15,9 @@ namespace Autodesk.Revit.DB {
         public string Name { get; set; }
     }
     internal sealed class Family : Element { }
-    internal sealed class FamilySymbol : Element { }
+    internal class ElementType : Element { }
+    internal sealed class FamilySymbol : ElementType { }
+    internal sealed class WallType : ElementType { }
     internal sealed class Document {
         public string Title { get; set; } = "Test document";
         public string PathName { get; set; } = "";

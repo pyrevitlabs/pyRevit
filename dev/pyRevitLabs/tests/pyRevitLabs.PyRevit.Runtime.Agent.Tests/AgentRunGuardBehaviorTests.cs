@@ -433,6 +433,49 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void SystemTypesAreListedWithFamilies() {
+            var app = new UIApplication();
+            var document = new Document();
+            var wallType = new ElementId();
+            var wall = new ElementId();
+            document.Elements[wallType] = new WallType { Name = "Generic - 300" };
+            document.Elements[wall] = new Element { Name = "Wall" };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new[] { wallType, wall });
+
+                var description = guard.Changes.Describe(document, 50);
+                Assert.Equal(
+                    new[] { "WallType:Generic - 300" },
+                    description["added_families"].Select(element => element.Value<string>("class") + ":" + element.Value<string>("name")));
+            }
+        }
+
+        [Fact]
+        public void FamiliesComeBeforeSystemTypesWhenTheListIsCut() {
+            var app = new UIApplication();
+            var document = new Document();
+            var wallTypes = Enumerable.Range(0, 5).Select(_ => new ElementId()).ToList();
+            foreach (var id in wallTypes)
+                document.Elements[id] = new WallType { Name = "Copy" };
+            var family = new ElementId();
+            var symbol = new ElementId();
+            document.Elements[family] = new Family { Name = "Desk" };
+            document.Elements[symbol] = new FamilySymbol { Name = "1200x600" };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: wallTypes.Concat(new[] { symbol, family }).ToArray());
+
+                var description = guard.Changes.Describe(document, 2);
+                Assert.Equal(
+                    new[] { "Family:Desk", "FamilySymbol:1200x600" },
+                    description["added_families"].Select(element => element.Value<string>("class") + ":" + element.Value<string>("name")));
+            }
+        }
+
+        [Fact]
         public void TransactionNamesAreListedOnce() {
             var app = new UIApplication();
             var document = new Document();

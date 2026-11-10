@@ -278,9 +278,11 @@ class _WorkspaceLoopGuard(object):
         2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
         implemented. Modules get the same broad-handler narrowing as the
         script, so a bare ``except`` cannot swallow the timeout. Namespace
-        packages are not rewritten, and on IronPython a workspace module that
-        compiles code at runtime is not line-traced; its loops there are
-        stopped only if the script itself is traced.
+        packages are not rewritten. On engines without
+        ``PyThreadState_SetAsyncExc``, importing a module whose loops the
+        rewrite can't see (code compiled at run time, a loop inside an
+        f-string) calls ``on_unguarded``, which turns on per-line deadline
+        checks for the rest of the run.
     """
 
     def __init__(self, workspace, guards, on_unguarded=lambda: None):
@@ -364,10 +366,12 @@ class _WorkspaceLoopGuard(object):
     def exec_module(self, module):
         with open(module.__file__, "rb") as handle:
             raw = handle.read()
-        code, rewrite_problem, guarded = _compile_source(
-            _decode_source(raw), True, module.__file__
-        )
-        if not guarded:
+        source = _decode_source(raw)
+        code, rewrite_problem, guarded = _compile_source(source, True, module.__file__)
+        if not guarded or (
+            _set_async_exc_function() is None
+            and (_runs_dynamic_code(source) or _hides_loops_in_fstrings(source))
+        ):
             self._on_unguarded()
         if rewrite_problem:
             print(
@@ -752,6 +756,8 @@ def _execution_tracer(
     def raise_if_timed_out(frame):
         if state["timed_out"]:
             _track_stack_transactions(frame, transactions)
+            if frame.f_code.co_filename != _RUNNER_FILENAME:
+                state["interrupted"] = True
             raise RunTimedOut(timeout_s)
 
     def track_module(frame, event, arg):
@@ -806,6 +812,7 @@ def _loop_guards(timeout_s, state, transactions):
             _track_stack_transactions(sys._getframe(2), transactions)
         except Exception:
             pass
+        state["interrupted"] = True
         raise RunTimedOut(timeout_s)
 
     def agent_tick():
@@ -869,6 +876,7 @@ def _start_watchdog(timeout_s, state):
             return
         escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
         while not stopped.is_set() and not state["finished"]:
+            state["interrupted"] = True
             inject(RunTimedOut)
             if _clock() >= escalate_at:
                 escalation.arm()
@@ -956,6 +964,8 @@ class _JumpEscalation(object):
             and destination < offset
             and threading.get_ident() == self._thread_id
         ):
+            if code.co_filename != _RUNNER_FILENAME:
+                self._state["interrupted"] = True
             raise RunTimedOut(self._timeout_s)
 
 
@@ -1135,7 +1145,12 @@ def run(context):
     left_open = 0
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
-    state = {"timed_out": False, "finished": False, "check_lines": False}
+    state = {
+        "timed_out": False,
+        "interrupted": False,
+        "finished": False,
+        "check_lines": False,
+    }
     script_finished = False
     tracked_transactions = {}
     try:
@@ -1245,7 +1260,7 @@ def run(context):
     except BaseException as ex:
         failed = True
         if isinstance(ex, RunTimedOut) and state["timed_out"]:
-            if script_finished:
+            if script_finished and not state["interrupted"]:
                 context.SetError("timeout", _late_timeout_message(timeout_s), "")
             else:
                 context.SetError(
@@ -1253,7 +1268,7 @@ def run(context):
                     "The script ran longer than its {:g} second limit and was "
                     "stopped; its changes were rolled back. Pass a larger timeout_s "
                     "if the work needs more time.".format(timeout_s),
-                    _format_script_traceback(),
+                    "" if script_finished else _format_script_traceback(),
                 )
         else:
             error_type, message = _describe_error(ex)
