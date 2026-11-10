@@ -48,6 +48,7 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocumentBinding.cs" Link="Sources\AgentDocumentBinding.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPipeServer.cs" Link="Sources\AgentPipeServer.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRequestLine.cs" Link="Sources\AgentRequestLine.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentConfigRefresh.cs" Link="Sources\AgentConfigRefresh.cs"/>
     </ItemGroup>
 
 </Project>
