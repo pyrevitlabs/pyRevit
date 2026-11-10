@@ -888,6 +888,55 @@ Honest limits:
   sample is in `get_run`. Phase 2 will rank the elements the script touched ahead of
   these side effects.
 
+### Decisions and known limits
+
+Choices made on purpose, with the reason, so they aren't reopened as bugs:
+
+- **Leftover documents.** After a run the host closes, without saving, every background
+  document that wasn't open when the run started. A viewless document another add-in opened
+  during the run (for example from its own `DocumentOpened` handler) is closed too: its handler
+  runs inside the script's own API call, so Revit gives no way to tell who opened it.
+- **`deleted_ids` carries ids only.** The change set is described while the run's group is still
+  open, when deleted elements no longer exist, so their category, name and class can't be read.
+  Only a run that rolls back could describe them, after the rollback.
+- **Traced runs are slower.** When the `__agent_start__` rewrite can't prove it wraps every
+  `Start` call, the runner traces the script to find open transactions and checks the attributes
+  of every local on every traced line. Measured on IronPython 2.7 in #3937: 1.6 times slower with
+  empty objects, 3.7 times with 40 attributes (100,000 iterations: 13.6 s against 3.7 s). A
+  per-object cache would miss a transaction stored on an object after it was first seen, so the
+  cost is accepted.
+- **Screen-capture overlays.** `screen` mode ignores windows that are both layered and transparent
+  to input (`WS_EX_LAYERED | WS_EX_TRANSPARENT`), such as the GeForce overlay, which span the
+  screen and draw little. Such a window that draws opaque content over the view ends up in the
+  image. The check keeps a capture from showing another application's window by mistake; it isn't
+  a privacy boundary, and `GetLayeredWindowAttributes` reports nothing for an overlay drawn with
+  per-pixel alpha (`UpdateLayeredWindow`), so there is no cheap way to tell how much it covers.
+- **Host error details reach the agent.** The client passes every `error.data` field the host
+  sets (such as `run_dir`) through to MCP results. The host only puts fields there that it wrote for
+  the agent, and the agent runs as the same user on the same machine.
+- **Dialogs during requests.** Every request that runs on Revit's main thread dismisses each dialog
+  Revit raises through `DialogBoxShowing` while it runs, including a prompt another add-in shows
+  in reaction to it (for example to a view `zoom` opens), and lists it in `dialogs`. Requests other
+  than `run` install no `IFailuresPreprocessor`; their transactions only change temporary view
+  state or are rolled back. The run-tab highlight flushes its
+  rendering with a nested `Dispatcher.Invoke`, which can process other queued work early; no
+  problem has been reproduced from it.
+- **Shared agent storage.** Per-launch sessions keep their instance and run records in the shared
+  `%APPDATA%\pyRevit\agent` folder, so clients find every session; see
+  [Running several clones side by side](#running-several-clones-side-by-side).
+- **Uninterruptible calls.** A single blocking call can't be stopped on any engine; `run_hung`
+  releases the caller. See the timeout rules in [Script contract](#script-contract).
+- **`null` tool arguments.** Settled by #3933: a `null` argument is `invalid_params` unless the
+  property's schema lists `null`; see
+  [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer).
+- **Built-in automation input types.** The hand-wired operations in
+  `PyRevitAutomationOperations` describe their inputs with JSON-schema types, such as `array` for
+  `pyrevit.elements.by-category`, and validate them in C#. The marker types (`string`, `number`,
+  `integer`, `boolean`, `element`, `scalar`) apply to `@automation.operation` declarations only.
+- **Runner reload check in C#.** The few lines that drop a stale `pyrevit.agent._runner` before
+  importing it are a string in `AgentScriptRunner`, because they decide whether the runner module
+  itself is current; moved into a Python module, that module would need the same check.
+
 ### pyRevit commands as agent tools (Phase 3)
 
 Commands will opt in through `bundle.yaml`:
