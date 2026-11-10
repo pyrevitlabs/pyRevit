@@ -50,6 +50,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int DefaultWidth = 1280;
         private const int MinWidth = 320;
         private const int MaxWidth = 2400;
+        private const int MaxElements = 20000;
 
         private const double SectionBoxPadding = 2.0;
         private const double DirectionTolerance = 1e-3;
@@ -177,6 +178,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return null;
             var ids = token as JArray
                 ?? throw new AgentException("invalid_params", "'elements' must be an array of element ids.");
+            if (ids.Count > MaxElements)
+                throw new AgentException("invalid_params", $"At most {MaxElements} 'elements' per call.");
             return AgentParams.ElementIds(ids, "elements").Select(AgentIds.FromValue).ToList();
         }
 
