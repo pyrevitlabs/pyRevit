@@ -316,6 +316,21 @@ def delayed_unregister_exec_handlers(handler_group_id):
         _unregister_handler_groups(handler_group_ids)
 
 
+HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
+"""Deprecated since 7.1: kept so code written against 7.0 still imports.
+
+Use ``delayed_unregister_exec_handlers`` instead. It is never passed to
+``ExternalEvent.Create``, so holding it does not keep this module or its
+engine alive across reloads.
+"""
+
+HANDLER_UNREGISTERER_EXTEVENT = None
+"""Deprecated since 7.1: always ``None``.
+
+Unregistering now goes through the runtime's shared ``ApiContextQueue``.
+"""
+
+
 def _schedule_in_api_context(callback):
     """Queue a callback on the runtime's ExternalEvent shared by all engines.
 
