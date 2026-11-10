@@ -7,6 +7,12 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+#if NETFRAMEWORK
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+
+using Microsoft.Win32.SafeHandles;
+#endif
 
 using pyRevitLabs.NLog;
 
@@ -100,7 +106,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
                 NamedPipeServerStream created;
                 try {
-                    created = CreatePipe();
+                    created = CreateInstance();
                     createFailures = 0;
                 }
                 catch (Exception ex) {
@@ -167,9 +173,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void Close(NamedPipeServerStream pipe) {
-            lock (pipeLock)
+            lock (pipeLock) {
                 openPipes.Remove(pipe);
-            pipe.Dispose();
+                pipe.Dispose();
+            }
             connectionSlots.Release();
         }
 
@@ -210,18 +217,63 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return null;
         }
 
-        private NamedPipeServerStream CreatePipe() {
+        private NamedPipeServerStream CreateInstance() {
+            lock (pipeLock)
+                return CreatePipe(firstInstance: openPipes.Count == 0);
+        }
+
+        /// <remarks>
+        /// Important: the first instance must be created with <c>FILE_FLAG_FIRST_PIPE_INSTANCE</c>.
+        /// Otherwise a pipe of the same name that another process created first would be joined,
+        /// and its owner's access list, not <see cref="BuildPipeSecurity"/>, would guard the host.
+        /// </remarks>
+        private NamedPipeServerStream CreatePipe(bool firstInstance) {
             var security = BuildPipeSecurity();
 #if NETFRAMEWORK
-            return new NamedPipeServerStream(
-                pipeName, PipeDirection.InOut, maxConnections, PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous, 0, 0, security);
+            return CreatePipeNative(security, firstInstance);
 #else
+            var options = firstInstance ? PipeOptions.Asynchronous | PipeOptions.FirstPipeInstance : PipeOptions.Asynchronous;
             return NamedPipeServerStreamAcl.Create(
                 pipeName, PipeDirection.InOut, maxConnections, PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous, 0, 0, security);
+                options, 0, 0, security);
 #endif
         }
+
+#if NETFRAMEWORK
+        private const uint PipeAccessDuplex = 0x3;
+        private const uint FileFlagFirstPipeInstance = 0x80000;
+        private const uint FileFlagOverlapped = 0x40000000;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SecurityAttributes {
+            public int Length;
+            public IntPtr SecurityDescriptor;
+            public int InheritHandle;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern SafePipeHandle CreateNamedPipe(
+            string name, uint openMode, uint pipeMode, uint maxInstances,
+            uint outBufferSize, uint inBufferSize, uint defaultTimeout, ref SecurityAttributes securityAttributes);
+
+        private NamedPipeServerStream CreatePipeNative(PipeSecurity security, bool firstInstance) {
+            var descriptor = GCHandle.Alloc(security.GetSecurityDescriptorBinaryForm(), GCHandleType.Pinned);
+            try {
+                var attributes = new SecurityAttributes {
+                    Length = Marshal.SizeOf(typeof(SecurityAttributes)),
+                    SecurityDescriptor = descriptor.AddrOfPinnedObject(),
+                };
+                var openMode = PipeAccessDuplex | FileFlagOverlapped | (firstInstance ? FileFlagFirstPipeInstance : 0);
+                var handle = CreateNamedPipe(@"\\.\pipe\" + pipeName, openMode, 0, (uint)maxConnections, 0, 0, 0, ref attributes);
+                if (handle.IsInvalid)
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                return new NamedPipeServerStream(PipeDirection.InOut, true, false, handle);
+            }
+            finally {
+                descriptor.Free();
+            }
+        }
+#endif
 
         private static PipeSecurity BuildPipeSecurity() {
             var security = new PipeSecurity();

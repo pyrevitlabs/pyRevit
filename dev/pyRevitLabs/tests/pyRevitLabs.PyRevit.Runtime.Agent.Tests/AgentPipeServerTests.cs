@@ -50,6 +50,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>
+        /// A pipe name another process already serves, even one that allows several instances, is
+        /// never joined: its owner's access list would apply to the host's instances too.
+        /// </summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void APipeNameAnotherServerAlreadyHoldsIsNotJoined() {
+            var pipeName = UniquePipeName();
+            using (var squatter = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 4))
+            using (var stopped = new ManualResetEventSlim()) {
+                var server = new AgentPipeServer(pipeName, line => line, _ => stopped.Set(), TimeSpan.FromMilliseconds(1));
+                using (server) {
+                    server.Start();
+
+                    Assert.True(stopped.Wait(Long));
+                    Assert.False(server.IsListening);
+                }
+            }
+        }
+
         /// <summary>A connection whose request is still being handled doesn't keep the next client from connecting (#3949).</summary>
         [Fact]
         [Trait("Level", "Integration")]
