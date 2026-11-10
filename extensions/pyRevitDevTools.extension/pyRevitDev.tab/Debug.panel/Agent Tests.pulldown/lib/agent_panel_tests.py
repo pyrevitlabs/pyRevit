@@ -37,12 +37,15 @@ def _history():
     return list(_member(activity.GetValue(None), "History"))
 
 
+RUN_KINDS = ("query", "dry_run", "modify")
+
+
 def _logged_runs():
     """Run entries of the agent log, by run id."""
     runs = {}
     for entry in _history():
         details = _member(entry, "Details")
-        if details is None:
+        if details is None or _member(entry, "Kind") not in RUN_KINDS:
             continue
         summary = json.loads(str(details))
         runs.setdefault(summary["run_id"], []).append((entry, summary))
