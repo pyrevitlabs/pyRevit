@@ -186,7 +186,11 @@ def invoke(operation, inputs, doc):
 
     needs_document = marker.get("context") == "document"
     if needs_document and doc is None:
-        raise OperationError("'{}' requires an active document.".format(marker["id"]))
+        raise OperationError(
+            "'{}' works in a document: pass document=key from get_context.".format(
+                marker["id"]
+            )
+        )
 
     arguments = {}
     for spec in automation.parse_inputs(marker["inputs"]):

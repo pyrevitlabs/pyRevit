@@ -446,6 +446,116 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        private static (UIApplication App, Document Active, Document Session, Document Outside) ThreeDocuments() {
+            var app = new UIApplication();
+            var active = new Document { Title = "Tower" };
+            var session = new Document { Title = "Annex" };
+            var outside = new Document { Title = "Site" };
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(session);
+            app.Application.Documents.Add(outside);
+            return (app, active, session, outside);
+        }
+
+        [Fact]
+        public void ChangesToAnotherSessionDocumentAreKeptWithTheRun() {
+            var (app, active, session, outside) = ThreeDocuments();
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(session);
+
+                Assert.True(guard.HasChanges);
+                Assert.False(guard.ChangedOtherOpenDocument);
+                guard.Assimilate();
+
+                Assert.Equal(1, active.AssimilateCalls);
+                Assert.Equal(1, session.AssimilateCalls);
+                Assert.Equal(0, session.RollbackCalls);
+                Assert.Equal(1, outside.RollbackCalls);
+                var described = Assert.Single(guard.DescribeOtherDocuments());
+                Assert.True(described.Value<bool>("in_session"));
+                Assert.True(described.Value<bool>("kept"));
+                Assert.False(guard.HasUnrevertedOtherDocumentChanges);
+                Assert.Empty(guard.NotKept);
+            }
+        }
+
+        [Fact]
+        public void ChangingADocumentOutsideTheSessionStillFailsTheRun() {
+            var (app, active, session, outside) = ThreeDocuments();
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(outside);
+
+                Assert.True(guard.ChangedOtherOpenDocument);
+                Assert.Equal(new[] { "Site" }, guard.ChangedOtherOpenDocumentTitles);
+                Assert.False(guard.HasChanges);
+            }
+        }
+
+        [Fact]
+        public void WithoutASessionOnlyTheRunsOwnDocumentCanBeKept() {
+            var (app, active, session, _) = ThreeDocuments();
+            using (var guard = new AgentRunGuard(app, active)) {
+                guard.Arm("Test");
+                app.Application.Change(session);
+
+                Assert.True(guard.ChangedOtherOpenDocument);
+                Assert.Empty(guard.ChangedSessionDocuments);
+            }
+        }
+
+        [Fact]
+        public void AnUnchangedSessionDocumentIsRolledBackNotKept() {
+            var (app, active, session, _) = ThreeDocuments();
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(active);
+
+                guard.Assimilate();
+
+                Assert.Equal(0, session.AssimilateCalls);
+                Assert.Equal(1, session.RollbackCalls);
+            }
+        }
+
+        [Fact]
+        public void ASessionDocumentRevitWontKeepIsRolledBackAndReported() {
+            var (app, active, session, _) = ThreeDocuments();
+            session.ThrowOnAssimilate = true;
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(active);
+                app.Application.Change(session);
+
+                guard.Assimilate();
+
+                Assert.Equal(1, active.AssimilateCalls);
+                Assert.Equal(1, session.RollbackCalls);
+                var notKept = Assert.Single(guard.NotKept);
+                Assert.Equal("Annex", notKept.Title);
+                Assert.Equal("Assimilate failed.", notKept.KeepError);
+                var described = Assert.Single(guard.DescribeOtherDocuments());
+                Assert.False(described.Value<bool>("kept"));
+                Assert.Equal("Assimilate failed.", described.Value<string>("keep_error"));
+            }
+        }
+
+        [Fact]
+        public void RollingBackTheRunRollsBackSessionDocumentsToo() {
+            var (app, active, session, _) = ThreeDocuments();
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(session);
+
+                guard.RollBack();
+
+                Assert.Equal(0, session.AssimilateCalls);
+                Assert.Equal(1, session.RollbackCalls);
+                Assert.False(Assert.Single(guard.DescribeOtherDocuments()).Value<bool>("kept"));
+            }
+        }
+
         [Fact]
         public void NothingChangedMeansAnEmptyChangeSet() {
             var app = new UIApplication();

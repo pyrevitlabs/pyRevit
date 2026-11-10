@@ -28,6 +28,8 @@ class AgentRunnerOutcomeTests(unittest.TestCase):
             Workspace=None,
             TimeoutSeconds=timeout_s,
             InputsJson="{}",
+            UIDocument=None,
+            Document=None,
             UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
             SetEngine=lambda *args: None,
             SetResult=results.append,

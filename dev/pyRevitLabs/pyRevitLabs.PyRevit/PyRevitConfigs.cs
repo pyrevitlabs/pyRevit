@@ -391,6 +391,31 @@ namespace pyRevitLabs.PyRevit {
         }
 
         /// <summary>
+        /// How agent sessions start: <c>user</c> when the user starts one in the agent panel, or
+        /// <c>auto</c> when an agent's first model request starts one on every open document. The
+        /// host reads it only when pyRevit loads, so a change applies after the next reload.
+        /// Unknown values read as <c>user</c>, so a typo never opens the model to agents.
+        /// </summary>
+        public static string GetAgentSessionStart() {
+            IConfigurationService cfg = GetConfigFile();
+            var start = cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentSessionStartKey,
+                PyRevitConsts.ConfigsAgentSessionStartDefault);
+            return string.Equals(start?.Trim(), PyRevitConsts.ConfigsAgentSessionStartAuto, StringComparison.OrdinalIgnoreCase)
+                ? PyRevitConsts.ConfigsAgentSessionStartAuto
+                : PyRevitConsts.ConfigsAgentSessionStartUser;
+        }
+
+        public static void SetAgentSessionStart(string start) {
+            if (start != PyRevitConsts.ConfigsAgentSessionStartUser && start != PyRevitConsts.ConfigsAgentSessionStartAuto)
+                throw new PyRevitException($"Unknown agent session start \"{start}\"");
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentSessionStartKey, start);
+        }
+
+        /// <summary>
         /// Whether agent runs skip the Python runner's in-script checks: the run timeout, the
         /// loop and handler rewriting that enforces it, and per-line transaction tracking.
         /// </summary>

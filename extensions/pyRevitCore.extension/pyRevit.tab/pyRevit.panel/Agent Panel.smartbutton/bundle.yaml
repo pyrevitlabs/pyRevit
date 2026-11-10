@@ -1,0 +1,7 @@
+title:
+  en_us: "Agent\nPanel"
+tooltip:
+  en_us: >-
+    Open the pyRevit Agent panel. Start a session there to let MCP coding agents read and change
+    the open document, pause or end it at any time, and see what the agent is doing.
+context: zero-doc

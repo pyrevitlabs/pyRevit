@@ -18,9 +18,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// request never occupies the Revit main thread.
     /// </summary>
     internal sealed class AgentRunRequest {
-        private static readonly Regex TitleBreaks = new Regex(@"[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+");
-        private const int MaxTitleLength = 200;
-
         public string Script { get; private set; }
 
         /// <summary>
@@ -32,16 +29,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// 200 characters, so it can't push the rest of the prompt off screen.
         /// </remarks>
         public string Title { get; private set; }
+        public string Reason { get; private set; }
         public AgentRunMode Mode { get; private set; }
         public AgentEngine Engine { get; private set; }
         public string InputsJson { get; private set; }
         public string Workspace { get; private set; }
-
-        /// <summary>
-        /// Title or path of the document the caller inspected. When set, the run is refused with
-        /// <c>document_changed</c> unless it is the active document.
-        /// </summary>
-        public string Document { get; private set; }
 
         /// <summary>
         /// The JSON-RPC <c>id</c> the client sent, kept in the run record so a caller that lost
@@ -83,7 +75,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (inputs != null && inputs.Type != JTokenType.Null && inputs.Type != JTokenType.Object)
                 throw new AgentException("invalid_params", "'inputs' must be an object.");
             var workspace = AgentParams.Get<string>(parameters, "workspace");
-            var document = AgentDocumentBinding.Parse(parameters["document"]);
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
             var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
@@ -91,14 +82,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
-                Title = Shorten(TitleBreaks.Replace(AgentParams.Get<string>(parameters, "title") ?? "Agent run", " ").Trim()),
+                Title = AgentRequestText.Title(parameters) ?? "Agent run",
+                Reason = AgentRequestText.Reason(parameters),
                 Mode = ParseMode(AgentParams.Get<string>(parameters, "mode")),
                 Engine = ParseEngine(AgentParams.Get<string>(parameters, "engine")),
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
                     ? "{}"
                     : inputs.ToString(Formatting.None),
                 Workspace = string.IsNullOrWhiteSpace(workspace) ? null : Path.GetFullPath(workspace),
-                Document = document,
                 TimeoutSeconds = timeoutSeconds,
             };
         }
@@ -118,23 +109,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JObject ToJson() {
             return new JObject {
                 ["title"] = Title,
+                ["reason"] = Reason,
                 ["mode"] = ModeName,
                 ["engine"] = Engine == AgentEngine.CPython ? "cpython" : "ironpython",
                 ["inputs"] = JToken.Parse(InputsJson),
                 ["workspace"] = Workspace,
-                ["document"] = Document,
                 ["timeout_s"] = TimeoutSeconds,
                 ["request_id"] = RequestId,
             };
-        }
-
-        private static string Shorten(string title) {
-            if (title.Length <= MaxTitleLength)
-                return title;
-            var length = MaxTitleLength - 1;
-            if (char.IsHighSurrogate(title[length - 1]))
-                length--;
-            return title.Substring(0, length) + "…";
         }
 
         private static AgentRunMode ParseMode(string mode) {
@@ -154,6 +136,50 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 default:
                     throw new AgentException("invalid_params", "'engine' must be ironpython or cpython.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Reads the agent's own words about a request, its <c>title</c> and <c>reason</c>, for the
+    /// agent log and the run record.
+    /// </summary>
+    /// <remarks>
+    /// The MCP server refuses a missing or overlong title. The host only cleans and cuts,
+    /// because the CLI and in-Revit callers send what they have; a title or reason that isn't a
+    /// string is <c>invalid_params</c>.
+    /// Invariant: the text holds no line breaks or other control and format characters, which
+    /// become spaces, so it can't add lines that pass for the change counts in the approval
+    /// prompt, and a cut never splits a character.
+    /// </remarks>
+    internal static class AgentRequestText {
+        public const int MaxTitleLength = 200;
+        public const int MaxReasonLength = 300;
+
+        private static readonly Regex Breaks = new Regex(@"[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+");
+
+        public static string Title(JObject parameters) {
+            return Read(parameters, "title", MaxTitleLength);
+        }
+
+        public static string Reason(JObject parameters) {
+            return Read(parameters, "reason", MaxReasonLength);
+        }
+
+        private static string Read(JObject parameters, string name, int maxLength) {
+            var raw = AgentParams.Get<string>(parameters, name);
+            if (raw == null)
+                return null;
+            var text = Breaks.Replace(raw, " ").Trim();
+            return text.Length == 0 ? null : Cut(text, maxLength);
+        }
+
+        private static string Cut(string text, int maxLength) {
+            if (text.Length <= maxLength)
+                return text;
+            var length = maxLength - 1;
+            if (char.IsHighSurrogate(text[length - 1]))
+                length--;
+            return text.Substring(0, length) + "…";
         }
     }
 }

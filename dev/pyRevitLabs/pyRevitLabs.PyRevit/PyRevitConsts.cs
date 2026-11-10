@@ -140,6 +140,14 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentUserSkillsEnabledKey = "user_skills";
         public const bool ConfigsAgentUserSkillsEnabledDefault = false;
         /// <summary>
+        /// How agent sessions start: <c>user</c>, in the agent panel, or <c>auto</c>, with an agent's
+        /// first model request, on every open document.
+        /// </summary>
+        public const string ConfigsAgentSessionStartKey = "session_start";
+        public const string ConfigsAgentSessionStartUser = "user";
+        public const string ConfigsAgentSessionStartAuto = "auto";
+        public const string ConfigsAgentSessionStartDefault = ConfigsAgentSessionStartUser;
+        /// <summary>
         /// Runs agent scripts without the in-script timeout and transaction checks. Off unless
         /// the user opts in.
         /// </summary>

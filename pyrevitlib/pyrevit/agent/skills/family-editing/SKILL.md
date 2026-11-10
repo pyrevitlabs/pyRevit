@@ -32,12 +32,12 @@ Read `revit-scripting` first. Check API names with `lookup_revit_api`. To create
 
 ## What the run guard covers here
 
-The run guard, and the dry-run rollback, cover the **project** document only.
-
-- **In the family document:** transactions are **not** rolled back by a dry run. They're discarded only because the family document is closed without saving.
+- **In a family the run itself opens:** its transactions are **not** rolled back by a dry run. They're discarded only because the family document is closed without saving.
+- **In a family kept open from an earlier run:** it's one of the session's documents, so a later run's changes to it are guarded like the project's. A dry run rolls them back, and a kept run keeps them as one undo entry in the family, even when the run names the project.
 - **Failures in the family document** are handled like the project's: warnings are removed and reported in `failures`, and an error rolls back that transaction and fails the run with `revit_failure`. Each entry names its `document`.
 - **The project change is `LoadFamily`.** It's part of the guarded run, so it's rolled back by a dry run and needs approval under policy `ask`.
-- **Close without saving:** always call `fam_doc.Close(False)`, in a `finally`.
+- **Close without saving:** call `fam_doc.Close(False)` in a `finally` when one run does the whole edit. A dry run closes it for you.
+- **Editing over several calls:** open the family in a `run_modify` that changes nothing else and leave it open. It stays in the agent session, and the run's `opened_documents` gives its key: edit it with runs that name that key, then load it from a run that names the project. It closes without saving when the session ends.
 - **Reloading replaces the `Family` object.** After `LoadFamily` brings an edited family back, the `Family` you edited is no longer valid (`IsValidObject` is false). Keep its name before editing, and look the family up again by name to read it afterwards.
 - **No saving from a run:** the guard blocks `Save` and `SaveAs` for every document that was open, created or opened during the run, including a family from `EditFamily` or `NewFamilyDocument`; the call fails with "Saving failed" and the response lists it in `blocked`. Load the family into the project instead, and ask the user to save a family file in Revit when they want one (see `revit-files`).
 
@@ -73,5 +73,5 @@ Create a type with `fm.NewType` before `SetFormula`. To get the parameter and fo
 
 - [ ] The family's types and parameter values, queried after loading, are the ones asked for.
 - [ ] A geometry change was checked on a placed instance or in a view with `capture_view`.
-- [ ] Every family document you opened is closed: it's no longer in `app.Documents`.
+- [ ] Every family document you opened is closed, or kept open on purpose for a later call: check `app.Documents`.
 - [ ] The family file on disk is unchanged; any save is left to the user in Revit.

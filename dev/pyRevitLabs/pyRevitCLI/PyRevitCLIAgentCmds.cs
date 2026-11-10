@@ -65,7 +65,7 @@ namespace pyRevitCLI {
             Console.WriteLine(PyRevitAgentClient.Call(instance, "get_context").ToString(Formatting.Indented));
         }
 
-        public static void RunScript(string scriptFile, string mode, string engine, string title, string inputsJson, string revitSelector, string timeoutSeconds = null, string workspace = null) {
+        public static void RunScript(string scriptFile, string mode, string engine, string title, string inputsJson, string revitSelector, string timeoutSeconds = null, string workspace = null, string document = null) {
             if (!File.Exists(scriptFile))
                 throw new PyRevitException("Script file not found: " + scriptFile);
             if (timeoutSeconds != null
@@ -85,6 +85,8 @@ namespace pyRevitCLI {
                 parameters["timeout_s"] = double.Parse(timeoutSeconds, System.Globalization.CultureInfo.InvariantCulture);
             if (workspace != null)
                 parameters["workspace"] = Path.GetFullPath(workspace);
+            if (document != null)
+                parameters["document"] = document;
 
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             var response = PyRevitAgentClient.Call(instance, "run", parameters);
@@ -93,6 +95,37 @@ namespace pyRevitCLI {
             var status = response.Value<string>("status");
             if (status != "ok")
                 Environment.ExitCode = 1;
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent session</c>: shows, requests, pauses or ends the agent session of a
+        /// running Revit, and prints the session state the host returns.
+        /// </summary>
+        /// <remarks>
+        /// There is deliberately no start or resume: only a click in Revit gives agents access, so
+        /// an agent that runs this command can ask for a session but can't grant itself one.
+        /// </remarks>
+        public static void ControlSession(string action, string reason, string revitSelector) {
+            var instance = PyRevitAgentClient.Resolve(revitSelector);
+            JToken result;
+            switch (action) {
+                case "request":
+                    var parameters = new JObject();
+                    if (reason != null)
+                        parameters["reason"] = reason;
+                    result = PyRevitAgentClient.Call(instance, "request_session", parameters);
+                    break;
+                case "pause":
+                    result = PyRevitAgentClient.Call(instance, "pause_session");
+                    break;
+                case "end":
+                    result = PyRevitAgentClient.Call(instance, "end_session");
+                    break;
+                default:
+                    result = PyRevitAgentClient.Call(instance, "session_status");
+                    break;
+            }
+            Console.WriteLine(result.ToString(Formatting.Indented));
         }
 
         public static void PrintRuns(string limit) {
@@ -170,6 +203,21 @@ namespace pyRevitCLI {
             }
             else
                 Console.WriteLine("Agent user skills are {0}", PyRevitConfigs.GetAgentUserSkillsEnabled() ? "Enabled" : "Disabled");
+        }
+
+        /// <summary>
+        /// <c>pyrevit configs agent sessionstart</c>: sets how agent sessions start, or prints it
+        /// when <paramref name="start"/> is null.
+        /// </summary>
+        public static void ConfigureSessionStart(string start) {
+            if (start != null) {
+                PyRevitConfigs.SetAgentSessionStart(start);
+                Console.WriteLine(start == PyRevitConsts.ConfigsAgentSessionStartAuto
+                    ? "Agent sessions start automatically, on every open document. Reload pyRevit or restart Revit to apply."
+                    : "Agent sessions start when you start one in the agent panel. Reload pyRevit or restart Revit to apply.");
+            }
+            else
+                Console.WriteLine("Agent sessions start: " + PyRevitConfigs.GetAgentSessionStart());
         }
 
         /// <summary>

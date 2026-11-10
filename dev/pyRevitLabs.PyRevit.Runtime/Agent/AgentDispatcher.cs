@@ -84,20 +84,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Queues <paramref name="work"/> for the main thread without waiting for it. Work Revit
-        /// refuses to schedule is dropped.
+        /// Queues <paramref name="work"/> for the main thread and returns without waiting.
         /// </summary>
         /// <remarks>
-        /// Nobody observes the result, so <paramref name="work"/> must handle its own failures.
+        /// For callers on the main thread itself, such as the agent panel, which must not block
+        /// the thread the work needs. The work runs in order with requests from the pipe and must
+        /// handle its own errors; nothing observes them.
         /// </remarks>
-        public void Post(Func<UIApplication, JToken> work) {
-            var item = new AgentWorkItem(work);
+        /// <returns>False when Revit refused the ExternalEvent, so the work will never run.</returns>
+        public bool Post(Action<UIApplication> work) {
+            var item = new AgentWorkItem(app => {
+                work(app);
+                return null;
+            });
             lock (queueLock)
                 queue.Enqueue(item);
 
             var response = externalEvent.Raise();
             if (response == ExternalEventRequest.Denied || response == ExternalEventRequest.TimedOut)
-                TryRemove(item);
+                return !TryRemove(item);
+            return true;
         }
 
         /// <summary>

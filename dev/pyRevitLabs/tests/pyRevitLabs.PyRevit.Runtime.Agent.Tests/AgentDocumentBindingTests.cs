@@ -1,21 +1,27 @@
-using pyRevitLabs.Json.Linq;
-
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
     public sealed class AgentDocumentBindingTests {
         private const string Path = @"C:\models\second.rvt";
 
+        private static readonly (string Key, string Title, string Path)[] Open = {
+            ("doc-1", "Tower", @"C:\models\Tower.rvt"),
+            ("doc-2", "second", Path),
+            ("doc-3", "Project1", ""),
+            ("doc-4", "Family1", ""),
+            ("doc-5", "Family1", ""),
+        };
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("  ")]
-        public void NoRequestedDocumentMatchesAnyActiveDocument(string requested) {
-            Assert.True(AgentDocumentBinding.Matches(requested, "second", Path));
+        public void ABlankValueMatchesNothing(string requested) {
+            Assert.False(AgentDocumentBinding.Matches(requested, "second", Path));
         }
 
         [Fact]
-        public void TheActiveTitleMatchesIgnoringCase() {
+        public void ATitleMatchesIgnoringCase() {
             Assert.True(AgentDocumentBinding.Matches("SECOND", "second", Path));
         }
 
@@ -47,7 +53,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void AnUnsavedActiveDocumentMatchesByTitleOnly() {
+        public void AnUnsavedDocumentMatchesByTitleOnly() {
             Assert.True(AgentDocumentBinding.Matches("Project1", "Project1", ""));
             Assert.False(AgentDocumentBinding.Matches(Path, "Project1", ""));
         }
@@ -58,52 +64,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void ParseReturnsNullWhenAbsentOrNull() {
-            Assert.Null(AgentDocumentBinding.Parse(null));
-            Assert.Null(AgentDocumentBinding.Parse(JValue.CreateNull()));
-        }
-
-        [Fact]
-        public void ParseKeepsAStringUnchanged() {
-            Assert.Equal("  second ", AgentDocumentBinding.Parse(new JValue("  second ")));
-        }
-
-        [Fact]
         public void ATitleWithSurroundingSpacesMatchesItself() {
             Assert.True(AgentDocumentBinding.Matches(" Tower", " Tower", Path));
         }
 
         [Theory]
-        [InlineData("")]
-        [InlineData("   ")]
-        public void ParseRejectsABlankString(string value) {
-            var error = Assert.Throws<AgentException>(() => AgentDocumentBinding.Parse(new JValue(value)));
-            Assert.Equal("invalid_params", error.Code);
+        [InlineData("tower", "doc-1")]
+        [InlineData(@"C:\models\second.rvt", "doc-2")]
+        [InlineData("Project1", "doc-3")]
+        public void TheOneDocumentATitleOrPathNamesIsFound(string requested, string key) {
+            Assert.Equal(key, AgentDocumentBinding.Named(requested, Open)?.Key);
         }
 
-        [Fact]
-        public void ParseRejectsANonString() {
-            var error = Assert.Throws<AgentException>(() => AgentDocumentBinding.Parse(new JObject { ["title"] = "second" }));
-            Assert.Equal("invalid_params", error.Code);
-            Assert.Throws<AgentException>(() => AgentDocumentBinding.Parse(new JValue(3)));
-        }
-
-        [Fact]
-        public void TheRefusalNamesBothDocumentsAndIsANotRun() {
-            var refusal = AgentDocumentBinding.Refusal("first", "second");
-
-            Assert.Equal("document_changed", refusal.Code);
-            Assert.Contains("'first'", refusal.Message);
-            Assert.Contains("'second'", refusal.Message);
-            Assert.Equal("not_run", refusal.Details.Value<string>("outcome"));
-        }
-
-        [Fact]
-        public void TheRefusalSaysWhenNoDocumentIsActive() {
-            var refusal = AgentDocumentBinding.Refusal("first", null);
-
-            Assert.Contains("no active document", refusal.Message);
-            Assert.Equal("not_run", refusal.Details.Value<string>("outcome"));
+        [Theory]
+        [InlineData("Family1")]
+        [InlineData("doc-9")]
+        [InlineData(@"C:\models\gone.rvt")]
+        public void ATitleSeveralDocumentsShareOrAValueNoneHasNamesNone(string requested) {
+            Assert.Null(AgentDocumentBinding.Named(requested, Open));
         }
     }
 }

@@ -78,7 +78,7 @@ public partial class McpServerTests {
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession();
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["revit"] = "2090" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1", ["revit"] = "2090" }));
         Assert.True(runStarted.Wait(Patience));
         session.Send(ToolCall(2, "get_context", new JObject { ["revit"] = "2091" }));
         var context = session.Next();
@@ -106,7 +106,7 @@ public partial class McpServerTests {
         PyRevitAgentClient.PingConnectTimeoutMs = 300;
         using var session = new LiveSession();
 
-        session.Send(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1", ["title"] = "Change", ["document"] = "doc-1" }));
         Assert.True(runStarted.Wait(Patience));
         session.Send(ToolCall(2, "get_context"));
         session.Cancel(2);

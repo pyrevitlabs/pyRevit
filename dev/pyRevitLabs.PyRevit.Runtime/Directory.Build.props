@@ -9,6 +9,7 @@
     <ItemGroup>
         <Compile Include="..\*.cs" />
         <Compile Include="..\Agent\*.cs" />
+        <EmbeddedResource Include="..\Agent\*.xaml" LogicalName="PyRevitLabs.PyRevit.Runtime.Agent.%(Filename)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup>

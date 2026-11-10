@@ -101,6 +101,8 @@ class AgentRunnerTimeoutEscapeTests(unittest.TestCase):
             Workspace=None,
             TimeoutSeconds=timeout_s,
             InputsJson="{}",
+            UIDocument=None,
+            Document=None,
             UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
             SetEngine=lambda *args: None,
             SetResult=lambda *args: None,
@@ -294,6 +296,8 @@ class AgentRunnerWatchdogStopTests(unittest.TestCase):
                     Workspace=None,
                     TimeoutSeconds=0.1,
                     InputsJson="{}",
+                    UIDocument=None,
+                    Document=None,
                     UIApp=types.SimpleNamespace(
                         ActiveUIDocument=None, Application=None
                     ),

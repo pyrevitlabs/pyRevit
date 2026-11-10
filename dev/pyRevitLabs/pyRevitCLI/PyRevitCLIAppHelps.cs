@@ -359,6 +359,7 @@ namespace pyRevitCLI {
                             { "run",                    "Run a Python script in Revit through the agent host" },
                             { "runs",                   "List recent agent runs" },
                             { "show",                   "Print the record of an agent run" },
+                            { "session",                "Show (status), request, pause or end the agent session; only Revit can start one" },
                         },
                         options: new Dictionary<string, string>() {
                             { "<script_file>",          "Python script to run" },
@@ -369,8 +370,10 @@ namespace pyRevitCLI {
                             { "--revit=<revit_year>",   "Target Revit year, process id or clone name when several are running" },
                             { "--timeout=<seconds>",    "Stop the script after this many seconds (default 300, max 3600)" },
                             { "--workspace=<folder>",   "Folder of your own modules to put on sys.path for the run" },
+                            { "--document=<document_key>", "Document to run in: a key from 'agent context' (default: the active document)" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
+                            { "--reason=<reason>",      "Why the session is needed; shown to the user in Revit" },
                             { "--json",                 "Print status as json" },
                         });
                     break;
@@ -400,7 +403,7 @@ namespace pyRevitCLI {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
                             { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
                             { "routes",                 "Routes configurations" },
-                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, reckless runs)" },
+                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, session start, reckless runs)" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },
                         },

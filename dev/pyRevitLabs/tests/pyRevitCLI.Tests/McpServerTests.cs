@@ -8,7 +8,7 @@ namespace pyRevitCLI.Tests;
 [Collection(CliGlobalState.Name)]
 public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
-        "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
+        "list_skills", "get_skill", "list_revit_instances", "request_session", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
         "run_automation", "lookup_revit_api", "get_run",
     };
 
@@ -283,8 +283,8 @@ public partial class McpServerTests : IDisposable {
     [InlineData("run_query", "{\"script\":[]}")]
     [InlineData("run_query", "{\"script\":\"result = 1\",\"title\":{}}")]
     [InlineData("run_modify", "{\"script\":\"x = 1\",\"title\":\"T\",\"document\":{}}")]
-    [InlineData("run_query", "{\"script\":\"x = 1\",\"document\":123}")]
-    [InlineData("run_modify", "{\"script\":\"x = 1\",\"document\":true}")]
+    [InlineData("run_query", "{\"script\":\"x = 1\",\"title\":\"T\",\"document\":123}")]
+    [InlineData("run_modify", "{\"script\":\"x = 1\",\"title\":\"T\",\"document\":true}")]
     [InlineData("navigate_revit_link", "{\"link\":{\"destination\":{},\"ids\":[1]}}")]
     [InlineData("navigate_revit_link", "{\"link\":{\"destination\":\"element\",\"ids\":[1],\"document\":{}},\"action\":{}}")]
     [InlineData("run_automation", "{\"id\":{}}")]
@@ -389,16 +389,22 @@ public partial class McpServerTests : IDisposable {
         Assert.Empty(host.Requests);
     }
 
-    [Theory]
-    [InlineData("revit")]
-    [InlineData("document")]
-    public void TheSchemaListsNullWhereNullSelectsTheDefault(string property) {
+    [Fact]
+    public void TheRevitSchemaListsNullBecauseNullSelectsTheDefault() {
         var tools = (JArray)Single(Request(1, "tools/list"))["result"]["tools"];
         var run = tools.Single(tool => tool.Value<string>("name") == "run_query");
 
-        var types = run["inputSchema"]["properties"][property]["type"].Values<string>();
+        var types = run["inputSchema"]["properties"]["revit"]["type"].Values<string>();
 
         Assert.Contains("null", types);
+    }
+
+    [Fact]
+    public void TheDocumentSchemaIsAStringBecauseADocumentIsRequired() {
+        var tools = (JArray)Single(Request(1, "tools/list"))["result"]["tools"];
+        var run = tools.Single(tool => tool.Value<string>("name") == "run_query");
+
+        Assert.Equal("string", run["inputSchema"]["properties"]["document"].Value<string>("type"));
     }
 
     [Theory]
@@ -411,7 +417,11 @@ public partial class McpServerTests : IDisposable {
     public void ArgumentsThatMatchTheSchemaReachRevit(string arguments) {
         host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
 
-        var response = Single(ToolCall(1, "capture_view", JObject.Parse(arguments)));
+        var given = JObject.Parse(arguments);
+        given["title"] = "Look";
+        given["document"] = "doc-1";
+
+        var response = Single(ToolCall(1, "capture_view", given));
 
         Assert.False(IsError(response));
         Assert.Single(host.RequestsFor("capture"));
@@ -424,7 +434,7 @@ public partial class McpServerTests : IDisposable {
     public void AnAnswerThatCantBeProcessedAfterARunIsAnUnknownOutcomeWithTheRunsRequestId(string result) {
         host.Handler = request => FakeAgentHost.Result(request, JToken.Parse(result));
 
-        var response = Single(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1", ["title"] = "Change" }));
+        var response = Single(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1", ["title"] = "Change", ["document"] = "doc-1" }));
 
         Assert.True(IsError(response));
         var payload = Payload(response);
@@ -494,13 +504,37 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void AClientInfoOfTheWrongShapeIsIgnored() {
+        var responses = Serve(
+            Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-06-18", ["clientInfo"] = JValue.CreateNull() }),
+            Request(2, "initialize", new JObject { ["protocolVersion"] = "2025-06-18", ["clientInfo"] = "Claude Code" }),
+            Request(3, "initialize", new JObject { ["protocolVersion"] = "2025-06-18", ["clientInfo"] = new JArray("Claude Code") }),
+            Request(4, "ping"));
+
+        Assert.Equal(new[] { 1, 2, 3, 4 }, responses.Select(response => response.Value<int>("id")));
+        Assert.All(responses.Take(3), response => Assert.Equal("2025-06-18", response["result"].Value<string>("protocolVersion")));
+        Assert.NotNull(responses[3]["result"]);
+    }
+
+    [Fact]
+    public void AMetaThatIsNotAnObjectStillGetsTheToolResult() {
+        var call = ToolCall(1, "list_skills");
+        call["params"]["_meta"] = JValue.CreateNull();
+
+        var response = Single(call);
+
+        Assert.False(IsError(response));
+    }
+
+    [Fact]
     public void TheToolListHasTheExpectedToolsWithConsistentSchemasAndHints() {
         var tools = ((JArray)Single(Request(1, "tools/list"))["result"]["tools"]).Cast<JObject>().ToList();
 
         Assert.Equal(
             new[] {
-                "list_skills", "get_skill", "list_revit_instances", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
-                "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "run_query", "run_modify", "get_run",
+                "list_skills", "get_skill", "list_revit_instances", "request_session", "get_context", "inspect_elements", "lookup_pyrevit_api",
+                "list_automation", "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "run_query",
+                "run_modify", "get_run",
             },
             tools.Select(tool => tool.Value<string>("name")));
         foreach (var tool in tools) {
@@ -520,13 +554,19 @@ public partial class McpServerTests : IDisposable {
     public void RequiredArgumentsAreDeclared() {
         var tools = ((JArray)Single(Request(1, "tools/list"))["result"]["tools"]).Cast<JObject>().ToDictionary(tool => tool.Value<string>("name"));
 
-        Assert.Equal(new[] { "script" }, tools["run_query"]["inputSchema"]["required"].Select(token => token.Value<string>()));
-        Assert.Equal(new[] { "script", "title" }, tools["run_modify"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "script", "title", "document" }, tools["run_query"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "script", "title", "document" }, tools["run_modify"]["inputSchema"]["required"].Select(token => token.Value<string>()));
         Assert.Equal(new[] { "run_id" }, tools["get_run"]["inputSchema"]["required"].Select(token => token.Value<string>()));
-        Assert.Equal(new[] { "ids" }, tools["inspect_elements"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "ids", "title", "document" }, tools["inspect_elements"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "title", "document" }, tools["show_elements"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "title", "document" }, tools["capture_view"]["inputSchema"]["required"].Select(token => token.Value<string>()));
         Assert.Equal(new[] { "id", "inputs" }, tools["run_automation"]["inputSchema"]["required"].Select(token => token.Value<string>()));
         Assert.Equal(new[] { "query" }, tools["lookup_pyrevit_api"]["inputSchema"]["required"].Select(token => token.Value<string>()));
-        Assert.Equal(new[] { "link" }, tools["navigate_revit_link"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        Assert.Equal(new[] { "link", "title" }, tools["navigate_revit_link"]["inputSchema"]["required"].Select(token => token.Value<string>()));
+        foreach (var tool in new[] { "run_query", "run_modify", "inspect_elements", "show_elements", "navigate_revit_link", "capture_view" }) {
+            Assert.Equal(120, tools[tool]["inputSchema"]["properties"]["title"].Value<int>("maxLength"));
+            Assert.Equal(300, tools[tool]["inputSchema"]["properties"]["reason"].Value<int>("maxLength"));
+        }
         Assert.Contains("revit-scripting", tools["get_skill"]["inputSchema"]["properties"]["name"]["enum"].Select(token => token.Value<string>()));
     }
 
@@ -575,12 +615,13 @@ public partial class McpServerTests : IDisposable {
             ? RunResponse(request, extra: new JObject { ["result"] = new JObject { ["count"] = 3 } })
             : FakeAgentHost.Result(request, new JObject());
 
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "result = 3" }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "result = 3", ["title"] = "Count the walls" }));
 
         var sent = Assert.Single(host.RequestsFor("run"))["params"];
         Assert.Equal("query", sent.Value<string>("mode"));
         Assert.Equal("result = 3", sent.Value<string>("script"));
-        Assert.Equal("Agent query", sent.Value<string>("title"));
+        Assert.Equal("Count the walls", sent.Value<string>("title"));
+        Assert.Null(sent["reason"]);
         Assert.Empty(((JObject)sent["inputs"]).Properties());
         Assert.Null(sent["engine"]);
         var payload = Payload(response);
@@ -595,6 +636,7 @@ public partial class McpServerTests : IDisposable {
         host.Handler = request => RunResponse(request);
 
         Serve(ToolCall(1, "run_query", new JObject {
+            ["document"] = "doc-1",
             ["script"] = "x = 1",
             ["title"] = "Mine",
             ["engine"] = "cpython",
@@ -611,26 +653,12 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(1, sent["inputs"].Value<int>("a"));
     }
 
-    [Theory]
-    [InlineData("run_query")]
-    [InlineData("run_modify")]
-    public void TheDocumentIsForwardedWhenGivenAndOmittedOtherwise(string tool) {
-        host.Handler = request => RunResponse(request);
-
-        Serve(ToolCall(1, tool, new JObject { ["script"] = "x = 1", ["title"] = "T", ["document"] = "second" }));
-        Serve(ToolCall(2, tool, new JObject { ["script"] = "x = 1", ["title"] = "T" }));
-
-        var sent = host.RequestsFor("run").Select(request => request["params"]).ToList();
-        Assert.Equal("second", sent[0].Value<string>("document"));
-        Assert.Null(sent[1]["document"]);
-    }
-
     [Fact]
     public void ModifyRunsChooseTheModeFromDryRunAndKeepTheDecision() {
         host.Handler = request => RunResponse(request);
 
-        var dry = Single(ToolCall(1, "run_modify", new JObject { ["script"] = "x = 1", ["title"] = "T", ["dry_run"] = true }));
-        var real = Single(ToolCall(2, "run_modify", new JObject { ["script"] = "x = 1", ["title"] = "T" }));
+        var dry = Single(ToolCall(1, "run_modify", new JObject { ["document"] = "doc-1", ["script"] = "x = 1", ["title"] = "T", ["dry_run"] = true }));
+        var real = Single(ToolCall(2, "run_modify", new JObject { ["document"] = "doc-1", ["script"] = "x = 1", ["title"] = "T" }));
 
         var modes = host.RequestsFor("run").Select(request => request["params"].Value<string>("mode")).ToList();
         Assert.Equal(new[] { "dry_run", "modify" }, modes);
@@ -639,17 +667,42 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
-    public void ModifyRunsDefaultTheTitle() {
+    public void ModelToolsRefuseAMissingBlankOrOverlongTitleWithoutReachingRevit() {
+        var calls = new[] {
+            ToolCall(1, "run_modify", new JObject { ["document"] = "doc-1", ["script"] = "x = 1" }),
+            ToolCall(2, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "x = 1", ["title"] = "   " }),
+            ToolCall(3, "inspect_elements", new JObject { ["document"] = "doc-1", ["ids"] = new JArray(1) }),
+            ToolCall(4, "show_elements", new JObject { ["document"] = "doc-1", ["ids"] = new JArray(1), ["title"] = new string('x', 121) }),
+            ToolCall(5, "capture_view", new JObject { ["document"] = "doc-1", ["title"] = "Look", ["reason"] = new string('x', 301) }),
+        };
+
+        foreach (var call in calls) {
+            var response = Single(call);
+            Assert.True(IsError(response));
+            Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
+        }
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void TheTitleAndReasonAreTrimmedAndForwarded() {
         host.Handler = request => RunResponse(request);
 
-        Serve(ToolCall(1, "run_modify", new JObject { ["script"] = "x = 1" }));
+        Serve(ToolCall(1, "run_modify", new JObject {
+            ["document"] = "doc-1",
+            ["script"] = "x = 1",
+            ["title"] = "  Renumber doors  ",
+            ["reason"] = "  The marks skip numbers. ",
+        }));
 
-        Assert.Equal("Agent change", Assert.Single(host.RequestsFor("run"))["params"].Value<string>("title"));
+        var sent = Assert.Single(host.RequestsFor("run"))["params"];
+        Assert.Equal("Renumber doors", sent.Value<string>("title"));
+        Assert.Equal("The marks skip numbers.", sent.Value<string>("reason"));
     }
 
     [Fact]
     public void ARunWithoutAScriptIsRejectedWithoutReachingRevit() {
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "  " }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "  " }));
 
         Assert.True(IsError(response));
         Assert.Equal("invalid_params", Payload(response).Value<string>("error"));
@@ -663,7 +716,7 @@ public partial class McpServerTests : IDisposable {
             new JObject { ["id"] = 102, ["name"] = "QA Dup", ["type"] = "CeilingPlan" });
         host.Handler = request => FakeAgentHost.Failure(request, "view_ambiguous", "2 views are named 'QA Dup'.", new JObject { ["views"] = views });
 
-        var response = Single(ToolCall(1, "capture_view", new JObject { ["view"] = "QA Dup" }));
+        var response = Single(ToolCall(1, "capture_view", new JObject { ["view"] = "QA Dup", ["title"] = "Look", ["document"] = "doc-1" }));
 
         Assert.True(IsError(response));
         var payload = Payload(response);
@@ -677,7 +730,7 @@ public partial class McpServerTests : IDisposable {
             ["error"] = new JObject { ["type"] = "ValueError", ["message"] = "bad" },
         });
 
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "raise ValueError()" }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "raise ValueError()", ["title"] = "Fail on purpose" }));
 
         Assert.True(IsError(response));
         Assert.Equal("ValueError", Payload(response)["error"].Value<string>("type"));
@@ -694,7 +747,7 @@ public partial class McpServerTests : IDisposable {
                 ["suggestions"] = new JArray("Autodesk.Revit.DB.Wall"),
             });
 
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = DB.Wal" }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "x = DB.Wal", ["title"] = "Read walls" }));
 
         Assert.Equal("Wal", Assert.Single(host.RequestsFor("lookup_api"))["params"].Value<string>("name"));
         Assert.Contains("DB.Wall", Payload(response)["error"].Value<string>("hint"));
@@ -708,7 +761,7 @@ public partial class McpServerTests : IDisposable {
             })
             : FakeAgentHost.Failure(request, "revit_busy", "busy");
 
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = DB.Wal" }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "x = DB.Wal", ["title"] = "Read walls" }));
 
         Assert.Equal("abc123def456", Payload(response).Value<string>("run_id"));
         Assert.Equal("AttributeError", Payload(response)["error"].Value<string>("type"));
@@ -720,10 +773,10 @@ public partial class McpServerTests : IDisposable {
 
         Serve(
             ToolCall(1, "get_context"),
-            ToolCall(2, "inspect_elements", new JObject { ["ids"] = new JArray(1, 2) }),
+            ToolCall(2, "inspect_elements", new JObject { ["document"] = "doc-1", ["ids"] = new JArray(1, 2), ["title"] = "Inspect two walls" }),
             ToolCall(3, "lookup_revit_api", new JObject { ["name"] = "Wall" }),
-            ToolCall(4, "show_elements", new JObject { ["ids"] = new JArray(1) }),
-            ToolCall(5, "capture_view", new JObject { ["view"] = "3d", ["mode"] = "viewport", ["width"] = 400, ["direction"] = "top", ["elements"] = new JArray(9) }));
+            ToolCall(4, "show_elements", new JObject { ["document"] = "doc-1", ["ids"] = new JArray(1), ["title"] = "Show a wall" }),
+            ToolCall(5, "capture_view", new JObject { ["document"] = "doc-1", ["view"] = "3d", ["mode"] = "viewport", ["width"] = 400, ["direction"] = "top", ["elements"] = new JArray(9), ["title"] = "Look from above" }));
 
         var methods = host.Requests.Select(request => request.Value<string>("method")).OrderBy(name => name).ToList();
         Assert.Equal(new[] { "capture", "get_context", "inspect_elements", "lookup_api", "show" }, methods);
@@ -738,6 +791,9 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(400, capture.Value<int>("width"));
         Assert.Equal("top", capture.Value<string>("direction"));
         Assert.Equal(9, capture["elements"][0].Value<int>());
+        Assert.Equal("Look from above", capture.Value<string>("title"));
+        Assert.Equal("Show a wall", show.Value<string>("title"));
+        Assert.Equal("Inspect two walls", host.RequestsFor("inspect_elements").Single()["params"].Value<string>("title"));
     }
 
     [Fact]
@@ -745,12 +801,14 @@ public partial class McpServerTests : IDisposable {
         host.Handler = request => FakeAgentHost.Result(request, new JObject { ["ok"] = true });
 
         Serve(ToolCall(1, "capture_view", new JObject {
+            ["document"] = "doc-1",
             ["view"] = "3d",
             ["detail_level"] = "fine",
             ["display_style"] = "hidden_line",
             ["eye"] = new JArray(1, 2, 3),
             ["target"] = new JArray(4, 5, 6),
             ["section"] = new JObject { ["origin"] = new JArray(0, 0, 4), ["normal"] = new JArray(0, 0, -1), ["depth"] = 3 },
+            ["title"] = "Look at a plan cut",
         }));
 
         var capture = host.RequestsFor("capture").Single()["params"];
@@ -770,7 +828,7 @@ public partial class McpServerTests : IDisposable {
         var properties = (JObject)schema["properties"];
         foreach (var name in new[] { "detail_level", "display_style", "eye", "target", "section" })
             Assert.True(properties.ContainsKey(name), name);
-        Assert.Empty((JArray)schema["required"] ?? new JArray());
+        Assert.Equal(new[] { "title", "document" }, ((JArray)schema["required"]).Values<string>());
     }
 
     [Fact]
@@ -781,7 +839,7 @@ public partial class McpServerTests : IDisposable {
             ["path"] = "C:\\captures\\view.png",
         });
 
-        var response = Single(ToolCall(1, "capture_view"));
+        var response = Single(ToolCall(1, "capture_view", new JObject { ["document"] = "doc-1", ["title"] = "Look at the view" }));
 
         var content = (JArray)response["result"]["content"];
         Assert.Equal("image", content[0].Value<string>("type"));
@@ -835,7 +893,7 @@ public partial class McpServerTests : IDisposable {
             request, "revit_busy", "Revit did not become idle.",
             new JObject { ["outcome"] = "not_run", ["run_id"] = "abc123def456" });
 
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "x = 1", ["title"] = "Read a value" }));
 
         Assert.True(IsError(response));
         var payload = Payload(response);
@@ -850,7 +908,7 @@ public partial class McpServerTests : IDisposable {
     public void ALostAnswerIsReportedAsAnUnknownOutcomeWithTheRequestId() {
         host.Handler = request => null;
 
-        var response = Single(ToolCall(1, "run_query", new JObject { ["script"] = "x = 1" }));
+        var response = Single(ToolCall(1, "run_query", new JObject { ["document"] = "doc-1", ["script"] = "x = 1", ["title"] = "Read a value" }));
 
         var payload = Payload(response);
         Assert.Equal("pipe_error", payload.Value<string>("error"));

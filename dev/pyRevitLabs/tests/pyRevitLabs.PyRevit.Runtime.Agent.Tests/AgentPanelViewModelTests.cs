@@ -1,0 +1,644 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using PyRevitLabs.PyRevit.Runtime.Agent;
+using pyRevitLabs.Json.Linq;
+
+namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    public sealed class AgentPanelViewModelTests {
+        private static readonly DateTime Started = new DateTime(2026, 10, 5, 14, 2, 0, DateTimeKind.Utc);
+
+        private static readonly Dictionary<string, string> Strings = new Dictionary<string, string> {
+            ["AgentPanel.State.Off"] = "AGENT HOST OFF",
+            ["AgentPanel.State.Inactive"] = "NO SESSION",
+            ["AgentPanel.State.Active"] = "ACTIVE",
+            ["AgentPanel.State.Paused"] = "PAUSED",
+            ["AgentPanel.Document.HostOff"] = "host off",
+            ["AgentPanel.Document.NoDocument"] = "no document",
+            ["AgentPanel.Document.Ready"] = "ready",
+            ["AgentPanel.Document.Auto"] = "automatic",
+            ["AgentPanel.Document.Since"] = "since {0}",
+            ["AgentPanel.Documents.Active"] = "(active)",
+            ["AgentPanel.Documents.OpenedByAgent"] = "(agent)",
+            ["AgentPanel.Start"] = "Start on {0}",
+            ["AgentPanel.Start.Many"] = "Start on {0} documents",
+            ["AgentPanel.Document.NotInSession"] = "{0} not in session",
+            ["AgentPanel.Resume"] = "Resume",
+            ["AgentPanel.Paused.ByHost"] = "paused: {0}",
+            ["AgentPanel.Paused.PanelHidden"] = "panel hidden",
+            ["AgentPanel.Paused.ByAgent"] = "agent paused",
+            ["AgentPanel.Request.NoReason"] = "no reason",
+            ["AgentPanel.Request.Time"] = "asked {0}",
+            ["AgentPanel.Policy.Ask"] = "ask",
+            ["AgentPanel.Policy.Readonly"] = "read-only",
+            ["AgentPanel.Client.Unknown"] = "unknown client",
+            ["AgentPanel.Last"] = "{0} | {1} | {2}",
+            ["AgentPanel.Waiting.Approval"] = "{0} approval",
+            ["AgentPanel.Waiting.Running"] = "{0} running",
+            ["AgentPanel.Waiting.Dialog"] = "{0} blocked by {1}",
+            ["AgentPanel.Waiting.Revit"] = "{0} waiting",
+            ["AgentPanel.Kind.modify"] = "Change",
+            ["AgentPanel.Kind.query"] = "Query",
+        };
+
+        private readonly FakeBackend backend = new FakeBackend();
+
+        private AgentPanelViewModel Panel() {
+            return new AgentPanelViewModel(backend, key => Strings.TryGetValue(key, out var value) ? value : null);
+        }
+
+        private static string Local(DateTime utc) {
+            return utc.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture);
+        }
+
+        private static string Key(string title) {
+            return "doc-" + title;
+        }
+
+        private static AgentPanelOpenDocument Open(string title, bool active = false, bool background = false) {
+            return new AgentPanelOpenDocument(Key(title), title, active, background);
+        }
+
+        private void OpenOnly(params AgentPanelOpenDocument[] documents) {
+            backend.Documents.Clear();
+            backend.Documents.AddRange(documents);
+        }
+
+        private static JObject Session(string state, string start = "user", JObject request = null, params string[] documents) {
+            var open = state != "inactive";
+            var titles = documents.Length == 0 ? new[] { "Tower.rvt" } : documents;
+            return new JObject {
+                ["start"] = start,
+                ["state"] = state,
+                ["automatic"] = open && start == "auto",
+                ["documents"] = open
+                    ? new JArray(titles.Select(title => new JObject { ["key"] = Key(title), ["title"] = title, ["opened_by_agent"] = false }))
+                    : null,
+                ["started"] = open ? Started.ToString("o") : null,
+                ["pending_request"] = request,
+            };
+        }
+
+        private static JObject OpenedByAgent(JObject session, string title) {
+            foreach (var entry in session["documents"].OfType<JObject>().Where(entry => entry.Value<string>("title") == title))
+                entry["opened_by_agent"] = true;
+            return session;
+        }
+
+        [Fact]
+        public void WhileTheHostIsOffNothingCanBeDone() {
+            backend.HostRunning = false;
+            backend.Session = Session("active", request: new JObject { ["reason"] = "x" });
+
+            var panel = Panel();
+
+            Assert.Equal("off", panel.StateKind);
+            Assert.Equal("AGENT HOST OFF", panel.StateLabel);
+            Assert.Equal("host off", panel.DocumentLine);
+            Assert.False(panel.CanStart || panel.CanPause || panel.CanResume || panel.CanEnd || panel.HasRequest || panel.IsChoosing);
+        }
+
+        [Fact]
+        public void WithoutASessionTheActiveDocumentIsTickedToStartOn() {
+            var panel = Panel();
+
+            Assert.Equal("NO SESSION", panel.StateLabel);
+            Assert.True(panel.IsChoosing);
+            var row = Assert.Single(panel.ChoiceDocuments);
+            Assert.True(row.IsChosen);
+            Assert.Equal("(active)", row.Note);
+            Assert.True(panel.CanStart);
+            Assert.Equal("Start on Tower.rvt", panel.StartLabel);
+            Assert.Equal("ready", panel.DocumentLine);
+            Assert.False(panel.CanPause || panel.CanResume || panel.CanEnd || panel.HasChooseHint);
+        }
+
+        [Fact]
+        public void WithoutADocumentNothingCanBeStarted() {
+            OpenOnly();
+
+            var panel = Panel();
+
+            Assert.False(panel.CanStart || panel.IsChoosing);
+            Assert.Equal("no document", panel.DocumentLine);
+        }
+
+        [Fact]
+        public void TickingMoreDocumentsStartsOnAllOfThem() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+
+            panel.ChoiceDocuments[1].IsChosen = true;
+            panel.StartCommand.Execute(null);
+
+            Assert.Equal("Start on 2 documents", panel.StartLabel);
+            Assert.Equal(new[] { Key("Tower.rvt"), Key("Annex.rvt") }, Assert.Single(backend.Starts));
+        }
+
+        [Fact]
+        public void UntickingEveryDocumentLeavesNothingToStartOn() {
+            var panel = Panel();
+
+            panel.ChoiceDocuments[0].IsChosen = false;
+
+            Assert.False(panel.CanStart);
+            Assert.True(panel.HasChooseHint);
+            Assert.Equal(string.Empty, panel.StartLabel);
+        }
+
+        [Fact]
+        public void TheUsersChoiceStandsWhenAnotherDocumentBecomesActive() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+            panel.ChoiceDocuments[1].IsChosen = true;
+            panel.ChoiceDocuments[0].IsChosen = false;
+
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+            panel.Refresh();
+
+            Assert.Equal(new[] { false, true }, panel.ChoiceDocuments.Select(row => row.IsChosen));
+            Assert.Equal("Start on Annex.rvt", panel.StartLabel);
+        }
+
+        [Fact]
+        public void UntouchedTheTickFollowsTheActiveDocument() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+            panel.Refresh();
+
+            Assert.Equal(new[] { false, true }, panel.ChoiceDocuments.Select(row => row.IsChosen));
+        }
+
+        [Fact]
+        public void DocumentsWithNoViewAreNotOffered() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Family1", background: true));
+
+            var panel = Panel();
+
+            Assert.Equal(new[] { "Tower.rvt" }, panel.ChoiceDocuments.Select(row => row.Title));
+        }
+
+        [Fact]
+        public void ARowsTickChangesWithoutTheListBeingRebuilt() {
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            var panel = Panel();
+            var annex = panel.ChoiceDocuments[1];
+
+            annex.IsChosen = true;
+
+            Assert.Same(annex, panel.ChoiceDocuments[1]);
+            Assert.True(annex.IsChosen);
+        }
+
+        [Fact]
+        public void WhenSessionsStartAutomaticallyThePanelSaysSoAndOffersNoStart() {
+            backend.Session = Session("inactive", start: "auto");
+
+            var panel = Panel();
+
+            Assert.Equal("automatic", panel.DocumentLine);
+            Assert.False(panel.CanStart || panel.IsChoosing);
+        }
+
+        [Fact]
+        public void AnAutomaticSessionListsItsDocumentsButCanOnlyBePaused() {
+            backend.Session = Session("active", "auto", null, "Tower.rvt", "Annex.rvt");
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt"), Open("Site.rvt", active: true));
+
+            var panel = Panel();
+
+            Assert.True(panel.CanPause);
+            Assert.False(panel.CanEnd || panel.IsActiveOutside || panel.HasOtherDocuments);
+            Assert.Equal(new[] { "Tower.rvt", "Annex.rvt" }, panel.SessionDocuments.Select(row => row.Title));
+            Assert.DoesNotContain(panel.SessionDocuments, row => row.CanRemove);
+            Assert.Equal("since " + Local(Started), panel.DocumentLine);
+        }
+
+        [Fact]
+        public void AnActiveSessionCanBePausedOrEnded() {
+            backend.Session = Session("active");
+
+            var panel = Panel();
+
+            Assert.Equal("ACTIVE", panel.StateLabel);
+            Assert.Equal("since " + Local(Started), panel.DocumentLine);
+            Assert.True(panel.CanPause && panel.CanEnd);
+            Assert.False(panel.CanStart || panel.CanResume || panel.IsChoosing);
+        }
+
+        [Fact]
+        public void TheSessionsOnlyDocumentCanNotBeTakenOut() {
+            backend.Session = Session("active");
+
+            var row = Assert.Single(Panel().SessionDocuments);
+
+            Assert.False(row.CanRemove || row.CanClose);
+        }
+
+        [Fact]
+        public void TakingADocumentOutCallsTheBackendAndShowsARefusal() {
+            backend.Session = Session("active", "user", null, "Tower.rvt", "Annex.rvt");
+            var panel = Panel();
+
+            panel.SessionDocuments[1].RemoveCommand.Execute(null);
+            backend.Refusal = new AgentException("session_locked", "Not while a run executes.");
+            panel.SessionDocuments[1].RemoveCommand.Execute(null);
+
+            Assert.Equal(new[] { "Remove " + Key("Annex.rvt") }, backend.Calls);
+            Assert.Equal("Not while a run executes.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void ADocumentAnAgentOpenedIsMarkedAndClosesInsteadOfLeaving() {
+            backend.Session = OpenedByAgent(Session("active", "user", null, "Tower.rvt", "Family1"), "Family1");
+            var panel = Panel();
+
+            var family = panel.SessionDocuments[1];
+            family.CloseCommand.Execute(null);
+
+            Assert.Equal("(agent)", family.Note);
+            Assert.True(family.CanClose);
+            Assert.False(family.CanRemove);
+            Assert.True(panel.SessionDocuments[0].CanRemove);
+            Assert.Equal(new[] { Key("Family1") }, backend.Closes);
+        }
+
+        [Fact]
+        public void APausedSessionCanBeResumedOrEnded() {
+            backend.Session = Session("paused");
+
+            var panel = Panel();
+
+            Assert.Equal("PAUSED", panel.StateLabel);
+            Assert.True(panel.CanResume && panel.CanEnd);
+            Assert.False(panel.CanStart || panel.CanPause || panel.HasPausedReason);
+        }
+
+        [Fact]
+        public void APauseByPyRevitSaysWhy() {
+            backend.Session = Session("paused");
+            backend.Session["paused_reason"] = "it changed Annex.rvt.";
+
+            var panel = Panel();
+
+            Assert.True(panel.HasPausedReason);
+            Assert.Equal("paused: it changed Annex.rvt.", panel.PausedReason);
+            Assert.True(panel.CanResume);
+
+            backend.Session = Session("active");
+            backend.Session["paused_reason"] = "stale";
+            panel.Refresh();
+
+            Assert.False(panel.HasPausedReason);
+            Assert.Equal(string.Empty, panel.PausedReason);
+        }
+
+        [Fact]
+        public void APauseWhenThePanelWasHiddenSaysSoInThePanelsOwnWords() {
+            backend.Session = Session("paused");
+            backend.Session["paused_cause"] = "panel_hidden";
+            backend.Session["paused_reason"] = "the agent panel in Revit was closed or hidden.";
+
+            var panel = Panel();
+
+            Assert.True(panel.HasPausedReason);
+            Assert.Equal("panel hidden", panel.PausedReason);
+        }
+
+        [Fact]
+        public void APauseByAnAgentSaysSoInThePanelsOwnWords() {
+            backend.Session = Session("paused");
+            backend.Session["paused_cause"] = "agent";
+            backend.Session["paused_reason"] = "an agent paused it.";
+
+            var panel = Panel();
+
+            Assert.True(panel.HasPausedReason);
+            Assert.Equal("agent paused", panel.PausedReason);
+        }
+
+        [Fact]
+        public void APendingRequestShowsItsReasonAndStartsOnTheTickedDocuments() {
+            backend.Session = Session("inactive", request: new JObject { ["reason"] = "Renumber doors", ["requested"] = Started.ToString("o") });
+
+            var panel = Panel();
+            panel.AcceptCommand.Execute(null);
+
+            Assert.True(panel.HasRequest);
+            Assert.Equal("Renumber doors", panel.RequestReason);
+            Assert.Equal("asked " + Local(Started), panel.RequestTime);
+            Assert.Equal("Start on Tower.rvt", panel.AcceptLabel);
+            Assert.Equal(new[] { Key("Tower.rvt") }, Assert.Single(backend.Starts));
+        }
+
+        [Fact]
+        public void APendingRequestWhilePausedResumesWhenAccepted() {
+            backend.Session = Session("paused", request: new JObject { ["reason"] = null });
+
+            var panel = Panel();
+            panel.AcceptCommand.Execute(null);
+
+            Assert.Equal("no reason", panel.RequestReason);
+            Assert.Equal("Resume", panel.AcceptLabel);
+            Assert.Equal(new[] { "Resume" }, backend.Calls);
+        }
+
+        [Fact]
+        public void OtherOpenDocumentsAreOfferedToAdd() {
+            backend.Session = Session("active");
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true), Open("Family1", background: true));
+
+            var panel = Panel();
+            var annex = Assert.Single(panel.OtherDocuments);
+            annex.AddCommand.Execute(null);
+            backend.AddFailure("'Annex.rvt' is already part of the agent session.");
+
+            Assert.True(panel.HasOtherDocuments);
+            Assert.Equal("Annex.rvt", annex.Title);
+            Assert.Equal("(active)", annex.Note);
+            Assert.Equal(new[] { Key("Annex.rvt") }, backend.Adds);
+            Assert.Equal("'Annex.rvt' is already part of the agent session.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void AnActiveDocumentOutsideTheSessionIsPointedOutButNothingIsPaused() {
+            backend.Session = Session("active");
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+
+            var panel = Panel();
+
+            Assert.True(panel.IsActiveOutside);
+            Assert.Equal("Annex.rvt not in session", panel.ActiveOutsideText);
+            Assert.Equal("ACTIVE", panel.StateLabel);
+            Assert.True(panel.CanPause);
+
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt"));
+            panel.Refresh();
+            Assert.False(panel.IsActiveOutside);
+
+            OpenOnly(Open("Tower.rvt", active: true), Open("Annex.rvt"));
+            panel.Refresh();
+            Assert.False(panel.IsActiveOutside);
+            Assert.Equal(string.Empty, panel.ActiveOutsideText);
+        }
+
+        [Fact]
+        public void ADocumentAlreadyInTheSessionIsNotOfferedAgain() {
+            backend.Session = Session("paused", "user", null, "Tower.rvt", "Annex.rvt");
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+
+            var panel = Panel();
+
+            Assert.False(panel.HasOtherDocuments || panel.IsActiveOutside);
+            Assert.All(panel.SessionDocuments, row => Assert.True(row.CanRemove));
+        }
+
+        [Fact]
+        public void NothingToAddWithoutASession() {
+            backend.Session = Session("inactive");
+            OpenOnly(Open("Tower.rvt"), Open("Annex.rvt", active: true));
+
+            var panel = Panel();
+
+            Assert.False(panel.HasOtherDocuments || panel.HasSessionDocuments);
+        }
+
+        [Fact]
+        public void EachCommandCallsTheBackend() {
+            var panel = Panel();
+
+            panel.PauseCommand.Execute(null);
+            panel.ResumeCommand.Execute(null);
+            panel.EndCommand.Execute(null);
+            panel.DeclineCommand.Execute(null);
+            panel.StartCommand.Execute(null);
+
+            Assert.Equal(new[] { "Pause", "Resume", "End", "Decline" }, backend.Calls);
+            Assert.Single(backend.Starts);
+        }
+
+        [Fact]
+        public void AnEndThatFailsLaterShowsTheError() {
+            backend.Session = Session("active");
+            var panel = Panel();
+
+            panel.EndCommand.Execute(null);
+            backend.EndFailure("Revit is busy.");
+
+            Assert.Equal("Revit is busy.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void ARefusedActionShowsItsMessageUntilTheNextAction() {
+            backend.Refusal = new AgentException("session_inactive", "There is no agent session to pause.");
+            var panel = Panel();
+
+            panel.PauseCommand.Execute(null);
+            Assert.True(panel.HasError);
+            Assert.Equal("There is no agent session to pause.", panel.ErrorText);
+
+            backend.Refusal = null;
+            panel.ResumeCommand.Execute(null);
+            Assert.False(panel.HasError);
+        }
+
+        [Fact]
+        public void AStartThatFailsLaterShowsTheError() {
+            var panel = Panel();
+
+            panel.StartCommand.Execute(null);
+            backend.ReportStartFailure("Revit is busy.");
+
+            Assert.Equal("Revit is busy.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void TheLastRequestShowsWhatWhenAndHowItEnded() {
+            var record = backend.Activity.Arrive("modify", "Add walls", null, (null, null), Started);
+            backend.Activity.Finish(record, "committed", Started);
+
+            var panel = Panel();
+
+            Assert.True(panel.HasLast);
+            Assert.Equal("Change: Add walls | " + Local(Started) + " | committed", panel.LastText);
+        }
+
+        [Fact]
+        public void AWaitingRequestSaysWhatHoldsItUp() {
+            var record = backend.Activity.Arrive("query", null, null, (null, null), Started);
+            Assert.Equal("Query waiting", Panel().WaitingText);
+
+            backend.Dialogs.Add("'Save reminder' (#32770)");
+            Assert.Equal("Query blocked by 'Save reminder' (#32770)", Panel().WaitingText);
+
+            backend.Activity.Start(record, Started);
+            Assert.Equal("Query running", Panel().WaitingText);
+
+            backend.Activity.BeginApproval();
+            Assert.Equal("Query approval", Panel().WaitingText);
+        }
+
+        [Fact]
+        public void PolicyAndClientAreShown() {
+            backend.Policy = "readonly";
+            var panel = Panel();
+            Assert.Equal("read-only", panel.PolicyText);
+            Assert.Equal("unknown client", panel.ClientText);
+
+            backend.Activity.NoteClient("Claude Code");
+            panel.Refresh();
+            Assert.Equal("Claude Code", panel.ClientText);
+        }
+
+        [Fact]
+        public void AMissingStringFallsBackToItsKey() {
+            backend.Policy = "auto";
+
+            Assert.Equal("AgentPanel.Policy.Auto", Panel().PolicyText);
+        }
+
+        [Fact]
+        public void RefreshTellsTheViewThatEverythingChanged() {
+            var panel = Panel();
+            string changed = null;
+            panel.PropertyChanged += (_, args) => changed = args.PropertyName;
+
+            panel.Refresh();
+
+            Assert.Equal(string.Empty, changed);
+        }
+
+        [Fact]
+        public void ClickingALoggedElementShowsItOrTheRefusal() {
+            var record = backend.Activity.Arrive("modify", "Add walls", null, ("s1", "Tower.rvt"), Started);
+            backend.Activity.Finish(record, "committed", Started, new JObject {
+                ["document"] = "Tower.rvt",
+                ["document_path"] = "C:\\models\\Tower.rvt",
+                ["elements"] = new JArray(new JObject { ["id"] = 5, ["name"] = "Wall" }),
+            });
+            var panel = Panel();
+
+            panel.Log.Groups[0].Entries[0].Elements[0].SelectCommand.Execute(null);
+            backend.ShowFailure("The link belongs to a different or closed document.");
+
+            var shown = Assert.Single(backend.Shown);
+            Assert.Equal(new long[] { 5 }, shown.Ids);
+            Assert.Equal("Tower.rvt", shown.Document);
+            Assert.Equal("C:\\models\\Tower.rvt", shown.DocumentPath);
+            Assert.Equal("The link belongs to a different or closed document.", panel.ErrorText);
+        }
+
+        [Fact]
+        public void ALoggedCaptureShowsItsThumbnailAndOpensTheImageOrTheFailure() {
+            var record = backend.Activity.Arrive("capture", "Check the plan", null, ("s1", "Tower.rvt"), Started);
+            backend.Activity.Finish(record, "ok", Started, new JObject {
+                ["view"] = "Level 1",
+                ["width"] = 1200,
+                ["height"] = 800,
+                ["image"] = "C:\\captures\\a.png",
+            });
+            var panel = Panel();
+            var capture = panel.Log.Groups[0].Entries[0].Capture;
+
+            Assert.Equal("thumbnail of C:\\captures\\a.png", capture.Thumbnail);
+            capture.OpenCommand.Execute(null);
+            backend.OpenFailure("The image is no longer on disk.");
+
+            Assert.Equal(new[] { "C:\\captures\\a.png" }, backend.Opened);
+            Assert.Equal("The image is no longer on disk.", panel.ErrorText);
+        }
+
+        private sealed class FakeBackend : IAgentPanelBackend {
+            private Action<string> startFailure;
+
+            public bool HostRunning { get; set; } = true;
+            public string Policy { get; set; } = "ask";
+            public List<AgentPanelOpenDocument> Documents { get; } = new List<AgentPanelOpenDocument> { Open("Tower.rvt", active: true) };
+            public IList<AgentPanelOpenDocument> OpenDocuments => Documents;
+            public JObject Session { get; set; } = AgentPanelViewModelTests.Session("inactive");
+            public AgentActivity Activity { get; } = new AgentActivity();
+            public List<string> Dialogs { get; } = new List<string>();
+            public List<string> Calls { get; } = new List<string>();
+            public List<IList<string>> Starts { get; } = new List<IList<string>>();
+            public List<string> Adds { get; } = new List<string>();
+            public List<string> Closes { get; } = new List<string>();
+            public Action<string> AddFailure { get; private set; }
+            public Action<string> EndFailure { get; private set; }
+            public AgentException Refusal { get; set; }
+
+            public IList<string> OpenDialogs() {
+                return Dialogs;
+            }
+
+            public void Start(IList<string> keys, Action<string> onError) {
+                Starts.Add(keys);
+                startFailure = onError;
+            }
+
+            public void Add(string key, Action<string> onError) {
+                Adds.Add(key);
+                AddFailure = onError;
+            }
+
+            public void Remove(string key) {
+                Record("Remove " + key);
+            }
+
+            public void Close(string key, Action<string> onError) {
+                Closes.Add(key);
+            }
+
+            public void ReportStartFailure(string message) {
+                startFailure(message);
+            }
+
+            public List<(IList<long> Ids, string Document, string DocumentPath)> Shown { get; } = new List<(IList<long>, string, string)>();
+
+            public Action<string> ShowFailure { get; private set; }
+
+            public void ShowElements(IList<long> ids, string document, string documentPath, Action<string> onError) {
+                Shown.Add((ids, document, documentPath));
+                ShowFailure = onError;
+            }
+
+            public List<string> Opened { get; } = new List<string>();
+
+            public Action<string> OpenFailure { get; private set; }
+
+            public object LoadThumbnail(string path) {
+                return "thumbnail of " + path;
+            }
+
+            public void OpenImage(string path, Action<string> onError) {
+                Opened.Add(path);
+                OpenFailure = onError;
+            }
+
+            public void Pause() {
+                Record("Pause");
+            }
+
+            public void Resume() {
+                Record("Resume");
+            }
+
+            public void End(Action<string> onError) {
+                Record("End");
+                EndFailure = onError;
+            }
+
+            public void Decline() {
+                Record("Decline");
+            }
+
+            private void Record(string call) {
+                if (Refusal != null)
+                    throw Refusal;
+                Calls.Add(call);
+            }
+        }
+    }
+}

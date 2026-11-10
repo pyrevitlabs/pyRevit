@@ -4,10 +4,17 @@ import os
 import os.path as op
 import shutil
 
+from pyrevit import DB
 from pyrevit.labs import PyRevit
 
 import agent_harness as harness
 from agent_harness import AgentRequestError, TestCase, run
+
+OTHER_LEVEL_SCRIPT = (
+    "other = [d for d in app.Documents if d.Title == inputs['title']][0]\n"
+    "t = DB.Transaction(other, 'touch other')\nt.Start()\n"
+    "DB.Level.Create(other, inputs['elevation'])\nt.Commit()\n"
+)
 
 
 def _modify(script, dry_run=False, **kwargs):
@@ -18,6 +25,25 @@ def _modify(script, dry_run=False, **kwargs):
 
 def _wall():
     return harness.session().wall_ids[0]
+
+
+def _levels_at(document, elevation):
+    return [
+        level.Id
+        for level in DB.FilteredElementCollector(document).OfClass(DB.Level)
+        if abs(level.Elevation - elevation) < 1e-6
+    ]
+
+
+def _delete_levels_at(document, elevation):
+    ids = _levels_at(document, elevation)
+    if not ids:
+        return
+    transaction = DB.Transaction(document, "Agent test cleanup")
+    transaction.Start()
+    for element_id in ids:
+        document.Delete(element_id)
+    transaction.Commit()
 
 
 class DecisionTests(TestCase):
@@ -229,8 +255,145 @@ class RollbackTests(TestCase):
         self.assertEqual("timeout", response["error"]["type"])
 
 
+class SessionDocumentTests(TestCase):
+    """A modify run may change the session's other documents; a query or dry run keeps nothing."""
+
+    def setUp(self):
+        """Add the scratch session's other project to the agent session."""
+        scratch = harness.session()
+        try:
+            scratch.activate(scratch.other_path)
+            harness.add_document()
+        finally:
+            scratch.activate(scratch.project_path)
+
+    def tearDown(self):
+        """Delete the levels a kept run left, and put back the session every test starts from."""
+        scratch = harness.session()
+        _delete_levels_at(scratch.other, 53.0)
+        _delete_levels_at(scratch.project, 54.0)
+        harness.restore_session()
+
+    def test_a_run_keeps_its_changes_to_another_session_document(self):
+        """The run's own document and the other session document both keep its changes."""
+        scratch = harness.session()
+        response = _modify(
+            "t = DB.Transaction(doc, 'touch project')\nt.Start()\n"
+            "DB.Level.Create(doc, 54.0)\nt.Commit()\n" + OTHER_LEVEL_SCRIPT,
+            inputs={"title": scratch.other_title, "elevation": 53.0},
+        )
+        [other] = response["changes"]["other_documents"]
+        self.assertEqual("committed", response["decision"])
+        self.assertTrue(other["in_session"])
+        self.assertTrue(other["kept"])
+        self.assertEqual(1, len(_levels_at(scratch.other, 53.0)))
+        self.assertEqual(1, len(_levels_at(scratch.project, 54.0)))
+        self.assertEqual("active", harness.session_status()["state"])
+
+    def test_a_run_may_change_only_another_session_document(self):
+        """Changing nothing in its own document, the run still keeps what it changed elsewhere."""
+        scratch = harness.session()
+        response = _modify(
+            OTHER_LEVEL_SCRIPT, inputs={"title": scratch.other_title, "elevation": 53.0}
+        )
+        self.assertEqual("committed", response["decision"])
+        self.assertEqual(1, len(_levels_at(scratch.other, 53.0)))
+
+    def test_a_dry_run_rolls_back_session_documents_too(self):
+        """A dry run keeps nothing, in any document."""
+        scratch = harness.session()
+        response = _modify(
+            OTHER_LEVEL_SCRIPT,
+            dry_run=True,
+            inputs={"title": scratch.other_title, "elevation": 53.0},
+        )
+        [other] = response["changes"]["other_documents"]
+        self.assertFalse(other["kept"])
+        self.assertTrue(other["rolled_back"])
+        self.assertEqual([], _levels_at(scratch.other, 53.0))
+
+    def test_a_query_that_changes_a_session_document_fails_without_pausing(self):
+        """A query changes nothing, so it fails as one that changed the model, not another document."""
+        scratch = harness.session()
+        response = harness.run(
+            OTHER_LEVEL_SCRIPT, inputs={"title": scratch.other_title, "elevation": 53.0}
+        )
+        self.assertEqual("query_modified_model", response["error"]["type"])
+        self.assertEqual([], _levels_at(scratch.other, 53.0))
+        self.assertEqual("active", harness.session_status()["state"])
+
+
+class OpenedDocumentTests(TestCase):
+    """Documents a run opens: kept in the session after a modify run that went through, closed otherwise."""
+
+    def tearDown(self):
+        """End the session that holds the opened documents, which closes them, and start over."""
+        harness.restore_session()
+
+    def _copy(self, name):
+        copy = op.join(harness.session().folder, name + ".rvt")
+        shutil.copyfile(harness.session().other_path, copy)
+        return copy
+
+    def _open_titles(self):
+        return [document.Title for document in harness.session().app.Documents]
+
+    def test_a_document_a_modify_run_opens_stays_open_in_the_session(self):
+        """A modify run that changes nothing keeps what it opened, and later runs name it by key."""
+        copy = self._copy("kept")
+        response = _modify(
+            "app.OpenDocumentFile(inputs['path'])\n", inputs={"path": copy}
+        )
+        self.assertEqual("no_changes", response["decision"])
+        [opened] = response["opened_documents"]
+        self.assertEqual("kept", opened["title"])
+        entry = [
+            document
+            for document in harness.session_status()["documents"]
+            if document["key"] == opened["key"]
+        ][0]
+        self.assertTrue(entry["opened_by_agent"])
+        result = harness.run("result = doc.Title", document=opened["key"])["result"]
+        self.assertEqual("kept", result)
+
+    def test_ending_the_session_closes_the_documents_agents_opened(self):
+        """Without a window the user could close it with, an agent's document closes with the session."""
+        copy = self._copy("closed-at-end")
+        _modify("app.OpenDocumentFile(inputs['path'])\n", inputs={"path": copy})
+        kept = "closed-at-end" in self._open_titles()
+        harness.end_session()
+        self.assertTrue(kept)
+        self.assertNotIn("closed-at-end", self._open_titles())
+
+    def test_a_dry_run_closes_the_documents_it_opens(self):
+        """A dry run leaves nothing behind, so what it opened closes when it ends."""
+        copy = self._copy("dry")
+        response = _modify(
+            "app.OpenDocumentFile(inputs['path'])\n",
+            dry_run=True,
+            inputs={"path": copy},
+        )
+        self.assertEqual([], response["opened_documents"])
+        self.assertEqual(["dry"], response["closed_documents"])
+        self.assertNotIn("dry", self._open_titles())
+
+    def test_a_query_closes_the_documents_it_opens(self):
+        """A query changes nothing that lasts, so what it opened closes when it ends."""
+        copy = self._copy("read")
+        response = harness.run(
+            "result = app.OpenDocumentFile(inputs['path']).Title", inputs={"path": copy}
+        )
+        self.assertEqual("read", response["result"])
+        self.assertEqual(["read"], response["closed_documents"])
+        self.assertNotIn("read", self._open_titles())
+
+
 class BlockTests(TestCase):
     """Operations the run guard blocks or reports."""
+
+    def tearDown(self):
+        """Resume the session a run that changed another document paused."""
+        harness.restore_session()
 
     def test_save_as_of_the_active_document_writes_no_file(self):
         """Save As of the active document writes no file."""
@@ -268,6 +431,7 @@ class BlockTests(TestCase):
         )
         self.assertIn("save", [entry["operation"] for entry in response["blocked"]])
         self.assertEqual(stamp, os.path.getmtime(copy))
+        harness.restore_session()
         titles = [
             document["title"]
             for document in harness.request("get_context")["open_documents"]
@@ -286,8 +450,8 @@ class BlockTests(TestCase):
         self.assertIn("save_as", [entry["operation"] for entry in response["blocked"]])
         self.assertFalse(op.exists(target))
 
-    def test_change_to_another_open_document_fails_and_is_rolled_back(self):
-        """Changing another open document fails the run and rolls that document back."""
+    def test_change_to_another_open_document_fails_rolls_back_and_pauses(self):
+        """Changing an open document outside the session fails the run, rolls it back and pauses the session."""
         title = harness.session().other_title
         levels = "result = DB.FilteredElementCollector([d for d in app.Documents if d.Title == inputs['title']][0]).OfClass(DB.Level).GetElementCount()"
         before = harness.run(levels, inputs={"title": title})["result"]
@@ -300,7 +464,47 @@ class BlockTests(TestCase):
         outcome = response["changes"]["other_documents"][0]
         self.assertEqual(title, outcome["document"])
         self.assertTrue(outcome["rolled_back"])
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.request("get_context")
+        self.assertEqual("paused_by_host", raised.exception.code)
+        self.assertIn(title, raised.exception.message)
+        self.assertIn(title, harness.session_status()["paused_reason"])
+        harness.resume_session()
         self.assertEqual(before, harness.run(levels, inputs={"title": title})["result"])
+
+    def test_a_failing_run_that_changed_another_document_still_pauses(self):
+        """A script that changes a document outside the session and then raises still pauses the session."""
+        title = harness.session().other_title
+        response = _modify(
+            "other = [d for d in app.Documents if d.Title == inputs['title']][0]\n"
+            "t = DB.Transaction(other, 'touch other')\nt.Start()\nDB.Level.Create(other, 51.0)\nt.Commit()\n"
+            "raise ValueError('after touching the other document')\n",
+            inputs={"title": title},
+        )
+        self.assertEqual("ValueError", response["error"]["type"])
+        self.assertTrue(response["changes"]["other_documents"][0]["rolled_back"])
+        self.assertTrue(any("paused" in warning for warning in response["warnings"]))
+        with self.assertRaises(AgentRequestError) as raised:
+            harness.request("get_context")
+        self.assertEqual("paused_by_host", raised.exception.code)
+
+    def test_in_an_automatic_session_a_run_keeps_changes_to_any_open_document(self):
+        """Every open document is in a session that started automatically, so the change is kept."""
+        harness.end_session()
+        harness.set_session_start("auto")
+        scratch = harness.session()
+        try:
+            response = _modify(
+                OTHER_LEVEL_SCRIPT,
+                inputs={"title": scratch.other_title, "elevation": 52.0},
+            )
+            [other] = response["changes"]["other_documents"]
+            self.assertEqual("committed", response["decision"])
+            self.assertTrue(other["kept"])
+            self.assertEqual(1, len(_levels_at(scratch.other, 52.0)))
+            self.assertEqual("active", harness.session_status()["state"])
+        finally:
+            _delete_levels_at(scratch.other, 52.0)
 
     def test_warnings_are_reported(self):
         """Revit warnings raised during a run are reported as failures."""

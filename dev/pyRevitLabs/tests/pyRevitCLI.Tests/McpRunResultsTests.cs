@@ -34,6 +34,9 @@ public class McpRunResultsTests {
             ["failures"] = new JArray(),
             ["dialogs"] = new JArray(),
             ["blocked"] = new JArray(),
+            ["opened_documents"] = new JArray(),
+            ["closed_documents"] = new JArray(),
+            ["unclosed_documents"] = new JArray(),
         };
         if (extra != null)
             run.Merge(extra);
@@ -65,8 +68,20 @@ public class McpRunResultsTests {
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 
-            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval" })
+            foreach (var key in new[] {
+                "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval", "since_last_call",
+                "opened_documents", "closed_documents", "unclosed_documents",
+            })
                 Assert.Null(compact[key]);
+        }
+
+        [Fact]
+        public void WhatTheUserChangedSinceTheLastCallIsKept() {
+            var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
+                ["since_last_call"] = new JObject { ["edits"] = new JArray(new JObject { ["document"] = "doc-1", ["modified"] = 2 }) },
+            }));
+
+            Assert.Equal(2, compact["since_last_call"]["edits"][0].Value<int>("modified"));
         }
 
         [Fact]
@@ -76,11 +91,15 @@ public class McpRunResultsTests {
                 ["failures"] = new JArray(new JObject { ["severity"] = "Warning" }),
                 ["dialogs"] = new JArray(new JObject { ["message"] = "hi" }),
                 ["blocked"] = new JArray(new JObject { ["operation"] = "save" }),
+                ["opened_documents"] = new JArray(new JObject { ["key"] = "doc-5", ["title"] = "Family1" }),
+                ["closed_documents"] = new JArray("background"),
+                ["unclosed_documents"] = new JArray("stuck"),
                 ["approval"] = "user",
             }));
 
-            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked" })
+            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked", "opened_documents", "closed_documents", "unclosed_documents" })
                 Assert.Single((JArray)compact[key]);
+            Assert.Equal("doc-5", compact["opened_documents"][0].Value<string>("key"));
             Assert.Equal("user", compact["approval"].Value<string>());
         }
 
