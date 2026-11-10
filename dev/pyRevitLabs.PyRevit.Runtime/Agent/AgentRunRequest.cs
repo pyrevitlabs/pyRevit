@@ -67,23 +67,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static AgentRunRequest FromJson(JObject parameters) {
-            var script = parameters.Value<string>("script");
+            var script = AgentParams.Get<string>(parameters, "script");
             if (string.IsNullOrWhiteSpace(script))
                 throw new AgentException("invalid_params", "'script' is required.");
 
             var inputs = parameters["inputs"];
-            var workspace = parameters.Value<string>("workspace");
+            if (inputs != null && inputs.Type != JTokenType.Null && inputs.Type != JTokenType.Object)
+                throw new AgentException("invalid_params", "'inputs' must be an object.");
+            var workspace = AgentParams.Get<string>(parameters, "workspace");
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
-            var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
+            var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
                 Title = AgentRequestText.Title(parameters) ?? "Agent run",
                 Reason = AgentRequestText.Reason(parameters),
-                Mode = ParseMode(parameters.Value<string>("mode")),
-                Engine = ParseEngine(parameters.Value<string>("engine")),
+                Mode = ParseMode(AgentParams.Get<string>(parameters, "mode")),
+                Engine = ParseEngine(AgentParams.Get<string>(parameters, "engine")),
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
                     ? "{}"
                     : inputs.ToString(Formatting.None),
@@ -143,7 +145,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     /// <remarks>
     /// The MCP server refuses a missing or overlong title. The host only cleans and cuts,
-    /// because the CLI and in-Revit callers send what they have.
+    /// because the CLI and in-Revit callers send what they have; a title or reason that isn't a
+    /// string is <c>invalid_params</c>.
     /// Invariant: the text holds no line breaks or other control and format characters, which
     /// become spaces, so it can't add lines that pass for the change counts in the approval
     /// prompt, and a cut never splits a character.
@@ -163,7 +166,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static string Read(JObject parameters, string name, int maxLength) {
-            var raw = (parameters[name] as JValue)?.Value as string;
+            var raw = AgentParams.Get<string>(parameters, name);
             if (raw == null)
                 return null;
             var text = Breaks.Replace(raw, " ").Trim();

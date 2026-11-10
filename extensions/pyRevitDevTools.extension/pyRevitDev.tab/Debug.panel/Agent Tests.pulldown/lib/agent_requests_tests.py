@@ -150,7 +150,7 @@ class CaptureTests(TestCase):
             view="3d",
             direction="northwest",
             elements=harness.session().wall_ids,
-            width=300,
+            width=320,
         )
         self.assertTrue(op.exists(result["path"]))
         self.assertEqual(before, harness.run(count)["result"])
@@ -164,7 +164,7 @@ class CaptureTests(TestCase):
             scratch.activate(scratch.other_path)
             for params in (dict(view="3d"), dict(mode="viewport")):
                 with self.assertRaises(AgentRequestError) as raised:
-                    request("capture", width=300, document=key, **params)
+                    request("capture", width=320, document=key, **params)
                 codes.append(raised.exception.code)
             still_active = scratch.uiapp.ActiveUIDocument.Document.Title
         finally:

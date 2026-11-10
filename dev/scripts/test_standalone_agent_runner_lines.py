@@ -1349,8 +1349,8 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 "    except:\n        return 'swallowed'\n"
             }
         )
-        with self.assertRaises(BaseException):
-            self._run("import swallow\nswallow.go()\n", workspace=folder)
+        errors, _, _ = self._run("import swallow\nswallow.go()\n", workspace=folder)
+        self.assertEqual(["BaseException"], errors)
 
     def test_workspace_source_honours_its_encoding_cookie(self):
         """A latin-1 workspace module with a cookie imports intact."""

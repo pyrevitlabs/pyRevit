@@ -391,6 +391,7 @@ namespace pyRevitCLI {
         /// Important: giving up on the answer, through <paramref name="cancellation"/> or
         /// <paramref name="answerTimeoutMs"/>, only closes the connection. A request already sent
         /// keeps running in Revit, so its outcome is <see cref="AgentOutcome.Unknown"/>.
+        /// A caller that must name the request in its own errors passes <paramref name="requestId"/>.
         /// </remarks>
         /// <exception cref="AgentClientException">
         /// <c>cancelled</c> when <paramref name="cancellation"/> fires and <c>no_answer</c> when
@@ -398,8 +399,9 @@ namespace pyRevitCLI {
         /// </exception>
         public static JToken Call(
             AgentInstance instance, string method, JObject parameters = null,
-            CancellationToken cancellation = default, int? answerTimeoutMs = null, int? connectTimeoutMs = null) {
-            var requestId = NewRequestId();
+            CancellationToken cancellation = default, int? answerTimeoutMs = null, int? connectTimeoutMs = null,
+            string requestId = null) {
+            requestId ??= NewRequestId();
             var request = new JObject {
                 ["jsonrpc"] = "2.0",
                 ["id"] = requestId,
@@ -453,6 +455,13 @@ namespace pyRevitCLI {
                     sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
                     requestId);
             }
+            catch (Exception ex) when (ex is not AgentClientException) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Connection to Revit failed (" + ex.GetType().Name + ")." + LostAnswerNotice(sent),
+                    sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+            }
 
             if (responseLine == null)
                 throw new AgentClientException(
@@ -494,7 +503,7 @@ namespace pyRevitCLI {
             return "req-" + Guid.NewGuid().ToString("N").Substring(0, 12);
         }
 
-        private static string LostAnswerNotice(bool sent) {
+        internal static string LostAnswerNotice(bool sent) {
             return sent
                 ? " The request was sent and its outcome is unknown: it may have run or may still run. "
                     + "Look it up by its request id before sending it again."

@@ -136,6 +136,13 @@ class ShowValidationTests(TestCase):
         )
         self.assertEqual("invalid_params", _code("show", action="select", ids=["abc"]))
 
+    def test_a_category_that_is_not_text_is_rejected(self):
+        """A category given as an object is a wrong JSON type, not a crash."""
+        self.assertEqual(
+            "invalid_params",
+            _code("show", action="select", ids=[1], categories=[{}]),
+        )
+
     def test_category_names_ignore_case_and_the_ost_prefix(self):
         """Walls, walls, OST_Walls and ost_walls all name the same category."""
         for name in ("Walls", "walls", "OST_Walls", "ost_walls"):
@@ -154,13 +161,16 @@ class CaptureValidationTests(TestCase):
             "invalid_params", _code("capture", view="3d", direction="sideways")
         )
 
-    def test_width_is_clamped_to_the_supported_range(self):
-        """A width below 320 or above 2400 is clamped instead of rejected."""
-        narrow = request("capture", mode="export", width=1)
-        wide = request("capture", mode="export", width=99999)
-        self.assertGreater(narrow["width"], 100)
-        self.assertLessEqual(narrow["width"], 320)
-        self.assertLessEqual(wide["width"], 2400)
+    def test_width_outside_the_supported_range_is_rejected(self):
+        """A width below 320 or above 2400 is rejected, the limits themselves are accepted."""
+        for width in (320, 2400):
+            result = request("capture", mode="export", width=width)
+            self.assertLessEqual(result["width"], width)
+        for width in (319, 2401):
+            with self.assertRaises(AgentRequestError) as raised:
+                request("capture", mode="export", width=width)
+            self.assertEqual("invalid_params", raised.exception.code)
+            self.assertIn("'width'", raised.exception.message)
 
     def test_a_view_can_be_named_by_id_or_by_name_ignoring_case(self):
         """A view is found by its numeric id, and by a name no other view has in any case."""
