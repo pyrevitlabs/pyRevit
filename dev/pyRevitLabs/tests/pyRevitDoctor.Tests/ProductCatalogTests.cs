@@ -25,6 +25,10 @@ public class ProductCatalogTests {
         "  }\r\n" +
         "]\r\n";
 
+    /// <summary>
+    /// Guards against the original regex parser, which loaded nothing from CRLF documents and
+    /// could not represent versions such as <c>7.0.0.26278+2233</c>.
+    /// </summary>
     [Fact]
     public void CrlfDocumentWithBuildSuffixedVersionsParsesEveryProduct() {
         var products = ProductCatalog.Parse(BuildStampedProducts);
@@ -43,6 +47,10 @@ public class ProductCatalogTests {
             });
     }
 
+    /// <summary>
+    /// Guards the contract between the doctor and <c>release/pyrevit-products.json</c>: every record
+    /// the build seeds the embedded catalog from must load with a name, version and key.
+    /// </summary>
     [Fact]
     public void ShippedProductTemplateParsesEveryRecord() {
         var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "pyrevit-products.json"));

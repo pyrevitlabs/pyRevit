@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.Win32;
 
 namespace pyRevitDoctor {
@@ -35,7 +37,15 @@ namespace pyRevitDoctor {
 
         public static void PurgeOldInstalls(bool dryrun) {
             Console.WriteLine("Purging old installs...");
-            var products = Program.LoadProducts();
+            List<Product> products;
+            try {
+                products = Program.LoadProducts();
+            }
+            catch (JsonException ex) {
+                Console.Error.WriteLine($"Can not load the embedded product list. Rebuild pyrevit-doctor with a valid pyrevit-products.json: {ex.Message}");
+                Environment.ExitCode = 1;
+                return;
+            }
 
             // iterate thru the target and remove the key if matches
             foreach (RegistryTarget target in SearchTargets) {
