@@ -65,4 +65,18 @@ public class ProductCatalogTests {
             Assert.False(string.IsNullOrWhiteSpace(product.Key));
         });
     }
+
+    /// <summary>
+    /// Guards registry matching: a missing, null or empty key would match unrelated installer
+    /// entries by substring, and a null record would crash the purge loop.
+    /// </summary>
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[null]")]
+    [InlineData("[{\"product\": \"pyRevit\", \"release\": \"1.0\", \"version\": \"1.0\"}]")]
+    [InlineData("[{\"product\": \"pyRevit\", \"release\": \"1.0\", \"version\": \"1.0\", \"key\": null}]")]
+    [InlineData("[{\"product\": \"pyRevit\", \"release\": \"1.0\", \"version\": \"1.0\", \"key\": \"\"}]")]
+    public void CatalogWithoutUsableKeysIsRejected(string productsJson) {
+        Assert.Throws<System.Text.Json.JsonException>(() => ProductCatalog.Parse(productsJson));
+    }
 }
