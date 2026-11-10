@@ -320,9 +320,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnFileExporting(object sender, FileExportingEventArgs e) {
+            if (IsBackgroundExport(e)) {
+                Block(e, null, "background_export", e.Path);
+                return;
+            }
             if (exportFolder != null && exportFolder.Contains(e.Path))
                 return;
             Block(e, null, "file_export", e.Path);
+        }
+
+        /// <remarks>
+        /// A background export, such as a PDF export with <c>SetExportInBackground(true)</c> from
+        /// Revit 2025, writes its files after the run ends, so the run could neither report them
+        /// nor keep its export folder for them.
+        /// </remarks>
+        private static bool IsBackgroundExport(FileExportingEventArgs e) {
+#if NETFRAMEWORK
+            return false;
+#else
+            return e.BackgroundOperation;
+#endif
         }
 
         private void OnViewExporting(object sender, ViewExportingEventArgs e) {
@@ -375,6 +392,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var explanation = "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs.";
             if (blocked.Any(entry => entry.Value<string>("operation") == "file_export"))
                 explanation += " Revit exports may only write into the run's export_dir.";
+            if (blocked.Any(entry => entry.Value<string>("operation") == "background_export"))
+                explanation += " Background exports finish after the run, so export without SetExportInBackground.";
             return explanation;
         }
 

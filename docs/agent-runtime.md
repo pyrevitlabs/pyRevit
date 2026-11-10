@@ -290,11 +290,15 @@ Rules the host enforces:
   prefix or a folder. It must be a fully qualified drive or UNC path; the host compares its
   final location, with links and short names resolved, against the folder as it was resolved
   before the script ran. Any other target, or one the host can't resolve, is cancelled, and its
-  `blocked` entry carries the `path`. Exported files are not rolled back. They are deleted with
-  the run record by the cleanup that runs when an agent host starts (see
+  `blocked` entry carries the `path`. A background export, such as a PDF export with
+  `PDFExportOptions.SetExportInBackground(true)` (Revit 2025 and later), is cancelled as
+  `background_export` whatever its target, because Revit writes its files after the run ends,
+  when the run can no longer report them. Exported files are not rolled back. They are deleted
+  with the run record by the cleanup that runs when an agent host starts (see
   [Run records](#run-records)): they last at least 14 days, and after that any Revit start,
-  including another Revit instance, may delete them, so copy deliverables out. Only `Document.Export` and `Document.ExportImage` go through this check;
-  the other APIs that write files, listed above, are not checked. This keeps a run's mistakes
+  including another Revit instance, may delete them, so copy deliverables out. Only
+  `Document.Export` and `Document.ExportImage` go through this check; the other APIs that
+  write files, listed above, are not checked. This keeps a run's mistakes
   away from the user's files; it is not a sandbox, since the script can still write files by
   other means.
 - A run in any mode that changes another open document fails with `other_document_modified`

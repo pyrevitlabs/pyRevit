@@ -92,9 +92,11 @@ image.PixelSize = 2000
 doc.ExportImage(image)
 ```
 
-`PDFExportOptions` needs Revit 2022 or later. `ExportImage` appends the view type and name to
-`FilePath`. An export the host cancelled raises Revit's generic `InternalException`, and the
-`operation_blocked` warning names its target.
+`PDFExportOptions` needs Revit 2022 or later. Don't call `SetExportInBackground(True)`: the
+host cancels background exports, since their files arrive after the run, and `Export` still
+returns `True`, so only the `blocked` entry shows it. `ExportImage` appends the view type and
+name to `FilePath`. Any other export the host cancelled raises Revit's generic
+`InternalException`, and the `operation_blocked` warning names its target.
 
 ## Before you report done
 

@@ -163,6 +163,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ABackgroundExportIsBlockedEvenIntoTheFolder() {
+            var app = new UIApplication();
+            using (var guard = new AgentRunGuard(app, new Document(), exports)) {
+                guard.Arm("Test");
+
+                Assert.False(app.Application.ExportFile(exports, background: true));
+                Assert.True(app.Application.ExportFile(exports));
+
+                var blocked = Assert.Single(guard.Blocked);
+                Assert.Equal("background_export", blocked.Value<string>("operation"));
+                Assert.Equal(exports, blocked.Value<string>("path"));
+                Assert.Equal(
+                    $"operation_blocked: background_export to '{exports}' not allowed in agent runs. "
+                    + "Background exports finish after the run, so export without SetExportInBackground.",
+                    guard.DescribeBlockedOperations());
+            }
+        }
+
+        [Fact]
         public void WithoutAFolderEveryExportIsBlocked() {
             var app = new UIApplication();
             using (var guard = new AgentRunGuard(app, new Document())) {
