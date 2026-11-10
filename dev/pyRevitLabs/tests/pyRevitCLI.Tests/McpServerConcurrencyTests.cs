@@ -66,7 +66,7 @@ public partial class McpServerTests {
 
         public override void WriteLine(string value) {
             Writing.Set();
-            Gate?.Wait(Patience);
+            Gate?.Wait(Patience * 3);
             Lines.Add(value);
         }
     }
@@ -165,11 +165,38 @@ public partial class McpServerTests {
         session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
         Assert.True(runStarted.Wait(Patience));
         session.Cancel(1, jsonrpc: "1.0");
+        session.Send(new JObject { ["jsonrpc"] = "2.0", ["id"] = 2, ["method"] = "ping" });
+        var pong = session.Next();
         release.Set();
         var run = session.Next();
 
+        Assert.Equal(2, pong.Value<int>("id"));
         Assert.Equal(1, run.Value<int>("id"));
         Assert.False(IsError(run));
+    }
+
+    /// <summary>A call whose answer waits for another call's answer to be written can still be cancelled (#3949).</summary>
+    [Fact]
+    public void ACallWaitingToWriteItsAnswerCanStillBeCancelled() {
+        host.Handler = request => request.Value<string>("method") == "run"
+            ? RunResponse(request)
+            : FakeAgentHost.Result(request, new JObject { ["pong"] = true });
+        using var gate = new ManualResetEventSlim(false);
+        using var session = new LiveSession(writeGate: gate);
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(session.Writing.Wait(Patience));
+        session.Send(ToolCall(2, "get_context"));
+        Assert.True(SpinWait.SpinUntil(() => host.RequestsFor("get_context").Count > 0, Patience));
+        Thread.Sleep(500);
+        session.Cancel(2);
+        session.Send(new JObject { ["jsonrpc"] = "2.0", ["id"] = 3, ["method"] = "ping" });
+        Thread.Sleep(500);
+        gate.Set();
+        session.Dispose();
+
+        var answered = Enumerable.Range(0, session.Unread).Select(_ => session.Next().Value<int>("id")).OrderBy(id => id);
+        Assert.Equal(new[] { 1, 3 }, answered);
     }
 
     [Fact]

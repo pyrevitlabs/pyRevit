@@ -248,10 +248,16 @@ namespace pyRevitCLI {
             }
         }
 
+        /// <remarks>
+        /// Takes the output lock before the call's own lock, so while the answer waits for another
+        /// call's answer to be written, <see cref="Cancel"/> can still stop it.
+        /// </remarks>
         private void AnswerUnlessCancelled(CancellationTokenSource cancellation, JObject message) {
-            lock (cancellation) {
-                if (!cancellation.IsCancellationRequested)
-                    WriteUnlessClosed(message);
+            lock (writeLock) {
+                lock (cancellation) {
+                    if (!cancellation.IsCancellationRequested)
+                        WriteUnlessClosed(message);
+                }
             }
         }
 
