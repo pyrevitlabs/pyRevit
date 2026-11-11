@@ -25,10 +25,13 @@ namespace pyRevitDoctor {
             new("machine", RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
         };
 
-        public static void Run(PurgeSession session, MachineLocations locations) {
+        /// <returns>False when the config backup failed and nothing was deleted.</returns>
+        public static bool Run(PurgeSession session, MachineLocations locations) {
             session.Output.WriteLine("Purging pyRevit files...");
-            if (PurgeFilesAndFolders(session, locations))
-                PurgePathEntries(session, PurgeTargets.InstallDirectories(locations));
+            if (!PurgeFilesAndFolders(session, locations))
+                return false;
+            PurgePathEntries(session, PurgeTargets.InstallDirectories(locations));
+            return true;
         }
 
         internal static bool PurgeFilesAndFolders(PurgeSession session, MachineLocations locations) {
@@ -116,10 +119,17 @@ namespace pyRevitDoctor {
                 Directory.Delete(directory, recursive: true);
             }
             catch (UnauthorizedAccessException) {
-                foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
-                    File.SetAttributes(file, FileAttributes.Normal);
+                ClearReadOnlyAttributes(directory);
                 Directory.Delete(directory, recursive: true);
             }
+        }
+
+        static void ClearReadOnlyAttributes(string directory) {
+            foreach (var file in Directory.EnumerateFiles(directory))
+                File.SetAttributes(file, FileAttributes.Normal);
+            foreach (var subdirectory in Directory.EnumerateDirectories(directory))
+                if (!new DirectoryInfo(subdirectory).Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    ClearReadOnlyAttributes(subdirectory);
         }
 
         static void DeleteFile(PurgeSession session, string file) {
