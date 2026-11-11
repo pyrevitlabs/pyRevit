@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -92,6 +92,7 @@
     <Compile Include="LoadTimelineTests.cs" />
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
+    <Compile Include="IronPythonRuleCachesTests.cs" />
     <Compile Include="SessionResourceRegistryTests.cs" />
     <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
@@ -116,6 +117,22 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="IronPython">
+      <HintPath>..\..\..\bin\netfx\engines\IPY342\IronPython.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="IronPython.Modules">
+      <HintPath>..\..\..\bin\netfx\engines\IPY342\IronPython.Modules.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Microsoft.Scripting">
+      <HintPath>..\..\..\bin\netfx\engines\IPY342\Microsoft.Scripting.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Microsoft.Dynamic">
+      <HintPath>..\..\..\bin\netfx\engines\IPY342\Microsoft.Dynamic.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
     <Reference Include="pyRevitLabs.NLog">
       <HintPath>..\..\libs\netfx\pyRevitLabs.NLog.dll</HintPath>
       <Private>true</Private>
@@ -133,6 +150,22 @@
     </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <Reference Include="IronPython">
+      <HintPath>..\..\..\bin\netcore\engines\IPY342\IronPython.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="IronPython.Modules">
+      <HintPath>..\..\..\bin\netcore\engines\IPY342\IronPython.Modules.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Microsoft.Scripting">
+      <HintPath>..\..\..\bin\netcore\engines\IPY342\Microsoft.Scripting.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Microsoft.Dynamic">
+      <HintPath>..\..\..\bin\netcore\engines\IPY342\Microsoft.Dynamic.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
     <Reference Include="pyRevitLabs.NLog">
       <HintPath>..\..\libs\netcore\pyRevitLabs.NLog.dll</HintPath>
       <Private>true</Private>
