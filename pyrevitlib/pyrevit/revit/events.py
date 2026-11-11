@@ -341,6 +341,24 @@ def _schedule_in_api_context(callback):
     return None
 
 
+HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
+"""Handler that unregisters the handler groups set on its ``handler_group_id``.
+
+Deprecated:
+    Kept so code written for 7.0 still imports. It is not registered with
+    Revit; ``delayed_unregister_exec_handlers`` goes through the shared
+    API context queue instead.
+"""
+
+HANDLER_UNREGISTERER_EXTEVENT = None
+"""Always None since the shared API context queue replaced it.
+
+Deprecated:
+    Kept so code written for 7.0 still imports. An ExternalEvent created with
+    a Python handler at import would keep every engine alive across reloads.
+"""
+
+
 def handle(*args):  # pylint: disable=no-method-argument
     def decorator(function):
         def wrapper(*args, **kwargs):

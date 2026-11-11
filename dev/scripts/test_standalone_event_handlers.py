@@ -166,6 +166,17 @@ class _EventHandlerFactory:
         return lambda handler: handler
 
 
+class _ExternalEventFactory:
+    """Records every ``ExternalEvent.Create`` call."""
+
+    def __init__(self):
+        self.created = []
+
+    def Create(self, handler):
+        self.created.append(handler)
+        return types.SimpleNamespace(Raise=lambda: "Accepted")
+
+
 def _module(name, **values):
     result = types.ModuleType(name)
     for key, value in values.items():
@@ -180,6 +191,7 @@ def load_events_module(
     logger,
     api_context_queue,
     has_selection_changed_args=True,
+    external_events=None,
 ):
     """Import the production events module with isolated host and CLR doubles."""
     ui_events = types.SimpleNamespace(
@@ -207,6 +219,7 @@ def load_events_module(
         UI=types.SimpleNamespace(
             IExternalEventHandler=type("IExternalEventHandler", (), {}),
             Events=ui_events,
+            ExternalEvent=external_events or _ExternalEventFactory(),
             ExternalEventRequest=types.SimpleNamespace(
                 Denied="Denied", TimedOut="TimedOut"
             ),
@@ -422,6 +435,33 @@ class ReplaceHandlerTests(unittest.TestCase):
         self.events.release_handler("slot", source, "ViewActivated")
         self.assertEqual([stale], source.ViewActivated.handlers)
         self.assertIsNone(self.app_domain.GetData("slot"))
+
+
+class DeprecatedNamesTests(unittest.TestCase):
+    """Names public in 7.0 still import, without registering anything with Revit."""
+
+    def setUp(self):
+        """Load the events module with an ExternalEvent factory that records calls."""
+        self.external_events = _ExternalEventFactory()
+        self.events = load_events_module(
+            _AppDomain(),
+            _HostApplication(),
+            "third-party",
+            _Logger(),
+            _ApiContextQueue(),
+            external_events=self.external_events,
+        )
+
+    def test_handler_unregisterer_names_still_import(self):
+        """The 7.0 names exist with their documented replacement values."""
+        self.assertIsInstance(
+            self.events.HANDLER_UNREGISTERER, self.events.FuncAsEventHandler
+        )
+        self.assertIsNone(self.events.HANDLER_UNREGISTERER_EXTEVENT)
+
+    def test_import_creates_no_external_event(self):
+        """Importing the module hands no Python handler to Revit."""
+        self.assertEqual([], self.external_events.created)
 
 
 class PreSelectionChangedHostTests(unittest.TestCase):
