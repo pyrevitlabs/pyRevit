@@ -4,7 +4,7 @@
 Adds conversion of ASCII dashes, quotes and ellipses to their HTML
 entity equivalents.
 
-See <https://pythonhosted.org/Markdown/extensions/smarty.html>
+See <https://python-markdown.github.io/extensions/smarty/>
 for documentation.
 
 Author: 2013, Dmitry Shachnev <mitya57@gmail.com>
