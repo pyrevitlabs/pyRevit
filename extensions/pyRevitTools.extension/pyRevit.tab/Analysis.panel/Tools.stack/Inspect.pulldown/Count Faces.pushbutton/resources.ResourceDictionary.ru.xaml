@@ -4,8 +4,11 @@
 
     <sys:String x:Key="progress_title">Подсчёт треугольников</sys:String>
     <sys:String x:Key="no_geometry">Экземпляры семейств с твердотельной геометрией не найдены.</sys:String>
+    <sys:String x:Key="no_geometry_family">В этом семействе не найдено форм с твердотельной геометрией.</sys:String>
     <sys:String x:Key="table_title">Треугольники по типам семейств</sys:String>
+    <sys:String x:Key="table_title_family">Треугольники по формам</sys:String>
     <sys:String x:Key="column_type">Тип</sys:String>
+    <sys:String x:Key="column_form">Форма</sys:String>
     <sys:String x:Key="column_category">Категория</sys:String>
     <sys:String x:Key="column_example">Пример элемента</sys:String>
     <sys:String x:Key="column_coarse">Низкая</sys:String>
