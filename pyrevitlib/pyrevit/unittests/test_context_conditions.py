@@ -19,7 +19,7 @@ from pyrevit import HOST_APP
 from pyrevit.framework import AppDomain, Array
 
 TEST_ENVIRONMENT = "Revit"
-TEST_LEVEL = "Integration"
+TEST_LEVEL = "Unit"
 
 RUNTIME_ASSEMBLY_PREFIX = "pyRevitLabs.PyRevit.Runtime."
 AVAIL_TYPE_NAME = "PyRevitLabs.PyRevit.Runtime.ScriptCommandExtendedAvail"
