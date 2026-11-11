@@ -529,6 +529,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// undo stack while the group is open; the group then still reports
         /// <c>RolledBack</c> and the run's changes stay in the model. Call it only after the
         /// rollback, and only for a document the change set was recorded from.
+        /// <para>
+        /// Warning: modified elements are not verified. The run records no state from before
+        /// it, so a modification that survives a flushed undo stack is invisible here unless
+        /// the run also added or deleted an element.
+        /// </para>
         /// </remarks>
         public bool LeavesTracesAfterRollback(Document document) {
             return deleted.Any(id => document.GetElement(id) == null)

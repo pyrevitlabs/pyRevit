@@ -941,8 +941,10 @@ Honest limits:
   `rollback_incomplete` with `status: error`, for dry runs and queries too, also when the
   group had already ended before the rollback was requested. The host can't undo the
   changes then, and the borrowed ownership stays with the local; the user has to
-  undo in Revit or close the document without saving. Run dry runs of destructive scripts
-  on a detached or non-workshared copy.
+  undo in Revit or close the document without saving. The check does not cover
+  modifications: the host records no state from before the run, so a script that only
+  changes elements it doesn't own is reported `rolled_back` even if the changes stay. Run
+  dry runs of destructive or modifying scripts on a detached or non-workshared copy.
 - Revit regeneration inflates change sets: two new walls can report 100+ modified
   elements (rooms, tags, paths of travel, schedules). The MCP tools therefore return only
   counts, categories and the first 20 added, modified and deleted elements; the longer
