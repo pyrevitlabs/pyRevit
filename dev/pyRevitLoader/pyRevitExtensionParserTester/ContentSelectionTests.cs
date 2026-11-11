@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -9,6 +10,7 @@ namespace pyRevitExtensionParserTest
     /// <summary>
     /// Regression coverage for versioned family selection and generated command caching.
     /// </summary>
+    /// <remarks>Regression tests for PR #3947.</remarks>
     [TestFixture]
     [Property("Level", "Integration")]
     [Property("Environment", "HostFree")]
@@ -18,6 +20,10 @@ namespace pyRevitExtensionParserTest
         private const string Panel = Extension + "/Test.tab/Test.panel/";
         private const string Bundle = Panel + "Family.content/";
 
+        /// <summary>Prefers matching families and falls back to generic files when the year is unavailable.</summary>
+        /// <param name="revitYear">The host year, or zero if it is unknown.</param>
+        /// <param name="primary">The expected primary filename.</param>
+        /// <param name="alternative">The expected alternative filename.</param>
         [TestCase(2023, "Family_content_2023.rfa", "Family_other_2023.rfa")]
         [TestCase(2024, "Family_CONTENT_2024.RFA", "Family_other.rfa")]
         [TestCase(2025, "Family_content_2025.rfa", "Family_other_2025.rfa")]
@@ -37,6 +43,28 @@ namespace pyRevitExtensionParserTest
             Assert.That(button?.ConfigScriptPath, Is.EqualTo(BundleFile(alternative)));
         }
 
+        /// <summary>Preserves postfix matching for both versioned and generic content with legacy prefixes.</summary>
+        /// <param name="separator">The separator between the prefix and the content postfix.</param>
+        /// <param name="revitYear">The host year used for selection.</param>
+        /// <param name="primary">The expected primary postfix.</param>
+        /// <param name="alternative">The expected alternative postfix.</param>
+        [TestCase("-", 2024, "content_2024.rfa", "other_2024.rfa")]
+        [TestCase("-", 2025, "content.rfa", "other.rfa")]
+        [TestCase(" ", 2024, "content_2024.rfa", "other_2024.rfa")]
+        [TestCase(" ", 2025, "content.rfa", "other.rfa")]
+        public void RecognizesLegacyPrefixedNames(string separator, int revitYear, string primary, string alternative)
+        {
+            var prefix = "Family" + separator;
+            AddFamilies(prefix + "content_2024.rfa", prefix + "content.rfa",
+                prefix + "other_2024.rfa", prefix + "other.rfa");
+
+            var button = ParseButton(revitYear);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile(prefix + primary)));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(BundleFile(prefix + alternative)));
+        }
+
+        /// <summary>Uses the primary family for Ctrl+Click when the unprefixed bundle lacks a compatible alternative.</summary>
         [Test]
         public void RecognizesUnprefixedNamesAndUsesPrimaryWhenAlternativeYearDoesNotMatch()
         {
@@ -48,6 +76,8 @@ namespace pyRevitExtensionParserTest
             Assert.That(button?.ConfigScriptPath, Is.EqualTo(button?.ScriptPath));
         }
 
+        /// <summary>Excludes bundles whose primary families target other Revit versions.</summary>
+        /// <param name="revitYear">The host year, or zero if it is unknown.</param>
         [TestCase(2023)]
         [TestCase(2025)]
         [TestCase(2026)]
@@ -60,6 +90,7 @@ namespace pyRevitExtensionParserTest
             Assert.That(ParseButton(revitYear), Is.Null);
         }
 
+        /// <summary>Preserves valid explicit paths when conventional families are also present.</summary>
         [Test]
         public void ExplicitRelativeAndAbsoluteYamlPathsOverrideConventions()
         {
@@ -74,6 +105,7 @@ namespace pyRevitExtensionParserTest
             Assert.That(button?.ConfigScriptPath, Is.EqualTo(alternative));
         }
 
+        /// <summary>Falls back to conventional primary content when the YAML path cannot be resolved.</summary>
         [Test]
         public void MissingExplicitPrimaryUsesMatchingConvention()
         {
@@ -86,12 +118,41 @@ namespace pyRevitExtensionParserTest
             Assert.That(button?.ConfigScriptPath, Is.Null);
         }
 
+        /// <summary>Distinguishes generated commands when the resolved alternative changes without file edits.</summary>
         [Test]
         public void CommandCacheKeyTracksResolvedContentPaths()
         {
             AddFamilies("content.rfa", "other_2023.rfa", "other_2024.rfa");
 
             Assert.That(ParseExtension(2023).GetHash(), Is.Not.EqualTo(ParseExtension(2024).GetHash()));
+        }
+
+        /// <summary>Preserves the cache key when an identical content extension is copied to another directory.</summary>
+        [Test]
+        public void CommandCacheKeyIsIndependentOfExtensionLocation()
+        {
+            var timestamp = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var sharedFamily = CreateFile("Shared.rfa", "");
+
+            string HashExtension(string parent)
+            {
+                CreateFile(parent + "/" + Panel + "Primary.rfa", "");
+                CreateFile(parent + "/" + Bundle + "other_2024.rfa", "");
+                var metadata = CreateFile(parent + "/" + Bundle + "bundle.yaml", "content: '../Primary.rfa'");
+                var sharedMetadata = CreateFile(parent + "/" + Panel + "Shared.content/bundle.yaml",
+                    $"content: '{sharedFamily}'\ncontent_alt: 'missing.rfa'");
+                File.SetLastWriteTimeUtc(metadata, timestamp);
+                File.SetLastWriteTimeUtc(sharedMetadata, timestamp);
+
+                var root = Path.Combine(TestTempDir, parent, Extension);
+                foreach (var directory in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories))
+                    Directory.SetLastWriteTimeUtc(directory, timestamp);
+                Directory.SetLastWriteTimeUtc(root, timestamp);
+
+                return ExtensionParser.ParseInstalledExtensions(root, 2024).Single().GetHash("Roslyn");
+            }
+
+            Assert.That(HashExtension("Second/Nested"), Is.EqualTo(HashExtension("First")));
         }
 
         private ParsedExtension ParseExtension(int revitYear)

@@ -14,12 +14,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     /// <remarks>
     /// Read-only: never opens a transaction. Numeric parameter values are reported both as
-    /// Revit displays them and raw in internal units (feet, radians).
+    /// Revit displays them and raw in internal units (feet, radians). An element Revit can't
+    /// describe gets an <c>error</c> entry instead of failing the whole batch. When any of those
+    /// errors is a memory access error, the response carries one <c>note</c> saying how many, not
+    /// one per element: Revit 2024 raised it for every Material Asset in a batch.
     /// </remarks>
     internal static class AgentInspector {
         private const int MaxElements = 50;
 
-        public static List<ElementId> ParseIds(JObject parameters) {
+        /// <remarks>Repeated ids are described once, in the order they first appear.</remarks>
+        public static List<long> ParseIds(JObject parameters) {
             var ids = parameters["ids"] as JArray;
             if (ids == null || ids.Count == 0)
                 throw new AgentException("invalid_params", "'ids' must be a non-empty array of element ids.");
@@ -28,28 +32,54 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     "invalid_params",
                     string.Format("At most {0} elements can be inspected per call.", MaxElements));
 
-            try {
-                return ids.Select(id => AgentIds.FromValue(id.Value<long>())).ToList();
-            }
-            catch (Exception) {
-                throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-            }
+            return AgentParams.ElementIds(ids, "ids").Distinct().ToList();
         }
 
-        public static JToken Inspect(UIApplication app, List<ElementId> ids, bool includeParameters) {
+        public static JToken Inspect(UIApplication app, List<long> ids, bool includeParameters) {
             var uidoc = app.ActiveUIDocument
                 ?? throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
-            return new JObject {
+            var elements = new JArray();
+            var memoryErrors = 0;
+            foreach (var id in ids)
+                elements.Add(DescribeOrReportError(doc, id, includeParameters, ref memoryErrors));
+            var response = new JObject {
                 ["document"] = DocumentReference(doc),
-                ["elements"] = new JArray(ids.Select(id => Describe(doc, id, includeParameters))),
+                ["elements"] = elements,
             };
+            if (memoryErrors > 0)
+                response["note"] = string.Format(
+                    "Revit hit a memory access error reading {0} of these elements and may be unstable; save your work before continuing.",
+                    memoryErrors);
+            return response;
         }
 
-        private static JObject Describe(Document doc, ElementId id, bool includeParameters) {
+        private static JObject DescribeOrReportError(Document doc, long value, bool includeParameters, ref int memoryErrors) {
+            try {
+                return Describe(doc, value, includeParameters);
+            }
+            catch (Exception ex) {
+                var entry = new JObject { ["id"] = value, ["found"] = true };
+                try {
+                    var element = doc.GetElement(AgentIds.FromValue(value));
+                    entry["class"] = element.GetType().Name;
+                    entry["name"] = SafeName(element);
+                    entry["category"] = element.Category?.Name;
+                }
+                catch (Exception) {
+                }
+                entry["error"] = ex.Message;
+                if (ex is AccessViolationException)
+                    memoryErrors++;
+                return entry;
+            }
+        }
+
+        private static JObject Describe(Document doc, long value, bool includeParameters) {
+            var id = AgentIds.FromValue(value);
             var element = doc.GetElement(id);
             if (element == null)
-                return new JObject { ["id"] = AgentIds.ToValue(id), ["found"] = false };
+                return new JObject { ["id"] = value, ["found"] = false };
 
             var description = new JObject {
                 ["id"] = AgentIds.ToValue(id),

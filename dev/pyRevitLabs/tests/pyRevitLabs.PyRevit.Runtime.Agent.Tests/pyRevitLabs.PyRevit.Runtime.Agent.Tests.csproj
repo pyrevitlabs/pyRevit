@@ -32,10 +32,24 @@
     <ItemGroup>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunGuard.cs" Link="Sources\AgentRunGuard.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocuments.cs" Link="Sources\AgentDocuments.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentCommitSentinel.cs" Link="Sources\AgentCommitSentinel.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunDecision.cs" Link="Sources\AgentRunDecision.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunRequest.cs" Link="Sources\AgentRunRequest.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDispatcher.cs" Link="Sources\AgentDispatcher.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunTimings.cs" Link="Sources\AgentRunTimings.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentException.cs" Link="Sources\AgentException.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentParams.cs" Link="Sources\AgentParams.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentWindows.cs" Link="Sources\AgentWindows.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentUser32.cs" Link="Sources\AgentUser32.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlight.cs" Link="Sources\AgentTabHighlight.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentTabHighlightValue.cs" Link="Sources\AgentTabHighlightValue.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentEngineWarmUp.cs" Link="Sources\AgentEngineWarmUp.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentSelectors.cs" Link="Sources\AgentSelectors.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocumentBinding.cs" Link="Sources\AgentDocumentBinding.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPipeServer.cs" Link="Sources\AgentPipeServer.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRequestLine.cs" Link="Sources\AgentRequestLine.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentConfigRefresh.cs" Link="Sources\AgentConfigRefresh.cs"/>
+        <Compile Include="..\..\pyRevitLabs.Common\BoundedLineReader.cs" Link="Sources\BoundedLineReader.cs"/>
     </ItemGroup>
 
 </Project>

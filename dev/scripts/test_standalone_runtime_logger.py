@@ -9,6 +9,7 @@ with `-p 'test_standalone_*.py'`.
 import importlib.util
 import logging
 import os
+import shutil
 import sys
 import tempfile
 import types
@@ -65,7 +66,7 @@ def load_logger_module():
         exec_timestamp="timestamp",
         exec_id="exec-id",
     )
-    pyrevit.USER_DESKTOP = tempfile.gettempdir()
+    pyrevit.USER_SYS_TEMP = tempfile.gettempdir()
     pyrevit.coreutils = types.ModuleType("pyrevit.coreutils")
     pyrevit.coreutils.prepare_html_str = lambda value: value
 
@@ -284,6 +285,48 @@ class RuntimeLoggerTests(unittest.TestCase):
                 sys.modules.pop("pyrevit.runtime.types", None)
             else:
                 sys.modules["pyrevit.runtime.types"] = previous_types
+
+    def use_dev_log_folder(self):
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        original_logfile_path = self.module.get_runtime_logfile_path
+        original_command_id = self.module.EXEC_PARAMS.command_uniqueid
+        self.module.get_runtime_logfile_path = lambda: os.path.join(
+            folder, "runtime.log"
+        )
+        self.module.EXEC_PARAMS.command_uniqueid = None
+
+        def restore():
+            self.module.get_runtime_logfile_path = original_logfile_path
+            self.module.EXEC_PARAMS.command_uniqueid = original_command_id
+
+        self.addCleanup(restore)
+        return folder
+
+    def test_dev_log_writes_nothing_without_debug_mode(self):
+        folder = self.use_dev_log_folder()
+
+        self.module.LoggerWrapper("handler").dev_log("source", "note")
+
+        self.assertEqual([], os.listdir(folder))
+
+    def test_dev_log_writes_into_the_log_folder_named_after_the_logger(self):
+        folder = self.use_dev_log_folder()
+        self.service.minimum_level = logging.DEBUG
+
+        self.module.LoggerWrapper("handler").dev_log("source", "note")
+        self.module.LoggerWrapper(None).dev_log("source", "note")
+
+        self.assertEqual(["handler.log", "pyrevit.log"], sorted(os.listdir(folder)))
+
+    def test_dev_log_names_the_file_after_the_command_id_first(self):
+        folder = self.use_dev_log_folder()
+        self.service.minimum_level = logging.DEBUG
+        self.module.EXEC_PARAMS.command_uniqueid = "a/b:c"
+
+        self.module.LoggerWrapper("handler").dev_log("source", "note")
+
+        self.assertEqual(["a_b_c.log"], os.listdir(folder))
 
 
 if __name__ == "__main__":

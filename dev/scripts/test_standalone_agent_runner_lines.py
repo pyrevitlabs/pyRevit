@@ -2,10 +2,15 @@
 
 import ast
 import builtins
+import contextlib
 import importlib.util
+import linecache
 import os
 import re
+import shutil
 import sys
+import tempfile
+import threading
 import time
 import tokenize
 import traceback
@@ -13,6 +18,8 @@ import types
 import unittest
 from unittest import mock
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RUNNER_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "agent", "_runner.py")
@@ -48,6 +55,8 @@ def _load_runner():
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: int
+    compat.PY2 = False
+    compat.IRONPY = False
     modules = {
         "System": system,
         "pyrevit": pyrevit,
@@ -611,7 +620,7 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
             with (
                 self.subTest(hidden=hidden),
                 mock.patch.object(
-                    self.runner, "_async_exception_setter", return_value=None
+                    self.runner, "_set_async_exc_function", return_value=None
                 ),
                 mock.patch.object(
                     self.runner, "_hides_loops_in_fstrings", return_value=hidden
@@ -799,6 +808,63 @@ class AgentRunnerLoopGuardTests(unittest.TestCase):
         )
         self.runner.run(context)
         self.assertEqual({}, self.runner._TRANSACTION_RANKS)
+        self.assertEqual({}, self.runner._ATTRIBUTE_HOLDERS)
+
+    def test_the_script_source_leaves_linecache_after_a_run(self):
+        """Never keep the last script's source alive in the shared engine."""
+        context = types.SimpleNamespace(
+            Source="result = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertNotIn(self.runner.SOURCE_NAME, linecache.cache)
+
+    def test_transactions_held_in_object_attributes_are_tracked(self):
+        """Find the transaction inside a wrapper such as pyrevit.revit.Transaction."""
+        source = (
+            "class Wrapper(object):\n"
+            "    def __init__(self, label):\n"
+            "        self._rvtxn = Labelled(label)\n"
+            "def helper():\n"
+            "    held = Wrapper('local')\n"
+            "helper()\n"
+            "kept = Wrapper('global')\n"
+        )
+        self.assertEqual(["global", "local"], self._tracked(source))
+
+    def test_a_local_that_gains_a_transaction_attribute_later_is_tracked(self):
+        """Revisit an object whose type held no transaction the first time it was seen."""
+        source = (
+            "class Holder(object):\n"
+            "    pass\n"
+            "def helper():\n"
+            "    held = Holder()\n"
+            "    held.txn = Labelled('later')\n"
+            "    held = None\n"
+            "helper()\n"
+        )
+        self.assertEqual(["later"], self._tracked(source))
+
+    def test_an_attribute_rebound_to_a_transaction_is_tracked(self):
+        """Notice a transaction that replaces an attribute's value in place."""
+        source = (
+            "class Holder(object):\n"
+            "    def __init__(self):\n"
+            "        self.txn = None\n"
+            "def helper():\n"
+            "    held = Holder()\n"
+            "    held.txn = Labelled('swapped')\n"
+            "    held.txn = None\n"
+            "helper()\n"
+        )
+        self.assertEqual(["swapped"], self._tracked(source))
 
 
 LOOP_PAST_TIMEOUT = (
@@ -1163,6 +1229,190 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertEqual(1, len(created))
         self.assertEqual([], traces)
 
+    def _workspace(self, files):
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        for name, body in files.items():
+            path = os.path.join(folder, name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(body)
+        return folder
+
+    def test_loops_in_workspace_modules_are_guarded_for_the_run(self):
+        """A loop inside a workspace module or package stops at the deadline."""
+        folder = self._workspace(
+            {
+                "spin.py": "def go():\n    while True:\n        pass\n",
+                "pkg/__init__.py": "",
+                "pkg/inner.py": "def go():\n    for _ in iter(int, 1):\n        pass\n",
+            }
+        )
+        for source in (
+            "import spin\nspin.go()\n",
+            "from pkg import inner\ninner.go()\n",
+        ):
+            with self.subTest(source=source):
+                started = time.time()
+                with mock.patch.object(
+                    self.runner, "_set_async_exc_function", lambda: None
+                ):
+                    errors, _, _ = self._run(source, timeout_s=0.3, workspace=folder)
+                self.assertEqual(["timeout"], errors)
+                self.assertLess(time.time() - started, 3)
+
+    def test_sys_path_order_still_picks_the_module(self):
+        """A folder placed before the workspace keeps winning its imports."""
+        workspace = self._workspace({"shared.py": "SOURCE = 'workspace'\n"})
+        earlier = self._workspace({"shared.py": "SOURCE = 'earlier'\n"})
+        errors, _, _ = self._run(
+            "import sys\nsys.path.insert(0, {!r})\nimport shared\n"
+            "assert shared.SOURCE == 'earlier'\n"
+            "assert '__agent_tick__' not in vars(shared)\n".format(earlier),
+            workspace=workspace,
+        )
+        self.assertEqual([], errors)
+
+    def test_relative_sys_path_entries_to_the_workspace_are_guarded(self):
+        """A relative path to the workspace still gets the loop guards."""
+        parent = self._workspace({"inside/relmod.py": "VALUE = 1\n"})
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(parent)
+        errors, _, _ = self._run(
+            "import sys\nsys.path.insert(0, 'inside')\nimport relmod\n"
+            "assert '__agent_tick__' in vars(relmod)\n",
+            workspace=os.path.join(parent, "inside"),
+        )
+        self.assertEqual([], errors)
+
+    def test_library_folders_inside_the_workspace_stay_unguarded(self):
+        """A library under the workspace is never rewritten by the hook."""
+        folder = self._workspace({"lib/libmod.py": "VALUE = 1\n"})
+        library = os.path.join(folder, "lib")
+        with mock.patch.object(self.runner, "_PYREVITLIB_PATH", library):
+            errors, _, _ = self._run(
+                "import sys\nsys.path.append({!r})\nimport libmod\n"
+                "assert '__agent_tick__' not in vars(libmod)\n".format(library),
+                workspace=folder,
+            )
+        self.assertEqual([], errors)
+
+    def test_a_workspace_module_that_cannot_be_rewritten_is_line_checked(self):
+        """The deadline is still enforced inside an unrewritable module."""
+        folder = self._workspace(
+            {"stubborn.py": "def spin():\n    while lambda: True:\n        pass\n"}
+        )
+        started = time.time()
+        with mock.patch.object(self.runner, "_set_async_exc_function", lambda: None):
+            errors, _, _ = self._run(
+                "import stubborn\nstubborn.spin()\n", timeout_s=0.3, workspace=folder
+            )
+        self.assertEqual(["timeout"], errors)
+        self.assertLess(time.time() - started, 3)
+
+    def test_workspace_packages_can_read_their_data_files(self):
+        """pkgutil.get_data still returns a workspace package's resource."""
+        folder = self._workspace(
+            {"datapkg/__init__.py": "", "datapkg/settings.json": "{}"}
+        )
+        errors, _, _ = self._run(
+            "import pkgutil, datapkg\n"
+            "assert pkgutil.get_data('datapkg', 'settings.json') == b'{}'\n",
+            workspace=folder,
+        )
+        self.assertEqual([], errors)
+
+    def test_non_string_sys_path_entries_do_not_break_imports(self):
+        """A None or bytes sys.path entry is skipped by the hook."""
+        folder = self._workspace({"quiet.py": "VALUE = 1\n"})
+        saved_path = list(sys.path)
+        self.addCleanup(lambda: sys.path.__setitem__(slice(None), saved_path))
+        errors, _, _ = self._run(
+            "import sys\nsys.path.insert(0, None)\nsys.path.insert(0, b'x')\n"
+            "import quiet, colorsys\n",
+            workspace=folder,
+        )
+        self.assertEqual([], errors)
+
+    def test_bare_except_in_a_workspace_module_is_narrowed(self):
+        """Workspace handlers are narrowed like the script's own."""
+        folder = self._workspace(
+            {
+                "swallow.py": "def go():\n    try:\n        raise BaseException()\n"
+                "    except:\n        return 'swallowed'\n"
+            }
+        )
+        errors, _, _ = self._run("import swallow\nswallow.go()\n", workspace=folder)
+        self.assertEqual(["BaseException"], errors)
+
+    def test_workspace_source_honours_its_encoding_cookie(self):
+        """A latin-1 workspace module with a cookie imports intact."""
+        folder = self._workspace({})
+        with open(os.path.join(folder, "latin.py"), "wb") as handle:
+            handle.write(b"# -*- coding: latin-1 -*-\nNAME = '\xe9'\n")
+        errors, _, _ = self._run(
+            "import latin\nassert latin.NAME == '\xe9'\n", workspace=folder
+        )
+        self.assertEqual([], errors)
+
+    def test_the_pep302_protocol_loads_a_guarded_module(self):
+        """find_module and load_module, used by IronPython 2.7, work too."""
+        folder = self._workspace({"old.py": "VALUE = 7\n"})
+        guards = {"__agent_tick__": lambda: True, "__agent_loop__": iter}
+        hook = self.runner._WorkspaceLoopGuard(folder, guards)
+        sys.path.insert(0, folder)
+        self.addCleanup(sys.path.remove, folder)
+        self.addCleanup(sys.modules.pop, "old", None)
+        self.assertIs(hook, hook.find_module("old"))
+        module = hook.load_module("old")
+        self.assertEqual(7, module.VALUE)
+        self.assertIs(guards["__agent_tick__"], module.__agent_tick__)
+        self.assertIsNone(hook.find_module("json"))
+
+    def test_runtime_compiled_workspace_code_turns_on_line_checks(self):
+        """On IronPython, a workspace module with exec asks for per-line deadline checks."""
+        folder = self._workspace(
+            {"dyn.py": "def go(code):\n    exec(code)\n", "plain.py": "VALUE = 1\n"}
+        )
+        guards = {"__agent_tick__": lambda: True, "__agent_loop__": iter}
+        sys.path.insert(0, folder)
+        self.addCleanup(sys.path.remove, folder)
+        for name in ("dyn", "plain"):
+            self.addCleanup(sys.modules.pop, name, None)
+        for implementation, module, expected in (
+            ("ironpython", "dyn", 1),
+            ("ironpython", "plain", 0),
+            ("cpython", "dyn", 0),
+        ):
+            calls = []
+            hook = self.runner._WorkspaceLoopGuard(
+                folder, guards, lambda: calls.append(1)
+            )
+            sys.modules.pop(module, None)
+            self.assertIs(hook, hook.find_module(module))
+            with mock.patch.object(
+                self.runner, "_implementation", return_value=implementation
+            ):
+                hook.load_module(module)
+            self.assertEqual(expected, len(calls), (implementation, module))
+
+    def test_the_workspace_hook_is_removed_after_the_run(self):
+        """The import hook never outlives the run that installed it."""
+        folder = self._workspace({"quiet.py": "VALUE = 1\n"})
+        before = list(sys.meta_path)
+        self._run("import quiet\nresult = quiet.VALUE\n", workspace=folder)
+        self.assertEqual(before, sys.meta_path)
+
+    def test_modules_outside_the_workspace_stay_unguarded(self):
+        """Only workspace code is rewritten; other imports are untouched."""
+        folder = self._workspace({"quiet.py": "VALUE = 1\n"})
+        errors, _, _ = self._run(
+            "import quiet, json\nassert '__agent_tick__' not in vars(json)\n"
+            "assert '__agent_tick__' in vars(quiet)\n",
+            workspace=folder,
+        )
+        self.assertEqual([], errors)
+
     def test_workspace_and_indirect_starts_keep_the_tracer(self):
         """Starts the rewrite can't see still get the trace function."""
         source = "from start_doubles import OpenTransaction as T\nresult = 1\n"
@@ -1240,7 +1490,7 @@ class AgentRunnerTracebackTests(unittest.TestCase):
     def test_timeout_noticed_after_the_script_ends_names_the_blocking_call(self):
         """A limit passed inside one uninterruptible call says so, with no bare traceback."""
         with mock.patch.object(
-            self.runner, "_async_exception_setter", return_value=None
+            self.runner, "_set_async_exc_function", return_value=None
         ):
             error_type, message, text = self._run(
                 "import time\ntime.sleep(0.4)\n", timeout_s=0.2
@@ -1248,6 +1498,51 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual("timeout", error_type)
         self.assertIn("could not be interrupted", message)
         self.assertEqual("", text)
+
+    def test_timeout_injected_while_converting_the_result_is_not_an_interruption(self):
+        """A limit passed after the script ended gets the late message on CPython too."""
+        convert = self.runner._to_jsonable
+
+        def slow_convert(value):
+            ends = time.time() + 0.6
+            while time.time() < ends:
+                pass
+            return convert(value)
+
+        source = "class Slow(object):\n    pass\nresult = [Slow()]\n"
+        with mock.patch.object(self.runner, "_to_jsonable", slow_convert):
+            error_type, message, text = self._run(source, timeout_s=0.2)
+        self.assertEqual("timeout", error_type)
+        self.assertIn("could not be interrupted", message)
+        self.assertEqual("", text)
+
+    def test_swallowed_timeout_does_not_blame_an_uninterruptible_call(self):
+        """A loop whose timeout an aliased handler swallowed is not called uninterruptible."""
+        source = "B = BaseException\ntry:\n    while True:\n        pass\nexcept B:\n    pass\n"
+        without_injection = mock.patch.object(
+            self.runner, "_set_async_exc_function", return_value=None
+        )
+        for engine in (without_injection, contextlib.nullcontext()):
+            with self.subTest(engine=engine), engine:
+                error_type, message, text = self._run(source, timeout_s=0.2)
+                self.assertEqual("timeout", error_type)
+                self.assertNotIn("could not be interrupted", message)
+                self.assertEqual("", text)
+
+    def test_a_timeout_raised_in_runner_code_is_not_an_interruption(self):
+        """Only a script frame the tracer stops marks the run as interrupted."""
+        for filename, interrupted in (
+            (self.runner._RUNNER_FILENAME, False),
+            (self.runner.SOURCE_NAME, True),
+        ):
+            state = {"timed_out": True, "interrupted": False, "check_lines": False}
+            trace = self.runner._execution_tracer(5, state, {}, True, False)
+            code = types.SimpleNamespace(co_filename=filename, co_name="f", co_flags=0)
+            frame = types.SimpleNamespace(f_code=code)
+            with mock.patch.object(self.runner, "_track_stack_transactions"):
+                with self.assertRaises(self.runner.RunTimedOut):
+                    trace(frame, "call", None)(frame, "line", None)
+            self.assertEqual(interrupted, state["interrupted"], filename)
 
     def test_error_traceback_keeps_the_script_frames(self):
         """A script error still names each script frame and the error."""
@@ -1283,6 +1578,270 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual([4, 8, 7], self._script_lines(text))
 
 
+TRACED_LIMIT_SOURCE = """import sys
+start = getattr(sys, 'Start', None)
+result = sys.getrecursionlimit()
+"""
+UNTRACED_LIMIT_SOURCE = """import sys
+result = sys.getrecursionlimit()
+"""
+RAISED_LIMIT_SOURCE = """import sys
+start = getattr(sys, 'Start', None)
+sys.setrecursionlimit(1000)
+def limit():
+    return sys.getrecursionlimit()
+result = limit()
+"""
+
+
+class AgentRunnerTracedRecursionTests(unittest.TestCase):
+    """Traced IronPython runs get a lower recursion limit (issue #3918)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _context(self, source, results, errors):
+        return types.SimpleNamespace(
+            Source=source,
+            Workspace=None,
+            TimeoutSeconds=5,
+            Reckless=False,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=results.append,
+            SetOutput=lambda *args: None,
+            SetError=lambda *args: errors.append(args),
+        )
+
+    def _limit_seen(self, source, implementation):
+        errors = []
+        results = []
+        before = sys.getrecursionlimit()
+        with mock.patch.object(
+            self.runner, "_implementation", return_value=implementation
+        ):
+            self.runner.run(self._context(source, results, errors))
+        self.assertEqual([], errors)
+        self.assertEqual(before, sys.getrecursionlimit())
+        return int(results[0])
+
+    def test_traced_ironpython_run_uses_the_lower_limit(self):
+        """A run with a trace function sees the traced limit, then gets the old one back."""
+        self.assertEqual(
+            self.runner.IRONPYTHON_TRACED_RECURSION_LIMIT,
+            self._limit_seen(TRACED_LIMIT_SOURCE, "ironpython"),
+        )
+
+    def test_traced_ironpython_run_cannot_raise_its_limit(self):
+        """A script that raises its limit while traced is held at the traced limit."""
+        self.assertEqual(
+            self.runner.IRONPYTHON_TRACED_RECURSION_LIMIT,
+            self._limit_seen(RAISED_LIMIT_SOURCE, "ironpython"),
+        )
+
+    def test_limit_is_restored_when_tracing_fails_to_start(self):
+        """A failing settrace still gives the engine its old limit back."""
+        errors = []
+        before = sys.getrecursionlimit()
+        real_settrace = sys.settrace
+        self.addCleanup(real_settrace, sys.gettrace())
+
+        def refuse_tracers(tracer):
+            if tracer is not None:
+                raise RuntimeError("no tracing")
+            real_settrace(tracer)
+
+        with (
+            mock.patch.object(
+                self.runner, "_implementation", return_value="ironpython"
+            ),
+            mock.patch.object(sys, "settrace", side_effect=refuse_tracers),
+        ):
+            self.runner.run(self._context(TRACED_LIMIT_SOURCE, [], errors))
+        self.assertEqual(["RuntimeError"], [error[0] for error in errors])
+        self.assertEqual(before, sys.getrecursionlimit())
+
+    def test_a_nested_run_gives_the_caller_its_trace_function_back(self):
+        """An inner run restores the outer run's tracer instead of clearing it."""
+        previous = sys.gettrace()
+        self.addCleanup(sys.settrace, previous)
+
+        def outer_tracer(frame, event, arg):
+            return None
+
+        results = []
+        errors = []
+        sys.settrace(outer_tracer)
+        with mock.patch.object(
+            self.runner, "_implementation", return_value="ironpython"
+        ):
+            self.runner.run(self._context(TRACED_LIMIT_SOURCE, results, errors))
+        restored = sys.gettrace()
+        sys.settrace(previous)
+        self.assertEqual([], errors)
+        self.assertEqual(1, len(results))
+        self.assertIs(outer_tracer, restored)
+
+    def test_untraced_ironpython_run_keeps_the_engine_limit(self):
+        """Without a trace function the engine's own limit applies."""
+        self.assertEqual(
+            sys.getrecursionlimit(),
+            self._limit_seen(UNTRACED_LIMIT_SOURCE, "ironpython"),
+        )
+
+    def test_traced_cpython_run_keeps_the_engine_limit(self):
+        """CPython frames don't grow under tracing, so its limit is left alone."""
+        self.assertEqual(
+            sys.getrecursionlimit(),
+            self._limit_seen(TRACED_LIMIT_SOURCE, "cpython"),
+        )
+
+
+class AgentRunnerOutputTests(unittest.TestCase):
+    """Printed output is capped while the script runs (issue #3922)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def test_output_is_capped_while_printing(self):
+        """Keep one character past the host cap so it still reports truncation."""
+        outputs = []
+        context = types.SimpleNamespace(
+            Source="import sys\nfor _ in range(200):\n    print('x' * 4096)\n"
+            "sys.stderr.write('tail')\nresult = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=outputs.append,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertEqual([self.runner._MAX_OUTPUT_CHARS + 1], [len(o) for o in outputs])
+        self.assertEqual(64 * 1024, self.runner._MAX_OUTPUT_CHARS)
+
+    def test_writes_past_the_cap_are_dropped(self):
+        """Print and writelines both stop at the cap."""
+        captured = self.runner._CappedOutput(10)
+        print("abc", file=captured)
+        captured.writelines(["de", "fghijkl"])
+        self.assertEqual("abc\ndefghi", captured.getvalue())
+
+    def test_writelines_goes_through_the_capped_write(self):
+        """IronPython 3.4's StringIO.writelines skips an overridden write."""
+        self.assertIn("writelines", vars(self.runner._CappedOutput))
+        captured = self.runner._CappedOutput(10)
+        written = []
+        real_write = captured.write
+        captured.write = lambda text: written.append(text) or real_write(text)
+        captured.writelines(line for line in ["ab", "cd"])
+        self.assertEqual(["ab", "cd"], written)
+        self.assertEqual("abcd", captured.getvalue())
+
+    def test_writelines_keeps_the_cap_and_partial_lines(self):
+        """Lines go through write, so a line straddling the cap is cut."""
+        captured = self.runner._CappedOutput(5)
+        captured.writelines(iter(["ab", "cd", "efgh", "ij"]))
+        self.assertEqual("abcde", captured.getvalue())
+
+    def test_the_cap_is_not_given_back_by_truncate(self):
+        """Truncating after the cap was reached still drops later writes."""
+        captured = self.runner._CappedOutput(3)
+        captured.write("abcdef")
+        captured.truncate(0)
+        captured.write("x")
+        self.assertEqual("", captured.getvalue())
+
+    def test_a_seek_cannot_grow_the_output_past_the_cap(self):
+        """Writes after a seek append, so no padded gap bypasses the cap."""
+        captured = self.runner._CappedOutput(10)
+        captured.write("abc")
+        captured.seek(1000000)
+        captured.write("de")
+        captured.seek(0)
+        captured.write("fg")
+        self.assertEqual("abcdefg", captured.getvalue())
+
+    def test_appends_do_not_seek_while_the_cursor_is_at_the_end(self):
+        """IronPython 2.7's StringIO joins its buffer on every seek."""
+        real = self.runner.StringIO
+        seeks = []
+
+        class CountingStringIO(object):
+            tell = real.tell
+            write = real.write
+
+            @staticmethod
+            def seek(stream, *args):
+                seeks.append(args)
+                return real.seek(stream, *args)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", CountingStringIO):
+            for _ in range(5):
+                captured.write("x")
+        self.assertEqual([], seeks)
+        self.assertEqual("xxxxx", captured.getvalue())
+
+    def test_writes_after_a_truncate_leave_no_gap(self):
+        """Truncating the stream moves the end the next write appends at."""
+        captured = self.runner._CappedOutput(100)
+        captured.write("hello world")
+        captured.truncate(0)
+        captured.seek(0)
+        captured.write("abc")
+        self.assertEqual("abc", captured.getvalue())
+
+    def test_a_second_writer_waits_for_the_first(self):
+        """Script threads share one buffer for stdout and stderr."""
+        real = self.runner.StringIO
+        inside = threading.Event()
+        release = threading.Event()
+        entered = []
+
+        class GatedStringIO(object):
+            tell = real.tell
+            seek = real.seek
+
+            @staticmethod
+            def write(stream, text):
+                entered.append(text)
+                if text == "first":
+                    inside.set()
+                    release.wait(5)
+                return real.write(stream, text)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", GatedStringIO):
+            first = threading.Thread(target=captured.write, args=("first",))
+            second = threading.Thread(target=captured.write, args=("second",))
+            first.start()
+            self.assertTrue(inside.wait(5))
+            second.start()
+            second.join(0.3)
+            entered_while_held = list(entered)
+            release.set()
+            first.join(5)
+            second.join(5)
+        self.assertFalse(first.is_alive() or second.is_alive())
+        self.assertEqual(["first"], entered_while_held)
+        self.assertEqual("firstsecond", captured.getvalue())
+
+    def test_non_text_is_written_as_text_on_python_two(self):
+        """IronPython 2.7 scripts may write any object, as StringIO allowed."""
+        captured = self.runner._CappedOutput(10)
+        with mock.patch.object(self.runner, "PY2", True):
+            captured.write(12345)
+        self.assertEqual("12345", captured.getvalue())
+
+
 class AgentRunnerSourceTests(unittest.TestCase):
     """Constraints on the runner file itself."""
 
@@ -1296,6 +1855,133 @@ class AgentRunnerSourceTests(unittest.TestCase):
             if any(byte > 127 for byte in line)
         ]
         self.assertEqual([], offending)
+
+
+class AgentRunnerWorkspaceTests(unittest.TestCase):
+    """Which modules a workspace unloads from the shared engine."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def _unloaded(self, workspace, libraries, files):
+        modules = {
+            name: types.SimpleNamespace(__file__=file) for name, file in files.items()
+        }
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", libraries),
+            mock.patch.dict(sys.modules, modules),
+        ):
+            self.runner._unload_modules_under(workspace)
+            return sorted(name for name in modules if name not in sys.modules)
+
+    def test_workspace_modules_are_unloaded(self):
+        """A module imported from the workspace is dropped so the next run re-imports it."""
+        workspace = os.path.abspath("work")
+        unloaded = self._unloaded(
+            workspace,
+            [workspace],
+            {
+                "house_ws": os.path.join(workspace, "house.py"),
+                "tool_ws": os.path.join(workspace, "tool.pyw"),
+            },
+        )
+        self.assertEqual(["house_ws", "tool_ws"], unloaded)
+
+    def test_library_folders_inside_the_workspace_stay_loaded(self):
+        """A drive-root workspace doesn't unload the stdlib or pyrevitlib."""
+        root = os.path.abspath(os.sep)
+        stdlib = os.path.join(root, "python", "Lib")
+        library = os.path.join(root, "pyRevit", "pyrevitlib")
+        unloaded = self._unloaded(
+            root,
+            [root, stdlib, library],
+            {
+                "json_ws": os.path.join(stdlib, "json", "__init__.py"),
+                "pyrevit_ws": os.path.join(library, "pyrevit", "__init__.py"),
+                "scratch_ws": os.path.join(root, "scratch.py"),
+            },
+        )
+        self.assertEqual(["scratch_ws"], unloaded)
+
+    def test_pyrevitlib_as_the_workspace_stays_loaded(self):
+        """A workspace that is pyrevitlib itself doesn't unload pyrevit or the runner."""
+        library = os.path.dirname(os.path.dirname(os.path.dirname(RUNNER_PATH)))
+        unloaded = self._unloaded(
+            library,
+            [library],
+            {
+                "pyrevit_ws": os.path.join(library, "pyrevit", "__init__.py"),
+                "runner_ws": RUNNER_PATH,
+            },
+        )
+        self.assertEqual([], unloaded)
+
+    def test_helper_folders_the_agent_adds_to_sys_path_are_reloaded(self):
+        """A workspace subfolder on sys.path that isn't a library folder is still unloaded."""
+        workspace = os.path.abspath("work")
+        helpers = os.path.join(workspace, "helpers")
+        with mock.patch.object(sys, "path", [workspace, helpers]):
+            unloaded = self._unloaded(
+                workspace,
+                [],
+                {"helper_ws": os.path.join(helpers, "helper.py")},
+            )
+        self.assertEqual(["helper_ws"], unloaded)
+
+    def test_modules_without_an_absolute_python_source_stay_loaded(self):
+        """Relative stdlib paths, assembly names and .NET modules are never unloaded."""
+        root = os.path.abspath(os.sep)
+        unloaded = self._unloaded(
+            root,
+            [root],
+            {
+                "abc_ws": "abc.py",
+                "revitapi_ws": "RevitAPI, Version=26.0.0.0, Culture=neutral",
+                "clr_ws": "unknown",
+                "autodesk_ws": os.path.join(
+                    root, "Program Files", "Autodesk", "RevitAPI.dll"
+                ),
+                "scratch_ws": os.path.join(root, "scratch.py"),
+            },
+        )
+        self.assertEqual(["scratch_ws"], unloaded)
+
+    def test_namespace_packages_in_the_workspace_are_unloaded(self):
+        """Packages without __init__.py, nested too, have no __file__ but are unloaded (#3949)."""
+        workspace = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, workspace)
+        os.makedirs(os.path.join(workspace, "nspkg_ws", "inner"))
+        with open(
+            os.path.join(workspace, "nspkg_ws", "inner", "part.py"), "w"
+        ) as handle:
+            handle.write("VALUE = 1\n")
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.object(sys, "path", [workspace] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            importlib.import_module("nspkg_ws.inner.part")
+            self.assertIsNone(getattr(sys.modules["nspkg_ws"], "__file__", None))
+            self.runner._unload_modules_under(workspace)
+            for name in ("nspkg_ws", "nspkg_ws.inner", "nspkg_ws.inner.part"):
+                self.assertIsNone(sys.modules.get(name), name)
+
+    def test_namespace_packages_outside_the_workspace_stay_loaded(self):
+        """A namespace package with any portion outside the workspace stays loaded."""
+        workspace = os.path.abspath("work")
+        outside = os.path.abspath("elsewhere")
+        package = types.SimpleNamespace(
+            __file__=None,
+            __path__=[os.path.join(workspace, "ns"), os.path.join(outside, "ns")],
+        )
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.dict(sys.modules, {"split_ns_ws": package}),
+        ):
+            self.runner._unload_modules_under(workspace)
+            self.assertIn("split_ns_ws", sys.modules)
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal static class AgentPresenter {
         private const int MaxIds = 20000;
+        private const int MaxCategories = 100;
         private static readonly string[] Actions = { "select", "isolate", "hide", "reset" };
 
         public sealed class Request {
@@ -34,32 +35,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static Request Parse(JObject parameters) {
-            var action = (parameters.Value<string>("action") ?? "select").ToLowerInvariant();
+            var action = (AgentParams.Get<string>(parameters, "action") ?? "select").ToLowerInvariant();
             if (!Actions.Contains(action))
                 throw new AgentException("invalid_params", "'action' must be one of: " + string.Join(", ", Actions) + ".");
 
-            var request = new Request { Action = action, Zoom = parameters.Value<bool?>("zoom") ?? false };
+            var request = new Request { Action = action, Zoom = AgentParams.Get<bool?>(parameters, "zoom") ?? false };
 
             if (parameters["ids"] is JArray ids) {
                 if (ids.Count > MaxIds)
                     throw new AgentException("invalid_params", $"At most {MaxIds} ids per call.");
-                try {
-                    request.Ids.AddRange(ids.Select(id => id.Value<long>()));
-                }
-                catch (Exception) {
-                    throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-                }
+                request.Ids.AddRange(AgentParams.ElementIds(ids, "ids"));
             }
 
-            if (parameters["categories"] is JArray categories) {
-                foreach (var token in categories) {
-                    var name = token.Value<string>() ?? string.Empty;
-                    var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
-                    if (!Enum.TryParse(enumName, true, out BuiltInCategory category))
-                        throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
-                    request.Categories.Add(category);
-                }
-            }
+            if (parameters["categories"] is JArray categories)
+                request.Categories.AddRange(AgentSelectors.ParseDistinctCategories<BuiltInCategory>(
+                    categories.Select(token => token.Value<string>()), MaxCategories));
 
             if (action != "reset" && request.Ids.Count == 0 && request.Categories.Count == 0)
                 throw new AgentException("invalid_params", "Pass 'ids' and/or 'categories'.");
@@ -82,6 +72,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// no open view can show the elements. <paramref name="dialogs"/> closes it; the response
         /// then carries <c>zoomed: false</c> and a <c>zoom_failed</c> error with Revit's message,
         /// while the selection or isolation already applied stays in place.
+        /// Ids the active view doesn't show are listed in <c>not_in_view_ids</c>. Isolate and hide
+        /// also leave them out of <c>count</c>; select keeps them, so <c>zoom</c> can still open
+        /// another view that shows them. A temporary view change Revit rolls back fails with
+        /// <c>show_failed</c> instead of reporting success. <c>view</c> is the view the action
+        /// applied to; when zooming makes Revit open another view, <c>active_view</c> names it.
         /// </remarks>
         public static JToken Show(UIApplication app, Request request, AgentDialogCapture dialogs) {
             var uidoc = app.ActiveUIDocument;
@@ -98,11 +93,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var response = new JObject {
                 ["action"] = request.Action,
-                ["view"] = view == null ? null : new JObject {
-                    ["id"] = AgentIds.ToValue(view.Id),
-                    ["name"] = view.Name,
-                    ["type"] = view.ViewType.ToString(),
-                },
+                ["view"] = DescribeView(view),
             };
 
             if (request.Action == "reset") {
@@ -117,12 +108,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var missing = new List<long>();
             var targets = ResolveTargets(doc, view, request, missing);
+            if (request.Ids.Count > 0 && targets.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
+                var inView = new HashSet<ElementId>(new FilteredElementCollector(doc, view.Id)
+                    .WherePasses(new ElementIdSetFilter(targets))
+                    .ToElementIds());
+                var notInView = targets.Where(id => !inView.Contains(id)).ToList();
+                if (notInView.Count > 0) {
+                    response["not_in_view_ids"] = new JArray(notInView.Take(100).Select(AgentIds.ToValue));
+                    if (request.Action != "select")
+                        targets = targets.Where(inView.Contains).ToList();
+                    if (request.Action != "select" && view.IsTemporaryHideIsolateActive())
+                        response["note"] = "Some elements are not shown in the active view, possibly hidden by its temporary hide/isolate; "
+                            + "call action 'reset' first to include them.";
+                }
+            }
             response["count"] = targets.Count;
             if (missing.Count > 0)
                 response["missing_ids"] = new JArray(missing.Take(100));
 
             if (targets.Count == 0) {
-                response["note"] = "Nothing to show: no matching elements in the active view.";
+                response["note"] = "Nothing to show: no matching elements in the active view."
+                    + (response["note"] == null ? string.Empty : " " + response.Value<string>("note"));
                 return response;
             }
 
@@ -144,10 +150,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     break;
             }
 
-            if (request.Zoom)
+            if (request.Zoom) {
                 Zoom(uidoc, targets, dialogs, response);
+                var activeAfterZoom = app.ActiveUIDocument?.ActiveView;
+                if (activeAfterZoom != null && (view == null || !activeAfterZoom.Id.Equals(view.Id)))
+                    response["active_view"] = DescribeView(activeAfterZoom);
+            }
             uidoc.RefreshActiveView();
             return response;
+        }
+
+        private static JObject DescribeView(View view) {
+            return view == null ? null : new JObject {
+                ["id"] = AgentIds.ToValue(view.Id),
+                ["name"] = view.Name,
+                ["type"] = view.ViewType.ToString(),
+            };
         }
 
         private static bool MatchesDocument(Document document, Request request) {
@@ -166,15 +184,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void Zoom(UIDocument uidoc, ICollection<ElementId> targets, AgentDialogCapture dialogs, JObject response) {
-            var dialogsBefore = dialogs.Dialogs.Count;
+            var shownBefore = dialogs.Shown;
+            var recordedBefore = dialogs.Dialogs.Count;
             uidoc.ShowElements(targets);
-            var zoomed = dialogs.Dialogs.Count == dialogsBefore;
+            var zoomed = dialogs.Shown == shownBefore;
             response["zoomed"] = zoomed;
             if (!zoomed)
                 response["zoom_error"] = new JObject {
                     ["type"] = "zoom_failed",
                     ["message"] = "Revit could not zoom to the elements: "
-                        + (dialogs.Dialogs[dialogsBefore].Value<string>("message") ?? "it showed a dialog, which was closed.")
+                        + ((dialogs.Dialogs.Count > recordedBefore ? dialogs.Dialogs[recordedBefore].Value<string>("message") : null)
+                            ?? "it showed a dialog, which was closed.")
                         + " Open a view that shows them, then call again.",
                 };
         }
@@ -197,9 +217,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var collector = view != null && !view.IsTemplate
                     ? new FilteredElementCollector(doc, view.Id)
                     : new FilteredElementCollector(doc);
-                foreach (var id in collector.OfCategory(category).WhereElementIsNotElementType().ToElementIds()) {
-                    if (seen.Add(AgentIds.ToValue(id)))
+                using (var ids = collector.OfCategory(category).WhereElementIsNotElementType().GetElementIdIterator()) {
+                    while (ids.MoveNext()) {
+                        var id = ids.Current;
+                        if (!seen.Add(AgentIds.ToValue(id)))
+                            continue;
+                        if (targets.Count >= MaxIds)
+                            throw new AgentException("too_many_elements",
+                                $"The categories match more than {MaxIds} elements in the active view; pass fewer categories or ids.");
                         targets.Add(id);
+                    }
                 }
             }
 
@@ -207,10 +234,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void InTransaction(Document doc, string name, Action change) {
+            if (doc.IsReadOnly)
+                throw new AgentException("document_read_only", "Temporary hide/isolate needs a transaction, which a read-only document doesn't allow.");
             using (var transaction = new Transaction(doc, name)) {
-                transaction.Start();
+                if (transaction.Start() != TransactionStatus.Started)
+                    throw new AgentException("show_failed", "Revit did not start the transaction for the temporary view change.");
                 change();
-                transaction.Commit();
+                var status = transaction.Commit();
+                if (status == TransactionStatus.RolledBack)
+                    throw new AgentException("show_failed", "Revit rolled back the temporary view change; the view is unchanged.");
+                if (status != TransactionStatus.Committed)
+                    throw new AgentException("show_failed",
+                        $"Revit did not confirm the temporary view change (status {status}); check the view before relying on it.");
             }
         }
     }

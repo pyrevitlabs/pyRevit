@@ -206,8 +206,95 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
-    public void ASelectorThatIsNotANumberIsInvalid() {
-        Assert.Equal("invalid_params", Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve("latest")).Code);
+    public void ASelectorThatNamesNoCloneIsNoRevit() {
+        Assert.Equal("no_revit", Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve("latest")).Code);
+    }
+
+    private static readonly AgentInstance[] ClonedSessions = {
+        new AgentInstance { ProcessId = 100, RevitVersion = "2026", Clone = "review-a", ClonePath = @"C:\work\review-a", Engine = "IPY2712PR" },
+        new AgentInstance { ProcessId = 200, RevitVersion = "2026", Clone = "review-b", ClonePath = @"C:\work\review-b\", Engine = "IPY342" },
+        new AgentInstance { ProcessId = 300, RevitVersion = "2026" },
+    };
+
+    [Fact]
+    public void ACloneNameSelectsTheSessionsOfThatCloneIgnoringCase() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, "REVIEW-B")).ProcessId);
+    }
+
+    [Fact]
+    public void ACloneSelectorTakesNoSessionWithoutARecordedClone() {
+        Assert.DoesNotContain(PyRevitAgentClient.Match(ClonedSessions, "review-a"), session => session.ProcessId == 300);
+    }
+
+    [Fact]
+    public void AClonePathSelectsRegardlessOfATrailingSeparator() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\review-b")).ProcessId);
+        Assert.Equal(100, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\review-a\")).ProcessId);
+    }
+
+    [Fact]
+    public void AClonePathSelectsRegardlessOfDotSegments() {
+        Assert.Equal(200, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, @"C:\work\other\..\review-b")).ProcessId);
+    }
+
+    [Fact]
+    public void ABareCloneNameNeverSelectsAnotherCloneThroughAFolderOfThatName() {
+        var folderOfAnotherClone = new AgentInstance {
+            ProcessId = 500,
+            RevitVersion = "2026",
+            Clone = "other",
+            ClonePath = Path.Combine(Directory.GetCurrentDirectory(), "dev"),
+        };
+
+        Assert.Empty(PyRevitAgentClient.Match(new[] { folderOfAnotherClone }, "dev"));
+        Assert.Equal(500, Assert.Single(PyRevitAgentClient.Match(new[] { folderOfAnotherClone }, Path.Combine(".", "dev"))).ProcessId);
+    }
+
+    [Fact]
+    public void ASelectorThatIsNotAPathIsNotAMatchByPath() {
+        Assert.Empty(PyRevitAgentClient.Match(ClonedSessions, "bad|path?"));
+    }
+
+    [Fact]
+    public void ANumericCloneNameIsSelectedWithThePrefixAndNeverAsAProcessId() {
+        var numbered = new[] {
+            new AgentInstance { ProcessId = 342, RevitVersion = "2026" },
+            new AgentInstance { ProcessId = 400, RevitVersion = "2026", Clone = "342", ClonePath = @"C:\work\342" },
+        };
+
+        Assert.Equal(342, Assert.Single(PyRevitAgentClient.Match(numbered, "342")).ProcessId);
+        Assert.Equal(400, Assert.Single(PyRevitAgentClient.Match(numbered, "clone:342")).ProcessId);
+        Assert.Equal(400, Assert.Single(PyRevitAgentClient.Match(numbered, " CLONE: 342 ")).ProcessId);
+    }
+
+    [Fact]
+    public void SeveralSessionsOfOneYearAreToldApartByClone() {
+        Assert.Equal(3, PyRevitAgentClient.Match(ClonedSessions, "2026").Count);
+        Assert.Equal(100, Assert.Single(PyRevitAgentClient.Match(ClonedSessions, "review-a")).ProcessId);
+    }
+
+    [Fact]
+    public void ARegisteredCloneIsReadFromTheInstanceRecordAndReportedInJson() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342", branch: "fix/review-a");
+
+        var session = PyRevitAgentClient.Resolve("review-a");
+        var json = session.ToJson();
+
+        Assert.Equal("2091", session.RevitVersion);
+        Assert.Equal("review-a", json.Value<string>("clone"));
+        Assert.Equal("IPY342", json.Value<string>("engine"));
+        Assert.Equal("fix/review-a", json.Value<string>("branch"));
+        Assert.True(json.Value<bool>("per_launch"));
+    }
+
+    [Fact]
+    public void AmbiguityNamesTheCloneOfEachSession() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342");
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve(null));
+
+        Assert.Equal("ambiguous_revit", error.Code);
+        Assert.Contains("review-a IPY342", error.Message);
     }
 
     private static readonly AgentInstance[] Sessions = {
@@ -478,5 +565,88 @@ public class AgentClientTests : IDisposable {
     public void WithoutARunsFolderThereAreNoRuns() {
         Assert.Empty(PyRevitAgentClient.GetRecentRunDirs(5));
         Assert.Null(PyRevitAgentClient.FindRunDir("abc123def456"));
+    }
+
+    [Fact]
+    public void APingThatGetsNoAnswerInTimeFailsInsteadOfHanging() {
+        using var release = new ManualResetEventSlim(false);
+        host.Handler = request => {
+            release.Wait(TimeSpan.FromSeconds(10));
+            return FakeAgentHost.Result(request, new JObject());
+        };
+        PyRevitAgentClient.PingTimeoutMs = 200;
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Ping(ThisHost()));
+        release.Set();
+
+        Assert.Equal("no_answer", error.Code);
+        Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+    }
+
+    [Fact]
+    public void StatusReportsAHostThatIsOnlyBusyAsBusy() {
+        host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(ThisHost());
+
+        Assert.EndsWith(": busy", line);
+    }
+
+    [Fact]
+    public void StatusReportsAHostWithoutAPipeAsNotResponding() {
+        var instance = ThisHost();
+        instance.Pipe = "pyrevit-missing-" + Guid.NewGuid().ToString("N");
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.StartsWith("Revit 2090", line);
+        Assert.Contains("not responding (", line);
+    }
+
+    [Fact]
+    public void StatusShowsTheCloneAndEngineOfARespondingHost() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "dev", clonePath: "C:/dev", engine: "CPython");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(PyRevitAgentClient.Resolve("2091"));
+
+        Assert.Equal("Revit 2091 (build build-2091) pid " + Environment.ProcessId + " on dev CPython: responding", line);
+    }
+
+    [Fact]
+    public async Task CancellingASentCallClosesItWithAnUnknownOutcome() {
+        using var release = new ManualResetEventSlim(false);
+        using var received = new ManualResetEventSlim(false);
+        host.Handler = request => {
+            received.Set();
+            release.Wait(TimeSpan.FromSeconds(10));
+            return FakeAgentHost.Result(request, new JObject());
+        };
+        using var cancellation = new CancellationTokenSource();
+        var instance = ThisHost();
+
+        var call = Task.Run(() => PyRevitAgentClient.Call(instance, "run", cancellation: cancellation.Token));
+        Assert.True(received.Wait(TimeSpan.FromSeconds(10)));
+        cancellation.Cancel();
+        var error = await Assert.ThrowsAsync<AgentClientException>(() => call);
+        release.Set();
+
+        Assert.Equal("cancelled", error.Code);
+        Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+        Assert.Equal(host.Requests.Single().Value<string>("id"), error.RequestId);
+    }
+
+    [Fact]
+    public async Task CheckingThatAPipeExistsDoesNotConnectToIt() {
+        var pipeName = "pyrevit-probe-" + Guid.NewGuid().ToString("N");
+        using var server = new System.IO.Pipes.NamedPipeServerStream(
+            pipeName, System.IO.Pipes.PipeDirection.InOut, 1,
+            System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+        var connection = server.WaitForConnectionAsync();
+
+        Assert.True(PyRevitAgentClient.PipeExists(pipeName));
+        Assert.False(PyRevitAgentClient.PipeExists("pyrevit-missing-" + Guid.NewGuid().ToString("N")));
+        await Task.Delay(200);
+        Assert.False(connection.IsCompleted);
     }
 }

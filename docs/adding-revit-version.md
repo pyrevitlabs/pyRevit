@@ -111,7 +111,7 @@ Example entry:
     "build": "20270115_1200",
     "meta": {
         "schema": "1.0",
-        "source": "https://www.autodesk.com/support/technical/article/..."
+        "source": "https://www.autodesk.com/support/technical/article/<article-name>"
     },
     "notes": "",
     "product": "Autodesk Revit",

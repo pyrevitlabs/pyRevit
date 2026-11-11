@@ -8,6 +8,7 @@ Tests run against scratch documents this module creates in the temp folder and
 closes again, never against the user's model.
 """
 
+import ctypes
 import json
 import os
 import os.path as op
@@ -15,6 +16,8 @@ import platform
 import shutil
 import sys
 import tempfile
+import threading
+import time
 from contextlib import contextmanager
 from unittest import TestCase as _TestCase
 
@@ -118,8 +121,13 @@ def pipe_name():
 
 
 def agent_dir():
-    """The folder holding host registrations, run records and captures."""
-    return op.join(str(Common.PyRevitLabsConsts.PyRevitPath), "agent")
+    """The folder holding host registrations, run records and captures.
+
+    Note:
+        Resolved like the host does, so a per-launch session that pins the agent
+        folder (``pyrevit launch --isolated``) is followed.
+    """
+    return str(Common.PyRevitLabsConsts.AgentPath)
 
 
 def run_cli(*arguments):
@@ -188,6 +196,60 @@ def session():
     return _session
 
 
+YES = 6
+NO = 7
+POLICY_PROMPT = "pyRevit Agent policy"
+
+
+@contextmanager
+def answer_prompts(title, button):
+    """Press ``button`` on every native message box titled ``title`` during the block.
+
+    The host's approval and policy prompts are native Windows message boxes,
+    which Revit's dialog event can't answer, so a helper thread presses them.
+    Only boxes owned by this Revit process are pressed, never another Revit's.
+    Yields the list of presses.
+    """
+    user32 = ctypes.windll.user32
+    user32.FindWindowExW.restype = ctypes.c_void_p
+    revit_pid = os.getpid()
+    pressed = []
+    stop = threading.Event()
+
+    def own_prompt():
+        window = None
+        while True:
+            window = user32.FindWindowExW(
+                None, ctypes.c_void_p(window) if window else None, "#32770", title
+            )
+            if not window:
+                return None
+            owner = ctypes.c_ulong()
+            user32.GetWindowThreadProcessId(
+                ctypes.c_void_p(window), ctypes.byref(owner)
+            )
+            if owner.value == revit_pid:
+                return window
+
+    def press():
+        while not stop.is_set():
+            window = own_prompt()
+            if window:
+                user32.PostMessageW(ctypes.c_void_p(window), 0x0111, button, 0)
+                pressed.append(button)
+                time.sleep(0.5)
+            time.sleep(0.1)
+
+    worker = threading.Thread(target=press)
+    worker.daemon = True
+    worker.start()
+    try:
+        yield pressed
+    finally:
+        stop.set()
+        worker.join(5)
+
+
 @contextmanager
 def policy(name):
     """Set the agent policy for the block, restoring the previous value after."""
@@ -197,6 +259,34 @@ def policy(name):
         yield
     finally:
         PyRevit.PyRevitConfigs.SetAgentPolicy(previous)
+
+
+def _policy_in_force():
+    return request("get_context")["agent"]["policy"]
+
+
+def _restore_policy_in_force(in_force_before):
+    """Make the policy the host enforces the one it enforced before the tests.
+
+    Note:
+        The host only tightens the policy it enforces. After a test ran under a
+        stricter policy, restoring the configured value leaves the stricter one
+        enforced until a modify run starts and the user confirms the looser
+        policy. The modify run therefore starts under ``in_force_before``
+        itself: a policy the user had refused stays refused, because the host
+        only asks about a policy looser than the enforced one. The caller must
+        have ``answer_prompts(POLICY_PROMPT, YES)`` active so that the
+        confirmation is pressed.
+
+    Raises:
+        AgentRequestError: for any host error other than ``policy_readonly``.
+    """
+    with policy(in_force_before):
+        try:
+            run("result = None", mode="modify", engine="ironpython")
+        except AgentRequestError as error:
+            if error.code != "policy_readonly":
+                raise
 
 
 def run_suites(modules):
@@ -214,15 +304,22 @@ def run_suites(modules):
     problems = []
     try:
         _session.open()
-        with policy("auto"):
-            for module in modules:
-                result = run_module_tests(module)
-                if result.failures or result.errors:
-                    problems.append(
-                        "{} (failures={}, errors={})".format(
-                            module.__name__, len(result.failures), len(result.errors)
-                        )
-                    )
+        in_force_before = _policy_in_force()
+        with answer_prompts(POLICY_PROMPT, YES):
+            try:
+                with policy("auto"):
+                    for module in modules:
+                        result = run_module_tests(module)
+                        if result.failures or result.errors:
+                            problems.append(
+                                "{} (failures={}, errors={})".format(
+                                    module.__name__,
+                                    len(result.failures),
+                                    len(result.errors),
+                                )
+                            )
+            finally:
+                _restore_policy_in_force(in_force_before)
     finally:
         _session.close()
         _session = None

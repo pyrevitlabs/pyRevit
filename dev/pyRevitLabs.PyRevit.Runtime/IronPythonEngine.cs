@@ -90,7 +90,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     flags["Tracing"] = true;
                 }
 
-                Engine = IronPython.Hosting.Python.CreateEngine(flags);
+                Engine = CreateEngineWithUtf8Streams(flags);
 
                 // also, allow access to the PyRevitLoader internals
                 Engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
@@ -221,6 +221,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 );
             }
             ExecEngineConfigs = configs;
+        }
+
+        /// <summary>
+        /// Creates the IronPython engine with UTF-8 standard streams already in place.
+        /// </summary>
+        /// <remarks>
+        /// IronPython 3 builds <c>sys.stdout</c>, <c>sys.stderr</c> and <c>sys.stdin</c> while the engine is
+        /// created and fixes their encoding name from the console writer at that moment. In a process without
+        /// a console that writer reports code page 0 and the name becomes <c>codepage___0</c>, which fails on
+        /// the first <c>print</c>. Redirecting the streams afterwards does not rename it, so the redirect
+        /// has to happen before the engine exists.
+        /// </remarks>
+        private static Microsoft.Scripting.Hosting.ScriptEngine CreateEngineWithUtf8Streams(IDictionary<string, object> flags) {
+#if IPY342
+            var scriptRuntime = IronPython.Hosting.Python.CreateRuntime(flags);
+            scriptRuntime.IO.SetOutput(Stream.Null, System.Text.Encoding.UTF8);
+            scriptRuntime.IO.SetErrorOutput(Stream.Null, System.Text.Encoding.UTF8);
+            scriptRuntime.IO.SetInput(Stream.Null, System.Text.Encoding.UTF8);
+            return IronPython.Hosting.Python.GetEngine(scriptRuntime);
+#else
+            return IronPython.Hosting.Python.CreateEngine(flags);
+#endif
         }
 
         private void SetupStreams(ref ScriptRuntime runtime) {

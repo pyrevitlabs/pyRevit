@@ -158,34 +158,45 @@ namespace pyRevitCLI {
     /// </remarks>
     internal static class PyRevitAutomationOperations {
         private sealed class Operation {
+            public Operation() {
+            }
+
+            /// <summary>
+            /// An operation whose inputs are declared like a marker's, such as <c>"value: scalar"</c>,
+            /// so they are listed and checked by the same <see cref="AutomationInput"/> rules.
+            /// </summary>
+            public Operation(params string[] inputSpecs) {
+                var declared = AutomationInput.ParseAll(inputSpecs);
+                ValidateInputs = inputs => AutomationInput.Validate(declared, inputs);
+                Inputs = new JArray(declared.Select(input => input.ToJson()));
+            }
+
             public string Id { get; set; }
             public string Title { get; set; }
             public string Source { get; set; }
             public bool RequiresDocument { get; set; }
             public Func<JObject, JObject> ValidateInputs { get; set; }
+            public JArray Inputs { get; set; }
         }
 
         private static readonly Regex BuiltInCategoryName = new Regex("^OST_[A-Za-z0-9_]{1,124}$");
 
         private static readonly Dictionary<string, Operation> Operations = new Dictionary<string, Operation>(StringComparer.OrdinalIgnoreCase) {
-            ["pyrevit.units.parse-length"] = new Operation {
+            ["pyrevit.units.parse-length"] = new Operation("value: scalar") {
                 Id = "pyrevit.units.parse-length",
                 Title = "Normalize length",
                 Source = "from pyrevit.revit import units\nresult = {'value': units.parse_length(inputs['value'])}\n",
-                ValidateInputs = inputs => ValidateSingleInput(inputs, "value", false),
             },
-            ["pyrevit.units.parse-slope"] = new Operation {
+            ["pyrevit.units.parse-slope"] = new Operation("value: scalar") {
                 Id = "pyrevit.units.parse-slope",
                 Title = "Normalize slope",
                 Source = "from pyrevit.revit import units\nresult = {'value': units.parse_slope(inputs['value'])}\n",
-                ValidateInputs = inputs => ValidateSingleInput(inputs, "value", false),
             },
-            ["pyrevit.levels.resolve"] = new Operation {
+            ["pyrevit.levels.resolve"] = new Operation("name: string") {
                 Id = "pyrevit.levels.resolve",
                 Title = "Resolve level",
                 Source = "from pyrevit.revit.db import query\nresult = {'level': query.find_level(inputs['name'], doc=doc)}\n",
                 RequiresDocument = true,
-                ValidateInputs = inputs => ValidateSingleInput(inputs, "name", true),
             },
             ["pyrevit.elements.by-category"] = new Operation {
                 Id = "pyrevit.elements.by-category",
@@ -193,6 +204,9 @@ namespace pyRevitCLI {
                 Source = "from pyrevit.revit.db import query\nelements = list(query.get_elements_by_categories(inputs['categories'], doc=doc))\nlimited = elements[:inputs['limit']]\nunknown = [name for name in inputs['categories'] if query.get_category(name, doc=doc) is None]\nresult = {'elements': limited, 'total': len(elements), 'truncated': len(elements) > len(limited), 'unknown_categories': unknown}\n",
                 RequiresDocument = true,
                 ValidateInputs = ValidateCategoryCollection,
+                Inputs = new JArray(
+                    Input("categories", "array", true, "1 to 20 BuiltInCategory names such as OST_Walls."),
+                    Input("limit", "integer", false, "Elements to return, 1 to 200, default 50.")),
             },
         };
 
@@ -219,6 +233,34 @@ namespace pyRevitCLI {
         internal static bool IsInvocable(LibrarySymbol symbol) {
             return symbol?.Automation != null
                 && (Operations.ContainsKey(symbol.Automation.Id) || IsMarkedInvocable(symbol));
+        }
+
+        /// <summary>
+        /// The inputs run_automation takes for this symbol, as <c>name</c>, <c>type</c> and
+        /// <c>required</c> entries, or null when it declares none.
+        /// </summary>
+        /// <remarks>
+        /// A hand-wired operation's own inputs win over its marker, which declares none.
+        /// </remarks>
+        internal static JArray InputsOf(LibrarySymbol symbol) {
+            if (symbol?.Automation == null)
+                return null;
+            if (Operations.TryGetValue(symbol.Automation.Id, out var operation))
+                return (JArray)operation.Inputs.DeepClone();
+            return symbol.Automation.Inputs == null
+                ? null
+                : new JArray(symbol.Automation.Inputs.Select(input => input.ToJson()));
+        }
+
+        private static JObject Input(string name, string type, bool required, string description = null) {
+            var input = new JObject {
+                ["name"] = name,
+                ["type"] = type,
+                ["required"] = required,
+            };
+            if (description != null)
+                input["description"] = description;
+            return input;
         }
 
         /// <summary>
@@ -288,18 +330,6 @@ namespace pyRevitCLI {
             };
         }
 
-        private static JObject ValidateSingleInput(JObject inputs, string name, bool stringOnly) {
-            if (inputs.Properties().Any(property => property.Name != name))
-                throw new AgentClientException("invalid_params", $"'inputs' accepts only '{name}'.");
-            var value = inputs[name];
-            if (value == null || (value.Type != JTokenType.Integer && value.Type != JTokenType.Float && value.Type != JTokenType.String))
-                throw new AgentClientException("invalid_params", $"'inputs.{name}' must be a number or string.");
-            if (stringOnly && value.Type != JTokenType.String)
-                throw new AgentClientException("invalid_params", $"'inputs.{name}' must be a string.");
-            if (value.Type == JTokenType.String && (value.Value<string>().Length > 256 || string.IsNullOrWhiteSpace(value.Value<string>())))
-                throw new AgentClientException("invalid_params", $"'inputs.{name}' must be non-empty and contain at most 256 characters.");
-            return inputs;
-        }
 
         private static JObject ValidateCategoryCollection(JObject inputs) {
             if (inputs.Properties().Any(property => property.Name != "categories" && property.Name != "limit"))

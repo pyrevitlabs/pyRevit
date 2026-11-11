@@ -16,27 +16,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxLevels = 200;
 
         /// <remarks>
-        /// <c>clone</c> comes from the attachment when the session env doesn't know it, and is
-        /// null rather than <c>Unknown</c> when neither does; <c>attached</c> tells the agent
+        /// <c>clone</c> is the clone the session actually loaded, with the engine, path, branch
+        /// and commit beside it; the session env's clone name is the fallback, and the value is
+        /// null rather than <c>Unknown</c> when neither knows. <c>attached</c> tells the agent
         /// why engine details may be missing.
         /// </remarks>
         private static JObject DescribePyRevit(EnvDictionary env, string revitVersion) {
-            PyRevitAttachment attachment = null;
-            try {
-                if (int.TryParse(revitVersion, out var revitYear))
-                    attachment = PyRevitAttachments.GetAttachedCached(revitYear);
-            }
-            catch (Exception) {
-            }
+            var identity = int.TryParse(revitVersion, out var revitYear)
+                ? AgentSessionIdentity.Describe(revitYear)
+                : new JObject();
 
-            var clone = env.PyRevitClone;
-            if (string.IsNullOrEmpty(clone) || clone == "Unknown")
-                clone = attachment?.Clone?.Name;
-            return new JObject {
+            var clone = identity.Value<string>("clone");
+            if (string.IsNullOrEmpty(clone) && env.PyRevitClone != "Unknown")
+                clone = env.PyRevitClone;
+            var description = new JObject {
                 ["version"] = env.PyRevitVersion,
-                ["clone"] = clone,
-                ["attached"] = attachment != null,
+                ["clone"] = string.IsNullOrEmpty(clone) ? null : clone,
             };
+            identity.Remove("clone");
+            description.Merge(identity);
+            description["attached"] = identity.Value<bool?>("attached") ?? false;
+            return description;
         }
 
         /// <remarks>
@@ -44,9 +44,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         private static JObject DescribeAgent() {
             var agent = new JObject {
-                ["policy"] = PyRevitConfigs.GetAgentPolicy(),
+                ["policy"] = AgentRunService.PolicyNameInForce(),
             };
-            if (PyRevitConfigs.GetAgentReckless())
+            if (AgentRunService.RecklessInForce())
                 agent["reckless"] = true;
             return agent;
         }
@@ -125,9 +125,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 #endif
         }
 
+        /// <remarks>
+        /// On Revit 2021-2023, whose ids are 32-bit, a value out of that range returns
+        /// <see cref="ElementId.InvalidElementId"/>, which matches no element, instead of throwing.
+        /// </remarks>
         public static ElementId FromValue(long value) {
 #if REVIT2021 || REVIT2022 || REVIT2023
-            return new ElementId(checked((int)value));
+            return value < int.MinValue || value > int.MaxValue
+                ? ElementId.InvalidElementId
+                : new ElementId((int)value);
 #else
             return new ElementId(value);
 #endif

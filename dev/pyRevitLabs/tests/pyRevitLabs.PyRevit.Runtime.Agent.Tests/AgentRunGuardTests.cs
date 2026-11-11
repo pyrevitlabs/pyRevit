@@ -2,8 +2,11 @@ using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using PyRevitLabs.PyRevit.Runtime.Agent;
+using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentRunGuardTests {
         [Fact]
         public void OpenedDocumentsAreProtectedEvenWithAnEmptyPath() {
@@ -17,6 +20,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.Change(opened);
                 Assert.True(guard.ChangedOtherOpenDocument);
             }
+        }
+
+        [Fact]
+        public void OnlyBackgroundDocumentsOpenedAfterTheGuardWasCreatedAreLeftovers() {
+            var app = new UIApplication();
+            app.Application.Documents.Add(new Document { Title = "Open before" });
+            var guard = new AgentRunGuard(app, null);
+            guard.Arm("Test");
+            app.Application.Open(new Document { Title = "Opened by the run" });
+            guard.Dispose();
+
+            var leftovers = AgentDocuments.CloseLeftovers(app.Application, guard.OpenAtStart);
+
+            Assert.Equal(new[] { "Opened by the run" }, leftovers["closed"].Values<string>());
         }
 
         [Fact]
@@ -35,7 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void ExportAndSynchronizeOperationsAreBlocked() {
+        public void ExportPrintAndSynchronizeOperationsAreBlocked() {
             var app = new UIApplication();
             var document = new Document();
             using (var guard = new AgentRunGuard(app, document)) {
@@ -43,9 +60,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 Assert.False(app.Application.ExportFile());
                 Assert.False(app.Application.ExportView());
                 Assert.False(app.Application.Synchronize(document));
+                Assert.False(app.Application.Print(document));
                 Assert.Equal("file_export", guard.Blocked[0].Value<string>("operation"));
                 Assert.Equal("view_export", guard.Blocked[1].Value<string>("operation"));
                 Assert.Equal("synchronize_with_central", guard.Blocked[2].Value<string>("operation"));
+                Assert.Equal("print", guard.Blocked[3].Value<string>("operation"));
             }
         }
 
@@ -73,10 +92,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             app.Application.Documents.Add(existing);
             var guard = new AgentRunGuard(app, null);
             guard.Arm("Test");
-            app.Application.Change(existing);
+            var added = new ElementId();
+            app.Application.Change(existing, added: new[] { added });
             Assert.False(app.Application.Save(existing));
             Assert.False(app.Application.SaveAs(existing));
             Assert.False(guard.DescribeOtherDocuments()[0].Value<bool>("rolled_back"));
+            existing.Deleted.Add(added);
             guard.RollBack();
             guard.Dispose();
             Assert.True(guard.DescribeOtherDocuments()[0].Value<bool>("rolled_back"));
@@ -112,8 +133,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             app.Application.Documents.Add(healthy);
             var guard = new AgentRunGuard(app, null);
             guard.Arm("Test");
+            var healthyAdded = new ElementId();
             app.Application.Change(failing);
-            app.Application.Change(healthy);
+            app.Application.Change(healthy, added: new[] { healthyAdded });
+            healthy.Deleted.Add(healthyAdded);
             Assert.Throws<AggregateException>(guard.RollBack);
             guard.Dispose();
             Assert.False(guard.DescribeOtherDocuments()[0].Value<bool>("rolled_back"));

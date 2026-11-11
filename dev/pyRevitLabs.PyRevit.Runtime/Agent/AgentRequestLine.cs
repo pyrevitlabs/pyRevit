@@ -1,0 +1,38 @@
+using System.IO;
+using pyRevitLabs.Json;
+using pyRevitLabs.Json.Linq;
+
+namespace PyRevitLabs.PyRevit.Runtime.Agent {
+    /// <summary>
+    /// Parses one request line of the agent pipe.
+    /// </summary>
+    internal static class AgentRequestLine {
+        /// <summary>
+        /// Parses <paramref name="line"/> as a single JSON object without converting date-like strings.
+        /// </summary>
+        /// <exception cref="JsonException">The line is not one JSON object.</exception>
+        public static JObject Parse(string line) {
+            using (var reader = new JsonTextReader(new StringReader(line)) { DateParseHandling = DateParseHandling.None }) {
+                var request = JObject.Load(reader);
+                while (reader.Read()) {
+                    if (reader.TokenType != JsonToken.Comment)
+                        throw new JsonReaderException("Additional text found in JSON string after finishing deserializing object.");
+                }
+                return request;
+            }
+        }
+
+        /// <summary>The answer to a request line refused unread, so the client knows nothing ran.</summary>
+        public static string RefuseOversized(string reason) {
+            return new JObject {
+                ["jsonrpc"] = "2.0",
+                ["id"] = null,
+                ["error"] = new JObject {
+                    ["code"] = -32600,
+                    ["message"] = "Request refused, nothing ran: " + reason,
+                    ["data"] = new JObject { ["type"] = "request_too_large", ["outcome"] = "not_run" },
+                },
+            }.ToString(Formatting.None);
+        }
+    }
+}

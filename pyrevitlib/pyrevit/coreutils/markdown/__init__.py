@@ -8,7 +8,7 @@ called from the command line.
     import markdown
     html = markdown.markdown(your_text_string)
 
-See <https://pythonhosted.org/Markdown/> for more
+See <https://python-markdown.github.io/> for more
 information and instructions on how to extend the functionality of
 Python Markdown.  Read that before you try modifying this file.
 
@@ -16,7 +16,7 @@ Python Markdown.  Read that before you try modifying this file.
 
 Started by [Manfred Stienstra](http://www.dwerg.net/).  Continued and
 maintained  by [Yuri Takhteyev](http://www.freewisdom.org), [Waylan
-Limberg](http://achinghead.com/) and [Artem Yunusov](http://blog.splyer.com).
+Limberg](http://achinghead.com/) and Artem Yunusov.
 
 Contact: markdown@freewisdom.org
 

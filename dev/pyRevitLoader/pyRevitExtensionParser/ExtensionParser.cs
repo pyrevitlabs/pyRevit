@@ -1484,7 +1484,7 @@ namespace pyRevitExtensionParser
                 return files.FirstOrDefault(file =>
                            Path.GetFileName(file).Equals(name, StringComparison.OrdinalIgnoreCase))
                     ?? files.FirstOrDefault(file =>
-                           Path.GetFileName(file).EndsWith("_" + name, StringComparison.OrdinalIgnoreCase));
+                           Path.GetFileName(file).EndsWith(name, StringComparison.OrdinalIgnoreCase));
             }
 
             var versioned = revitYear > 0

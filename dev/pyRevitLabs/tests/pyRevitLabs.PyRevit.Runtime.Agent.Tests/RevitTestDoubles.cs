@@ -10,10 +10,14 @@ namespace Autodesk.Revit.DB {
     internal enum FailureProcessingResult { Continue, ProceedWithRollBack }
     internal sealed class ElementId { }
     internal sealed class Category { public string Name { get; set; } }
-    internal sealed class Element {
+    internal class Element {
         public Category Category { get; set; }
         public string Name { get; set; }
     }
+    internal sealed class Family : Element { }
+    internal class ElementType : Element { }
+    internal sealed class FamilySymbol : ElementType { }
+    internal sealed class WallType : ElementType { }
     internal sealed class Document {
         public string Title { get; set; } = "Test document";
         public string PathName { get; set; } = "";
@@ -36,7 +40,13 @@ namespace Autodesk.Revit.DB {
                 IsValidObject = false;
             return CloseSucceeds;
         }
-        public Element GetElement(ElementId id) => new Element();
+        public HashSet<ElementId> Deleted { get; } = new HashSet<ElementId>();
+        public Dictionary<ElementId, Element> Elements { get; } = new Dictionary<ElementId, Element>();
+        public Element GetElement(ElementId id) {
+            if (Deleted.Contains(id))
+                return null;
+            return Elements.TryGetValue(id, out var element) ? element : new Element();
+        }
     }
     internal sealed class TransactionGroup : IDisposable {
         private readonly Document document;
@@ -99,6 +109,7 @@ namespace Autodesk.Revit.DB.Events {
     internal sealed class DocumentSynchronizingWithCentralEventArgs : DocumentEventArgs { }
     internal sealed class DocumentCreatedEventArgs : DocumentEventArgs { }
     internal sealed class DocumentOpenedEventArgs : DocumentEventArgs { }
+    internal sealed class DocumentPrintingEventArgs : DocumentEventArgs { }
     internal sealed class FileExportingEventArgs : RevitAPIPreEventArgs { }
     internal sealed class ViewExportingEventArgs : RevitAPIPreEventArgs { }
     internal sealed class DocumentChangedEventArgs : EventArgs {
@@ -133,6 +144,7 @@ namespace Autodesk.Revit.ApplicationServices {
         public event EventHandler<DocumentSavingAsEventArgs> DocumentSavingAs;
         public event EventHandler<FileExportingEventArgs> FileExporting;
         public event EventHandler<ViewExportingEventArgs> ViewExporting;
+        public event EventHandler<DocumentPrintingEventArgs> DocumentPrinting;
         public event EventHandler<DocumentCreatedEventArgs> DocumentCreated;
         public event EventHandler<DocumentOpenedEventArgs> DocumentOpened;
         public event EventHandler<DocumentClosingEventArgs> DocumentClosing;
@@ -187,6 +199,11 @@ namespace Autodesk.Revit.ApplicationServices {
             ViewExporting?.Invoke(this, args);
             return !args.Cancelled;
         }
+        public bool Print(Document document) {
+            var args = new DocumentPrintingEventArgs { Document = document };
+            DocumentPrinting?.Invoke(this, args);
+            return !args.Cancelled;
+        }
         public bool Synchronize(Document document) {
             var args = new DocumentSynchronizingWithCentralEventArgs { Document = document };
             DocumentSynchronizingWithCentral?.Invoke(this, args);
@@ -204,6 +221,15 @@ namespace Autodesk.Revit.UI {
         public Document Document { get; }
         public List<int> GetOpenUIViews() => Document.HasView ? new List<int> { 1 } : new List<int>();
     }
+    internal enum ExternalEventRequest { Accepted, Pending, Denied, TimedOut }
+    internal interface IExternalEventHandler {
+        void Execute(UIApplication app);
+        string GetName();
+    }
+    internal sealed class ExternalEvent {
+        public Func<ExternalEventRequest> OnRaise { get; set; }
+        public ExternalEventRequest Raise() => OnRaise();
+    }
 }
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal sealed class AgentDialogCapture {
@@ -213,5 +239,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
     internal static class AgentIds {
         public static long ToValue(ElementId id) => 1;
+    }
+}
+namespace pyRevitLabs.PyRevit {
+    internal static class PyRevitConfigs {
+        public static string GetAgentEngine() => "ironpython";
+    }
+}
+namespace pyRevitLabs.NLog {
+    internal sealed class Logger {
+        public void Error(string message, params object[] args) { }
+        public void Warn(string message, params object[] args) { }
+        public void Debug(string message, params object[] args) { }
+    }
+    internal static class LogManager {
+        public static Logger GetCurrentClassLogger() => new Logger();
     }
 }
