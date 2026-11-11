@@ -272,23 +272,21 @@ def _restore_policy_in_force(in_force_before):
         The host only tightens the policy it enforces. After a test ran under a
         stricter policy, restoring the configured value leaves the stricter one
         enforced until a modify run starts and the user confirms the looser
-        policy. A policy the user had refused stays refused: when it was
-        stricter than the configured one, it is enforced again without a prompt.
-        The caller must have ``answer_prompts(POLICY_PROMPT, YES)`` active so
-        that the confirmation is pressed.
+        policy. The modify run therefore starts under ``in_force_before``
+        itself: a policy the user had refused stays refused, because the host
+        only asks about a policy looser than the enforced one. The caller must
+        have ``answer_prompts(POLICY_PROMPT, YES)`` active so that the
+        confirmation is pressed.
 
     Raises:
         AgentRequestError: for any host error other than ``policy_readonly``.
     """
-    if in_force_before != PyRevit.PyRevitConfigs.GetAgentPolicy():
-        with policy(in_force_before):
-            _policy_in_force()
-        return
-    try:
-        run("result = None", mode="modify", engine="ironpython")
-    except AgentRequestError as error:
-        if error.code != "policy_readonly":
-            raise
+    with policy(in_force_before):
+        try:
+            run("result = None", mode="modify", engine="ironpython")
+        except AgentRequestError as error:
+            if error.code != "policy_readonly":
+                raise
 
 
 def run_suites(modules):
