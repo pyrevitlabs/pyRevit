@@ -38,6 +38,35 @@ namespace PyRevitLoader
                 slots[slotName] = release;
             }
 
+            RunPreviousRelease(slotName, previous, onError);
+        }
+
+        /// <summary>
+        /// Empties <paramref name="slotName"/> and runs the release that a previous session load
+        /// stored there, if any.
+        /// </summary>
+        /// <param name="slotName">Name of the resource, shared by every session load.</param>
+        /// <param name="onError">Receives the failure of the previous release, if it threw.</param>
+        /// <remarks>
+        /// For a session load that no longer needs the resource: without this call the previous
+        /// session's resources would stay alive until a later load claims the slot again.
+        /// A failing release is reported and swallowed, as in <see cref="Replace"/>.
+        /// </remarks>
+        public static void Release(string slotName, Action<string> onError = null)
+        {
+            Action previous;
+            var slots = GetSlots();
+            lock (slots)
+            {
+                if (slots.TryGetValue(slotName, out previous))
+                    slots.Remove(slotName);
+            }
+
+            RunPreviousRelease(slotName, previous, onError);
+        }
+
+        private static void RunPreviousRelease(string slotName, Action previous, Action<string> onError)
+        {
             if (previous == null)
                 return;
 

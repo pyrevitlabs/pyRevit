@@ -185,24 +185,39 @@ def replace_handler(slot, source, event_name, handler_func, handler_args_type):
 def release_handler(slot, source, event_name):
     """Detach the delegate ``replace_handler`` subscribed under ``slot``.
 
-    A failing detach is logged and the slot is cleared anyway, so one stale
-    delegate cannot make every later reload fail on the same slot.
+    A delegate whose detach fails is logged and moved out of the slot into a
+    retry list, so the next load still gets the slot while every later
+    release keeps trying to detach it until the detach succeeds.
 
     Args:
         slot (str): the key passed to ``replace_handler``.
         source (object): object raising the event.
         event_name (str): CLR event name.
+
+    Note:
+        The retry list lives in AppDomain data under ``slot + ":stale"`` and
+        must stay a CLR ``ArrayList``: each reload runs in a new engine.
     """
     domain = framework.AppDomain.CurrentDomain
+    stale_key = slot + ":stale"
+    pending = list(domain.GetData(stale_key) or [])
     previous = domain.GetData(slot)
-    if previous is None:
+    if previous is not None:
+        pending.append(previous)
+    if not pending:
         return
+    clr_event = source.GetType().GetEvent(event_name)
+    still_attached = ArrayList()
     try:
-        source.GetType().GetEvent(event_name).RemoveEventHandler(source, previous)
-    except Exception as ex:
-        mlogger.error("Could not release handler for %s: %s", slot, ex)
+        for event_handler in pending:
+            try:
+                clr_event.RemoveEventHandler(source, event_handler)
+            except Exception as ex:
+                mlogger.error("Could not release handler for %s: %s", slot, ex)
+                still_attached.Add(event_handler)
     finally:
         domain.SetData(slot, None)
+        domain.SetData(stale_key, still_attached if still_attached.Count else None)
 
 
 def register_handler(event_name, handler_func, handler_group_id):

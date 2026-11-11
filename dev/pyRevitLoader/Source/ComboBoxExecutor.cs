@@ -49,6 +49,20 @@ namespace PyRevitLoader
             _logger = logger;
         }
 
+        /// <summary>
+        /// Releases the engine and event handlers that the previous session load's executor left
+        /// behind, whether or not this session load creates an executor of its own.
+        /// </summary>
+        /// <param name="onError">Receives the failure of the previous release, if it threw.</param>
+        /// <remarks>
+        /// Called by reflection from <c>ComboBoxScriptInitializer</c> at the start of every
+        /// session load; keep the name and signature.
+        /// </remarks>
+        public static void ReleasePreviousSession(Action<string> onError)
+        {
+            SessionResourceRegistry.Release(SessionSlotName, onError);
+        }
+
         public string Message { get; private set; } = null;
 
         private void Log(string message)
