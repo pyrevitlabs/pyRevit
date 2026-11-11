@@ -133,24 +133,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.False(folder.Contains(ShortName(other)));
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData("\\")]
-        [InlineData("/")]
-        public void ScriptsGetTheFolderWithOneTrailingSeparator(string suffix) {
-            var forScripts = AgentExportFolder.ForScripts(exports + suffix);
+        [Fact]
+        public void TheScriptFacingFolderEndsWithExactlyOneSeparator() {
+            var exportDir = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(exports), "exports")).FullName;
+            var forScripts = exportDir + Path.DirectorySeparatorChar;
 
             Assert.Equal(exports + Path.DirectorySeparatorChar, forScripts);
         }
 
         [Fact]
-        public void TheFolderAsScriptsGetItIsAnAllowedTarget() {
-            var folder = new AgentExportFolder(exports);
-            var forScripts = AgentExportFolder.ForScripts(exports);
+        public void TheScriptFacingFolderAndItsPrefixesAreAllowedByAGuardOnThePlainFolder() {
+            var app = new UIApplication();
+            var forScripts = exports + Path.DirectorySeparatorChar;
+            using (var guard = new AgentRunGuard(app, new Document(), exports)) {
+                guard.Arm("Test");
 
-            Assert.True(folder.Contains(forScripts));
-            Assert.True(folder.Contains(Path.Combine(forScripts, "sheet")));
-            Assert.True(folder.Contains(forScripts + "sheet"));
+                Assert.True(app.Application.ExportFile(forScripts));
+                Assert.True(app.Application.ExportFile(Path.Combine(forScripts, "sheet")));
+                Assert.True(app.Application.ExportFile(forScripts + "sheet"));
+                Assert.Empty(guard.Blocked);
+            }
         }
 
         [Fact]

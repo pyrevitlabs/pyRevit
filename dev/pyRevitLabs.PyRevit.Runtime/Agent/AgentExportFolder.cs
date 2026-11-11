@@ -28,15 +28,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// The folder as scripts get it in <c>export_dir</c>: with one trailing separator, so
-        /// <c>ImageExportOptions.FilePath = export_dir</c> writes inside it. Revit treats a
-        /// <c>FilePath</c> without one as a file name prefix and would write beside the folder.
-        /// </summary>
-        public static string ForScripts(string folder) {
-            return folder.TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
-        }
-
-        /// <summary>
         /// True when <paramref name="target"/>, a file, file name prefix or folder as Revit
         /// reports it in <c>FileExportingEventArgs.Path</c>, is the folder or lies inside it.
         /// </summary>
