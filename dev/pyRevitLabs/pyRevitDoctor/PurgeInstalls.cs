@@ -23,6 +23,13 @@ namespace pyRevitDoctor {
             new(RegistryHive.CurrentUser, @"SOFTWARE\Microsoft\Installer\Products", IsUninstallList: false),
         };
 
+        /// <summary>
+        /// Scans the uninstall lists and installer product keys of the machine and the user and deletes the pyRevit records.
+        /// </summary>
+        /// <remarks>
+        /// A key that cannot be opened is counted as a failure and the scan goes on. When the embedded product list is invalid,
+        /// nothing is scanned and the process exit code is set to 1.
+        /// </remarks>
         public static void Run(PurgeSession session) {
             session.Output.WriteLine("Purging old installs...");
             List<Product> products;

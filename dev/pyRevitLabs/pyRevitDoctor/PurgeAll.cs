@@ -20,6 +20,12 @@ namespace pyRevitDoctor {
         const string McpUninstallArguments = "mcp uninstall --all --owned";
         const int McpUninstallTimeoutMilliseconds = 60_000;
 
+        /// <summary>
+        /// Unregisters the MCP integrations, then purges the files, then the registry records.
+        /// </summary>
+        /// <remarks>
+        /// Purges nothing when a timed-out <c>pyrevit.exe</c> cannot be stopped, and leaves the registry alone when the file purge aborted.
+        /// </remarks>
         public static void Run(PurgeSession session, MachineLocations locations) {
             if (!UninstallMcpIntegrations(session, locations))
                 return;

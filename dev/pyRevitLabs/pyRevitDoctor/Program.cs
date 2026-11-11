@@ -125,6 +125,8 @@ Usage:
                 Console.WriteLine($"    {command.Name,-25} {command.HelpMsg}");
         }
 
+        /// <summary>Reads the product list embedded in the executable.</summary>
+        /// <exception cref="System.Text.Json.JsonException">The embedded list is not valid JSON.</exception>
         public static List<Product> LoadProducts() => ProductCatalog.Parse(Resources.ProductInfo);
     }
 

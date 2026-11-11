@@ -14,6 +14,7 @@ namespace pyRevitDoctor {
         public string ProgramData { get; init; }
         public string Documents { get; init; }
 
+        /// <summary>Resolves the folders for the user and machine the process runs as.</summary>
         public static MachineLocations FromEnvironment() => new() {
             AppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             LocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

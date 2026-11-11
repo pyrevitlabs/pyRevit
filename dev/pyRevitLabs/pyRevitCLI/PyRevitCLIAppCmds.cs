@@ -305,6 +305,7 @@ namespace pyRevitCLI {
             };
             var utilityProcess = Process.Start(cpyProcessInfo);
             utilityProcess.WaitForExit();
+            Environment.ExitCode = utilityProcess.ExitCode;
         }
     }
 }
