@@ -36,15 +36,10 @@ namespace pyRevitDoctor {
             }
 
             foreach (var target in SearchTargets) {
-                RegistryKey key;
-                try {
-                    key = OpenTargetKey(session, target);
-                }
-                catch (Exception ex) {
-                    session.ReportFailed($@"({target.BaseKey})\{target.SubKeyName}", ex, "Opening");
-                    continue;
-                }
-
+                var key = RegistryAccess.TryOpenForPurge(
+                    session,
+                    $@"({target.BaseKey})\{target.SubKeyName}",
+                    writable => OpenSubKey(target, writable));
                 if (key == null)
                     continue;
 
@@ -54,15 +49,6 @@ namespace pyRevitDoctor {
                             PurgeUninstallEntry(session, key, subKeyName, products);
                         else
                             PurgeInstallerProduct(session, target, key, subKeyName, products);
-            }
-        }
-
-        static RegistryKey OpenTargetKey(PurgeSession session, RegistryTarget target) {
-            try {
-                return OpenSubKey(target, writable: !session.Options.DryRun);
-            }
-            catch (Exception ex) when (ex is UnauthorizedAccessException or SecurityException) {
-                return OpenSubKey(target, writable: false);
             }
         }
 
