@@ -168,12 +168,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public void Assimilate() {
-            assimilationRequested = true;
             RollBackOtherDocuments();
             if (HasOpenGroup) {
                 group.Assimilate();
                 Committed = true;
             }
+            assimilationRequested = true;
         }
 
         /// <summary>

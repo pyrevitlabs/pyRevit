@@ -479,6 +479,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AnAssimilationThatFailsPartwayDoesNotExemptTheRunFromTheModelCheck() {
+            var app = new UIApplication();
+            var active = new Document();
+            var other = new Document { ThrowOnRollback = true, ThrowOnDispose = true };
+            var deleted = new ElementId();
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(other);
+            var guard = new AgentRunGuard(app, active);
+            guard.Arm("Test");
+            app.Application.Change(other);
+            Assert.Throws<AggregateException>(guard.RollBack);
+            Assert.False(guard.HasOpenGroup);
+            app.Application.Change(active, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            active.Deleted.Add(deleted);
+            Assert.Throws<AggregateException>(guard.Assimilate);
+
+            guard.Dispose();
+
+            Assert.True(guard.RollbackFailed);
+        }
+
+        [Fact]
         public void AGuardWithoutAnActiveGroupDoesNotCheckTheModel() {
             var app = new UIApplication();
             var document = new Document { IsReadOnly = true };
