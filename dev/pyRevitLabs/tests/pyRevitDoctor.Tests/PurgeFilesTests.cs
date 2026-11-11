@@ -123,4 +123,31 @@ public sealed class PurgeFilesTests : IDisposable {
         Assert.True(File.Exists(config));
         Assert.True(File.Exists(clone));
     }
+
+    /// <summary>
+    /// A config next to <c>pyRevitfile</c> in an install folder is the active one (clone-local config),
+    /// so it must be backed up before the folder goes.
+    /// </summary>
+    [Fact]
+    public void LocalConfigInInstallFolderIsBackedUp() {
+        Create("Roaming", "pyRevit-Master", "pyRevitfile");
+        var localConfig = Create("Roaming", "pyRevit-Master", "pyRevit_config.ini");
+
+        Purge(new PurgeOptions());
+
+        Assert.False(File.Exists(localConfig));
+        Assert.Single(Directory.GetFiles(locations.Documents, "pyRevit_config.install*.ini"));
+    }
+
+    [Fact]
+    public void KeepConfigPreservesLocalConfigInInstallFolder() {
+        Create("Roaming", "pyRevit-Master", "pyRevitfile");
+        var localConfig = Create("Roaming", "pyRevit-Master", "pyRevit_config.ini");
+
+        Purge(new PurgeOptions { KeepConfig = true });
+
+        Assert.True(File.Exists(localConfig));
+        Assert.False(File.Exists(Path.Combine(root, "Roaming", "pyRevit-Master", "pyRevitfile")));
+        Assert.Empty(Directory.GetFiles(locations.Documents));
+    }
 }

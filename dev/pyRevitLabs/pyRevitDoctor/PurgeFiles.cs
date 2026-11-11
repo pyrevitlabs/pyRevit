@@ -15,7 +15,8 @@ namespace pyRevitDoctor {
     /// Needs no working <c>pyrevit.exe</c>. Only paths from <see cref="PurgeTargets"/> are touched, and a
     /// folder is deleted only if it holds a pyRevit marker and is not a link. Unless
     /// <see cref="PurgeOptions.KeepConfig"/> is set, <c>pyRevit_config.ini</c> is first copied to the
-    /// Documents folder, and when that copy fails nothing is deleted.
+    /// Documents folder, and when that copy fails nothing is deleted. That covers the clone-local config in
+    /// an install folder that holds <c>pyRevitfile</c>, which takes precedence over the data folder configs.
     /// </remarks>
     public static class PurgeFiles {
         sealed record PathScope(string Name, RegistryHive Hive, string SubKey);
@@ -38,10 +39,10 @@ namespace pyRevitDoctor {
             if (!BackUpConfigs(session, locations))
                 return false;
 
-            foreach (var directory in PurgeTargets.InstallDirectories(locations))
-                DeleteDirectory(session, directory, preservedFileName: null);
-
             var preservedConfig = session.Options.KeepConfig ? PurgeTargets.ConfigFileName : null;
+            foreach (var directory in PurgeTargets.InstallDirectories(locations))
+                DeleteDirectory(session, directory, preservedConfig);
+
             foreach (var directory in PurgeTargets.DataDirectories(locations))
                 DeleteDirectory(session, directory, preservedConfig);
 
@@ -57,9 +58,13 @@ namespace pyRevitDoctor {
             }
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-            var configs = PurgeTargets.DataDirectories(locations)
-                .Select((directory, index) => (Source: Path.Combine(directory, PurgeTargets.ConfigFileName), Label: index == 0 ? "user" : "all-users"))
-                .Where(config => session.Exists(config.Source));
+            var dataConfigs = PurgeTargets.DataDirectories(locations)
+                .Select((directory, index) => (Source: Path.Combine(directory, PurgeTargets.ConfigFileName), Label: index == 0 ? "user" : "all-users"));
+            var localConfigs = PurgeTargets.InstallDirectories(locations)
+                .Select((directory, index) => (Directory: directory, Label: $"install{index + 1}"))
+                .Where(install => session.Exists(Path.Combine(install.Directory, "pyRevitfile")))
+                .Select(install => (Source: Path.Combine(install.Directory, PurgeTargets.ConfigFileName), install.Label));
+            var configs = dataConfigs.Concat(localConfigs).Where(config => session.Exists(config.Source));
             foreach (var (source, label) in configs) {
                 var backup = Path.Combine(locations.Documents, $"pyRevit_config.{label}.{timestamp}.ini");
                 try {
