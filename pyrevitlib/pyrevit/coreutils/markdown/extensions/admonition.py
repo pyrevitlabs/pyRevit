@@ -4,10 +4,10 @@ Adds rST-style admonitions. Inspired by [rST][] feature with the same name.
 
 [rST]: http://docutils.sourceforge.net/docs/ref/rst/directives.html#specific-admonitions
 
-See <https://pythonhosted.org/Markdown/extensions/admonition.html>
+See <https://python-markdown.github.io/extensions/admonition/>
 for documentation.
 
-Original code Copyright [Tiago Serafim](http://www.tiagoserafim.com/).
+Original code Copyright Tiago Serafim.
 
 All changes Copyright The Python Markdown Project
 

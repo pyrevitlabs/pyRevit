@@ -2,7 +2,7 @@
 
 Modify the behavior of Lists in Python-Markdown to act in a sane manor.
 
-See <https://pythonhosted.org/Markdown/extensions/sane_lists.html>
+See <https://python-markdown.github.io/extensions/sane_lists/>
 for documentation.
 
 Original code Copyright 2011 [Waylan Limberg](http://achinghead.com)

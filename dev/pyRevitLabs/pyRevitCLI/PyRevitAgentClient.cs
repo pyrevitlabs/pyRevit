@@ -35,6 +35,9 @@ namespace pyRevitCLI {
         public string Engine { get; set; }
         public string EngineVersion { get; set; }
         public string Commit { get; set; }
+
+        /// <summary>Git branch of the clone, or the branch its image was deployed from; null when the host did not record it.</summary>
+        public string Branch { get; set; }
         public string ConfigRoot { get; set; }
 
         /// <summary>True for a session started by <c>pyrevit launch</c> rather than through the shared attachment.</summary>
@@ -53,6 +56,7 @@ namespace pyRevitCLI {
                 json["engine"] = Engine;
                 json["engine_version"] = EngineVersion;
                 json["commit"] = Commit;
+                json["branch"] = Branch;
                 json["config_root"] = ConfigRoot;
                 json["per_launch"] = PerLaunch;
             }
@@ -156,8 +160,9 @@ namespace pyRevitCLI {
     /// discovery of running hosts and of recorded runs.
     /// </summary>
     /// <remarks>
-    /// Each call opens its own pipe connection. The host serves one connection at a time,
-    /// so callers that may overlap (the MCP server) must serialize their calls to each host.
+    /// Each call opens its own pipe connection. The host runs one request at a time, and hosts
+    /// older than the multi-connection pipe server also accept one connection at a time, so
+    /// callers that may overlap (the MCP server) must serialize their calls to each host.
     /// </remarks>
     internal static class PyRevitAgentClient {
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
@@ -177,8 +182,9 @@ namespace pyRevitCLI {
         internal static int PingTimeoutMs = 5000;
 
         /// <summary>
-        /// How long <see cref="Ping"/> waits for the host's pipe. A host serving another client
-        /// never accepts, so a ping must not wait the full <see cref="ConnectTimeoutMs"/>.
+        /// How long <see cref="Ping"/> waits for the host's pipe. A host whose server instances
+        /// all serve other clients never accepts, so a ping must not wait the full
+        /// <see cref="ConnectTimeoutMs"/>.
         /// Shortened by tests.
         /// </summary>
         internal static int PingConnectTimeoutMs = 1500;
@@ -196,7 +202,8 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// Invariant: never open the pipe to check it. Opening it, as <c>File.Exists</c> does,
-        /// connects to the host's only server instance and can lock a real client out.
+        /// takes one of the host's few server instances (an older host has only one) and can
+        /// lock a real client out.
         /// </remarks>
         internal static Func<string, bool> PipeExists = pipeName => Directory.EnumerateFiles(PipeRoot)
             .Any(path => string.Equals(path, PipeRoot + pipeName, StringComparison.OrdinalIgnoreCase));
@@ -237,6 +244,7 @@ namespace pyRevitCLI {
                         Engine = data.Value<string>("engine"),
                         EngineVersion = data.Value<string>("engine_version"),
                         Commit = data.Value<string>("commit"),
+                        Branch = data.Value<string>("branch"),
                         ConfigRoot = data.Value<string>("config_root"),
                         PerLaunch = data.Value<bool?>("per_launch") ?? false,
                     };
@@ -375,6 +383,7 @@ namespace pyRevitCLI {
         /// Important: giving up on the answer, through <paramref name="cancellation"/> or
         /// <paramref name="answerTimeoutMs"/>, only closes the connection. A request already sent
         /// keeps running in Revit, so its outcome is <see cref="AgentOutcome.Unknown"/>.
+        /// A caller that must name the request in its own errors passes <paramref name="requestId"/>.
         /// </remarks>
         /// <exception cref="AgentClientException">
         /// <c>cancelled</c> when <paramref name="cancellation"/> fires and <c>no_answer</c> when
@@ -382,8 +391,9 @@ namespace pyRevitCLI {
         /// </exception>
         public static JToken Call(
             AgentInstance instance, string method, JObject parameters = null,
-            CancellationToken cancellation = default, int? answerTimeoutMs = null, int? connectTimeoutMs = null) {
-            var requestId = NewRequestId();
+            CancellationToken cancellation = default, int? answerTimeoutMs = null, int? connectTimeoutMs = null,
+            string requestId = null) {
+            requestId ??= NewRequestId();
             var request = new JObject {
                 ["jsonrpc"] = "2.0",
                 ["id"] = requestId,
@@ -399,12 +409,12 @@ namespace pyRevitCLI {
                     pipe.ConnectAsync(connectTimeoutMs ?? ConnectTimeoutMs, cancellation).GetAwaiter().GetResult();
                     RequireServerProcess(pipe, instance);
                     var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-                    var reader = new StreamReader(pipe, Utf8);
+                    var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
                     writer.WriteLine(request.ToString(Formatting.None));
                     sent = true;
                     if (answerTimeoutMs.HasValue)
                         answer.CancelAfter(answerTimeoutMs.Value);
-                    responseLine = reader.ReadLineAsync(answer.Token).AsTask().GetAwaiter().GetResult();
+                    responseLine = reader.ReadLineAsync(answer.Token).GetAwaiter().GetResult();
                 }
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) {
@@ -434,6 +444,20 @@ namespace pyRevitCLI {
                 throw new AgentClientException(
                     "pipe_error",
                     "Connection to Revit failed: " + ex.Message + LostAnswerNotice(sent),
+                    sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
+                    requestId);
+            }
+            catch (InvalidDataException ex) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Revit's answer was refused: " + ex.Message + LostAnswerNotice(sent),
+                    AgentOutcome.Unknown,
+                    requestId);
+            }
+            catch (Exception ex) when (ex is not AgentClientException) {
+                throw new AgentClientException(
+                    "pipe_error",
+                    "Connection to Revit failed (" + ex.GetType().Name + ")." + LostAnswerNotice(sent),
                     sent ? AgentOutcome.Unknown : AgentOutcome.NotSent,
                     requestId);
             }
@@ -478,7 +502,7 @@ namespace pyRevitCLI {
             return "req-" + Guid.NewGuid().ToString("N").Substring(0, 12);
         }
 
-        private static string LostAnswerNotice(bool sent) {
+        internal static string LostAnswerNotice(bool sent) {
             return sent
                 ? " The request was sent and its outcome is unknown: it may have run or may still run. "
                     + "Look it up by its request id before sending it again."

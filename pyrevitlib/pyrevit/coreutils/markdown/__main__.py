@@ -23,7 +23,7 @@ def parse_options(args=None, values=None):
        (STDIN is assumed if no INPUTFILE is given)"""
     desc = (
         "A Python implementation of John Gruber's Markdown. "
-        "https://pythonhosted.org/Markdown/"
+        "https://python-markdown.github.io/"
     )
     ver = "%%prog %s" % markdown.version
 

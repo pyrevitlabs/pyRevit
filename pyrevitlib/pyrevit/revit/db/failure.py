@@ -28,9 +28,6 @@ RESOLUTION_TYPES = [
 ]
 
 
-# see FailureProcessingResult docs
-# http://www.revitapidocs.com/2018.1/f147e6e6-4b2e-d61c-df9b-8b8e5ebe3fcb.htm
-# explains usage of FailureProcessingResult options
 class FailureSwallower(DB.IFailuresPreprocessor):
     """Swallows all failures."""
 

@@ -29,6 +29,7 @@ public static class PyRevitPaths
     public static string CliTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitCLI.Tests", "pyRevitCLI.Tests.csproj");
     public static string AgentRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj");
     public static string RendererTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Renderer.Tests", "pyRevitLabs.PyRevit.Renderer.Tests.csproj");
+    public static string DoctorTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitDoctor.Tests", "pyRevitDoctor.Tests.csproj");
     public static string ShellTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Shell.Tests", "pyRevitLabs.PyRevit.Shell.Tests.csproj");
     public static string PyRevitUnitTestProject => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests.csproj");
 

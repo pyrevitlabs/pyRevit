@@ -2,7 +2,7 @@
 
 Adds code/syntax highlighting to standard Python-Markdown code blocks.
 
-See <https://pythonhosted.org/Markdown/extensions/code_hilite.html>
+See <https://python-markdown.github.io/extensions/code_hilite/>
 for documentation.
 
 Original code Copyright 2006-2008 [Waylan Limberg](http://achinghead.com/).

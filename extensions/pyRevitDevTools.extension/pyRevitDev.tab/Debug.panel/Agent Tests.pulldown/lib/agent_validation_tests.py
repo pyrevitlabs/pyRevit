@@ -22,6 +22,22 @@ CLOSED_PLAN_VIEW = (
     "    result = plans[0].Id.Value if hasattr(plans[0].Id, 'Value') else plans[0].Id.IntegerValue\n"
 )
 
+UNIQUELY_NAMED_MIXED_CASE_VIEW = (
+    "views = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.View)"
+    " if not v.IsTemplate]\n"
+    "counts = {}\n"
+    "for v in views:\n"
+    "    counts[v.Name.lower()] = counts.get(v.Name.lower(), 0) + 1\n"
+    "candidates = [v for v in views if v.CanBePrinted and counts[v.Name.lower()] == 1"
+    " and v.Name != v.Name.lower() and v.Name.lower() not in ('3d', 'active')"
+    " and all(ord(c) < 128 for c in v.Name)]\n"
+    "result = None\n"
+    "if candidates:\n"
+    "    view_id = candidates[0].Id\n"
+    "    result = {'id': view_id.Value if hasattr(view_id, 'Value') else view_id.IntegerValue,"
+    " 'name': candidates[0].Name}\n"
+)
+
 
 def _code(method, **params):
     try:
@@ -123,6 +139,13 @@ class ShowValidationTests(TestCase):
         )
         self.assertEqual("invalid_params", _code("show", action="select", ids=["abc"]))
 
+    def test_a_category_that_is_not_text_is_rejected(self):
+        """A category given as an object is a wrong JSON type, not a crash."""
+        self.assertEqual(
+            "invalid_params",
+            _code("show", action="select", ids=[1], categories=[{}]),
+        )
+
     def test_category_names_ignore_case_and_the_ost_prefix(self):
         """Walls, walls, OST_Walls and ost_walls all name the same category."""
         for name in ("Walls", "walls", "OST_Walls", "ost_walls"):
@@ -141,23 +164,30 @@ class CaptureValidationTests(TestCase):
             "invalid_params", _code("capture", view="3d", direction="sideways")
         )
 
-    def test_width_is_clamped_to_the_supported_range(self):
-        """A width below 320 or above 2400 is clamped instead of rejected."""
-        narrow = request("capture", mode="export", width=1)
-        wide = request("capture", mode="export", width=99999)
-        self.assertGreater(narrow["width"], 100)
-        self.assertLessEqual(narrow["width"], 320)
-        self.assertLessEqual(wide["width"], 2400)
+    def test_width_outside_the_supported_range_is_rejected(self):
+        """A width below 320 or above 2400 is rejected, the limits themselves are accepted."""
+        for width in (320, 2400):
+            result = request("capture", mode="export", width=width)
+            self.assertLessEqual(result["width"], width)
+        for width in (319, 2401):
+            with self.assertRaises(AgentRequestError) as raised:
+                request("capture", mode="export", width=width)
+            self.assertEqual("invalid_params", raised.exception.code)
+            self.assertIn("'width'", raised.exception.message)
 
     def test_a_view_can_be_named_by_id_or_by_name_ignoring_case(self):
         """A view is found by its numeric id and by its name in any case."""
-        active = request("get_context")["active_view"]
-        by_id = request("capture", mode="export", view=str(active["id"]), width=320)
+        view = harness.run(UNIQUELY_NAMED_MIXED_CASE_VIEW)["result"]
+        if view is None:
+            self.skipTest(
+                "This Revit has no printable view with a unique mixed-case name."
+            )
+        by_id = request("capture", mode="export", view=str(view["id"]), width=320)
         by_name = request(
-            "capture", mode="export", view=active["name"].lower(), width=320
+            "capture", mode="export", view=view["name"].lower(), width=320
         )
-        self.assertEqual(active["id"], by_id["view"]["id"])
-        self.assertEqual(active["id"], by_name["view"]["id"])
+        self.assertEqual(view["id"], by_id["view"]["id"])
+        self.assertEqual(view["id"], by_name["view"]["id"])
 
     def test_a_view_that_cannot_be_exported_is_not_supported(self):
         """A view Revit can't print is refused in export mode."""

@@ -2,6 +2,7 @@
 
 import ast
 import builtins
+import contextlib
 import importlib.util
 import linecache
 import os
@@ -9,6 +10,7 @@ import re
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import tokenize
 import traceback
@@ -53,6 +55,7 @@ def _load_runner():
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
     compat.get_elementid_value_func = lambda: int
+    compat.PY2 = False
     compat.IRONPY = False
     modules = {
         "System": system,
@@ -1339,8 +1342,8 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 "    except:\n        return 'swallowed'\n"
             }
         )
-        with self.assertRaises(BaseException):
-            self._run("import swallow\nswallow.go()\n", workspace=folder)
+        errors, _, _ = self._run("import swallow\nswallow.go()\n", workspace=folder)
+        self.assertEqual(["BaseException"], errors)
 
     def test_workspace_source_honours_its_encoding_cookie(self):
         """A latin-1 workspace module with a cookie imports intact."""
@@ -1365,6 +1368,33 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertEqual(7, module.VALUE)
         self.assertIs(guards["__agent_tick__"], module.__agent_tick__)
         self.assertIsNone(hook.find_module("json"))
+
+    def test_runtime_compiled_workspace_code_turns_on_line_checks(self):
+        """On IronPython, a workspace module with exec asks for per-line deadline checks."""
+        folder = self._workspace(
+            {"dyn.py": "def go(code):\n    exec(code)\n", "plain.py": "VALUE = 1\n"}
+        )
+        guards = {"__agent_tick__": lambda: True, "__agent_loop__": iter}
+        sys.path.insert(0, folder)
+        self.addCleanup(sys.path.remove, folder)
+        for name in ("dyn", "plain"):
+            self.addCleanup(sys.modules.pop, name, None)
+        for implementation, module, expected in (
+            ("ironpython", "dyn", 1),
+            ("ironpython", "plain", 0),
+            ("cpython", "dyn", 0),
+        ):
+            calls = []
+            hook = self.runner._WorkspaceLoopGuard(
+                folder, guards, lambda: calls.append(1)
+            )
+            sys.modules.pop(module, None)
+            self.assertIs(hook, hook.find_module(module))
+            with mock.patch.object(
+                self.runner, "_implementation", return_value=implementation
+            ):
+                hook.load_module(module)
+            self.assertEqual(expected, len(calls), (implementation, module))
 
     def test_the_workspace_hook_is_removed_after_the_run(self):
         """The import hook never outlives the run that installed it."""
@@ -1468,6 +1498,51 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual("timeout", error_type)
         self.assertIn("could not be interrupted", message)
         self.assertEqual("", text)
+
+    def test_timeout_injected_while_converting_the_result_is_not_an_interruption(self):
+        """A limit passed after the script ended gets the late message on CPython too."""
+        convert = self.runner._to_jsonable
+
+        def slow_convert(value):
+            ends = time.time() + 0.6
+            while time.time() < ends:
+                pass
+            return convert(value)
+
+        source = "class Slow(object):\n    pass\nresult = [Slow()]\n"
+        with mock.patch.object(self.runner, "_to_jsonable", slow_convert):
+            error_type, message, text = self._run(source, timeout_s=0.2)
+        self.assertEqual("timeout", error_type)
+        self.assertIn("could not be interrupted", message)
+        self.assertEqual("", text)
+
+    def test_swallowed_timeout_does_not_blame_an_uninterruptible_call(self):
+        """A loop whose timeout an aliased handler swallowed is not called uninterruptible."""
+        source = "B = BaseException\ntry:\n    while True:\n        pass\nexcept B:\n    pass\n"
+        without_injection = mock.patch.object(
+            self.runner, "_set_async_exc_function", return_value=None
+        )
+        for engine in (without_injection, contextlib.nullcontext()):
+            with self.subTest(engine=engine), engine:
+                error_type, message, text = self._run(source, timeout_s=0.2)
+                self.assertEqual("timeout", error_type)
+                self.assertNotIn("could not be interrupted", message)
+                self.assertEqual("", text)
+
+    def test_a_timeout_raised_in_runner_code_is_not_an_interruption(self):
+        """Only a script frame the tracer stops marks the run as interrupted."""
+        for filename, interrupted in (
+            (self.runner._RUNNER_FILENAME, False),
+            (self.runner.SOURCE_NAME, True),
+        ):
+            state = {"timed_out": True, "interrupted": False, "check_lines": False}
+            trace = self.runner._execution_tracer(5, state, {}, True, False)
+            code = types.SimpleNamespace(co_filename=filename, co_name="f", co_flags=0)
+            frame = types.SimpleNamespace(f_code=code)
+            with mock.patch.object(self.runner, "_track_stack_transactions"):
+                with self.assertRaises(self.runner.RunTimedOut):
+                    trace(frame, "call", None)(frame, "line", None)
+            self.assertEqual(interrupted, state["interrupted"], filename)
 
     def test_error_traceback_keeps_the_script_frames(self):
         """A script error still names each script frame and the error."""
@@ -1625,6 +1700,148 @@ class AgentRunnerTracedRecursionTests(unittest.TestCase):
         )
 
 
+class AgentRunnerOutputTests(unittest.TestCase):
+    """Printed output is capped while the script runs (issue #3922)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the shared runner against isolated host doubles."""
+        cls.runner = _load_runner()
+
+    def test_output_is_capped_while_printing(self):
+        """Keep one character past the host cap so it still reports truncation."""
+        outputs = []
+        context = types.SimpleNamespace(
+            Source="import sys\nfor _ in range(200):\n    print('x' * 4096)\n"
+            "sys.stderr.write('tail')\nresult = 1\n",
+            Workspace=None,
+            TimeoutSeconds=5,
+            InputsJson="{}",
+            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+            SetEngine=lambda *args: None,
+            SetResult=lambda *args: None,
+            SetOutput=outputs.append,
+            SetError=lambda *args: self.fail(args),
+        )
+        self.runner.run(context)
+        self.assertEqual([self.runner._MAX_OUTPUT_CHARS + 1], [len(o) for o in outputs])
+        self.assertEqual(64 * 1024, self.runner._MAX_OUTPUT_CHARS)
+
+    def test_writes_past_the_cap_are_dropped(self):
+        """Print and writelines both stop at the cap."""
+        captured = self.runner._CappedOutput(10)
+        print("abc", file=captured)
+        captured.writelines(["de", "fghijkl"])
+        self.assertEqual("abc\ndefghi", captured.getvalue())
+
+    def test_writelines_goes_through_the_capped_write(self):
+        """IronPython 3.4's StringIO.writelines skips an overridden write."""
+        self.assertIn("writelines", vars(self.runner._CappedOutput))
+        captured = self.runner._CappedOutput(10)
+        written = []
+        real_write = captured.write
+        captured.write = lambda text: written.append(text) or real_write(text)
+        captured.writelines(line for line in ["ab", "cd"])
+        self.assertEqual(["ab", "cd"], written)
+        self.assertEqual("abcd", captured.getvalue())
+
+    def test_writelines_keeps_the_cap_and_partial_lines(self):
+        """Lines go through write, so a line straddling the cap is cut."""
+        captured = self.runner._CappedOutput(5)
+        captured.writelines(iter(["ab", "cd", "efgh", "ij"]))
+        self.assertEqual("abcde", captured.getvalue())
+
+    def test_the_cap_is_not_given_back_by_truncate(self):
+        """Truncating after the cap was reached still drops later writes."""
+        captured = self.runner._CappedOutput(3)
+        captured.write("abcdef")
+        captured.truncate(0)
+        captured.write("x")
+        self.assertEqual("", captured.getvalue())
+
+    def test_a_seek_cannot_grow_the_output_past_the_cap(self):
+        """Writes after a seek append, so no padded gap bypasses the cap."""
+        captured = self.runner._CappedOutput(10)
+        captured.write("abc")
+        captured.seek(1000000)
+        captured.write("de")
+        captured.seek(0)
+        captured.write("fg")
+        self.assertEqual("abcdefg", captured.getvalue())
+
+    def test_appends_do_not_seek_while_the_cursor_is_at_the_end(self):
+        """IronPython 2.7's StringIO joins its buffer on every seek."""
+        real = self.runner.StringIO
+        seeks = []
+
+        class CountingStringIO(object):
+            tell = real.tell
+            write = real.write
+
+            @staticmethod
+            def seek(stream, *args):
+                seeks.append(args)
+                return real.seek(stream, *args)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", CountingStringIO):
+            for _ in range(5):
+                captured.write("x")
+        self.assertEqual([], seeks)
+        self.assertEqual("xxxxx", captured.getvalue())
+
+    def test_writes_after_a_truncate_leave_no_gap(self):
+        """Truncating the stream moves the end the next write appends at."""
+        captured = self.runner._CappedOutput(100)
+        captured.write("hello world")
+        captured.truncate(0)
+        captured.seek(0)
+        captured.write("abc")
+        self.assertEqual("abc", captured.getvalue())
+
+    def test_a_second_writer_waits_for_the_first(self):
+        """Script threads share one buffer for stdout and stderr."""
+        real = self.runner.StringIO
+        inside = threading.Event()
+        release = threading.Event()
+        entered = []
+
+        class GatedStringIO(object):
+            tell = real.tell
+            seek = real.seek
+
+            @staticmethod
+            def write(stream, text):
+                entered.append(text)
+                if text == "first":
+                    inside.set()
+                    release.wait(5)
+                return real.write(stream, text)
+
+        captured = self.runner._CappedOutput(100)
+        with mock.patch.object(self.runner, "StringIO", GatedStringIO):
+            first = threading.Thread(target=captured.write, args=("first",))
+            second = threading.Thread(target=captured.write, args=("second",))
+            first.start()
+            self.assertTrue(inside.wait(5))
+            second.start()
+            second.join(0.3)
+            entered_while_held = list(entered)
+            release.set()
+            first.join(5)
+            second.join(5)
+        self.assertFalse(first.is_alive() or second.is_alive())
+        self.assertEqual(["first"], entered_while_held)
+        self.assertEqual("firstsecond", captured.getvalue())
+
+    def test_non_text_is_written_as_text_on_python_two(self):
+        """IronPython 2.7 scripts may write any object, as StringIO allowed."""
+        captured = self.runner._CappedOutput(10)
+        with mock.patch.object(self.runner, "PY2", True):
+            captured.write(12345)
+        self.assertEqual("12345", captured.getvalue())
+
+
 class AgentRunnerSourceTests(unittest.TestCase):
     """Constraints on the runner file itself."""
 
@@ -1730,6 +1947,41 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
             },
         )
         self.assertEqual(["scratch_ws"], unloaded)
+
+    def test_namespace_packages_in_the_workspace_are_unloaded(self):
+        """Packages without __init__.py, nested too, have no __file__ but are unloaded (#3949)."""
+        workspace = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, workspace)
+        os.makedirs(os.path.join(workspace, "nspkg_ws", "inner"))
+        with open(
+            os.path.join(workspace, "nspkg_ws", "inner", "part.py"), "w"
+        ) as handle:
+            handle.write("VALUE = 1\n")
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.object(sys, "path", [workspace] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            importlib.import_module("nspkg_ws.inner.part")
+            self.assertIsNone(getattr(sys.modules["nspkg_ws"], "__file__", None))
+            self.runner._unload_modules_under(workspace)
+            for name in ("nspkg_ws", "nspkg_ws.inner", "nspkg_ws.inner.part"):
+                self.assertIsNone(sys.modules.get(name), name)
+
+    def test_namespace_packages_outside_the_workspace_stay_loaded(self):
+        """A namespace package with any portion outside the workspace stays loaded."""
+        workspace = os.path.abspath("work")
+        outside = os.path.abspath("elsewhere")
+        package = types.SimpleNamespace(
+            __file__=None,
+            __path__=[os.path.join(workspace, "ns"), os.path.join(outside, "ns")],
+        )
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.dict(sys.modules, {"split_ns_ws": package}),
+        ):
+            self.runner._unload_modules_under(workspace)
+            self.assertIn("split_ns_ws", sys.modules)
 
 
 if __name__ == "__main__":

@@ -353,6 +353,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         collectedConditions.Add(subCondition);
                     }
                     collectedSubConditions = new HashSet<Condition>();
+                    subCondition = new AllCondition();
                     capturingSubCondition = false;
                     subConditionIsNot = false;
                 }

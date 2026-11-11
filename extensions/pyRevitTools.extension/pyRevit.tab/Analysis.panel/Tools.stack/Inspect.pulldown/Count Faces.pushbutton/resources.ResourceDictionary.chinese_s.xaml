@@ -4,8 +4,11 @@
 
     <sys:String x:Key="progress_title">正在统计三角形面数</sys:String>
     <sys:String x:Key="no_geometry">未找到带有实体几何的族实例。</sys:String>
+    <sys:String x:Key="no_geometry_family">在此族中未找到带有实体几何的形状。</sys:String>
     <sys:String x:Key="table_title">各族类型的三角形面数</sys:String>
+    <sys:String x:Key="table_title_family">各形状的三角形面数</sys:String>
     <sys:String x:Key="column_type">类型</sys:String>
+    <sys:String x:Key="column_form">形状</sys:String>
     <sys:String x:Key="column_category">类别</sys:String>
     <sys:String x:Key="column_example">示例图元</sys:String>
     <sys:String x:Key="column_coarse">粗略</sys:String>
