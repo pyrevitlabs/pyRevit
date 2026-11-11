@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using NUnit.Framework;
@@ -10,71 +12,115 @@ using PyRevitLabs.PyRevit.Runtime;
 namespace pyRevitExtensionParserTester
 {
     /// <summary>
-    /// Releasing the call-site rules IronPython's long-lived contexts cached lets a dropped engine
-    /// be collected, and leaves the engines still in use working.
+    /// Dropping the IronPython call-site rule caches on reload (#3685): the caches really are
+    /// dropped, the engine keeps working, and an engine nobody holds can then be collected.
     /// </summary>
     /// <remarks>
-    /// <c>import ctypes</c> is the bridge measured in Revit: ctypes reads a library's
-    /// <c>_handle</c> through the default context, whose binder then caches a rule that holds the
-    /// importing engine. The engines follow the order of Revit sessions: the first one, which owns
-    /// the default context and IronPython's first-use caches, imports ctypes before the dropped
-    /// one, and a successor repeats the import after it, so IronPython's static last-call caches
-    /// stop pointing at the dropped engine. Only the cached rules are left to hold it.
+    /// The engines are created and driven by reflection because this project does not compile
+    /// against the IronPython assemblies; the Runtime's own references bring them into the
+    /// output folder. Release works on process-wide state, hence <see cref="NonParallelizableAttribute"/>.
     /// </remarks>
     [TestFixture]
     [NonParallelizable]
     [Category("HostFree")]
-    [Category("Integration")]
+    [Category("Unit")]
     public class IronPythonRuleCachesTests
     {
+        private const string ListExpression = "len([1, 2] + [3])";
+        private const string StringExpression = "'rule'.upper() + str(2)";
+        private const string CtypesImport = "import ctypes";
         private const string StdLibZip = "python_342_lib.zip";
 
-        private const string CtypesImport = "import ctypes";
+        [Test]
+        public void Release_AfterATrackedEngineRanCode_DropsBinderCaches()
+        {
+            object engine = CreateTrackedEngine();
+            Execute(engine, ListExpression);
+            Execute(engine, StringExpression);
+
+            int released = IronPythonRuleCaches.Release();
+
+            Assert.That(released, Is.GreaterThan(0));
+        }
 
         [Test]
-        public void Release_AfterCtypesImport_FreesTheDroppedEngineAndKeepsTheLiveOneWorking()
+        public void Release_LeavesTheEngineUsable()
         {
-            var keeper = CreateEngine();
-            keeper.Execute(CtypesImport);
+            object engine = CreateTrackedEngine();
+            Assert.That(Execute(engine, ListExpression), Is.EqualTo(3));
 
-            WeakReference dropped = ImportCtypesInDroppedEngine();
-            var successor = CreateEngine();
-            successor.Execute(CtypesImport);
+            IronPythonRuleCaches.Release();
+
+            Assert.That(Execute(engine, ListExpression), Is.EqualTo(3));
+            Assert.That(Execute(engine, StringExpression), Is.EqualTo("RULE2"));
+        }
+
+        /// <remarks>
+        /// <c>import ctypes</c> is the bridge measured in Revit: ctypes reads a library's
+        /// <c>_handle</c> through the default context, whose binder then caches a rule that holds
+        /// the importing engine. The engines follow the order of Revit sessions: the first one,
+        /// which owns the default context and IronPython's first-use caches, imports ctypes before
+        /// the dropped one, and a successor repeats the import after it, so IronPython's static
+        /// last-call caches stop pointing at the dropped engine. In any other order those caches
+        /// alone keep it alive, and the test would not show what the release does.
+        /// </remarks>
+        [Test]
+        public void Release_LetsAnEngineNobodyHoldsBeCollected()
+        {
+            object first = CreateTrackedEngine();
+            Execute(first, CtypesImport);
+            WeakReference dropped = RunAndDropTrackedEngine();
+            object successor = CreateTrackedEngine();
+            Execute(successor, CtypesImport);
             Collect();
             Assert.That(dropped.IsAlive, Is.True, "ctypes no longer bridges engines; this test proves nothing");
 
-            int released = IronPythonRuleCaches.Release();
+            IronPythonRuleCaches.Release();
             Collect();
 
-            Assert.That(released, Is.GreaterThan(0));
             Assert.That(dropped.IsAlive, Is.False);
-            Assert.That(successor.Execute<int>("import ctypes\nlen([ctypes.c_int])"), Is.EqualTo(1));
-            Assert.That(keeper.Execute<int>("import ctypes\nlen([ctypes.c_int])"), Is.EqualTo(1));
+            Assert.That(Execute(successor, CtypesImport + "\nlen([ctypes.c_int])"), Is.EqualTo(1));
+            Assert.That(Execute(first, CtypesImport + "\nlen([ctypes.c_int])"), Is.EqualTo(1));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static WeakReference ImportCtypesInDroppedEngine()
+        private static WeakReference RunAndDropTrackedEngine()
         {
-            var engine = CreateEngine();
-            engine.Execute(CtypesImport);
-            return new WeakReference(Microsoft.Scripting.Hosting.Providers.HostingHelpers.GetLanguageContext(engine));
-        }
-
-        private static Microsoft.Scripting.Hosting.ScriptEngine CreateEngine()
-        {
-            var engine = IronPython.Hosting.Python.CreateEngine();
-            engine.SetSearchPaths(new List<string> { FindStdLibZip() });
-            IronPythonRuleCaches.Track(engine);
-            return engine;
+            object engine = CreateTrackedEngine();
+            Execute(engine, CtypesImport);
+            return new WeakReference(engine);
         }
 
         private static void Collect()
         {
-            for (int i = 0; i < 3; i++)
+            for (int attempt = 0; attempt < 3; attempt++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
+        }
+
+        private static object CreateTrackedEngine()
+        {
+            Type python = IronPythonAssembly().GetType("IronPython.Hosting.Python", throwOnError: true)!;
+            object engine = python.GetMethod("CreateEngine", Type.EmptyTypes)!.Invoke(null, null)!;
+            engine.GetType().GetMethod("SetSearchPaths")!
+                .Invoke(engine, new object[] { new List<string> { FindStdLibZip() } });
+            typeof(IronPythonRuleCaches)
+                .GetMethod("Track", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!
+                .Invoke(null, new[] { engine });
+            return engine;
+        }
+
+        private static object? Execute(object engine, string expression)
+        {
+            MethodInfo execute = engine.GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Single(method => method.Name == "Execute"
+                    && !method.IsGenericMethodDefinition
+                    && method.GetParameters().Length == 1
+                    && method.GetParameters()[0].ParameterType == typeof(string));
+            return execute.Invoke(engine, new object[] { expression });
         }
 
         private static string FindStdLibZip()
@@ -86,6 +132,15 @@ namespace pyRevitExtensionParserTester
                     return candidate;
             }
             throw new FileNotFoundException("IronPython standard library not found", StdLibZip);
+        }
+
+        private static Assembly IronPythonAssembly()
+        {
+            AssemblyName name = typeof(IronPythonRuleCaches).Assembly
+                .GetReferencedAssemblies()
+                .First(reference => reference.Name != null
+                    && reference.Name.EndsWith("IronPython", StringComparison.Ordinal));
+            return Assembly.Load(name);
         }
     }
 }

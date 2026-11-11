@@ -40,7 +40,6 @@ PARAM_VALUE_EVALUATORS = {
 }
 
 
-# http://www.revitapidocs.com/2018.1/5da8e3c5-9b49-f942-02fc-7e7783fe8f00.htm
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     """Family loader options handler."""
 

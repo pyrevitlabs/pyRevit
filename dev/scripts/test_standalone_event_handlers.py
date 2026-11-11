@@ -17,6 +17,10 @@ class _ArrayList(list):
     def Add(self, value):
         self.append(value)
 
+    @property
+    def Count(self):
+        return len(self)
+
 
 class _Hashtable(dict):
     @property
@@ -419,7 +423,7 @@ class ReplaceHandlerTests(unittest.TestCase):
         self.assertIsNone(self.app_domain.GetData("slot"))
 
     def test_failing_detach_is_logged_and_does_not_block_the_next_load(self):
-        """A delegate Revit refuses to detach is dropped from the slot."""
+        """A delegate Revit refuses to detach leaves the slot to the next load."""
         source = self.host._uiapp
         stale = self.events.replace_handler(
             "slot", source, "ViewActivated", lambda *_: None, object
@@ -432,8 +436,39 @@ class ReplaceHandlerTests(unittest.TestCase):
 
         self.assertTrue(self.logger.errors)
         self.assertIs(fresh, self.app_domain.GetData("slot"))
+        self.assertEqual([stale, fresh], source.ViewActivated.handlers)
+
+    def test_failed_detach_is_retried_until_it_succeeds(self):
+        """A later release detaches the delegate a previous release could not."""
+        source = self.host._uiapp
+        stale = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.add(stale)
+        self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.discard(stale)
+
         self.events.release_handler("slot", source, "ViewActivated")
+
+        self.assertEqual([], source.ViewActivated.handlers)
+        self.assertIsNone(self.app_domain.GetData("slot"))
+        self.assertIsNone(self.app_domain.GetData("slot:stale"))
+
+    def test_detach_failing_again_stays_queued_for_the_next_release(self):
+        """A delegate that still refuses to detach is kept for another try."""
+        source = self.host._uiapp
+        stale = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.add(stale)
+
+        self.events.release_handler("slot", source, "ViewActivated")
+        self.events.release_handler("slot", source, "ViewActivated")
+
         self.assertEqual([stale], source.ViewActivated.handlers)
+        self.assertEqual([stale], list(self.app_domain.GetData("slot:stale")))
         self.assertIsNone(self.app_domain.GetData("slot"))
 
 

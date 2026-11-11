@@ -383,6 +383,184 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
+    public class AgentRunGuardRollbackVerificationTests {
+        [Fact]
+        public void ARollbackThatLeavesADeletedElementMissingFailsTheRun() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                document.Deleted.Add(deleted);
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void ARollbackThatLeavesAnAddedElementInTheModelFailsTheRun() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { new ElementId() });
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void ARollbackThatRestoresTheModelDoesNotFailTheRun() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            var added = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { added }, deleted: new[] { deleted });
+                document.Deleted.Add(added);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void AnAssimilatedRunIsNotCheckedAgainstTheModel() {
+            var app = new UIApplication();
+            var document = new Document();
+            var guard = new AgentRunGuard(app, document);
+            var deleted = new ElementId();
+            guard.Arm("Test");
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            document.Deleted.Add(deleted);
+            guard.Assimilate();
+
+            guard.Dispose();
+
+            Assert.False(guard.RollbackFailed);
+            Assert.True(guard.Committed);
+        }
+
+        [Fact]
+        public void ARollbackRequestedAfterTheGroupEndedStillChecksTheModel() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            guard.RollBack();
+            Assert.False(guard.HasOpenGroup);
+            Assert.False(guard.RollbackFailed);
+            document.Deleted.Add(deleted);
+
+            guard.Dispose();
+
+            Assert.True(guard.RollbackFailed);
+        }
+
+        [Fact]
+        public void ARunThatAskedToKeepItsChangesIsNotCheckedAgainstTheModelAfterTheGroupEnded() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            guard.RollBack();
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            document.Deleted.Add(deleted);
+            guard.Assimilate();
+
+            guard.Dispose();
+
+            Assert.False(guard.RollbackFailed);
+            Assert.False(guard.Committed);
+        }
+
+        [Fact]
+        public void AnAssimilationThatFailsPartwayDoesNotExemptTheRunFromTheModelCheck() {
+            var app = new UIApplication();
+            var active = new Document();
+            var other = new Document { ThrowOnRollback = true, ThrowOnDispose = true };
+            var deleted = new ElementId();
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(other);
+            var guard = new AgentRunGuard(app, active);
+            guard.Arm("Test");
+            app.Application.Change(other);
+            Assert.Throws<AggregateException>(guard.RollBack);
+            Assert.False(guard.HasOpenGroup);
+            app.Application.Change(active, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            active.Deleted.Add(deleted);
+            Assert.Throws<AggregateException>(guard.Assimilate);
+
+            guard.Dispose();
+
+            Assert.True(guard.RollbackFailed);
+        }
+
+        [Fact]
+        public void AGuardWithoutAnActiveGroupDoesNotCheckTheModel() {
+            var app = new UIApplication();
+            var document = new Document { IsReadOnly = true };
+            var deleted = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                document.Deleted.Add(deleted);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void AnotherDocumentWhoseDeletionSurvivesTheRollbackIsReportedAsNotReverted() {
+            var app = new UIApplication();
+            var active = new Document();
+            var other = new Document();
+            var deleted = new ElementId();
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(other);
+            using (var guard = new AgentRunGuard(app, active)) {
+                guard.Arm("Test");
+                app.Application.Change(other, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                other.Deleted.Add(deleted);
+
+                guard.RollBack();
+
+                Assert.True(guard.HasUnrevertedOtherDocumentChanges);
+            }
+        }
+
+        [Fact]
+        public void AnotherDocumentWhoseRollbackRestoresItIsReportedAsReverted() {
+            var app = new UIApplication();
+            var active = new Document();
+            var other = new Document();
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(other);
+            using (var guard = new AgentRunGuard(app, active)) {
+                guard.Arm("Test");
+                app.Application.Change(other, added: Array.Empty<ElementId>(), deleted: new[] { new ElementId() });
+
+                guard.RollBack();
+
+                Assert.False(guard.HasUnrevertedOtherDocumentChanges);
+            }
+        }
+    }
+
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentChangeSetTests {
         [Fact]
         public void ModifyingAnElementTheRunAddedCountsItOnlyAsAdded() {

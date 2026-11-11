@@ -80,5 +80,29 @@ namespace pyRevitExtensionParserTester
 
             Assert.That(second, Is.EqualTo(1));
         }
+
+        [Test]
+        public void Release_RunsThePreviousReleaseOnceAndEmptiesTheSlot()
+        {
+            var released = 0;
+            SessionResourceRegistry.Replace(_slot, () => released++);
+
+            SessionResourceRegistry.Release(_slot);
+            SessionResourceRegistry.Release(_slot);
+            SessionResourceRegistry.Replace(_slot, () => { });
+
+            Assert.That(released, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Release_FailingPreviousRelease_IsReportedAndSwallowed()
+        {
+            string? error = null;
+            SessionResourceRegistry.Replace(_slot, () => throw new InvalidOperationException("boom"));
+
+            Assert.DoesNotThrow(() => SessionResourceRegistry.Release(_slot, message => error = message));
+
+            Assert.That(error, Does.Contain("boom"));
+        }
     }
 }

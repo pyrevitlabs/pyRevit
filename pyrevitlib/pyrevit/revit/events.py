@@ -185,24 +185,39 @@ def replace_handler(slot, source, event_name, handler_func, handler_args_type):
 def release_handler(slot, source, event_name):
     """Detach the delegate ``replace_handler`` subscribed under ``slot``.
 
-    A failing detach is logged and the slot is cleared anyway, so one stale
-    delegate cannot make every later reload fail on the same slot.
+    A delegate whose detach fails is logged and moved out of the slot into a
+    retry list, so the next load still gets the slot while every later
+    release keeps trying to detach it until the detach succeeds.
 
     Args:
         slot (str): the key passed to ``replace_handler``.
         source (object): object raising the event.
         event_name (str): CLR event name.
+
+    Note:
+        The retry list lives in AppDomain data under ``slot + ":stale"`` and
+        must stay a CLR ``ArrayList``: each reload runs in a new engine.
     """
     domain = framework.AppDomain.CurrentDomain
+    stale_key = slot + ":stale"
+    pending = list(domain.GetData(stale_key) or [])
     previous = domain.GetData(slot)
-    if previous is None:
+    if previous is not None:
+        pending.append(previous)
+    if not pending:
         return
+    clr_event = source.GetType().GetEvent(event_name)
+    still_attached = ArrayList()
     try:
-        source.GetType().GetEvent(event_name).RemoveEventHandler(source, previous)
-    except Exception as ex:
-        mlogger.error("Could not release handler for %s: %s", slot, ex)
+        for event_handler in pending:
+            try:
+                clr_event.RemoveEventHandler(source, event_handler)
+            except Exception as ex:
+                mlogger.error("Could not release handler for %s: %s", slot, ex)
+                still_attached.Add(event_handler)
     finally:
         domain.SetData(slot, None)
+        domain.SetData(stale_key, still_attached if still_attached.Count else None)
 
 
 def register_handler(event_name, handler_func, handler_group_id):
@@ -316,6 +331,21 @@ def delayed_unregister_exec_handlers(handler_group_id):
         _unregister_handler_groups(handler_group_ids)
 
 
+HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
+"""Deprecated since 7.1: kept so code written against 7.0 still imports.
+
+Use ``delayed_unregister_exec_handlers`` instead. It is never passed to
+``ExternalEvent.Create``, so holding it does not keep this module or its
+engine alive across reloads.
+"""
+
+HANDLER_UNREGISTERER_EXTEVENT = None
+"""Deprecated since 7.1: always ``None``.
+
+Unregistering now goes through the runtime's shared ``ApiContextQueue``.
+"""
+
+
 def _schedule_in_api_context(callback):
     """Queue a callback on the runtime's ExternalEvent shared by all engines.
 
@@ -339,24 +369,6 @@ def _schedule_in_api_context(callback):
     ):
         return "ExternalEvent request was {}".format(response)
     return None
-
-
-HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
-"""Handler that unregisters the handler groups set on its ``handler_group_id``.
-
-Deprecated:
-    Kept so code written for 7.0 still imports. It is not registered with
-    Revit; ``delayed_unregister_exec_handlers`` goes through the shared
-    API context queue instead.
-"""
-
-HANDLER_UNREGISTERER_EXTEVENT = None
-"""Always None since the shared API context queue replaced it.
-
-Deprecated:
-    Kept so code written for 7.0 still imports. An ExternalEvent created with
-    a Python handler at import would keep every engine alive across reloads.
-"""
 
 
 def handle(*args):  # pylint: disable=no-method-argument
