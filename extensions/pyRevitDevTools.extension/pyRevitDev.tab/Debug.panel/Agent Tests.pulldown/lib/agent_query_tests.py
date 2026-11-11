@@ -161,6 +161,17 @@ class RecursionTests(TestCase):
 class TimeoutTests(TestCase):
     """The run timeout."""
 
+    def test_timeout_message_writes_the_limit_with_a_decimal_point(self):
+        """The limit reads the same on every engine and under any OS culture."""
+        for engine in ENGINES:
+            response = run(
+                "while True:\n    pass\n",
+                engine=engine,
+                timeout=1.5,
+            )
+            self.assertEqual("timeout", response["error"]["type"], engine)
+            self.assertIn("1.5 second limit", response["error"]["message"], engine)
+
     def test_timeout_stops_a_script_that_catches_everything(self):
         """The timeout stops a loop even when it catches every exception."""
         for engine in ENGINES:

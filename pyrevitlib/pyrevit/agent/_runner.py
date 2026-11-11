@@ -1320,9 +1320,9 @@ def run(context):
             else:
                 context.SetError(
                     "timeout",
-                    "The script ran longer than its {:g} second limit and was "
+                    "The script ran longer than its {} second limit and was "
                     "stopped; its changes were rolled back. Pass a larger timeout_s "
-                    "if the work needs more time.".format(timeout_s),
+                    "if the work needs more time.".format(_format_limit(timeout_s)),
                     "" if script_finished else _format_script_traceback(),
                 )
         else:
@@ -1359,12 +1359,23 @@ def run(context):
         return
 
 
+def _format_limit(seconds):
+    """Return seconds as text that does not depend on the OS culture.
+
+    Note:
+        ``format(x, "g")`` follows the current culture on IronPython 2.7, so a
+        decimal-comma locale would print "1,5". ``repr`` of a float never does.
+    """
+    text = repr(float(seconds))
+    return text[:-2] if text.endswith(".0") else text
+
+
 def _late_timeout_message(timeout_s):
     return (
-        "The script passed its {:g} second limit inside a call that could not be "
+        "The script passed its {} second limit inside a call that could not be "
         "interrupted, such as a long Revit API call, and was stopped when it "
         "finished; its changes were rolled back. Pass a larger timeout_s if the "
-        "work needs more time.".format(timeout_s)
+        "work needs more time.".format(_format_limit(timeout_s))
     )
 
 
