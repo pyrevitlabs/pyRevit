@@ -210,7 +210,7 @@ class RecordLockReleaseTests(_KeynoteFileTestCase):
 
 def _load_error_description():
     """Load the real error formatter without opening Keynote Manager."""
-    with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "r") as script_file:
+    with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "rb") as script_file:
         tree = ast.parse(script_file.read())
     names = {
         "describe_lock_error",
@@ -349,7 +349,9 @@ class ReadTimeoutCauseTests(_KeynoteFileTestCase):
                 getattr(System.IO.FileShare, "None"),
             )
             timer = System.Diagnostics.Stopwatch.StartNew()
-            with self.assertRaises(System.Reflection.TargetInvocationException) as raised:
+            with self.assertRaises(
+                System.Reflection.TargetInvocationException
+            ) as raised:
                 store_type.GetMethod("Open", flags).Invoke(store, None)
             self.assertLess(timer.ElapsedMilliseconds, 2000)
             error = raised.exception.InnerException

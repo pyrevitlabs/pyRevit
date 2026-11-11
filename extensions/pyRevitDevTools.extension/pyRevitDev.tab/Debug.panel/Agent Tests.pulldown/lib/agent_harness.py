@@ -261,6 +261,22 @@ def policy(name):
         PyRevit.PyRevitConfigs.SetAgentPolicy(previous)
 
 
+def _confirm_restored_policy():
+    """Make the policy the host enforces match the restored configured one.
+
+    Note:
+        The host only tightens the policy it enforces. After a test ran under a
+        stricter policy, restoring the configured value leaves the stricter one
+        enforced until a modify run starts and the user confirms the looser
+        policy. The caller must have ``answer_prompts(POLICY_PROMPT, YES)``
+        active so that confirmation is pressed.
+    """
+    try:
+        run("result = None", mode="modify")
+    except AgentRequestError:
+        pass
+
+
 def run_suites(modules):
     """Run test modules against fresh scratch documents and fail the button on any failure.
 
@@ -276,15 +292,19 @@ def run_suites(modules):
     problems = []
     try:
         _session.open()
-        with answer_prompts(POLICY_PROMPT, YES), policy("auto"):
-            for module in modules:
-                result = run_module_tests(module)
-                if result.failures or result.errors:
-                    problems.append(
-                        "{} (failures={}, errors={})".format(
-                            module.__name__, len(result.failures), len(result.errors)
+        with answer_prompts(POLICY_PROMPT, YES):
+            with policy("auto"):
+                for module in modules:
+                    result = run_module_tests(module)
+                    if result.failures or result.errors:
+                        problems.append(
+                            "{} (failures={}, errors={})".format(
+                                module.__name__,
+                                len(result.failures),
+                                len(result.errors),
+                            )
                         )
-                    )
+            _confirm_restored_policy()
     finally:
         _session.close()
         _session = None
