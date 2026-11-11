@@ -221,9 +221,10 @@ class LoggerWrapper(object):
 
         Notes are written only while the debug level is on, so a script can
         record handled errors without leaving files behind for end users. The
-        file is named after the running command's unique id, then after this
-        logger, then ``pyrevit``; code that runs outside a command, such as an
-        event handler, shares the file of whichever command ran last.
+        file is named after the command unique id, then after this logger,
+        then ``pyrevit``. A callback defined in a command script keeps that
+        command's id; a caller without a command execution scope gets the id of
+        the command running at the time, if any.
 
         Args:
             source (str): source of the message
