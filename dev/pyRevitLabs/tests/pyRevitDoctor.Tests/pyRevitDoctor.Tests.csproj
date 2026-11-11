@@ -24,6 +24,10 @@
 
     <ItemGroup>
         <Compile Include="..\..\pyRevitDoctor\ProductCatalog.cs" Link="Sources\ProductCatalog.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\UninstallEntryMatcher.cs" Link="Sources\UninstallEntryMatcher.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\PurgeTargets.cs" Link="Sources\PurgeTargets.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\PurgeSession.cs" Link="Sources\PurgeSession.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\PurgeFiles.cs" Link="Sources\PurgeFiles.cs"/>
     </ItemGroup>
 
     <ItemGroup>
