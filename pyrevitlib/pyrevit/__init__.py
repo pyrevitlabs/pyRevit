@@ -1048,6 +1048,9 @@ for pyrvt_app_dir in [
         try:
             os.makedirs(pyrvt_app_dir)
         except Exception as err:
-            raise PyRevitException(
-                "Can not access pyRevit folder at: {} | {}".format(pyrvt_app_dir, err)
-            )
+            if not op.isdir(pyrvt_app_dir):
+                raise PyRevitException(
+                    "Can not access pyRevit folder at: {} | {}".format(
+                        pyrvt_app_dir, err
+                    )
+                )
