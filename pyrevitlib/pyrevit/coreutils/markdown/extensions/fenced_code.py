@@ -2,7 +2,7 @@
 
 This extension adds Fenced Code Blocks to Python-Markdown.
 
-See <https://python-markdown.github.io/extensions/fenced_code_blocks/>
+See <https://github.com/Python-Markdown/markdown/blob/2.6.8-final/docs/extensions/fenced_code_blocks.txt>
 for documentation.
 
 Original code Copyright 2007-2008 [Waylan Limberg](http://achinghead.com/).
