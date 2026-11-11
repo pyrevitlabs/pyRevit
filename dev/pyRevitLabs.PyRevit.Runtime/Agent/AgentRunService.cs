@@ -224,7 +224,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 };
 
                 timings.Lap("prepare");
-                var openAtStart = AgentDocuments.Snapshot(app.Application);
                 var guard = new AgentRunGuard(app, doc, exportDir);
                 using (guard) {
                     try {
@@ -266,7 +265,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         if (approval != null)
                             response["approval"] = approval;
                         response["status"] = AgentRunDecision.Status(verdict);
-                        response["decision"] = AgentRunDecision.Decision(verdict);
+                        response["decision"] = AgentRunDecision.Decision(verdict, context.Started);
                         response["exit_code"] = exitCode;
                         response["changes"] = changes;
                         response["failures"] = guard.Failures;
@@ -277,7 +276,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         logger.Error(ex, "Agent run {0} failed in the host", runId);
                         context.SetError("host_error", ex.Message, ex.ToString());
                         response["status"] = "error";
-                        response["decision"] = guard.Committed ? "committed" : "rolled_back";
+                        response["decision"] = AgentRunDecision.AfterHostError(guard.Committed, context.Started);
                         response["failures"] = guard.Failures;
                         response["dialogs"] = guard.Dialogs;
                         response["blocked"] = guard.Blocked;
@@ -292,7 +291,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         + "Ask the user to undo them in Revit or close the document without saving.");
                 }
 
-                if (doc != null && !guard.RollbackFailed && response.Value<string>("decision") != "committed") {
+                if (doc != null && context.Started && !guard.RollbackFailed && response.Value<string>("decision") != "committed") {
                     var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
                     if (lostByRollback != null) {
                         logger.Error("Agent run {0}: {1}", runId, lostByRollback);
@@ -300,7 +299,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                 }
                 try {
-                    var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
+                    var leftovers = AgentDocuments.CloseLeftovers(app.Application, guard.OpenAtStart);
                     response["closed_documents"] = leftovers["closed"];
                     response["unclosed_documents"] = leftovers["failed"];
                     if (((JArray)leftovers["failed"]).Count > 0)

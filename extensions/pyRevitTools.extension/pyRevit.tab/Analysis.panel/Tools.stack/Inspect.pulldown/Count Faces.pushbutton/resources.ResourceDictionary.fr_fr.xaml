@@ -4,8 +4,11 @@
 
     <sys:String x:Key="progress_title">Comptage des triangles</sys:String>
     <sys:String x:Key="no_geometry">Aucune instance de famille avec une géométrie solide n'a été trouvée.</sys:String>
+    <sys:String x:Key="no_geometry_family">Aucune forme avec une géométrie solide n'a été trouvée dans cette famille.</sys:String>
     <sys:String x:Key="table_title">Triangles par type de famille</sys:String>
+    <sys:String x:Key="table_title_family">Triangles par forme</sys:String>
     <sys:String x:Key="column_type">Type</sys:String>
+    <sys:String x:Key="column_form">Forme</sys:String>
     <sys:String x:Key="column_category">Catégorie</sys:String>
     <sys:String x:Key="column_example">Élément exemple</sys:String>
     <sys:String x:Key="column_coarse">Basse</sys:String>

@@ -70,7 +70,7 @@ public class AutomationOperationsTests {
     [Theory]
     [InlineData("pyrevit.units.parse-length")]
     [InlineData("pyrevit.units.parse-slope")]
-    public void UnitParsersTakeOneNumberOrStringAndNothingElse(string id) {
+    public void UnitParsersTakeOneScalarAndNothingElse(string id) {
         PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = 12 });
         PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = 1.5 });
         PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = "8:12" });
@@ -78,10 +78,38 @@ public class AutomationOperationsTests {
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject())));
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = "8:12", ["extra"] = 1 })));
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject { ["other"] = "8:12" })));
-        Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = true })));
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = JValue.CreateNull() })));
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = new JArray(1) })));
         Assert.Equal("invalid_params", Code(() => PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = new JObject() })));
+    }
+
+    /// <summary>
+    ///     The hand-wired unit parsers follow the <c>scalar</c> rule of marked operations since #3949: a boolean,
+    ///     refused before, is accepted, and an integer beyond Int64, accepted before, is refused.
+    /// </summary>
+    [Theory]
+    [InlineData("pyrevit.units.parse-length")]
+    [InlineData("pyrevit.units.parse-slope")]
+    public void UnitParsersFollowTheScalarRuleOfMarkedOperations(string id) {
+        Assert.True(PyRevitAutomationOperations.Resolve(id, new JObject { ["value"] = true })["inputs"].Value<bool>("value"));
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAutomationOperations.Resolve(id, JObject.Parse("{\"value\": 99999999999999999999}")));
+
+        Assert.Equal("'inputs.value' must be a string, a finite number or a boolean.", error.Message);
+    }
+
+    /// <summary>
+    ///     Hand-wired operations word their input errors like marked ones since #3949.
+    /// </summary>
+    [Fact]
+    public void HandWiredInputErrorsAreWordedLikeMarkedOnes() {
+        static string Message(string id, JObject inputs) => Assert.Throws<AgentClientException>(() => PyRevitAutomationOperations.Resolve(id, inputs)).Message;
+
+        Assert.Equal("'inputs.value' is required.", Message("pyrevit.units.parse-length", new JObject()));
+        Assert.Equal("'inputs.value' is required.", Message("pyrevit.units.parse-slope", new JObject { ["value"] = JValue.CreateNull() }));
+        Assert.Equal("'inputs' accepts only value (got extra).", Message("pyrevit.units.parse-length", new JObject { ["value"] = 1, ["extra"] = 1 }));
+        Assert.Equal("'inputs.name' must be a string.", Message("pyrevit.levels.resolve", new JObject { ["name"] = true }));
+        Assert.Equal("'inputs.name' must be non-empty and contain at most 256 characters.", Message("pyrevit.levels.resolve", new JObject { ["name"] = " " }));
     }
 
     [Fact]
@@ -243,7 +271,12 @@ public class AutomationOperationsTests {
     [Fact]
     public void DeclaredInputsAcceptEachTypeAndReturnTheObjectUnchanged() {
         var inputs = new JObject {
-            ["name"] = "Level 1", ["count"] = 3, ["ratio"] = 1.5, ["flag"] = false, ["element"] = 316542L, ["value"] = "Concrete",
+            ["name"] = "Level 1",
+            ["count"] = 3,
+            ["ratio"] = 1.5,
+            ["flag"] = false,
+            ["element"] = 316542L,
+            ["value"] = "Concrete",
         };
 
         Assert.Same(inputs, AutomationInput.Validate(Declared, inputs));
