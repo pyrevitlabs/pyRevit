@@ -150,4 +150,36 @@ public sealed class PurgeFilesTests : IDisposable {
         Assert.False(File.Exists(Path.Combine(root, "Roaming", "pyRevit-Master", "pyRevitfile")));
         Assert.Empty(Directory.GetFiles(locations.Documents));
     }
+
+    /// <summary>
+    /// A folder emptied except for the kept config is a cleared install, so its uninstall record
+    /// is stale rather than pointing at a live install.
+    /// </summary>
+    [Fact]
+    public void FolderEmptiedExceptForKeptConfigNoLongerCountsAsInstalled() {
+        Create("Roaming", "pyRevit-Master", "pyRevitfile");
+        var localConfig = Create("Roaming", "pyRevit-Master", "pyRevit_config.ini");
+        var installDirectory = Path.GetDirectoryName(localConfig);
+
+        var (session, _, _) = Purge(new PurgeOptions { KeepConfig = true });
+
+        Assert.True(Directory.Exists(installDirectory));
+        Assert.False(session.Exists(installDirectory));
+    }
+
+    /// <summary>
+    /// A config kept by one run has lost its <c>pyRevitfile</c> but is still deleted by the next
+    /// run, so that run must back it up.
+    /// </summary>
+    [Fact]
+    public void ConfigKeptByEarlierRunIsBackedUpByTheNextRun() {
+        Create("Roaming", "pyRevit-Master", "pyRevitfile");
+        var localConfig = Create("Roaming", "pyRevit-Master", "pyRevit_config.ini");
+        Purge(new PurgeOptions { KeepConfig = true });
+
+        Purge(new PurgeOptions());
+
+        Assert.False(File.Exists(localConfig));
+        Assert.Single(Directory.GetFiles(locations.Documents, "pyRevit_config.install*.ini"));
+    }
 }

@@ -20,9 +20,11 @@ namespace pyRevitDoctor {
     /// <remarks>
     /// In a dry run nothing is changed, but items reported as deleted are remembered so later steps of the
     /// same run, such as the staleness check of <c>purge-installs</c> inside <c>purge-all</c>, see them as gone.
+    /// A folder emptied except for a kept config is marked cleared the same way, so it no longer counts as a
+    /// live install.
     /// </remarks>
     public sealed class PurgeSession {
-        readonly List<string> dryRunRemovedPaths = new();
+        readonly List<string> clearedPaths = new();
         bool needsAdmin;
         bool filesInUse;
 
@@ -39,17 +41,19 @@ namespace pyRevitDoctor {
 
         public bool Exists(string path) {
             var normalized = path.TrimEnd('\\', '/');
-            var removedInDryRun = dryRunRemovedPaths.Any(removed =>
-                normalized.Equals(removed, StringComparison.OrdinalIgnoreCase)
-                || normalized.StartsWith(removed + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
-            return !removedInDryRun && (File.Exists(normalized) || Directory.Exists(normalized));
+            var cleared = clearedPaths.Any(clearedPath =>
+                normalized.Equals(clearedPath, StringComparison.OrdinalIgnoreCase)
+                || normalized.StartsWith(clearedPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+            return !cleared && (File.Exists(normalized) || Directory.Exists(normalized));
         }
+
+        public void MarkCleared(string path) => clearedPaths.Add(path.TrimEnd('\\', '/'));
 
         public void ReportDeleted(string item, string removedPath = null) {
             DeletedCount++;
             Output.WriteLine($"{(Options.DryRun ? "Fake Deleted" : "Deleted")} {item}");
             if (Options.DryRun && removedPath != null)
-                dryRunRemovedPaths.Add(removedPath.TrimEnd('\\', '/'));
+                MarkCleared(removedPath);
         }
 
         public void ReportSkipped(string reason, string item) {
