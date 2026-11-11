@@ -40,8 +40,8 @@ namespace pyRevitDoctor {
                 try {
                     key = OpenTargetKey(session, target);
                 }
-                catch {
-                    session.Output.WriteLine($"Can not open \"({target.BaseKey})\\{target.SubKeyName}\". Run this command as admin");
+                catch (Exception ex) {
+                    session.ReportFailed($@"({target.BaseKey})\{target.SubKeyName}", ex, "Opening");
                     continue;
                 }
 

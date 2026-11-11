@@ -61,11 +61,11 @@ namespace pyRevitDoctor {
             Output.WriteLine($"Skipped ({reason}) {item}");
         }
 
-        public void ReportFailed(string item, Exception exception) {
+        public void ReportFailed(string item, Exception exception, string action = "Deleting") {
             FailedCount++;
             needsAdmin |= exception is UnauthorizedAccessException or SecurityException;
             filesInUse |= exception is IOException;
-            Output.WriteLine($"Error Deleting {item} | {exception.Message}");
+            Output.WriteLine($"Error {action} {item} | {exception.Message}");
         }
 
         public void PrintSummary() {
