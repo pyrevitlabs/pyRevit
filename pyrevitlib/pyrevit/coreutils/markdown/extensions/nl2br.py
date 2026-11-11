@@ -3,10 +3,10 @@
 A Python-Markdown extension to treat newlines as hard breaks; like
 GitHub-flavored Markdown does.
 
-See <https://pythonhosted.org/Markdown/extensions/nl2br.html>
+See <https://python-markdown.github.io/extensions/nl2br/>
 for documentation.
 
-Oringinal code Copyright 2011 [Brian Neal](http://deathofagremmie.com/)
+Oringinal code Copyright 2011 Brian Neal
 
 All changes Copyright 2011-2014 The Python Markdown Project
 

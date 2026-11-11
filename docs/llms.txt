@@ -42,7 +42,6 @@
 - [pyRevit Bundle Type Maker](https://docs.pyrevitlabs.io/reference/pyrevit/runtime/bundletypemaker/): Create compiled types for pyRevit bundles and commands.
 - [pyRevit Project Information](https://docs.pyrevitlabs.io/reference/pyrevit/versionmgr/about/): Utility module providing information about the pyRevit project.
 - [Preflight Test Case](https://docs.pyrevitlabs.io/reference/pyrevit/preflight/case/): Base class for preflight tests with setup and teardown methods.
-- [Assembly Maker Module](https://docs.pyrevitlabs.io/reference/pyrevit/loader/asmmaker/): Module for creating and managing extension assemblies in pyRevit.
 - [YamlDotNet Wrapper](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/yaml/): Wrapper for YamlDotNet to load and save YAML files.
 - [pyRevit AppData Utilities](https://docs.pyrevitlabs.io/reference/pyrevit/coreutils/appdata/): Utility functions for managing data files in pyRevit.
 - [Bounding Box File Operations](https://docs.pyrevitlabs.io/reference/pyrevit/interop/bbx/): Read and write bounding box files with pyRevit.

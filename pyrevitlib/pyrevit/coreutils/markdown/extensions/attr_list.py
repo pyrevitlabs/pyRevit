@@ -1,10 +1,10 @@
 """Attribute List Extension for Python-Markdown.
 
 Adds attribute list syntax. Inspired by
-[maruku](http://maruku.rubyforge.org/proposal.html#attribute_lists)'s
+maruku's
 feature of the same name.
 
-See <https://pythonhosted.org/Markdown/extensions/attr_list.html>
+See <https://python-markdown.github.io/extensions/attr_list/>
 for documentation.
 
 Original code Copyright 2011 [Waylan Limberg](http://achinghead.com/).

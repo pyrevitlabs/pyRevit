@@ -2,7 +2,7 @@
 
 Auto-generate id attributes for HTML headers.
 
-See <https://pythonhosted.org/Markdown/extensions/header_id.html>
+See <https://python-markdown.github.io/extensions/toc/>
 for documentation.
 
 Original code Copyright 2007-2011 [Waylan Limberg](http://achinghead.com/).

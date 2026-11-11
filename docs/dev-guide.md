@@ -62,7 +62,7 @@ Make sure to uncheck the "Copy the master branch only" option, since we mostly u
 | **1 — Run in Revit** | Use pyRevit without building C# | `pyrevit clone` | Public Release `ci-binaries` (`develop`/`master`) or signed `bin-v{version}.zip` on a published `v*` tag |
 | **2 — C# contributor** | Change DLLs and debug in Visual Studio | `git clone` | `dotnet run -- ci` in [`build/`](../build/) |
 
-#### Profile 1 — Run in Revit (CI binaries)
+#### Profile 1: Run in Revit (CI binaries)
 
 Uses the pyRevit CLI to clone git source **and** download pre-built `bin/` from the [`ci-binaries`](https://github.com/pyrevitlabs/pyRevit/releases/tag/ci-binaries) release (or the matching GitHub Release when `--branch` is a `v*` tag). Normal path on `pyrevitlabs/pyRevit` needs no `GITHUBTOKEN`. Synced forks use upstream Release assets for the same commit SHA.
 
@@ -85,7 +85,7 @@ pyrevit clones update dev
 
 If public Release download fails (diverged fork, private repo), set `GITHUBTOKEN` (`read:packages` and/or `actions:read`) and retry — the CLI falls back to the `PyRevit.UnsignedBin` NuGet mirror and Actions artifacts. See [download order](ci-cd.md#prebuilt-binaries-for-clone).
 
-#### Profile 2 — C# contributor (local build)
+#### Profile 2: C# contributor (local build)
 
 Use **git**, not `pyrevit clone` — `clone` would pull CI binaries and overwrite the local-build workflow.
 
