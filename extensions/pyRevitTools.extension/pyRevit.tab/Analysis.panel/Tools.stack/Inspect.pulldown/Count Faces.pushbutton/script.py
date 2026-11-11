@@ -77,7 +77,11 @@ def count_triangles_per_visibility(form):
     geometry of a form in a family document. The count then applies to each detail
     level the form is set to be visible in.
     """
-    triangles = count_triangles(form, DB.ViewDetailLevel.Medium)
+    try:
+        triangles = count_triangles(form, DB.ViewDetailLevel.Medium)
+    except Exception:
+        logger.debug("Triangles of form {} could not be counted.".format(form.Id))
+        return [0, 0, 0]
     visibility = form.GetVisibility()
     shown = [
         visibility.IsShownInCoarse,
@@ -90,16 +94,15 @@ def count_triangles_per_visibility(form):
 def collect_family_counts():
     """Return one row per element of the family being edited with at least one triangle.
 
-    Rows cover the family's own forms and every nested family instance, since each
-    instance adds its triangles to the family. Each row holds the element and the
-    triangle counts at coarse, medium and fine detail.
+    Rows cover the family's own forms and every nested family instance, counted
+    individually because instance parameters can change an instance's geometry. Each
+    row holds the element and the triangle counts at coarse, medium and fine detail.
     """
     family_forms = revit.query.get_elements_by_class(DB.GenericForm, doc=revit.doc)
     nested_instances = revit.query.get_elements_by_class(
         DB.FamilyInstance, doc=revit.doc
     )
     rows = []
-    counts_by_type = {}
     with forms.ProgressBar(
         title=_t("progress_title"), cancellable=True, step=10
     ) as progress:
@@ -115,10 +118,7 @@ def collect_family_counts():
             if progress.cancelled:
                 script.exit()
             progress.update_progress(index, total)
-            type_id = instance.GetTypeId()
-            if type_id not in counts_by_type:
-                counts_by_type[type_id] = count_triangles_per_level(instance)
-            counts = counts_by_type[type_id]
+            counts = count_triangles_per_level(instance)
             if any(counts):
                 rows.append((instance, counts))
     return rows
