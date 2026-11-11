@@ -136,15 +136,17 @@ things. Because they change view state or write files, `show_elements`,
 read-only nor destructive.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
-`error` (when present), `decision`, `result`, `output`, and only the non-empty change
-set, failures, dialogs, blocked operations and `exports` (the files the run exported). The change set starts with `summary`, one
-line the host builds from every change, for example `added 1 family (Door) with 3 types and 2
-other elements (Legend Components), modified 1 element (Project Information), deleted 1
-element`: it names up to 3 families and the 3 most frequent categories, then `+N more`, and
-reads `no changes` for an empty set. It then keeps counts, `by_category`,
-`added_ids`, `added_families` (id, category, name and class of every added family and
-type, system types included), `modified` (the same fields) and `deleted_ids`, each
-capped at 20 entries. The full record, with up to 50 of each, stays available through
+`error` (when present), `decision`, `result` and `output`. The non-empty change set,
+failures, dialogs and blocked operations follow, and `exports` lists the files the run
+exported (the first 20, with `exports_note` when there are more).
+
+The change set starts with `summary`, one line the host builds from every change, for example
+`added 1 family (Door) with 3 types and 2 other elements (Legend Components), modified 1
+element (Project Information), deleted 1 element`. It names up to 3 families and the 3 most
+frequent categories, then `+N more`, and reads `no changes` for an empty set. Then come
+counts, `by_category`, `added_ids`, `added_families` (id, category, name and class of every
+added family and type, system types included), `modified` (the same fields) and
+`deleted_ids`, each capped at 20 entries. The full record, with up to 50 of each, stays available through
 `get_run`. `AttributeError` and `TypeError` failures carry a `hint` that names the
 `lookup_revit_api` call to make, for example `'Collector' does not exist in
 Autodesk.Revit.DB` or `check the overloads of 'FilteredElementCollector.OfCategory'`.
@@ -240,8 +242,7 @@ injects `doc`, `uidoc`, `app`, `uiapp`, `DB` (`Autodesk.Revit.DB`), `UI`
 (`Autodesk.Revit.UI`), `inputs` (the `inputs` argument as a dict) and `export_dir` (the
 folder Revit exports from the run may write into, ending with a path separator so that
 `ImageExportOptions.FilePath = export_dir` writes inside it; see the rules below). Assign
-`result`
-to return data. It is serialized to JSON:
+`result` to return data. It is serialized to JSON:
 
 - `ElementId` becomes an integer.
 - `Element` becomes `{id, category, name, class}`.
@@ -286,8 +287,9 @@ Rules the host enforces:
   active.
   `get_context.open_documents` lists every open document and marks the background ones.
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
-  save-as, synchronize-with-central, file-export, view-export and printing events. The response
-  lists a cancelled operation in `blocked`. APIs that write files without raising one of these
+  save-as, synchronize-with-central, file-export (except exports into the run's `export_dir`,
+  see the next rule), view-export and printing events. The response lists a cancelled
+  operation in `blocked`. APIs that write files without raising one of these
   events, such as `ViewSchedule.Export`, shared parameter file edits and
   `TransmissionData.WriteTransmissionData`, are not blocked.
 - A file export (`Document.Export`, `Document.ExportImage`) whose target is the run's

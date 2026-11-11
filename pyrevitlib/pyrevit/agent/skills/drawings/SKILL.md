@@ -78,9 +78,12 @@ for sheet in DB.FilteredElementCollector(doc).OfClass(DB.ViewSheet):
     if sheet.SheetNumber in ("A101", "A102"):
         ids.Add(sheet.Id)
 
+pdf_dir = os.path.join(export_dir, "pdf")
+if not os.path.isdir(pdf_dir):
+    os.makedirs(pdf_dir)
 pdf = DB.PDFExportOptions()
 pdf.Combine = False
-doc.Export(export_dir, ids, pdf)
+doc.Export(pdf_dir, ids, pdf)
 
 image = DB.ImageExportOptions()
 image.ExportRange = DB.ExportRange.SetOfViews
@@ -92,7 +95,8 @@ image.PixelSize = 2000
 doc.ExportImage(image)
 ```
 
-`PDFExportOptions` needs Revit 2022 or later. Don't call `SetExportInBackground(True)`: the
+`PDFExportOptions` needs Revit 2022 or later. Create a subfolder before exporting into it:
+Revit doesn't, and fails with "The folder does not exist". Don't call `SetExportInBackground(True)`: the
 host cancels background exports, since their files arrive after the run, and `Export` still
 returns `True`, so only the `blocked` entry shows it. `ExportImage` appends the view type and
 name to `FilePath`, which is a file name prefix, not a folder. `export_dir` ends with a path
