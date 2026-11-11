@@ -1,8 +1,8 @@
 """Revit events handler management."""
 
 # pylint: disable=unused-argument
-import uuid
 from collections import deque
+from System import Guid
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
@@ -14,7 +14,7 @@ from pyrevit.coreutils.logger import get_logger
 
 mlogger = get_logger(__name__)
 
-_CLR_NAMESPACE = "pyrevit.revit.events._" + uuid.uuid4().hex
+_CLR_NAMESPACE = "pyrevit.revit.events._" + Guid.NewGuid().ToString("N")
 """CLR namespace for the handler types this execution of the module defines.
 
 Warning:

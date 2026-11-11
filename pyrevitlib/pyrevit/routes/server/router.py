@@ -3,7 +3,6 @@
 
 # pylint: disable=import-error,invalid-name,broad-except
 import re
-import uuid
 from collections import namedtuple
 
 from pyrevit.coreutils import envvars
@@ -57,9 +56,19 @@ def _validate_pattern(route_pattern):
 
 
 def _cast_value(cast, val):
+    """Cast a route parameter string to its declared type.
+
+    Note:
+        ``uuid`` is imported on demand, never at module level. The IronPython
+        2.7 stdlib ``uuid`` calls ``ctypes.LoadLibrary`` as it is imported, and
+        endpoint security hooks on ``LoadLibrary`` (SentinelOne) can fail-fast
+        Revit with it. This module loads on every pyRevit startup.
+    """
     if cast in ["int", "float", "double", "bool"]:
         return eval("%s(%s)" % (cast, val))  # pylint: disable=eval-used
     elif cast == "uuid":
+        import uuid  # pylint: disable=import-outside-toplevel
+
         return uuid.UUID(val)
 
 
