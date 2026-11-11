@@ -322,6 +322,7 @@ namespace pyRevitCLI {
                             { "<revit_year>",           "Revit version year e.g. 2026" },
                             { "<engine_version>",       "Engine version to be used e.g. 2712" },
                             { "DEFAULT",                "Use default engine" },
+                            { "<model_file>",           "Model file Revit opens once it has started" },
                             { "--isolated",             "Give the session its own pyRevit config folder, seeded with a copy of the current config" },
                             { "--language=<code>",      "Revit UI language code e.g. ENU" },
                         });

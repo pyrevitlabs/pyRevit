@@ -4,8 +4,11 @@
 
     <sys:String x:Key="progress_title">Dreiecke werden gezählt</sys:String>
     <sys:String x:Key="no_geometry">Es wurden keine Familieninstanzen mit Volumenkörpern gefunden.</sys:String>
+    <sys:String x:Key="no_geometry_family">In dieser Familie wurden keine Formen mit Volumenkörpern gefunden.</sys:String>
     <sys:String x:Key="table_title">Dreiecke je Familientyp</sys:String>
+    <sys:String x:Key="table_title_family">Dreiecke je Form</sys:String>
     <sys:String x:Key="column_type">Typ</sys:String>
+    <sys:String x:Key="column_form">Form</sys:String>
     <sys:String x:Key="column_category">Kategorie</sys:String>
     <sys:String x:Key="column_example">Beispielelement</sys:String>
     <sys:String x:Key="column_coarse">Grob</sys:String>

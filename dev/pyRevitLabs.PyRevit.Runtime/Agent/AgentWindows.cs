@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using static PyRevitLabs.PyRevit.Runtime.Agent.AgentUser32;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Lists the visible top-level windows of the Revit process other than its main window,
@@ -22,17 +24,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal static class AgentWindows {
         private const int MaxWindows = 6;
-
-        private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
-
-        [DllImport("user32.dll")]
-        private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
-
-        [DllImport("user32.dll")]
-        private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
-
-        [DllImport("user32.dll")]
-        private static extern bool IsWindowVisible(IntPtr window);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int InternalGetWindowText(IntPtr window, StringBuilder text, int maxCount);

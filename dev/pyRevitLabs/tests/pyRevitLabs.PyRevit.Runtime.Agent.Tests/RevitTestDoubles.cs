@@ -15,7 +15,9 @@ namespace Autodesk.Revit.DB {
         public string Name { get; set; }
     }
     internal sealed class Family : Element { }
-    internal sealed class FamilySymbol : Element { }
+    internal class ElementType : Element { }
+    internal sealed class FamilySymbol : ElementType { }
+    internal sealed class WallType : ElementType { }
     internal sealed class Document {
         public string Title { get; set; } = "Test document";
         public string PathName { get; set; } = "";
@@ -242,5 +244,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 namespace pyRevitLabs.PyRevit {
     internal static class PyRevitConfigs {
         public static string GetAgentEngine() => "ironpython";
+    }
+}
+namespace pyRevitLabs.NLog {
+    internal sealed class Logger {
+        public void Error(string message, params object[] args) { }
+        public void Warn(string message, params object[] args) { }
+        public void Debug(string message, params object[] args) { }
+    }
+    internal static class LogManager {
+        public static Logger GetCurrentClassLogger() => new Logger();
     }
 }

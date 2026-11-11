@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </remarks>
     internal static class AgentPresenter {
         private const int MaxIds = 20000;
+        private const int MaxCategories = 100;
         private static readonly string[] Actions = { "select", "isolate", "hide", "reset" };
 
         public sealed class Request {
@@ -34,32 +35,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public static Request Parse(JObject parameters) {
-            var action = (parameters.Value<string>("action") ?? "select").ToLowerInvariant();
+            var action = (AgentParams.Get<string>(parameters, "action") ?? "select").ToLowerInvariant();
             if (!Actions.Contains(action))
                 throw new AgentException("invalid_params", "'action' must be one of: " + string.Join(", ", Actions) + ".");
 
-            var request = new Request { Action = action, Zoom = parameters.Value<bool?>("zoom") ?? false };
+            var request = new Request { Action = action, Zoom = AgentParams.Get<bool?>(parameters, "zoom") ?? false };
 
             if (parameters["ids"] is JArray ids) {
                 if (ids.Count > MaxIds)
                     throw new AgentException("invalid_params", $"At most {MaxIds} ids per call.");
-                try {
-                    request.Ids.AddRange(ids.Select(id => id.Value<long>()));
-                }
-                catch (Exception) {
-                    throw new AgentException("invalid_params", "'ids' must contain integer element ids.");
-                }
+                request.Ids.AddRange(AgentParams.ElementIds(ids, "ids"));
             }
 
-            if (parameters["categories"] is JArray categories) {
-                foreach (var token in categories) {
-                    var name = token.Value<string>() ?? string.Empty;
-                    var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
-                    if (!AgentSelectors.TryParseMember(enumName, out BuiltInCategory category))
-                        throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
-                    request.Categories.Add(category);
-                }
-            }
+            if (parameters["categories"] is JArray categories)
+                request.Categories.AddRange(AgentSelectors.ParseDistinctCategories<BuiltInCategory>(
+                    categories.Select(token => token.Value<string>()), MaxCategories));
 
             if (action != "reset" && request.Ids.Count == 0 && request.Categories.Count == 0)
                 throw new AgentException("invalid_params", "Pass 'ids' and/or 'categories'.");
@@ -82,8 +72,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// no open view can show the elements. <paramref name="dialogs"/> closes it; the response
         /// then carries <c>zoomed: false</c> and a <c>zoom_failed</c> error with Revit's message,
         /// while the selection or isolation already applied stays in place.
-        /// For isolate and hide, ids the active view doesn't show are left out of <c>count</c> and
-        /// listed in <c>not_in_view_ids</c>. A temporary view change Revit rolls back fails with
+        /// Ids the active view doesn't show are listed in <c>not_in_view_ids</c>. Isolate and hide
+        /// also leave them out of <c>count</c>; select keeps them, so <c>zoom</c> can still open
+        /// another view that shows them. A temporary view change Revit rolls back fails with
         /// <c>show_failed</c> instead of reporting success. <c>view</c> is the view the action
         /// applied to; when zooming makes Revit open another view, <c>active_view</c> names it.
         /// </remarks>
@@ -117,17 +108,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var missing = new List<long>();
             var targets = ResolveTargets(doc, view, request, missing);
-            if (request.Action != "select" && request.Ids.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
+            if (request.Ids.Count > 0 && targets.Count > 0 && view != null && !view.IsTemplate && view.CanUseTemporaryVisibilityModes()) {
                 var inView = new HashSet<ElementId>(new FilteredElementCollector(doc, view.Id)
-                    .WherePasses(new LogicalOrFilter(
-                        new ElementIsElementTypeFilter(false),
-                        new ElementIsElementTypeFilter(true)))
+                    .WherePasses(new ElementIdSetFilter(targets))
                     .ToElementIds());
                 var notInView = targets.Where(id => !inView.Contains(id)).ToList();
                 if (notInView.Count > 0) {
-                    targets = targets.Where(inView.Contains).ToList();
                     response["not_in_view_ids"] = new JArray(notInView.Take(100).Select(AgentIds.ToValue));
-                    if (view.IsTemporaryHideIsolateActive())
+                    if (request.Action != "select")
+                        targets = targets.Where(inView.Contains).ToList();
+                    if (request.Action != "select" && view.IsTemporaryHideIsolateActive())
                         response["note"] = "Some elements are not shown in the active view, possibly hidden by its temporary hide/isolate; "
                             + "call action 'reset' first to include them.";
                 }
@@ -227,9 +217,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var collector = view != null && !view.IsTemplate
                     ? new FilteredElementCollector(doc, view.Id)
                     : new FilteredElementCollector(doc);
-                foreach (var id in collector.OfCategory(category).WhereElementIsNotElementType().ToElementIds()) {
-                    if (seen.Add(AgentIds.ToValue(id)))
+                using (var ids = collector.OfCategory(category).WhereElementIsNotElementType().GetElementIdIterator()) {
+                    while (ids.MoveNext()) {
+                        var id = ids.Current;
+                        if (!seen.Add(AgentIds.ToValue(id)))
+                            continue;
+                        if (targets.Count >= MaxIds)
+                            throw new AgentException("too_many_elements",
+                                $"The categories match more than {MaxIds} elements in the active view; pass fewer categories or ids.");
                         targets.Add(id);
+                    }
                 }
             }
 

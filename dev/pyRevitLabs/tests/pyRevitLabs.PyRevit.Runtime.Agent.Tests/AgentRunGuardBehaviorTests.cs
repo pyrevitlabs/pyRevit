@@ -6,6 +6,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentRunGuardFailureTests {
         [Fact]
         public void WarningsAreRecordedDeletedAndDoNotRollBack() {
@@ -118,6 +120,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentRunGuardBlockTests {
         [Fact]
         public void NonCancellableEventsAreNeitherCancelledNorReported() {
@@ -169,7 +173,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.SaveAs(document);
 
                 Assert.Equal(
-                    "operation_blocked: save_as of 'Family23' not allowed in agent runs.",
+                    "operation_blocked: save_as of 'Family23' not allowed in agent runs; the user must do it in Revit.",
                     guard.DescribeBlockedOperations());
             }
         }
@@ -187,7 +191,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.Save(document);
 
                 Assert.Equal(
-                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs.",
+                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs; the user must do it in Revit.",
                     guard.DescribeBlockedOperations());
             }
         }
@@ -260,6 +264,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentRunGuardGroupTests {
         [Fact]
         public void TheActiveDocumentGetsAGroupThatRollBackCloses() {
@@ -375,6 +381,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class AgentChangeSetTests {
         [Fact]
         public void ModifyingAnElementTheRunAddedCountsItOnlyAsAdded() {
@@ -433,6 +441,49 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void SystemTypesAreListedWithFamilies() {
+            var app = new UIApplication();
+            var document = new Document();
+            var wallType = new ElementId();
+            var wall = new ElementId();
+            document.Elements[wallType] = new WallType { Name = "Generic - 300" };
+            document.Elements[wall] = new Element { Name = "Wall" };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new[] { wallType, wall });
+
+                var description = guard.Changes.Describe(document, 50);
+                Assert.Equal(
+                    new[] { "WallType:Generic - 300" },
+                    description["added_families"].Select(element => element.Value<string>("class") + ":" + element.Value<string>("name")));
+            }
+        }
+
+        [Fact]
+        public void FamiliesComeBeforeSystemTypesWhenTheListIsCut() {
+            var app = new UIApplication();
+            var document = new Document();
+            var wallTypes = Enumerable.Range(0, 5).Select(_ => new ElementId()).ToList();
+            foreach (var id in wallTypes)
+                document.Elements[id] = new WallType { Name = "Copy" };
+            var family = new ElementId();
+            var symbol = new ElementId();
+            document.Elements[family] = new Family { Name = "Desk" };
+            document.Elements[symbol] = new FamilySymbol { Name = "1200x600" };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: wallTypes.Concat(new[] { symbol, family }).ToArray());
+
+                var description = guard.Changes.Describe(document, 2);
+                Assert.Equal(
+                    new[] { "Family:Desk", "FamilySymbol:1200x600" },
+                    description["added_families"].Select(element => element.Value<string>("class") + ":" + element.Value<string>("name")));
+            }
+        }
+
+        [Fact]
         public void TransactionNamesAreListedOnce() {
             var app = new UIApplication();
             var document = new Document();
@@ -454,7 +505,82 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
                 Assert.True(guard.Changes.IsEmpty);
                 Assert.Equal(0, guard.Changes.Summarize().Value<int>("added_count"));
+                Assert.Equal("no changes", guard.Changes.Summarize().Value<string>("summary"));
             }
+        }
+
+        [Fact]
+        public void TheSummaryNamesLoadedFamiliesTheirTypesAndTheChangedCategories() {
+            var app = new UIApplication();
+            var document = new Document();
+            var family = Add(document, new Family { Name = "Door" });
+            var types = Enumerable.Range(0, 3).Select(_ => Add(document, new FamilySymbol { Name = "Type" })).ToList();
+            var legend = Add(document, new Element { Category = new Category { Name = "Legend Components" } });
+            var walls = Enumerable.Range(0, 2).Select(_ => Add(document, new Element { Category = new Category { Name = "Walls" } })).ToList();
+            var gone = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: types.Concat(new[] { family, legend }).ToArray(), deleted: new[] { gone }, modified: walls);
+
+                Assert.Equal(
+                    "added 1 family (Door) with 3 types and 1 other element (Legend Components), modified 2 elements (Walls), deleted 1 element",
+                    guard.Changes.Describe(document, 50).Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TheSummaryCountsEveryChangeAndCutsLongNameLists() {
+            var app = new UIApplication();
+            var document = new Document();
+            var families = Enumerable.Range(1, 5).Select(i => Add(document, new Family { Name = "F" + i })).ToList();
+            var systemTypes = Enumerable.Range(0, 2).Select(_ => Add(document, new WallType { Name = "Copy" })).ToList();
+            var categories = new[] { "Walls", "Walls", "Doors", "Floors", "Roofs", "Roofs", "Roofs" };
+            var modified = categories.Select(name => Add(document, new Element { Category = new Category { Name = name } }))
+                .Concat(Enumerable.Range(0, 60).Select(_ => Add(document, new Element { Category = new Category { Name = "Grids" } })))
+                .ToList();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: families.Concat(systemTypes).ToArray(), modified: modified);
+
+                Assert.Equal(
+                    "added 5 families (F1, F2, F3, +2 more) and 2 system types, modified 67 elements (Grids, Roofs, Walls, +2 more)",
+                    guard.Changes.Describe(document, 2).Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TheSummaryWithoutTheDocumentGivesCountsOnly() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new[] { new ElementId(), new ElementId() }, modified: new[] { new ElementId() });
+
+                Assert.Equal("added 2 elements, modified 1 element", guard.Changes.Summarize().Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TypesAddedToAFamilyThatWasAlreadyLoadedAreNamedFamilyTypes() {
+            var app = new UIApplication();
+            var document = new Document();
+            var symbol = Add(document, new FamilySymbol { Name = "900x2100" });
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new[] { symbol });
+
+                Assert.Equal("added 1 family type", guard.Changes.Describe(document, 50).Value<string>("summary"));
+            }
+        }
+
+        private static ElementId Add(Document document, Element element) {
+            var id = new ElementId();
+            document.Elements[id] = element;
+            return id;
         }
     }
 }

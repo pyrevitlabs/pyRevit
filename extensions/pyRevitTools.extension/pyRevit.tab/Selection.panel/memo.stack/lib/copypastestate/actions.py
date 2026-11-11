@@ -587,6 +587,47 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
             return DB.XYZ.Zero
 
     @staticmethod
+    def detach_scope_box(view):
+        """Detach the scope box that controls the crop of a view.
+
+        Revit refuses to set a crop shape on a view whose crop is controlled
+        by a scope box, so base point mode must detach it first.
+
+        Args:
+            view (DB.View): view to apply changes
+
+        Returns:
+            DB.ElementId: scope box to hand back to attach_scope_box,
+                or None if the view has no detachable scope box
+        """
+        scope_box_param = view.get_Parameter(
+            DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+        )
+        if scope_box_param is None or scope_box_param.IsReadOnly:
+            return None
+        scope_box_id = scope_box_param.AsElementId()
+        if scope_box_id == DB.ElementId.InvalidElementId:
+            return None
+        scope_box_param.Set(DB.ElementId.InvalidElementId)
+        return scope_box_id
+
+    @staticmethod
+    def attach_scope_box(view, scope_box_id):
+        """Re-attach a scope box detached by detach_scope_box.
+
+        Removes the temporary crop shape first, because Revit keeps the scope
+        box parameter read-only while a crop shape is set.
+
+        Args:
+            view (DB.View): view to apply changes
+            scope_box_id (DB.ElementId): value returned by detach_scope_box
+        """
+        view.GetCropRegionShapeManager().RemoveCropRegionShape()
+        view.get_Parameter(DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP).Set(
+            scope_box_id
+        )
+
+    @staticmethod
     def zero_cropbox(view):
         """Generates a rectangular curve loop in model coordinates
         (0,0; 0,1; 1,1; 1,0) parallel to a provided view.
@@ -647,6 +688,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
         with revit.DryTransaction("Activate & Read Cropbox, Copy Center"):
             if alignment == ALIGNMENT_BASEPOINT:
+                ViewportPlacementAction.detach_scope_box(view)
                 revit.update.set_crop_region(
                     view, ViewportPlacementAction.zero_cropbox(view)
                 )
@@ -698,6 +740,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                     viewport
                 )
                 crop_region_current = None
+                scope_box_id_current = None
                 cropbox_values_current = None
                 hidden_elements = None
                 # set temporary settings: hide elements, set cropbox visibility
@@ -707,6 +750,9 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                         # 'base point' mode - set cropbox to 'zero' temporary
                         if alignment == ALIGNMENT_BASEPOINT:
                             crop_region_current = revit.query.get_crop_region(view)
+                            scope_box_id_current = (
+                                ViewportPlacementAction.detach_scope_box(view)
+                            )
                             revit.update.set_crop_region(
                                 view, ViewportPlacementAction.zero_cropbox(view)
                             )
@@ -735,6 +781,11 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                 if crop_region_current:
                     with revit.Transaction("Recover crop region form"):
                         revit.update.set_crop_region(view, crop_region_current)
+                if scope_box_id_current is not None:
+                    with revit.Transaction("Recover scope box"):
+                        ViewportPlacementAction.attach_scope_box(
+                            view, scope_box_id_current
+                        )
                 if cropbox_values_current:
                     with revit.Transaction("Recover crop region values"):
                         ViewportPlacementAction.recover_cropbox(

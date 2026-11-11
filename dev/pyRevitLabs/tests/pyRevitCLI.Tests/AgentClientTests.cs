@@ -275,7 +275,7 @@ public class AgentClientTests : IDisposable {
 
     [Fact]
     public void ARegisteredCloneIsReadFromTheInstanceRecordAndReportedInJson() {
-        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342");
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342", branch: "fix/review-a");
 
         var session = PyRevitAgentClient.Resolve("review-a");
         var json = session.ToJson();
@@ -283,6 +283,7 @@ public class AgentClientTests : IDisposable {
         Assert.Equal("2091", session.RevitVersion);
         Assert.Equal("review-a", json.Value<string>("clone"));
         Assert.Equal("IPY342", json.Value<string>("engine"));
+        Assert.Equal("fix/review-a", json.Value<string>("branch"));
         Assert.True(json.Value<bool>("per_launch"));
     }
 
@@ -580,6 +581,36 @@ public class AgentClientTests : IDisposable {
 
         Assert.Equal("no_answer", error.Code);
         Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+    }
+
+    [Fact]
+    public void StatusReportsAHostThatIsOnlyBusyAsBusy() {
+        host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(ThisHost());
+
+        Assert.EndsWith(": busy", line);
+    }
+
+    [Fact]
+    public void StatusReportsAHostWithoutAPipeAsNotResponding() {
+        var instance = ThisHost();
+        instance.Pipe = "pyrevit-missing-" + Guid.NewGuid().ToString("N");
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.StartsWith("Revit 2090", line);
+        Assert.Contains("not responding (", line);
+    }
+
+    [Fact]
+    public void StatusShowsTheCloneAndEngineOfARespondingHost() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "dev", clonePath: "C:/dev", engine: "CPython");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(PyRevitAgentClient.Resolve("2091"));
+
+        Assert.Equal("Revit 2091 (build build-2091) pid " + Environment.ProcessId + " on dev CPython: responding", line);
     }
 
     [Fact]
