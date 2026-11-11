@@ -52,7 +52,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Host-owned folder inside the run record that Revit exports from this run may write
-        /// into; the runner passes it to the script as <c>export_dir</c>.
+        /// into; the runner passes it to the script as <c>export_dir</c>. It ends with a path
+        /// separator; see <see cref="AgentExportFolder.ForScripts"/>.
         /// </summary>
         public string ExportDir { get; internal set; }
 

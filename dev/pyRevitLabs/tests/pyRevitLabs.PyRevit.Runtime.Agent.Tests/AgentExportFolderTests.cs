@@ -133,6 +133,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.False(folder.Contains(ShortName(other)));
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData("\\")]
+        [InlineData("/")]
+        public void ScriptsGetTheFolderWithOneTrailingSeparator(string suffix) {
+            var forScripts = AgentExportFolder.ForScripts(exports + suffix);
+
+            Assert.Equal(exports + Path.DirectorySeparatorChar, forScripts);
+        }
+
+        [Fact]
+        public void TheFolderAsScriptsGetItIsAnAllowedTarget() {
+            var folder = new AgentExportFolder(exports);
+            var forScripts = AgentExportFolder.ForScripts(exports);
+
+            Assert.True(folder.Contains(forScripts));
+            Assert.True(folder.Contains(Path.Combine(forScripts, "sheet")));
+            Assert.True(folder.Contains(forScripts + "sheet"));
+        }
+
         [Fact]
         public void AFolderThatDoesNotExistRefusesEverything() {
             var folder = new AgentExportFolder(Path.Combine(root, "missing"));

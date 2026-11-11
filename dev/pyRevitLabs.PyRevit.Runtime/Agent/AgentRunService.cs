@@ -213,7 +213,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var stopwatch = Stopwatch.StartNew();
                 var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
                     Timings = timings,
-                    ExportDir = exportDir,
+                    ExportDir = AgentExportFolder.ForScripts(exportDir),
                 };
                 var response = new JObject {
                     ["run_id"] = runId,

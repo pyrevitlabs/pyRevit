@@ -95,8 +95,11 @@ doc.ExportImage(image)
 `PDFExportOptions` needs Revit 2022 or later. Don't call `SetExportInBackground(True)`: the
 host cancels background exports, since their files arrive after the run, and `Export` still
 returns `True`, so only the `blocked` entry shows it. `ExportImage` appends the view type and
-name to `FilePath`. Any other export the host cancelled raises Revit's generic
-`InternalException`, and the `operation_blocked` warning names its target.
+name to `FilePath`, which is a file name prefix, not a folder. `export_dir` ends with a path
+separator, so `os.path.join(export_dir, "sheet")` and `export_dir + "sheet"` both work; a bare
+`export_dir` also works but gives names starting with ` - Sheet`. Any other export the host
+cancelled raises Revit's generic `InternalException`, and the `operation_blocked` warning names
+its target.
 
 ## Before you report done
 

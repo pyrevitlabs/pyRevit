@@ -238,7 +238,9 @@ operation and never executes a command or changes model elements.
 Scripts are Python, executed inside Revit by the regular pyRevit engines. The runner
 injects `doc`, `uidoc`, `app`, `uiapp`, `DB` (`Autodesk.Revit.DB`), `UI`
 (`Autodesk.Revit.UI`), `inputs` (the `inputs` argument as a dict) and `export_dir` (the
-folder Revit exports from the run may write into; see the rules below). Assign `result`
+folder Revit exports from the run may write into, ending with a path separator so that
+`ImageExportOptions.FilePath = export_dir` writes inside it; see the rules below). Assign
+`result`
 to return data. It is serialized to JSON:
 
 - `ElementId` becomes an integer.
