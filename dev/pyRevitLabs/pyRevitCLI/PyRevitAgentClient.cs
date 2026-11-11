@@ -35,6 +35,9 @@ namespace pyRevitCLI {
         public string Engine { get; set; }
         public string EngineVersion { get; set; }
         public string Commit { get; set; }
+
+        /// <summary>Git branch of the clone, or the branch its image was deployed from; null when the host did not record it.</summary>
+        public string Branch { get; set; }
         public string ConfigRoot { get; set; }
 
         /// <summary>True for a session started by <c>pyrevit launch</c> rather than through the shared attachment.</summary>
@@ -53,6 +56,7 @@ namespace pyRevitCLI {
                 json["engine"] = Engine;
                 json["engine_version"] = EngineVersion;
                 json["commit"] = Commit;
+                json["branch"] = Branch;
                 json["config_root"] = ConfigRoot;
                 json["per_launch"] = PerLaunch;
             }
@@ -156,8 +160,9 @@ namespace pyRevitCLI {
     /// discovery of running hosts and of recorded runs.
     /// </summary>
     /// <remarks>
-    /// Each call opens its own pipe connection. The host serves one connection at a time,
-    /// so callers that may overlap (the MCP server) must serialize their calls to each host.
+    /// Each call opens its own pipe connection. The host runs one request at a time, and hosts
+    /// older than the multi-connection pipe server also accept one connection at a time, so
+    /// callers that may overlap (the MCP server) must serialize their calls to each host.
     /// </remarks>
     internal static class PyRevitAgentClient {
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
@@ -177,8 +182,9 @@ namespace pyRevitCLI {
         internal static int PingTimeoutMs = 5000;
 
         /// <summary>
-        /// How long <see cref="Ping"/> waits for the host's pipe. A host serving another client
-        /// never accepts, so a ping must not wait the full <see cref="ConnectTimeoutMs"/>.
+        /// How long <see cref="Ping"/> waits for the host's pipe. A host whose server instances
+        /// all serve other clients never accepts, so a ping must not wait the full
+        /// <see cref="ConnectTimeoutMs"/>.
         /// Shortened by tests.
         /// </summary>
         internal static int PingConnectTimeoutMs = 1500;
@@ -196,7 +202,8 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// Invariant: never open the pipe to check it. Opening it, as <c>File.Exists</c> does,
-        /// connects to the host's only server instance and can lock a real client out.
+        /// takes one of the host's few server instances (an older host has only one) and can
+        /// lock a real client out.
         /// </remarks>
         internal static Func<string, bool> PipeExists = pipeName => Directory.EnumerateFiles(PipeRoot)
             .Any(path => string.Equals(path, PipeRoot + pipeName, StringComparison.OrdinalIgnoreCase));
@@ -237,6 +244,7 @@ namespace pyRevitCLI {
                         Engine = data.Value<string>("engine"),
                         EngineVersion = data.Value<string>("engine_version"),
                         Commit = data.Value<string>("commit"),
+                        Branch = data.Value<string>("branch"),
                         ConfigRoot = data.Value<string>("config_root"),
                         PerLaunch = data.Value<bool?>("per_launch") ?? false,
                     };

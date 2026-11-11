@@ -86,6 +86,20 @@ def _swallowing_library():
     return library
 
 
+def _context(source, timeout_s, errors):
+    return types.SimpleNamespace(
+        Source=source,
+        Workspace=None,
+        TimeoutSeconds=timeout_s,
+        InputsJson="{}",
+        UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
+        SetEngine=lambda *args: None,
+        SetResult=lambda *args: None,
+        SetOutput=lambda *args: None,
+        SetError=lambda *args: errors.append(args[0]),
+    )
+
+
 class AgentRunnerTimeoutEscapeTests(unittest.TestCase):
     """Every listed shape fails with ``timeout`` instead of running forever."""
 
@@ -96,17 +110,7 @@ class AgentRunnerTimeoutEscapeTests(unittest.TestCase):
 
     def _run(self, source, timeout_s=0.2):
         errors = []
-        context = types.SimpleNamespace(
-            Source=source,
-            Workspace=None,
-            TimeoutSeconds=timeout_s,
-            InputsJson="{}",
-            UIApp=types.SimpleNamespace(ActiveUIDocument=None, Application=None),
-            SetEngine=lambda *args: None,
-            SetResult=lambda *args: None,
-            SetOutput=lambda *args: None,
-            SetError=lambda *args: errors.append(args[0]),
-        )
+        context = _context(source, timeout_s, errors)
         previous_trace = sys.gettrace()
         try:
             with (
@@ -121,7 +125,7 @@ class AgentRunnerTimeoutEscapeTests(unittest.TestCase):
         return errors
 
     def _assert_stopped(self, without_injection):
-        for name, source in sorted(ESCAPES.items()):
+        for name, source in sorted(ESCAPES.items(), key=lambda item: item[0]):
             with self.subTest(shape=name):
                 injection = (
                     mock.patch.object(
@@ -285,23 +289,11 @@ class AgentRunnerWatchdogStopTests(unittest.TestCase):
                 "_execution_tracer": tracer_hit,
             },
         }
-        for name, patches in sorted(landings.items()):
+        for name, patches in sorted(landings.items(), key=lambda item: item[0]):
             with self.subTest(landing=name):
                 del stops[:]
                 errors = []
-                context = types.SimpleNamespace(
-                    Source="result = eval('1')\n",
-                    Workspace=None,
-                    TimeoutSeconds=0.1,
-                    InputsJson="{}",
-                    UIApp=types.SimpleNamespace(
-                        ActiveUIDocument=None, Application=None
-                    ),
-                    SetEngine=lambda *args: None,
-                    SetResult=lambda *args: None,
-                    SetOutput=lambda *args: None,
-                    SetError=lambda *args: errors.append(args[0]),
-                )
+                context = _context("result = eval('1')\n", 0.1, errors)
                 previous_trace = sys.gettrace()
                 injected = False
                 try:

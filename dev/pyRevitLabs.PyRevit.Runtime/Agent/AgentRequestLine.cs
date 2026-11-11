@@ -21,5 +21,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return request;
             }
         }
+
+        /// <summary>The answer to a request line refused unread, so the client knows nothing ran.</summary>
+        public static string RefuseOversized(string reason) {
+            return new JObject {
+                ["jsonrpc"] = "2.0",
+                ["id"] = null,
+                ["error"] = new JObject {
+                    ["code"] = -32600,
+                    ["message"] = "Request refused, nothing ran: " + reason,
+                    ["data"] = new JObject { ["type"] = "request_too_large", ["outcome"] = "not_run" },
+                },
+            }.ToString(Formatting.None);
+        }
     }
 }

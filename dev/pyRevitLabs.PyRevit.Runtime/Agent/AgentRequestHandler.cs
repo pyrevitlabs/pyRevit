@@ -10,7 +10,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Maps JSON-RPC 2.0 request lines from the pipe to agent operations.
     /// </summary>
     /// <remarks>
-    /// Runs on the pipe thread. Anything that touches the Revit API must go through
+    /// Runs on the pipe's connection threads, up to one per open connection at once, so
+    /// <see cref="Handle"/> and everything it calls before the dispatcher must be thread-safe.
+    /// Anything that touches the Revit API must go through
     /// <see cref="AgentDispatcher.Invoke"/>, except a request made in-process through
     /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
@@ -220,11 +222,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["id"] = id,
                 ["result"] = result,
             }.ToString(Formatting.None);
-        }
-
-        /// <summary>The answer to a request line refused unread, so the client knows nothing ran.</summary>
-        public static string RefuseOversizedLine(string reason) {
-            return Failure(null, -32600, "Request refused, nothing ran: " + reason, "request_too_large", new JObject { ["outcome"] = "not_run" });
         }
 
         private static string Failure(JToken id, int code, string message, string type, JObject details = null) {
