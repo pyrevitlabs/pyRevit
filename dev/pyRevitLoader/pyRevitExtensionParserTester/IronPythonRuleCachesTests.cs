@@ -88,9 +88,13 @@ namespace pyRevitExtensionParserTester
 
         private static object? Execute(object engine, string expression)
         {
-            return engine.GetType()
-                .GetMethod("Execute", new[] { typeof(string) })!
-                .Invoke(engine, new object[] { expression });
+            MethodInfo execute = engine.GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Single(method => method.Name == "Execute"
+                    && !method.IsGenericMethodDefinition
+                    && method.GetParameters().Length == 1
+                    && method.GetParameters()[0].ParameterType == typeof(string));
+            return execute.Invoke(engine, new object[] { expression });
         }
 
         private static Assembly IronPythonAssembly()
