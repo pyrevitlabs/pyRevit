@@ -302,7 +302,9 @@ Rules the host enforces:
 - A transaction left open fails the run with `transaction_left_open`.
 - A failure in the host itself reports `host_error` with decision `rolled_back`, or
   `committed` when the change set had already been kept, or `rollback_incomplete` when the
-  run's rollback failed and its changes may remain in the active document.
+  run's rollback failed, or left the model different from before the run (an element the
+  run deleted is still missing, or one it added is still there), so its changes may remain
+  in the active document.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
   most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
@@ -899,6 +901,17 @@ Honest limits:
   `UndoElement::simplify PROBLEMS`). The host remembers a sample of the elements each
   committed run created and checks them after every rollback and before every run; a
   loss comes back as `warnings` in the run result.
+- A rollback can report success and still leave the model changed. In a workshared local
+  bound to a central model, deleting or changing elements the local doesn't own makes Revit
+  borrow them while the script's transaction commits. That flushes Revit's undo stack under
+  the run's open group, whose `RollBack()` then still returns `RolledBack`
+  ([#3979](https://github.com/pyrevitlabs/pyRevit/issues/3979)). After every rollback the
+  host therefore checks the run's change set against the model: an element the run deleted
+  that is still missing, or one it added that is still there, makes the run
+  `rollback_incomplete` with `status: error`, for dry runs and queries too. The host can't
+  undo the changes then, and the borrowed ownership stays with the local; the user has to
+  undo in Revit or close the document without saving. Run dry runs of destructive scripts
+  on a detached or non-workshared copy.
 - Revit regeneration inflates change sets: two new walls can report 100+ modified
   elements (rooms, tags, paths of travel, schedules). The MCP tools therefore return only
   counts, categories and the first 20 added, modified and deleted elements; the longer

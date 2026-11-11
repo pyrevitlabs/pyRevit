@@ -375,6 +375,110 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
+    public class AgentRunGuardRollbackVerificationTests {
+        [Fact]
+        public void ARollbackThatLeavesADeletedElementMissingFailsTheRun() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                document.Deleted.Add(deleted);
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void ARollbackThatLeavesAnAddedElementInTheModelFailsTheRun() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { new ElementId() });
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void ARollbackThatRestoresTheModelDoesNotFailTheRun() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            var added = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { added }, deleted: new[] { deleted });
+                document.Deleted.Add(added);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void AnAssimilatedRunIsNotCheckedAgainstTheModel() {
+            var app = new UIApplication();
+            var document = new Document();
+            var guard = new AgentRunGuard(app, document);
+            var deleted = new ElementId();
+            guard.Arm("Test");
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            document.Deleted.Add(deleted);
+            guard.Assimilate();
+
+            guard.Dispose();
+
+            Assert.False(guard.RollbackFailed);
+            Assert.True(guard.Committed);
+        }
+
+        [Fact]
+        public void AnotherDocumentWhoseDeletionSurvivesTheRollbackIsReportedAsNotReverted() {
+            var app = new UIApplication();
+            var active = new Document();
+            var other = new Document();
+            var deleted = new ElementId();
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(other);
+            using (var guard = new AgentRunGuard(app, active)) {
+                guard.Arm("Test");
+                app.Application.Change(other, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                other.Deleted.Add(deleted);
+
+                guard.RollBack();
+
+                Assert.True(guard.HasUnrevertedOtherDocumentChanges);
+            }
+        }
+
+        [Fact]
+        public void AnotherDocumentWhoseRollbackRestoresItIsReportedAsReverted() {
+            var app = new UIApplication();
+            var active = new Document();
+            var other = new Document();
+            app.Application.Documents.Add(active);
+            app.Application.Documents.Add(other);
+            using (var guard = new AgentRunGuard(app, active)) {
+                guard.Arm("Test");
+                app.Application.Change(other, added: Array.Empty<ElementId>(), deleted: new[] { new ElementId() });
+
+                guard.RollBack();
+
+                Assert.False(guard.HasUnrevertedOtherDocumentChanges);
+            }
+        }
+    }
+
     public class AgentChangeSetTests {
         [Fact]
         public void ModifyingAnElementTheRunAddedCountsItOnlyAsAdded() {
