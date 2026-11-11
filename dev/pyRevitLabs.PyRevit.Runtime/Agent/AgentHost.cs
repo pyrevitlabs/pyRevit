@@ -39,8 +39,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static List<string> searchPaths = new List<string>();
         private static string revitVersion = string.Empty;
         private static bool exitHandlerRegistered;
-        private static string configWatchedPath;
-        private static DateTime configLastWrite = DateTime.MinValue;
+        private static readonly AgentConfigRefresh configRefresh = new AgentConfigRefresh(
+            PyRevitConfigs.GetLoadedConfigFilePath,
+            path => File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue,
+            PyRevitConfigs.ReloadConfig);
         private static AgentTabHighlight tabHighlight;
         private static AgentTabHighlightVisuals tabHighlightVisuals;
         private static bool tabHighlightDisabled;
@@ -177,15 +179,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         internal static void RefreshConfigIfChanged() {
             try {
-                var configPath = PyRevitConfigs.GetLoadedConfigFilePath();
-                var lastWrite = File.Exists(configPath) ? File.GetLastWriteTimeUtc(configPath) : DateTime.MinValue;
-                lock (sync) {
-                    if (configPath == configWatchedPath && lastWrite == configLastWrite)
-                        return;
-                    configWatchedPath = configPath;
-                    configLastWrite = lastWrite;
-                }
-                PyRevitConfigs.ReloadConfig();
+                configRefresh.RefreshIfChanged();
             }
             catch (Exception ex) {
                 logger.Debug("Could not refresh agent config: {0}", ex.Message);
@@ -247,7 +241,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return;
 
                 pipeServer?.Dispose();
-                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle);
+                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle, ForgetStoppedPipe);
                 pipeServer.Start();
                 WriteInstanceFile(uiApp);
                 AgentPaths.PruneOldRecordsInBackground();
@@ -277,6 +271,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             logger.Info("pyRevit agent host stopped");
+        }
+
+        private static void ForgetStoppedPipe(AgentPipeServer stopped) {
+            lock (sync) {
+                if (ReferenceEquals(pipeServer, stopped))
+                    DeleteInstanceFile();
+            }
         }
 
         private static bool IsElevated() {

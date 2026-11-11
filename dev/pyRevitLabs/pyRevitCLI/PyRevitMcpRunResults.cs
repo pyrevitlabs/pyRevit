@@ -315,11 +315,12 @@ namespace pyRevitCLI {
         }
 
         private static JObject CompactChanges(JObject changes) {
-            var compact = new JObject {
-                ["added_count"] = changes["added_count"],
-                ["modified_count"] = changes["modified_count"],
-                ["deleted_count"] = changes["deleted_count"],
-            };
+            var compact = new JObject();
+            if (changes["summary"] is JValue summary && summary.Type == JTokenType.String)
+                compact["summary"] = summary;
+            compact["added_count"] = changes["added_count"];
+            compact["modified_count"] = changes["modified_count"];
+            compact["deleted_count"] = changes["deleted_count"];
             if (changes["by_category"] is JObject byCategory && byCategory.Count > 0)
                 compact["by_category"] = byCategory;
             if (changes["added"] is JArray added && added.Count > 0)

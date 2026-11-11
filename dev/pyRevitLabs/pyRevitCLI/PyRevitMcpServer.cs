@@ -34,7 +34,8 @@ namespace pyRevitCLI {
     /// Revit. Once a tool call has sent a request, a failure that the host did not report itself
     /// is returned with <c>outcome</c> <c>unknown</c> and that <c>request_id</c>, never as bad
     /// arguments, because the request may have run.
-    /// Calls to one Revit are serialized, because its host serves one connection at a time; calls
+    /// Calls to one Revit are serialized, because its host runs one request at a time and an older
+    /// host also accepts one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
     /// </remarks>
@@ -111,7 +112,7 @@ namespace pyRevitCLI {
                 var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
                 if (id == null) {
-                    if (method == "notifications/cancelled")
+                    if (method == "notifications/cancelled" && (message["jsonrpc"] as JValue)?.Value as string == "2.0")
                         Cancel((message["params"] as JObject)?["requestId"]);
                     continue;
                 }
@@ -148,7 +149,7 @@ namespace pyRevitCLI {
                             var tracked = pendingCalls.TryAdd(key, cancellation);
                             inFlight.Add(Task.Run(() => {
                                 try {
-                                    CallTool(id, parameters, cancellation.Token);
+                                    CallTool(id, parameters, cancellation);
                                 }
                                 finally {
                                     if (tracked)
@@ -183,13 +184,25 @@ namespace pyRevitCLI {
             };
         }
 
+        /// <remarks>
+        /// A call whose answer is being written holds its lock; the cancel then has nothing left to
+        /// stop, so it is dropped instead of making the reader wait for a slow client's stdout.
+        /// </remarks>
         private void Cancel(JToken requestId) {
-            if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
+            if (requestId == null || !pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
+                return;
+            if (!Monitor.TryEnter(cancellation))
+                return;
+            try {
                 cancellation.Cancel();
+            }
+            finally {
+                Monitor.Exit(cancellation);
+            }
         }
 
-        private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
-            callCancellation.Value = cancellation;
+        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {
+            callCancellation.Value = cancellation.Token;
             Timer progress = null;
             sentRequestId.Value = null;
             try {
@@ -197,11 +210,11 @@ namespace pyRevitCLI {
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
                     if (string.IsNullOrWhiteSpace(name)) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: 'arguments' must be an object."));
                         return;
                     }
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -240,10 +253,23 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                WriteUnlessClosed(Result(id, result));
+                AnswerUnlessCancelled(cancellation, Result(id, result));
             }
             finally {
                 StopProgress(progress);
+            }
+        }
+
+        /// <remarks>
+        /// Takes the output lock before the call's own lock, so while the answer waits for another
+        /// call's answer to be written, <see cref="Cancel"/> can still stop it.
+        /// </remarks>
+        private void AnswerUnlessCancelled(CancellationTokenSource cancellation, JObject message) {
+            lock (writeLock) {
+                lock (cancellation) {
+                    if (!cancellation.IsCancellationRequested)
+                        WriteUnlessClosed(message);
+                }
             }
         }
 
