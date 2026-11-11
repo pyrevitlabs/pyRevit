@@ -55,6 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly List<Document> documentsCreatedDuringRun = new List<Document>();
         private readonly List<Document> documentsOpenedFromDisk = new List<Document>();
         private TransactionGroup group;
+        private bool assimilationRequested;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
 
@@ -83,6 +84,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// still missing, or one it added is still there), so the run's changes may still be in
         /// the model.
         /// </summary>
+        /// <remarks>
+        /// The model is checked even when the group already ended before the rollback was
+        /// requested, unless the run asked to keep its changes.
+        /// </remarks>
         public bool RollbackFailed { get; private set; }
 
         /// <summary>
@@ -149,7 +154,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private void RollBackGroup() {
             try {
-                if (HasOpenGroup && (group.RollBack() != TransactionStatus.RolledBack || changes.LeavesTracesAfterRollback(doc)))
+                if (HasOpenGroup) {
+                    if (group.RollBack() != TransactionStatus.RolledBack || changes.LeavesTracesAfterRollback(doc))
+                        RollbackFailed = true;
+                }
+                else if (group != null && !assimilationRequested && changes.LeavesTracesAfterRollback(doc))
                     RollbackFailed = true;
             }
             catch (Exception) {
@@ -159,6 +168,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public void Assimilate() {
+            assimilationRequested = true;
             RollBackOtherDocuments();
             if (HasOpenGroup) {
                 group.Assimilate();

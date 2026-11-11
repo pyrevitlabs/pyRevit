@@ -443,6 +443,58 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ARollbackRequestedAfterTheGroupEndedStillChecksTheModel() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            guard.RollBack();
+            Assert.False(guard.HasOpenGroup);
+            Assert.False(guard.RollbackFailed);
+            document.Deleted.Add(deleted);
+
+            guard.Dispose();
+
+            Assert.True(guard.RollbackFailed);
+        }
+
+        [Fact]
+        public void ARunThatAskedToKeepItsChangesIsNotCheckedAgainstTheModelAfterTheGroupEnded() {
+            var app = new UIApplication();
+            var document = new Document();
+            var deleted = new ElementId();
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            guard.RollBack();
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            document.Deleted.Add(deleted);
+            guard.Assimilate();
+
+            guard.Dispose();
+
+            Assert.False(guard.RollbackFailed);
+            Assert.False(guard.Committed);
+        }
+
+        [Fact]
+        public void AGuardWithoutAnActiveGroupDoesNotCheckTheModel() {
+            var app = new UIApplication();
+            var document = new Document { IsReadOnly = true };
+            var deleted = new ElementId();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                document.Deleted.Add(deleted);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
         public void AnotherDocumentWhoseDeletionSurvivesTheRollbackIsReportedAsNotReverted() {
             var app = new UIApplication();
             var active = new Document();
