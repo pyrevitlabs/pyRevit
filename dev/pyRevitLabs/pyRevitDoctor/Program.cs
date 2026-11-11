@@ -60,7 +60,7 @@ Usage:
             else if (args.Contains("--help") || args.Contains("-h"))
                 Console.WriteLine(helpMessage);
             else if (args.Contains("--wrappedhelp"))
-                Console.WriteLine(helpMessage.Replace("pyrevit-doctor (-V | --version)\n", "").Replace("pyrevit-doctor", "pyrevit doctor"));
+                Console.WriteLine(WrappedHelp.From(helpMessage));
             else if (args.Contains("--list"))
                 PrintCommands();
 

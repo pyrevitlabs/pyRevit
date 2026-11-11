@@ -29,6 +29,7 @@
         <Compile Include="..\..\pyRevitDoctor\PurgeSession.cs" Link="Sources\PurgeSession.cs"/>
         <Compile Include="..\..\pyRevitDoctor\PurgeFiles.cs" Link="Sources\PurgeFiles.cs"/>
         <Compile Include="..\..\pyRevitDoctor\RegistryAccess.cs" Link="Sources\RegistryAccess.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\WrappedHelp.cs" Link="Sources\WrappedHelp.cs"/>
     </ItemGroup>
 
     <ItemGroup>
