@@ -1038,3 +1038,16 @@ PYREVIT_ALLUSER_APP_DIR = ALLUSER_PROGRAMDATA
 PYREVIT_APP_DIR = USER_ROAMING_DIR
 PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
 THIRDPARTY_EXTENSIONS_DEFAULT_DIR = op.join(PYREVIT_APP_DIR, "Extensions")
+
+for pyrvt_app_dir in [
+    PYREVIT_APP_DIR,
+    PYREVIT_VERSION_APP_DIR,
+    THIRDPARTY_EXTENSIONS_DEFAULT_DIR,
+]:
+    if not op.isdir(pyrvt_app_dir):
+        try:
+            os.makedirs(pyrvt_app_dir)
+        except Exception as err:
+            raise PyRevitException(
+                "Can not access pyRevit folder at: {} | {}".format(pyrvt_app_dir, err)
+            )
