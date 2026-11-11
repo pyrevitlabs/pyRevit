@@ -908,8 +908,9 @@ Honest limits:
   ([#3979](https://github.com/pyrevitlabs/pyRevit/issues/3979)). After every rollback the
   host therefore checks the run's change set against the model: an element the run deleted
   that is still missing, or one it added that is still there, makes the run
-  `rollback_incomplete` with `status: error`, for dry runs and queries too. The host can't
-  undo the changes then, and the borrowed ownership stays with the local; the user has to
+  `rollback_incomplete` with `status: error`, for dry runs and queries too, also when the
+  group had already ended before the rollback was requested. The host can't undo the
+  changes then, and the borrowed ownership stays with the local; the user has to
   undo in Revit or close the document without saving. Run dry runs of destructive scripts
   on a detached or non-workshared copy.
 - Revit regeneration inflates change sets: two new walls can report 100+ modified
