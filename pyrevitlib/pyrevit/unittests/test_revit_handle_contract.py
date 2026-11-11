@@ -48,6 +48,15 @@ def _load(relative_path, names, namespace):
     return namespace
 
 
+def _call_stack_holds_script_runtime():
+    frame = sys._getframe(1)
+    while frame:
+        if "__scriptruntime__" in frame.f_globals:
+            return True
+        frame = frame.f_back
+    return False
+
+
 class _Application(object):
     VersionNumber = "2025"
     ActiveAddInId = "test-addin"
@@ -173,6 +182,13 @@ class HostHandleTests(unittest.TestCase):
             execution_scope["deferred_callback"](params),
             ("first runtime", "Measure", "first/path", "first-id"),
         )
+
+    def test_executor_params_fall_back_to_builtins_without_execution_scope(self):
+        """Command values come from the builtins when no caller holds a script scope."""
+        if _call_stack_holds_script_runtime():
+            self.skipTest("a hosted caller's script scope always takes precedence")
+        params = self.scope["_ExecutorParams"]()
+        self.scope["__builtins__"].update({"__commandname__": "SecondCommand"})
         self.assertEqual(params.command_name, "SecondCommand")
 
     def test_none_metadata_is_safe(self):
