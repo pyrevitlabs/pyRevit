@@ -71,13 +71,19 @@ namespace pyRevitDoctor {
         }
 
         /// <summary>
-        /// True when the entry records an uninstaller or install location that no longer exists.
+        /// True when the install the entry points at no longer exists.
         /// </summary>
+        /// <remarks>
+        /// The install location decides when the entry records a usable one, otherwise the uninstaller does.
+        /// An entry with neither is never stale.
+        /// </remarks>
         public static bool IsStale(UninstallEntry entry, Func<string, bool> pathExists) {
-            var recordedPaths = new[] { ExtractExecutablePath(entry.UninstallString), TrimQuotes(entry.InstallLocation)?.TrimEnd('\\', '/') }
-                .Where(path => !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path));
-            return recordedPaths.Any(path => !pathExists(path));
+            var installLocation = TrimQuotes(entry.InstallLocation)?.TrimEnd('\\', '/');
+            var probedPath = IsProbeable(installLocation) ? installLocation : ExtractExecutablePath(entry.UninstallString);
+            return IsProbeable(probedPath) && !pathExists(probedPath);
         }
+
+        static bool IsProbeable(string path) => !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
 
         /// <summary>
         /// Returns the executable of an <c>UninstallString</c> such as <c>"C:\dir\unins000.exe" /SILENT</c>.

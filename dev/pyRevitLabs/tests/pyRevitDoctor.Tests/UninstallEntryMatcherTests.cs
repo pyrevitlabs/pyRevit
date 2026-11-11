@@ -61,6 +61,13 @@ public class UninstallEntryMatcherTests {
     }
 
     [Fact]
+    public void InnoEntryWithPresentInstallLocationButMissingUninstallerIsSkipped() {
+        var verdict = UninstallEntryMatcher.Classify(InnoEntry(PyRevitAppId), ShippedProducts, Present(InstalledLocation.TrimEnd('\\')), force: false);
+
+        Assert.Equal(UninstallVerdict.SkipInstallPresent, verdict);
+    }
+
+    [Fact]
     public void ForcePurgesInnoEntryWhoseInstallIsPresent() {
         var verdict = UninstallEntryMatcher.Classify(InnoEntry(PyRevitAppId), ShippedProducts, InstallOnDisk, force: true);
 

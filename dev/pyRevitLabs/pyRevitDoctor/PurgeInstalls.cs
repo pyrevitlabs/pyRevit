@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text.Json;
 using Microsoft.Win32;
 
@@ -37,7 +38,7 @@ namespace pyRevitDoctor {
             foreach (var target in SearchTargets) {
                 RegistryKey key;
                 try {
-                    key = RegistryKey.OpenBaseKey(target.BaseKey, RegistryView.Default).OpenSubKey(target.SubKeyName, writable: !session.Options.DryRun);
+                    key = OpenTargetKey(session, target);
                 }
                 catch {
                     session.Output.WriteLine($"Can not open \"({target.BaseKey})\\{target.SubKeyName}\". Run this command as admin");
@@ -55,6 +56,18 @@ namespace pyRevitDoctor {
                             PurgeInstallerProduct(session, target, key, subKeyName, products);
             }
         }
+
+        static RegistryKey OpenTargetKey(PurgeSession session, RegistryTarget target) {
+            try {
+                return OpenSubKey(target, writable: !session.Options.DryRun);
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or SecurityException) {
+                return OpenSubKey(target, writable: false);
+            }
+        }
+
+        static RegistryKey OpenSubKey(RegistryTarget target, bool writable) =>
+            RegistryKey.OpenBaseKey(target.BaseKey, RegistryView.Default).OpenSubKey(target.SubKeyName, writable);
 
         static void PurgeUninstallEntry(PurgeSession session, RegistryKey uninstallKey, string subKeyName, List<Product> products) {
             var entry = ReadUninstallEntry(uninstallKey, subKeyName);
@@ -89,8 +102,14 @@ namespace pyRevitDoctor {
                 return;
 
             var item = $@"{productsKey.Name}\{subKeyName}\ ({product.Name} {product.Version})";
-            DeleteFeatureReference(session, target, subKeyName, product);
-            DeleteUpgradeCodeReferences(session, target, subKeyName, product);
+            try {
+                DeleteFeatureReference(session, target, subKeyName, product);
+                DeleteUpgradeCodeReferences(session, target, subKeyName, product);
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or SecurityException) {
+                session.ReportFailed(item, ex);
+                return;
+            }
             DeleteSubKeyTree(session, productsKey, subKeyName, item);
         }
 
