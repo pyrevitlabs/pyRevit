@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">Revit hat den erweiterten Ansichtsbereich abgelehnt</sys:String>
     <sys:String x:Key="fix_error_missing">Das Ziel existiert nicht mehr</sys:String>
     <sys:String x:Key="fix_error_rolled_back">Revit hat die Änderung zurückgenommen ({})</sys:String>
+    <sys:String x:Key="fix_stale">Diese Korrektur ist nicht mehr anwendbar. Überprüfen Sie die Ansicht erneut.</sys:String>
+    <sys:String x:Key="fix_cancelled">Abgebrochen.</sys:String>
+    <sys:String x:Key="fix_describe_failed">Korrektur konnte nicht beschrieben werden: {}</sys:String>
+    <sys:String x:Key="confirm_template_fix">Dadurch werden die Ansichtsvorlage '{}' und alle Ansichten geändert, die diese verwenden.</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Ansichtsvorlagen wurden für alle Ansichten geändert, die diese verwenden: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Sollen {0} Korrekturen auf '{}' angewendet werden?</sys:String>
     <sys:String x:Key="error_document_inactive">Wechseln Sie zuerst zum Dokument '{}'</sys:String>
     <sys:String x:Key="plane_top">Oben</sys:String>
     <sys:String x:Key="plane_cut">Schnittebene</sys:String>
