@@ -1,10 +1,10 @@
-## Proposing an External pyRevit Extension
+# Proposing an External pyRevit Extension
 
 If your tool is too specific to be included in the main pyRevit toolset, you can still share it as an external extension so others can discover and install it.
 
 See [Extensions](extensions.md) for how to structure and author the extension itself; this page covers listing it in the catalog.
 
-### Steps
+## Steps
 
 1. Structure your repository so the `.tab` folder is at the root.
 2. Include an `extension.json` file in your repo.
@@ -13,7 +13,7 @@ See [Extensions](extensions.md) for how to structure and author the extension it
 5. Add your extension entry to the `"extensions"` list.
 6. Open a pull request against the `develop` branch.
 
-### Example Entry
+## Example Entry
 
 A typical entry in `extensions/extensions.json` looks like this:
 
@@ -31,20 +31,20 @@ A typical entry in `extensions/extensions.json` looks like this:
         "dependencies": []
     }
 
-### Review Process
+## Review Process
 
 Once you submit the PR, we'll review your extension and its metadata against the
 [acceptance criteria](#acceptance-criteria) below. If everything checks out, we'll
 add it to the directory so others can easily find and use it. It's worth running
 through the list before you open your PR, since it's what we'll be doing too.
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 To keep the catalog safe and reliable for everyone, every listed extension needs to
 meet the requirements below. The recommended items aren't blockers, but they make
 your extension feel at home in pyRevit and may come up as review feedback.
 
-#### Required
+### Required
 
 - **Open source.** The repository URL in `extensions.json` must be publicly
   accessible and contain the full source code of the extension.
@@ -67,7 +67,7 @@ your extension feel at home in pyRevit and may come up as review feedback.
 - **English titles and tooltips.** Provide `title` and `tooltip` in `bundle.yaml`
   with at least an `en_us` entry.
 
-#### Recommended
+### Recommended
 
 - **Dark theme support.** Provide an `icon.dark.png` alongside every `icon.png`,
   and `background_dark` colors for any `*.panel` bundle that sets a custom

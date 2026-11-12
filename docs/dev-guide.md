@@ -17,7 +17,7 @@ Before you begin, you'll need to set up your development environment with the fo
 Install Visual Studio 2022 and select:
 
 - under **workloads**, enable **.NET desktop development**
-- under ¨**Individual components** make sure the following are selected:
+- under **Individual components** make sure the following are selected:
     - .NET 8.0 Runtime (Long Term Support)
     - .NET 10.0 Runtime
     - .NET Framework 4.7.2 Targeting Pack
@@ -29,7 +29,7 @@ Install Visual Studio 2022 and select:
 
 ### Python 3
 
-Make sure Python 3 is installed on your system.
+Make sure Python 3.14 is installed on your system (the `Pipfile` requires it).
 
 Download it from the [Python official website](https://www.python.org/downloads/).
 
@@ -182,7 +182,7 @@ You can choose any name for the remote, but "upstream" is a common convention.
 
 ### Retrieve the submodules
 
-If you skipped Profile 2 step 4, or switch branches that change dependencies:
+If you did not run `git submodule update --init --recursive` in Profile 2, or you switch branches that change dependencies:
 
 ```shell
 git submodule update --init --recursive
@@ -194,11 +194,14 @@ git submodule update --init --recursive
 
 ## Initialize the pipenv environment
 
-This will create a python environment for running the toolchain scripts to build the various pyrevit components.
+This will create a python environment for the repository's Python tooling: the documentation build, linting (`ruff`), the compatibility checkers in `dev/scripts`, and the pre-commit hooks.
 
 ```shell
-pipenv install
+pipenv install --dev
+pipenv run install-hooks
 ```
+
+The hooks run `ruff format` on staged Python files and `dotnet format` on staged C# files, and fail the commit when they change anything.
 
 ## IDE Setup
 
@@ -227,7 +230,7 @@ pyrevit attachments
 
 !!! note
 
-    pyRevit 7 (current WIP) needs a WIP `pyrevit` CLI — a released CLI does not know the commands added in `develop`. Build it from this repo if you need one:
+    A released `pyrevit` CLI can predate commands added in `develop`. Use the CLI built from your clone:
 
     ```shell
     cd build
@@ -270,6 +273,17 @@ Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because 
 
 3. **Attach the Debugger**: Attach the Visual Studio debugger to the `revit.exe` process to start debugging:
    - Go to `Debug` > `Attach to Process...` and select `revit.exe` from the list.
+
+## Building the documentation
+
+The website is built with mkdocs. The reference API pages are generated from the docstrings under `pyrevitlib/pyrevit` by `docs/gen_ref_pages.py`, which also copies the `*.md` files of the repository root into the site.
+
+```shell
+pipenv run mkdocs build --strict
+pipenv run check-docstrings
+```
+
+`--strict` fails the build on warnings such as broken links. `check-docstrings` lints the `pyrevitlib/pyrevit` docstrings with `ruff`. The `pyRevitDocsCI` workflow (`docs.yml`) publishes the site with `mkdocs gh-deploy` when the `docs` branch changes. It also runs on pull requests into `master` and on manual dispatch. Do not push to the `docs` branch directly.
 
 ## Conclusion
 

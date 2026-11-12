@@ -1,25 +1,10 @@
-# Python config API: naming contract
+# Python config API
 
-This page records the decision for issue [#3645](https://github.com/pyrevitlabs/pyRevit/issues/3645)
-— `snake_case` versus `PascalCase` for the Python config API after
-[#3450](https://github.com/pyrevitlabs/pyRevit/pull/3450) replaced the
-hand-rolled INI parser with the typed C# configuration service.
+How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/scripts/check_config_api.py` fails the build when the code and this page disagree.
 
-It is a **contract**, not a proposal. The API it describes is the one that
-merged in #3450; what is new here is that the parts #3450 left open are now
-written down, and that `dev/scripts/check_config_api.py` fails the build when
-the code and this page disagree.
+## Two ways to reach a setting
 
-## Status
-
-Accepted. Two items below are flagged as **needing maintainer approval**; they
-are the ones where the product owner, not the code, has to choose. Neither is
-implemented. Everything else is the current, enforced behavior.
-
-## The shape of the problem
-
-`PyRevitConfig` exposes three typed sections — `core`, `routes`, `telemetry` —
-whose property names come from the C# records in
+`PyRevitConfig` exposes three typed sections — `core`, `routes`, `telemetry` — whose property names come from the C# records in
 `dev/pyRevitLabs/pyRevitLabs.Configurations/Sections/`. Those names are
 PascalCase, so a setting can be reached two ways:
 
@@ -28,9 +13,22 @@ user_config.core.RocketMode = True   # typed section, PascalCase
 user_config.rocket_mode = True       # flat alias, snake_case
 ```
 
-Both work. Nothing in this repository depends on which one it uses, and
-neither do the 25 extensions in `extensions/extensions.json`. The question is
-which one is *the* API for extension authors, and what happens to the other.
+Both work and read the same stored value.
+
+**PascalCase on the typed section is the canonical spelling.** The C# property name is the only spelling that survives a rename of the underlying key, and it is a real CLR member, so autocomplete, hover documentation and language servers see it. The flat `snake_case` aliases are frozen:
+
+- the 35 aliases keep working, for reads and writes;
+- they are not deprecated, and no new ones may be added (the checker fails on one);
+- no alias may be removed or retargeted without updating this page, because third-party code depends on the spelling;
+- an alias must stay a statically declared property. Moving one behind `__getattr__` removes it for tooling, and the checker fails on it.
+
+Eleven aliases are renames rather than spelling conversions (see the second table below). For these, all three spellings work:
+
+```python
+user_config.routes_port = 8080        # flat alias
+user_config.routes.Port = 8080        # typed property, canonical
+user_config.routes.set_option("port", 8080)   # escape hatch
+```
 
 ## Inventory
 
@@ -113,8 +111,8 @@ counting `Debug` and `Verbose` under `log_level`. The one without is
 ### Call sites
 
 `pipenv run check-config-api --census` reports the first-party cost of any
-change. At the time of writing: **34 of the 35 aliases have a first-party call
-site, 64 reads and 32 writes.** The exception is `cpython_engine_version`,
+change: **34 of the 35 aliases have a first-party call site, 66 reads and 32
+writes.** The exception is `cpython_engine_version`,
 because `get_active_cpython_engine` and `set_active_cpython_engine` reach it
 through `self` rather than through `user_config`.
 
@@ -124,88 +122,8 @@ the total, and a string argument sharing a line with a real call does not hide
 it.
 
 This is the floor, not the total. Third-party extension call sites are not
-greppable from this repository, and #3450's own review noted that the
-authoritative set of users is the extension ecosystem, not this tree.
-
-## The decision
-
-**PascalCase on the typed section is the canonical spelling. The flat
-snake_case aliases are frozen: they are not deprecated, not scheduled for
-removal, and no new ones may be added.**
-
-### Why PascalCase
-
-1. **One name per setting.** The C# property name is the only spelling that
-   survives a rename of the underlying key. `rocket_mode`, `RocketMode` and the
-   INI key `rocketmode` are three names for one setting, and no Python choice
-   makes them agree. Choosing the C# name leaves exactly two.
-2. **A derived name has to be maintained by hand.** The 11 renames above prove
-   it. Any scheme that derives property names from alias names needs a
-   mapping table, and a typo in that table is a runtime `AttributeError` —
-   #3450's own review says so, which is why the checker here compares every
-   alias target against the C# schema instead.
-3. **The derivation is not cheaper.** The obvious way to get `snake_case` on the
-   typed sections is `__getattr__`/`__setattr__` translation. The explicit
-   alternative is a facade of `@property` pairs — 35 typed properties across the
-   three sections, so about 70 property bodies, which is more code than the 35
-   aliases it would replace, and it has to be kept in step with the C# records
-   by hand. Neither is free; the explicit one is at least visible to tooling.
-4. **Dynamic dispatch costs the tooling a maintainer asked to protect.**
-   @sanzoghenzo's objection to `__getattr__` was not stylistic: dynamic
-   attributes do not appear in autocomplete, have no hover documentation, and
-   are invisible to LSP servers, which are what coding agents read to decide
-   whether code is correct. A property that exists only after a name transform
-   is a property the tooling cannot see. The typed property is a real CLR
-   member, so none of this applies to it.
-5. **The mixed style is already the house style.** Attribute accesses across
-   `pyrevitlib/pyrevit` skew PascalCase roughly two to one (about 5,300 against
-   2,500 snake_case), and the config file itself is mixed: `bincache` and
-   `rocketmode` alongside `user_locale` and `tooltip_debug_info`. A module that
-   disagreed with both would be the odd one out, not the standard.
-6. **The INI keys do not favour snake_case.** For 20 of the 31 delegations the
-   key is flat lowercase (`bincache`, `rocketmode`, `autoupdate`,
-   `closeotheroutputs`). PascalCase is the closer of the two Python spellings
-   to what is actually on disk.
-
-### Why the aliases are frozen rather than deprecated
-
-#3450's module docstring called the flat aliases "legacy" and "expected to be
-deprecated in a future release". That was the unsettled part of #3645, and this
-page supersedes it: **no deprecation, no timeline, no warning.**
-
-- The audience for a deprecation warning is extension authors, and there is no
-  channel in this repository that reaches all of them. A warning that only
-  fires for authors who happened to read a release note is not a migration
-  plan.
-- The read and write sides cannot be separated safely. The flat aliases are the
-  only spelling for 34 settings, and a write that silently stops taking effect
-  is worse than a name that never changes.
-- The cost of keeping them is 35 property pairs that are already written,
-  tested, and mechanically checkable. It is not a tax that grows.
-
-What "frozen" means concretely:
-
-- the 35 aliases keep working, for reads and writes, indefinitely;
-- no new alias may be added — the checker fails on one;
-- no alias may be removed or retargeted without a separate decision recorded
-  here, because third-party code depends on the spelling;
-- an alias must stay a statically declared property. Moving one behind
-  `__getattr__` is a removal in all the ways that matter, and the checker fails
-  on it.
-
-### The 11 renames
-
-All three spellings are supported and none is being taken away:
-
-```python
-user_config.routes_port = 8080        # flat alias, unchanged
-user_config.routes.Port = 8080        # typed property, canonical
-user_config.routes.set_option("port", 8080)   # escape hatch, unchanged
-```
-
-`routes_port` is a rename, not a naming convention, so the typed property is
-`Port` and there is no `routes_port` property to be confused with. The flat
-spelling stays because third-party extensions are already using it.
+greppable from this repository, so the real number of users of each alias is
+larger.
 
 ## Typed-section behavior
 
@@ -236,8 +154,9 @@ user_config.core.rocket_mode = True    # does NOT set RocketMode
 the key `rocket_mode`, in a section whose real key is `rocketmode`. The write
 succeeds, the file grows a junk key, and `RocketMode` keeps its old value. No
 exception is raised. `check-config-api` fails on this spelling in
-first-party code (`SECTION-SNAKE`); third-party code is not covered, which is
-one of the reasons the strictness question below is worth answering.
+first-party code (`SECTION-SNAKE`); third-party code is not covered.
+`pyrevitlib/pyrevit/unittests/test_config_api_contract.py` pins this permissive
+behavior, so changing it is a visible diff.
 
 `core.UserExtensions` is a declared property with no flat alias, and is reached
 through `get_option`/`set_option` even by pyRevit's own Extensions button — to
@@ -263,49 +182,7 @@ cfg.set_option("my_option", value)      # explicit: same effect
 script.save_config()
 ```
 
-`ConfigSection` — what a script gets — stays permissive in both directions.
-Strictness is proposed only for the three built-in typed sections, and only
-needs to be decided once.
-
-## Options considered
-
-| | option | verdict |
-| --- | --- | --- |
-| A | Status quo as merged in #3450 | **Chosen**, with the "legacy / will be deprecated" wording replaced by the frozen policy above. |
-| B | `snake_case` on the typed sections, via translation plus an 11-entry table | Rejected. Needs a hand-maintained table whose typos are runtime `AttributeError`s; the explicit-facade variant costs more code than the 35 aliases it removes; the `__getattr__` variant is invisible to the tooling a maintainer asked to protect. |
-| C | Both spellings on the typed sections, permanently | Rejected. Two public spellings for one setting, and the snake_case one is the silent-write footgun above. |
-| D | Rename the C# properties to match, and generate | Rejected for now. Cleanest end state, largest blast radius: those names are public API for the CLI, the loader, and any .NET consumer. Worth revisiting if a major version ever renames the INI keys too. |
-
-## Decisions that still need maintainer approval
-
-These are **not** implemented. Both are behavior changes for third-party
-extensions, so neither can be inferred from the code.
-
-### 1. Should the typed sections become strict?
-
-@ChrisCrosley proposed that attribute assignment on `core`/`routes`/`telemetry`
-reject any name that is not a declared property, raising `AttributeError`
-instead of writing a raw option, with `set_option()` as the explicit way to do
-that, leaving custom sections permissive.
-
-- For: the `user_config.core.rocket_mode = True` footgun disappears. A
-  mis-cased or typo'd name fails at the line that made the mistake.
-- Against: it is a breaking change for any extension that stores a non-schema
-  key in `[core]`, `[routes]` or `[telemetry]`. The Extensions button's
-  `userextensions` use is the one in-tree exception, and it would need to stay
-  on `get_option`/`set_option` or the raw-key capability would be lost
-  entirely.
-- The current permissive behavior is pinned by
-  `pyrevitlib/pyrevit/unittests/test_config_api_contract.py`, so adopting
-  strictness is a visible diff rather than a silent one.
-
-### 2. Is there ever a deprecation timeline for the flat aliases?
-
-The recommendation is that there is not — freeze them. If maintainers want one
-anyway, this page's constraints say it has to come with a migration channel
-that reaches extension authors, write-side removal strictly before read-side
-removal, and a major-version boundary. The census above is the number to
-quote when that discussion happens; it is a lower bound.
+`ConfigSection` — what a script gets — is permissive in both directions.
 
 ## Enforcing this page
 
