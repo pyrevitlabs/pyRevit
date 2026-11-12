@@ -17,6 +17,7 @@ NON_FRAMING_CATEGORY_IDS = (
     int(DB.BuiltInCategory.OST_SectionBox),
 )
 VISIBLE_ELEMENTS_PADDING = 1.0
+VISIBLE_ELEMENTS_CROP_PADDING = 3.0
 HORIZONTAL_TOLERANCE = 1e-6
 
 
@@ -140,6 +141,54 @@ def pick_scope_box_on_screen(view, message):
                         view.DisableTemporaryViewMode(mode)
 
 
+def _get_corners_in_view(view, elements):
+    to_view = view.CropBox.Transform.Inverse
+    corners = []
+    for element in elements:
+        bounding_box = element.get_BoundingBox(None)
+        if not bounding_box:
+            continue
+        for x in (bounding_box.Min.X, bounding_box.Max.X):
+            for y in (bounding_box.Min.Y, bounding_box.Max.Y):
+                for z in (bounding_box.Min.Z, bounding_box.Max.Z):
+                    corners.append(to_view.OfPoint(DB.XYZ(x, y, z)))
+    return corners
+
+
+def fit_crop_box_to_elements(view, elements, padding=VISIBLE_ELEMENTS_CROP_PADDING):
+    """Fit a view's crop box to elements and turn the crop on.
+
+    Every element's corners are measured in the crop box's own frame before the
+    bounds are combined, so a rotated view gets a tight crop instead of one
+    around the elements' world-aligned bounds.
+
+    Args:
+        view (DB.View): plan, section or elevation view.
+        elements (list[DB.Element]): elements to frame.
+        padding (float): clearance around the elements in the view plane, in feet.
+
+    Returns:
+        bool: False when none of the elements has a bounding box.
+    """
+    corners = _get_corners_in_view(view, elements)
+    if not corners:
+        return False
+    crop_box = view.CropBox
+    crop_box.Min = DB.XYZ(
+        min(corner.X for corner in corners) - padding,
+        min(corner.Y for corner in corners) - padding,
+        crop_box.Min.Z,
+    )
+    crop_box.Max = DB.XYZ(
+        max(corner.X for corner in corners) + padding,
+        max(corner.Y for corner in corners) + padding,
+        crop_box.Max.Z,
+    )
+    view.CropBox = crop_box
+    view.CropBoxActive = True
+    return True
+
+
 def _create_from_visible_elements(view, get_string):
     elements = get_visible_model_elements(view)
     if not elements:
@@ -148,8 +197,9 @@ def _create_from_visible_elements(view, get_string):
     with revit.Transaction("Create Box from Visible Elements"):
         if isinstance(view, DB.View3D):
             update.set_section_box(view, elements, padding=VISIBLE_ELEMENTS_PADDING)
-        else:
-            update.crop_view_to_elements(view, elements)
+        elif not fit_crop_box_to_elements(view, elements):
+            forms.alert(get_string("NoVisibleElements"))
+            return None
     return get_string("SourceVisibleElements")
 
 
