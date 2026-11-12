@@ -55,8 +55,8 @@
     <sys:String x:Key="fix_cancelled">Отменено.</sys:String>
     <sys:String x:Key="fix_describe_failed">Не удалось описать исправление: {}</sys:String>
     <sys:String x:Key="confirm_template_fix">Будет изменён шаблон вида '{}' и все виды, использующие его.</sys:String>
-    <sys:String x:Key="confirm_fix_all_templates">Изменены шаблоны видов для всех видов, использующих их: {}</sys:String>
-    <sys:String x:Key="confirm_fix_all">Применить {0} исправлений к '{}'?</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Будут изменены шаблоны видов для всех видов, использующих их: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Применить {0} исправлений к '{1}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Сначала переключитесь на документ '{}'</sys:String>
     <sys:String x:Key="plane_top">Верх</sys:String>
     <sys:String x:Key="plane_cut">Секущая плоскость</sys:String>
