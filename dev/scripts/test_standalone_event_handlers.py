@@ -5,10 +5,23 @@ import os
 import sys
 import types
 import unittest
+import uuid
 
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 EVENTS_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "revit", "events.py")
+
+
+class _Guid:
+    def __init__(self):
+        self._value = uuid.uuid4()
+
+    @classmethod
+    def NewGuid(cls):
+        return cls()
+
+    def ToString(self, format_specifier):
+        return self._value.hex
 
 
 class _ArrayList(list):
@@ -170,7 +183,7 @@ def load_events_module(
     system_collections = _module(
         "System.Collections", ArrayList=_ArrayList, Hashtable=_Hashtable
     )
-    system = _module("System")
+    system = _module("System", Guid=_Guid)
     system.Collections = system_collections
 
     pyrevit = _module(
