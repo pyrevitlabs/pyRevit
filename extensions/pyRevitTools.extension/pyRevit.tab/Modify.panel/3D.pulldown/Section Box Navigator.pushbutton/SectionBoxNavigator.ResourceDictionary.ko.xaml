@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">섹션 박스가 뷰 '{0}'에 정렬되었습니다</system:String>
     <system:String x:Key="CropBoxAlignedFormat">자르기 박스가 뷰 '{0}'에 정렬되었습니다</system:String>
     <system:String x:Key="ScopeBoxApplied">뷰에 범위 상자가 적용되었습니다</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">이 뷰에는 섹션 박스가 없습니다. 다음에서 만들기:</system:String>
+    <system:String x:Key="NoCropBoxPrompt">이 뷰에는 활성 자르기 박스가 없습니다. 다음에서 만들기:</system:String>
+    <system:String x:Key="SourceVisibleElements">뷰에서 보이는 요소</system:String>
+    <system:String x:Key="SourceScopeBoxList">목록의 범위 상자</system:String>
+    <system:String x:Key="SourceScopeBoxPick">뷰에서 선택한 범위 상자</system:String>
+    <system:String x:Key="NoScopeBoxes">이 프로젝트에는 범위 상자가 없습니다.</system:String>
+    <system:String x:Key="SelectScopeBox">범위 상자 선택</system:String>
+    <system:String x:Key="PickScopeBox">범위 상자를 선택하세요</system:String>
+    <system:String x:Key="NoVisibleElements">이 뷰에는 보이는 모델 요소가 없습니다.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">이 뷰에서는 범위 상자를 사용할 수 없습니다.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">범위 상자에 형상이 없습니다.</system:String>
+    <system:String x:Key="NoCropBoxActive">활성 자르기 박스 없음</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">범위 상자가 이 자르기 박스를 제어합니다.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">자르기 영역이 사용자 지정 모양입니다.</system:String>
+    <system:String x:Key="BoxCreatedFormat">{0}에서 박스를 만들었습니다</system:String>
     <system:String x:Key="UnsupportedViewType">지원되지 않는 뷰 유형입니다.</system:String>
     <system:String x:Key="Activated">활성화됨</system:String>
     <system:String x:Key="Deactivated">비활성화됨</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">이 뷰에 저장된 섹션 박스가 있습니다! 복원하시겠습니까?</system:String>
     <system:String x:Key="RestoreSectionBox">섹션 박스 복원</system:String>
-    <system:String x:Key="NoSectionBoxMessage">현재 뷰에 활성화되거나 저장된 섹션 박스가 없습니다.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">섹션 박스 없음</system:String>
     <system:String x:Key="ErrorTitle">오류</system:String>
 </ResourceDictionary>

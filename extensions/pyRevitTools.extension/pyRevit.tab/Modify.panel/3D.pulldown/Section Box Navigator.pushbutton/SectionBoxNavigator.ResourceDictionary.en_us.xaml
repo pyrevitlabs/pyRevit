@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">Section box aligned to view '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Crop box aligned to view '{0}'</system:String>
     <system:String x:Key="ScopeBoxApplied">Scope box applied to view</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">This view has no section box. Create one from:</system:String>
+    <system:String x:Key="NoCropBoxPrompt">This view has no active crop box. Create one from:</system:String>
+    <system:String x:Key="SourceVisibleElements">Elements visible in view</system:String>
+    <system:String x:Key="SourceScopeBoxList">Scope box from list</system:String>
+    <system:String x:Key="SourceScopeBoxPick">Scope box picked in view</system:String>
+    <system:String x:Key="NoScopeBoxes">This project has no scope boxes.</system:String>
+    <system:String x:Key="SelectScopeBox">Select Scope Box</system:String>
+    <system:String x:Key="PickScopeBox">Pick a scope box</system:String>
+    <system:String x:Key="NoVisibleElements">No model elements are visible in this view.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">This view cannot use a scope box.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">The scope box has no geometry.</system:String>
+    <system:String x:Key="NoCropBoxActive">No crop box active</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">A scope box drives this crop box.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">The crop region has a custom shape.</system:String>
+    <system:String x:Key="BoxCreatedFormat">Box created from {0}</system:String>
     <system:String x:Key="UnsupportedViewType">Unsupported view type.</system:String>
     <system:String x:Key="Activated">activated</system:String>
     <system:String x:Key="Deactivated">deactivated</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">Stored SectionBox for this view found! Restore?</system:String>
     <system:String x:Key="RestoreSectionBox">Restore Section Box</system:String>
-    <system:String x:Key="NoSectionBoxMessage">The current view doesn't have an active or stored section box.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">No Section Box</system:String>
     <system:String x:Key="ErrorTitle">Error</system:String>
 </ResourceDictionary>
