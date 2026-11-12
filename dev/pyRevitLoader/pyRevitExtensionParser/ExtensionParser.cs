@@ -1050,7 +1050,7 @@ namespace pyRevitExtensionParser
                         scriptPath = yaml;
                 }
 
-                if (scriptPath == null)
+                if (scriptPath == null && componentType != CommandComponentType.ContentButton)
                 {
                     var validEndings = new[] { "script", "_script", "-script", ".script" };
                     var dirFiles = bundleDirFiles.Where(f =>
@@ -1148,80 +1148,17 @@ namespace pyRevitExtensionParser
                 // and configScriptPath being the alternative content (CTRL+Click)
                 if (componentType == CommandComponentType.ContentButton)
                 {
-                    // Try to get content from bundle.yaml metadata first
-                    if (bundleInComponent != null && !string.IsNullOrEmpty(bundleInComponent.Content))
-                    {
-                        scriptPath = ResolveContentPath(dir, bundleInComponent.Content);
-                    }
-
-                    // If no content in metadata, use naming convention
+                    scriptPath = ResolveContentPath(dir, bundleInComponent?.Content)
+                        ?? FindContentFile(bundleDirFiles, "content", revitYear);
                     if (scriptPath == null)
                     {
-                        // Look for version-specific content first: content_{version}.rfa
-                        var versionedContent = bundleDirFiles.FirstOrDefault(f =>
-                        {
-                            var name = Path.GetFileName(f);
-                            return name.StartsWith("content_", StringComparison.OrdinalIgnoreCase)
-                                && name.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase);
-                        });
-                        if (versionedContent != null)
-                        {
-                            scriptPath = versionedContent;
-                        }
-                        else
-                        {
-                            // Look for default content.rfa
-                            var defaultContent = Path.Combine(dir, "content.rfa");
-                            if (FileExists(defaultContent))
-                            {
-                                scriptPath = defaultContent;
-                            }
-                            else
-                            {
-                                // Look for any .rfa file in the directory
-                                var anyRfa = bundleDirFiles.FirstOrDefault(f =>
-                                    f.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase));
-                                if (anyRfa != null)
-                                {
-                                    scriptPath = anyRfa;
-                                }
-                            }
-                        }
+                        LogWarning($"'{dir}': no matching or generic content family for Revit year {revitYear}; skipping.");
+                        continue;
                     }
 
-                    // Handle alternative content (CTRL+Click)
-                    if (bundleInComponent != null && !string.IsNullOrEmpty(bundleInComponent.ContentAlt))
-                    {
-                        configScriptPath = ResolveContentPath(dir, bundleInComponent.ContentAlt);
-                    }
-                    else
-                    {
-                        // Look for version-specific alternative content: other_{version}.rfa
-                        var versionedAltContent = bundleDirFiles.FirstOrDefault(f =>
-                        {
-                            var name = Path.GetFileName(f);
-                            return name.StartsWith("other_", StringComparison.OrdinalIgnoreCase)
-                                && name.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase);
-                        });
-                        if (versionedAltContent != null)
-                        {
-                            configScriptPath = versionedAltContent;
-                        }
-                        else
-                        {
-                            // Look for default other.rfa
-                            var defaultAltContent = Path.Combine(dir, "other.rfa");
-                            if (FileExists(defaultAltContent))
-                            {
-                                configScriptPath = defaultAltContent;
-                            }
-                            else
-                            {
-                                // Fall back to main content path
-                                configScriptPath = scriptPath;
-                            }
-                        }
-                    }
+                    configScriptPath = !string.IsNullOrEmpty(bundleInComponent?.ContentAlt)
+                        ? ResolveContentPath(dir, bundleInComponent.ContentAlt)
+                        : FindContentFile(bundleDirFiles, "other", revitYear) ?? scriptPath;
                 }
 
                 // Look for on/off icons for smartbuttons and toggle buttons
@@ -1538,6 +1475,22 @@ namespace pyRevitExtensionParser
             }
 
             return null;
+        }
+
+        private static string FindContentFile(string[] files, string role, int revitYear)
+        {
+            string FindByName(string name)
+            {
+                return files.FirstOrDefault(file =>
+                           Path.GetFileName(file).Equals(name, StringComparison.OrdinalIgnoreCase))
+                    ?? files.FirstOrDefault(file =>
+                           Path.GetFileName(file).EndsWith(name, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var versioned = revitYear > 0
+                ? FindByName(role + "_" + revitYear.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".rfa")
+                : null;
+            return versioned ?? FindByName(role + ".rfa");
         }
 
         /// <summary>

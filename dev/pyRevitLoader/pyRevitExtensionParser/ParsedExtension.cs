@@ -98,7 +98,7 @@ namespace pyRevitExtensionParser
         };
 
         /// <summary>
-        /// Calculates a hash from relevant bundle paths and modification times in the extension directory.
+        /// Calculates a hash from relevant bundle paths, modification times, and resolved content family paths.
         /// </summary>
         /// <param name="seed">Optional seed to distinguish build strategies. Use 'Roslyn' for the Roslyn build strategy.</param>
         public string GetHash(string seed = "")
@@ -208,8 +208,25 @@ namespace pyRevitExtensionParser
                 // Include the seed in the hash to differentiate between build strategies
                 using (var md5 = MD5.Create())
                 {
-                    var inputString = string.Join("\n", hashEntries.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)) + seed;
-                    var bytes = Encoding.UTF8.GetBytes(inputString);
+                    var input = new StringBuilder(string.Join("\n", hashEntries.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)))
+                        .Append(seed);
+
+                    string GetContentHashPath(string path) => string.IsNullOrEmpty(path)
+                        ? path
+                        : GetHashRelativePath(extensionRootPath, Path.GetFullPath(path));
+
+                    var contentButtons = CollectCommandComponents()
+                        .Where(c => c.Type == CommandComponentType.ContentButton)
+                        .Select(c => (Directory: GetContentHashPath(c.Directory), c.ScriptPath, c.ConfigScriptPath))
+                        .OrderBy(c => c.Directory, StringComparer.Ordinal);
+                    foreach (var content in contentButtons)
+                    {
+                        input.Append("\ncontent:").Append(content.Directory)
+                             .Append('\n').Append(GetContentHashPath(content.ScriptPath))
+                             .Append('\n').Append(GetContentHashPath(content.ConfigScriptPath));
+                    }
+
+                    var bytes = Encoding.UTF8.GetBytes(input.ToString());
                     var hashBytes = md5.ComputeHash(bytes);
                     var result = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                     _cachedHashes[seed] = result;
