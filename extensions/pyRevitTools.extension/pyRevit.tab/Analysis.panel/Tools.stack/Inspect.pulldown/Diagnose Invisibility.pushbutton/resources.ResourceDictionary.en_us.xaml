@@ -55,7 +55,7 @@
     <sys:String x:Key="fix_cancelled">Cancelled.</sys:String>
     <sys:String x:Key="fix_describe_failed">Could not describe fix: {}</sys:String>
     <sys:String x:Key="confirm_template_fix">This changes view template '{}' and every view using it.</sys:String>
-    <sys:String x:Key="confirm_fix_all_templates">View templates changed for every view using them: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">View templates will be changed for every view using them: {}</sys:String>
     <sys:String x:Key="confirm_fix_all">Apply {0} fixes to '{1}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Switch to the document '{}' first</sys:String>
     <sys:String x:Key="plane_top">Top</sys:String>
