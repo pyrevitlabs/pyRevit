@@ -150,7 +150,7 @@ A pragma without a reason is an error, and an unused one is a warning.
 
 ## Baseline
 
-`revit_api_catalog/baseline.json` lists the findings that existed when the
+`dev/scripts/revit_api_catalog/baseline.json` lists the findings that existed when the
 lint was introduced, so CI fails only on new ones. Entries match on path,
 code and message, not line numbers. After fixing some, run:
 
