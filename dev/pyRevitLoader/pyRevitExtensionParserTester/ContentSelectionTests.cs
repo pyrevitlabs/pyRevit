@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
+using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitExtensionParser;
 using pyRevitExtensionParserTest.TestHelpers;
 
@@ -118,23 +119,29 @@ namespace pyRevitExtensionParserTest
             Assert.That(button?.ConfigScriptPath, Is.Null);
         }
 
-        /// <summary>Distinguishes generated commands when the resolved alternative changes without file edits.</summary>
+        /// <summary>Changes the assembly filename when only the selected family changes.</summary>
         [Test]
-        public void CommandCacheKeyTracksResolvedContentPaths()
+        public void AssemblyFileNameTracksResolvedContentPaths()
         {
             AddFamilies("content.rfa", "other_2023.rfa", "other_2024.rfa");
 
-            Assert.That(ParseExtension(2023).GetHash(), Is.Not.EqualTo(ParseExtension(2024).GetHash()));
+            var first = ParseExtension(2023);
+            var second = ParseExtension(2024);
+            var builder = CreateAssemblyBuilder();
+
+            Assert.That(first.GetHash(), Is.Not.EqualTo(second.GetHash()));
+            Assert.That(builder.GetAssemblyFileName(first, null, false),
+                Is.Not.EqualTo(builder.GetAssemblyFileName(second, null, false)));
         }
 
-        /// <summary>Preserves the cache key when an identical content extension is copied to another directory.</summary>
+        /// <summary>Relocated content keeps its parser hash and gets its own cached assembly.</summary>
         [Test]
-        public void CommandCacheKeyIsIndependentOfExtensionLocation()
+        public void IdenticalExtensionsUseDistinctAssemblyFileNames()
         {
             var timestamp = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             var sharedFamily = CreateFile("Shared.rfa", "");
 
-            string HashExtension(string parent)
+            ParsedExtension CreateExtension(string parent)
             {
                 CreateFile(parent + "/" + Panel + "Primary.rfa", "");
                 CreateFile(parent + "/" + Bundle + "other_2024.rfa", "");
@@ -149,10 +156,42 @@ namespace pyRevitExtensionParserTest
                     Directory.SetLastWriteTimeUtc(directory, timestamp);
                 Directory.SetLastWriteTimeUtc(root, timestamp);
 
-                return ExtensionParser.ParseInstalledExtensions(root, 2024).Single().GetHash("Roslyn");
+                return ExtensionParser.ParseInstalledExtensions(root, 2024).Single();
             }
 
-            Assert.That(HashExtension("Second/Nested"), Is.EqualTo(HashExtension("First")));
+            var first = CreateExtension("First");
+            var second = CreateExtension("Second/Nested");
+            var builder = CreateAssemblyBuilder();
+            var generator = new RoslynCommandTypeGenerator(new MockLogger());
+            var firstButton = first.CollectCommandComponents().Single(button => button.ConfigScriptPath != null);
+            var secondButton = second.CollectCommandComponents().Single(button => button.ConfigScriptPath != null);
+
+            Assert.That(second.GetHash("Roslyn"), Is.EqualTo(first.GetHash("Roslyn")));
+            Assert.That(generator.GenerateExtensionCode(first, "2024"),
+                Does.Contain(firstButton.ScriptPath).And.Contain(firstButton.ConfigScriptPath));
+            Assert.That(generator.GenerateExtensionCode(second, "2024"),
+                Does.Contain(secondButton.ScriptPath).And.Contain(secondButton.ConfigScriptPath)
+                    .And.Not.Contain(firstButton.ScriptPath));
+            Assert.That(builder.GetAssemblyFileName(second, null, false),
+                Is.Not.EqualTo(builder.GetAssemblyFileName(first, null, false)));
+        }
+
+        /// <summary>Reuses the assembly filename across builders and equivalent spellings of the same root.</summary>
+        [Test]
+        public void AssemblyFileNameIsStableForTheSameExtensionLocation()
+        {
+            AddFamilies("content_2024.rfa");
+            var first = ParseExtension(2024);
+            var second = ParseExtension(2024);
+            second.Directory = Path.Combine(second.Directory, ".") + Path.DirectorySeparatorChar;
+
+            Assert.That(CreateAssemblyBuilder().GetAssemblyFileName(second, null, false),
+                Is.EqualTo(CreateAssemblyBuilder().GetAssemblyFileName(first, null, false)));
+        }
+
+        private static AssemblyBuilderService CreateAssemblyBuilder()
+        {
+            return new AssemblyBuilderService("2024", AssemblyBuildStrategy.Roslyn, new MockLogger());
         }
 
         private ParsedExtension ParseExtension(int revitYear)

@@ -75,18 +75,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // so they're available in the AppDomain for CLREngine to reference
             LoadExtensionModules(extension);
 
-            // Include generation-time inputs that affect emitted command types, so cache invalidates
-            // when runtime behavior changes (rocket mode, generator schema, or library-extension
-            // search paths — those paths are compiled into each command).
-            string strategySeed = string.Join("|",
-                _buildStrategy.ToString(),
-                $"rocket:{rocketMode}",
-                $"rocket_compat:{extension.RocketModeCompatible}",
-                $"builder:{GetAssemblyBuildFingerprint()}",
-                $"runtime:{GetRuntimeBuildFingerprint()}",
-                $"libs:{LibraryExtensionSearchPaths.CacheSeed(libraryExtensions)}");
-            string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
-            string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
+            string fileName = GetAssemblyFileName(extension, libraryExtensions, rocketMode);
 
             string outputDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -133,6 +122,29 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             {
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Names the cached DLL for the seeded parser hash, Revit version, and extension location.
+        /// </summary>
+        /// <remarks>
+        /// Uses the full extension path without trailing separators or junction resolution.
+        /// Generated commands embed paths from the location used to parse the extension.
+        /// </remarks>
+        internal string GetAssemblyFileName(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions, bool rocketMode)
+        {
+            string strategySeed = string.Join("|",
+                _buildStrategy.ToString(),
+                $"rocket:{rocketMode}",
+                $"rocket_compat:{extension.RocketModeCompatible}",
+                $"builder:{GetAssemblyBuildFingerprint()}",
+                $"runtime:{GetRuntimeBuildFingerprint()}",
+                $"libs:{LibraryExtensionSearchPaths.CacheSeed(libraryExtensions)}");
+            string extensionDirectory = string.IsNullOrEmpty(extension.Directory)
+                ? string.Empty
+                : Path.GetFullPath(extension.Directory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string hash = GetStableHash($"{extension.GetHash(strategySeed)}|{_revitVersion}|{extensionDirectory}").Substring(0, 16);
+            return $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
         }
 
         /// <summary>
@@ -391,19 +403,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <summary>
         /// Generates a stable SHA1 hash from the input string.
         /// </summary>
-        /// <remarks>
-        /// This method creates a deterministic hash that is used for assembly caching.
-        /// The hash is computed using SHA1 algorithm and returns a 40-character hexadecimal string.
-        /// The input should include:
-        /// - Extension structure hash (from extension.GetHash())
-        /// - Build strategy seed ("Roslyn")
-        /// - Revit version
-        /// 
-        /// This ensures that assemblies are only regenerated when:
-        /// 1. The extension structure changes
-        /// 2. The Revit version changes
-        /// </remarks>
-        /// <param name="input">The string to hash, typically a concatenation of extension hash, strategy seed, and Revit version.</param>
+        /// <param name="input">The assembly cache inputs to hash.</param>
         /// <returns>A 40-character lowercase hexadecimal string representing the SHA1 hash.</returns>
         private static string GetStableHash(string input)
         {
