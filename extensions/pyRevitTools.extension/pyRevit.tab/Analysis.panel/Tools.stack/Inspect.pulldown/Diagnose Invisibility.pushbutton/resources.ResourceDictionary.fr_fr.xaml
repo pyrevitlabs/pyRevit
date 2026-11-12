@@ -55,8 +55,8 @@
     <sys:String x:Key="fix_cancelled">Annulé.</sys:String>
     <sys:String x:Key="fix_describe_failed">Impossible de décrire la correction : {}</sys:String>
     <sys:String x:Key="confirm_template_fix">Cette opération modifiera le gabarit de vue '{}' ainsi que toutes les vues qui l'utilisent.</sys:String>
-    <sys:String x:Key="confirm_fix_all_templates">Les gabarits de vue ont été modifiés pour toutes les vues qui les utilisent : {}</sys:String>
-    <sys:String x:Key="confirm_fix_all">Appliquer {0} corrections à '{}' ?</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Les gabarits de vue seront modifiés pour toutes les vues qui les utilisent : {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Appliquer {0} corrections à '{1}' ?</sys:String>
     <sys:String x:Key="error_document_inactive">Passez d'abord au document '{}'</sys:String>
     <sys:String x:Key="plane_top">Haut</sys:String>
     <sys:String x:Key="plane_cut">Plan de coupe</sys:String>
