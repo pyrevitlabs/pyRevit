@@ -2,8 +2,10 @@
 
 !!! warning "Status: experimental"
 
-    The agent runtime is experimental and off by default. Enable it per clone with
-    `pyrevit configs agent enable` (see [Getting started](#getting-started)).
+    The agent runtime is experimental and off by default. Enable it with
+    `pyrevit configs agent enable` (see [Getting started](#getting-started)). The setting is stored in the
+    clone's own config when it has one, otherwise in the shared user config. A clone without its own config
+    therefore shares the setting with every other clone that reads the user config.
 
 The agent runtime lets any MCP-capable coding agent (Claude Code, Codex, Cursor, VS Code,
 OpenCode, ...) read and change a live Revit model by sending **Python programs**, not by calling

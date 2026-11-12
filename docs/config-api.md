@@ -1,6 +1,6 @@
 # Python config API
 
-How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/scripts/check_config_api.py` fails the build when the code and this page disagree.
+How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/scripts/check_config_api.py` checks the Python code against the C# section schemas and the contract constants in the checker, and fails the build on drift.
 
 ## Two ways to reach a setting
 
@@ -17,7 +17,7 @@ Both work and read the same stored value.
 
 **PascalCase on the typed section is the canonical spelling.** The C# property name is the only spelling that survives a rename of the underlying key, and it is a real CLR member, so autocomplete, hover documentation and language servers see it. The flat `snake_case` aliases are frozen:
 
-- the 35 aliases keep working, for reads and writes;
+- the 35 aliases keep working for reads, and for writes except `config_file` and `config_type`, which are read-only properties;
 - they are not deprecated, and no new ones may be added (the checker fails on one);
 - no alias may be removed or retargeted without updating this page, because third-party code depends on the spelling;
 - an alias must stay a statically declared property. Moving one behind `__getattr__` removes it for tooling, and the checker fails on it.
@@ -187,7 +187,7 @@ script.save_config()
 ## Enforcing this page
 
 ```bash
-pipenv run check-config-api            # fails on any drift from this contract
+pipenv run check-config-api            # fails when the code diverges from the checker's contract
 pipenv run check-config-api --census   # first-party read/write cost per alias
 pipenv run test-config-api             # tests for the checker itself
 ```

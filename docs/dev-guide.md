@@ -279,11 +279,11 @@ Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because 
 The website is built with mkdocs. The reference API pages are generated from the docstrings under `pyrevitlib/pyrevit` by `docs/gen_ref_pages.py`, which also copies the `*.md` files of the repository root into the site.
 
 ```shell
-pipenv run mkdocs build --strict
-pipenv run check-docstrings
+pipenv run docs
+pipenv run ruff check pyrevitlib/pyrevit
 ```
 
-`--strict` fails the build on warnings such as broken links. `check-docstrings` lints the `pyrevitlib/pyrevit` docstrings with `ruff`. The `pyRevitDocsCI` workflow (`docs.yml`) publishes the site with `mkdocs gh-deploy` when the `docs` branch changes. It also runs on pull requests into `master` and on manual dispatch. Do not push to the `docs` branch directly.
+`pipenv run docs` is `mkdocs build`. Adding `--strict` makes warnings fail the build, but the build currently reports existing warnings (relative links to files outside `docs/` and docstring cross-references), so check that your change adds none. `pipenv run check-docstrings` runs the same `ruff check` with `--fix` and can rewrite files under `pyrevitlib/pyrevit`. The `pyRevitDocsCI` workflow (`docs.yml`) publishes the site with `mkdocs gh-deploy` when the `docs` branch changes. It also runs on pull requests into `master` and on manual dispatch. Do not push to the `docs` branch directly.
 
 ## Conclusion
 
