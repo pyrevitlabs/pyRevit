@@ -55,8 +55,8 @@
     <sys:String x:Key="fix_cancelled">Cancelado.</sys:String>
     <sys:String x:Key="fix_describe_failed">Não foi possível descrever a correção: {}</sys:String>
     <sys:String x:Key="confirm_template_fix">Isso alterará o modelo de vista '{}' e todas as vistas que o utilizam.</sys:String>
-    <sys:String x:Key="confirm_fix_all_templates">Os modelos de vista foram alterados para todas as vistas que os utilizam: {}</sys:String>
-    <sys:String x:Key="confirm_fix_all">Aplicar {0} correções a '{}'?</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Os modelos de vista serão alterados para todas as vistas que os utilizam: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Aplicar {0} correções a '{1}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Mude primeiro para o documento '{}'</sys:String>
     <sys:String x:Key="plane_top">Superior</sys:String>
     <sys:String x:Key="plane_cut">Plano de corte</sys:String>
