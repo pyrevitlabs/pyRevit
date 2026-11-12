@@ -79,6 +79,20 @@ def _ensure_path_registered(dest_path):
             logger.error("Error saving extension path. | %s", write_err)
 
 
+def _list_ext_packages():
+    """List packages, refreshing remote catalogs under a wait cursor.
+
+    The catalog download runs on Revit's UI thread before the window shows, so
+    the cursor is the only feedback the user gets while it runs.
+    """
+    previous_cursor = framework.Input.Mouse.OverrideCursor
+    framework.Input.Mouse.OverrideCursor = framework.Input.Cursors.Wait
+    try:
+        return extpkgs.get_ext_packages(download_catalogs=True)
+    finally:
+        framework.Input.Mouse.OverrideCursor = previous_cursor
+
+
 def _get_default_ext_dir():
     """Return the best default extension installation directory."""
     dirs = user_config.get_thirdparty_ext_root_dirs(include_default=True)
@@ -252,7 +266,7 @@ class ExtensionsWindow(forms.WPFWindow):
         # Tracks whether install_custom_ext_b is acting as "Update" for an
         # already-installed custom extension.
         self._update_mode = False
-        self._setup_ext_pkg_ui(extpkgs.get_ext_packages())
+        self._setup_ext_pkg_ui(_list_ext_packages())
         self.custom_ext_install_path_tb.Text = _get_default_ext_dir()
         if self.selected_pkg:
             self._update_add_custom_section_for_selection(self.selected_pkg)
@@ -309,7 +323,7 @@ class ExtensionsWindow(forms.WPFWindow):
 
     def _refresh_extension_list(self):
         """Reload extension packages and refresh the grid (e.g. after installing)."""
-        ext_pkgs_list = extpkgs.get_ext_packages()
+        ext_pkgs_list = _list_ext_packages()
         self._setup_ext_pkg_ui(ext_pkgs_list)
         self._update_add_custom_section_for_new()
 

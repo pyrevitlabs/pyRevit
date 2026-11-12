@@ -1,0 +1,111 @@
+name: Extension catalog publish
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'extensions/extensions.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: catalog-publish
+  cancel-in-progress: false
+
+env:
+  CATALOG_PATH: extensions/extensions.json
+  SYNC_BRANCH: catalog/sync-from-develop
+
+jobs:
+  open-sync-pr:
+    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: source
+          persist-credentials: false
+
+      - name: Validate extensions.json
+        run: python3 source/dev/scripts/check_extension_catalog.py "source/$CATALOG_PATH"
+
+      - name: Checkout master
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          path: target
+
+      - name: Summarize catalog changes
+        id: summary
+        run: |
+          python3 - "target/$CATALOG_PATH" "source/$CATALOG_PATH" > summary.md <<'EOF'
+          import json, sys
+          def names(path):
+              with open(path, encoding="utf-8") as catalog:
+                  return {e["name"]: e for e in json.load(catalog)["extensions"]}
+          before, after = names(sys.argv[1]), names(sys.argv[2])
+          sections = (
+              ("Added", sorted(set(after) - set(before))),
+              ("Removed", sorted(set(before) - set(after))),
+              ("Changed", sorted(n for n in set(after) & set(before) if after[n] != before[n])),
+          )
+          for title, entries in sections:
+              if entries:
+                  print("**{}:** {}".format(title, ", ".join("`{}`".format(n) for n in entries)))
+          EOF
+          if cmp -s "source/$CATALOG_PATH" "target/$CATALOG_PATH"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Close stale sync PR
+        if: steps.summary.outputs.changed == 'false'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pr=$(gh pr list --head "$SYNC_BRANCH" --base master --state open --json number --jq '.[0].number')
+          if [ -n "$pr" ]; then
+            gh pr close "$pr" --delete-branch --comment "master already matches develop@${GITHUB_SHA::7}; nothing to publish."
+          fi
+          echo "master already matches develop; nothing to publish."
+
+      - name: Push sync branch
+        if: steps.summary.outputs.changed == 'true'
+        working-directory: target
+        run: |
+          git switch -C "$SYNC_BRANCH"
+          cp "../source/$CATALOG_PATH" "$CATALOG_PATH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$CATALOG_PATH"
+          git commit -m "chore(catalog): publish extensions.json from develop@${GITHUB_SHA::7}"
+          git push --force origin "HEAD:refs/heads/$SYNC_BRANCH"
+
+      - name: Open or update sync PR
+        if: steps.summary.outputs.changed == 'true'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Publishes \`$CATALOG_PATH\` from develop@${GITHUB_SHA::7} to \`master\`, where the Extension Manager and \`pyrevit extend\` download it."
+            echo
+            cat ../summary.md
+            echo
+            echo "Only the catalog file changes; \`ci.yml\` ignores it, so merging does not start a build or release."
+            echo "This PR is refreshed automatically when the catalog changes again on develop."
+          } > body.md
+          pr=$(gh pr list --head "$SYNC_BRANCH" --base master --state open --json number --jq '.[0].number')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --body-file body.md
+          else
+            gh pr create --base master --head "$SYNC_BRANCH" \
+              --title "chore(catalog): publish extensions.json to master" \
+              --body-file body.md
+          fi
