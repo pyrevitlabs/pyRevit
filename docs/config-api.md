@@ -1,6 +1,6 @@
 # Python config API
 
-How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/scripts/check_config_api.py` checks the Python code against the C# section schemas and the contract constants in the checker, and fails the build on drift.
+How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/scripts/check_config_api.py` checks the Python code against the C# section schemas and the contract constants in the checker, and fails the commit on drift when Python files under `pyrevitlib/` or `extensions/` change (a pre-commit hook; CI and the build do not run it).
 
 ## Two ways to reach a setting
 
@@ -187,7 +187,7 @@ script.save_config()
 ## Enforcing this page
 
 ```bash
-pipenv run check-config-api            # fails when the code diverges from the checker's contract
+pipenv run check-config-api            # same check as the pre-commit hook, on demand
 pipenv run check-config-api --census   # first-party read/write cost per alias
 pipenv run test-config-api             # tests for the checker itself
 ```
