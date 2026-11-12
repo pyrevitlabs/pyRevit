@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">Revit에서 확장된 뷰 범위를 거부했습니다</sys:String>
     <sys:String x:Key="fix_error_missing">대상이 더 이상 존재하지 않습니다</sys:String>
     <sys:String x:Key="fix_error_rolled_back">Revit에서 변경을 롤백했습니다 ({})</sys:String>
+    <sys:String x:Key="fix_stale">이 수정 사항은 더 이상 적용할 수 없습니다. 뷰를 다시 확인하세요.</sys:String>
+    <sys:String x:Key="fix_cancelled">취소되었습니다.</sys:String>
+    <sys:String x:Key="fix_describe_failed">수정 사항을 설명할 수 없습니다: {}</sys:String>
+    <sys:String x:Key="confirm_template_fix">이 작업은 뷰 템플릿 '{}' 및 해당 템플릿을 사용하는 모든 뷰를 변경합니다.</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">해당 뷰 템플릿을 사용하는 모든 뷰의 뷰 템플릿이 변경됩니다: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all"> '{1}'에 {0}개의 수정 사항을 적용하시겠습니까?</sys:String>
     <sys:String x:Key="error_document_inactive">먼저 '{}' 문서로 전환하십시오</sys:String>
     <sys:String x:Key="plane_top">상단</sys:String>
     <sys:String x:Key="plane_cut">절단 평면</sys:String>
