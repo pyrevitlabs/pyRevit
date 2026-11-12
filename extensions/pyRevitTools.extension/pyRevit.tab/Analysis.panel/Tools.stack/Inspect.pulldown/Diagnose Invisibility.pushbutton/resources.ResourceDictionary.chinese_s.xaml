@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">Revit 拒绝了扩展的视图范围</sys:String>
     <sys:String x:Key="fix_error_missing">目标已不存在</sys:String>
     <sys:String x:Key="fix_error_rolled_back">Revit 已回滚更改（{}）</sys:String>
+    <sys:String x:Key="fix_stale">此修复已不再适用。请重新检查视图。</sys:String>
+    <sys:String x:Key="fix_cancelled">已取消。</sys:String>
+    <sys:String x:Key="fix_describe_failed">无法描述修复内容：{}</sys:String>
+    <sys:String x:Key="confirm_template_fix">此操作将更改视图样板 '{}' 以及所有使用该样板的视图。</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">已为所有使用这些视图样板的视图更改视图样板：{}</sys:String>
+    <sys:String x:Key="confirm_fix_all">要对 '{}' 应用 {0} 项修复吗？</sys:String>
     <sys:String x:Key="error_document_inactive">请先切换到文档“{}”</sys:String>
     <sys:String x:Key="plane_top">顶部</sys:String>
     <sys:String x:Key="plane_cut">剖切面</sys:String>
