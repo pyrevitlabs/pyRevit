@@ -12,33 +12,39 @@ tooltip:
     Modeless window for section box navigation in 3D views and crop box navigation in plan, section and elevation views.
     Quickly snap boundaries to levels and grids, nudge precisely, expand/shrink uniformly.
     Real-time preview on hover shows changes before applying.
+    Level navigation and the hover preview are available in 3D views only.
     Create a missing box from the visible elements or from a scope box.
-  ko: 3D 뷰에서 단면 상자를, 평면·단면·입면 뷰에서 자르기 상자를 탐색하는 모달리스 창입니다. 경계를 레벨과 그리드에 빠르게 스냅하고 정밀하게 조정하며 균일하게 확장/축소할 수 있습니다. 마우스를 올리면 적용 전 변경 사항을 실시간으로 미리 볼 수 있습니다. 상자가 없으면 보이는 요소 또는 범위 상자에서 만들 수 있습니다.
+  ko: 3D 뷰에서 단면 상자를, 평면·단면·입면 뷰에서 자르기 상자를 탐색하는 모달리스 창입니다. 경계를 레벨과 그리드에 빠르게 스냅하고 정밀하게 조정하며 균일하게 확장/축소할 수 있습니다. 마우스를 올리면 적용 전 변경 사항을 실시간으로 미리 볼 수 있습니다. 레벨 탐색과 미리보기는 3D 뷰에서만 사용할 수 있습니다. 상자가 없으면 보이는 요소 또는 범위 상자에서 만들 수 있습니다.
   fr_fr: |
     Fenêtre modale pour gérer les zones de coupe dans les vues 3D et les boîtes de recadrage dans les vues en plan, en coupe et en élévation.
     Alignement rapide sur les niveaux et les axes, ajustements précis, expansion/réduction.
     Aperçu des modifications au survol de la souris.
+    La navigation par niveaux et l'aperçu ne sont disponibles que dans les vues 3D.
     Créez une boîte manquante à partir des éléments visibles ou d'une boîte de portée.
   ru: |
     Модальное окно для управления секущими коробками в 3D видах и рамками обрезки на планах, разрезах и фасадах.
     Быстрое перемещение границ по уровням и осям, точная настройка, расширение/сжатие.
     Предварительный просмотр изменений при наведении курсора.
+    Навигация по уровням и предпросмотр доступны только в 3D видах.
     Создайте отсутствующую коробку из видимых элементов или из области видимости.
-  chinese_s: "用于在三维视图中导航剖面框、在平面、剖面和立面视图中导航裁剪框的无模式窗口。\n快速将边界捕捉到标高和轴网，精确微调，均匀扩展/收缩。\n悬停时可实时预览更改效果，然后再应用。\n可根据可见图元或范围框创建缺少的框。"
+  chinese_s: "用于在三维视图中导航剖面框、在平面、剖面和立面视图中导航裁剪框的无模式窗口。\n快速将边界捕捉到标高和轴网，精确微调，均匀扩展/收缩。\n悬停时可实时预览更改效果，然后再应用。\n标高导航和悬停预览仅适用于三维视图。\n可根据可见图元或范围框创建缺少的框。"
   es_es: |
     Ventana no modal para navegación de caja de sección en vistas 3D y de caja de recorte en vistas de planta, sección y alzado.
     Ajuste rápido de límites a niveles y rejillas, ajuste preciso, expandir/contraer uniformemente.
     Vista previa en tiempo real al pasar el mouse muestra los cambios antes de aplicarlos.
+    La navegación por niveles y la vista previa solo están disponibles en vistas 3D.
     Cree una caja que falte a partir de los elementos visibles o de una caja de alcance.
   de_de: |
     Abgelöstes Fenster zur Navigation von Schnittboxen in 3D-Ansichten und von Zuschnittboxen in Grundriss-, Schnitt- und Fassadenansichten.
     Schnelles Ausrichten an Ebenen und Rasterlinien, präzises Verschieben, gleichmäßiges Erweitern/Verkleinern.
     Echtzeitvorschau beim Überfahren zeigt Änderungen vor dem Anwenden.
+    Ebenennavigation und Vorschau sind nur in 3D-Ansichten verfügbar.
     Fehlende Box aus den sichtbaren Elementen oder aus einer Bereichsbox erstellen.
   pt_br: |-
     Janela não modal para navegação da caixa de corte em vistas 3D e da região de recorte em vistas de planta, corte e elevação. Ajuste rapidamente os limites
     aos níveis e eixos, utilize o deslocamento preciso (nudge) e expanda ou reduza uniformemente.
     A visualização em tempo real ao passar o cursor (hover) mostra as alterações antes da aplicação.
+    A navegação por níveis e a visualização prévia só estão disponíveis em vistas 3D.
     Crie uma caixa ausente a partir dos elementos visíveis ou de uma caixa de escopo.
 author: wurschdhaud
 context:

@@ -6,6 +6,7 @@ from pyrevit import revit, DB
 from pyrevit.framework import List
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.revit import query, update, selection
+from sectionbox_geometry import get_crop_edit_blocker
 
 logger = script.get_logger()
 get_elementid_value = get_elementid_value_func()
@@ -194,6 +195,17 @@ def _create_from_visible_elements(view, get_string):
     if not elements:
         forms.alert(get_string("NoVisibleElements"))
         return None
+    if not isinstance(view, DB.View3D):
+        blocker = get_crop_edit_blocker(view)
+        if blocker:
+            forms.alert(
+                get_string(
+                    "CropBoxDrivenByScopeBox"
+                    if blocker == "scope_box"
+                    else "CropBoxHasCustomShape"
+                )
+            )
+            return None
     with revit.Transaction("Create Box from Visible Elements"):
         if isinstance(view, DB.View3D):
             update.set_section_box(view, elements, padding=VISIBLE_ELEMENTS_PADDING)
