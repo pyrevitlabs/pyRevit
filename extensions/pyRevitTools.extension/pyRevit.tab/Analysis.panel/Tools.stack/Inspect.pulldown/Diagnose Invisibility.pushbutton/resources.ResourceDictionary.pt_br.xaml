@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">O Revit rejeitou o alcance da vista ampliado</sys:String>
     <sys:String x:Key="fix_error_missing">O destino não existe mais</sys:String>
     <sys:String x:Key="fix_error_rolled_back">O Revit reverteu a alteração ({})</sys:String>
+    <sys:String x:Key="fix_stale">Esta correção não se aplica mais. Verifique a vista novamente.</sys:String>
+    <sys:String x:Key="fix_cancelled">Cancelado.</sys:String>
+    <sys:String x:Key="fix_describe_failed">Não foi possível descrever a correção: {}</sys:String>
+    <sys:String x:Key="confirm_template_fix">Isso alterará o modelo de vista '{}' e todas as vistas que o utilizam.</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Os modelos de vista foram alterados para todas as vistas que os utilizam: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Aplicar {0} correções a '{}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Mude primeiro para o documento '{}'</sys:String>
     <sys:String x:Key="plane_top">Superior</sys:String>
     <sys:String x:Key="plane_cut">Plano de corte</sys:String>
