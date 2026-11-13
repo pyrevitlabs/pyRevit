@@ -169,6 +169,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// for their last <see cref="ExitEngine"/> to be shut down. Same threading invariant as
         /// <see cref="ActiveEngineDict"/>.
         /// </summary>
+        /// <remarks>
+        /// Limitation: the only cleanup path is the <see cref="ExitEngine"/> that brings the type
+        /// id's depth to zero. A newer engine entered under the same id delays the shutdown until
+        /// it exits too, and an <see cref="EnterEngine"/> whose exit is missed keeps the retired
+        /// engines for the rest of the process, which the pairing invariant already forbids.
+        /// Nothing shuts retired engines down at session teardown.
+        /// </remarks>
         private static Dictionary<string, List<object>> RetiredEngineDict {
             get {
                 var existing = AppDomain.CurrentDomain.GetData(DomainStorageKeys.RetiredEnginesDictKey);
