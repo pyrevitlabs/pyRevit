@@ -248,10 +248,15 @@ namespace pyRevitCLI {
                                 try {
                                     var cmdScript = ext.GetCommand(commandName);
                                     if (cmdScript != null) {
-                                        logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
-                                                        commandName, cmdScript);
-                                        commandScriptPath = cmdScript.Path;
-                                        break;
+                                        if (commandScriptPath is null) {
+                                            logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
+                                                            commandName, cmdScript);
+                                            commandScriptPath = cmdScript.Path;
+                                        }
+                                        else
+                                            logger.Warn(string.Format(
+                                                "Run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
+                                                commandName, cmdScript.Path, commandScriptPath));
                                     }
                                 }
                                 catch {
