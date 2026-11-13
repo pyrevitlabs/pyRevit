@@ -15,6 +15,8 @@ namespace pyRevitExtensionParserTester
     /// and dropped instead of piling up in the cache.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     [NonParallelizable]
     public class ScriptEngineManagerTests : TempFileTestBase
     {
@@ -228,6 +230,10 @@ namespace pyRevitExtensionParserTester
             }
         }
 
+        /// <summary>
+        /// An engine dropped from the cache while running is shut down once its outermost execution
+        /// exits, and only once.
+        /// </summary>
         [Test]
         public void ClearEnginesShutsARunningEngineDownWhenItsExecutionEnds()
         {

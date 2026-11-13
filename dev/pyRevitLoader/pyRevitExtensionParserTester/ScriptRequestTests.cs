@@ -9,8 +9,13 @@ namespace pyRevitExtensionParserTester
     /// must never signal or alter the request that follows it.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class ScriptRequestTests
     {
+        /// <summary>
+        /// A second submission completes the first request as failed and leaves the second pending.
+        /// </summary>
         [Test]
         public void SubmittingASecondRequestAbandonsTheFirstWithoutTouchingTheSecond()
         {
@@ -26,6 +31,9 @@ namespace pyRevitExtensionParserTester
             Assert.That(second.Completed.IsSet, Is.False);
         }
 
+        /// <summary>
+        /// Withdrawing the pending request succeeds once and does not signal its events.
+        /// </summary>
         [Test]
         public void WithdrawingTheCurrentRequestSucceedsOnceAndLeavesItUnsignalled()
         {
@@ -37,6 +45,9 @@ namespace pyRevitExtensionParserTester
             Assert.That(request.Completed.IsSet, Is.False);
         }
 
+        /// <summary>
+        /// A replaced request cannot be withdrawn and does not withdraw its replacement.
+        /// </summary>
         [Test]
         public void ARequestReplacedByANewerOneCannotBeWithdrawnNorWithdrawTheNewerOne()
         {
@@ -48,6 +59,9 @@ namespace pyRevitExtensionParserTester
             Assert.That(slot.TryWithdraw(current), Is.True);
         }
 
+        /// <summary>
+        /// A request that never ran reports the failed-request result code.
+        /// </summary>
         [Test]
         public void AnUnstartedRequestReportsTheFailedRequestCode()
         {

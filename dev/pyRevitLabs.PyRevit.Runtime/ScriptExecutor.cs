@@ -36,7 +36,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ScriptRuntimeConfigs = scriptRuntimeConfigs;
         }
 
+        /// <summary>
+        /// The script to run.
+        /// </summary>
         public ScriptData ScriptData { get; }
+
+        /// <summary>
+        /// The runtime configuration of the run. The main-thread <c>UIApp</c> is filled in when Revit
+        /// starts the request.
+        /// </summary>
         public ScriptRuntimeConfigs ScriptRuntimeConfigs { get; }
 
         /// <summary>
@@ -125,10 +133,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class ScriptExecutorExternalEventHandler : IExternalEventHandler {
         private readonly ScriptRequestSlot slot = new ScriptRequestSlot();
 
+        /// <summary>
+        /// Queues a request for the next time Revit raises the external event. Submitting replaces a
+        /// request that was not yet claimed; the replaced request completes with
+        /// <see cref="ScriptExecutorResultCodes.FailedDelayedExecutionRequest"/>.
+        /// </summary>
         public ScriptRequest Submit(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeConfigs) {
             return slot.Submit(scriptData, scriptRuntimeConfigs);
         }
 
+        /// <summary>
+        /// Cancels a request that has not started. Returns false when withdrawal is no longer
+        /// possible because execution already claimed the request or a newer submission replaced it;
+        /// a claimed request is running and the caller must wait for
+        /// <see cref="ScriptRequest.Completed"/>.
+        /// </summary>
         public bool TryWithdraw(ScriptRequest request) {
             return slot.TryWithdraw(request);
         }
