@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Configurations.Sections;
 using pyRevitLabs.NLog;
@@ -138,6 +139,68 @@ namespace pyRevitLabs.UnitTests {
             PyRevitClones.GetRegisteredClones();
 
             Assert.AreEqual(1, target.Logs.Count(line => line.StartsWith("Warn|")));
+        }
+
+        private MemoryTarget CaptureLogs(LogLevel minLevel) {
+            var target = new MemoryTarget("memory") { Layout = "${level}|${message}" };
+            var logConfiguration = new LoggingConfiguration();
+            logConfiguration.AddRule(minLevel, LogLevel.Fatal, target);
+            LogManager.Configuration = logConfiguration;
+            return target;
+        }
+
+        private void RegisterClones(Dictionary<string, string> clones) {
+            PyRevitConfigs.GetConfigFile().SaveSection(new EnvironmentSection { Clones = clones });
+        }
+
+        [TestMethod]
+        public void GetRegisteredClones_RegisteredSubfolderOfValidClone_IsAcceptedWithoutWarning() {
+            var parentPath = CreateClone("parent");
+            var subfolder = Path.Combine(parentPath, "extensions");
+            Directory.CreateDirectory(subfolder);
+            RegisterClones(new Dictionary<string, string> { { "sub", subfolder } });
+            var target = CaptureLogs(LogLevel.Warn);
+
+            var clones = PyRevitClones.GetRegisteredClones();
+
+            Assert.AreEqual(1, clones.Count);
+            Assert.IsTrue(clones[0].ClonePath.IsSamePathAs(parentPath));
+            Assert.AreEqual(0, target.Logs.Count);
+        }
+
+        [TestMethod]
+        public void GetRegisteredClones_CloneRepairedThenBrokenAgain_IsWarnedAgain() {
+            var path = Path.Combine(_tempRoot, "flaky");
+            Directory.CreateDirectory(path);
+            RegisterClones(new Dictionary<string, string> { { "flaky", path } });
+            var target = CaptureLogs(LogLevel.Warn);
+
+            PyRevitClones.GetRegisteredClones();
+            Directory.CreateDirectory(Path.Combine(path, "pyrevitlib", "pyrevit"));
+            Assert.AreEqual(1, PyRevitClones.GetRegisteredClones().Count);
+            Directory.Delete(Path.Combine(path, "pyrevitlib"), true);
+            PyRevitClones.GetRegisteredClones();
+
+            Assert.AreEqual(2, target.Logs.Count(line => line.StartsWith("Warn|")));
+        }
+
+        [TestMethod]
+        public void GetRegisteredClones_DuplicateDifferingInCase_IsKeptOnceAndLoggedWhenPruned() {
+            var path = CreateClone("dup");
+            var missing = Path.Combine(_tempRoot, "missing");
+            RegisterClones(new Dictionary<string, string> {
+                { "first", path },
+                { "alias", path.ToUpperInvariant() },
+                { "gone", missing },
+            });
+            var target = CaptureLogs(LogLevel.Info);
+
+            var clones = PyRevitClones.GetRegisteredClones();
+
+            CollectionAssert.AreEqual(new[] { "first" }, clones.Select(c => c.Name).ToArray());
+            var info = target.Logs.Single(line => line.StartsWith("Info|"));
+            StringAssert.Contains(info, "alias");
+            StringAssert.Contains(info, "first");
         }
     }
 }
