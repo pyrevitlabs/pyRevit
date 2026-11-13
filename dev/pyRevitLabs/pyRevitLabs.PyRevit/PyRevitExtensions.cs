@@ -168,13 +168,7 @@ namespace pyRevitLabs.PyRevit {
                                             string repoPath, string destPath = null, string branchName = null,
                                             GitInstallerCredentials credentials = null) {
             // make sure extension is not installed already
-            PyRevitExtension existExt = null;
-            try {
-                existExt = GetInstalledExtension(extensionName);
-            }
-            catch {
-                // extension is not installed so everything is fine
-            }
+            var existExt = FindInstalledExtensionByExactName(extensionName);
             if (existExt != null)
                 throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
                                                          existExt.Name, existExt.InstallPath));
@@ -213,6 +207,17 @@ namespace pyRevitLabs.PyRevit {
                 throw new PyRevitException(string.Format("Error installing extension. Null repo error on \"{0}\"",
                                                          repoPath));
 
+        }
+
+        private static PyRevitExtension FindInstalledExtensionByExactName(string extensionName) {
+            foreach (var searchPath in GetRegisteredExtensionSearchPaths()) {
+                if (!Directory.Exists(searchPath))
+                    continue;
+                foreach (var ext in FindExtensions(searchPath))
+                    if (string.Equals(ext.Name, extensionName, StringComparison.OrdinalIgnoreCase))
+                        return ext;
+            }
+            return null;
         }
 
         internal static void DeleteInvalidClone(string clonedPath) {

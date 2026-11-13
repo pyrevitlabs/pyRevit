@@ -162,6 +162,54 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void InstallExtension_WhenOnlyALongerNameIsInstalled_DoesNotReportAlreadyInstalled() {
+            var searchPath = Path.Combine(_tempRoot, "extensions");
+            Directory.CreateDirectory(Path.Combine(searchPath, "MyTools.extension"));
+            PyRevitExtensions.RegisterExtensionSearchPath(searchPath);
+
+            var ex = Assert.ThrowsException<PyRevitException>(
+                () => PyRevitExtensions.InstallExtension(
+                    "Tools",
+                    PyRevitExtensionTypes.UIExtension,
+                    Path.Combine(_tempRoot, "missing-source-repo"),
+                    destPath: Path.Combine(_tempRoot, "elsewhere")));
+
+            Assert.IsFalse(ex.Message.Contains("already installed"), ex.Message);
+        }
+
+        [TestMethod]
+        public void InstallExtension_WhenNameHasRegexMetacharacters_StillDetectsTheInstalledExtension() {
+            var searchPath = Path.Combine(_tempRoot, "extensions");
+            Directory.CreateDirectory(Path.Combine(searchPath, "C++.extension"));
+            PyRevitExtensions.RegisterExtensionSearchPath(searchPath);
+
+            var ex = Assert.ThrowsException<PyRevitException>(
+                () => PyRevitExtensions.InstallExtension(
+                    "C++",
+                    PyRevitExtensionTypes.UIExtension,
+                    Path.Combine(_tempRoot, "missing-source-repo"),
+                    destPath: Path.Combine(_tempRoot, "elsewhere")));
+
+            StringAssert.Contains(ex.Message, "already installed");
+        }
+
+        [TestMethod]
+        public void InstallExtension_WhenNameDiffersOnlyInCase_FailsWithAlreadyInstalledMessage() {
+            var searchPath = Path.Combine(_tempRoot, "extensions");
+            Directory.CreateDirectory(Path.Combine(searchPath, "Sample.extension"));
+            PyRevitExtensions.RegisterExtensionSearchPath(searchPath);
+
+            var ex = Assert.ThrowsException<PyRevitException>(
+                () => PyRevitExtensions.InstallExtension(
+                    "SAMPLE",
+                    PyRevitExtensionTypes.UIExtension,
+                    Path.Combine(_tempRoot, "missing-source-repo"),
+                    destPath: Path.Combine(_tempRoot, "elsewhere")));
+
+            StringAssert.Contains(ex.Message, "already installed");
+        }
+
+        [TestMethod]
         public void DeleteInvalidClone_RemovesTheClonedPathAndLeavesTheSourceAlone() {
             var sourcePath = Path.Combine(_tempRoot, "source-repo");
             var clonedPath = Path.Combine(_tempRoot, "cloned-repo");
