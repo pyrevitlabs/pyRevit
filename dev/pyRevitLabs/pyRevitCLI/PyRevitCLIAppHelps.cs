@@ -306,6 +306,9 @@ namespace pyRevitCLI {
                                                         "Target script path or run command name" },
                             { "--revit=<revit_year>",   "Target Revit year e.g. 2019" },
                             { "<model_file>",           "Target Revit model file path" },
+                            { "--inputs=<inputs_json>", "JSON object exposed to the script as JSON text in `__inputs__`" },
+                            { "--inputs-file=<inputs_file>",
+                                                        "Path of a JSON file whose object is exposed to the script as JSON text in `__inputs__`" },
                             { "--purge",                "Remove temporary run environment after completion" },
                             { "--import=<import_path>", "Copy content of this folder into the runtime temp path." },
                             { "--allowdialogs",         "To allow dialogs during journal playback" }

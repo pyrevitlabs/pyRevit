@@ -70,9 +70,9 @@ Usage:
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit run (-h | --help)
 	pyrevit run commands
-	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--allowdialogs] [--import=<import_path>]
-	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--purge] [--allowdialogs] [--import=<import_path>]
-	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
 	pyrevit launch (-h | --help)
 	pyrevit launch <clone_name_or_path> (default | <engine_version>) <revit_year> [<model_file>] [--isolated] [--language=<code>] [--log=<log_file>]
 	pyrevit agent (-h | --help)
