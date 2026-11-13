@@ -43,7 +43,7 @@ Annotation belongs to a view. Pass the plan, not the sheet.
 titleblock = query.find_family_symbol("D 22 x 34 Horizontal", family_name="D 22 x 34 Horizontal", category="OST_TitleBlocks")
 sheet = create.create_sheet("A101", "Floor Plan", titleblock.Id)
 create.place_on_sheet(sheet, plan_view, anchor="top_left")
-create.place_on_sheet(sheet, schedule, anchor="top_right")
+create.place_on_sheet(sheet, schedule, anchor="top_right", right_margin=0.25)
 ```
 
 - **Placing:** `create.place_on_sheet(sheet, view_or_schedule, anchor, margin=0.1)` aligns the viewport or schedule to a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) or the `center` of the title block. `margin` is in sheet feet (0.1 ft = 1.2 in). The title block's right-hand information strip is inside its box, so pass the `right_margin` keyword (the strip's width in sheet feet, measured on the sheet) when anchoring right or center. Passing a sheet instead of a view raises.
