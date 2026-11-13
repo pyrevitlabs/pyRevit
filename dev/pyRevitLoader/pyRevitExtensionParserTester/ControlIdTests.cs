@@ -12,6 +12,7 @@ namespace pyRevitExtensionParserTester
     /// Control IDs are used by the runtime to find ribbon items via findRibbonItem().
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
     public class ControlIdTests
     {
         /// <summary>
@@ -19,6 +20,7 @@ namespace pyRevitExtensionParserTester
         /// the control ID for "Test C# Script" button matches expected format.
         /// </summary>
         [Test]
+        [Category("Integration")]
         public void ControlId_RealExtension_TestCSharpScript_HasCorrectFormat()
         {
             // Find the pyRevitDevTools.extension directory
@@ -57,6 +59,7 @@ namespace pyRevitExtensionParserTester
         /// Expected format: CustomCtrl_%CustomCtrl_%{tab}%{panel}%{button}
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_SimpleButtonInPanel_HasCorrectFormat()
         {
             // Arrange: Tab -> Panel -> PushButton
@@ -104,6 +107,7 @@ namespace pyRevitExtensionParserTester
         /// Note: Command groups "deepen" the hierarchy by adding extra CustomCtrl_
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_ButtonInPulldown_HasDeepenedFormat()
         {
             // Arrange: Tab -> Panel -> PullDown -> PushButton
@@ -157,6 +161,7 @@ namespace pyRevitExtensionParserTester
         /// Tests control ID for a button inside a split button (another command group type).
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_ButtonInSplitButton_HasDeepenedFormat()
         {
             // Arrange: Tab -> Panel -> SplitButton -> PushButton
@@ -209,6 +214,7 @@ namespace pyRevitExtensionParserTester
         /// Tests that multiple buttons at different levels get correct control IDs.
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_MultipleButtonsAtDifferentLevels_AllHaveCorrectIds()
         {
             // Arrange: Tab -> Panel -> [PushButton1, PullDown -> PushButton2]
@@ -271,6 +277,7 @@ namespace pyRevitExtensionParserTester
         /// Tests control ID for SmartButton (should behave same as PushButton).
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_SmartButton_HasCorrectFormat()
         {
             // Arrange: Tab -> Panel -> SmartButton
@@ -317,6 +324,7 @@ namespace pyRevitExtensionParserTester
         /// Revit registers a button inside a stack as if it sat directly in the panel.
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_ButtonInStack_StackDoesNotAddToPath()
         {
             // Arrange: Tab -> Panel -> Stack -> PushButton
@@ -370,6 +378,7 @@ namespace pyRevitExtensionParserTester
         /// while the stack itself stays out of the path.
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_ButtonInPulldownInStack_StackDoesNotAddToPath()
         {
             var button = new ParsedComponent
@@ -424,6 +433,7 @@ namespace pyRevitExtensionParserTester
         /// Tests control ID for nested command groups (pulldown inside split button).
         /// </summary>
         [Test]
+        [Category("Unit")]
         public void ControlId_NestedCommandGroups_HasDoubleDeepenedFormat()
         {
             // Arrange: Tab -> Panel -> SplitButton -> PullDown -> PushButton
