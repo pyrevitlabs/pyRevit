@@ -204,6 +204,17 @@ class Python3CompatibilityTests(unittest.TestCase):
             module = preflight._load_check_module("levels", script)
         self.assertEqual(42, module.MARKER)
 
+    def test_importlib_loads_check_with_uppercase_extension(self):
+        """A check file whose suffix is ``.PY`` loads through importlib."""
+        with tempfile.TemporaryDirectory() as checks_dir:
+            script = os.path.join(checks_dir, "Foo_CHECK.PY")
+            with open(script, "w") as check_file:
+                check_file.write("MARKER = 7" + chr(10))
+            _, preflight = _load_production_modules(imp_available=False)
+            module = preflight._load_check_module("Foo", script)
+            self.addCleanup(sys.modules.pop, module.__name__, None)
+        self.assertEqual(7, module.MARKER)
+
     def test_importlib_check_module_does_not_shadow_stdlib(self):
         """Loading a check named like a stdlib module leaves ``sys.modules`` intact."""
         with tempfile.TemporaryDirectory() as checks_dir:

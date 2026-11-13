@@ -32,10 +32,11 @@ def _load_check_with_imp(name, script_path):
 
 
 def _load_check_with_importlib(name, script_path):
-    from importlib import util
+    from importlib import machinery, util
 
     module_name = "pyrevit_preflight_check_" + name
-    spec = util.spec_from_file_location(module_name, script_path)
+    loader = machinery.SourceFileLoader(module_name, script_path)
+    spec = util.spec_from_file_location(module_name, script_path, loader=loader)
     if spec is None or spec.loader is None:
         raise ImportError("Cannot load check script: %s" % script_path)
     module = util.module_from_spec(spec)
