@@ -6,6 +6,9 @@ using pyRevitLabs.Json.Linq;
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
+    /// <summary>
+    /// Covers the provisional record written while a run waits for approval.
+    /// </summary>
     public sealed class AgentPendingRecordTests {
         private static AgentRunRequest Request() {
             var request = AgentRunRequest.FromJson(new JObject {
@@ -17,6 +20,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return request;
         }
 
+        /// <summary>
+        /// The provisional record names the run and request and marks it as awaiting approval.
+        /// </summary>
         [Fact]
         public void TheRecordSaysTheRunAwaitsApprovalAndNamesTheRequest() {
             var record = AgentPendingRecord.Build(Request(), "abc123", "C:\\runs\\abc123");
@@ -28,6 +34,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("Rename template", record.Value<string>("title"));
         }
 
+        /// <summary>
+        /// Writing leaves a readable response.json in the run folder.
+        /// </summary>
         [Fact]
         public void WritingLeavesResponseJsonInTheRunFolder() {
             var runDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -43,11 +52,35 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>
+        /// A missing run folder is tolerated because the record is best effort.
+        /// </summary>
         [Fact]
         public void AMissingRunFolderDoesNotThrow() {
             var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
             AgentPendingRecord.Write(Request(), "abc123", missing);
+        }
+
+        /// <summary>
+        /// A read-only response.json is tolerated and left unchanged because the record is best effort.
+        /// </summary>
+        [Fact]
+        public void AReadOnlyExistingRecordDoesNotThrow() {
+            var runDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(runDir);
+            var path = Path.Combine(runDir, "response.json");
+            File.WriteAllText(path, "{}");
+            File.SetAttributes(path, FileAttributes.ReadOnly);
+            try {
+                AgentPendingRecord.Write(Request(), "abc123", runDir);
+
+                Assert.Equal("{}", File.ReadAllText(path));
+            }
+            finally {
+                File.SetAttributes(path, FileAttributes.Normal);
+                Directory.Delete(runDir, true);
+            }
         }
     }
 }

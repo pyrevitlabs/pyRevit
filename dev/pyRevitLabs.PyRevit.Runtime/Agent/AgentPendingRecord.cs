@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text;
 
@@ -12,7 +13,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <c>response.json</c> is otherwise written once the run ends, so a Revit that exits while
     /// the approval prompt is up would leave a run folder with no outcome, which a reader can't
     /// tell from a run that never started. The final record replaces this one; one that survives
-    /// means the run was interrupted at the prompt and nothing was committed.
+    /// means the run was interrupted before its outcome was recorded, so whether it committed is unknown.
     /// </remarks>
     internal static class AgentPendingRecord {
         public const string Status = "pending";
@@ -41,6 +42,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     new UTF8Encoding(false));
             }
             catch (IOException) {
+            }
+            catch (UnauthorizedAccessException) {
             }
         }
     }

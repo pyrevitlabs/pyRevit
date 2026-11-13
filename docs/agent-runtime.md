@@ -501,6 +501,9 @@ doesn't know them, instead of `Unknown` or `0`.
 `get_context.pyrevit.bin_commit` is the commit the binaries were built from. When it differs from
 `commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- local`), and
 `pyrevit agent status` shows the same fields. Nothing is flagged when the clone's commit is unknown.
+`get_context` recomputes `commit` on every call, but the instance record that `pyrevit agent status`
+reads is written when the session starts, so after a checkout with Revit open `agent status` can still
+report the startup `commit` and `bin_stale`. Use `get_context` for the current value.
 
 Syntax measured in Revit on IronPython 3.4.2:
 
@@ -581,7 +584,8 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `response.json`: status, decision, changes, failures, dialogs, output and result. While a run waits
   for the user's approval it holds a provisional record with `status` `pending` and `decision`
   `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
-  the prompt (for example Revit exited) and committed nothing.
+  the prompt or before the final write (for example Revit exited), so its outcome is unknown: the user
+  may have approved and the change committed. Check the model before repeating the run.
 - `result.json`: present when the result was too large to return inline
 
 For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's
