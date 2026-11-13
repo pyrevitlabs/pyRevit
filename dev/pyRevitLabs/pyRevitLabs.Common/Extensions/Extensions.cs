@@ -127,31 +127,56 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         /// <summary>
-        /// True when both paths normalize to the same full path, ignoring case and trailing separators.
+        /// True when both paths have the same comparable form, ignoring case and trailing separators.
+        /// Returns false instead of throwing when either path is null, empty or invalid.
         /// </summary>
         public static bool IsSamePathAs(this string path, string otherPath) {
-            if (path is null || otherPath is null)
+            var comparable = path.ToComparablePath();
+            var otherComparable = otherPath.ToComparablePath();
+            if (comparable is null || otherComparable is null)
                 return false;
-            return string.Equals(ToComparablePath(path), ToComparablePath(otherPath), StringComparison.OrdinalIgnoreCase);
+            return string.Equals(comparable, otherComparable, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
         /// True when the path is the parent path or lies below it, matching whole directory
-        /// names so <c>C:\pyrevit2\x</c> is not within <c>C:\pyrevit</c>. Ignores case.
+        /// names so <c>C:\pyrevit2\x</c> is not within <c>C:\pyrevit</c>. Ignores case and returns
+        /// false instead of throwing when either path is null, empty or invalid.
         /// </summary>
+        /// <remarks>
+        /// Purely lexical: junctions, symlinks and 8.3 short names are not resolved.
+        /// </remarks>
         public static bool IsPathWithin(this string path, string parentPath) {
-            if (path is null || parentPath is null)
+            var comparable = path.ToComparablePath();
+            var comparableParent = parentPath.ToComparablePath();
+            if (comparable is null || comparableParent is null)
                 return false;
-            var normalizedPath = ToComparablePath(path);
-            var normalizedParent = ToComparablePath(parentPath);
-            if (string.Equals(normalizedPath, normalizedParent, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(comparable, comparableParent, StringComparison.OrdinalIgnoreCase))
                 return true;
-            return normalizedPath.StartsWith(
-                normalizedParent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+            return comparable.StartsWith(
+                comparableParent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string ToComparablePath(string path) {
-            return path.NormalizeAsPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        /// <summary>
+        /// Returns the full path without trailing separators, the form compared by
+        /// <see cref="IsSamePathAs"/> and <see cref="IsPathWithin"/>, or null when the path is
+        /// null, empty, invalid or only separators. Compare the result ignoring case.
+        /// </summary>
+        public static string ToComparablePath(this string path) {
+            if (string.IsNullOrWhiteSpace(path))
+                return null;
+            var fullPath = path;
+            if (path.IsLocalPath()) {
+                try {
+                    fullPath = Path.GetFullPath(path);
+                }
+                catch (Exception ex) {
+                    logger.Debug("Can not compare path \"{0}\" | {1}", path, ex.Message);
+                    return null;
+                }
+            }
+            var comparable = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return comparable.Length == 0 ? null : comparable;
         }
 
         public static string NormalizeAsPath(this string path) {

@@ -33,5 +33,28 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse(@"C:\pyrevit\..\other".IsPathWithin(@"C:\pyrevit"));
             Assert.IsTrue(@"C:\pyrevit\x\..\bin".IsPathWithin(@"C:\pyrevit"));
         }
+
+        [TestMethod]
+        public void ToComparablePath_UriPathsDifferingByTrailingSeparator_AreIdentical() {
+            Assert.AreEqual(@"\\server\share\pyrevit\".ToComparablePath(), @"\\server\share\pyrevit".ToComparablePath());
+            Assert.AreEqual("http://host/repo/".ToComparablePath(), "http://host/repo".ToComparablePath());
+        }
+
+        [TestMethod]
+        public void PathComparison_InvalidOrEmptyInput_ReturnsFalseWithoutThrowing() {
+            const string invalid = "C:\\bad\0path";
+            Assert.IsNull(invalid.ToComparablePath());
+            Assert.IsFalse(invalid.IsPathWithin(@"C:\pyrevit"));
+            Assert.IsFalse(@"C:\pyrevit".IsPathWithin(invalid));
+            Assert.IsFalse(invalid.IsSamePathAs(invalid));
+            Assert.IsFalse("".IsSamePathAs(""));
+        }
+
+        [TestMethod]
+        public void IsPathWithin_BareSeparatorParent_IsNotAMatch() {
+            Assert.IsFalse(@"C:\pyrevit".IsPathWithin(@"\"));
+            Assert.IsFalse(@"C:\pyrevit".IsPathWithin("/"));
+            Assert.IsFalse(@"C:\pyrevit".IsPathWithin(""));
+        }
     }
 }
