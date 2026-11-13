@@ -578,7 +578,10 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 
 - `script.py`: the submitted source
 - `request.json`: title, mode, engine and inputs
-- `response.json`: status, decision, changes, failures, dialogs, output and result
+- `response.json`: status, decision, changes, failures, dialogs, output and result. While a run waits
+  for the user's approval it holds a provisional record with `status` `pending` and `decision`
+  `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
+  the prompt (for example Revit exited) and committed nothing.
 - `result.json`: present when the result was too large to return inline
 
 For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's

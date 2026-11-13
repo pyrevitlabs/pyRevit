@@ -50,6 +50,7 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRequestLine.cs" Link="Sources\AgentRequestLine.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentConfigRefresh.cs" Link="Sources\AgentConfigRefresh.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentBinaryCommit.cs" Link="Sources\AgentBinaryCommit.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPendingRecord.cs" Link="Sources\AgentPendingRecord.cs"/>
         <Compile Include="..\..\pyRevitLabs.Common\BoundedLineReader.cs" Link="Sources\BoundedLineReader.cs"/>
     </ItemGroup>
 
