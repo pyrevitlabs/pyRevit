@@ -168,15 +168,16 @@ namespace pyRevitLabs.PyRevit {
                                             string repoPath, string destPath = null, string branchName = null,
                                             GitInstallerCredentials credentials = null) {
             // make sure extension is not installed already
+            PyRevitExtension existExt = null;
             try {
-                var existExt = GetInstalledExtension(extensionName);
-                if (existExt != null)
-                    throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
-                                                             existExt.Name, existExt.InstallPath));
+                existExt = GetInstalledExtension(extensionName);
             }
             catch {
                 // extension is not installed so everything is fine
             }
+            if (existExt != null)
+                throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
+                                                         existExt.Name, existExt.InstallPath));
 
             // determine repo folder name
             // Name.extension for UI Extensions
@@ -205,20 +206,24 @@ namespace pyRevitLabs.PyRevit {
                     RegisterExtensionSearchPath(destPath.NormalizeAsPath());
                 }
                 else {
-                    _logger.Debug("Invalid repo after cloning. Deleting clone \"{0}\"", repoPath);
-                    try {
-                        CommonUtils.DeleteDirectory(repoPath);
-                    }
-                    catch (Exception delEx) {
-                        _logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
-                                                   repoPath, delEx.Message));
-                    }
+                    DeleteInvalidClone(clonedPath);
                 }
             }
             else
                 throw new PyRevitException(string.Format("Error installing extension. Null repo error on \"{0}\"",
                                                          repoPath));
 
+        }
+
+        internal static void DeleteInvalidClone(string clonedPath) {
+            _logger.Debug("Invalid repo after cloning. Deleting clone \"{0}\"", clonedPath);
+            try {
+                CommonUtils.DeleteDirectory(clonedPath);
+            }
+            catch (Exception delEx) {
+                _logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
+                                           clonedPath, delEx.Message));
+            }
         }
 
         /// <summary>
