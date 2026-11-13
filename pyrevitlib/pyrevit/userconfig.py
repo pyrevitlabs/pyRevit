@@ -791,13 +791,21 @@ class PyRevitConfig(object):
         among the clone's available engines.
         """
         attachment = self.get_current_attachment()
+        failure_reason = "the clone has no CPython engines"
         if attachment and attachment.Clone:
             clone = attachment.Clone
         else:
+            if attachment:
+                failure_reason = (
+                    "the attached clone failed validation, see the preceding "
+                    "warning for its path and cause"
+                )
             try:
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
             except Exception as cEx:
                 mlogger.debug("Can not create clone from path: %s", str(cEx))
+                if not attachment:
+                    failure_reason = "no clone could be created | %s" % str(cEx)
                 clone = None
         engines = clone.GetCPythonEngines() if clone else []
         cpy_engines_dict = {x.Version: x for x in engines}
@@ -805,8 +813,9 @@ class PyRevitConfig(object):
 
         if not cpy_engines_dict:
             mlogger.error(
-                "Can not determine cpython engines for current attachment: %s",
+                "Can not determine cpython engines for current attachment: %s | %s",
                 attachment,
+                failure_reason,
             )
             return None
         try:

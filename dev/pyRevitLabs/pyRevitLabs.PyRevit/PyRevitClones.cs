@@ -120,15 +120,17 @@ namespace pyRevitLabs.PyRevit {
                     listChanged = true;
                 }
                 try {
+                    PyRevitClone.VerifyCloneValidity(clonePath);
                     var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
-                    if (clone.IsValid && !validatedClones.Contains(clone)) {
+                    if (!validatedClones.Contains(clone)) {
 
                         logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
                         validatedClones.Add(clone);
                     }
                 }
-                catch {
-                    logger.Debug("Error occured when processing registered clone \"{0}\" at \"{1}\"", cloneKeyValue.Key, clonePath);
+                catch (Exception ex) {
+                    logger.Warn("Registered clone \"{0}\" at \"{1}\" failed validation and is skipped | {2}",
+                                cloneKeyValue.Key, clonePath, ex.Message);
                 }
             }
             if (listChanged) {
@@ -746,7 +748,7 @@ namespace pyRevitLabs.PyRevit {
 
             var normalizedPath = clonePath.NormalizeAsPath();
             foreach (var clone in GetRegisteredClones().ToList()) {
-                if (clone.ClonePath.Equals(normalizedPath, StringComparison.OrdinalIgnoreCase))
+                if (clone.ClonePath.IsSamePathAs(normalizedPath))
                     UnregisterClone(clone);
             }
         }
