@@ -59,12 +59,47 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
-        public void BlankLinesAreDropped() {
+        public void BlankLinesArePreserved() {
             File.WriteAllText(_path, "");
             var tail = new JournalTail(_path);
 
             Append("a\r\n\r\nb\n");
-            Assert.Equal(new[] { "a", "b" }, tail.ReadNewLines());
+            Assert.Equal(new[] { "a", "", "b" }, tail.ReadNewLines());
+        }
+
+        [Fact]
+        public void LinesBeyondTheChunkLimitAreDeliveredOnLaterReads() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path, 8);
+
+            Append("aaa\nbbb\nccc\nddd\n");
+            Assert.Equal(new[] { "aaa", "bbb" }, tail.ReadNewLines());
+            Assert.Equal(new[] { "ccc", "ddd" }, tail.ReadNewLines());
+        }
+
+        [Fact]
+        public void ChunkWithoutLineFeedAtTheLimitIsDiscardedSoReadingContinues() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path, 4);
+
+            Append("xxxxxxxx");
+            Assert.Empty(tail.ReadNewLines());
+            Assert.Empty(tail.ReadNewLines());
+
+            Append("ok\n");
+            Assert.Equal(new[] { "ok" }, tail.ReadNewLines());
+        }
+
+        [Fact]
+        public void FileReplacedByAShorterOneAfterPartialLineIsReadFromTheStart() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path);
+
+            Append("a long unfinished line without a break");
+            Assert.Empty(tail.ReadNewLines());
+
+            File.WriteAllText(_path, "new\n");
+            Assert.Equal(new[] { "new" }, tail.ReadNewLines());
         }
 
         [Fact]
