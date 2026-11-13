@@ -290,10 +290,7 @@ namespace pyRevitExtensionParser
                 ClearAllCaches();
             }
 
-            if (!string.IsNullOrEmpty(userLocale))
-            {
-                DefaultLocale = userLocale;
-            }
+            DefaultLocale = string.IsNullOrEmpty(userLocale) ? "en_us" : userLocale;
             _cachedLocale = userLocale;
             _localeInitialized = true;
         }
@@ -399,7 +396,11 @@ namespace pyRevitExtensionParser
         /// <returns>A single ParsedExtension if the path is valid and contains an extension, otherwise empty</returns>
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath, int revitYear = 0)
         {
-            if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
+            if (string.IsNullOrWhiteSpace(extensionPath))
+                yield break;
+
+            extensionPath = TrimTrailingSeparators(extensionPath);
+            if (!Directory.Exists(extensionPath))
                 yield break;
 
             // Ensure the directory has .extension or .lib suffix
@@ -425,18 +426,27 @@ namespace pyRevitExtensionParser
 
             foreach (var extensionPath in extensionPaths)
             {
-                if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
+                if (string.IsNullOrWhiteSpace(extensionPath))
+                    continue;
+
+                var trimmedPath = TrimTrailingSeparators(extensionPath);
+                if (!Directory.Exists(trimmedPath))
                     continue;
 
                 // Ensure the directory has .extension or .lib suffix
-                if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase) &&
-                    !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
+                if (!trimmedPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase) &&
+                    !trimmedPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var parsed = ParseExtension(extensionPath, revitYear);
+                var parsed = ParseExtension(trimmedPath, revitYear);
                 if (parsed != null)
                     yield return parsed;
             }
+        }
+
+        private static string TrimTrailingSeparators(string path)
+        {
+            return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
         // Config caching is now handled inside PyRevitConfig.Load() itself.
@@ -1853,6 +1863,32 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Removes a trailing <c>#</c> comment that sits outside any quoted string and trims the result.
+        /// </summary>
+        private static string StripTrailingComment(string value)
+        {
+            var quoteChar = '\0';
+            for (int i = 0; i < value.Length; i++)
+            {
+                var ch = value[i];
+                if (quoteChar != '\0')
+                {
+                    if (ch == quoteChar && value[i - 1] != '\\')
+                        quoteChar = '\0';
+                }
+                else if (ch == '"' || ch == '\'')
+                {
+                    quoteChar = ch;
+                }
+                else if (ch == '#')
+                {
+                    return value.Substring(0, i).Trim();
+                }
+            }
+            return value.Trim();
+        }
+
+        /// <summary>
         /// Extracts a Python list from a line like: __context__ = ['OST_Walls', 'OST_TextNotes']
         /// </summary>
         private static List<string> ExtractPythonList(string line)
@@ -1860,7 +1896,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim();
+                var value = StripTrailingComment(parts[1]);
                 // Check if it's a list literal
                 if (value.StartsWith("[") && value.EndsWith("]"))
                 {
@@ -1956,7 +1992,7 @@ namespace pyRevitExtensionParser
                 if (line.Contains("\"\"\""))
                 {
                     var lastQuotePos = line.LastIndexOf("\"\"\"");
-                    if (lastQuotePos > 0)
+                    if (lastQuotePos >= 0)
                     {
                         // Strip the just-appended line + newline and replace with the
                         // content up to (but not including) the closing triple quote.
@@ -2136,7 +2172,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim();
+                var value = StripTrailingComment(parts[1]);
                 // Check if it's a dictionary literal
                 if (value.StartsWith("{") && value.EndsWith("}"))
                 {
