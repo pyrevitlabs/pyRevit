@@ -184,10 +184,19 @@ namespace PyRevitLoader
         /// </remarks>
         public void AddEmbeddedLib(ScriptEngine engine)
         {
-            object registered;
-            if (_enginesWithEmbeddedLib.TryGetValue(engine, out registered))
-                return;
+            lock (_enginesWithEmbeddedLib)
+            {
+                object registered;
+                if (_enginesWithEmbeddedLib.TryGetValue(engine, out registered))
+                    return;
 
+                RegisterEmbeddedLib(engine);
+                _enginesWithEmbeddedLib.Add(engine, new object());
+            }
+        }
+
+        private void RegisterEmbeddedLib(ScriptEngine engine)
+        {
             // use embedded python lib
             var asm = this.GetType().Assembly;
 #if PYREVITLABS_ENGINE
@@ -203,7 +212,6 @@ namespace PyRevitLoader
             var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resQuery.Single());
             dynamic sys = IronPython.Hosting.Python.GetSysModule(engine);
             sys.meta_path.append(importer);
-            _enginesWithEmbeddedLib.Add(engine, new object());
         }
 
         // Set up an IronPython environment
