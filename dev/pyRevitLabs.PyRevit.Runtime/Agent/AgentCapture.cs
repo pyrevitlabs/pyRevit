@@ -490,7 +490,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         target = prepare();
                         var committed = transaction.Commit();
                         if (committed != TransactionStatus.Committed)
-                            throw new AgentException("capture_failed", $"Revit did not commit the temporary view change (status {committed}).");
+                            throw new AgentException("capture_failed", describeFailure($"Revit did not commit the temporary view change (status {committed})."));
                     }
                     return ExportView(doc, target, directory, baseName, width);
                 }

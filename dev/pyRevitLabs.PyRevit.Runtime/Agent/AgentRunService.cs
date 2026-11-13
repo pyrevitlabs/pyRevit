@@ -594,9 +594,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             try {
                 using (var transaction = new Transaction(doc, TransactionName)) {
-                    transaction.Start();
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("Revit did not start the approval preview's temporary isolation.");
                     view.IsolateElementsTemporary(visibleCandidates);
-                    transaction.Commit();
+                    if (transaction.Commit() != TransactionStatus.Committed)
+                        throw new InvalidOperationException("Revit did not commit the approval preview's temporary isolation.");
                 }
                 uidoc.RefreshActiveView();
                 return new AgentViewPreview(doc, view,
