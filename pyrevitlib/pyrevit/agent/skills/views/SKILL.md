@@ -53,7 +53,7 @@ Run these in `run_modify`, inside `with revit.Transaction("..."):`. Names are ma
 
 - `update.set_section_box(view3d, elements=None, padding=2)` fits a 3D view's section box.
 - `update.orient_3d_view(view3d, "northwest")`, or `update.set_3d_view_camera(view3d, eye, target)` with `DB.XYZ` points.
-- `update.crop_view_to_elements(view, elements=None, padding=3)` crops a plan, section or elevation to elements; `update.set_crop_region(view, curve_loops)` sets a non-rectangular crop.
+- `update.crop_view_to_elements(view, elements=None, padding=3)` crops a plan, section or elevation to elements (it clears the view's scope box, which would otherwise override the crop); `update.set_crop_region(view, curve_loops)` sets a non-rectangular crop.
 - `update.hide_non_model_categories(view)` hides every non-model category.
 - `update.hide_categories(view, ["OST_Furniture"])` hides categories permanently; `view.HideElements(ids)` hides elements. `SetCategoryHidden` takes a category's `Id`, not the Category; the function handles that.
 - Scale and detail: `view.Scale = 50`, `view.DetailLevel = DB.ViewDetailLevel.Fine`, `view.DisplayStyle = DB.DisplayStyle.ShadingWithEdges`.

@@ -605,9 +605,20 @@ class Extension(GenericUIContainer):
         return [op.join(self.hooks_path, x) for x in hook_scripts]
 
     def get_checks(self):
+        """Get the preflight check scripts of this extension.
+
+        Only files ending in ``_check.py`` (case-insensitive) are checks. Any
+        other file in ``checks/`` is a helper module and is never loaded as a
+        check.
+
+        Returns:
+            list[str]: full paths of the check scripts.
+        """
         check_scripts = os.listdir(self.checks_path) if self.checks_path else []
         return [
-            op.join(self.checks_path, x) for x in check_scripts if x.endswith(".py")
+            op.join(self.checks_path, x)
+            for x in check_scripts
+            if x.lower().endswith(exts.COMP_CHECK_POSTFIX)
         ]
 
 

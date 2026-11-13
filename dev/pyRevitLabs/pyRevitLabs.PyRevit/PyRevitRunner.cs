@@ -19,7 +19,18 @@ namespace pyRevitLabs.PyRevit {
             return $"{Name} | \"{Path}\"";
         }
 
-        public string Name => System.IO.Path.GetFileName(Path).Replace(PyRevitConsts.ExtensionUICommandPostfix, "");
+        /// <summary>
+        /// The command file name without its trailing <c>_command.py</c>, matched case-insensitively.
+        /// </summary>
+        public string Name {
+            get {
+                string fileName = System.IO.Path.GetFileName(Path);
+                string postfix = PyRevitConsts.ExtensionUICommandPostfix;
+                return fileName.EndsWith(postfix, StringComparison.OrdinalIgnoreCase)
+                    ? fileName.Substring(0, fileName.Length - postfix.Length)
+                    : fileName;
+            }
+        }
         public string Path { get; }
     }
 
