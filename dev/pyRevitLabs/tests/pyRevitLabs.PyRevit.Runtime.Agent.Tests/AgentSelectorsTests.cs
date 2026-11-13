@@ -13,6 +13,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         private sealed class View {
             public long Id;
             public string Name;
+            public string Number;
         }
 
         private static readonly List<View> Views = new List<View> {
@@ -20,10 +21,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             new View { Id = 101, Name = "Level 1" },
             new View { Id = 102, Name = "12345" },
             new View { Id = 103, Name = "Site" },
+            new View { Id = 104, Name = "Roof Plan", Number = "A101" },
         };
 
         private static List<View> Find(string selector) =>
-            AgentSelectors.FindView(selector, id => Views.FirstOrDefault(view => view.Id == id), Views, view => view.Name);
+            AgentSelectors.FindView(selector, id => Views.FirstOrDefault(view => view.Id == id), Views, view => view.Name, view => view.Number);
 
         [Fact]
         public void AnIdFindsThatView() {
@@ -38,6 +40,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [Fact]
         public void ASharedNameReturnsEveryMatch() {
             Assert.Equal(new long[] { 100, 101 }, Find("level 1").Select(view => view.Id));
+        }
+
+        [Fact]
+        public void ASheetNumberFindsThatSheetIgnoringCase() {
+            Assert.Equal(new long[] { 104 }, Find("a101").Select(view => view.Id));
         }
 
         [Fact]
