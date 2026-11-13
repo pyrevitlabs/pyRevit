@@ -39,6 +39,11 @@ public partial class McpServerTests {
             return JObject.Parse(line);
         }
 
+        public bool CloseInputAndWait(TimeSpan timeout) {
+            input.CompleteAdding();
+            return serving.Wait(timeout);
+        }
+
         public void Dispose() {
             input.CompleteAdding();
             Assert.True(serving.Wait(Patience), "The server did not finish its open calls.");
@@ -164,6 +169,21 @@ public partial class McpServerTests {
         session.Dispose();
 
         Assert.True(reachedHost, "The server stopped reading requests while an answer was written.");
+    }
+
+    /// <summary>Closing stdin while a call waits on Revit ends the server instead of holding the process open (#4050).</summary>
+    [Fact]
+    public void ClosingInputCancelsCallsStillWaitingOnRevit() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession();
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        var finished = session.CloseInputAndWait(Patience);
+        release.Set();
+
+        Assert.True(finished, "The server kept running after stdin ended.");
     }
 
     [Fact]

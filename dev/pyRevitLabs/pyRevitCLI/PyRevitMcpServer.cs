@@ -38,6 +38,8 @@ namespace pyRevitCLI {
     /// host also accepts one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
+    /// When input ends, calls still open get a short grace period to answer and are then cancelled, so
+    /// the process exits and releases its folder.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -45,6 +47,7 @@ namespace pyRevitCLI {
             "2025-06-18", "2025-03-26", "2024-11-05",
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan InputClosedGracePeriod = TimeSpan.FromSeconds(5);
         private const int MaxRunResultPage = 200 * 1024;
 
         private readonly string defaultRevit;
@@ -167,7 +170,11 @@ namespace pyRevitCLI {
                 }
             }
 
-            Task.WaitAll(inFlight.ToArray());
+            if (!Task.WaitAll(inFlight.ToArray(), InputClosedGracePeriod)) {
+                foreach (var cancellation in pendingCalls.Values)
+                    Cancel(cancellation);
+                Task.WaitAll(inFlight.ToArray());
+            }
         }
 
         private static JObject Initialize(JObject parameters) {
@@ -191,6 +198,10 @@ namespace pyRevitCLI {
         private void Cancel(JToken requestId) {
             if (requestId == null || !pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
                 return;
+            Cancel(cancellation);
+        }
+
+        private static void Cancel(CancellationTokenSource cancellation) {
             if (!Monitor.TryEnter(cancellation))
                 return;
             try {
