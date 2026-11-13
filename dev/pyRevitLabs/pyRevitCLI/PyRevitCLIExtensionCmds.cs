@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
-using System.Diagnostics;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonCLI;
@@ -117,7 +116,7 @@ namespace pyRevitCLI {
                     if (info && extDef != null)
                         Console.WriteLine(extDef.ToString());
                     else if (help && extDef != null)
-                        Process.Start(extDef.Website);
+                        CommonUtils.OpenUrl(extDef.Website);
                 }
             }
         }

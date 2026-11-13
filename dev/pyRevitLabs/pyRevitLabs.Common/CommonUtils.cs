@@ -289,12 +289,24 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        internal static ProcessStartInfo CreateUrlStartInfo(string url) {
+            if (!Regex.IsMatch(url, @"^https?://"))
+                url = "http://" + url;
+            return new ProcessStartInfo(url) { UseShellExecute = true };
+        }
+
+        /// <summary>
+        /// Opens <paramref name="url"/> in the default browser, prefixing <c>http://</c> when no scheme is given.
+        /// </summary>
+        /// <remarks>
+        /// The URL is started through the shell, which .NET 8 and later no longer do by default.
+        /// Logs an error instead of opening when no internet connection is detected.
+        /// </remarks>
         public static void OpenUrl(string url, string logErrMsg = null) {
             if (CheckInternetConnection()) {
-                if (!Regex.IsMatch(url, @"^https?://"))
-                    url = "http://" + url;
-                logger.Debug("Opening {0}", url);
-                Process.Start(url);
+                var startInfo = CreateUrlStartInfo(url);
+                logger.Debug("Opening {0}", startInfo.FileName);
+                Process.Start(startInfo);
             }
             else {
                 if (logErrMsg is null)

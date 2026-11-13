@@ -111,7 +111,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     MenuItem openHelpSource = new MenuItem();
                     openHelpSource.Header = "Open Help";
                     openHelpSource.ToolTip = ScriptData.HelpSource;
-                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(ScriptData.HelpSource); };
+                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(ScriptData.HelpSource) { UseShellExecute = true }); };
                     pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
 
