@@ -45,8 +45,13 @@ Usage:
                 PrintCommands();
 
             else if (args.Length > 0) {
-                if (Commands.Where(x => x.Name == args[0]).FirstOrDefault() is DoctorCommand command)
+                var command = Commands.FirstOrDefault(x => x.Name == args[0]);
+                if (command.Command != null)
                     command.Command(dryrun);
+                else {
+                    Console.Error.WriteLine($"Unknown command \"{args[0]}\". Run \"pyrevit-doctor --list\" to see the available commands.");
+                    Environment.ExitCode = 1;
+                }
             }
             else {
                 if (AskForCommand() is DoctorCommand command) {
@@ -61,7 +66,7 @@ Usage:
             Console.WriteLine("Select a commands to run:");
             uint commandId = 1;
             foreach (var command in Commands)
-                Console.WriteLine($"    {commandId}) {command.Name,-25} {command.HelpMsg}");
+                Console.WriteLine($"    {commandId++}) {command.Name,-25} {command.HelpMsg}");
             Console.Write("\nEnter Command Id: ");
 
             if (int.TryParse(Console.ReadLine(), out int cmdId)) {
