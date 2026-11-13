@@ -147,6 +147,42 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void ReplaceClone_WhenBinariesAreMissingForTheBranch_KeepsTheDeployedCloneAndDropsTheBackup() {
+            var clonePath = Path.Combine(_tempRoot, "binlessDest");
+            Directory.CreateDirectory(clonePath);
+            File.WriteAllText(Path.Combine(clonePath, "previous.txt"), "previous clone");
+
+            Assert.ThrowsException<pyRevitBinArtifactNotFoundException>(
+                () => PyRevitClones.ReplaceClone(CloneName, clonePath, () => {
+                    Directory.CreateDirectory(clonePath);
+                    File.WriteAllText(Path.Combine(clonePath, "deployed.txt"), "new clone");
+                    throw new pyRevitBinArtifactNotFoundException("no binaries");
+                }));
+
+            Assert.IsTrue(File.Exists(Path.Combine(clonePath, "deployed.txt")));
+            Assert.IsFalse(File.Exists(Path.Combine(clonePath, "previous.txt")));
+            Assert.AreEqual(0, Directory.GetDirectories(_tempRoot, "binlessDest.update-backup-*").Length);
+        }
+
+        [TestMethod]
+        public void ReplaceClone_WhenTheRedeployFails_RestoresThePreviousClone() {
+            var clonePath = Path.Combine(_tempRoot, "failedDest");
+            Directory.CreateDirectory(clonePath);
+            File.WriteAllText(Path.Combine(clonePath, "previous.txt"), "previous clone");
+
+            Assert.ThrowsException<PyRevitException>(
+                () => PyRevitClones.ReplaceClone(CloneName, clonePath, () => {
+                    Directory.CreateDirectory(clonePath);
+                    File.WriteAllText(Path.Combine(clonePath, "partial.txt"), "partial");
+                    throw new PyRevitException("deploy failed");
+                }));
+
+            Assert.IsTrue(File.Exists(Path.Combine(clonePath, "previous.txt")));
+            Assert.IsFalse(File.Exists(Path.Combine(clonePath, "partial.txt")));
+            Assert.AreEqual(0, Directory.GetDirectories(_tempRoot, "failedDest.update-backup-*").Length);
+        }
+
+        [TestMethod]
         public void InstallExtension_WhenAlreadyInstalled_FailsWithAlreadyInstalledMessage() {
             var searchPath = Path.Combine(_tempRoot, "extensions");
             Directory.CreateDirectory(Path.Combine(searchPath, "Sample.extension"));

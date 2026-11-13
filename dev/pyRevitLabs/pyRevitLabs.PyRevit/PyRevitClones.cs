@@ -626,28 +626,39 @@ namespace pyRevitLabs.PyRevit {
             var cloneDeployArgs = clone.DeploymentArgs;
             logger.Debug("Clone Name=\"{0}\", Path=\"{1}\" Args=> {2}", cloneName, clonePath, cloneDeployArgs);
 
+            ReplaceClone(cloneName, clonePath, () => DeployFromImage(
+                cloneName: cloneName,
+                deploymentName: cloneDeployArgs.DeploymentName,
+                branchName: cloneDeployArgs.BranchName,
+                imagePath: cloneDeployArgs.Url,
+                destPath: clonePath,
+                installBinaries: !skipBin,
+                binInstallMode: BinArtifactInstallMode.Update
+                ));
+        }
+
+        internal static void ReplaceClone(string cloneName, string clonePath, Action redeploy) {
             var backupPath = clonePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                              + ".update-backup-" + Guid.NewGuid().ToString("N");
 
             Directory.Move(clonePath, backupPath);
 
             try {
-                UnregisterClone(clone);
-                DeployFromImage(
-                    cloneName: cloneName,
-                    deploymentName: cloneDeployArgs.DeploymentName,
-                    branchName: cloneDeployArgs.BranchName,
-                    imagePath: cloneDeployArgs.Url,
-                    destPath: clonePath,
-                    installBinaries: !skipBin,
-                    binInstallMode: BinArtifactInstallMode.Update
-                    );
+                redeploy();
+            }
+            catch (pyRevitBinArtifactNotFoundException) {
+                DeleteCloneBackup(backupPath);
+                throw;
             }
             catch {
                 RestoreClone(cloneName, clonePath, backupPath);
                 throw;
             }
 
+            DeleteCloneBackup(backupPath);
+        }
+
+        private static void DeleteCloneBackup(string backupPath) {
             try {
                 CommonUtils.DeleteDirectory(backupPath);
             }
