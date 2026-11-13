@@ -8,7 +8,7 @@ Run from Revit via the pyRevit DevTools "Create View Helpers Tests" button
 import unittest
 
 from pyrevit import DB, revit
-from pyrevit.revit.db import create
+from pyrevit.revit.db import create, query, update
 
 TEST_LEVEL = "Integration"
 TOLERANCE = 1e-6
@@ -50,3 +50,32 @@ class CreateSectionViewTests(RolledBackTestCase):
     def test_south_to_north_looks_west_and_cuts_on_the_line(self):
         """A line drawn south to north cuts on the line and looks west."""
         self._assert_section((14.25, -12), (14.25, 36), (-1, 0, 0))
+
+
+class CropViewToElementsTests(RolledBackTestCase):
+    """Regression tests for #4022."""
+
+    def _view_with_scope_box(self):
+        for view in DB.FilteredElementCollector(revit.doc).OfClass(DB.ViewPlan):
+            parameter = view.get_Parameter(
+                DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+            )
+            if (
+                not view.IsTemplate
+                and parameter is not None
+                and parameter.AsElementId() != DB.ElementId.InvalidElementId
+            ):
+                return view
+        self.skipTest("No plan view with a scope box in the document")
+
+    def test_crop_applies_on_a_view_with_a_scope_box(self):
+        """The crop box is set even though the view had a scope box."""
+        view = self._view_with_scope_box()
+        elements = query.get_model_elements()
+        if not elements:
+            self.skipTest("No model elements to crop to")
+        before = view.CropBox.Max.X - view.CropBox.Min.X
+        update.crop_view_to_elements(view, elements, padding=1.0)
+        after = view.CropBox.Max.X - view.CropBox.Min.X
+        self.assertNotAlmostEqual(before, after)
+        self.assertTrue(view.CropBoxActive)
