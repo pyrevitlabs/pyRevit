@@ -439,6 +439,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             return ExportInRolledBackGroup(doc, "pyRevit Agent schedule sheet", () => {
                 var sheet = ViewSheet.Create(doc, ElementId.InvalidElementId);
+                var appearsInSheetList = sheet.get_Parameter(BuiltInParameter.SHEET_SCHEDULED);
+                if (appearsInSheetList != null && !appearsInSheetList.IsReadOnly)
+                    appearsInSheetList.Set(0);
                 ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, XYZ.Zero);
                 return sheet;
             }, directory, baseName, request.Width,
