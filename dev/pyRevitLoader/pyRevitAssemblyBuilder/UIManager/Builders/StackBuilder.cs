@@ -388,7 +388,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 button.AssemblyName = assemblyInfo.Location;
                 button.ClassName = className;
 
-                button.AvailabilityClassName = AvailabilityBinding.ForContext(className, component.Context);
+                AvailabilityBinding.Apply(button, AvailabilityBinding.ForContext(className, component.Context));
             }
             catch (Exception ex)
             {

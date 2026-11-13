@@ -23,5 +23,16 @@ namespace pyRevitExtensionParserTest
         {
             Assert.That(AvailabilityBinding.ForResolved(resolved), Is.EqualTo(expected));
         }
+
+        [TestCase(null, "", false)]
+        [TestCase("", "", false)]
+        [TestCase("Cmd_abc_avail", "", true)]
+        [TestCase("", "Cmd_abc_avail", true)]
+        [TestCase(null, "Cmd_abc_avail", true)]
+        [TestCase("Cmd_abc_avail", "Cmd_abc_avail", false)]
+        public void NeedsUpdate_SkipsTheSetterWhenNothingChanges(string? current, string desired, bool expected)
+        {
+            Assert.That(AvailabilityBinding.NeedsUpdate(current, desired), Is.EqualTo(expected));
+        }
     }
 }

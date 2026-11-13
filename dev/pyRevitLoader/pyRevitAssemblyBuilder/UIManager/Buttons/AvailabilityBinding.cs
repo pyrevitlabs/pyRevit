@@ -1,4 +1,6 @@
 #nullable enable
+using Autodesk.Revit.UI;
+
 namespace pyRevitAssemblyBuilder.UIManager.Buttons
 {
     /// <summary>
@@ -26,6 +28,26 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         public static string ForResolved(string? availabilityClassName)
         {
             return availabilityClassName ?? string.Empty;
+        }
+
+        /// <summary>
+        /// True when assigning <paramref name="desired"/> would change the button's availability class.
+        /// </summary>
+        /// <param name="current">The value currently set on the button; null and empty are equivalent.</param>
+        /// <param name="desired">The value computed by <see cref="ForContext"/> or <see cref="ForResolved"/>.</param>
+        public static bool NeedsUpdate(string? current, string desired)
+        {
+            return (current ?? string.Empty) != desired;
+        }
+
+        /// <summary>
+        /// Assigns <paramref name="desired"/> to <c>AvailabilityClassName</c> only when it differs from
+        /// the current value, so buttons that never had a context never hit the setter with an empty string.
+        /// </summary>
+        public static void Apply(PushButton button, string desired)
+        {
+            if (NeedsUpdate(button.AvailabilityClassName, desired))
+                button.AvailabilityClassName = desired;
         }
     }
 }
