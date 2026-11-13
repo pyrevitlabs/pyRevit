@@ -134,7 +134,7 @@ pyrevit run C:\scripts\one_off.py "house.rvt"     # a path to a .py file runs th
 ```
 
 - The name lookup is case-insensitive. It searches the extensions of the clone attached to the target Revit first, then installed extensions. The first match wins, so two extensions defining the same command name shadow each other.
-- The runner starts Revit from a generated journal with the attached pyRevit and quits Revit when the script ends. Without `--revit`, the Revit version comes from the models, or is the newest installed.
+- The runner starts Revit from a generated journal with the attached pyRevit and quits Revit when the script ends. Without `--revit`, the Revit version comes from the model, or is the newest installed; the `--models` form always requires `--revit`.
 - The script runs in a full-frame engine with output windows suppressed; what the script prints and logs (`script.get_logger()`) goes to the run's log file. Besides the usual builtins it gets `__models__` (the model paths passed on the command line), `__batchexec__` (`True`) and `__logfile__` (the run's log file).
 - The script opens the models itself (`HOST_APP.app.OpenDocumentFile(path)`) and is responsible for saving and closing them. Error dialogs are dismissed automatically unless `--allowdialogs` is passed.
 
@@ -151,7 +151,7 @@ Each class in a file that derives from `pyrevit.preflight.PreflightTestCase` bec
 - The optional class attribute `author` overrides the extension's author.
 - `setUp(doc, output)`, `startTest(doc, output)`, `tearDown(doc, output)` and `doCleanups(doc, output)` run in that order on a fresh instance against the active document.
 
-Checks from all installed UI extensions are merged into one list. `extensions/pyRevitDevTools.extension/checks/view_count_check.py` is the reference example, and the checks in `extensions/pyRevitTools.extension/checks/` show localized, multi-check files.
+Checks from all enabled UI extensions are merged into one list; a disabled extension, such as the default-disabled pyRevitDevTools, contributes none. `extensions/pyRevitDevTools.extension/checks/view_count_check.py` is the reference example, and the checks in `extensions/pyRevitTools.extension/checks/` show localized, multi-check files.
 
 ## The `__revit__` host handle
 
