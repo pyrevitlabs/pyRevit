@@ -348,4 +348,15 @@ public partial class McpServerTests {
         Assert.Matches("^[0-9a-f]{64}$", core.Value<string>("sha256"));
         Assert.All(skills, skill => Assert.False(string.IsNullOrWhiteSpace(skill.Value<string>("description"))));
     }
+
+    [Fact]
+    public void GetRunKeepsDateLikeStringsOfTheRecordedResponseUnchanged() {
+        host.AddRun("abc123def456", response: "{\"result\":{\"day\":\"2024-05-01T10:00:00.50Z\"}}");
+
+        var response = Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "abc123def456" }));
+
+        Assert.False(IsError(response));
+        Assert.Contains("\"2024-05-01T10:00:00.50Z\"", Text(response));
+        Assert.DoesNotContain("T10:00:00.5Z", Text(response));
+    }
 }

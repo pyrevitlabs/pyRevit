@@ -370,6 +370,16 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void ACallKeepsDateLikeStringsOfTheResultUnchanged() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["day"] = "2024-05-01T10:00:00.50Z" });
+
+        var result = PyRevitAgentClient.Call(ThisHost(), "run", new JObject());
+
+        Assert.Equal(JTokenType.String, result["day"].Type);
+        Assert.Equal("2024-05-01T10:00:00.50Z", result.Value<string>("day"));
+    }
+
+    [Fact]
     public void AHostErrorBecomesAnExceptionWithItsTypeAndMessage() {
         host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle");
 

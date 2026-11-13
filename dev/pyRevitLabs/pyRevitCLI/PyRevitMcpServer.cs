@@ -473,7 +473,7 @@ namespace pyRevitCLI {
                 ?? throw new AgentClientException("run_not_found", "No recorded run with id " + runId);
 
             var responsePath = Path.Combine(runDir, "response.json");
-            var run = File.Exists(responsePath) ? JObject.Parse(File.ReadAllText(responsePath)) : new JObject();
+            var run = File.Exists(responsePath) ? (JObject)JsonText.Parse(File.ReadAllText(responsePath)) : new JObject();
             run["script"] = ReadIfExists(Path.Combine(runDir, "script.py"));
 
             var resultPath = Path.Combine(runDir, "result.json");
