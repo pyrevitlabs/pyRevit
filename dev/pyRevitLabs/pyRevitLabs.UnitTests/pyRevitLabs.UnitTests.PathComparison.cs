@@ -24,5 +24,14 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse(@"C:\pyrevit2\bin\netcore".IsPathWithin(@"C:\pyrevit"));
             Assert.IsFalse(@"C:\pyrevit".IsPathWithin(@"C:\pyrevit\bin"));
         }
+
+        [TestMethod]
+        public void IsPathWithin_HandlesDriveRootsUncSharesAndRelativeSegments() {
+            Assert.IsTrue(@"C:\pyrevit".IsPathWithin(@"C:\"));
+            Assert.IsTrue(@"\\server\share\pyrevit\bin".IsPathWithin(@"\\server\share\pyrevit\"));
+            Assert.IsFalse(@"\\server\share2\pyrevit".IsPathWithin(@"\\server\share"));
+            Assert.IsFalse(@"C:\pyrevit\..\other".IsPathWithin(@"C:\pyrevit"));
+            Assert.IsTrue(@"C:\pyrevit\x\..\bin".IsPathWithin(@"C:\pyrevit"));
+        }
     }
 }

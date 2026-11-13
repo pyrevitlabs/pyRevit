@@ -119,5 +119,25 @@ namespace pyRevitLabs.UnitTests {
             StringAssert.Contains(warning, "not a valid");
             Assert.IsTrue(PyRevitConfigs.GetConfigFile().Environment.Clones.ContainsKey("rejected"));
         }
+
+        [TestMethod]
+        public void GetRegisteredClones_SameRejectedCloneRepeatedly_IsWarnedOnce() {
+            var rejectedPath = Path.Combine(_tempRoot, "rejected-repeat");
+            Directory.CreateDirectory(rejectedPath);
+            var cfg = PyRevitConfigs.GetConfigFile();
+            cfg.SaveSection(new EnvironmentSection {
+                Clones = new Dictionary<string, string> { { "rejected-repeat", rejectedPath } }
+            });
+            var target = new MemoryTarget("memory") { Layout = "${level}|${message}" };
+            var logConfiguration = new LoggingConfiguration();
+            logConfiguration.AddRule(LogLevel.Warn, LogLevel.Fatal, target);
+            LogManager.Configuration = logConfiguration;
+
+            PyRevitClones.GetRegisteredClones();
+            PyRevitClones.GetRegisteredClones();
+            PyRevitClones.GetRegisteredClones();
+
+            Assert.AreEqual(1, target.Logs.Count(line => line.StartsWith("Warn|")));
+        }
     }
 }

@@ -132,7 +132,7 @@ namespace pyRevitLabs.Common.Extensions {
         public static bool IsSamePathAs(this string path, string otherPath) {
             if (path is null || otherPath is null)
                 return false;
-            return string.Equals(path.NormalizeAsPath(), otherPath.NormalizeAsPath(), StringComparison.OrdinalIgnoreCase);
+            return string.Equals(ToComparablePath(path), ToComparablePath(otherPath), StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -142,12 +142,16 @@ namespace pyRevitLabs.Common.Extensions {
         public static bool IsPathWithin(this string path, string parentPath) {
             if (path is null || parentPath is null)
                 return false;
-            var normalizedPath = path.NormalizeAsPath();
-            var normalizedParent = parentPath.NormalizeAsPath();
+            var normalizedPath = ToComparablePath(path);
+            var normalizedParent = ToComparablePath(parentPath);
             if (string.Equals(normalizedPath, normalizedParent, StringComparison.OrdinalIgnoreCase))
                 return true;
             return normalizedPath.StartsWith(
                 normalizedParent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ToComparablePath(string path) {
+            return path.NormalizeAsPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
         public static string NormalizeAsPath(this string path) {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -26,6 +27,8 @@ namespace pyRevitLabs.PyRevit {
 
     public static class PyRevitClones {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly ConcurrentDictionary<string, bool> reportedRejectedClones =
+            new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         // managing clones ===========================================================================================
         // clones are git clones. pyRevit module likes to know about available clones to
@@ -129,8 +132,9 @@ namespace pyRevitLabs.PyRevit {
                     }
                 }
                 catch (Exception ex) {
-                    logger.Warn("Registered clone \"{0}\" at \"{1}\" failed validation and is skipped | {2}",
-                                cloneKeyValue.Key, clonePath, ex.Message);
+                    if (reportedRejectedClones.TryAdd(cloneKeyValue.Key + "|" + clonePath + "|" + ex.Message, true))
+                        logger.Warn("Registered clone \"{0}\" at \"{1}\" failed validation and is skipped | {2}",
+                                    cloneKeyValue.Key, clonePath, ex.Message);
                 }
             }
             if (listChanged) {
