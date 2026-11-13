@@ -38,7 +38,7 @@ def _grab_test_types(module):
 def _get_check_name(check_script):
     file_name = op.basename(check_script)
     if file_name.lower().endswith(COMP_CHECK_POSTFIX):
-        file_name = file_name[: -len(COMP_CHECK_POSTFIX)]
+        return file_name[: -len(COMP_CHECK_POSTFIX)]
     return op.splitext(file_name)[0]
 
 

@@ -118,6 +118,8 @@ class PreflightCheckDiscoveryTests(unittest.TestCase):
             "modelchecker_Warnings", get_name("modelchecker_Warnings_check.py")
         )
         self.assertEqual("Foo", get_name("Foo_CHECK.PY"))
+        self.assertEqual("coord.v2", get_name("coord.v2_check.py"))
+        self.assertEqual("helpers", get_name("helpers.py"))
 
 
 if __name__ == "__main__":
