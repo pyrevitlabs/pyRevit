@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 
+using LibGit2Sharp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.Common;
@@ -210,17 +211,50 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
-        public void DeleteInvalidClone_RemovesTheClonedPathAndLeavesTheSourceAlone() {
+        public void DeleteInvalidClone_RemovesTheClonedPathLeavesTheSourceAloneAndThrows() {
             var sourcePath = Path.Combine(_tempRoot, "source-repo");
             var clonedPath = Path.Combine(_tempRoot, "cloned-repo");
             Directory.CreateDirectory(sourcePath);
             Directory.CreateDirectory(clonedPath);
             File.WriteAllText(Path.Combine(sourcePath, "keep.txt"), "source");
 
-            PyRevitExtensions.DeleteInvalidClone(clonedPath);
+            var ex = Assert.ThrowsException<PyRevitException>(
+                () => PyRevitExtensions.DeleteInvalidClone(clonedPath, sourcePath));
 
+            StringAssert.Contains(ex.Message, sourcePath);
             Assert.IsFalse(Directory.Exists(clonedPath));
             Assert.IsTrue(File.Exists(Path.Combine(sourcePath, "keep.txt")));
+        }
+
+        [TestMethod]
+        public void InstallExtension_WhenCloneSucceeds_LeavesTheCloneFreeToDeleteRightAway() {
+            var sourcePath = CreateLocalSourceRepo();
+            var destPath = Path.Combine(_tempRoot, "extensions");
+            Directory.CreateDirectory(destPath);
+
+            PyRevitExtensions.InstallExtension(
+                "LocalExt",
+                PyRevitExtensionTypes.UIExtension,
+                sourcePath,
+                destPath: destPath);
+
+            var clonedPath = Path.Combine(destPath, "LocalExt.extension");
+            Assert.IsTrue(Directory.Exists(Path.Combine(clonedPath, ".git")));
+            CommonUtils.DeleteDirectory(clonedPath);
+            Assert.IsFalse(Directory.Exists(clonedPath));
+        }
+
+        private string CreateLocalSourceRepo() {
+            var sourcePath = Path.Combine(_tempRoot, "local-source");
+            Repository.Init(sourcePath);
+            using (var repo = new Repository(sourcePath)) {
+                repo.Refs.UpdateTarget("HEAD", "refs/heads/master");
+                File.WriteAllText(Path.Combine(sourcePath, "readme.txt"), "extension");
+                Commands.Stage(repo, "readme.txt");
+                var author = new Signature("test", "test@example.com", DateTimeOffset.UtcNow);
+                repo.Commit("init", author, author);
+            }
+            return sourcePath;
         }
 
         private static void CreateMinimalCloneZip(string zipPath) {
