@@ -1,3 +1,5 @@
+using System.IO;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.Common.Extensions;
@@ -10,6 +12,7 @@ namespace pyRevitLabs.UnitTests {
     [TestCategory("HostFree")]
     [TestCategory("Unit")]
     public class PathComparisonTests {
+        /// <summary>Case and trailing separators do not affect path identity.</summary>
         [TestMethod]
         public void IsSamePathAs_IgnoresCaseAndTrailingSeparators() {
             Assert.IsTrue(@"C:\pyrevit\bin".IsSamePathAs(@"c:\PYREVIT\BIN\"));
@@ -17,6 +20,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse(@"C:\pyrevit".IsSamePathAs(null));
         }
 
+        /// <summary>Sibling folders sharing a name prefix are not within each other.</summary>
         [TestMethod]
         public void IsPathWithin_MatchesWholeDirectoryNamesOnly() {
             Assert.IsTrue(@"C:\pyrevit\bin\netcore".IsPathWithin(@"C:\pyrevit"));
@@ -25,6 +29,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse(@"C:\pyrevit".IsPathWithin(@"C:\pyrevit\bin"));
         }
 
+        /// <summary>Drive roots, UNC shares and dot segments are resolved before comparing.</summary>
         [TestMethod]
         public void IsPathWithin_HandlesDriveRootsUncSharesAndRelativeSegments() {
             Assert.IsTrue(@"C:\pyrevit".IsPathWithin(@"C:\"));
@@ -34,12 +39,31 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsTrue(@"C:\pyrevit\x\..\bin".IsPathWithin(@"C:\pyrevit"));
         }
 
+        /// <summary>UNC dot segments are resolved so they cannot escape the parent folder.</summary>
+        [TestMethod]
+        public void IsPathWithin_UncDotSegments_AreResolved() {
+            Assert.IsFalse(@"\\server\share\repo\..\other".IsPathWithin(@"\\server\share\repo"));
+            Assert.IsTrue(@"\\server\share\repo\x\..\bin".IsPathWithin(@"\\server\share\repo"));
+            Assert.IsTrue(@"\\server\share\repo\..\repo".IsSamePathAs(@"\\server\share\repo"));
+        }
+
+        /// <summary>Relative paths resolve against the current directory and invalid ones are rejected.</summary>
+        [TestMethod]
+        public void ToComparablePath_RelativePaths_AreResolvedAndInvalidOnesRejected() {
+            var current = Directory.GetCurrentDirectory();
+            Assert.IsTrue(@"sub\..\leaf".IsSamePathAs(Path.Combine(current, "leaf")));
+            Assert.IsNull("rel\0ative".ToComparablePath());
+            Assert.IsFalse("rel\0ative".IsSamePathAs("rel\0ative"));
+        }
+
+        /// <summary>UNC and URL paths differing only by a trailing separator compare identical.</summary>
         [TestMethod]
         public void ToComparablePath_UriPathsDifferingByTrailingSeparator_AreIdentical() {
             Assert.AreEqual(@"\\server\share\pyrevit\".ToComparablePath(), @"\\server\share\pyrevit".ToComparablePath());
             Assert.AreEqual("http://host/repo/".ToComparablePath(), "http://host/repo".ToComparablePath());
         }
 
+        /// <summary>Invalid or empty input yields false or null instead of throwing.</summary>
         [TestMethod]
         public void PathComparison_InvalidOrEmptyInput_ReturnsFalseWithoutThrowing() {
             const string invalid = "C:\\bad\0path";
@@ -50,6 +74,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse("".IsSamePathAs(""));
         }
 
+        /// <summary>A bare separator or empty parent never matches.</summary>
         [TestMethod]
         public void IsPathWithin_BareSeparatorParent_IsNotAMatch() {
             Assert.IsFalse(@"C:\pyrevit".IsPathWithin(@"\"));

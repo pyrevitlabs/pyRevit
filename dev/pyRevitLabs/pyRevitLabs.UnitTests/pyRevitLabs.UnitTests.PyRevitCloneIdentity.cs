@@ -27,6 +27,7 @@ namespace pyRevitLabs.UnitTests {
         private string _previousProgramDataPathOverride;
         private LoggingConfiguration _previousLogConfiguration;
 
+        /// <summary>Redirects pyRevit data folders to a temporary root and captures the logging configuration.</summary>
         [TestInitialize]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitCloneIdentity_" + Guid.NewGuid().ToString("N"));
@@ -46,6 +47,7 @@ namespace pyRevitLabs.UnitTests {
             _previousLogConfiguration = LogManager.Configuration;
         }
 
+        /// <summary>Restores environment overrides, logging and the install scope, then deletes the temporary root.</summary>
         [TestCleanup]
         public void Cleanup() {
             LogManager.Configuration = _previousLogConfiguration;
@@ -68,6 +70,7 @@ namespace pyRevitLabs.UnitTests {
             return clonePath;
         }
 
+        /// <summary>Null and foreign types are never equal to a clone.</summary>
         [TestMethod]
         public void Equals_NullAndForeignTypes_AreNotEqual() {
             var clone = new PyRevitClone(CreateClone("a"), name: "a");
@@ -76,6 +79,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse(clone.Equals("not a clone"));
         }
 
+        /// <summary>Clones whose paths differ only in case are equal and share a hash code.</summary>
         [TestMethod]
         public void Equals_PathsDifferingOnlyInCase_AreEqualAndHashAlike() {
             var path = CreateClone("CaseClone");
@@ -86,6 +90,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.AreEqual(first.GetHashCode(), second.GetHashCode());
         }
 
+        /// <summary>A clone matches a path differing only in case.</summary>
         [TestMethod]
         public void Matches_PathDifferingOnlyInCase_Matches() {
             var path = CreateClone("MatchClone");
@@ -95,6 +100,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsFalse(clone.Matches(path + "2"));
         }
 
+        /// <summary>A rejected clone is warned about with its path and reason and stays registered.</summary>
         [TestMethod]
         public void GetRegisteredClones_RejectedClone_IsWarnedWithPathAndReasonAndStaysRegistered() {
             var rejectedPath = Path.Combine(_tempRoot, "rejected");
@@ -121,6 +127,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.IsTrue(PyRevitConfigs.GetConfigFile().Environment.Clones.ContainsKey("rejected"));
         }
 
+        /// <summary>The same rejected clone is warned about only once across repeated reads.</summary>
         [TestMethod]
         public void GetRegisteredClones_SameRejectedCloneRepeatedly_IsWarnedOnce() {
             var rejectedPath = Path.Combine(_tempRoot, "rejected-repeat");
@@ -153,6 +160,7 @@ namespace pyRevitLabs.UnitTests {
             PyRevitConfigs.GetConfigFile().SaveSection(new EnvironmentSection { Clones = clones });
         }
 
+        /// <summary>A registered subfolder of a valid clone is accepted without a warning.</summary>
         [TestMethod]
         public void GetRegisteredClones_RegisteredSubfolderOfValidClone_IsAcceptedWithoutWarning() {
             var parentPath = CreateClone("parent");
@@ -168,6 +176,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.AreEqual(0, target.Logs.Count);
         }
 
+        /// <summary>A clone that is repaired and then broken again is warned about again.</summary>
         [TestMethod]
         public void GetRegisteredClones_CloneRepairedThenBrokenAgain_IsWarnedAgain() {
             var path = Path.Combine(_tempRoot, "flaky");
@@ -184,6 +193,7 @@ namespace pyRevitLabs.UnitTests {
             Assert.AreEqual(2, target.Logs.Count(line => line.StartsWith("Warn|")));
         }
 
+        /// <summary>A case-differing duplicate is kept once and logged when pruned.</summary>
         [TestMethod]
         public void GetRegisteredClones_DuplicateDifferingInCase_IsKeptOnceAndLoggedWhenPruned() {
             var path = CreateClone("dup");

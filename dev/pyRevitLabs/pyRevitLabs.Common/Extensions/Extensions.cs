@@ -160,13 +160,16 @@ namespace pyRevitLabs.Common.Extensions {
         /// <summary>
         /// Returns the full path without trailing separators, the form compared by
         /// <see cref="IsSamePathAs"/> and <see cref="IsPathWithin"/>, or null when the path is
-        /// null, empty, invalid or only separators. Compare the result ignoring case.
+        /// null, empty, invalid or only separators. Compare the result ignoring case. Dot segments
+        /// are resolved for local, UNC and relative paths; URLs are only trimmed.
         /// </summary>
         public static string ToComparablePath(this string path) {
             if (string.IsNullOrWhiteSpace(path))
                 return null;
+            if (path.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Length == 0)
+                return null;
             var fullPath = path;
-            if (path.IsLocalPath()) {
+            if (!path.IsRemoteUri()) {
                 try {
                     fullPath = Path.GetFullPath(path);
                 }
@@ -177,6 +180,10 @@ namespace pyRevitLabs.Common.Extensions {
             }
             var comparable = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             return comparable.Length == 0 ? null : comparable;
+        }
+
+        private static bool IsRemoteUri(this string path) {
+            return Uri.TryCreate(path, UriKind.Absolute, out var uri) && !uri.IsFile && !uri.IsUnc;
         }
 
         public static string NormalizeAsPath(this string path) {
