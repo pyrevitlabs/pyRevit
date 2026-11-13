@@ -15,6 +15,8 @@ Extensions follow this hierarchy:
 MyExtension.extension/
   extension.json          # optional extension-level manifest
   startup.py               # optional, runs once when the extension loads
+  commands/                # optional, runner commands (*_command.py) for `pyrevit run`
+  checks/                  # optional, preflight checks
   MyTab.tab/
     MyPanel.panel/
       MyButton.pushbutton/
@@ -119,6 +121,37 @@ This is different from the entry an extension gets in `extensions/extensions.jso
 A `hooks/` folder (at the bundle, tab, panel, or extension level) can hold Python scripts named after a Revit/pyRevit event, e.g. `doc-opened.py`, `view-activated.py`, `command-before-exec[ID_INPLACE_COMPONENT].py` (the bracketed suffix scopes the hook to one command id). Each script runs whenever that event fires while the extension is loaded.
 
 There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`. A more detailed list of event names is published [here](https://pyrevitlabs.notion.site/Extension-Hooks-b771ecf65f6a45fe87ae12beab2a73a6).
+
+## Runner commands
+
+A `commands/` folder at the root of a UI extension holds scripts that the CLI can run against Revit models without a ribbon button. A file is a runner command when it ends in `_command.py`; its name is the file name without that postfix, so `commands/list_views_command.py` is the command `list_views`. Other files in the folder, and subfolders, are ignored. The constants are `ExtensionUICommandsDirName` and `ExtensionUICommandPostfix` in `PyRevitConsts.cs`, and the scan is `PyRevitExtension.GetCommands()`.
+
+```text
+pyrevit run commands                              # list the commands of every registered clone and installed extension
+pyrevit run list_views "C:\models\house.rvt"      # run a command by name on a model
+pyrevit run list_views --models=models.txt --revit=2026   # run it on every model listed in a text file, one path per line
+pyrevit run C:\scripts\one_off.py "house.rvt"     # a path to a .py file runs that script instead of looking up a command
+```
+
+- The name lookup is case-insensitive. It searches the extensions of the clone attached to the target Revit first, then installed extensions. The first match wins, so two extensions defining the same command name shadow each other.
+- The runner starts Revit from a generated journal with the attached pyRevit and quits Revit when the script ends. Without `--revit`, the Revit version comes from the model, or is the newest installed; the `--models` form always requires `--revit`.
+- The script runs in a full-frame engine with output windows suppressed; what the script prints and logs (`script.get_logger()`) goes to the run's log file. Besides the usual builtins it gets `__models__` (the model paths passed on the command line), `__batchexec__` (`True`) and `__logfile__` (the run's log file).
+- The script opens the models itself (`HOST_APP.app.OpenDocumentFile(path)`) and is responsible for saving and closing them. Error dialogs are dismissed automatically unless `--allowdialogs` is passed.
+
+`extensions/pyRevitDevTools.extension/commands/list_views_command.py` is the reference example.
+
+## Preflight checks
+
+A `checks/` folder at the root of a UI extension holds [preflight][pyrevit.preflight] checks: model-quality scripts offered by the *Preflight Checks* button in pyRevitTools. Every `*.py` file in the folder is imported at the time the dialog opens, so keep helper modules out of it. Other file types in the folder (JSON data, `locale/` resources) are ignored by the loader and can be read by the checks.
+
+Each class in a file that derives from `pyrevit.preflight.PreflightTestCase` becomes one entry in the dialog:
+
+- The entry name is the class attribute `name`, or, when `name` is absent, the file name without `.py` and with every occurrence of `_check` removed (`model_check_views_check.py` becomes `model_views`).
+- The class docstring is required. Its first line is the subtitle and the remaining lines are the description; a missing docstring is logged as an error.
+- The optional class attribute `author` overrides the extension's author.
+- `setUp(doc, output)`, `startTest(doc, output)`, `tearDown(doc, output)` and `doCleanups(doc, output)` run in that order on a fresh instance against the active document. An exception in any of them aborts the run, so `tearDown` and `doCleanups` are skipped after a failure; don't rely on them for cleanup that must always happen.
+
+Checks from all enabled UI extensions are merged into one list; a disabled extension, such as the default-disabled pyRevitDevTools, contributes none. `extensions/pyRevitDevTools.extension/checks/view_count_check.py` is the reference example, and the checks in `extensions/pyRevitTools.extension/checks/` show localized, multi-check files.
 
 ## The `__revit__` host handle
 
