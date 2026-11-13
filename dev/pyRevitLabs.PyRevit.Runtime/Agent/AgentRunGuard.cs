@@ -26,8 +26,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
     /// <item>cancels synchronize, save, save-as, file-export, view-export and print operations while
-    /// armed when Revit marks their event cancellable. It cancels closing only for documents
-    /// that were open when the run started.</item>
+    /// armed when Revit marks their event cancellable. A file export whose target lies inside the
+    /// run's export folder is let through; see <see cref="AgentExportFolder"/>. It cancels
+    /// closing only for documents that were open when the run started.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -58,11 +59,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private bool assimilationRequested;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
+        private readonly AgentExportFolder exportFolder;
 
-        public AgentRunGuard(UIApplication uiApp, Document doc) {
+        /// <param name="exportDir">Existing folder the run may export Revit files into, or null
+        /// to block every export. It is resolved here, before the script runs.</param>
+        public AgentRunGuard(UIApplication uiApp, Document doc, string exportDir = null) {
             this.uiApp = uiApp;
             app = uiApp.Application;
             this.doc = doc;
+            exportFolder = exportDir == null ? null : new AgentExportFolder(exportDir);
             openAtStart = AgentDocuments.Snapshot(app);
         }
 
@@ -333,7 +338,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnFileExporting(object sender, FileExportingEventArgs e) {
-            Block(e, null, "file_export");
+            var insideExportFolder = exportFolder != null && exportFolder.Contains(e.Path);
+            if (IsBackgroundExport(e)) {
+                var entry = Block(e, null, "background_export", e.Path);
+                if (entry != null && !insideExportFolder)
+                    entry["outside_export_dir"] = true;
+                return;
+            }
+            if (insideExportFolder)
+                return;
+            Block(e, null, "file_export", e.Path);
+        }
+
+        /// <remarks>
+        /// A background export, such as a PDF export with <c>SetExportInBackground(true)</c> from
+        /// Revit 2025, writes its files after the run ends, so the run could neither report them
+        /// nor keep its export folder for them.
+        /// </remarks>
+        private static bool IsBackgroundExport(FileExportingEventArgs e) {
+#if NETFRAMEWORK
+            return false;
+#else
+            return e.BackgroundOperation;
+#endif
         }
 
         private void OnViewExporting(object sender, ViewExportingEventArgs e) {
@@ -383,23 +410,46 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (blocked.Count == 0)
                 return null;
             var operations = blocked.Select(DescribeBlockedOperation).Distinct();
-            return "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs; the user must do it in Revit.";
+            var explanation = "operation_blocked: " + string.Join(", ", operations) + " not allowed in agent runs";
+            explanation += blocked.Any(entry => !IsExportOperation(entry)) ? "; the user must do it in Revit." : ".";
+            if (blocked.Any(entry => entry.Value<string>("operation") == "file_export"
+                    || entry.Value<bool?>("outside_export_dir") == true))
+                explanation += " Revit exports may only write into the run's export_dir.";
+            if (blocked.Any(entry => entry.Value<string>("operation") == "background_export"))
+                explanation += " Background exports finish after the run, so export without SetExportInBackground.";
+            return explanation;
+        }
+
+        private static bool IsExportOperation(JToken entry) {
+            var operation = entry.Value<string>("operation");
+            return operation == "file_export" || operation == "background_export";
         }
 
         private static string DescribeBlockedOperation(JToken entry) {
             var operation = entry.Value<string>("operation");
             var document = entry.Value<string>("document");
-            return document == null ? operation : $"{operation} of '{document}'";
+            var path = entry.Value<string>("path");
+            if (document != null)
+                return $"{operation} of '{document}'";
+            return path == null ? operation : $"{operation} to '{path}'";
         }
 
-        private void Block(RevitAPIPreEventArgs e, Document target, string operation) {
+        /// <summary>
+        /// Cancels the operation and records it in <see cref="Blocked"/>, returning the recorded
+        /// entry, or null when Revit doesn't let it be cancelled.
+        /// </summary>
+        private JObject Block(RevitAPIPreEventArgs e, Document target, string operation, string path = null) {
             if (!e.Cancellable)
-                return;
+                return null;
             e.Cancel();
-            blocked.Add(new JObject {
+            var entry = new JObject {
                 ["operation"] = operation,
                 ["document"] = target?.Title,
-            });
+            };
+            if (path != null)
+                entry["path"] = path;
+            blocked.Add(entry);
+            return entry;
         }
 
         private bool IsWatchedDocument(Document other) {

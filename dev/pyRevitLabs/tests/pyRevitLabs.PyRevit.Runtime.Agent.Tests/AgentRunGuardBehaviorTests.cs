@@ -191,7 +191,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.Save(document);
 
                 Assert.Equal(
-                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs; the user must do it in Revit.",
+                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs; the user must do it in Revit. "
+                    + "Revit exports may only write into the run's export_dir.",
                     guard.DescribeBlockedOperations());
             }
         }

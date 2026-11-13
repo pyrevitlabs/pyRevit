@@ -50,6 +50,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public bool Reckless { get; }
 
+        /// <summary>
+        /// Host-owned folder inside the run record that Revit exports from this run may write
+        /// into; the runner passes it to the script as <c>export_dir</c>.
+        /// </summary>
+        /// <remarks>
+        /// Ends with a directory separator, because Revit appends the view or sheet name to
+        /// <c>ImageExportOptions.FilePath</c>: without it, <c>FilePath = export_dir</c> would write
+        /// <c>exports - Sheet - A101.png</c> beside the folder instead of inside it.
+        /// </remarks>
+        public string ExportDir { get; internal set; }
+
         public string ResultJson { get; private set; }
         public string Output { get; private set; } = string.Empty;
         public string ErrorType { get; private set; }

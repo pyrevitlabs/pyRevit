@@ -52,14 +52,62 @@ create.place_on_sheet(sheet, schedule, anchor="top_right")
 - **Title block parameters** such as drawn by and date are parameters on the title block instance on the sheet.
 - **Re-runnable:** delete the previous sheet, view and schedule by number and name before creating them again.
 
-## Exporting to PDF
+## Exporting to PDF and images
 
-Guarded agent runs block Revit file and view exports. Use a run to prepare sheets and verify
-them, then have the user export from Revit after the run ends.
+A run may export only into `export_dir`, a folder the host creates for that run; any other
+target is cancelled. Exporting works in `run_query` too, since it doesn't change the model.
+The response lists the files in `exports`.
+
+Files in `export_dir` are temporary: they last at least 14 days, and after that any host
+start or later recorded run, including one in another Revit instance, may delete them, even
+while this Revit session stays open. When you give the user those paths, say so, and offer
+to copy the deliverables to a folder they name. Copy them with your own file tools after the
+run, or ask the user to copy them; never write to that folder from the script.
+
+An export shows the model as the script had it, so files from a dry run or a declined modify
+run show changes that were rolled back: export deliverables only from the state the user
+should get.
+
+```python
+import os
+from System.Collections.Generic import List
+from pyrevit.api import DB
+
+ids = List[DB.ElementId]()
+for sheet in DB.FilteredElementCollector(doc).OfClass(DB.ViewSheet):
+    if sheet.SheetNumber in ("A101", "A102"):
+        ids.Add(sheet.Id)
+
+pdf_dir = os.path.join(export_dir, "pdf")
+if not os.path.isdir(pdf_dir):
+    os.makedirs(pdf_dir)
+pdf = DB.PDFExportOptions()
+pdf.Combine = False
+doc.Export(pdf_dir, ids, pdf)
+
+image = DB.ImageExportOptions()
+image.ExportRange = DB.ExportRange.SetOfViews
+image.SetViewsAndSheets(ids)
+image.FilePath = os.path.join(export_dir, "sheet")
+image.HLRandWFViewsFileType = DB.ImageFileType.PNG
+image.ZoomType = DB.ZoomFitType.FitToPage
+image.PixelSize = 2000
+doc.ExportImage(image)
+```
+
+`PDFExportOptions` needs Revit 2022 or later. Create a subfolder before exporting into it:
+Revit doesn't, and fails with "The folder does not exist". Don't call `SetExportInBackground(True)`: the
+host cancels background exports, since their files arrive after the run, and `Export` still
+returns `True`, so only the `blocked` entry shows it. `ExportImage` appends the view type and
+name to `FilePath`, which is a file name prefix, not a folder. `export_dir` ends with a path
+separator, so `os.path.join(export_dir, "sheet")` and `export_dir + "sheet"` both work; a bare
+`export_dir` also works but gives names starting with ` - Sheet`. Any other export the host
+cancelled raises Revit's generic `InternalException`, and the `operation_blocked` warning names
+its target.
 
 ## Before you report done
 
 - [ ] `capture_view(view="A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
 - [ ] Tag and dimension counts match the element counts you intended.
 - [ ] Each view is on one sheet only; duplicates were made where a view is needed twice.
-- [ ] You told the user which sheets are ready to export from Revit.
+- [ ] You told the user which sheets are ready, the paths of any files you exported, that those files are temporary, and offered to copy them to a folder they name.

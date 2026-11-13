@@ -251,10 +251,63 @@ class BlockTests(TestCase):
             "views.Add(doc.ActiveView.Id)\ndoc.Export(inputs['folder'], 'agent', views, DB.DWGExportOptions())\n",
             inputs={"folder": folder},
         )
-        self.assertIn(
-            "file_export", [entry["operation"] for entry in response["blocked"]]
-        )
+        blocked = [
+            entry
+            for entry in response["blocked"]
+            if entry["operation"] == "file_export"
+        ]
+        self.assertTrue(blocked)
+        self.assertTrue(op.normcase(blocked[0]["path"]).startswith(op.normcase(folder)))
         self.assertEqual([], os.listdir(folder))
+
+    def test_export_into_export_dir_is_allowed_and_listed(self):
+        """An image export with FilePath = export_dir is written inside it and listed."""
+        response = _modify(
+            "import os\nfrom System.Collections.Generic import List\n"
+            "views = List[DB.ElementId]()\nviews.Add(doc.ActiveView.Id)\n"
+            "options = DB.ImageExportOptions()\n"
+            "options.ExportRange = DB.ExportRange.SetOfViews\n"
+            "options.SetViewsAndSheets(views)\n"
+            "options.FilePath = export_dir\n"
+            "options.HLRandWFViewsFileType = DB.ImageFileType.PNG\n"
+            "options.ZoomType = DB.ZoomFitType.FitToPage\n"
+            "options.PixelSize = 256\n"
+            "doc.ExportImage(options)\n"
+            "result = export_dir.endswith(os.sep)\n",
+        )
+        self.assertEqual("ok", response["status"])
+        self.assertTrue(response["result"])
+        self.assertFalse(response.get("blocked"))
+        exports = response["exports"]
+        self.assertTrue(exports)
+        folder = op.normcase(op.join(response["run_dir"], "exports"))
+        for path in exports:
+            self.assertTrue(op.isfile(path))
+            self.assertTrue(op.normcase(path).startswith(folder))
+
+    def test_background_export_is_blocked_into_export_dir_too(self):
+        """A background PDF export is cancelled as background_export and writes nothing."""
+        response = _modify(
+            "from System.Collections.Generic import List\n"
+            "if not hasattr(DB.PDFExportOptions, 'SetExportInBackground'):\n"
+            "    result = 'unsupported'\n"
+            "else:\n"
+            "    views = List[DB.ElementId]()\n    views.Add(doc.ActiveView.Id)\n"
+            "    options = DB.PDFExportOptions()\n    options.Combine = False\n"
+            "    options.SetExportInBackground(True)\n"
+            "    doc.Export(export_dir, views, options)\n"
+            "    result = 'exported'\n",
+        )
+        if response.get("result") == "unsupported":
+            self.skipTest("Background export needs Revit 2025 or later.")
+        blocked = [
+            entry
+            for entry in response.get("blocked", [])
+            if entry["operation"] == "background_export"
+        ]
+        self.assertEqual(1, len(blocked))
+        self.assertTrue(blocked[0]["path"])
+        self.assertFalse(response.get("exports"))
 
     def test_document_opened_in_the_background_cannot_be_saved_and_is_closed(self):
         """A document the run opens can't be saved, and it is closed after the run."""

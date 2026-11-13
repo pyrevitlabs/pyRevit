@@ -110,7 +110,10 @@ namespace Autodesk.Revit.DB.Events {
     internal sealed class DocumentCreatedEventArgs : DocumentEventArgs { }
     internal sealed class DocumentOpenedEventArgs : DocumentEventArgs { }
     internal sealed class DocumentPrintingEventArgs : DocumentEventArgs { }
-    internal sealed class FileExportingEventArgs : RevitAPIPreEventArgs { }
+    internal sealed class FileExportingEventArgs : RevitAPIPreEventArgs {
+        public string Path { get; set; }
+        public bool BackgroundOperation { get; set; }
+    }
     internal sealed class ViewExportingEventArgs : RevitAPIPreEventArgs { }
     internal sealed class DocumentChangedEventArgs : EventArgs {
         public Document Document { get; set; }
@@ -189,8 +192,8 @@ namespace Autodesk.Revit.ApplicationServices {
             DocumentSavingAs?.Invoke(this, args);
             return !args.Cancelled;
         }
-        public bool ExportFile() {
-            var args = new FileExportingEventArgs();
+        public bool ExportFile(string path = null, bool background = false) {
+            var args = new FileExportingEventArgs { Path = path, BackgroundOperation = background };
             FileExporting?.Invoke(this, args);
             return !args.Cancelled;
         }
