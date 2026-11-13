@@ -54,27 +54,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private void RunRequestedScript(UIApplication uiApp) {
-            if (ScriptData != null && ScriptRuntimeConfigs != null) {
-                try {
-                    // provide the given uiapp
-                    ScriptRuntimeConfigs.UIApp = uiApp;
+        /// <summary>
+        /// Takes the pending request back so <see cref="Execute"/> cannot start it. Returns false
+        /// when <see cref="Execute"/> already took it, meaning the script is running and the caller
+        /// must wait for <see cref="Completed"/> instead of reporting a failure.
+        /// </summary>
+        public bool TryWithdrawRequest() {
+            var withdrawn = Interlocked.Exchange(ref ScriptData, null) != null;
+            if (withdrawn)
+                ScriptRuntimeConfigs = null;
+            return withdrawn;
+        }
 
-                    // request execution and set results
-                    Result = ScriptExecutor.ExecuteScript(ScriptData, ScriptRuntimeConfigs);
-                }
-                finally {
-                    // release the executed script's references; this handler lives
-                    // for the whole process and would otherwise pin the previous
-                    // session's runtime objects (UIApp, documents) across reloads.
-                    // NOTE: these fields are a singleton and not thread-safe. A
-                    // concurrent non-blocking RequestExecuteScript can overwrite a
-                    // pending script before Execute() fires for it; this is a
-                    // pre-existing limitation of the single-handler design.
-                    ScriptData = null;
-                    ScriptRuntimeConfigs = null;
-                }
-            }
+        private void RunRequestedScript(UIApplication uiApp) {
+            var scriptData = Interlocked.Exchange(ref ScriptData, null);
+            if (scriptData == null)
+                return;
+
+            var scriptRuntimeConfigs = Interlocked.Exchange(ref ScriptRuntimeConfigs, null);
+            if (scriptRuntimeConfigs == null)
+                return;
+
+            scriptRuntimeConfigs.UIApp = uiApp;
+            Result = ScriptExecutor.ExecuteScript(scriptData, scriptRuntimeConfigs);
         }
 
         public string GetName() {
@@ -242,16 +244,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // request command exec now
                 var request = extExecEvent.Raise();
                 if (request != ExternalEventRequest.Accepted && request != ExternalEventRequest.Pending) {
-                    extExecEventHandler.ScriptData = null;
-                    extExecEventHandler.ScriptRuntimeConfigs = null;
+                    extExecEventHandler.TryWithdrawRequest();
                     return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
                 }
 
                 // wait until the script is executed
                 if (scriptExecConfigs.WaitForResult) {
-                    if (!extExecEventHandler.Started.Wait(ExternalEventStartTimeout)) {
-                        extExecEventHandler.ScriptData = null;
-                        extExecEventHandler.ScriptRuntimeConfigs = null;
+                    if (!extExecEventHandler.Started.Wait(ExternalEventStartTimeout)
+                        && extExecEventHandler.TryWithdrawRequest()) {
                         logger.Warn("Revit did not start the external event within {0}s for script: {1}",
                             ExternalEventStartTimeout.TotalSeconds, scriptData.ScriptPath);
                         return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
