@@ -11,6 +11,7 @@ from pyrevit import DB, PyRevitException, revit
 from pyrevit.revit.db import create, query, update
 
 TEST_LEVEL = "Integration"
+TEST_ENVIRONMENT = "Revit"
 TOLERANCE = 1e-6
 
 
@@ -55,45 +56,96 @@ class CreateSectionViewTests(RolledBackTestCase):
 class CropViewToElementsTests(RolledBackTestCase):
     """Regression tests for #4022."""
 
-    def _view_with_scope_box(self):
-        for view in DB.FilteredElementCollector(revit.doc).OfClass(DB.ViewPlan):
-            parameter = view.get_Parameter(
-                DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
-            )
-            if (
-                not view.IsTemplate
-                and parameter is not None
-                and parameter.AsElementId() != DB.ElementId.InvalidElementId
-            ):
-                return view
-        self.skipTest("No plan view with a scope box in the document")
+    PADDING = 1.0
+
+    def _first_scope_box(self):
+        scope_boxes = (
+            DB.FilteredElementCollector(revit.doc)
+            .OfCategory(DB.BuiltInCategory.OST_VolumeOfInterest)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
+        if not scope_boxes:
+            self.skipTest("No scope box in the document to assign")
+        return scope_boxes[0]
+
+    def _plan_view_with_scope_box(self, scope_box):
+        level = DB.Level.Create(revit.doc, 0.0)
+        plan_type = next(
+            vft
+            for vft in DB.FilteredElementCollector(revit.doc).OfClass(DB.ViewFamilyType)
+            if vft.ViewFamily == DB.ViewFamily.FloorPlan
+        )
+        view = DB.ViewPlan.Create(revit.doc, plan_type.Id, level.Id)
+        parameter = view.get_Parameter(
+            DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+        )
+        parameter.Set(scope_box.Id)
+        revit.doc.Regenerate()
+        return view, level
+
+    def _wall_wider_than(self, level, width):
+        line = DB.Line.CreateBound(
+            DB.XYZ(0.0, 0.0, 0.0), DB.XYZ(width + 20.0, 0.0, 0.0)
+        )
+        return DB.Wall.Create(revit.doc, line, level.Id, False)
 
     def test_crop_applies_on_a_view_with_a_scope_box(self):
-        """The crop box is set even though the view had a scope box."""
-        view = self._view_with_scope_box()
-        elements = query.get_model_elements()
-        if not elements:
-            self.skipTest("No model elements to crop to")
-        before = view.CropBox.Max.X - view.CropBox.Min.X
-        update.crop_view_to_elements(view, elements, padding=1.0)
+        """The crop box matches the elements even though the view had a scope box."""
+        view, level = self._plan_view_with_scope_box(self._first_scope_box())
+        scope_width = view.CropBox.Max.X - view.CropBox.Min.X
+        wall = self._wall_wider_than(level, scope_width)
         revit.doc.Regenerate()
-        after = view.CropBox.Max.X - view.CropBox.Min.X
-        self.assertNotAlmostEqual(before, after)
+        extents = query.get_elements_bounding_box([wall])
+        expected_width = extents.Max.X - extents.Min.X + 2 * self.PADDING
+        self.assertNotAlmostEqual(scope_width, expected_width)
+        update.crop_view_to_elements(view, [wall], padding=self.PADDING)
+        revit.doc.Regenerate()
         self.assertTrue(view.CropBoxActive)
+        self.assertAlmostEqual(
+            view.CropBox.Max.X - view.CropBox.Min.X, expected_width, delta=1e-3
+        )
 
 
 class CreateModel3dViewTests(RolledBackTestCase):
     """Regression tests for #4023."""
 
+    def _create_sheet_and_camera(self):
+        DB.ViewSheet.Create(revit.doc, DB.ElementId.InvalidElementId)
+        view3d_type = next(
+            vft
+            for vft in DB.FilteredElementCollector(revit.doc).OfClass(DB.ViewFamilyType)
+            if vft.ViewFamily == DB.ViewFamily.ThreeDimensional
+        )
+        DB.View3D.CreatePerspective(revit.doc, view3d_type.Id)
+        revit.doc.Regenerate()
+
     def test_model_elements_leave_out_sheets_and_cameras(self):
         """Sheets and cameras have extents far beyond the building."""
-        excluded = (
-            DB.BuiltInCategory.OST_Sheets,
-            DB.BuiltInCategory.OST_Cameras,
+        self._create_sheet_and_camera()
+        excluded_ids = [
+            DB.ElementId(DB.BuiltInCategory.OST_Sheets),
+            DB.ElementId(DB.BuiltInCategory.OST_Cameras),
+        ]
+        existing = [
+            element
+            for element in DB.FilteredElementCollector(
+                revit.doc
+            ).WhereElementIsNotElementType()
+            if element.Category is not None and element.Category.Id in excluded_ids
+        ]
+        found_categories = set(element.Category.Id for element in existing)
+        self.assertEqual(
+            len(found_categories),
+            len(excluded_ids),
+            "fixtures must create both a sheet and a camera",
         )
-        excluded_ids = [DB.ElementId(category) for category in excluded]
-        for element in query.get_model_elements():
-            self.assertNotIn(element.Category.Id, excluded_ids)
+        leaked = [
+            element
+            for element in query.get_model_elements()
+            if element.Category.Id in excluded_ids
+        ]
+        self.assertEqual(leaked, [])
 
     def test_section_box_hugs_the_model(self):
         """The default section box is the model's extents plus padding."""
