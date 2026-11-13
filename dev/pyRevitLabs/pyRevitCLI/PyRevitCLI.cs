@@ -217,7 +217,10 @@ namespace pyRevitCLI {
                                                       TryGetValue("--scope", "user"));
                 else if (all("path", "ensure"))
                     PyRevitCLIAppCmds.EnsurePathEntry(arguments["<dir>"].Value as string,
-                                                      TryGetValue("--scope", "user"));
+                                                      TryGetValue("--scope", "user"),
+                                                      first: arguments["--first"].IsTrue);
+                else if (all("path", "which"))
+                    PyRevitCLIAppCmds.ListCliCopiesOnPath();
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
             }
