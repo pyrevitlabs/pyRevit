@@ -254,9 +254,9 @@ namespace pyRevitCLI {
                                             commandScriptPath = cmdScript.Path;
                                         }
                                         else
-                                            logger.Warn(string.Format(
-                                                "Run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
-                                                commandName, cmdScript.Path, commandScriptPath));
+                                            System.Console.Error.WriteLine(
+                                                "Warning: run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
+                                                commandName, cmdScript.Path, commandScriptPath);
                                     }
                                 }
                                 catch {
