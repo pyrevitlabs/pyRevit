@@ -142,12 +142,12 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
-        public void FindFileInEntriesKeepsResolutionOrder() {
+        public void FindFileInPathValuesKeepsResolutionOrderAcrossValues() {
             var machineInstall = @"C:\Program Files\pyRevit-Master\bin";
             var userInstall = @"C:\Users\me\AppData\Local\Programs\pyRevit CLI\bin";
-            var entries = new[] { @"C:\Windows", machineInstall + @"\", userInstall };
+            var pathValues = new[] { @"C:\Windows;" + machineInstall + @"\", userInstall };
 
-            var found = SystemPath.FindFileInEntries(entries, "pyrevit.exe",
+            var found = SystemPath.FindFileInPathValues(pathValues, "pyrevit.exe",
                 file => !file.StartsWith(@"C:\Windows", StringComparison.OrdinalIgnoreCase));
 
             CollectionAssert.AreEqual(
@@ -156,34 +156,56 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
-        public void FindFileInEntriesSkipsDirectoriesWithoutTheFile() {
-            var found = SystemPath.FindFileInEntries(
-                new[] { @"C:\stale\bin", TestDir }, "pyrevit.exe",
+        public void FindFileInPathValuesSkipsDirectoriesWithoutTheFile() {
+            var found = SystemPath.FindFileInPathValues(
+                new[] { @"C:\stale\bin;" + TestDir }, "pyrevit.exe",
                 file => file.StartsWith(TestDir, StringComparison.OrdinalIgnoreCase));
             Assert.AreEqual(1, found.Count);
             Assert.AreEqual(TestDir + @"\pyrevit.exe", found[0]);
         }
 
         [TestMethod]
-        public void FindFileInEntriesReportsRepeatedDirectoryOnce() {
-            var found = SystemPath.FindFileInEntries(
-                new[] { TestDir, TestDir.ToUpperInvariant() + @"\", "\"" + TestDir + "\"" },
+        public void FindFileInPathValuesReportsRepeatedDirectoryOnce() {
+            var found = SystemPath.FindFileInPathValues(
+                new[] { TestDir + ";" + TestDir.ToUpperInvariant() + @"\;""" + TestDir + "\"" },
                 "pyrevit.exe", file => true);
             Assert.AreEqual(1, found.Count);
         }
 
         [TestMethod]
-        public void FindFileInEntriesExpandsEnvironmentVariables() {
+        public void FindFileInPathValuesExpandsEnvironmentVariables() {
             var systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
-            var found = SystemPath.FindFileInEntries(
+            var found = SystemPath.FindFileInPathValues(
                 new[] { @"%SystemRoot%\System32" }, "cmd.exe", file => true);
             Assert.AreEqual(systemRoot + @"\System32\cmd.exe", found[0]);
         }
 
         [TestMethod]
-        public void FindFileInEntriesIgnoresUnusableEntries() {
-            var found = SystemPath.FindFileInEntries(
-                new[] { null, string.Empty, "C:\\bad|dir", "\"\"" }, "pyrevit.exe", file => true);
+        public void FindFileInPathValuesSplitsEntriesThatExpandToSeveralDirectories() {
+            const string variable = "PYREVIT_UNITTEST_CLI_PATHS";
+            Environment.SetEnvironmentVariable(variable, @"C:\old-cli;C:\tools");
+            try {
+                var found = SystemPath.FindFileInPathValues(
+                    new[] { "%" + variable + "%;" + TestDir }, "pyrevit.exe", file => true);
+
+                CollectionAssert.AreEqual(
+                    new[] {
+                        @"C:\old-cli\pyrevit.exe",
+                        @"C:\tools\pyrevit.exe",
+                        TestDir + @"\pyrevit.exe",
+                    },
+                    (System.Collections.ICollection)found);
+            }
+            finally {
+                Environment.SetEnvironmentVariable(variable, null);
+            }
+        }
+
+        [TestMethod]
+        public void FindFileInPathValuesIgnoresUnusableEntries() {
+            var found = SystemPath.FindFileInPathValues(
+                new[] { null, string.Empty, ";;", "C:\\bad|dir", "\"\"" }, "pyrevit.exe",
+                file => true);
             Assert.AreEqual(0, found.Count);
         }
 

@@ -143,17 +143,22 @@ namespace pyRevitLabs.Common {
         }
 
         /// <summary>
-        /// Lists the copies of a file that exist in a sequence of <c>PATH</c> directories, in
-        /// the order of that sequence, which is the order Windows resolves a command in.
+        /// Lists the copies of a file that exist in the directories of raw <c>PATH</c> values, in
+        /// the order of those values, which is the order Windows resolves a command in.
         /// </summary>
-        /// <param name="entries">The directory tokens, <c>%VAR%</c> references allowed.</param>
+        /// <param name="pathValues">
+        /// The raw <c>PATH</c> values, in resolution order. Each one is expanded before it is
+        /// split, as Windows does, so a <c>%VAR%</c> entry whose value holds several
+        /// <c>;</c>-separated directories contributes every one of them.
+        /// </param>
         /// <param name="fileName">The file to look for, such as <c>pyrevit.exe</c>.</param>
         /// <param name="fileExists">Tests whether a full file path exists.</param>
         /// <returns>The full paths of the copies found, each reported once.</returns>
-        internal static IList<string> FindFileInEntries(IEnumerable<string> entries,
-                                                        string fileName,
-                                                        Func<string, bool> fileExists) {
-            return entries
+        internal static IList<string> FindFileInPathValues(IEnumerable<string> pathValues,
+                                                           string fileName,
+                                                           Func<string, bool> fileExists) {
+            return pathValues
+                .SelectMany(v => Tokenize(Environment.ExpandEnvironmentVariables(v ?? string.Empty)))
                 .Select(e => ResolveFileInEntry(e, fileName))
                 .Where(f => f != null && fileExists(f))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -161,8 +166,7 @@ namespace pyRevitLabs.Common {
         }
 
         private static string ResolveFileInEntry(string entry, string fileName) {
-            var directory = NormalizeToken(
-                Environment.ExpandEnvironmentVariables(entry ?? string.Empty).Trim('"'));
+            var directory = NormalizeToken((entry ?? string.Empty).Trim('"'));
             if (directory.Length == 0 || directory.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
                 return null;
             return Path.Combine(directory, fileName);
@@ -239,9 +243,14 @@ namespace pyRevitLabs.Common {
         /// snapshot taken before any change made by this or a parent process.
         /// </remarks>
         public static IList<string> FindFileOnPath(string fileName) {
-            var entries = GetPathEntries(EnvironmentVariableTarget.Machine)
-                .Concat(GetPathEntries(EnvironmentVariableTarget.User));
-            return FindFileInEntries(entries, fileName, File.Exists);
+            var pathValues = new[] { EnvironmentVariableTarget.Machine, EnvironmentVariableTarget.User }
+                .Select(GetRawPathValue);
+            return FindFileInPathValues(pathValues, fileName, File.Exists);
+        }
+
+        private static string GetRawPathValue(EnvironmentVariableTarget scope) {
+            using (var key = OpenEnvironmentKey(scope, writable: false))
+                return ReadRawPathValue(key);
         }
 
         /// <summary>
