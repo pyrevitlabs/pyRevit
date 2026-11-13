@@ -142,7 +142,7 @@ pyrevit run C:\scripts\one_off.py "house.rvt"     # a path to a .py file runs th
 
 ## Preflight checks
 
-A `checks/` folder at the root of a UI extension holds [preflight][pyrevit.preflight] checks: model-quality scripts offered by the *Preflight Checks* button in pyRevitTools. Only files ending in `_check.py` (case-insensitive) are imported, at the time the dialog opens. Helper modules can live in the folder as long as their name does not end in `_check.py`, and so can other file types (JSON data, `locale/` resources); the loader ignores them and the checks can read them.
+A `checks/` folder at the root of a UI extension holds [preflight][pyrevit.preflight] checks: model-quality scripts offered by the *Preflight Checks* button in pyRevitTools. Only files ending in `_check.py` (case-insensitive) are imported, at the time the dialog opens. `checks/` is not on `sys.path`, so put importable helper modules in the extension's `lib/` folder. Other file types (JSON data, `locale/` resources) can stay in `checks/`; the loader ignores them and the checks read them by path.
 
 Each class in a file that derives from `pyrevit.preflight.PreflightTestCase` becomes one entry in the dialog:
 
