@@ -18,4 +18,14 @@ public class OpenUrlTests {
         Assert.True(startInfo.UseShellExecute);
         Assert.Equal(expected, startInfo.FileName);
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void OpeningAMissingUrlDoesNotThrow(string url) {
+        var exception = Record.Exception(() => CommonUtils.OpenUrl(url));
+
+        Assert.Null(exception);
+    }
 }

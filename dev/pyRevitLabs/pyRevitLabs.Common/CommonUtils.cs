@@ -300,9 +300,14 @@ namespace pyRevitLabs.Common {
         /// </summary>
         /// <remarks>
         /// The URL is started through the shell, which .NET 8 and later no longer do by default.
-        /// Logs an error instead of opening when no internet connection is detected.
+        /// Logs an error instead of opening when <paramref name="url"/> is empty or no internet connection is detected.
         /// </remarks>
         public static void OpenUrl(string url, string logErrMsg = null) {
+            if (string.IsNullOrWhiteSpace(url)) {
+                logger.Error(string.Format("{0}. No url given.", logErrMsg ?? "Error opening url"));
+                return;
+            }
+
             if (CheckInternetConnection()) {
                 var startInfo = CreateUrlStartInfo(url);
                 logger.Debug("Opening {0}", startInfo.FileName);
