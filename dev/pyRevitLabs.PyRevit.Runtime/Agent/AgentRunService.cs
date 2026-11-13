@@ -9,6 +9,7 @@ using System.Text;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
@@ -427,7 +428,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["result_path"] = resultPath;
                     }
                     else {
-                        response["result"] = JToken.Parse(context.ResultJson);
+                        response["result"] = JsonText.Parse(context.ResultJson);
                     }
                 }
                 catch (Exception ex) {

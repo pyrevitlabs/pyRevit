@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.PyRevit;
@@ -120,7 +121,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["title"] = Title,
                 ["mode"] = ModeName,
                 ["engine"] = Engine == AgentEngine.CPython ? "cpython" : "ironpython",
-                ["inputs"] = JToken.Parse(InputsJson),
+                ["inputs"] = JsonText.Parse(InputsJson),
                 ["workspace"] = Workspace,
                 ["document"] = Document,
                 ["timeout_s"] = TimeoutSeconds,

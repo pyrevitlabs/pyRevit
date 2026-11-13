@@ -86,7 +86,7 @@ namespace pyRevitCLI {
                 ["script"] = File.ReadAllText(scriptFile),
                 ["mode"] = mode ?? "query",
                 ["title"] = title ?? Path.GetFileName(scriptFile),
-                ["inputs"] = string.IsNullOrWhiteSpace(inputsJson) ? new JObject() : JToken.Parse(inputsJson),
+                ["inputs"] = string.IsNullOrWhiteSpace(inputsJson) ? new JObject() : JsonText.Parse(inputsJson),
             };
             if (engine != null)
                 parameters["engine"] = engine;
