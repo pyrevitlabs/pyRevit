@@ -126,6 +126,30 @@ namespace pyRevitLabs.Common.Extensions {
             return validPath && (uriResult.HostNameType <= UriHostNameType.Basic);
         }
 
+        /// <summary>
+        /// True when both paths normalize to the same full path, ignoring case and trailing separators.
+        /// </summary>
+        public static bool IsSamePathAs(this string path, string otherPath) {
+            if (path is null || otherPath is null)
+                return false;
+            return string.Equals(path.NormalizeAsPath(), otherPath.NormalizeAsPath(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// True when the path is the parent path or lies below it, matching whole directory
+        /// names so <c>C:\pyrevit2\x</c> is not within <c>C:\pyrevit</c>. Ignores case.
+        /// </summary>
+        public static bool IsPathWithin(this string path, string parentPath) {
+            if (path is null || parentPath is null)
+                return false;
+            var normalizedPath = path.NormalizeAsPath();
+            var normalizedParent = parentPath.NormalizeAsPath();
+            if (string.Equals(normalizedPath, normalizedParent, StringComparison.OrdinalIgnoreCase))
+                return true;
+            return normalizedPath.StartsWith(
+                normalizedParent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+
         public static string NormalizeAsPath(this string path) {
             // determine if we are dealing with a uri or local path
             if (path.IsLocalPath()) {

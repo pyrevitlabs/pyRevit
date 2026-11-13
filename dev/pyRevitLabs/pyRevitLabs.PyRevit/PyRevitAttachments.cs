@@ -303,7 +303,7 @@ namespace pyRevitLabs.PyRevit {
 
         private static void ResolveRegisteredClone(PyRevitAttachment attachment, IEnumerable<PyRevitClone> registeredClones) {
             foreach (var clone in registeredClones) {
-                if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
+                if (attachment.Clone != null && attachment.Clone.ClonePath.IsPathWithin(clone.ClonePath)) {
                     attachment.SetClone(clone);
                     return;
                 }
