@@ -65,12 +65,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 RequireEnabled();
             switch (method) {
                 case "ping":
-                    return new JObject {
+                    var pong = new JObject {
                         ["pong"] = true,
                         ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
                     };
+                    if (AgentParams.Get<bool?>(parameters, "identity") == true && int.TryParse(AgentHost.RevitVersion, out var pingYear)) {
+                        var identity = AgentSessionIdentity.Describe(pingYear);
+                        foreach (var key in new[] { "commit", "bin_commit", "bin_stale", "bin_hint" })
+                            if (identity.TryGetValue(key, out var value))
+                                pong[key] = value;
+                    }
+                    return pong;
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":

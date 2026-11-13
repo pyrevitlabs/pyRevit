@@ -501,9 +501,9 @@ doesn't know them, instead of `Unknown` or `0`.
 `get_context.pyrevit.bin_commit` is the commit the binaries were built from. When it differs from
 `commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- local`), and
 `pyrevit agent status` shows the same fields. Nothing is flagged when the clone's commit is unknown.
-`get_context` recomputes `commit` on every call, but the instance record that `pyrevit agent status`
-reads is written when the session starts, so after a checkout with Revit open `agent status` can still
-report the startup `commit` and `bin_stale`. Use `get_context` for the current value.
+The instance record is written when the session starts, so `pyrevit agent status` asks the live host
+for `commit`, `bin_commit` and `bin_stale` when it pings it, and a checkout with Revit open shows up at
+once. A host that cannot be reached, or an older one that does not send them, falls back to the startup values.
 
 Syntax measured in Revit on IronPython 3.4.2:
 

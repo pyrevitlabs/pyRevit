@@ -30,6 +30,8 @@ namespace pyRevitCLI {
         public static void PrintStatus(bool json) {
             var instances = PyRevitAgentClient.GetInstances();
             if (json) {
+                foreach (var instance in instances)
+                    TryRefreshIdentity(instance);
                 Console.WriteLine(new JArray(instances.Select(instance => instance.ToJson())).ToString(Formatting.Indented));
                 return;
             }
@@ -50,10 +52,18 @@ namespace pyRevitCLI {
                 Console.WriteLine(StatusLine(instance));
         }
 
+        internal static void TryRefreshIdentity(AgentInstance instance) {
+            try {
+                instance.Refresh(PyRevitAgentClient.Ping(instance, identity: true));
+            }
+            catch (AgentClientException) {
+            }
+        }
+
         internal static string StatusLine(AgentInstance instance) {
             string state;
             try {
-                PyRevitAgentClient.Ping(instance);
+                instance.Refresh(PyRevitAgentClient.Ping(instance, identity: true));
                 state = "responding";
             }
             catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
