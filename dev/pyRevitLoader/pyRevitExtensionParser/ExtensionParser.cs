@@ -57,6 +57,56 @@ namespace pyRevitExtensionParser
                 logger.Error(message);
         }
 
+        private static List<string> ReadAuthList(
+            JToken token,
+            string extensionJsonPath,
+            ref bool authDefinitionUnreadable)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+
+            var array = token as JArray;
+            if (array == null)
+            {
+                authDefinitionUnreadable = true;
+                LogAuthDefinitionUnreadable(extensionJsonPath);
+                return null;
+            }
+
+            if (array.Count == 0)
+                return null;
+
+            var values = new List<string>();
+            foreach (var item in array)
+            {
+                var value = item?.ToString();
+                if (!string.IsNullOrWhiteSpace(value))
+                    values.Add(value);
+            }
+
+            if (values.Count == 0)
+            {
+                authDefinitionUnreadable = true;
+                LogAuthDefinitionUnreadable(extensionJsonPath);
+                return null;
+            }
+
+            return values;
+        }
+
+        private static bool MentionsAuthDefinition(string jsonContent)
+        {
+            return jsonContent != null
+                && (jsonContent.IndexOf("authusers", StringComparison.OrdinalIgnoreCase) >= 0
+                    || jsonContent.IndexOf("authgroups", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static void LogAuthDefinitionUnreadable(string extensionJsonPath)
+        {
+            LogError("Access list in " + extensionJsonPath +
+                " could not be read; the extension will not be loaded until it is fixed.");
+        }
+
         private static void LogParseException(string parsedFile, Exception ex)
         {
             if (ex == null)
@@ -516,12 +566,14 @@ namespace pyRevitExtensionParser
             List<string> authUsers = null;
             List<string> authGroups = null;
             string manifestName = null;
+            bool authDefinitionUnreadable = false;
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
+                string jsonContent = null;
                 try
                 {
-                    var jsonContent = File.ReadAllText(extensionJsonPath);
+                    jsonContent = File.ReadAllText(extensionJsonPath);
                     var json = JObject.Parse(jsonContent);
 
                     manifestName = json["name"]?.ToString();
@@ -554,39 +606,17 @@ namespace pyRevitExtensionParser
                         rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     }
 
-                    // Read authusers if present (list of authorized usernames)
-                    var authUsersArray = json["authusers"] as JArray;
-                    if (authUsersArray != null && authUsersArray.Count > 0)
-                    {
-                        authUsers = new List<string>();
-                        foreach (var item in authUsersArray)
-                        {
-                            var user = item?.ToString();
-                            if (!string.IsNullOrEmpty(user))
-                            {
-                                authUsers.Add(user);
-                            }
-                        }
-                    }
-
-                    // Read authgroups if present (list of authorized Windows security groups)
-                    var authGroupsArray = json["authgroups"] as JArray;
-                    if (authGroupsArray != null && authGroupsArray.Count > 0)
-                    {
-                        authGroups = new List<string>();
-                        foreach (var item in authGroupsArray)
-                        {
-                            var group = item?.ToString();
-                            if (!string.IsNullOrEmpty(group))
-                            {
-                                authGroups.Add(group);
-                            }
-                        }
-                    }
+                    authUsers = ReadAuthList(json["authusers"], extensionJsonPath, ref authDefinitionUnreadable);
+                    authGroups = ReadAuthList(json["authgroups"], extensionJsonPath, ref authDefinitionUnreadable);
                 }
                 catch (Exception ex)
                 {
                     LogParseException(extensionJsonPath, ex);
+                    if (MentionsAuthDefinition(jsonContent))
+                    {
+                        authDefinitionUnreadable = true;
+                        LogAuthDefinitionUnreadable(extensionJsonPath);
+                    }
                 }
             }
 
@@ -624,7 +654,8 @@ namespace pyRevitExtensionParser
                 Config = extConfig,
                 RocketModeCompatible = rocketModeCompatible,
                 AuthorizedUsers = authUsers,
-                AuthorizedGroups = authGroups
+                AuthorizedGroups = authGroups,
+                AuthDefinitionUnreadable = authDefinitionUnreadable
             };
 
             ReorderByLayout(parsedExtension, parsedExtension, null);
