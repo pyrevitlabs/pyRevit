@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -20,6 +21,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         private void AppendBytes(byte[] bytes, int offset, int count) {
             using var stream = new FileStream(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
             stream.Write(bytes, offset, count);
+        }
+
+        private static string[] ReadAll(JournalTail tail) {
+            var lines = new List<string>();
+            for (int i = 0; i < 10; i++)
+                lines.AddRange(tail.ReadNewLines());
+            return lines.ToArray();
         }
 
         [Fact]
@@ -86,8 +94,52 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Empty(tail.ReadNewLines());
             Assert.Empty(tail.ReadNewLines());
 
-            Append("ok\n");
-            Assert.Equal(new[] { "ok" }, tail.ReadNewLines());
+            Append("\nok\n");
+            Assert.Equal(new[] { "ok" }, ReadAll(tail));
+        }
+
+        [Fact]
+        public void OversizedLineEndingPartwayThroughALaterChunkDoesNotLeakItsTail() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path, 4);
+
+            Append("abcdef\n" + "ok\n");
+            Assert.Equal(new[] { "ok" }, ReadAll(tail));
+        }
+
+        [Fact]
+        public void OversizedLineEndingExactlyAtAChunkBoundaryDoesNotLeakAnEmptyLine() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path, 4);
+
+            Append("abcd\n" + "ok\n");
+            Assert.Equal(new[] { "ok" }, ReadAll(tail));
+        }
+
+        [Fact]
+        public void SeveralConsecutiveOversizedChunksAreAllDiscarded() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path, 4);
+
+            Append("abcdefghijkl");
+            Assert.Empty(tail.ReadNewLines());
+            Assert.Empty(tail.ReadNewLines());
+            Assert.Empty(tail.ReadNewLines());
+
+            Append("mn\n" + "ok\n");
+            Assert.Equal(new[] { "ok" }, ReadAll(tail));
+        }
+
+        [Fact]
+        public void DiscardEndsWhenTheFileIsTruncated() {
+            File.WriteAllText(_path, "");
+            var tail = new JournalTail(_path, 4);
+
+            Append("abcdefgh");
+            Assert.Empty(tail.ReadNewLines());
+
+            File.WriteAllText(_path, "x\n");
+            Assert.Equal(new[] { "x" }, tail.ReadNewLines());
         }
 
         [Fact]

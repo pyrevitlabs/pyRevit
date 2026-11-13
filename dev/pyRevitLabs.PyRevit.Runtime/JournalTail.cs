@@ -11,8 +11,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// unread until its line break arrives, so a line written across several reads is delivered once
     /// and whole. If the open file is shorter than the read position it is treated as truncated and
     /// read from the start. A file replaced by a longer one is not detected. At most one chunk of
-    /// bytes is read per call; a chunk without any line feed is discarded so a runaway line cannot
-    /// stall the reader. Not thread-safe.
+    /// bytes is read per call; a chunk without any line feed is discarded, together with the rest of that
+    /// line up to its next line feed, so a runaway line cannot stall the reader or leak its tail. Not thread-safe.
     /// </remarks>
     public sealed class JournalTail {
         private const int DefaultMaxChunkBytes = 1 << 20;
@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly string journalFile;
         private readonly int maxChunkBytes;
         private long offset;
+        private bool discardingLine;
 
         /// <summary>
         /// Starts reading at the current end of the file, or at the beginning if it does not exist yet.
@@ -45,8 +46,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             byte[] chunk;
             try {
                 using (var stream = new FileStream(journalFile, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite)) {
-                    if (stream.Length < offset)
+                    if (stream.Length < offset) {
                         offset = 0;
+                        discardingLine = false;
+                    }
                     long available = stream.Length - offset;
                     if (available == 0)
                         return NoLines;
@@ -71,15 +74,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return NoLines;
             }
 
-            int lastLineFeed = Array.LastIndexOf(chunk, (byte)'\n');
-            if (lastLineFeed < 0) {
-                if (chunk.Length >= maxChunkBytes)
+            int start = 0;
+            if (discardingLine) {
+                int endOfDiscarded = Array.IndexOf(chunk, (byte)'\n');
+                if (endOfDiscarded < 0) {
                     offset += chunk.Length;
+                    return NoLines;
+                }
+                start = endOfDiscarded + 1;
+                offset += start;
+                discardingLine = false;
+            }
+
+            int lastLineFeed = Array.LastIndexOf(chunk, (byte)'\n');
+            if (lastLineFeed < start) {
+                if (start == 0 && chunk.Length >= maxChunkBytes) {
+                    offset += chunk.Length;
+                    discardingLine = true;
+                }
                 return NoLines;
             }
 
-            offset += lastLineFeed + 1;
-            var text = Encoding.UTF8.GetString(chunk, 0, lastLineFeed + 1);
+            offset += lastLineFeed + 1 - start;
+            var text = Encoding.UTF8.GetString(chunk, start, lastLineFeed + 1 - start);
             var lines = text.Split(LineBreaks, StringSplitOptions.None);
             Array.Resize(ref lines, lines.Length - 1);
             return lines;
