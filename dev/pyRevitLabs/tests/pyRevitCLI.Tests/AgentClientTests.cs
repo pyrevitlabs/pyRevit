@@ -614,6 +614,18 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void StatusShowsTheBinaryCommitAndFlagsStaleBinaries() {
+        var instance = ThisHost();
+        instance.BinCommit = "23266b3";
+        instance.BinStale = true;
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(", binaries 23266b3 (stale)", line);
+    }
+
+    [Fact]
     public async Task CancellingASentCallClosesItWithAnUnknownOutcome() {
         using var release = new ManualResetEventSlim(false);
         using var received = new ManualResetEventSlim(false);

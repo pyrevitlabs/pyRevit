@@ -65,8 +65,11 @@ namespace pyRevitCLI {
             var session = instance.Clone == null
                 ? string.Empty
                 : " on " + instance.Clone + (instance.Engine == null ? string.Empty : " " + instance.Engine);
-            return string.Format("Revit {0} (build {1}) pid {2}{3}: {4}",
-                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, session, state);
+            var binaries = instance.BinCommit == null
+                ? string.Empty
+                : ", binaries " + instance.BinCommit + (instance.BinStale ? " (stale)" : string.Empty);
+            return string.Format("Revit {0} (build {1}) pid {2}{3}: {4}{5}",
+                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, session, state, binaries);
         }
 
         public static void PrintContext(string revitSelector) {
