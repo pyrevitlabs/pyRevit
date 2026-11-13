@@ -75,7 +75,7 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 ## Exporting
 
 To get data out, read the cells with `GetCellText` as above. `ViewSchedule.Export` raises none of the events
-the run guard cancels, so it is not blocked and the file it writes stays on disk even in a dry run; export only when the user asked for a file.
+the run guard cancels, so it is not blocked and the file it writes stays on disk even when the run later fails or is rolled back. Don't export during a dry run; export only when the user asked for a file, and only after the change that produces the schedule has committed.
 
 ## Before you report done
 
