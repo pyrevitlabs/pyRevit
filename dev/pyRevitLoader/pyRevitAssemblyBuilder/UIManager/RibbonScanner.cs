@@ -435,7 +435,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     if (tab?.Panels == null) continue;
 
                     // Only process pyRevit tabs (matching Python behavior)
-                    if (!IsPyRevitTab(tab))
+                    if (!IsPyRevitTabByTag(tab) && !IsPyRevitTab(tab))
                         continue;
 
                     foreach (var panelObj in tab.Panels)
