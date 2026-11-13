@@ -31,7 +31,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public delegate void CommandExecuted(object source, CommandExecutedArgs e);
 
     public class JournalListener {
-        private long prevLen = -1;
+        private const int PollIntervalMilliseconds = 250;
+        private JournalTail _tail;
         private string JournalFile = "";
         private Thread jtail;
         private CancellationTokenSource _cancellationTokenSource;
@@ -52,10 +53,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void Start() {
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+                return;
+
             _cancellationTokenSource = new CancellationTokenSource();
-            FileInfo fi = new FileInfo(JournalFile);
-            prevLen = fi.Length;
-            jtail = new Thread(TailJournal);
+            var token = _cancellationTokenSource.Token;
+            _tail = new JournalTail(JournalFile);
+            jtail = new Thread(() => TailJournal(token)) { IsBackground = true };
             jtail.Start();
         }
 
@@ -63,30 +67,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _cancellationTokenSource?.Cancel();
         }
 
-        private void TailJournal() { while (!_cancellationTokenSource.IsCancellationRequested) { Tail(); } }
+        private void TailJournal(CancellationToken token) {
+            while (!token.WaitHandle.WaitOne(PollIntervalMilliseconds)) {
+                Tail();
+            }
+        }
 
         private void Tail() {
-            FileInfo fi = new FileInfo(JournalFile);
-            if (fi.Exists) {
-                if (fi.Length != prevLen) {
-                    using (var stream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite)) {
-                        stream.Seek(prevLen, SeekOrigin.Begin);
+            var newLines = _tail.ReadNewLines();
+            if (newLines.Length == 0)
+                return;
 
-                        var newlengh = stream.Length;
-                        prevLen = newlengh;
+            if (OnJournalUpdate != null)
+                OnJournalUpdate(this, new JournalUpdateArgs(JournalFile, newLines));
 
-                        using (StreamReader sr = new StreamReader(stream)) {
-                            string all = sr.ReadToEnd();
-                            string[] newLines = all.Split(Environment.NewLine.ToCharArray());
-                            if (OnJournalUpdate != null)
-                                OnJournalUpdate(this, new JournalUpdateArgs(JournalFile, newLines));
-
-                            if (OnJournalCommandExecuted != null)
-                                DetectCommandExecutions(newLines);
-                        }
-                    }
-                }
-            }
+            if (OnJournalCommandExecuted != null)
+                DetectCommandExecutions(newLines);
         }
 
         private void DetectCommandExecutions(string[] newLines) {
