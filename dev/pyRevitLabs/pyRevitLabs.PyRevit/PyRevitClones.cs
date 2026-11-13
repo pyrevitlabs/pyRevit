@@ -657,14 +657,21 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        private static void RestoreClone(string cloneName, string clonePath, string backupPath) {
+        internal static void RestoreClone(string cloneName, string clonePath, string backupPath) {
             logger.Warn("Update failed. Restoring previous clone at \"{0}\"", clonePath);
-            if (CommonUtils.VerifyPath(clonePath)) {
-                UnregisterCloneAtPath(clonePath);
-                CommonUtils.DeleteDirectory(clonePath);
+            try {
+                if (CommonUtils.VerifyPath(clonePath)) {
+                    UnregisterCloneAtPath(clonePath);
+                    CommonUtils.DeleteDirectory(clonePath);
+                }
+                Directory.Move(backupPath, clonePath);
+                RegisterClone(cloneName, clonePath, forceUpdate: true);
             }
-            Directory.Move(backupPath, clonePath);
-            RegisterClone(cloneName, clonePath, forceUpdate: true);
+            catch (Exception restoreEx) {
+                logger.Error(string.Format("Could not restore clone \"{0}\" at \"{1}\". " +
+                                           "The previous clone is kept at \"{2}\" | {3}",
+                                           cloneName, clonePath, backupPath, restoreEx.Message));
+            }
         }
 
         // uninstall primary or specified clone, has option for clearing configs

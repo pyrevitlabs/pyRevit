@@ -85,6 +85,45 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void RestoreClone_WhenTheFailedDeployCanNotBeRemoved_KeepsTheBackupAndDoesNotThrow() {
+            var clonePath = Path.Combine(_tempRoot, "partialDest");
+            var backupPath = Path.Combine(_tempRoot, "partialDest.update-backup-test");
+            Directory.CreateDirectory(backupPath);
+            File.WriteAllText(Path.Combine(backupPath, "previous.txt"), "previous clone");
+            Directory.CreateDirectory(clonePath);
+            var lockedFile = Path.Combine(clonePath, "locked.txt");
+
+            using (new FileStream(lockedFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None)) {
+                PyRevitClones.RestoreClone(CloneName, clonePath, backupPath);
+            }
+
+            Assert.IsTrue(File.Exists(Path.Combine(backupPath, "previous.txt")), "backup must survive a failed restore");
+        }
+
+        [TestMethod]
+        public void Update_WhenTheCloneFolderIsLocked_KeepsTheCloneAndItsRegistration() {
+            var zipPath = Path.Combine(_tempRoot, "clone.zip");
+            var clonePath = Path.Combine(_tempRoot, "cloneDest");
+            CreateMinimalCloneZip(zipPath);
+            PyRevitClones.DeployFromImage(
+                cloneName: CloneName,
+                imagePath: zipPath,
+                destPath: clonePath,
+                installBinaries: false);
+            var lockedFile = Path.Combine(clonePath, "locked.txt");
+            var clone = PyRevitClones.GetRegisteredClone(CloneName);
+
+            using (new FileStream(lockedFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None)) {
+                Assert.ThrowsException<IOException>(
+                    () => PyRevitClones.Update(clone, credentials: null, skipBin: true));
+            }
+
+            Assert.IsTrue(File.Exists(lockedFile));
+            Assert.IsNotNull(PyRevitClones.GetRegisteredClone(CloneName));
+            Assert.AreEqual(0, Directory.GetDirectories(_tempRoot, "cloneDest.update-backup-*").Length);
+        }
+
+        [TestMethod]
         public void Update_WhenImageIsAvailable_ReplacesTheCloneAndRemovesTheBackup() {
             var zipPath = Path.Combine(_tempRoot, "clone.zip");
             var clonePath = Path.Combine(_tempRoot, "cloneDest");
