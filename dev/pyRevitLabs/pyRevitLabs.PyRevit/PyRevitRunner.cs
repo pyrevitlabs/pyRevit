@@ -151,7 +151,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                     string.Join(";", ModelPaths),                       // model paths
                     engineConfigs,                                      // engine configs
                     LogFile,                                            // log file
-                    EscapeJournalString(InputsJson ?? "")               // script inputs
+                    EscapeJournalString(InputsJson ?? "")
                 ));
         }
 
@@ -225,6 +225,8 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             try {
                 using (var reader = new JsonTextReader(new StringReader(inputsJson)) { DateParseHandling = DateParseHandling.None }) {
                     parsed = JToken.ReadFrom(reader);
+                    if (reader.Read())
+                        throw new PyRevitException("Inputs are not valid JSON: unexpected text after the JSON value.");
                 }
             }
             catch (JsonException ex) {

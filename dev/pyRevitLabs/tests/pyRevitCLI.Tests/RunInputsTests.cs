@@ -59,6 +59,21 @@ public sealed class RunInputsTests : IDisposable {
         Assert.Contains("not valid JSON", refused.Message);
     }
 
+    [Theory]
+    [InlineData("{\"a\":1} garbage")]
+    [InlineData("{\"a\":1}{\"b\":2}")]
+    [InlineData("{\"a\":1} 7")]
+    public void TextAfterTheJsonObjectIsRefused(string inputs) {
+        var refused = Assert.Throws<PyRevitException>(() => PyRevitRunner.NormalizeInputs(inputs));
+
+        Assert.Contains("not valid JSON", refused.Message);
+    }
+
+    [Fact]
+    public void TrailingWhitespaceAfterTheJsonObjectIsAccepted() {
+        Assert.Equal("{\"a\":1}", PyRevitRunner.NormalizeInputs("{\"a\":1}  "));
+    }
+
     [Fact]
     public void InputsFileIsReadAndNormalized() {
         File.WriteAllText(inputsFile, "{\n \"count\": 3\n}");
