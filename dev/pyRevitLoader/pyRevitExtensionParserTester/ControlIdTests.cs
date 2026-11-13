@@ -314,7 +314,7 @@ namespace pyRevitExtensionParserTester
 
         /// <summary>
         /// Tests that stacks pass through the parent control ID (they don't add to hierarchy).
-        /// Note: Stacks are containers but don't contribute to control ID path in Python.
+        /// Revit registers a button inside a stack as if it sat directly in the panel.
         /// </summary>
         [Test]
         public void ControlId_ButtonInStack_StackDoesNotAddToPath()
@@ -362,11 +362,62 @@ namespace pyRevitExtensionParserTester
             Assert.That(commands.Count, Is.EqualTo(1));
             var cmd = commands[0];
             Assert.That(cmd.Name, Is.EqualTo("StackedButton"));
-            // Stack is a command group type, so it deepens the hierarchy
-            // In Python, GenericStack.control_id returns parent_ctrl_id unchanged
-            // But our implementation treats Stack as a group that deepens
-            // This may need adjustment based on actual Python behavior
-            Assert.That(cmd.ControlId, Is.EqualTo("CustomCtrl_%CustomCtrl_%CustomCtrl_%TestTab%TestPanel%MyStack%StackedButton"));
+            Assert.That(cmd.ControlId, Is.EqualTo("CustomCtrl_%CustomCtrl_%TestTab%TestPanel%StackedButton"));
+        }
+
+        /// <summary>
+        /// Tests that a pulldown inside a stack deepens the hierarchy like a pulldown directly in a panel,
+        /// while the stack itself stays out of the path.
+        /// </summary>
+        [Test]
+        public void ControlId_ButtonInPulldownInStack_StackDoesNotAddToPath()
+        {
+            var button = new ParsedComponent
+            {
+                Name = "PulldownButton",
+                Type = CommandComponentType.PushButton,
+                UniqueId = "pulldown_button"
+            };
+
+            var pulldown = new ParsedComponent
+            {
+                Name = "MyPulldown",
+                Type = CommandComponentType.PullDown,
+                Children = new List<ParsedComponent> { button }
+            };
+
+            var stack = new ParsedComponent
+            {
+                Name = "MyStack",
+                Type = CommandComponentType.Stack,
+                Children = new List<ParsedComponent> { pulldown }
+            };
+
+            var panel = new ParsedComponent
+            {
+                Name = "TestPanel",
+                Type = CommandComponentType.Panel,
+                Children = new List<ParsedComponent> { stack }
+            };
+
+            var tab = new ParsedComponent
+            {
+                Name = "TestTab",
+                Type = CommandComponentType.Tab,
+                Children = new List<ParsedComponent> { panel }
+            };
+
+            var extension = new ParsedExtension
+            {
+                Name = "TestExtension",
+                Directory = @"C:\Test\TestExtension.extension",
+                Children = new List<ParsedComponent> { tab }
+            };
+
+            var commands = extension.CollectCommandComponents().ToList();
+
+            Assert.That(commands.Count, Is.EqualTo(1));
+            Assert.That(commands[0].ControlId, Is.EqualTo("CustomCtrl_%CustomCtrl_%CustomCtrl_%TestTab%TestPanel%MyPulldown%PulldownButton"));
         }
 
         /// <summary>
