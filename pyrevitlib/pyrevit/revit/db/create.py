@@ -1938,7 +1938,7 @@ def _sheet_area(sheet, doc):
 
 
 def place_on_sheet(
-    sheet, view, anchor="top_left", margin=0.1, right_margin=0.0, doc=None
+    sheet, view, anchor="top_left", margin=0.1, doc=None, right_margin=0.0
 ):
     """Place a view or schedule on a sheet, aligned to a corner of the title block.
 
@@ -1951,12 +1951,12 @@ def place_on_sheet(
             when it has none).
         margin (float | str, optional): gap between the placed box and the
             title block edge, in sheet feet (0.1 ft is 1.2 in).
+        doc (DB.Document, optional): document, defaults to the active one.
         right_margin (float | str, optional): width of the title block's
             right-hand information strip, in sheet feet, which right anchors
             and center keep clear. The title block's bounding box includes
             the strip and its width is not exposed by the API, so measure it
             on the sheet.
-        doc (DB.Document, optional): document, defaults to the active one.
 
     Returns:
         (DB.Viewport | DB.ScheduleSheetInstance): the placed viewport or
