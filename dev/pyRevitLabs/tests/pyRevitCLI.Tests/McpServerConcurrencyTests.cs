@@ -17,9 +17,9 @@ public partial class McpServerTests {
         private readonly LineWriter output = new LineWriter();
         private readonly Task serving;
 
-        public LiveSession(string defaultRevit = null, ManualResetEventSlim writeGate = null) {
+        public LiveSession(string defaultRevit = null, ManualResetEventSlim writeGate = null, TimeSpan? inputClosedGracePeriod = null) {
             output.Gate = writeGate;
-            serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, new LineReader(input), output));
+            serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, new LineReader(input), output, inputClosedGracePeriod));
         }
 
         public void Send(JObject message) => input.Add(message.ToString(Formatting.None));
@@ -176,7 +176,7 @@ public partial class McpServerTests {
     public void ClosingInputCancelsCallsStillWaitingOnRevit() {
         using var release = new ManualResetEventSlim(false);
         var runStarted = BlockRunsUntil(release);
-        using var session = new LiveSession();
+        using var session = new LiveSession(inputClosedGracePeriod: TimeSpan.FromMilliseconds(300));
 
         session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
         Assert.True(runStarted.Wait(Patience));
@@ -191,15 +191,33 @@ public partial class McpServerTests {
     public void ClosingInputCancelsCallsThatReuseAnOpenRequestId() {
         using var release = new ManualResetEventSlim(false);
         var runStarted = BlockRunsUntil(release);
-        using var session = new LiveSession();
+        using var session = new LiveSession(inputClosedGracePeriod: TimeSpan.FromMilliseconds(300));
 
         session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
         Assert.True(runStarted.Wait(Patience));
         session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 2" }));
-        var finished = session.CloseInputAndWait(TimeSpan.FromSeconds(8));
+        var finished = session.CloseInputAndWait(Patience);
         release.Set();
 
         Assert.True(finished, "The server kept running after stdin ended.");
+    }
+
+    /// <summary>A call that finishes within the grace period after stdin ended is still answered (#4050).</summary>
+    [Fact]
+    public void ACallFinishingWithinTheGraceAfterInputEndsStillGetsItsAnswer() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession(inputClosedGracePeriod: Patience);
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        var closing = Task.Run(() => session.CloseInputAndWait(Patience));
+        release.Set();
+        var run = session.Next();
+
+        Assert.True(closing.Result);
+        Assert.Equal(1, run.Value<int>("id"));
+        Assert.False(IsError(run));
     }
 
     [Fact]
