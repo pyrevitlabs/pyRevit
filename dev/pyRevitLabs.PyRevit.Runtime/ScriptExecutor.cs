@@ -38,7 +38,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public readonly ManualResetEventSlim Completed = new ManualResetEventSlim(false);
 
+        /// <summary>
+        /// Set when <see cref="Execute"/> begins, so a caller can bound how long it waits for Revit
+        /// to start the request without bounding the script's own run time.
+        /// </summary>
+        public readonly ManualResetEventSlim Started = new ManualResetEventSlim(false);
+
         public void Execute(UIApplication uiApp) {
+            Started.Set();
             try {
                 RunRequestedScript(uiApp);
             }
@@ -86,6 +93,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static int mainThreadId;
         private static ScriptExecutorExternalEventHandler extExecEventHandler;
         private static ExternalEvent extExecEvent;
+        private static readonly TimeSpan ExternalEventStartTimeout = TimeSpan.FromSeconds(30);
 
         public static void Initialize() {
             // Idempotent on purpose. The ExternalEvent is scoped to the add-in
@@ -225,11 +233,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static int RequestExecuteScript(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
             if (extExecEventHandler != null) {
+                extExecEventHandler.Result = ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                extExecEventHandler.Started.Reset();
+                extExecEventHandler.Completed.Reset();
                 extExecEventHandler.ScriptData = scriptData;
                 extExecEventHandler.ScriptRuntimeConfigs = scriptRuntimeCfg;
-
-                extExecEventHandler.Result = ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
-                extExecEventHandler.Completed.Reset();
 
                 // request command exec now
                 var request = extExecEvent.Raise();
@@ -241,6 +249,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // wait until the script is executed
                 if (scriptExecConfigs.WaitForResult) {
+                    if (!extExecEventHandler.Started.Wait(ExternalEventStartTimeout)) {
+                        extExecEventHandler.ScriptData = null;
+                        extExecEventHandler.ScriptRuntimeConfigs = null;
+                        logger.Warn("Revit did not start the external event within {0}s for script: {1}",
+                            ExternalEventStartTimeout.TotalSeconds, scriptData.ScriptPath);
+                        return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                    }
                     extExecEventHandler.Completed.Wait();
                     return extExecEventHandler.Result;
                 }
