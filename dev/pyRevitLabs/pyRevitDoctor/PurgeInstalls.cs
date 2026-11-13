@@ -56,6 +56,7 @@ namespace pyRevitDoctor {
                     }
                     catch {
                         Console.WriteLine($"Can not open \"({target.BaseKey})\\{target.SubKeyName}\". Run this command as admin");
+                        Environment.ExitCode = 1;
                         continue;
                     }
 
@@ -78,6 +79,7 @@ namespace pyRevitDoctor {
                                 }
                                 catch (Exception delEx) {
                                     Console.WriteLine($"Error Deleting {key.Name}\\{subkeyName}\\ ({product.Name} {product.Version}) | {delEx.Message}");
+                                    Environment.ExitCode = 1;
                                 }
                     key.Close();
                 }
@@ -89,7 +91,7 @@ namespace pyRevitDoctor {
         }
 
         static bool CheckInstallerProducts(RegistryTarget searchTarget, RegistryKey searchTargetKey, string subKeyName, Product product, bool dryrun) {
-            var label = $"{searchTargetKey.Name}\\{subKeyName} ({product.Name} {product.Version})";
+            string Label() => $"{searchTargetKey.Name}\\{subKeyName} ({product.Name} {product.Version})";
             try {
                 string productName;
                 string productIcon;
@@ -105,18 +107,14 @@ namespace pyRevitDoctor {
                 using var baseKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default);
                 using var featuresKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\Features"), writable: true);
                 using var upgradeInfoKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\UpgradeCodes"), writable: true);
-                if (featuresKey == null || upgradeInfoKey == null) {
-                    Console.WriteLine($"Skipped {label} | the Features or UpgradeCodes registry key is missing, nothing was deleted");
-                    return false;
-                }
 
-                if (featuresKey.GetSubKeyNames().Contains(subKeyName)) {
+                if (featuresKey != null && featuresKey.GetSubKeyNames().Contains(subKeyName)) {
                     if (!dryrun)
                         featuresKey.DeleteSubKey(subKeyName);
                     Console.WriteLine($"{(dryrun ? "Fake Deleted" : "Deleted")} {featuresKey.Name}\\{subKeyName}\\ ({product.Name} {product.Version})");
                 }
 
-                foreach (var upgradeInfoSubKeyName in upgradeInfoKey.GetSubKeyNames()) {
+                foreach (var upgradeInfoSubKeyName in upgradeInfoKey?.GetSubKeyNames() ?? Array.Empty<string>()) {
                     using var subUpgradeInfoKey = upgradeInfoKey.OpenSubKey(upgradeInfoSubKeyName, writable: true);
                     if (subUpgradeInfoKey != null && subUpgradeInfoKey.GetValueNames().Contains(subKeyName)) {
                         if (!dryrun)
@@ -128,7 +126,8 @@ namespace pyRevitDoctor {
                 return true;
             }
             catch (Exception ex) {
-                Console.WriteLine($"Error purging {label}, its Products key was kept | {ex.Message}");
+                Console.WriteLine($"Error purging {Label()}, its Products key was kept | {ex.Message}");
+                Environment.ExitCode = 1;
                 return false;
             }
         }

@@ -45,11 +45,12 @@ Usage:
                 PrintCommands();
 
             else if (args.Length > 0) {
-                var command = Commands.FirstOrDefault(x => x.Name == args[0]);
+                var commandName = DoctorArguments.FindCommandName(args);
+                var command = Commands.FirstOrDefault(x => x.Name == commandName);
                 if (command.Command != null)
                     command.Command(dryrun);
                 else {
-                    Console.Error.WriteLine($"Unknown command \"{args[0]}\". Run \"pyrevit-doctor --list\" to see the available commands.");
+                    Console.Error.WriteLine($"Unknown command \"{commandName ?? args[0]}\". Run \"pyrevit-doctor --list\" to see the available commands.");
                     Environment.ExitCode = 1;
                 }
             }

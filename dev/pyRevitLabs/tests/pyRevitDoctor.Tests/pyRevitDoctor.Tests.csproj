@@ -24,6 +24,7 @@
 
     <ItemGroup>
         <Compile Include="..\..\pyRevitDoctor\ProductCatalog.cs" Link="Sources\ProductCatalog.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\DoctorArguments.cs" Link="Sources\DoctorArguments.cs"/>
     </ItemGroup>
 
     <ItemGroup>
