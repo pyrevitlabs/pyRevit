@@ -168,6 +168,7 @@ COMP_LIBRARY_DIR_NAME = "lib"
 COMP_BIN_DIR_NAME = "bin"
 COMP_HOOKS_DIR_NAME = "hooks"
 COMP_CHECKS_DIR_NAME = "checks"
+COMP_CHECK_POSTFIX = "_check.py"
 
 # unique ids
 UNIQUE_ID_SEPARATOR = "_"

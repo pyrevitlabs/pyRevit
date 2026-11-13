@@ -14,6 +14,7 @@ import imp
 import inspect
 
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.extensions import COMP_CHECK_POSTFIX
 from pyrevit.extensions import extensionmgr
 from pyrevit.extensions import extpackages as extpkg
 from pyrevit.preflight.case import PreflightTestCase
@@ -35,8 +36,10 @@ def _grab_test_types(module):
 
 
 def _get_check_name(check_script):
-    script_name = op.splitext(op.basename(check_script))[0]
-    return script_name.replace("_check", "")
+    file_name = op.basename(check_script)
+    if file_name.lower().endswith(COMP_CHECK_POSTFIX):
+        return file_name[: -len(COMP_CHECK_POSTFIX)]
+    return op.splitext(file_name)[0]
 
 
 class PreflightCheck(object):
