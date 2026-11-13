@@ -15,6 +15,9 @@ ROOT_DIR = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
 GENERICCOMPS = op.join(
     ROOT_DIR, "pyrevitlib", "pyrevit", "extensions", "genericcomps.py"
 )
+EXTENSIONS_INIT = op.join(
+    ROOT_DIR, "pyrevitlib", "pyrevit", "extensions", "__init__.py"
+)
 METHOD_NAME = "_read_bundle_metadata_from_python_script"
 
 
@@ -41,12 +44,24 @@ class _FakeScriptFileParser(object):
         return None
 
 
-class _FakeExts(object):
-    AUTHOR_PARAM = "__author__"
-    AUTHORS_PARAM = "__authors__"
+def _load_exts_constants():
+    with open(EXTENSIONS_INIT, "rb") as source_file:
+        tree = ast.parse(source_file.read())
+    constants = {}
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            constants[node.targets[0].id] = node.value.value
+    return constants
 
-    def __getattr__(self, name):
-        return name
+
+def _make_exts():
+    return types.SimpleNamespace(**_load_exts_constants())
 
 
 class _RaisingLogger(object):
@@ -74,7 +89,7 @@ class _CommandStub(object):
 def _read_author(params, existing_author=None):
     module, namespace = _load_method()
     _FakeScriptFileParser.params = params
-    namespace["exts"] = _FakeExts()
+    namespace["exts"] = _make_exts()
     namespace["mlogger"] = _RaisingLogger()
     namespace["coreutils"] = types.SimpleNamespace(
         ScriptFileParser=_FakeScriptFileParser
