@@ -1,13 +1,15 @@
-from pyrevit import forms
-from pyrevit.revit import ui
+from pyrevit import DB, UI, forms
+from pyrevit.revit import events, ui
 from pyrevit.framework import Threading, System
 import pyrevit.extensions as exts
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 from panes.clipboard.pane import MatchHistoryClipboard
 
+_DOC_OPENED_SLOT = "pyRevitTools.MatchHistoryClipboard.DocumentOpened"
+_VISIBILITY_SLOT = "pyRevitTools.MatchHistoryClipboard.DockableFrameVisibilityChanged"
+
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-
     def set_icon(is_shown):
         if is_shown:
             icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_ON_ICON_FILE)
@@ -35,21 +37,43 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
             Threading.DispatcherPriority.Background, System.Action(deferred)
         )
 
+    def watch_visibility():
+        events.replace_handler(
+            _VISIBILITY_SLOT,
+            __rvt__,
+            "DockableFrameVisibilityChanged",
+            on_visibility_changed,
+            UI.Events.DockableFrameVisibilityChangedEventArgs,
+        )
+
+    def wait_for_document():
+        events.replace_handler(
+            _DOC_OPENED_SLOT,
+            __rvt__.Application,
+            "DocumentOpened",
+            on_document_opened,
+            DB.Events.DocumentOpenedEventArgs,
+        )
+
     def on_document_opened(sender, args):
-        __rvt__.Application.DocumentOpened -= on_document_opened
+        events.release_handler(_DOC_OPENED_SLOT, __rvt__.Application, "DocumentOpened")
         update_icon_from_pane()
-        __rvt__.DockableFrameVisibilityChanged += on_visibility_changed
+        watch_visibility()
 
     set_icon(False)
 
     try:
+        events.release_handler(_DOC_OPENED_SLOT, __rvt__.Application, "DocumentOpened")
+        events.release_handler(
+            _VISIBILITY_SLOT, __rvt__, "DockableFrameVisibilityChanged"
+        )
         if __rvt__.ActiveUIDocument is not None:
             update_icon_from_pane()
-            __rvt__.DockableFrameVisibilityChanged += on_visibility_changed
+            watch_visibility()
         else:
-            __rvt__.Application.DocumentOpened += on_document_opened
+            wait_for_document()
     except Exception:
-        __rvt__.Application.DocumentOpened += on_document_opened
+        wait_for_document()
 
     return True
 
