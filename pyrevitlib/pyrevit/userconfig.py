@@ -799,12 +799,10 @@ class PyRevitConfig(object):
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
             except Exception as cEx:
                 mlogger.debug("Can not create clone from path: %s", str(cEx))
-                failure_reason = "no clone could be created | %s" % str(cEx)
-                if attachment:
-                    failure_reason += (
-                        " | the attached clone failed validation, see the "
-                        "preceding warning for its path and cause"
-                    )
+                failure_reason = "no clone could be created at %s | %s" % (
+                    HOME_DIR,
+                    str(cEx),
+                )
                 clone = None
         engines = clone.GetCPythonEngines() if clone else []
         cpy_engines_dict = {x.Version: x for x in engines}
