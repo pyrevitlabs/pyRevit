@@ -273,7 +273,7 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Initializes the DefaultLocale from user configuration if not already set.
+        /// Sets DefaultLocale from user configuration, falling back to en_us when user_locale is empty.
         /// Should be called before parsing extensions to ensure locale-aware localization.
         /// If locale has changed since last initialization, all caches are cleared.
         /// </summary>
@@ -1786,6 +1786,8 @@ namespace pyRevitExtensionParser
                             var listValue = ExtractPythonList(trimmedLine);
                             if (listValue != null && listValue.Count > 0)
                                 result.Author = string.Join("\n", listValue);
+                            else if (listValue == null && IsQuotedValue(trimmedLine))
+                                result.Author = ExtractPythonConstantValue(trimmedLine);
                         }
                         else if (trimmedLine.StartsWith("__author__"))
                         {
@@ -1863,6 +1865,18 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Returns true when the value assigned on a <c>name = value</c> line starts with a string quote.
+        /// </summary>
+        private static bool IsQuotedValue(string line)
+        {
+            var separator = line.IndexOf('=');
+            if (separator < 0)
+                return false;
+            var value = line.Substring(separator + 1).TrimStart();
+            return value.StartsWith("\"") || value.StartsWith("'");
+        }
+
+        /// <summary>
         /// Removes a trailing <c>#</c> comment that sits outside any quoted string and trims the result.
         /// </summary>
         private static string StripTrailingComment(string value)
@@ -1873,7 +1887,9 @@ namespace pyRevitExtensionParser
                 var ch = value[i];
                 if (quoteChar != '\0')
                 {
-                    if (ch == quoteChar && value[i - 1] != '\\')
+                    if (ch == '\\')
+                        i++;
+                    else if (ch == quoteChar)
                         quoteChar = '\0';
                 }
                 else if (ch == '"' || ch == '\'')
@@ -2036,10 +2052,7 @@ namespace pyRevitExtensionParser
                     return ProcessPythonEscapeSequences(quotedValue);
 
                 // If no quotes, return the value as-is (for unquoted numbers, etc.)
-                // Remove any trailing comments
-                var commentIndex = value.IndexOf('#');
-                if (commentIndex >= 0)
-                    value = value.Substring(0, commentIndex).Trim();
+                value = StripTrailingComment(value);
 
                 return string.IsNullOrEmpty(value) ? null : value;
             }
@@ -2054,7 +2067,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim().ToLowerInvariant();
+                var value = StripTrailingComment(parts[1]).ToLowerInvariant();
                 if (value == "true")
                     return true;
                 if (value == "false")

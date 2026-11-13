@@ -12,7 +12,7 @@ namespace pyRevitExtensionParserTest
     [Category("HostFree")]
     [Category("Integration")]
     [Category("Regression")]
-    public class ScriptMetadataParsingTests : TempFileTestBase
+    public class ScriptMetadataIssue4046Tests : TempFileTestBase
     {
         private const string ButtonName = "Probe";
 
@@ -42,6 +42,37 @@ namespace pyRevitExtensionParserTest
             var button = ParseButton("__title__ = {\"en_us\": \"Door #1\"}  # note\n");
 
             Assert.That(button.Title, Is.EqualTo("Door #1"));
+        }
+
+        /// <summary>A trailing comment after a boolean flag does not turn it off.</summary>
+        [Test]
+        public void BooleanFlags_WithTrailingComment_AreRead()
+        {
+            var button = ParseButton("__beta__ = True  # note\n__cleanengine__ = True  # needed\n");
+
+            Assert.That(button.IsBeta, Is.True);
+            var metadata = ExtensionParser.ReadScriptMetadata(
+                Path.Combine(TestTempDir, "Probe.extension", "Tab.tab", "Panel.panel", ButtonName + ".pushbutton", "script.py"));
+            Assert.That(((IDictionary<string, object>)metadata["engine"])["clean"], Is.EqualTo(true));
+        }
+
+        /// <summary>A closing quote after an escaped backslash ends the string before the comment.</summary>
+        [Test]
+        public void Title_DictEndingWithEscapedBackslashBeforeComment_ParsesEntries()
+        {
+            var button = ParseButton("__title__ = {\"en_us\": \"Doors\", \"fr_fr\": \"C:\\\\\"}  # note\n");
+
+            Assert.That(button.Title, Is.EqualTo("Doors"));
+            Assert.That(button.GetLocalizedTitle("fr_fr"), Does.StartWith("C:"));
+        }
+
+        /// <summary>A plain string __authors__ takes precedence over __author__.</summary>
+        [Test]
+        public void Author_AuthorsAsPlainString_WinsOverAuthor()
+        {
+            var button = ParseButton("__author__ = \"Ann\"\n__authors__ = \"Bob\"\n");
+
+            Assert.That(button.Author, Is.EqualTo("Bob"));
         }
 
         /// <summary>A docstring closing quote at column zero does not remain in the tooltip.</summary>
