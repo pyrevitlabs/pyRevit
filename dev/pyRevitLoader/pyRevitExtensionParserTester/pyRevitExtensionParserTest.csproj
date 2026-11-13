@@ -92,6 +92,7 @@
     <Compile Include="LoadTimelineTests.cs" />
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
+    <Compile Include="ScriptRequestTests.cs" />
     <Compile Include="SessionResourceRegistryTests.cs" />
     <Compile Include="IronPythonRuleCachesTests.cs" />
     <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
