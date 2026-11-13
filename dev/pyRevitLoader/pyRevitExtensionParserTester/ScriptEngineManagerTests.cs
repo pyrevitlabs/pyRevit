@@ -229,6 +229,31 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void ClearEnginesShutsARunningEngineDownWhenItsExecutionEnds()
+        {
+            var excluded = GetEngine("ExcludedExtension.extension");
+            var running = GetEngine("RunningExtension.extension");
+            ScriptEngineManager.EnterEngine(running.TypeId);
+            ScriptEngineManager.EnterEngine(running.TypeId);
+
+            ScriptEngineManager.ClearEngines(excluded.TypeId);
+            ScriptEngineManager.ExitEngine(running.TypeId);
+
+            Assert.That(running.ShutdownCount, Is.EqualTo(0),
+                "an outer execution of the engine is still in progress");
+
+            ScriptEngineManager.ExitEngine(running.TypeId);
+
+            Assert.That(running.ShutdownCount, Is.EqualTo(1),
+                "an engine dropped from the cache while running must not leak");
+
+            ScriptEngineManager.EnterEngine(running.TypeId);
+            ScriptEngineManager.ExitEngine(running.TypeId);
+
+            Assert.That(running.ShutdownCount, Is.EqualTo(1));
+        }
+
+        [Test]
         public void ClearEnginesToleratesAnEngineThatFailsToShutDown()
         {
             var broken = GetEngine("BrokenExtension.extension");
