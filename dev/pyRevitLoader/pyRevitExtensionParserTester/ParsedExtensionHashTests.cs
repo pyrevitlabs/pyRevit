@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using pyRevitExtensionParser;
 using pyRevitExtensionParserTest.TestHelpers;
@@ -104,6 +105,46 @@ namespace pyRevitExtensionParserTest
             var after = GetHash(extension);
 
             Assert.That(after, Is.Not.EqualTo(before));
+        }
+
+        /// <summary>Editing a family file inside a content bundle changes the cache key.</summary>
+        [Test]
+        public void GetHash_ChangesWhenAFamilyFileInsideAContentBundleIsEdited()
+        {
+            var extension = CreateExtension("Root.extension");
+            var bundleDirectory = Path.Combine(extension, "Root.tab", "Root.panel", "Family.content");
+            var editedFile = AddFile(bundleDirectory, "content.rfa", DateTime.UtcNow.AddMinutes(-1));
+
+            var before = GetHash(extension);
+            File.SetLastWriteTimeUtc(editedFile, DateTime.UtcNow.AddMinutes(1));
+            var after = GetHash(extension);
+
+            Assert.That(after, Is.Not.EqualTo(before));
+        }
+
+        /// <summary>Every bundle suffix the parser recognizes is walked by the cache key.</summary>
+        [Test]
+        public void GetHash_ChangesWhenAFileInsideAnyRecognizedBundleTypeIsEdited()
+        {
+            var suffixes = Enum.GetValues(typeof(ExtensionParser.CommandComponentType))
+                .Cast<ExtensionParser.CommandComponentType>()
+                .Select(type => type.ToExtension())
+                .Where(suffix => suffix.Length > 0)
+                .ToList();
+            Assert.That(suffixes, Is.Not.Empty);
+
+            foreach (var suffix in suffixes)
+            {
+                var extension = CreateExtension("Root" + suffix.Replace('.', '_') + ".extension");
+                var bundleDirectory = Path.Combine(extension, "Root.tab", "Root.panel", "Probe" + suffix);
+                var editedFile = AddFile(bundleDirectory, "script.py", DateTime.UtcNow.AddMinutes(-1));
+
+                var before = GetHash(extension);
+                File.SetLastWriteTimeUtc(editedFile, DateTime.UtcNow.AddMinutes(1));
+                var after = GetHash(extension);
+
+                Assert.That(after, Is.Not.EqualTo(before), $"Bundle suffix {suffix} is not hashed.");
+            }
         }
 
         /// <summary>Editing a file in the extension checks folder changes the cache key.</summary>
