@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+
 using pyRevitLabs.Common;
 
 namespace pyRevitCLI.Tests;
@@ -12,6 +15,8 @@ public class OpenUrlTests {
     [InlineData("https://pyrevitlabs.io", "https://pyrevitlabs.io")]
     [InlineData("http://pyrevitlabs.io/docs", "http://pyrevitlabs.io/docs")]
     [InlineData("pyrevitlabs.io", "http://pyrevitlabs.io")]
+    [InlineData("HTTPS://pyrevitlabs.io", "HTTPS://pyrevitlabs.io")]
+    [InlineData("  pyrevitlabs.io  ", "http://pyrevitlabs.io")]
     public void UrlStartInfoUsesTheShellAndAnHttpUrl(string url, string expected) {
         var startInfo = CommonUtils.CreateUrlStartInfo(url);
 
@@ -25,6 +30,26 @@ public class OpenUrlTests {
     [InlineData("   ")]
     public void OpeningAMissingUrlDoesNotThrow(string url) {
         var exception = Record.Exception(() => CommonUtils.OpenUrl(url));
+
+        Assert.Null(exception);
+    }
+
+    [Theory]
+    [InlineData(@"C:\docs\help.html")]
+    [InlineData("file:///C:/docs/help.html")]
+    [InlineData("mailto:help@pyrevitlabs.io")]
+    public void ShellStartInfoKeepsTheTargetUnchanged(string target) {
+        var startInfo = CommonUtils.CreateShellStartInfo(target);
+
+        Assert.True(startInfo.UseShellExecute);
+        Assert.Equal(target, startInfo.FileName);
+    }
+
+    [Fact]
+    public void OpeningATargetNoHandlerCanOpenDoesNotThrow() {
+        var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "missing.html");
+
+        var exception = Record.Exception(() => CommonUtils.OpenWithShell(missing));
 
         Assert.Null(exception);
     }

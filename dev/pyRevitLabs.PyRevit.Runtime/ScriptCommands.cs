@@ -9,6 +9,8 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 
+using pyRevitLabs.Common;
+
 using MenuItem = System.Windows.Controls.MenuItem;
 using ContextMenu = System.Windows.Controls.ContextMenu;
 
@@ -111,7 +113,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     MenuItem openHelpSource = new MenuItem();
                     openHelpSource.Header = "Open Help";
                     openHelpSource.ToolTip = ScriptData.HelpSource;
-                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(ScriptData.HelpSource) { UseShellExecute = true }); };
+                    openHelpSource.Click += delegate { CommonUtils.OpenWithShell(ScriptData.HelpSource); };
                     pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
 

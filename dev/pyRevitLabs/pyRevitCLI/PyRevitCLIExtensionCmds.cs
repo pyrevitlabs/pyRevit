@@ -115,8 +115,12 @@ namespace pyRevitCLI {
                 else {
                     if (info && extDef != null)
                         Console.WriteLine(extDef.ToString());
-                    else if (help && extDef != null)
-                        CommonUtils.OpenUrl(extDef.Website);
+                    else if (help && extDef != null) {
+                        if (string.IsNullOrWhiteSpace(extDef.Website))
+                            logger.Error("Extension \"{0}\" has no website to open", extName);
+                        else
+                            CommonUtils.OpenWithShell(extDef.Website);
+                    }
                 }
             }
         }

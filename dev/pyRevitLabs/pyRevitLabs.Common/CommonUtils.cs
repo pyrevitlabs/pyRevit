@@ -1,5 +1,6 @@
 using OpenMcdf;
 using System;
+using System.ComponentModel;
 using System.Text;
 using System.Diagnostics;
 using System.IO;
@@ -289,18 +290,51 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        internal static ProcessStartInfo CreateShellStartInfo(string target) {
+            return new ProcessStartInfo(target.Trim()) { UseShellExecute = true };
+        }
+
         internal static ProcessStartInfo CreateUrlStartInfo(string url) {
-            if (!Regex.IsMatch(url, @"^https?://"))
+            url = url.Trim();
+            if (!Regex.IsMatch(url, @"^https?://", RegexOptions.IgnoreCase))
                 url = "http://" + url;
-            return new ProcessStartInfo(url) { UseShellExecute = true };
+            return CreateShellStartInfo(url);
+        }
+
+        /// <summary>
+        /// Opens <paramref name="target"/> (URL, file path or any URI scheme) with its shell-associated handler, unchanged.
+        /// </summary>
+        /// <remarks>
+        /// The target is started through the shell, which .NET 8 and later no longer do by default.
+        /// Logs an error instead of throwing when <paramref name="target"/> is empty or no handler can open it.
+        /// </remarks>
+        public static void OpenWithShell(string target, string logErrMsg = null) {
+            if (string.IsNullOrWhiteSpace(target)) {
+                logger.Error(string.Format("{0}. Nothing to open.", logErrMsg ?? "Error opening target"));
+                return;
+            }
+
+            StartShell(CreateShellStartInfo(target), logErrMsg);
+        }
+
+        private static void StartShell(ProcessStartInfo startInfo, string logErrMsg) {
+            logger.Debug("Opening {0}", startInfo.FileName);
+            try {
+                Process.Start(startInfo);
+            }
+            catch (Win32Exception ex) {
+                logger.Error(string.Format("{0}. {1}",
+                                           logErrMsg ?? string.Format("Error opening \"{0}\"", startInfo.FileName),
+                                           ex.Message));
+            }
         }
 
         /// <summary>
         /// Opens <paramref name="url"/> in the default browser, prefixing <c>http://</c> when no scheme is given.
         /// </summary>
         /// <remarks>
-        /// The URL is started through the shell, which .NET 8 and later no longer do by default.
-        /// Logs an error instead of opening when <paramref name="url"/> is empty or no internet connection is detected.
+        /// Logs an error instead of opening when <paramref name="url"/> is empty, no internet connection is detected
+        /// or no handler can open it. Use <see cref="OpenWithShell"/> for local paths and other URI schemes.
         /// </remarks>
         public static void OpenUrl(string url, string logErrMsg = null) {
             if (string.IsNullOrWhiteSpace(url)) {
@@ -309,9 +343,7 @@ namespace pyRevitLabs.Common {
             }
 
             if (CheckInternetConnection()) {
-                var startInfo = CreateUrlStartInfo(url);
-                logger.Debug("Opening {0}", startInfo.FileName);
-                Process.Start(startInfo);
+                StartShell(CreateUrlStartInfo(url), logErrMsg);
             }
             else {
                 if (logErrMsg is null)
