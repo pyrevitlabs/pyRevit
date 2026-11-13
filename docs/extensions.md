@@ -146,10 +146,10 @@ A `checks/` folder at the root of a UI extension holds [preflight][pyrevit.prefl
 
 Each class in a file that derives from `pyrevit.preflight.PreflightTestCase` becomes one entry in the dialog:
 
-- The entry name is the class attribute `name`, or the file name without a trailing `_check` when `name` is absent.
+- The entry name is the class attribute `name`, or, when `name` is absent, the file name without `.py` and with every occurrence of `_check` removed (`model_check_views_check.py` becomes `model_views`).
 - The class docstring is required. Its first line is the subtitle and the remaining lines are the description; a missing docstring is logged as an error.
 - The optional class attribute `author` overrides the extension's author.
-- `setUp(doc, output)`, `startTest(doc, output)`, `tearDown(doc, output)` and `doCleanups(doc, output)` run in that order on a fresh instance against the active document.
+- `setUp(doc, output)`, `startTest(doc, output)`, `tearDown(doc, output)` and `doCleanups(doc, output)` run in that order on a fresh instance against the active document. An exception in any of them aborts the run, so `tearDown` and `doCleanups` are skipped after a failure; don't rely on them for cleanup that must always happen.
 
 Checks from all enabled UI extensions are merged into one list; a disabled extension, such as the default-disabled pyRevitDevTools, contributes none. `extensions/pyRevitDevTools.extension/checks/view_count_check.py` is the reference example, and the checks in `extensions/pyRevitTools.extension/checks/` show localized, multi-check files.
 
