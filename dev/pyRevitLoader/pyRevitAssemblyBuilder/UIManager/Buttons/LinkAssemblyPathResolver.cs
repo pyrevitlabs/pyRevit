@@ -18,8 +18,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// </summary>
         /// <param name="component">The link or invoke button component.</param>
         /// <param name="extension">
-        /// The owning extension. Link and invoke buttons search its extension-level,
-        /// tab-level and component <c>bin/</c> and <c>lib/</c> folders; without it only the
+        /// The owning extension. Link and invoke buttons search the button's own folder,
+        /// <c>bin/</c> and <c>lib/</c>, then those of each ancestor up to the extension, nearest
+        /// first. A sibling bundle's folders are never searched. Without the extension only the
         /// component folder and its <c>bin/</c> are searched.
         /// </param>
         public static string? Resolve(ParsedComponent component, ParsedExtension? extension)
@@ -51,12 +52,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             if (extension != null &&
                 (component.Type == CommandComponentType.LinkButton || component.Type == CommandComponentType.InvokeButton))
             {
-                searchPaths.AddRange(extension.CollectBinaryPaths(component));
-                foreach (var libPath in extension.CollectLibraryPaths(component))
-                {
-                    if (!searchPaths.Contains(libPath))
-                        searchPaths.Add(libPath);
-                }
+                searchPaths.AddRange(CollectOwnAndAncestorPaths(component, extension));
             }
             else if (!string.IsNullOrEmpty(component.Directory))
             {
@@ -88,6 +84,28 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             }
 
             return null;
+        }
+
+        private static IEnumerable<string> CollectOwnAndAncestorPaths(ParsedComponent component, ParsedExtension extension)
+        {
+            var paths = new List<string>();
+            if (string.IsNullOrEmpty(component.Directory))
+                return paths;
+
+            paths.Add(component.Directory);
+
+            var stop = extension.Directory?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var current = component.Directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            while (!string.IsNullOrEmpty(current))
+            {
+                paths.Add(Path.Combine(current, "bin"));
+                paths.Add(Path.Combine(current, "lib"));
+                if (string.Equals(current, stop, StringComparison.OrdinalIgnoreCase))
+                    break;
+                current = Path.GetDirectoryName(current);
+            }
+
+            return paths;
         }
     }
 }

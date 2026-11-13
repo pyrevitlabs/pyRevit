@@ -3,6 +3,9 @@ using pyRevitAssemblyBuilder.AssemblyMaker;
 
 namespace pyRevitExtensionParserTest
 {
+    /// <summary>
+    /// Regression tests for #4047: extension assemblies are matched by exact extension name.
+    /// </summary>
     [TestFixture]
     [Category("HostFree")]
     [Category("Unit")]

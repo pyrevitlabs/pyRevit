@@ -3,6 +3,9 @@ using pyRevitAssemblyBuilder.UIManager.Buttons;
 
 namespace pyRevitExtensionParserTest
 {
+    /// <summary>
+    /// Regression tests for #4047: a reused button drops its availability class when its context is removed.
+    /// </summary>
     [TestFixture]
     [Category("HostFree")]
     [Category("Unit")]
