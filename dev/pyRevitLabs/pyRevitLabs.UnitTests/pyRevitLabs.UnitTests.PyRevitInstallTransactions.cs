@@ -246,6 +246,44 @@ namespace pyRevitLabs.UnitTests {
             StringAssert.Contains(ex.Message, "already installed");
         }
 
+        /// <summary>A malformed extension.json in an unrelated extension does not block an install.</summary>
+        [TestMethod]
+        public void InstallExtension_WhenAnUnrelatedExtensionHasMalformedMetadata_DoesNotReportAlreadyInstalled() {
+            var searchPath = Path.Combine(_tempRoot, "extensions");
+            var brokenPath = Path.Combine(searchPath, "Broken.extension");
+            Directory.CreateDirectory(brokenPath);
+            File.WriteAllText(Path.Combine(brokenPath, "extension.json"), "{ not valid json");
+            PyRevitExtensions.RegisterExtensionSearchPath(searchPath);
+
+            var ex = Assert.ThrowsException<PyRevitException>(
+                () => PyRevitExtensions.InstallExtension(
+                    "Sample",
+                    PyRevitExtensionTypes.UIExtension,
+                    Path.Combine(_tempRoot, "missing-source-repo"),
+                    destPath: Path.Combine(_tempRoot, "elsewhere")));
+
+            Assert.IsFalse(ex.Message.Contains("already installed"), ex.Message);
+        }
+
+        /// <summary>A malformed extension.json does not hide an installed extension of the same folder name.</summary>
+        [TestMethod]
+        public void InstallExtension_WhenTheSameNamedExtensionHasMalformedMetadata_StillReportsAlreadyInstalled() {
+            var searchPath = Path.Combine(_tempRoot, "extensions");
+            var brokenPath = Path.Combine(searchPath, "Sample.extension");
+            Directory.CreateDirectory(brokenPath);
+            File.WriteAllText(Path.Combine(brokenPath, "extension.json"), "{ not valid json");
+            PyRevitExtensions.RegisterExtensionSearchPath(searchPath);
+
+            var ex = Assert.ThrowsException<PyRevitException>(
+                () => PyRevitExtensions.InstallExtension(
+                    "Sample",
+                    PyRevitExtensionTypes.UIExtension,
+                    Path.Combine(_tempRoot, "missing-source-repo"),
+                    destPath: Path.Combine(_tempRoot, "elsewhere")));
+
+            StringAssert.Contains(ex.Message, "already installed");
+        }
+
         [TestMethod]
         public void DeleteInvalidClone_RemovesTheClonedPathLeavesTheSourceAloneAndThrows() {
             var sourcePath = Path.Combine(_tempRoot, "source-repo");

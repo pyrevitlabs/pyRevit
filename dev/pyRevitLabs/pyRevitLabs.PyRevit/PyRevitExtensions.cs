@@ -168,10 +168,10 @@ namespace pyRevitLabs.PyRevit {
                                             string repoPath, string destPath = null, string branchName = null,
                                             GitInstallerCredentials credentials = null) {
             // make sure extension is not installed already
-            var existExt = FindInstalledExtensionByExactName(extensionName);
-            if (existExt != null)
+            var existingInstallPath = FindInstalledExtensionByExactName(extensionName);
+            if (existingInstallPath != null)
                 throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
-                                                         existExt.Name, existExt.InstallPath));
+                                                         extensionName, existingInstallPath));
 
             // determine repo folder name
             // Name.extension for UI Extensions
@@ -211,15 +211,36 @@ namespace pyRevitLabs.PyRevit {
 
         }
 
-        private static PyRevitExtension FindInstalledExtensionByExactName(string extensionName) {
+        private static string FindInstalledExtensionByExactName(string extensionName) {
             foreach (var searchPath in GetRegisteredExtensionSearchPaths()) {
                 if (!Directory.Exists(searchPath))
                     continue;
-                foreach (var ext in FindExtensions(searchPath))
-                    if (string.Equals(ext.Name, extensionName, StringComparison.OrdinalIgnoreCase))
-                        return ext;
+                foreach (var extPostFix in PyRevitExtension.GetAllExtentionDirExts()) {
+                    if (string.IsNullOrEmpty(extPostFix))
+                        continue;
+                    foreach (var subdir in Directory.EnumerateDirectories(searchPath, "*" + extPostFix))
+                        if (IsInstalledExtensionNamed(subdir, extPostFix, extensionName))
+                            return subdir;
+                }
             }
             return null;
+        }
+
+        private static bool IsInstalledExtensionNamed(string extensionDir, string extPostFix, string extensionName) {
+            if (!PyRevitExtension.IsExtensionDirectory(extensionDir))
+                return false;
+            var dirName = Path.GetFileName(extensionDir);
+            if (string.Equals(dirName.Substring(0, dirName.Length - extPostFix.Length),
+                              extensionName, StringComparison.OrdinalIgnoreCase))
+                return true;
+            try {
+                return string.Equals(new PyRevitExtension(extensionDir).Name,
+                                     extensionName, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) {
+                _logger.Warn("Skipping extension \"{0}\" with unreadable metadata | {1}", extensionDir, ex.Message);
+                return false;
+            }
         }
 
         internal static void DeleteInvalidClone(string clonedPath, string repoPath) {
