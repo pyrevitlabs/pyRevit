@@ -292,8 +292,10 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunDoctor(string args, bool dryRun = false) {
+        RunDoctor(string args, bool dryRun = false, bool force = false, bool keepConfig = false) {
             if (dryRun) args += " --dryrun";
+            if (force) args += " --force";
+            if (keepConfig) args += " --keep-config";
 
             string doctorExe = Path.Combine(GetProcessPath(), "pyrevit-doctor.exe");
             ProcessStartInfo cpyProcessInfo = new ProcessStartInfo(doctorExe) {
@@ -303,6 +305,7 @@ namespace pyRevitCLI {
             };
             var utilityProcess = Process.Start(cpyProcessInfo);
             utilityProcess.WaitForExit();
+            Environment.ExitCode = utilityProcess.ExitCode;
         }
     }
 }

@@ -130,4 +130,4 @@ Usage:
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit doctor (-h | --help)
     pyrevit doctor [--list]
-    pyrevit doctor <doctor_command> [--dryrun]
+    pyrevit doctor <doctor_command> [--dryrun] [--force] [--keep-config]
