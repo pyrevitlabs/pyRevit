@@ -16,10 +16,12 @@ public partial class McpServerTests {
         private readonly BlockingCollection<string> input = new BlockingCollection<string>();
         private readonly LineWriter output = new LineWriter();
         private readonly Task serving;
+        private readonly LineReader reader;
 
         public LiveSession(string defaultRevit = null, ManualResetEventSlim writeGate = null, TimeSpan? inputClosedGracePeriod = null) {
             output.Gate = writeGate;
-            serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, new LineReader(input), output, inputClosedGracePeriod));
+            reader = new LineReader(input);
+            serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, reader, output, inputClosedGracePeriod));
         }
 
         public void Send(JObject message) => input.Add(message.ToString(Formatting.None));
@@ -33,6 +35,8 @@ public partial class McpServerTests {
         public int Unread => output.Lines.Count;
 
         public ManualResetEventSlim Writing => output.Writing;
+
+        public ManualResetEventSlim InputEnded => reader.Ended;
 
         public JObject Next() {
             Assert.True(output.Lines.TryTake(out var line, Patience), "The server did not answer in time.");
@@ -55,14 +59,18 @@ public partial class McpServerTests {
         private string current = string.Empty;
         private int position;
 
+        public ManualResetEventSlim Ended { get; } = new ManualResetEventSlim(false);
+
         public LineReader(BlockingCollection<string> lines) {
             this.lines = lines;
         }
 
         public override int Read() {
             if (position == current.Length) {
-                if (!lines.TryTake(out var line, Timeout.Infinite))
+                if (!lines.TryTake(out var line, Timeout.Infinite)) {
+                    Ended.Set();
                     return -1;
+                }
                 current = line + '\n';
                 position = 0;
             }
@@ -212,6 +220,10 @@ public partial class McpServerTests {
         session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
         Assert.True(runStarted.Wait(Patience));
         var closing = Task.Run(() => session.CloseInputAndWait(Patience));
+        Assert.True(session.InputEnded.Wait(Patience), "The server never read the end of input.");
+        Thread.Sleep(TimeSpan.FromMilliseconds(300));
+        Assert.False(closing.IsCompleted, "The server ended as soon as stdin did.");
+        Assert.Equal(0, session.Unread);
         release.Set();
         var run = session.Next();
 
