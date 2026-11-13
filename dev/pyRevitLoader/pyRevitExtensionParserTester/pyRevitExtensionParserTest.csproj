@@ -54,6 +54,7 @@
     <Compile Include="SeparatorTests.cs" />
     <Compile Include="ExtensionAssemblyNameTests.cs" />
     <Compile Include="LinkAssemblyPathResolverTests.cs" />
+    <Compile Include="AvailabilityBindingTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
     <Compile Include="DynamoScriptTests.cs" />
