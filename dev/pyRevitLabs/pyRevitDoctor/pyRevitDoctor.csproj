@@ -8,6 +8,9 @@
     
     <Platforms>x64</Platforms>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
 
     <PermitDeploy>true</PermitDeploy>
   </PropertyGroup>

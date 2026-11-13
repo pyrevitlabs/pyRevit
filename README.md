@@ -153,6 +153,10 @@ Check the list of [Currently Open](https://github.com/pyrevitlabs/pyRevit/issues
 
 [Reporting New Issues](https://www.notion.so/Reporting-New-Issues-f1fdd62cf6074b318bfe8ddfbc2d8d98)
 
+**↓** If pyRevit can not be installed or uninstalled, download the standalone doctor tool and run it without installing anything (needs the .NET 8 runtime)
+
+[pyrevit-doctor.exe](https://github.com/pyrevitlabs/pyRevit/releases/latest/download/pyrevit-doctor.exe)
+
 &nbsp;
 
 # Getting Involved
