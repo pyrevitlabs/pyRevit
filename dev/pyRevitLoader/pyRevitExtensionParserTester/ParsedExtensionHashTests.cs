@@ -89,6 +89,79 @@ namespace pyRevitExtensionParserTest
             Assert.That(after, Is.EqualTo(before));
         }
 
+        /// <summary>Editing a file in a bundle type that generates commands changes the cache key.</summary>
+        [TestCase("Open.urlbutton", "bundle.yaml")]
+        [TestCase("Invoke.invokebutton", "bundle.yaml")]
+        [TestCase("Open.nobutton", "script.py")]
+        public void GetHash_ChangesWhenAFileInsideABundleIsEdited(string bundleName, string fileName)
+        {
+            var extension = CreateExtension("Root.extension");
+            var bundleDirectory = Path.Combine(extension, "Root.tab", "Root.panel", bundleName);
+            var editedFile = AddFile(bundleDirectory, fileName, DateTime.UtcNow.AddMinutes(-1));
+
+            var before = GetHash(extension);
+            File.SetLastWriteTimeUtc(editedFile, DateTime.UtcNow.AddMinutes(1));
+            var after = GetHash(extension);
+
+            Assert.That(after, Is.Not.EqualTo(before));
+        }
+
+        /// <summary>Editing a file in the extension checks folder changes the cache key.</summary>
+        [Test]
+        public void GetHash_ChangesWhenAFileInsideChecksIsEdited()
+        {
+            var extension = CreateExtension("Root.extension");
+            var editedFile = AddFile(Path.Combine(extension, "checks"), "check.py", DateTime.UtcNow.AddMinutes(-1));
+
+            var before = GetHash(extension);
+            File.SetLastWriteTimeUtc(editedFile, DateTime.UtcNow.AddMinutes(1));
+            var after = GetHash(extension);
+
+            Assert.That(after, Is.Not.EqualTo(before));
+        }
+
+        /// <summary>Editing a file directly in the extension root changes the cache key.</summary>
+        [TestCase("extension.json")]
+        [TestCase("startup.py")]
+        public void GetHash_ChangesWhenAFileInTheExtensionRootIsEdited(string fileName)
+        {
+            var extension = CreateExtension("Root.extension");
+            var editedFile = AddFile(extension, fileName, DateTime.UtcNow.AddMinutes(-1));
+            Directory.SetLastWriteTimeUtc(extension, DateTime.UtcNow.AddMinutes(-1));
+
+            var before = GetHash(extension);
+            File.SetLastWriteTimeUtc(editedFile, DateTime.UtcNow.AddMinutes(1));
+            var after = GetHash(extension);
+
+            Assert.That(after, Is.Not.EqualTo(before));
+        }
+
+        /// <summary>Files in unrelated folders do not change the cache key.</summary>
+        [Test]
+        public void GetHash_IgnoresFilesInUnlistedDirectories()
+        {
+            var extension = CreateExtension("Root.extension");
+            var editedFile = AddFile(Path.Combine(extension, "docs"), "notes.py", DateTime.UtcNow.AddMinutes(-1));
+
+            var before = GetHash(extension);
+            File.SetLastWriteTimeUtc(editedFile, DateTime.UtcNow.AddMinutes(1));
+            var after = GetHash(extension);
+
+            Assert.That(after, Is.EqualTo(before));
+        }
+
+        /// <summary>Writes a file with a deterministic timestamp, creating its directory.</summary>
+        private static string AddFile(string directory, string fileName, DateTime timestamp)
+        {
+            Directory.CreateDirectory(directory);
+            Directory.SetLastWriteTimeUtc(directory, timestamp);
+            var path = Path.Combine(directory, fileName);
+            File.WriteAllText(path, "{}");
+            File.SetLastWriteTimeUtc(path, timestamp);
+            Directory.SetLastWriteTimeUtc(directory, timestamp);
+            return path;
+        }
+
         /// <summary>Creates an extension fixture containing one command bundle.</summary>
         private string CreateExtension(string directoryName)
         {
