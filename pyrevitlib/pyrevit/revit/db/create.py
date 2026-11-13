@@ -1937,7 +1937,9 @@ def _sheet_area(sheet, doc):
     )
 
 
-def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
+def place_on_sheet(
+    sheet, view, anchor="top_left", margin=0.1, right_margin=0.0, doc=None
+):
     """Place a view or schedule on a sheet, aligned to a corner of the title block.
 
     Args:
@@ -1949,6 +1951,11 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
             when it has none).
         margin (float | str, optional): gap between the placed box and the
             title block edge, in sheet feet (0.1 ft is 1.2 in).
+        right_margin (float | str, optional): width of the title block's
+            right-hand information strip, in sheet feet, which right anchors
+            and center keep clear. The title block's bounding box includes
+            the strip and its width is not exposed by the API, so measure it
+            on the sheet.
         doc (DB.Document, optional): document, defaults to the active one.
 
     Returns:
@@ -1956,8 +1963,8 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         schedule instance.
 
     Raises:
-        PyRevitException: when the view can't be added to the sheet, for
-            example because it is already on another sheet.
+        PyRevitException: when ``view`` is a sheet, or can't be added to the
+            sheet, for example because it is already on another sheet.
     """
     doc = doc or DOCS.doc
     _require_transaction(doc, "place views on sheets")
@@ -1966,10 +1973,17 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
             "anchor must be one of {}.".format(", ".join(SHEET_ANCHORS))
         )
     margin = units.parse_length(margin)
+    right_margin = units.parse_length(right_margin)
     is_schedule = isinstance(view, DB.ViewSchedule)
     if is_schedule:
         placed = DB.ScheduleSheetInstance.Create(doc, sheet.Id, view.Id, DB.XYZ.Zero)
     else:
+        if isinstance(view, DB.ViewSheet):
+            raise PyRevitException(
+                "{!r} is the sheet {}, not a view; pass the view to place.".format(
+                    view.Name, view.SheetNumber
+                )
+            )
         if not DB.Viewport.CanAddViewToSheet(doc, sheet.Id, view.Id):
             raise PyRevitException(
                 "View {!r} can't be placed on sheet {}; it may already be on a sheet.".format(
@@ -1985,6 +1999,7 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         outline = placed.GetBoxOutline()
         low, high = outline.MinimumPoint, outline.MaximumPoint
     area_low, area_high = _sheet_area(sheet, doc)
+    area_high = DB.XYZ(area_high.X - right_margin, area_high.Y, area_high.Z)
     width, height = high.X - low.X, high.Y - low.Y
     if anchor == "center":
         target_x = (area_low.X + area_high.X - width) / 2.0

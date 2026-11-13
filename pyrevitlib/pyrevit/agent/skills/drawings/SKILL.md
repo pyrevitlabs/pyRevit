@@ -46,7 +46,7 @@ create.place_on_sheet(sheet, plan_view, anchor="top_left")
 create.place_on_sheet(sheet, schedule, anchor="top_right")
 ```
 
-- **Placing:** `create.place_on_sheet(sheet, view_or_schedule, anchor, margin=0.1)` aligns the viewport or schedule to a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) or the `center` of the title block. `margin` is in sheet feet (0.1 ft = 1.2 in).
+- **Placing:** `create.place_on_sheet(sheet, view_or_schedule, anchor, margin=0.1)` aligns the viewport or schedule to a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) or the `center` of the title block. `margin` is in sheet feet (0.1 ft = 1.2 in). The title block's right-hand information strip is inside its box, so pass `right_margin` (the strip's width in sheet feet, measured on the sheet) when anchoring right or center. Passing a sheet instead of a view raises.
 - **One sheet per view:** a view can be placed on only one sheet; `place_on_sheet` raises when it's already on one. Duplicate it (`view.Duplicate(DB.ViewDuplicateOption.WithDetailing)`) for another. Schedules can repeat.
 - **Fit:** if the viewport is bigger than the sheet, raise `view.Scale` or tighten the crop.
 - **Title block parameters** such as drawn by and date are parameters on the title block instance on the sheet.

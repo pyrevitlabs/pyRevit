@@ -7,7 +7,7 @@ Run from Revit via the pyRevit DevTools "Create View Helpers Tests" button
 
 import unittest
 
-from pyrevit import DB, revit
+from pyrevit import DB, PyRevitException, revit
 from pyrevit.revit.db import create, query, update
 
 TEST_LEVEL = "Integration"
@@ -96,3 +96,15 @@ class CreateModel3dViewTests(RolledBackTestCase):
             model_size = getattr(extents.Max, axis) - getattr(extents.Min, axis)
             box_size = getattr(box.Max, axis) - getattr(box.Min, axis)
             self.assertLess(box_size, model_size + 10.0)
+
+
+class PlaceOnSheetTests(RolledBackTestCase):
+    """Regression tests for #4024."""
+
+    def test_a_sheet_is_rejected_as_a_view(self):
+        """Passing a sheet names it as a sheet instead of blaming the sheet it is on."""
+        sheet = DB.ViewSheet.CreatePlaceholder(revit.doc)
+        other = DB.ViewSheet.CreatePlaceholder(revit.doc)
+        with self.assertRaises(PyRevitException) as caught:
+            create.place_on_sheet(sheet, other)
+        self.assertIn("not a view", str(caught.exception))
