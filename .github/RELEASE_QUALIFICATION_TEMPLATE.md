@@ -4,6 +4,8 @@ Tick a box only when the check passed on the candidate commit. Put evidence in c
 A check that was not run stays unticked and goes under "Not covered" with the reason.
 -->
 
+How to run each check and when it counts as passed: [docs/release-qualification.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/docs/release-qualification.md)
+
 ## Candidate
 
 - Version:
@@ -23,7 +25,7 @@ A check that was not run stays unticked and goes under "Not covered" with the re
 
 ## Automated gates
 
-- [ ] `pyRevit CI` is green on the candidate commit, including the `wip` job
+- [ ] `pyRevit CI` is green on the candidate commit, including the `wip` job on `develop` (a hotfix branch has none)
 - [ ] `pyRevit Revit integration tests` is green on the candidate commit for 2022-2027
 - [ ] Host-free Python modules that CI omits pass (`test_check_*.py`)
 - [ ] `mkdocs build --strict` reports no warning the previous release did not have
@@ -31,7 +33,7 @@ A check that was not run stays unticked and goes under "Not covered" with the re
 
 ## Core checks
 
-**Install and upgrade** (machine without a development clone)
+**Install and upgrade** (machine without a development clone; for a hotfix, on the draft release)
 
 - [ ] Fresh install, per user and for all users: no Unsigned Add-In dialog, tab loads, candidate version shown
 - [ ] Upgrade over the previous release keeps the config and a third-party extension
@@ -43,7 +45,7 @@ A check that was not run stays unticked and goes under "Not covered" with the re
 - [ ] Every installed supported year: loads without errors, Reload works, one IronPython, one CPython and one C# button run
 - [ ] Revit 2021 started by hand (outside the integration workflow)
 
-**Engines** (one year per runtime, a 2.7.12 and a 3.4.2 session each)
+**Engines** (one year per runtime group, a 2.7.12 and a 3.4.2 session each)
 
 - [ ] Engine Tests pulldown, buttons that need no input
 - [ ] Py3 Compat Tests and Py3 Compat Tests (CPython)
@@ -51,7 +53,7 @@ A check that was not run stays unticked and goes under "Not covered" with the re
 
 **Hosted unit tests**
 
-- [ ] Run All Tests on 2.7.12 and 3.4.2, one year per runtime
+- [ ] Run All Tests on 2.7.12 and 3.4.2, one year per runtime group (2021-2024, 2025-2026, 2027)
 - [ ] Revit API Catalog Tests
 - [ ] Dynamo Module Tests on each installed year, cold and repeat
 
@@ -96,7 +98,7 @@ A check that was not run stays unticked and goes under "Not covered" with the re
 
 **Release content**
 
-- [ ] Milestone has no open issue
+- [ ] Milestone has no open issue other than this one
 - [ ] Version files carry the version to publish
 - [ ] Release notes list breaking changes, deprecations and known issues
 

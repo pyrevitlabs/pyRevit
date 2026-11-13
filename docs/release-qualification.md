@@ -21,17 +21,19 @@ How much is run depends on the kind of release:
 | Release | Run |
 |---|---|
 | Major or minor | Everything |
-| Patch | Automated gates, install and upgrade, load and **Run All Tests** on one Revit year per runtime (2024 or earlier for .NET Framework, 2025 or later for .NET), and a release-specific check for every fix it contains |
+| Patch | Automated gates, install and upgrade, load and **Run All Tests** on one Revit year per runtime group, and a release-specific check for every fix it contains |
+
+A runtime group is the set of Revit years that share a pyRevit runtime project: 2021-2024, 2025-2026, and 2027 and later (see [Revit versions and .NET](adding-revit-version.md#revit-versions-and-net)). Where a check asks for one Revit year per runtime group, a pass on one year of a group stands for the group.
 
 ## Candidate commit
 
 A qualification is valid for one commit. Record its full SHA and build version in the issue before running anything.
 
 - The automated gates are read from the CI runs of that commit.
-- The install checks use the signed WIP installers that the `wip` job of that commit's `pyRevit CI` run uploaded (`pyrevit-wip-installers-<install-version>`). A hotfix branch has no WIP job, so its install checks run on the draft release instead.
+- The install checks use the signed WIP installers that the `wip` job of that commit's `pyRevit CI` run uploaded (`pyrevit-wip-installers-<install-version>`). A hotfix branch has no WIP job, so its install checks cannot run before the tag. List them under *Not covered* at sign-off and run them on the draft release, before it is published.
 - The in-Revit checks use a build of that commit: a git worktree at the commit, built with `dotnet run -c Release -- ci` in `build/`, with every session started by `pyrevit launch <worktree> <engine> <year> --isolated` (see [Running several clones at the same time](dev-guide.md#running-several-clones-at-the-same-time)).
 
-When commits land after the run started, add a comment with the new SHA and re-run the checks whose area the commits touch. Re-run everything when the loader, the engines, the installer or the build pipeline changed.
+When commits land after the run started, the newest commit becomes the candidate. Change the SHA in the issue, and add a comment that names the old and the new SHA and the checks that were re-run. Re-run the automated gates and the checks whose area the new commits touch; a check in an untouched area keeps its result from the earlier candidate. Re-run everything when the loader, the engines, the installer or the build pipeline changed.
 
 The release pipeline builds and signs again on the tag, so the published installers are not the WIP installers that were qualified. The [draft release checks](#draft-release-and-after-publishing) cover that gap.
 
@@ -47,7 +49,7 @@ Then fill in the candidate commit and write the release-specific part from the m
 
 | Change in this release | Check to add |
 |---|---|
-| New feature | Its main workflow and one failure path, on IronPython 2.7.12 and 3.4.2 when it is Python, and on one Revit year per runtime |
+| New feature | Its main workflow and one failure path, on IronPython 2.7.12 and 3.4.2 when it is Python, and on one Revit year per runtime group |
 | Fix for a reported bug | The reporter's reproduction on the candidate build |
 | Change to the loader, an engine, the installer, the config or `pyrevit attach` / `clone` | A targeted regression check of that area, plus the upgrade check |
 | New Revit year or .NET runtime | All core checks on that year |
@@ -60,7 +62,7 @@ Then fill in the candidate commit and write the release-specific part from the m
 
 | Check | Passed when |
 |---|---|
-| `pyRevit CI` run of the candidate commit | Green, including its `wip` job. Covers the build, the C# suites, the build pipeline tests, the standalone Python tests and the Revit API compatibility lint |
+| `pyRevit CI` run of the candidate commit | Green, including its `wip` job when the candidate is on `develop`. A hotfix branch has no `wip` job, and the gate is the rest of the run. Covers the build, the C# suites, the build pipeline tests, the standalone Python tests and the Revit API compatibility lint |
 | `pyRevit Revit integration tests` run of the candidate commit | Green for 2022-2027: the add-in loads and no Unsigned Add-In dialog appears |
 | Host-free Python modules CI omits: `python -m unittest discover -s dev/scripts -p "test_check_*.py"` | No failure |
 | `mkdocs build --strict` | No warning that the previous release did not have. The build reports existing warnings, so compare instead of expecting a clean run |
@@ -85,7 +87,7 @@ On each year that is installed: start a session, check that the startup log has 
 
 ### Engines
 
-The IronPython version is fixed per session, so the engine checks need two sessions per Revit year: `pyrevit launch <clone> default <year> --isolated` for 2.7.12 and `pyrevit launch <clone> 342 <year> --isolated` for 3.4.2. Run them on one year per runtime.
+The IronPython version is fixed per session, so the engine checks need two sessions per Revit year: `pyrevit launch <clone> default <year> --isolated` for 2.7.12 and `pyrevit launch <clone> 342 <year> --isolated` for 3.4.2. Run them on one year per runtime group.
 
 | Check | Passed when |
 |---|---|
@@ -97,7 +99,7 @@ The IronPython version is fixed per session, so the engine checks need two sessi
 
 | Check | Passed when |
 |---|---|
-| **Debug > Unit Tests > Run All Tests** on 2.7.12 and 3.4.2, one year per runtime, with a sample model open | No failure and no error. Record the passed count per session |
+| **Debug > Unit Tests > Run All Tests** on 2.7.12 and 3.4.2, one year per runtime group, with a sample model open | No failure and no error. Record the passed count per session |
 | **Revit API Catalog Tests** (not part of Run All Tests) | No failure |
 | **Dynamo Module Tests** on each installed year, in a model that is never saved | Cold and repeat run pass. Record the Dynamo version |
 
@@ -161,7 +163,7 @@ In the installed session from [Install and upgrade](#install-and-upgrade): **Set
 
 | Check | Passed when |
 |---|---|
-| Milestone | No open issue, or each open one moved to a later milestone |
+| Milestone | No open issue other than the qualification issue itself, which stays open until the release is published. Every other open issue is moved to a later milestone |
 | `pyrevitlib/pyrevit/version` and `release/version` | They carry the version to publish |
 | Release notes | Breaking changes, deprecations and the known issues of this qualification are listed |
 
@@ -178,7 +180,7 @@ The in-Revit checks can be driven by a coding agent through the MCP server, as d
 
 ## Recording results
 
-Tick a box only when the check passed on the candidate commit. For everything else add a comment with the evidence: the commit, Revit year and build, engine, model, the button or command, and the result. A check that was not run goes under *Not covered* with the reason and stays unticked.
+Tick a box only when the check passed on the candidate commit, or on an earlier candidate whose later commits do not touch the check's area (see [Candidate commit](#candidate-commit)). For everything else add a comment with the evidence: the commit, Revit year and build, engine, model, the button or command, and the result. A check that was not run goes under *Not covered* with the reason and stays unticked.
 
 Every finding becomes an issue, linked from the qualification issue.
 

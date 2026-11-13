@@ -168,7 +168,7 @@ Merging into `master` does not trigger a release. A maintainer runs through the 
 
 ### Pre-flight
 
-- Confirm the [release qualification](release-qualification.md) issue of this version is signed off for the commit you are about to release.
+- Confirm the [release qualification](release-qualification.md) issue of this version is signed off, and that the candidate commit it names is the one you release from. The release commit of step 1 adds only the version stamp on top of it.
 - Confirm **`develop`** is green: the latest `pyRevit CI` run on `develop` succeeded and its **`wip` job** produced the signed artifact (`pyrevit-wip-installers-<install-version>`). The WIP job is part of that run, not a workflow of its own — check it in the run's job list.
 - Confirm `pyrevitlib/pyrevit/version` and `release/version` reflect the version you intend to publish. `release.yml` hard-fails if the tag name does not match `pyrevitlib/pyrevit/version`.
 - On **tag** pushes, CI preserves the committed build version (including the `+HHMM` suffix) from git. **`develop`** and **`master`** branch pushes re-stamp the build number.
