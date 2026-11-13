@@ -165,23 +165,29 @@ namespace pyRevitAssemblyBuilder.UIManager
             _currentExtension = extension;
             _buildContext.CurrentExtension = extension;
 
-            // Clear per-build accumulators on shared collaborators so what we capture below
-            // attributes only to this extension's BuildUI window.
-            _buttonPostProcessor.ResetAndGetStats();
-            _buttonPostProcessor.ResetAndGetAddItemStats();
-            _buttonPostProcessor.IconManager?.ResetAndGetStats();
-
-            foreach (var component in extension.Children)
+            try
             {
-                if (component != null)
-                    RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
-            }
+                // Clear per-build accumulators on shared collaborators so what we capture below
+                // attributes only to this extension's BuildUI window.
+                _buttonPostProcessor.ResetAndGetStats();
+                _buttonPostProcessor.ResetAndGetAddItemStats();
+                _buttonPostProcessor.IconManager?.ResetAndGetStats();
 
-            _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
-            _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
-            _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
-            _currentExtension = null;
-            _buildContext.CurrentExtension = null;
+                foreach (var component in extension.Children)
+                {
+                    if (component != null)
+                        RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+                }
+
+                _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
+                _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
+                _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
+            }
+            finally
+            {
+                _currentExtension = null;
+                _buildContext.CurrentExtension = null;
+            }
         }
 
         /// <summary>
