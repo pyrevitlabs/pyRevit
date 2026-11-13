@@ -183,6 +183,7 @@ namespace pyRevitLabs.UnitTests {
         [TestMethod]
         public void FindFileInPathValuesSplitsEntriesThatExpandToSeveralDirectories() {
             const string variable = "PYREVIT_UNITTEST_CLI_PATHS";
+            var previousValue = Environment.GetEnvironmentVariable(variable);
             Environment.SetEnvironmentVariable(variable, @"C:\old-cli;C:\tools");
             try {
                 var found = SystemPath.FindFileInPathValues(
@@ -197,7 +198,7 @@ namespace pyRevitLabs.UnitTests {
                     (System.Collections.ICollection)found);
             }
             finally {
-                Environment.SetEnvironmentVariable(variable, null);
+                Environment.SetEnvironmentVariable(variable, previousValue);
             }
         }
 
