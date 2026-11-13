@@ -311,6 +311,20 @@ def copy_viewtemplates(viewtemplates, src_doc, dest_doc):
 def create_sheet(
     sheet_num, sheet_name, titleblock_id=DB.ElementId.InvalidElementId, doc=None
 ):
+    """Create a sheet with a number and a name.
+
+    Must run inside a transaction. Raises if the sheet number is already used.
+
+    Args:
+        sheet_num (str): sheet number, unique in the document.
+        sheet_name (str): sheet name.
+        titleblock_id (DB.ElementId): title block type id; the default
+            creates a sheet without a title block.
+        doc (DB.Document): target document; defaults to the active one.
+
+    Returns:
+        DB.ViewSheet: the new sheet.
+    """
     doc = doc or DOCS.doc
     mlogger.debug("Creating sheet: %s - %s", sheet_num, sheet_name)
     mlogger.debug("Titleblock id is: %s", titleblock_id)
