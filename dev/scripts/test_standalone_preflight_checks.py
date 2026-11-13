@@ -1,6 +1,7 @@
 """Exercise preflight check discovery and naming without a Revit host (#4014)."""
 
 import importlib.util
+import json
 import logging
 import os
 import re
@@ -162,6 +163,17 @@ class Python3CompatibilityTests(unittest.TestCase):
             _, preflight = _load_production_modules(imp_available=False)
             module = preflight._load_check_module("levels", script)
         self.assertEqual(42, module.MARKER)
+
+    def test_importlib_check_module_does_not_shadow_stdlib(self):
+        """Loading a check named like a stdlib module leaves ``sys.modules`` intact."""
+        with tempfile.TemporaryDirectory() as checks_dir:
+            script = os.path.join(checks_dir, "json_check.py")
+            with open(script, "w") as check_file:
+                check_file.write("MARKER = 1" + chr(10))
+            _, preflight = _load_production_modules(imp_available=False)
+            module = preflight._load_check_module("json", script)
+            self.assertIs(json, sys.modules["json"])
+        self.assertEqual(1, module.MARKER)
 
 
 if __name__ == "__main__":
