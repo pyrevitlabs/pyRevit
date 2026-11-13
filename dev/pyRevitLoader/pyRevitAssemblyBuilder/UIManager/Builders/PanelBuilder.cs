@@ -93,6 +93,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             if (component == null || revitPanel == null)
                 return;
 
+            if (!PanelBackgroundResolver.HasBackgroundColors(component))
+                return;
+
             try
             {
                 var adwPanel = _styleManager.GetAdWindowsPanel(revitPanel, tabName);
