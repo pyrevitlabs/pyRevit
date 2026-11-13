@@ -129,7 +129,7 @@ A `commands/` folder at the root of a UI extension holds scripts that the CLI ca
 ```text
 pyrevit run commands                              # list the commands of every registered clone and installed extension
 pyrevit run list_views "C:\models\house.rvt"      # run a command by name on a model
-pyrevit run list_views --models=models.txt        # run it on every model listed in a text file, one path per line
+pyrevit run list_views --models=models.txt --revit=2026   # run it on every model listed in a text file, one path per line
 pyrevit run C:\scripts\one_off.py "house.rvt"     # a path to a .py file runs that script instead of looking up a command
 ```
 
