@@ -434,9 +434,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (request.OverridesDisplay)
                 throw new AgentException("view_not_supported",
                     $"View '{schedule.Name}' ({schedule.ViewType}) has no detail level or display style.");
+#if !(REVIT2021 || REVIT2022)
             if (schedule.Definition.IsFilteredBySheet)
                 throw new AgentException("view_not_supported",
                     $"Schedule '{schedule.Name}' is filtered by sheet, so it lists only elements shown on the sheet that hosts it and would be empty on a temporary sheet.");
+#endif
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A schedule is captured on a temporary sheet, which a read-only document doesn't allow.");
 
