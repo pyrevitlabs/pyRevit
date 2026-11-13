@@ -106,7 +106,7 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 - `create.place_family_instance(symbol, (x, y), level=None, rotation=0)` places furniture, fixtures and other level-based families.
 - `create.create_column(symbol, (x, y), level, top_level, structural=True)`.
 - `symbol` is a `FamilySymbol` or its type name; pass `query.find_family_symbol('36" x 84"', family_name="Single-Flush")` when several families share the type name. These functions activate the type.
-- **Keep openings clear of wall junctions:** at least half the opening's width plus 6" from any wall that meets the host, or Revit warns and the opening can't cut cleanly. Check the positions against the wall lines in your plan data before placing.
+- **Keep openings clear of wall junctions:** at least half the opening's width plus 6" from any wall that meets the host, or Revit warns and the opening can't cut cleanly. The nominal width is a minimum: a family's real extent can be wider (a 68" double door can span over 6'). Check the placed instance's bounding box against the wall junctions and move it if it crosses one.
 
 ## Stairs
 
