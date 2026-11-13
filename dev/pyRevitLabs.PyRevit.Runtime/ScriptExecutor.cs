@@ -31,7 +31,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public ScriptRuntimeConfigs ScriptRuntimeConfigs;
         public int Result = ScriptExecutorResultCodes.DelayedExecutionException;
 
+        /// <summary>
+        /// Set when <see cref="Execute"/> has finished, so a waiting caller blocks on it instead of
+        /// polling <see cref="ExternalEvent.IsPending"/>. The caller resets it, and
+        /// <see cref="Result"/>, before raising the event.
+        /// </summary>
+        public readonly ManualResetEventSlim Completed = new ManualResetEventSlim(false);
+
         public void Execute(UIApplication uiApp) {
+            try {
+                RunRequestedScript(uiApp);
+            }
+            finally {
+                Completed.Set();
+            }
+        }
+
+        private void RunRequestedScript(UIApplication uiApp) {
             if (ScriptData != null && ScriptRuntimeConfigs != null) {
                 try {
                     // provide the given uiapp
@@ -212,12 +228,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 extExecEventHandler.ScriptData = scriptData;
                 extExecEventHandler.ScriptRuntimeConfigs = scriptRuntimeCfg;
 
+                extExecEventHandler.Result = ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                extExecEventHandler.Completed.Reset();
+
                 // request command exec now
-                extExecEvent.Raise();
+                var request = extExecEvent.Raise();
+                if (request != ExternalEventRequest.Accepted && request != ExternalEventRequest.Pending) {
+                    extExecEventHandler.ScriptData = null;
+                    extExecEventHandler.ScriptRuntimeConfigs = null;
+                    return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                }
 
                 // wait until the script is executed
                 if (scriptExecConfigs.WaitForResult) {
-                    while (extExecEvent.IsPending) ;
+                    extExecEventHandler.Completed.Wait();
                     return extExecEventHandler.Result;
                 }
                 // otherwise
