@@ -319,7 +319,6 @@
     <ROW Directory="bson_Dir" Directory_Parent="sitepackages_Dir" DefaultDir="bson"/>
     <ROW Directory="chardet_Dir" Directory_Parent="packages_Dir" DefaultDir="chardet"/>
     <ROW Directory="checks_Dir" Directory_Parent="pyRevitTools.extension_Dir" DefaultDir="checks"/>
-    <ROW Directory="commands_Dir" Directory_Parent="pyRevitTools.extension_Dir" DefaultDir="commands"/>
     <ROW Directory="compat_Dir" Directory_Parent="natsort_Dir" DefaultDir="compat"/>
     <ROW Directory="connectors_Dir" Directory_Parent="sqlalchemy_Dir" DefaultDir="CONNEC~1|connectors"/>
     <ROW Directory="contrib_3_Dir" Directory_Parent="urllib3_2_Dir" DefaultDir="contrib"/>
@@ -808,7 +807,6 @@
     <ROW Component="iter_selection.py_1" ComponentId="{8FBEE713-D6A5-445B-BAD3-18DFD80542CB}" Directory_="lib_4_Dir" Attributes="0" KeyPath="iter_selection.py_1" Type="0"/>
     <ROW Component="labels.py" ComponentId="{EC51BF34-98D0-4487-9631-1A18517D4057}" Directory_="webencodings_Dir" Attributes="0" KeyPath="labels.py" Type="0"/>
     <ROW Component="linkmaker.py" ComponentId="{EAB1CD31-97D3-419F-9B87-0ECE112C98B5}" Directory_="output_Dir" Attributes="0" KeyPath="linkmaker.py" Type="0"/>
-    <ROW Component="make3dview_command.py" ComponentId="{447109C5-FCDA-4EC7-AD7A-70E9BD833DC5}" Directory_="commands_Dir" Attributes="0" KeyPath="make3dview_command.py_1" Type="0"/>
     <ROW Component="makefile.py" ComponentId="{DE4FAF1E-59D7-4364-91B5-9AAD76C9D052}" Directory_="backports_Dir" Attributes="0" KeyPath="makefile.py" Type="0"/>
     <ROW Component="makefile.py_2" ComponentId="{4341AB83-9C73-462F-9149-34838D2FCAB7}" Directory_="backports_2_Dir" Attributes="0" KeyPath="makefile.py_2" Type="0"/>
     <ROW Component="modelchecker_check.py" ComponentId="{A498C926-86F2-494E-B83E-01538CB7953F}" Directory_="checks_Dir" Attributes="0" KeyPath="modelchecker_check.py" Type="0"/>
@@ -2987,7 +2985,6 @@
     <ROW File="pyRevitLoader.dll_3" Component_="pyRevitLoader.dll_3" FileName="PYREVI~8.DLL|pyRevitLoader.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLoader.dll" SelfReg="false"/>
     <ROW File="pyRevitRunner.dll_6" Component_="pyRevitRunner.dll_6" FileName="PYREVI~9.DLL|pyRevitRunner.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitRunner.dll" SelfReg="false"/>
     <ROW File="modelchecker_check.py" Component_="modelchecker_check.py" FileName="MODELC~1.PY|modelchecker_check.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\checks\modelchecker_check.py" SelfReg="false"/>
-    <ROW File="make3dview_command.py_1" Component_="make3dview_command.py" FileName="MAKE3D~1.PY|make3dview_command.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\commands\make3dview_command.py" SelfReg="false"/>
     <ROW File="bundle.yaml_95" Component_="bundle.yaml_10" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="icon.png_32" Component_="bundle.yaml_10" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="icon_check.png" Component_="bundle.yaml_10" FileName="ICON_C~1.PNG|icon_check.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\icon_check.png" SelfReg="false"/>
@@ -3688,7 +3685,6 @@
     <ROW Feature_="MainFeature" Component_="pyRevitLoader.dll_10"/>
     <ROW Feature_="MainFeature" Component_="pyRevitRunner.dll_10"/>
     <ROW Feature_="MainFeature" Component_="modelchecker_check.py"/>
-    <ROW Feature_="MainFeature" Component_="make3dview_command.py"/>
     <ROW Feature_="MainFeature" Component_="bundle.yaml_10"/>
     <ROW Feature_="MainFeature" Component_="bundle.yaml_11"/>
     <ROW Feature_="MainFeature" Component_="bundle.yaml_12"/>
