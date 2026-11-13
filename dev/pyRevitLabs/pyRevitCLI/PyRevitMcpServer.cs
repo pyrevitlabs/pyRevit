@@ -94,7 +94,7 @@ namespace pyRevitCLI {
             LogManager.Configuration = new LoggingConfiguration();
             this.output = output;
 
-            var inFlight = new List<Task>();
+            var inFlight = new List<(Task Task, CancellationTokenSource Cancellation)>();
             var lines = new BoundedLineReader(input);
             string line;
             while ((line = ReadRequestLine(lines)) != null) {
@@ -146,11 +146,11 @@ namespace pyRevitCLI {
                             Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
                             break;
                         case "tools/call":
-                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.RemoveAll(call => call.Task.IsCompleted);
                             var cancellation = new CancellationTokenSource();
                             var key = id.ToString(Formatting.None);
                             var tracked = pendingCalls.TryAdd(key, cancellation);
-                            inFlight.Add(Task.Run(() => {
+                            inFlight.Add((Task.Run(() => {
                                 try {
                                     CallTool(id, parameters, cancellation);
                                 }
@@ -158,7 +158,7 @@ namespace pyRevitCLI {
                                     if (tracked)
                                         pendingCalls.TryRemove(key, out _);
                                 }
-                            }));
+                            }), cancellation));
                             break;
                         default:
                             Write(Error(id, -32601, "Method not found"));
@@ -170,10 +170,11 @@ namespace pyRevitCLI {
                 }
             }
 
-            if (!Task.WaitAll(inFlight.ToArray(), InputClosedGracePeriod)) {
-                foreach (var cancellation in pendingCalls.Values)
-                    Cancel(cancellation);
-                Task.WaitAll(inFlight.ToArray());
+            var openTasks = inFlight.Select(call => call.Task).ToArray();
+            if (!Task.WaitAll(openTasks, InputClosedGracePeriod)) {
+                foreach (var call in inFlight)
+                    Cancel(call.Cancellation);
+                Task.WaitAll(openTasks);
             }
         }
 

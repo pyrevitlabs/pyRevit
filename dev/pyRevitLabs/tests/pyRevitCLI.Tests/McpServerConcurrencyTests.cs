@@ -186,6 +186,22 @@ public partial class McpServerTests {
         Assert.True(finished, "The server kept running after stdin ended.");
     }
 
+    /// <summary>A call that reuses the id of an open call is cancelled too when stdin ends (#4050).</summary>
+    [Fact]
+    public void ClosingInputCancelsCallsThatReuseAnOpenRequestId() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession();
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 2" }));
+        var finished = session.CloseInputAndWait(TimeSpan.FromSeconds(8));
+        release.Set();
+
+        Assert.True(finished, "The server kept running after stdin ended.");
+    }
+
     [Fact]
     public void ACancelNotificationWithoutJsonRpc2IsIgnored() {
         using var release = new ManualResetEventSlim(false);
