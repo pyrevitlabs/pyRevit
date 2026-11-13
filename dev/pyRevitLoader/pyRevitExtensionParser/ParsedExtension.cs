@@ -319,10 +319,13 @@ namespace pyRevitExtensionParser
                     // Top-level (tab): "CustomCtrl_%CustomCtrl_%{name}"
                     currentControlId = $"CustomCtrl_%CustomCtrl_%{displayName}";
                 }
+                else if (comp.Type == CommandComponentType.Stack)
+                {
+                    currentControlId = parentControlId;
+                }
                 else if (comp.Type == CommandComponentType.PullDown ||
                          comp.Type == CommandComponentType.SplitButton ||
-                         comp.Type == CommandComponentType.SplitPushButton ||
-                         comp.Type == CommandComponentType.Stack)
+                         comp.Type == CommandComponentType.SplitPushButton)
                 {
                     // Command groups inside containers need to deepen the hierarchy
                     // This matches Python's GenericUICommandGroup.control_id behavior
