@@ -32,6 +32,7 @@ namespace Autodesk.Revit.DB {
         public bool ThrowOnDispose { get; set; }
         public TransactionStatus RollbackStatus { get; set; } = TransactionStatus.RolledBack;
         public TransactionStatus StartStatus { get; set; } = TransactionStatus.Started;
+        public TransactionStatus AssimilateStatus { get; set; } = TransactionStatus.Committed;
         public int RollbackCalls { get; set; }
         public bool Close(bool save) {
             if (save)
@@ -61,7 +62,7 @@ namespace Autodesk.Revit.DB {
                 throw new InvalidOperationException("Rollback failed.");
             return status = document.RollbackStatus;
         }
-        public void Assimilate() { status = TransactionStatus.Committed; }
+        public TransactionStatus Assimilate() => status = document.AssimilateStatus;
         public void Dispose() {
             if (document.ThrowOnDispose)
                 throw new InvalidOperationException("Dispose failed.");

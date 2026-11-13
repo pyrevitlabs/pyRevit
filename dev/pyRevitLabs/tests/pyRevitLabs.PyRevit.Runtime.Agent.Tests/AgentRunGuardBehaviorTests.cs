@@ -364,6 +364,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AnAssimilationRevitDoesNotConfirmIsNotCommitted() {
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+                Assert.False(guard.Committed);
+            }
+        }
+
+        [Fact]
         public void LinkedDocumentsAreNotTrackedAsChangedOtherDocuments() {
             var app = new UIApplication();
             var active = new Document();
