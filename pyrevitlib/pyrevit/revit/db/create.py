@@ -1584,13 +1584,13 @@ def create_section_view(
     direction = along.Normalize()
     transform = DB.Transform.Identity
     transform.Origin = DB.XYZ((start.X + end.X) / 2.0, (start.Y + end.Y) / 2.0, 0.0)
-    transform.BasisX = direction
+    transform.BasisX = direction.Negate()
     transform.BasisY = DB.XYZ.BasisZ
-    transform.BasisZ = direction.CrossProduct(DB.XYZ.BasisZ)
+    transform.BasisZ = DB.XYZ.BasisZ.CrossProduct(direction)
     box = DB.BoundingBoxXYZ()
     box.Transform = transform
-    box.Min = DB.XYZ(-half_length, bottom, -units.parse_length(depth))
-    box.Max = DB.XYZ(half_length, top, 0.0)
+    box.Min = DB.XYZ(-half_length, bottom, 0.0)
+    box.Max = DB.XYZ(half_length, top, units.parse_length(depth))
     view = DB.ViewSection.CreateSection(
         doc, _view_family_type(DB.ViewFamily.Section, doc).Id, box
     )
