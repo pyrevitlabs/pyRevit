@@ -2,6 +2,7 @@
 
 import os
 import os.path as op
+import re
 import json
 import codecs
 
@@ -485,37 +486,46 @@ class Extension(GenericUIContainer):
         #   cache only saves the png address and not the contents so they'll
         #   get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        pat = "(\\" + exts.TAB_POSTFIX + ")|(\\" + exts.PANEL_POSTFIX + ")"
-        pat += "|(\\" + exts.PULLDOWN_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.SPLIT_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.SPLITPUSH_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.STACK_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.PUSH_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.SMART_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.LINK_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.PANEL_PUSH_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.PANEL_PUSH_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.CONTENT_BUTTON_POSTFIX + ")"
-        pat += "|(\\" + exts.COMBOBOX_POSTFIX + ")"
-        # tnteresting directories
-        pat += "|(" + exts.COMP_LIBRARY_DIR_NAME + ")"
-        pat += "|(" + exts.COMP_HOOKS_DIR_NAME + ")"
-        # search for scripts, setting files (future support), and layout files
-        patfile = "(\\" + exts.PYTHON_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.CSHARP_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.VB_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.RUBY_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.DYNAMO_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.CONTENT_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.YAML_FILE_FORMAT + ")"
-        patfile += "|(\\" + exts.JSON_FILE_FORMAT + ")"
+        dir_pattern = "|".join(
+            re.escape(name)
+            for name in (
+                exts.TAB_POSTFIX,
+                exts.PANEL_POSTFIX,
+                exts.PULLDOWN_BUTTON_POSTFIX,
+                exts.SPLIT_BUTTON_POSTFIX,
+                exts.SPLITPUSH_BUTTON_POSTFIX,
+                exts.STACK_BUTTON_POSTFIX,
+                exts.PUSH_BUTTON_POSTFIX,
+                exts.SMART_BUTTON_POSTFIX,
+                exts.LINK_BUTTON_POSTFIX,
+                exts.PANEL_PUSH_BUTTON_POSTFIX,
+                exts.PANEL_PUSH_BUTTON_POSTFIX,
+                exts.CONTENT_BUTTON_POSTFIX,
+                exts.COMBOBOX_POSTFIX,
+                exts.COMP_LIBRARY_DIR_NAME,
+                exts.COMP_HOOKS_DIR_NAME,
+            )
+        )
+        file_pattern = "|".join(
+            re.escape(name)
+            for name in (
+                exts.PYTHON_SCRIPT_FILE_FORMAT,
+                exts.CSHARP_SCRIPT_FILE_FORMAT,
+                exts.VB_SCRIPT_FILE_FORMAT,
+                exts.RUBY_SCRIPT_FILE_FORMAT,
+                exts.DYNAMO_SCRIPT_FILE_FORMAT,
+                exts.GRASSHOPPER_SCRIPT_FILE_FORMAT,
+                exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT,
+                exts.CONTENT_FILE_FORMAT,
+                exts.YAML_FILE_FORMAT,
+                exts.JSON_FILE_FORMAT,
+            )
+        )
         from pyrevit.revit import ui
 
-        return coreutils.calculate_dir_hash(self.directory, pat, patfile) + str(
-            ui.get_current_theme()
-        )
+        return coreutils.calculate_dir_hash(
+            self.directory, dir_pattern, file_pattern
+        ) + str(ui.get_current_theme())
 
     def _update_from_directory(self):  # pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show
