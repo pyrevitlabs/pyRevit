@@ -746,8 +746,9 @@ class GenericUICommand(GenericUIComponent):
             custom_docstring = script_content.extract_param(exts.DOCSTRING_PARAM)
             self._tooltip = custom_docstring or script_docstring or self._tooltip
 
-            script_author = script_content.extract_param(exts.AUTHOR_PARAM)
-            script_author = script_content.extract_param(exts.AUTHORS_PARAM)
+            script_author = script_content.extract_param(
+                exts.AUTHORS_PARAM
+            ) or script_content.extract_param(exts.AUTHOR_PARAM)
             if isinstance(script_author, list):
                 script_author = "\n".join(script_author)
             self.author = script_author or self.author
