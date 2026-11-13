@@ -3,6 +3,7 @@
 import importlib.util
 import logging
 import os
+import re
 import sys
 import tempfile
 import types
@@ -20,7 +21,7 @@ def _load_module(name, path):
     return module
 
 
-def _load_production_modules():
+def _load_production_modules(imp_available=True):
     pyrevit = types.ModuleType("pyrevit")
     pyrevit.PyRevitException = Exception
     pyrevit.HOST_APP = MagicMock()
@@ -56,7 +57,7 @@ def _load_production_modules():
         "pyrevit.extensions": extensions,
         "pyrevit.extensions.genericcomps": genericcomps,
         "pyrevit.preflight.case": case,
-        "imp": MagicMock(),
+        "imp": MagicMock() if imp_available else None,
     }
     with patch.dict(sys.modules, modules):
         components = _load_module(
@@ -120,6 +121,47 @@ class PreflightCheckDiscoveryTests(unittest.TestCase):
         self.assertEqual("Foo", get_name("Foo_CHECK.PY"))
         self.assertEqual("coord.v2", get_name("coord.v2_check.py"))
         self.assertEqual("helpers", get_name("helpers.py"))
+
+
+class Python3CompatibilityTests(unittest.TestCase):
+    """Regressions for CPython 3 failures in extension hashing and check loading (#4043)."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load production modules with only host dependencies replaced."""
+        cls.components, cls.preflight = _load_production_modules()
+
+    def test_extension_dir_hash_patterns_compile(self):
+        """The directory and file filters handed to the hash are valid regexes."""
+        captured = []
+        self.components.coreutils.calculate_dir_hash = (
+            lambda directory, dir_pat, file_pat: (
+                captured.append((dir_pat, file_pat)) or ""
+            )
+        )
+        ui = MagicMock()
+        ui.get_current_theme.return_value = "light"
+        revit = types.ModuleType("pyrevit.revit")
+        revit.ui = ui
+        extension = self.components.Extension.__new__(self.components.Extension)
+        extension.directory = "unused"
+        with patch.dict(sys.modules, {"pyrevit.revit": revit, "pyrevit.revit.ui": ui}):
+            extension._calculate_extension_dir_hash()
+        dir_pat, file_pat = captured[0]
+        self.assertTrue(re.search(dir_pat, "lib"))
+        self.assertTrue(re.search(dir_pat, "hooks"))
+        self.assertTrue(re.search(dir_pat, "My.pushbutton"))
+        self.assertTrue(re.search(file_pat, "script.py"))
+
+    def test_check_module_loads_when_imp_is_unavailable(self):
+        """A check script is loaded through importlib when ``imp`` is gone."""
+        with tempfile.TemporaryDirectory() as checks_dir:
+            script = os.path.join(checks_dir, "levels_check.py")
+            with open(script, "w") as check_file:
+                check_file.write("MARKER = 42" + chr(10))
+            _, preflight = _load_production_modules(imp_available=False)
+            module = preflight._load_check_module("levels", script)
+        self.assertEqual(42, module.MARKER)
 
 
 if __name__ == "__main__":
