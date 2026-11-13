@@ -174,6 +174,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <remarks>
         /// Invariant: the excluded engine must remain in the returned cache. Dropping it makes every
         /// later caller with the same type id start a new engine and re-import its modules.
+        /// Also drops the call-site rules live IronPython contexts cached, which would otherwise keep
+        /// every earlier engine alive; see <see cref="IronPythonRuleCaches"/>.
         /// </remarks>
         public static Dictionary<string, object> ClearEngines(string excludeEngine = null) {
             object excludedEngine = null;
@@ -188,6 +190,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (excludedEngine != null)
                 newEngineDict[excludeEngine] = excludedEngine;
             AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnginesDictKey, newEngineDict);
+            try {
+                IronPythonRuleCaches.Release();
+            }
+            catch (Exception ex) {
+                logger.Warn(ex, "Could not release the IronPython rule caches");
+            }
             return newEngineDict;
         }
 

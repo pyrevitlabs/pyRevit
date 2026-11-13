@@ -11,9 +11,9 @@ import os.path as op
 import pickle as pl
 import math
 
-from pyrevit import framework
 from pyrevit import script, revit
 from pyrevit import DB, UI
+from pyrevit.revit import events
 
 
 logger = script.get_logger()
@@ -164,12 +164,20 @@ def toggle_state():
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     """pyRevit smartbuttom init"""
     try:
-        __rvt__.ViewActivating += framework.EventHandler[
-            UI.Events.ViewActivatingEventArgs
-        ](copy_zoomstate)
-        __rvt__.ViewActivated += framework.EventHandler[
-            UI.Events.ViewActivatedEventArgs
-        ](apply_zoomstate)
+        events.replace_handler(
+            "pyRevitTools.SyncViews.ViewActivating",
+            __rvt__,
+            "ViewActivating",
+            copy_zoomstate,
+            UI.Events.ViewActivatingEventArgs,
+        )
+        events.replace_handler(
+            "pyRevitTools.SyncViews.ViewActivated",
+            __rvt__,
+            "ViewActivated",
+            apply_zoomstate,
+            UI.Events.ViewActivatedEventArgs,
+        )
         return True
     except Exception:
         return False

@@ -1,9 +1,11 @@
+using System;
 using System.IO;
 using System.Threading;
 
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class ScriptExecutorResultCodes {
@@ -64,6 +66,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     /// Executes a script
     public class ScriptExecutor {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static int mainThreadId;
         private static ScriptExecutorExternalEventHandler extExecEventHandler;
         private static ExternalEvent extExecEvent;
@@ -85,12 +88,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // The check-then-create below is intentionally unlocked: both call
             // sites run on the Revit main thread during init, so there is no
             // concurrent entry to guard against.
-            if (extExecEvent != null)
-                return;
+            if (extExecEvent == null) {
+                mainThreadId = Thread.CurrentThread.ManagedThreadId;
+                extExecEventHandler = new ScriptExecutorExternalEventHandler();
+                extExecEvent = ExternalEvent.Create(extExecEventHandler);
+            }
 
-            mainThreadId = Thread.CurrentThread.ManagedThreadId;
-            extExecEventHandler = new ScriptExecutorExternalEventHandler();
-            extExecEvent = ExternalEvent.Create(extExecEventHandler);
+            try {
+                ApiContextQueue.Initialize();
+            }
+            catch (Exception ex) {
+                logger.Error(ex, "Could not create the shared API context queue.");
+            }
         }
 
         internal static bool IsOnMainThread =>
