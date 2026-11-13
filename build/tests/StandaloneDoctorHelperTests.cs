@@ -5,7 +5,7 @@ namespace Build.Tests;
 
 [TestClass]
 [TestCategory("HostFree")]
-[TestCategory("Unit")]
+[TestCategory("Integration")]
 public sealed class StandaloneDoctorHelperTests
 {
     private string _root = string.Empty;
