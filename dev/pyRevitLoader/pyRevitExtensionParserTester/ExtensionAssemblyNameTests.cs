@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 
-namespace pyRevitExtensionParserTester
+namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [Category("HostFree")]

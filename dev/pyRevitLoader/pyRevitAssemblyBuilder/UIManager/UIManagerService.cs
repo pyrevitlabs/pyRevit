@@ -163,6 +163,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             // The OS file cache is already warm from bundle.yaml parsing in PASS 1.
 
             _currentExtension = extension;
+            _buildContext.CurrentExtension = extension;
 
             // Clear per-build accumulators on shared collaborators so what we capture below
             // attributes only to this extension's BuildUI window.
@@ -180,6 +181,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
             _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
             _currentExtension = null;
+            _buildContext.CurrentExtension = null;
         }
 
         /// <summary>
