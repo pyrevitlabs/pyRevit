@@ -79,3 +79,20 @@ class CropViewToElementsTests(RolledBackTestCase):
         after = view.CropBox.Max.X - view.CropBox.Min.X
         self.assertNotAlmostEqual(before, after)
         self.assertTrue(view.CropBoxActive)
+
+
+class CreateModel3dViewTests(RolledBackTestCase):
+    """Regression tests for #4023."""
+
+    def test_section_box_hugs_the_model(self):
+        """The default section box is the model's extents plus padding."""
+        elements = query.get_model_elements()
+        if not elements:
+            self.skipTest("No model elements to frame")
+        extents = query.get_elements_bounding_box(elements)
+        view = create.create_model_3d_view()
+        box = view.GetSectionBox()
+        for axis in ("X", "Y", "Z"):
+            model_size = getattr(extents.Max, axis) - getattr(extents.Min, axis)
+            box_size = getattr(box.Max, axis) - getattr(box.Min, axis)
+            self.assertLess(box_size, model_size + 10.0)

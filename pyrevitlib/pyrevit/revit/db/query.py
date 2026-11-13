@@ -3549,6 +3549,8 @@ UNFRAMED_MODEL_CATEGORIES = (
     "OST_SharedBasePoint",
     "OST_Cameras",
     "OST_SectionBox",
+    "OST_Sun",
+    "OST_VolumeOfInterest",
     "OST_Topography",
     "OST_Toposolid",
     "OST_RvtLinks",
@@ -3809,8 +3811,9 @@ def get_model_elements(doc=None):
     """Return the elements that make up the model, for framing and extents.
 
     Model-category, non-view-specific instances with a bounding box.
-    Levels, base points, cameras, section boxes, topography and links are
-    left out, because their extents are far larger than the building.
+    Levels, base points, cameras, section boxes, sun paths, scope boxes,
+    topography and links are left out, because their extents are far larger
+    than the building.
 
     Args:
         doc (DB.Document, optional): document, defaults to the active one.
