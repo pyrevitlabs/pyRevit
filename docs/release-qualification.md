@@ -33,7 +33,7 @@ A qualification is valid for one commit. Record its full SHA and build version i
 - The install checks use the signed WIP installers that the `wip` job of that commit's `pyRevit CI` run uploaded (`pyrevit-wip-installers-<install-version>`). A hotfix branch has no WIP job, so its install checks cannot run before the tag. List them under *Not covered* at sign-off and run them on the draft release, before it is published.
 - The in-Revit checks use a build of that commit: a git worktree at the commit, built with `dotnet run -c Release -- ci` in `build/`, with every session started by `pyrevit launch <worktree> <engine> <year> --isolated` (see [Running several clones at the same time](dev-guide.md#running-several-clones-at-the-same-time)).
 
-When commits land after the run started, the newest commit becomes the candidate. Change the SHA in the issue, and add a comment that names the old and the new SHA and the checks that were re-run. Re-run the automated gates and the checks whose area the new commits touch; a check in an untouched area keeps its result from the earlier candidate. Re-run everything when the loader, the engines, the installer or the build pipeline changed.
+When commits land after the run started, the newest commit becomes the candidate. Change the SHA in the issue, and add a comment that names the old and the new SHA and the checks that were re-run. Re-run the automated gates and the checks whose area the new commits touch, and add a release-specific check for every fix or feature the new commits bring; a check in an untouched area keeps its result from the earlier candidate. Re-run everything when the loader, the engines, the installer or the build pipeline changed.
 
 The release pipeline builds and signs again on the tag, so the published installers are not the WIP installers that were qualified. The [draft release checks](#draft-release-and-after-publishing) cover that gap.
 
@@ -204,7 +204,7 @@ Every other finding is either fixed, or listed as a known issue in the release n
 
 ## Draft release and after publishing
 
-Pushing the tag builds the artifacts that users download. Check them before publishing the draft release:
+Pushing the tag builds the artifacts that users download. Check them before publishing the draft release. The same release job pushes the Chocolatey package before the draft exists, so these checks cannot hold that package back; a failed check means a follow-up release.
 
 | Check | Passed when |
 |---|---|
