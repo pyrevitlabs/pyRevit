@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 using Autodesk.Revit.UI;
+using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class JournalUpdateArgs : EventArgs {
@@ -31,8 +32,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public delegate void CommandExecuted(object source, CommandExecutedArgs e);
 
     public class JournalListener {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private const int PollIntervalMilliseconds = 250;
-        private JournalTail _tail;
         private string JournalFile = "";
         private Thread jtail;
         private CancellationTokenSource _cancellationTokenSource;
@@ -58,8 +59,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             _cancellationTokenSource = new CancellationTokenSource();
             var token = _cancellationTokenSource.Token;
-            _tail = new JournalTail(JournalFile);
-            jtail = new Thread(() => TailJournal(token)) { IsBackground = true };
+            var tail = new JournalTail(JournalFile);
+            jtail = new Thread(() => TailJournal(tail, token)) { IsBackground = true };
             jtail.Start();
         }
 
@@ -67,14 +68,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _cancellationTokenSource?.Cancel();
         }
 
-        private void TailJournal(CancellationToken token) {
+        private void TailJournal(JournalTail tail, CancellationToken token) {
             while (!token.WaitHandle.WaitOne(PollIntervalMilliseconds)) {
-                Tail();
+                try {
+                    Tail(tail);
+                }
+                catch (Exception ex) {
+                    logger.Error(ex, "Journal polling failed.");
+                }
             }
         }
 
-        private void Tail() {
-            var newLines = _tail.ReadNewLines();
+        private void Tail(JournalTail tail) {
+            var newLines = tail.ReadNewLines();
             if (newLines.Length == 0)
                 return;
 
