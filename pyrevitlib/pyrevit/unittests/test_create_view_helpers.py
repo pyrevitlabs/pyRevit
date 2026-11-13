@@ -76,6 +76,7 @@ class CropViewToElementsTests(RolledBackTestCase):
             self.skipTest("No model elements to crop to")
         before = view.CropBox.Max.X - view.CropBox.Min.X
         update.crop_view_to_elements(view, elements, padding=1.0)
+        revit.doc.Regenerate()
         after = view.CropBox.Max.X - view.CropBox.Min.X
         self.assertNotAlmostEqual(before, after)
         self.assertTrue(view.CropBoxActive)
@@ -83,6 +84,16 @@ class CropViewToElementsTests(RolledBackTestCase):
 
 class CreateModel3dViewTests(RolledBackTestCase):
     """Regression tests for #4023."""
+
+    def test_model_elements_leave_out_sheets_and_cameras(self):
+        """Sheets and cameras have extents far beyond the building."""
+        excluded = (
+            DB.BuiltInCategory.OST_Sheets,
+            DB.BuiltInCategory.OST_Cameras,
+        )
+        excluded_ids = [DB.ElementId(category) for category in excluded]
+        for element in query.get_model_elements():
+            self.assertNotIn(element.Category.Id, excluded_ids)
 
     def test_section_box_hugs_the_model(self):
         """The default section box is the model's extents plus padding."""

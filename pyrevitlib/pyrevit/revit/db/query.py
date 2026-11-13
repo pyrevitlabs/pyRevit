@@ -3551,6 +3551,7 @@ UNFRAMED_MODEL_CATEGORIES = (
     "OST_SectionBox",
     "OST_Sun",
     "OST_VolumeOfInterest",
+    "OST_Sheets",
     "OST_Topography",
     "OST_Toposolid",
     "OST_RvtLinks",
@@ -3812,7 +3813,7 @@ def get_model_elements(doc=None):
 
     Model-category, non-view-specific instances with a bounding box.
     Levels, base points, cameras, section boxes, sun paths, scope boxes,
-    topography and links are left out, because their extents are far larger
+    sheets, topography and links are left out, because their extents are far larger
     than the building.
 
     Args:
@@ -3822,12 +3823,11 @@ def get_model_elements(doc=None):
         (list[DB.Element]): model elements.
     """
     doc = doc or DOCS.doc
-    unframed = set()
-    for name in UNFRAMED_MODEL_CATEGORIES:
-        if hasattr(DB.BuiltInCategory, name):
-            category = DB.Category.GetCategory(doc, getattr(DB.BuiltInCategory, name))
-            if category is not None:
-                unframed.add(category.Name)
+    unframed = set(
+        DB.ElementId(getattr(DB.BuiltInCategory, name))
+        for name in UNFRAMED_MODEL_CATEGORIES
+        if hasattr(DB.BuiltInCategory, name)
+    )
     return [
         element
         for element in DB.FilteredElementCollector(doc).WhereElementIsNotElementType()
@@ -3835,7 +3835,7 @@ def get_model_elements(doc=None):
         and element.Category.CategoryType == DB.CategoryType.Model
         and not element.ViewSpecific
         and not isinstance(element, DB.Level)
-        and element.Category.Name not in unframed
+        and element.Category.Id not in unframed
         and element.get_BoundingBox(None) is not None
     ]
 
