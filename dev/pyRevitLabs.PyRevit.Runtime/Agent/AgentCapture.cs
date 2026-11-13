@@ -44,6 +44,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// views in <c>export</c> and <c>viewport</c> modes, to the view for the capture only: a
     /// view template that controls them is detached inside the rolled-back group. In a workshared
     /// model, a view the user doesn't own is duplicated in the group and the copy is changed.
+    /// A sheet can be named by its sheet number. A schedule is rendered on a temporary sheet in
+    /// the rolled-back group, in <c>export</c> mode only.
     /// A view name shared by several views fails with <c>view_ambiguous</c> listing their ids,
     /// unless <c>screen</c> mode can take the active view among them.
     /// Invariant: capturing never leaves a change in the model.
@@ -348,10 +350,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 selector,
                 id => ViewById(doc, id),
                 new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>().Where(view => !view.IsTemplate),
-                view => view.Name);
+                view => view.Name,
+                view => (view as ViewSheet)?.SheetNumber);
             if (matches.Count == 0) {
                 var named = long.TryParse(selector, out _) ? $"with id or name '{selector}'" : $"named '{selector}'";
-                throw new AgentException("view_not_found", $"No view {named}. Use 'active', '3d', a view name or a view id.");
+                throw new AgentException("view_not_found", $"No view {named}. Use 'active', '3d', a view name, a sheet number or a view id.");
             }
             if (matches.Count > 1 && preferActive && matches.Any(view => view.Id == uidoc.ActiveView.Id))
                 return uidoc.ActiveView;
@@ -427,7 +430,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("capture_failed", $"Revit did not write an image for view '{view.Name}'.");
         }
 
+        private static string ExportSchedule(Document doc, ViewSchedule schedule, string directory, string baseName, Request request) {
+            if (request.OverridesDisplay)
+                throw new AgentException("view_not_supported",
+                    $"View '{schedule.Name}' ({schedule.ViewType}) has no detail level or display style.");
+#if !(REVIT2021 || REVIT2022)
+            if (schedule.Definition.IsFilteredBySheet)
+                throw new AgentException("view_not_supported",
+                    $"Schedule '{schedule.Name}' is filtered by sheet, so it lists only elements shown on the sheet that hosts it and would be empty on a temporary sheet.");
+#endif
+            if (doc.IsReadOnly)
+                throw new AgentException("document_read_only", "A schedule is captured on a temporary sheet, which a read-only document doesn't allow.");
+
+            return ExportInRolledBackGroup(doc, "pyRevit Agent schedule sheet", () => {
+                var sheet = ViewSheet.Create(doc, ElementId.InvalidElementId);
+                var appearsInSheetList = sheet.get_Parameter(BuiltInParameter.SHEET_SCHEDULED);
+                if (appearsInSheetList != null && !appearsInSheetList.IsReadOnly)
+                    appearsInSheetList.Set(0);
+                ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, XYZ.Zero);
+                return sheet;
+            }, directory, baseName, request.Width,
+                message => $"Schedule '{schedule.Name}' could not be placed on a temporary sheet: {message}");
+        }
+
         private static string ExportWithDisplay(Document doc, View view, string directory, string baseName, Request request) {
+            if (view is ViewSchedule schedule)
+                return ExportSchedule(doc, schedule, directory, baseName, request);
             if (!request.OverridesDisplay)
                 return ExportView(doc, view, directory, baseName, request.Width);
             if (doc.IsReadOnly)

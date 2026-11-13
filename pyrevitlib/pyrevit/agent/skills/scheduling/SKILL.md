@@ -81,5 +81,5 @@ the run guard cancels, so it is not blocked and the file it writes stays on disk
 
 - [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
 - [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
-- [ ] `capture_view(view="Door Schedule")` shows how it looks.
+- [ ] `capture_view(view="Door Schedule")` shows how it looks; it renders the schedule on a temporary sheet that is rolled back.
 - [ ] You told the user the schedule's name and that it is ready to export from Revit, or the file path if you exported it.

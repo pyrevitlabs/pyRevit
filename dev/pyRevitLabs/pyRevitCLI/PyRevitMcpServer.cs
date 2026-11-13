@@ -809,7 +809,7 @@ namespace pyRevitCLI {
                         new JObject {
                             ["view"] = new JObject {
                                 ["type"] = "string",
-                                ["description"] = "'active' (default), '3d', a view name, or a view id.",
+                                ["description"] = "'active' (default), '3d', a view name, a sheet number, or a view id.",
                             },
                             ["mode"] = new JObject {
                                 ["type"] = "string",
