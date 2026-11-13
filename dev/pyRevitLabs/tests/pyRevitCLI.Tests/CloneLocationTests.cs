@@ -21,4 +21,15 @@ public class CloneLocationTests {
     public void IsInsideComparesWholeDirectoriesIgnoringCase(string path, string root, bool expected) {
         Assert.Equal(expected, PyRevitCloneLocation.IsInside(path, root));
     }
+
+    [Theory]
+    [InlineData(null, @"C:\pyrevit")]
+    [InlineData("", @"C:\pyrevit")]
+    [InlineData(@"C:\pyrevit\bin", null)]
+    [InlineData(@"C:\pyrevit\bin", "  ")]
+    [InlineData("C:\\py\0revit", @"C:\pyrevit")]
+    [InlineData(@"C:\pyrevit\bin", "C:\\py|revit")]
+    public void IsInsideIsFalseForMissingOrInvalidPaths(string path, string root) {
+        Assert.False(PyRevitCloneLocation.IsInside(path, root));
+    }
 }
