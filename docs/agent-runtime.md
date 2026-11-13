@@ -497,6 +497,11 @@ clone the session was loaded from. When that clone has no CPython engine, CPytho
 reports `attached`, and `clone` and the IronPython `python` are null when the session
 doesn't know them, instead of `Unknown` or `0`.
 
+`pyrevitlib/` loads live from the clone's working tree, but the runtime DLLs only change on a rebuild.
+`get_context.pyrevit.bin_commit` is the commit the binaries were built from. When it differs from
+`commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- local`), and
+`pyrevit agent status` shows the same fields. Nothing is flagged when the clone's commit is unknown.
+
 Syntax measured in Revit on IronPython 3.4.2:
 
 | Syntax | IronPython 3.4.2 |
