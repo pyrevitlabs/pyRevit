@@ -169,6 +169,11 @@ namespace pyRevitExtensionParserTester
                 @"{
   ""extensions"": [
     {
+      ""name"": ""FirstExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""FirstExtUser""]
+    },
+    {
       ""name"": ""SecondExt"",
       ""type"": ""extension"",
       ""authusers"": [""SomeoneElse""]
@@ -186,7 +191,7 @@ namespace pyRevitExtensionParserTester
             ExtensionRegistryAuth.ApplyRegistryAuthorization(extA, "FirstExt", null, ref usersA, ref groupsA);
             ExtensionRegistryAuth.ApplyRegistryAuthorization(extB, "SecondExt", null, ref usersB, ref groupsB);
 
-            Assert.That(usersA, Is.Null);
+            Assert.That(usersA, Is.EquivalentTo(new[] { "FirstExtUser" }));
             Assert.That(usersB, Is.EquivalentTo(new[] { "SomeoneElse" }));
         }
 
