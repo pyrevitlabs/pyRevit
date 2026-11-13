@@ -41,6 +41,8 @@ public sealed class BinCompleteModuleTests
     }
 
     [TestMethod]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public void Standalone_doctor_is_staged_after_signing_and_before_the_release_upload()
     {
         CollectionAssert.Contains(DependenciesOf(typeof(StageStandaloneDoctorModule)), typeof(SignBinariesModule));
