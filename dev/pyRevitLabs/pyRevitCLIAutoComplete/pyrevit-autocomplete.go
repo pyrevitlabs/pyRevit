@@ -43,6 +43,7 @@ func main() {
 							"ensure": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
+									"--first": complete.PredictNothing,
 									"--log":   complete.PredictNothing,
 									"--scope": complete.PredictNothing,
 								},
@@ -52,6 +53,12 @@ func main() {
 								Flags: complete.Flags{
 									"--log":   complete.PredictNothing,
 									"--scope": complete.PredictNothing,
+								},
+							},
+							"which": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
 								},
 							},
 						},

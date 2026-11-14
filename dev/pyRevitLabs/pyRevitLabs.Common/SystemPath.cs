@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -13,7 +14,9 @@ namespace pyRevitLabs.Common {
     /// <remarks>
     /// Every mutation here is idempotent: adding an entry that is already present is a no-op,
     /// which is what keeps installers from stacking duplicate <c>PATH</c> tokens on every
-    /// upgrade. The value is always read and written unexpanded and kept as
+    /// upgrade. Appending leaves an entry behind every directory registered before it, so an
+    /// installer that must win over an older copy of the same executable registers its
+    /// directory first instead. The value is always read and written unexpanded and kept as
     /// <see cref="RegistryValueKind.ExpandString"/> so that <c>%VAR%</c> tokens in unrelated
     /// entries survive a round-trip.
     /// </remarks>
@@ -112,6 +115,64 @@ namespace pyRevitLabs.Common {
         }
 
         /// <summary>
+        /// Returns a raw <c>PATH</c> value with a directory as its first entry, so that
+        /// executables in it win over same-named ones in every other directory of that value.
+        /// </summary>
+        /// <param name="path">The raw <c>PATH</c> value to extend.</param>
+        /// <param name="entry">The directory to put first.</param>
+        /// <returns>
+        /// The reordered value, or <paramref name="path"/> unchanged when the directory already
+        /// is the first entry. A directory that is absent is put in front of the existing text,
+        /// which is carried over as is. One that is present further back is moved, which
+        /// re-serializes the list like <see cref="RemoveEntry"/> does.
+        /// </returns>
+        public static string PrependEntry(string path, string entry) {
+            var normalizedEntry = NormalizeToken(entry);
+            if (normalizedEntry.Length == 0)
+                return path;
+            var firstToken = Tokenize(path).FirstOrDefault();
+            if (string.Equals(NormalizeToken(firstToken), normalizedEntry,
+                    StringComparison.OrdinalIgnoreCase))
+                return path;
+            var remainder = HasEntry(path, entry)
+                ? RemoveEntry(path, entry)
+                : (path ?? string.Empty).TrimStart(PathSeparator, ' ');
+            if (remainder.Length == 0)
+                return normalizedEntry;
+            return normalizedEntry + PathSeparator + remainder;
+        }
+
+        /// <summary>
+        /// Lists the copies of a file that exist in the directories of raw <c>PATH</c> values, in
+        /// the order of those values, which is the order Windows resolves a command in.
+        /// </summary>
+        /// <param name="pathValues">
+        /// The raw <c>PATH</c> values, in resolution order. Each one is expanded before it is
+        /// split, as Windows does, so a <c>%VAR%</c> entry whose value holds several
+        /// <c>;</c>-separated directories contributes every one of them.
+        /// </param>
+        /// <param name="fileName">The file to look for, such as <c>pyrevit.exe</c>.</param>
+        /// <param name="fileExists">Tests whether a full file path exists.</param>
+        /// <returns>The full paths of the copies found, each reported once.</returns>
+        internal static IList<string> FindFileInPathValues(IEnumerable<string> pathValues,
+                                                           string fileName,
+                                                           Func<string, bool> fileExists) {
+            return pathValues
+                .SelectMany(v => Tokenize(Environment.ExpandEnvironmentVariables(v ?? string.Empty)))
+                .Select(e => ResolveFileInEntry(e, fileName))
+                .Where(f => f != null && fileExists(f))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string ResolveFileInEntry(string entry, string fileName) {
+            var directory = NormalizeToken((entry ?? string.Empty).Trim('"'));
+            if (directory.Length == 0 || directory.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+                return null;
+            return Path.Combine(directory, fileName);
+        }
+
+        /// <summary>
         /// Returns a raw <c>PATH</c> value with every occurrence of a directory removed.
         /// </summary>
         /// <param name="path">The raw <c>PATH</c> value to reduce.</param>
@@ -171,20 +232,52 @@ namespace pyRevitLabs.Common {
         }
 
         /// <summary>
+        /// Lists the copies of a file found in the directories of the persistent <c>PATH</c>, in
+        /// the order a newly started process resolves a command: machine entries, then user
+        /// entries.
+        /// </summary>
+        /// <param name="fileName">The file to look for, such as <c>pyrevit.exe</c>.</param>
+        /// <returns>The full paths of the copies found. The first one is the one that runs.</returns>
+        /// <remarks>
+        /// This reads the registry, not the <c>PATH</c> of the current process, which is a
+        /// snapshot taken before any change made by this or a parent process.
+        /// </remarks>
+        public static IList<string> FindFileOnPath(string fileName) {
+            var pathValues = new[] { EnvironmentVariableTarget.Machine, EnvironmentVariableTarget.User }
+                .Select(GetRawPathValue);
+            return FindFileInPathValues(pathValues, fileName, File.Exists);
+        }
+
+        private static string GetRawPathValue(EnvironmentVariableTarget scope) {
+            using (var key = OpenEnvironmentKey(scope, writable: false))
+                return ReadRawPathValue(key);
+        }
+
+        /// <summary>
         /// Registers a directory in <c>PATH</c> at the given scope unless it is already there,
         /// then notifies running processes that the environment changed.
         /// </summary>
         /// <param name="scope">The <c>PATH</c> scope to write to.</param>
         /// <param name="entry">The directory to register.</param>
+        /// <param name="first">
+        /// <c>true</c> to make the directory the first entry of the scope, moving it there when
+        /// it is registered further back. <c>false</c> appends it when missing and never moves
+        /// it.
+        /// </param>
         /// <returns><c>true</c> if the value was modified.</returns>
         /// <remarks>
         /// Callers run after the installer's own environment-change broadcast, so this method
         /// must broadcast on its own or newly started shells will not pick the value up.
+        /// Being first in the user scope still leaves the directory behind every machine entry,
+        /// because Windows puts the machine <c>PATH</c> in front of the user one.
         /// </remarks>
-        public static bool EnsurePathEntry(EnvironmentVariableTarget scope, string entry) {
+        public static bool EnsurePathEntry(EnvironmentVariableTarget scope, string entry,
+                                           bool first = false) {
             using (var key = OpenEnvironmentKey(scope, writable: true)) {
                 var currentValue = ReadRawPathValue(key);
-                var updatedValue = AddEntry(currentValue, entry);
+                var updatedValue = first
+                    ? PrependEntry(currentValue, entry)
+                    : AddEntry(currentValue, entry);
                 if (string.Equals(currentValue, updatedValue, StringComparison.Ordinal))
                     return false;
                 WriteRawPathValue(key, updatedValue);
