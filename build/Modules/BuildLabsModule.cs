@@ -32,6 +32,7 @@ public sealed class BuildLabsModule(IOptions<BuildOptions> buildOptions) : Modul
         {
             await PublishProject(context, PyRevitPaths.LabsCliProject, cliDir, configuration, cancellationToken);
             await PublishProject(context, PyRevitPaths.LabsDoctorProject, doctorDir, configuration, cancellationToken);
+            StandaloneDoctorHelper.EnsureSingleFilePublish(doctorDir);
             MergePublishOutput(doctorDir, PyRevitPaths.BinPath);
             MergePublishOutput(cliDir, PyRevitPaths.BinPath);
         }
