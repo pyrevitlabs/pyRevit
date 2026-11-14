@@ -33,7 +33,9 @@ namespace Autodesk.Revit.DB {
         public TransactionStatus RollbackStatus { get; set; } = TransactionStatus.RolledBack;
         public TransactionStatus StartStatus { get; set; } = TransactionStatus.Started;
         public TransactionStatus AssimilateStatus { get; set; } = TransactionStatus.Committed;
+        public TransactionStatus CommitStatus { get; set; } = TransactionStatus.Committed;
         public int RollbackCalls { get; set; }
+        public int TransactionStarts { get; set; }
         public bool Close(bool save) {
             if (save)
                 throw new InvalidOperationException("Cleanup must never save.");
@@ -68,6 +70,16 @@ namespace Autodesk.Revit.DB {
                 throw new InvalidOperationException("Dispose failed.");
         }
     }
+    internal sealed class Transaction : IDisposable {
+        private readonly Document document;
+        public Transaction(Document document, string name) { this.document = document; }
+        public TransactionStatus Start() {
+            document.TransactionStarts++;
+            return TransactionStatus.Started;
+        }
+        public TransactionStatus Commit() => document.CommitStatus;
+        public void Dispose() { }
+    }
     internal sealed class FailureMessage {
         private readonly FailureSeverity severity;
         private readonly string description;
@@ -95,6 +107,11 @@ namespace Autodesk.Revit.DB {
         public IEnumerable<FailureMessage> GetFailureMessages() => messages;
         public string GetTransactionName() => "Test transaction";
         public void DeleteWarning(FailureMessage message) { DeletedWarnings.Add(message); }
+    }
+}
+namespace Autodesk.Revit.Exceptions {
+    internal class ApplicationException : Exception {
+        public ApplicationException(string message) : base(message) { }
     }
 }
 namespace Autodesk.Revit.DB.Events {

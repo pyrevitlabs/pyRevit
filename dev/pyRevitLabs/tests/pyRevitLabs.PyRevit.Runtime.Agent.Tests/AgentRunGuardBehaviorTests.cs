@@ -375,6 +375,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>
+        /// A group Revit does not commit throws, leaves Committed false, and the host-error decision
+        /// the run service reports for it is rolled_back.
+        /// </summary>
+        [Fact]
+        public void AFailedAssimilationIsReportedAsRolledBackNotCommitted() {
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+                Assert.Equal("rolled_back", AgentRunDecision.AfterHostError(guard.Committed, scriptStarted: true));
+            }
+        }
+
         [Fact]
         public void LinkedDocumentsAreNotTrackedAsChangedOtherDocuments() {
             var app = new UIApplication();

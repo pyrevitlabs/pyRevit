@@ -469,39 +469,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 message => $"View '{view.Name}' could not be shown with the requested display settings: {message}");
         }
 
-        /// <summary>
-        /// Changes the model with <paramref name="prepare"/> in one transaction, exports the view
-        /// it returns, and rolls the whole capture group back, so nothing stays in the model.
-        /// </summary>
-        /// <remarks>
-        /// A Revit <see cref="Autodesk.Revit.Exceptions.ApplicationException"/> becomes
-        /// <c>capture_failed</c> with the text <paramref name="describeFailure"/> builds from its
-        /// message; an <see cref="AgentException"/> from <paramref name="prepare"/> passes through.
-        /// </remarks>
         private static string ExportInRolledBackGroup(Document doc, string transactionName, Func<View> prepare,
             string directory, string baseName, int width, Func<string, string> describeFailure) {
-            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
-                if (group.Start() != TransactionStatus.Started)
-                    throw new AgentException("capture_failed", "Revit did not start the temporary capture group, so the view was not changed.");
-                try {
-                    View target;
-                    using (var transaction = new Transaction(doc, transactionName)) {
-                        transaction.Start();
-                        target = prepare();
-                        var committed = transaction.Commit();
-                        if (committed != TransactionStatus.Committed)
-                            throw new AgentException("capture_failed", describeFailure($"Revit did not commit the temporary view change (status {committed})."));
-                    }
-                    return ExportView(doc, target, directory, baseName, width);
-                }
-                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
-                    throw new AgentException("capture_failed", describeFailure(ex.Message));
-                }
-                finally {
-                    if (group.HasStarted() && !group.HasEnded())
-                        group.RollBack();
-                }
-            }
+            return AgentCaptureGroup.Run(doc, transactionName, prepare,
+                target => ExportView(doc, target, directory, baseName, width), describeFailure);
         }
 
         /// <remarks>
